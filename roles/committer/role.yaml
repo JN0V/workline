@@ -1,0 +1,40 @@
+contract: 1
+name: committer
+mission: Every commit is atomic, and its message tells a newcomer what changed and why.
+
+# commit-msg: the local git hook, on the message being written.
+# merge-request: CI, on every commit of the MR — the net for hooks that were skipped.
+events: [commit-msg, merge-request]
+
+requires: [git]
+# The user's existing checks, run when installed; the verdict says when they are missing.
+uses: [forbidden-terms, git-identity-guard, gitleaks]
+
+# A commit message is short writing; a cheap, fast model is enough.
+model:
+  capability: writing
+  tier: light
+  effort: low
+
+context:
+  knowledge: []
+  budget: 4000
+
+duties:
+  reads: ["**"]
+  writes: []
+
+intentions: [commit-message, note]
+
+# Without AI, a bad message still fails; the human rewrites it with the verdict in hand.
+without-ai: block
+
+settings:
+  subject-max: 72
+  body-max-lines: 12
+  types: [feat, fix, docs, test, refactor, perf, build, ci, chore, revert]
+  # Internal references that mean nothing outside the project (AC-3, F-NEW-1, L-019...).
+  # Forbidden in the subject; allowed in a trailer at the end (`Refs: AC-3`).
+  internal-codes: ['\b[A-Z]{1,4}(-NEW)?-[0-9]+\b']
+  # Standard identifiers that look like codes but are not.
+  internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, RFC-[0-9]+, CVE-[0-9]+]

@@ -1,0 +1,48 @@
+contract: 1
+name: release-manager
+mission: Own the project's versions — decide the next one, and publish it with notes a user can read.
+
+# release: someone decides to release now (manual run, or a schedule).
+# merge: a merge on the default branch; with the merge-request flow, it keeps the
+#        pending release merge request up to date, and releases once that is merged.
+events: [release, merge]
+
+# git-cliff computes the next version and the changelog from conventional commits,
+# which the committer guarantees. It is a single binary; see ADR-0001.
+requires: [git, git-cliff]
+
+# Release notes are real writing for users, but short. Retry one tier up on failure.
+model:
+  capability: writing
+  tier: standard
+  effort: medium
+  promote-after: 1
+
+context:
+  knowledge: []
+  budget: 12000
+
+duties:
+  reads: ["**"]
+  writes: [$settings.changelog, $settings.version-files]
+
+intentions: [patch, release, handoff, note]
+
+# Without AI, the release still happens with the changelog git-cliff generated.
+# The AI only adds a readable summary on top of it.
+without-ai: pass
+
+settings:
+  flow: merge-request         # merge-request | direct
+  tag-prefix: v
+  # The release manager owns the versioning scheme; the committer only supplies
+  # the signal (commit types). semver: MAJOR.MINOR.PATCH from the commits.
+  # calver: from the date, e.g. YYYY.MM.MICRO. Build metadata is optional in both.
+  versioning:
+    scheme: semver            # semver | calver
+    calver-format: YYYY.MM.MICRO
+    build: none               # none | ci-number | commit — appended as +<build>
+  changelog: CHANGELOG.md
+  version-files: []           # e.g. [package.json, Cargo.toml]; empty = tag only
+  # After a release, the documentalist checks that user docs match what shipped.
+  handoff-to: documentalist

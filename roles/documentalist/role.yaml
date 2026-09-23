@@ -1,0 +1,56 @@
+contract: 1
+name: documentalist
+mission: The docs stay true to the code, short enough to be read, and the product docs follow the technical ones.
+
+# merge-request: check what this change makes suspect, before it merges.
+# schedule: gardening — freshness, duplicates, budgets, across the whole repo.
+# handoff: from the release manager, when a release changes how the project is used.
+events: [merge-request, schedule, handoff]
+
+requires: [git]
+# Single binaries, called rather than rewritten. Missing ones are reported, not ignored.
+uses: [vale, lychee, jscpd]
+
+# Rewriting docs for a reader is real writing; condensing well needs judgement.
+model:
+  capability: writing
+  tier: standard
+  effort: medium
+  promote-after: 1
+
+context:
+  knowledge: [doc-model.md]
+  budget: 16000
+
+duties:
+  reads: ["**"]
+  writes: [$settings.docs]    # only documentation, never code
+
+intentions: [patch, issue, comment, note]
+
+# Without AI, every check still runs and still blocks. What needed judgement
+# (is this suspect doc still right? how to shorten this one?) becomes a
+# checklist for a human, who clears each item by marking the doc checked.
+without-ai: report
+
+settings:
+  docs: ["docs/**", "*.md"]
+  # Which side is right when they disagree, per glob.
+  truth:
+    code: ["docs/reference/**"]      # the doc follows the code
+    doc: ["docs/adr/**"]             # the code follows the doc
+  # Technical docs that product docs depend on; a change makes dependents suspect.
+  propagation: [{from: "docs/tech/**", to: "docs/product/**"}]
+  budgets:
+    doc-lines: 200                   # above it: extract into cards, don't compress
+    section-words: 400
+    card-words: {min: 80, max: 400}  # too small is fragmentation, a smell too
+    folder-lines: 2000
+    root-agent-file-lines: 200       # AGENTS.md / CLAUDE.md: a routing file, not a dump
+  freshness:
+    stale-after-days: 180
+  duplicates:
+    min-words: 40                    # shorter repeats are not worth merging
+    similarity: 0.85
+  max-open-merge-requests: 5         # backpressure: stop proposing when this many wait
+  ai-max-calls: 10                   # per run
