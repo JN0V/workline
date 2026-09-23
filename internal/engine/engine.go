@@ -118,6 +118,9 @@ func run(o Options, res *Result) error {
 	case exitOK:
 	case exitNothing:
 		res.Status, res.Summary = verdict.Pass, "nothing to do"
+		if v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml")); err == nil && v.Summary != "" {
+			res.Summary = v.Summary // the role's own words on why there is nothing to do
+		}
 		return nil
 	case exitExternal:
 		res.Status, res.Summary = verdict.BlockedExternal, "pre: an outside service failed"
