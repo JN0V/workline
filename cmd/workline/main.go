@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/releasemanager"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/hooks"
@@ -156,6 +157,10 @@ func builtin(args []string) int {
 		return committer.Pre(runDir, repo)
 	case "committer post":
 		return committer.Post(runDir)
+	case "documentalist pre":
+		return documentalist.Pre(runDir, repo)
+	case "documentalist post":
+		return documentalist.Post(runDir)
 	case "release-manager pre":
 		return releasemanager.Pre(runDir, repo)
 	case "release-manager post":

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Judge: report what needs a look; block only on what could not be judged.
+exec "${WORKLINE_BIN:-workline}" builtin documentalist post

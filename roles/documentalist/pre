@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prepare: which docs are suspect, which are pending.
+exec "${WORKLINE_BIN:-workline}" builtin documentalist pre

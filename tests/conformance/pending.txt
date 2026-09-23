@@ -1,10 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 
-# Needs the documentalist's pre and post.
-documentalist/cascade-is-cut
-documentalist/suspect-across-repositories
-documentalist/unreachable-source-repository
 
 # Needs run scopes, patches and the simulated forge.
 engine/out-of-scope-patch-refused

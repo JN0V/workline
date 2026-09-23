@@ -12,6 +12,10 @@ mkdir -p .workline guide
 cat > .workline/config.yaml <<CFG
 repos:
   api: {url: $API_REPO, branch: main}
+roles:
+  documentalist:
+    settings:
+      docs: ["guide/**"]
 CFG
 cat > guide/sign-in.md <<DOC
 ---

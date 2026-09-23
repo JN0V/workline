@@ -8,8 +8,8 @@ mission: The docs stay true to the code, short enough to be read, and the produc
 events: [merge-request, schedule, handoff]
 
 requires: [git]
-# Single binaries, called rather than rewritten. Missing ones are reported, not ignored.
-uses: [vale, lychee, jscpd]
+# Coming with the hygiene and duplicate checks: vale, lychee, jscpd — single
+# binaries, called rather than rewritten, listed in `uses` once actually used.
 
 # Rewriting docs for a reader is real writing; condensing well needs judgement.
 model:
