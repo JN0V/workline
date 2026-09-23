@@ -3,6 +3,7 @@
 //	workline run-role <role> --event <event> [--ai none|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>]
 //	                  [--input name=value]... [--input-file name=path]... [--json]
+//	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
@@ -21,6 +22,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/releasemanager"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/verdict"
@@ -40,6 +42,8 @@ func main() {
 		os.Exit(hooksCmd(os.Args[2:]))
 	case "hook":
 		os.Exit(hookCmd(os.Args[2:]))
+	case "gate":
+		os.Exit(gateCmd(os.Args[2:]))
 	}
 	usage()
 }
@@ -278,4 +282,27 @@ func userDefaultAI() string {
 		return ""
 	}
 	return c.AI
+}
+
+func gateCmd(args []string) int {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		usage()
+	}
+	fs := flag.NewFlagSet("gate", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository to check")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	_ = fs.Parse(args[1:])
+	abs, _ := filepath.Abs(*repo)
+	v := gate.Run(abs, args[0])
+	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	if v.Status == verdict.Pass {
+		return 0
+	}
+	return 1
 }

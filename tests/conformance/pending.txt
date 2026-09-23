@@ -6,9 +6,6 @@
 engine/out-of-scope-patch-refused
 engine/partial-apply-resumes
 
-# Needs the gate runner.
-gates/missing-tool-is-error
-gates/threshold-required
 
 
 # Needs routing.

@@ -1,0 +1,9 @@
+case: gates/optional-check-reports
+about: An optional check that cannot run is reported, but does not block.
+given:
+  repo: basic
+  config: {gates: {merge: {checks: [
+    {id: pentest, run: "no-such-pentest-tool", output: exit, optional: true},
+    {id: tests, run: "true", output: exit}]}}}
+run: {gate: merge}
+expect: {status: pass, findings: [{rule: check-error, where: pentest}]}

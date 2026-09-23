@@ -125,8 +125,8 @@ func TestConformance(t *testing.T) {
 
 // runCase returns what differs from the expectation; empty means it passes.
 func runCase(t *testing.T, c *caseFile) []string {
-	if len(c.Given.Forge) > 0 || c.Run.Then != "" || c.Run.Route != "" || c.Run.Gate != "" || len(c.Run.Scope) > 0 {
-		return []string{"the runner does not support forges, resume, routing, gates or scopes yet"}
+	if len(c.Given.Forge) > 0 || c.Run.Then != "" || c.Run.Route != "" || len(c.Run.Scope) > 0 {
+		return []string{"the runner does not support forges, resume, routing or scopes yet"}
 	}
 	work := t.TempDir()
 	env := hermeticEnv()
@@ -155,6 +155,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 
 	roles, _ := filepath.Abs("../../roles")
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
+	if c.Run.Gate != "" {
+		args = []string{"gate", c.Run.Gate, "--repo", repo, "--json"}
+	}
 	ai := c.Run.AI
 	if strings.HasPrefix(ai, "fake:") {
 		p, _ := filepath.Abs(filepath.Join("fixtures", "agents", strings.TrimPrefix(ai, "fake:")+".yaml"))

@@ -4,35 +4,40 @@ A gate is a checkpoint the work must pass before going further: before merging,
 before releasing. A gate runs tools, reads their output, and gives a verdict by
 rules. It never asks a model whether to pass.
 
-## `gates.yml`
+## Where gates are declared
+
+In the `gates:` section of `.workline/config.yaml`, one entry per gate, run with
+`workline gate <name>` (and, once routing exists, as `gate:<name>` in a
+sequence):
 
 ```yaml
-gates: 1
-
-release:
-  criteria: docs/nfr.md               # where the thresholds come from, for humans
-  checks:                             # commands are examples; flags vary by tool version
-    - id: secrets
-      run: gitleaks detect --report-format sarif --report-path {out}/secrets.sarif
-      output: sarif
-      max: {error: 0}
-    - id: dependencies
-      run: osv-scanner scan --format sarif --output {out}/deps.sarif .
-      output: sarif
-      max: {error: 0, warning: 5}
-    - id: load
-      run: k6 run --summary-export {out}/load.json load/checkout.js
-      output: exit                    # k6 thresholds already decide pass or fail
-    - id: docs-pending
-      run: workline docs pending --due release
-      output: exit
-  enforce:
-    dependencies: warn                # new rules start in warn
+gates:
+  release:
+    criteria: docs/nfr.md               # where the thresholds come from, for humans
+    checks:                             # commands are examples; flags vary by tool version
+      - id: secrets
+        run: gitleaks detect --report-format sarif --report-path {out}/secrets.sarif
+        output: sarif
+        max: {error: 0}
+      - id: dependencies
+        run: osv-scanner scan --format sarif --output {out}/deps.sarif .
+        output: sarif
+        max: {error: 0, warning: 5}
+      - id: load
+        run: k6 run --summary-export {out}/load.json load/checkout.js
+        output: exit                    # k6 thresholds already decide pass or fail
+      - id: versions
+        run: python3 tools/check_versions.py   # a project's own script, reused as is
+        output: exit
+    enforce:
+      dependencies: warn                # new rules start in warn
 ```
 
 - `run` is any command. `{out}` is the gate's output directory.
-- `output` says how to read the result: `exit` (the exit code decides), `sarif`
-  or `json` (findings counted against `max`, by severity).
+- `output` says how to read the result: `exit` (the exit code decides) or
+  `sarif` (results counted against `max`, by SARIF level; a result without a
+  level counts as `warning`). Other structured outputs (k6 or benchmark JSON)
+  are for a later version.
 - A check with no threshold is refused when the file is loaded. The criteria
   are decided before the gate runs, never while reading the results.
 - `enforce`, baselines with expiry dates, and `warn` before `block` work as in

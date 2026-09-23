@@ -1,0 +1,8 @@
+case: gates/sarif-over-threshold
+about: One error over a threshold of zero blocks the gate.
+given:
+  repo: basic
+  config: {gates: {merge: {checks: [{id: lint, output: sarif, max: {error: 0},
+    run: "printf '{\"runs\":[{\"results\":[{\"level\":\"error\"}]}]}' > {out}/lint.sarif"}]}}}
+run: {gate: merge}
+expect: {status: block, findings: [{rule: over-threshold, where: lint}]}

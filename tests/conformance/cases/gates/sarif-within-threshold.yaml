@@ -1,0 +1,8 @@
+case: gates/sarif-within-threshold
+about: Findings within the thresholds pass; the count is by SARIF level.
+given:
+  repo: basic
+  config: {gates: {merge: {checks: [{id: lint, output: sarif, max: {error: 0, warning: 2},
+    run: "printf '{\"runs\":[{\"results\":[{\"level\":\"warning\"},{}]}]}' > {out}/lint.sarif"}]}}}
+run: {gate: merge}
+expect: {status: pass}
