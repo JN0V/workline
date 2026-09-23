@@ -12,17 +12,30 @@ import (
 
 // Role is a parsed role.yaml, plus the folder it was loaded from.
 type Role struct {
-	Contract   int            `yaml:"contract"`
-	Name       string         `yaml:"name"`
-	Mission    string         `yaml:"mission"`
-	Events     []string       `yaml:"events"`
-	Requires   []string       `yaml:"requires"`
-	Uses       []string       `yaml:"uses"`
-	Intentions []string       `yaml:"intentions"`
-	WithoutAI  string         `yaml:"without-ai"`
-	Settings   map[string]any `yaml:"settings"`
+	Contract   int      `yaml:"contract"`
+	Name       string   `yaml:"name"`
+	Mission    string   `yaml:"mission"`
+	Events     []string `yaml:"events"`
+	Requires   []string `yaml:"requires"`
+	Uses       []string `yaml:"uses"`
+	Intentions []string `yaml:"intentions"`
+	Model      Model    `yaml:"model"`
+	Context    struct {
+		Knowledge []string `yaml:"knowledge"`
+		Budget    int      `yaml:"budget"`
+	} `yaml:"context"`
+	WithoutAI string         `yaml:"without-ai"`
+	Settings  map[string]any `yaml:"settings"`
 
 	Dir string `yaml:"-"`
+}
+
+// Model is what kind of thinking a role needs (docs/spec/model-grid.md).
+type Model struct {
+	Capability   string `yaml:"capability"`
+	Tier         string `yaml:"tier"`
+	Effort       string `yaml:"effort"`
+	PromoteAfter int    `yaml:"promote-after"`
 }
 
 // Load reads roles/<name>/role.yaml from rolesDir.
@@ -68,8 +81,9 @@ func (r *Role) Allows(kind string) bool {
 
 // ProjectConfig is the part of .workline/config.yaml the engine reads today.
 type ProjectConfig struct {
+	AI    string `yaml:"ai"` // default agent for this project: none, claude...
 	Roles map[string]struct {
-		Settings map[string]any   `yaml:"settings"`
+		Settings map[string]any    `yaml:"settings"`
 		Enforce  map[string]string `yaml:"enforce"`
 	} `yaml:"roles"`
 }
