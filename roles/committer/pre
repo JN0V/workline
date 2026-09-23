@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prepare: check the message; ask the agent only if it fails.
+exec "${ASSEMBLY_BIN:-assembly}" builtin committer pre

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Judge: a rewritten message must pass the same checks.
+exec "${ASSEMBLY_BIN:-assembly}" builtin committer post
