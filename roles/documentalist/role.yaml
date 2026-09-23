@@ -39,8 +39,11 @@ settings:
   truth:
     code: ["docs/reference/**"]      # the doc follows the code
     doc: ["docs/adr/**"]             # the code follows the doc
-  # Technical docs that product docs depend on; a change makes dependents suspect.
-  propagation: [{from: "docs/tech/**", to: "docs/product/**"}]
+  # Cascades are cut. Only edges marked `now` are handled in the change itself;
+  # the others are recorded in one tracking issue and are due at a later moment.
+  propagation:
+    - {from: code, to: "docs/tech/**", when: now}
+    - {from: "docs/tech/**", to: "docs/product/**", when: release}
   budgets:
     doc-lines: 200                   # above it: extract into cards, don't compress
     section-words: 400

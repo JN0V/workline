@@ -16,6 +16,19 @@ What runs, for humans. The AI never reads this file.
 5. **Duplicates.** Repeated passages across docs (jscpd, then near-duplicates).
 6. **Freshness.** Docs whose `checked` is older than the limit.
 
+**Cascades are cut.** A change of code can make a technical doc suspect, which
+makes a product doc suspect, and so on. Only the edges marked `now` are handled
+inside the change. Every other suspect goes on a pending list — one tracking
+issue, updated in place — with the moment it is due: the release gate refuses
+to release while product docs due `at release` are still pending, and the
+release manager hands them to the documentalist in one batch. Nothing is
+forgotten; nothing drags a small fix into a rewrite of the user guide.
+
+**Code never rewrites the authority.** When the code disagrees with a doc marked
+as the truth (a spec, an ADR, the architecture), the doc is not updated to
+match: the documentalist opens an `issue` for the architect, because the code
+may be the one that is wrong.
+
 Each finding is blocking, advisory, or *unknown* — and unknown fails, it is
 never read as a pass. Judgement calls become `task.md` entries, at most
 `ai-max-calls` per run, and none when `max-open-merge-requests` are waiting.
