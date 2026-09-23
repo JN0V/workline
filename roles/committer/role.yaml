@@ -37,4 +37,4 @@ settings:
   # Forbidden in the subject; allowed in a trailer at the end (`Refs: AC-3`).
   internal-codes: ['\b[A-Z]{1,4}(-NEW)?-[0-9]+\b']
   # Standard identifiers that look like codes but are not.
-  internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, RFC-[0-9]+, CVE-[0-9]+]
+  internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, 'RFC-[0-9]+', 'CVE-[0-9]+']
