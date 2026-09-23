@@ -1,0 +1,9 @@
+case: documentalist/unreachable-source-repository
+about: A source repository that cannot be read is blocked-external, never "no change".
+given:
+  repos:
+    API_REPO: {repo: documented}
+  repo: user-guide
+  setup: ["sed -i 's|url: .*|url: /nonexistent/repo, branch: main}|' .assembly/config.yaml && git commit -qam 'chore: point to a moved repository'"]
+run: {role: documentalist, event: schedule, ai: none}
+expect: {status: blocked-external}

@@ -1,0 +1,9 @@
+case: documentalist/suspect-across-repositories
+about: A change in another repository makes a doc that depends on it suspect.
+given:
+  repos:                              # built in order; each path is exported to the next builders
+    API_REPO: {repo: documented, setup: ["sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs(auth): tokens now last two hours'"]}
+  repo: user-guide
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  findings: [{rule: suspect, where: "guide/sign-in.md"}]
