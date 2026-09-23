@@ -7,9 +7,10 @@ mission: Own the project's versions — decide the next one, and publish it with
 #        pending release merge request up to date, and releases once that is merged.
 events: [release, merge]
 
-# git-cliff computes the next version and the changelog from conventional commits,
-# which the committer guarantees. It is a single binary; see ADR-0001.
-requires: [git, git-cliff]
+# The next version and the changelog come from the conventional commits the
+# committer guarantees, computed by the engine itself: a core role needs nothing
+# but git and the engine (ADR-0001).
+requires: [git]
 
 # Release notes are real writing for users, but short. Retry one tier up on failure.
 model:

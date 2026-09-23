@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/builtin/releasemanager"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/rolefs"
@@ -120,6 +121,9 @@ func report(r *engine.Result) {
 		fmt.Fprintf(os.Stderr, " — %s", r.Summary)
 	}
 	fmt.Fprintln(os.Stderr)
+	for _, h := range r.Handoffs {
+		fmt.Fprintf(os.Stderr, "  handoff: %v\n", h)
+	}
 	for _, f := range r.Findings {
 		level := ""
 		if f.Level != "" {
@@ -152,6 +156,10 @@ func builtin(args []string) int {
 		return committer.Pre(runDir, repo)
 	case "committer post":
 		return committer.Post(runDir)
+	case "release-manager pre":
+		return releasemanager.Pre(runDir, repo)
+	case "release-manager post":
+		return releasemanager.Post(runDir)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99

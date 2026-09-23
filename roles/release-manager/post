@@ -1,0 +1,3 @@
+#!/bin/sh
+# Judge: the version comes from the commits, never from the AI.
+exec "${WORKLINE_BIN:-workline}" builtin release-manager post

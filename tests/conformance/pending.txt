@@ -14,9 +14,6 @@ engine/partial-apply-resumes
 gates/missing-tool-is-error
 gates/threshold-required
 
-# Needs the release manager's pre and post (and git-cliff).
-release-manager/agent-cannot-choose-version
-release-manager/releases-without-ai
 
 # Needs routing.
 routing/item-not-ready

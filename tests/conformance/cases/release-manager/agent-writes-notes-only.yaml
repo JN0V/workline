@@ -1,0 +1,5 @@
+case: release-manager/agent-writes-notes-only
+about: The agent's notes go on the tag; the changelog is still the generated one, applied before the tag.
+given: {repo: released, config: {roles: {release-manager: {settings: {flow: direct}}}}}
+run: {role: release-manager, event: release, ai: "fake:release-with-notes"}
+expect: {status: pass, applied: [patch, release], files: {CHANGELOG.md: {contains: "## v1.3.0"}}}
