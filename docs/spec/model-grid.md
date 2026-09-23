@@ -49,7 +49,7 @@ effort:                           # our level -> the agent's own value
   agy:    {none: low, low: low, medium: medium, high: high, max: high}
 ```
 
-A project can pin or forbid models in `.assembly/config.yaml`; a pin always wins
+A project can pin or forbid models in `.workline/config.yaml`; a pin always wins
 over the grid.
 
 ## Refreshing it

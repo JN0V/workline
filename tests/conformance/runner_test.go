@@ -25,14 +25,14 @@ import (
 var engineBin string
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "assembly-engine-")
+	dir, err := os.MkdirTemp("", "workline-engine-")
 	if err != nil {
 		panic(err)
 	}
-	engineBin = os.Getenv("ASSEMBLY_ENGINE")
+	engineBin = os.Getenv("WORKLINE_ENGINE")
 	if engineBin == "" {
-		engineBin = filepath.Join(dir, "assembly")
-		build := exec.Command("go", "build", "-o", engineBin, "../../cmd/assembly")
+		engineBin = filepath.Join(dir, "workline")
+		build := exec.Command("go", "build", "-o", engineBin, "../../cmd/workline")
 		build.Stderr = os.Stderr
 		if err := build.Run(); err != nil {
 			panic("building the engine: " + err.Error())
@@ -149,8 +149,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Given.Config != nil {
 		data, _ := yaml.Marshal(c.Given.Config)
-		os.MkdirAll(filepath.Join(repo, ".assembly"), 0o755)
-		os.WriteFile(filepath.Join(repo, ".assembly", "config.yaml"), data, 0o644)
+		os.MkdirAll(filepath.Join(repo, ".workline"), 0o755)
+		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
 	}
 
 	roles, _ := filepath.Abs("../../roles")

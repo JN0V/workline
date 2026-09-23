@@ -1,9 +1,9 @@
-// Command assembly runs the roles of the line.
+// Command workline runs the roles of the line.
 //
-//	assembly run-role <role> --event <event> [--ai none|fake:<file>|unavailable:<reason>]
+//	workline run-role <role> --event <event> [--ai none|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>]
 //	                  [--input name=value]... [--input-file name=path]... [--json]
-//	assembly builtin <role> pre|post    (called by the shipped roles' scripts)
+//	workline builtin <role> pre|post    (called by the shipped roles' scripts)
 package main
 
 import (
@@ -14,9 +14,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/JN0V/assembly-line/internal/builtin/committer"
-	"github.com/JN0V/assembly-line/internal/engine"
-	"github.com/JN0V/assembly-line/internal/verdict"
+	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: assembly run-role <role> --event <event> [options]  |  assembly builtin <role> pre|post")
+	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]  |  workline builtin <role> pre|post")
 	os.Exit(64)
 }
 
@@ -70,7 +70,7 @@ func runRole(args []string) int {
 	for k, p := range inputFiles {
 		data, err := os.ReadFile(p)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "assembly:", err)
+			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 1
 		}
 		inputs[k] = string(data)
@@ -114,9 +114,9 @@ func report(r *engine.Result) {
 	}
 }
 
-// defaultRoles is $ASSEMBLY_ROLES, else the roles folder next to the binary's module.
+// defaultRoles is $WORKLINE_ROLES, else the roles folder next to the binary's module.
 func defaultRoles() string {
-	if d := os.Getenv("ASSEMBLY_ROLES"); d != "" {
+	if d := os.Getenv("WORKLINE_ROLES"); d != "" {
 		return d
 	}
 	return "roles"
@@ -126,9 +126,9 @@ func builtin(args []string) int {
 	if len(args) != 2 {
 		usage()
 	}
-	runDir := os.Getenv("ASSEMBLY_RUN_DIR")
+	runDir := os.Getenv("WORKLINE_RUN_DIR")
 	if runDir == "" {
-		fmt.Fprintln(os.Stderr, "assembly builtin: ASSEMBLY_RUN_DIR is not set; this command is run by the engine")
+		fmt.Fprintln(os.Stderr, "workline builtin: WORKLINE_RUN_DIR is not set; this command is run by the engine")
 		return 99
 	}
 	repo, _ := os.Getwd()
@@ -138,6 +138,6 @@ func builtin(args []string) int {
 	case "committer post":
 		return committer.Post(runDir)
 	}
-	fmt.Fprintf(os.Stderr, "assembly builtin: no built-in step %q\n", strings.Join(args, " "))
+	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99
 }

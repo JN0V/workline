@@ -1,4 +1,4 @@
-module github.com/JN0V/assembly-line
+module github.com/JN0V/workline
 
 go 1.27.1
 

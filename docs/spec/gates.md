@@ -24,7 +24,7 @@ release:
       run: k6 run --summary-export {out}/load.json load/checkout.js
       output: exit                    # k6 thresholds already decide pass or fail
     - id: docs-pending
-      run: assembly docs pending --due release
+      run: workline docs pending --due release
       output: exit
   enforce:
     dependencies: warn                # new rules start in warn

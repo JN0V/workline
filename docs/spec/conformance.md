@@ -40,7 +40,7 @@ given:
     - echo "change" >> main.go && git add main.go
   forge:                            # starting state of the simulated forge, if any
     issues: []
-  config: {}                        # .assembly/config.yaml for this case
+  config: {}                        # .workline/config.yaml for this case
 
 run:
   role: committer                   # or: route: <event>, or: gate: <name>

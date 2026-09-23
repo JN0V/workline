@@ -27,7 +27,7 @@ Suspicion follows the chain: code → technical doc → product doc.
 markers and are regenerated, never typed:
 
 ```
-<!-- assembly:derive cmd="..." -->
+<!-- workline:derive cmd="..." -->
 ...
-<!-- assembly:end -->
+<!-- workline:end -->
 ```

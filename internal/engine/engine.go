@@ -15,10 +15,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/JN0V/assembly-line/internal/agent"
-	"github.com/JN0V/assembly-line/internal/intent"
-	"github.com/JN0V/assembly-line/internal/role"
-	"github.com/JN0V/assembly-line/internal/verdict"
+	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // Options describe one run.
@@ -240,7 +240,7 @@ func apply(in intent.Intention, runDir string, targets map[string]string) error 
 
 func newRunDir(repo, roleName string) (string, error) {
 	id := fmt.Sprintf("%s-%s", time.Now().UTC().Format("20060102T150405.000000000"), roleName)
-	dir := filepath.Join(repo, ".assembly", "runs", id)
+	dir := filepath.Join(repo, ".workline", "runs", id)
 	for _, d := range []string{"in/input", "out"} {
 		if err := os.MkdirAll(filepath.Join(dir, d), 0o755); err != nil {
 			return "", err
@@ -269,11 +269,11 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 	}
 	self, _ := os.Executable()
 	return append(os.Environ(),
-		"ASSEMBLY_RUN_DIR="+runDir,
-		"ASSEMBLY_EVENT="+o.Event,
-		"ASSEMBLY_AI="+ai,
-		"ASSEMBLY_ROLE="+roleName,
-		"ASSEMBLY_BIN="+self,
+		"WORKLINE_RUN_DIR="+runDir,
+		"WORKLINE_EVENT="+o.Event,
+		"WORKLINE_AI="+ai,
+		"WORKLINE_ROLE="+roleName,
+		"WORKLINE_BIN="+self,
 	)
 }
 

@@ -4,6 +4,6 @@ given:
   repos:
     API_REPO: {repo: documented}
   repo: user-guide
-  setup: ["sed -i 's|url: .*|url: /nonexistent/repo, branch: main}|' .assembly/config.yaml && git commit -qam 'chore: point to a moved repository'"]
+  setup: ["sed -i 's|url: .*|url: /nonexistent/repo, branch: main}|' .workline/config.yaml && git commit -qam 'chore: point to a moved repository'"]
 run: {role: documentalist, event: schedule, ai: none}
 expect: {status: blocked-external}

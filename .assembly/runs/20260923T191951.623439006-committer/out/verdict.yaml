@@ -1,0 +1,9 @@
+status: block
+summary: rewrite the commit message
+findings:
+    - rule: internal-code
+      where: subject
+      message: '"AC-3" means nothing outside the project; say what changed, and put the reference in a trailer (Refs: AC-3)'
+    - rule: internal-code
+      where: subject
+      message: '"F-NEW-1" means nothing outside the project; say what changed, and put the reference in a trailer (Refs: F-NEW-1)'

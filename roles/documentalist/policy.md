@@ -2,7 +2,7 @@
   you were given; quote it with its line numbers.
 - A clarification you are unsure of is a `note`, never a `patch`.
 - Only documentation paths. Never code, never generated blocks between
-  `assembly:derive` markers.
+  `workline:derive` markers.
 - Keep every rule written as MUST or SHOULD; condensing never drops a rule.
 - A patch must not make the docs longer, unless the task is `propagate` and the
   product really gained something to say.

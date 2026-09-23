@@ -66,7 +66,7 @@ func (r *Role) Allows(kind string) bool {
 	return false
 }
 
-// ProjectConfig is the part of .assembly/config.yaml the engine reads today.
+// ProjectConfig is the part of .workline/config.yaml the engine reads today.
 type ProjectConfig struct {
 	Roles map[string]struct {
 		Settings map[string]any   `yaml:"settings"`
@@ -74,11 +74,11 @@ type ProjectConfig struct {
 	} `yaml:"roles"`
 }
 
-// LoadProjectConfig reads <repo>/.assembly/config.yaml. A missing file is an
+// LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an
 // empty config; an unreadable or invalid one is an error.
 func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	var c ProjectConfig
-	data, err := os.ReadFile(filepath.Join(repo, ".assembly", "config.yaml"))
+	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
 	if os.IsNotExist(err) {
 		return &c, nil
 	}
@@ -86,7 +86,7 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 		return nil, err
 	}
 	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf(".assembly/config.yaml: %w", err)
+		return nil, fmt.Errorf(".workline/config.yaml: %w", err)
 	}
 	return &c, nil
 }

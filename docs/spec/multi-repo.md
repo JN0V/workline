@@ -7,7 +7,7 @@ those boundaries the same way they work inside one repository.
 ## The dependent declares, the source does not need to know
 
 A repository declares the other repositories it depends on, in
-`.assembly/config.yaml`:
+`.workline/config.yaml`:
 
 ```yaml
 repos:

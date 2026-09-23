@@ -11,7 +11,7 @@ judged, and they accept or reject what comes out. The machine builds in between.
 So no development starts without a clear expression of the need. That does not
 mean pages of specification; it means the work is no longer research.
 
-A work item — an issue on the forge, or a file in `.assembly/work/` without one
+A work item — an issue on the forge, or a file in `.workline/work/` without one
 — moves through these states:
 
 ```
@@ -71,8 +71,8 @@ handoffs:                             # the only handoffs a role may ask for
 
 ## Where state lives
 
-On a forge, the state of a work item is a label (`assembly:ready`,
-`assembly:in-progress`…), readable by humans and by any CI. Without a forge, it
+On a forge, the state of a work item is a label (`workline:ready`,
+`workline:in-progress`…), readable by humans and by any CI. Without a forge, it
 is a field in the item's file. Either way, a state changes only through the
 engine, one transition at a time, and each transition is logged.
 

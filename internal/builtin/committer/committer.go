@@ -1,6 +1,6 @@
 // Package committer holds the deterministic checks of the committer role
 // (roles/committer). The role's pre and post scripts call them through
-// `assembly builtin committer pre|post`.
+// `workline builtin committer pre|post`.
 package committer
 
 import (
@@ -13,8 +13,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/JN0V/assembly-line/internal/intent"
-	"github.com/JN0V/assembly-line/internal/verdict"
+	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
 

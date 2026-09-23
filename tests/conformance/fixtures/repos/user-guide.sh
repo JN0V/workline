@@ -8,8 +8,8 @@ git config user.name "Fixture"
 git config user.email "fixture@example.invalid"
 export GIT_AUTHOR_DATE="2026-01-02T00:00:00Z" GIT_COMMITTER_DATE="2026-01-02T00:00:00Z"
 API_HEAD=$(git -C "$API_REPO" rev-parse --short HEAD)
-mkdir -p .assembly guide
-cat > .assembly/config.yaml <<CFG
+mkdir -p .workline guide
+cat > .workline/config.yaml <<CFG
 repos:
   api: {url: $API_REPO, branch: main}
 CFG

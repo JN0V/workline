@@ -7,7 +7,7 @@ What runs, for humans. The AI never reads this file.
 1. **Suspects.** For each doc, list commits since its `checked` commit that
    touched its `sources`. Follow the chain: a suspect technical section makes
    the product docs depending on it suspect too.
-2. **Derived blocks.** Regenerate everything between `assembly:derive` markers;
+2. **Derived blocks.** Regenerate everything between `workline:derive` markers;
    a difference is a finding.
 3. **Hygiene.** Broken links (lychee), style (vale), identifiers named in a doc
    that no longer exist in the code, docs citing a superseded ADR.
