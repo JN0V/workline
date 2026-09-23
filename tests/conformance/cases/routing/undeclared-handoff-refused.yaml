@@ -1,0 +1,5 @@
+case: routing/undeclared-handoff-refused
+about: A handoff to a role not declared in routing.yml is refused.
+given: {repo: basic, config: {routing: {handoffs: []}}}
+run: {role: release-manager, event: release, ai: "fake:handoff-to-documentalist"}
+expect: {refused: [handoff]}

@@ -1,0 +1,5 @@
+case: release-manager/agent-cannot-choose-version
+about: The version comes from the commits; a release proposing another one is blocked.
+given: {repo: released}
+run: {role: release-manager, event: release, ai: "fake:release-with-wrong-version"}
+expect: {status: block, findings: [{rule: version-mismatch}], applied: []}

@@ -1,0 +1,11 @@
+case: documentalist/cascade-is-cut
+about: A code change makes its technical doc suspect now; the product doc goes on the pending list, not into this change.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md}
+    - {rule: pending, where: docs/product/sign-in.md}

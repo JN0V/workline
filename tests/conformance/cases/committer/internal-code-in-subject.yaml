@@ -1,0 +1,5 @@
+case: committer/internal-code-in-subject
+about: A ticket code in the subject blocks the commit, even without AI.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: none}
+expect: {status: block, findings: [{rule: internal-code}], agent-calls: 0}

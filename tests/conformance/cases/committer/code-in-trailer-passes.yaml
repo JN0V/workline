@@ -1,0 +1,5 @@
+case: committer/code-in-trailer-passes
+about: A code is allowed in a trailer, after a plain-language subject.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: stop crashing on an empty input file\n\nRefs: AC-3"}, ai: none}
+expect: {status: pass}

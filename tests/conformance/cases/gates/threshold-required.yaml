@@ -1,0 +1,7 @@
+case: gates/threshold-required
+about: A SARIF check without a threshold is refused when gates.yml is loaded.
+given:
+  repo: basic
+  config: {gates: {release: {checks: [{id: sast, run: "true", output: sarif}]}}}
+run: {gate: release}
+expect: {status: block, findings: [{rule: invalid-gate, where: sast}]}

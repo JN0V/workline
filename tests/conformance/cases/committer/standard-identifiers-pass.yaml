@@ -1,0 +1,5 @@
+case: committer/standard-identifiers-pass
+about: UTF-8, SHA-256 and similar identifiers are not internal codes.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: read file names as UTF-8"}, ai: none}
+expect: {status: pass}

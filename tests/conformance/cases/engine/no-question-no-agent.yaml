@@ -1,0 +1,5 @@
+case: engine/no-question-no-agent
+about: When pre asks no question, the agent is not called, even if one is available.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: stop crashing on an empty input file"}, ai: "fake:good-commit-message"}
+expect: {status: pass, agent-calls: 0, applied: []}

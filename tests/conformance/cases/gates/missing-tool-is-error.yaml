@@ -1,0 +1,7 @@
+case: gates/missing-tool-is-error
+about: A check whose tool is missing fails the gate; it is never read as a pass.
+given:
+  repo: basic
+  config: {gates: {release: {checks: [{id: secrets, run: "no-such-scanner --sarif {out}/s.sarif", output: sarif, max: {error: 0}}]}}}
+run: {gate: release}
+expect: {status: block, findings: [{rule: check-error, where: secrets}]}

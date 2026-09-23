@@ -1,0 +1,7 @@
+case: routing/item-not-ready
+about: A work item without validation criteria cannot move to ready.
+given:
+  repo: basic
+  forge: {issues: [{id: 7, body: "## Need\nExport as CSV\n## Verification\nA test exports three rows\n## Scope\nsrc/export"}]}
+run: {route: ready, item: 7}
+expect: {status: block, findings: [{rule: not-ready, where: "Validation"}], forge: {issues: [{id: 7, labels: []}]}}

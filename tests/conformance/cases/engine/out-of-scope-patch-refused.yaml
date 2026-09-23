@@ -1,0 +1,5 @@
+case: engine/out-of-scope-patch-refused
+about: A patch outside the run's scope is refused whole; nothing is written.
+given: {repo: basic}
+run: {role: documentalist, event: merge-request, scope: ["docs/**"], ai: "fake:out-of-scope-patch"}
+expect: {refused: [patch], applied: [], files: {"src/billing/invoice.go": {exists: false}}}
