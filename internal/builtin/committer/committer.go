@@ -165,7 +165,7 @@ func Pre(runDir, repo string) int {
 // Post is the role's judge step: a rewritten message must pass the same
 // checks; with no rewrite, the original findings stand.
 func Post(runDir string) int {
-	s, _, err := load(runDir)
+	s, original, err := load(runDir)
 	if err != nil {
 		return fail(err)
 	}
@@ -180,6 +180,12 @@ func Post(runDir string) int {
 			findings, err := Check(msg, s)
 			if err != nil {
 				return fail(err)
+			}
+			for _, t := range Trailers(original) {
+				if !strings.Contains(msg, t) {
+					findings = append(findings, verdict.Finding{Rule: "trailer-dropped", Where: "trailers",
+						Message: fmt.Sprintf("the rewrite dropped %q; trailers are kept as written", t)})
+				}
 			}
 			if len(findings) > 0 {
 				return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "the rewritten message still fails", Findings: findings})
@@ -266,4 +272,26 @@ func all(in []string, f func(string) bool) bool {
 		}
 	}
 	return true
+}
+
+// Trailers returns the trailer lines of a message (Refs:, Co-Authored-By:...).
+func Trailers(message string) []string {
+	var lines []string
+	for _, l := range strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n") {
+		if !strings.HasPrefix(l, "#") {
+			lines = append(lines, strings.TrimRight(l, " \t"))
+		}
+	}
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	trailer := regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]*: \S`)
+	var out []string
+	for i := len(lines) - 1; i > 0 && trailer.MatchString(lines[i]); i-- {
+		out = append([]string{lines[i]}, out...)
+	}
+	if len(out) > 0 && len(lines) > len(out) && lines[len(lines)-len(out)-1] != "" {
+		return nil // not a separate last paragraph: not trailers
+	}
+	return out
 }

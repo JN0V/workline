@@ -4,4 +4,6 @@
   most. The explanation of a design belongs in the docs or the changelog.
 - No internal code (ticket, criterion, finding id) in the subject. If one is
   useful for traceability, put it in a trailer at the end: `Refs: AC-3`.
+- Keep every trailer of the original message (`Refs:`, `Co-Authored-By:`…)
+  exactly as written, at the end.
 - One commit, one change.

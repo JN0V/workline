@@ -1,0 +1,5 @@
+case: committer/rewrite-keeps-trailers
+about: A rewrite that drops a trailer of the original message is refused.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3\n\nCo-Authored-By: A <a@example.invalid>"}, ai: "fake:rewrite-dropping-trailer"}
+expect: {status: block, findings: [{rule: trailer-dropped}], applied: []}

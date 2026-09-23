@@ -1,0 +1,1 @@
+- commit-message: "fix(parser): stop crashing on an empty input file"
