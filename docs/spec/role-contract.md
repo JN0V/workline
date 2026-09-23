@@ -23,6 +23,30 @@ roles/<name>/
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.
 
+## Where roles come from
+
+A role is a folder, so it can live anywhere git can reach. A project says which
+roles it uses and where each comes from, pinned to a version:
+
+```yaml
+# .assembly/config.yaml
+roles:
+  committer:     {from: builtin}
+  documentalist: {from: "https://gitlab.example.com/tools/roles.git//documentalist", ref: v1.4.0}
+```
+
+The engine fetches each role at its pinned version and records what it got —
+commit and content digest — in `.assembly/roles.lock`, so every machine and
+every CI job runs the same role. A role fetched from elsewhere is still bound by
+the contract: it declares its `requires`, `duties` and `intentions`, and the
+engine enforces them whatever the role's origin.
+
+The roles shipped with the engine live in this repository, next to the contract
+and its conformance tests, because while the contract changes, a change to it
+and to every role must land together. A team keeps its own roles — or its own
+version of a shipped one — in its own repository, and a project can still
+override a single facet locally without forking the role.
+
 ## `role.yaml`
 
 ```yaml
