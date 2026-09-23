@@ -269,6 +269,24 @@ If a setting a role depends on cannot be resolved, the role says so and blocks.
 A check that silently passes for lack of configuration is still believed in,
 which is worse than no check.
 
+## Adapting a role to a project
+
+A project whose rules differ from a role's defaults goes, in order, to the first
+level that is enough — each one is heavier than the one before:
+
+| Need | Level | Where |
+|---|---|---|
+| Other values: tag prefix, versioning scheme, limits, paths | **settings** | `.workline/config.yaml`, `roles.<name>.settings` |
+| A rule bites too hard, or is not wanted | **enforcement** | `roles.<name>.enforce`: `warn` or `off` per rule |
+| The AI should write differently: language, tone, sections | **facets** | `.workline/roles/<name>/policy.md` (or any facet), replacing the shipped one |
+| Extra checks on top of the role's own: release only from `main`, a migration needs a note… | **gates** | `gates.yml`, run by routing before or after the role |
+| Different logic: another way to compute versions, another convention | **a role of its own** | `roles.<name>.from` in the config, pinned — a fork of the shipped role, or a new one |
+
+Settings, enforcement and facets change how a role behaves without touching its
+code. A gate adds checks without replacing anything. Only the last level
+replaces the role's scripts, and the project then owns them — the shipped
+role's conformance cases are the way to check the fork still keeps the contract.
+
 ## Defects become guards
 
 When a role lets a defect through, fixing the output is not enough. The defect
