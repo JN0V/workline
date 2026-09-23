@@ -58,6 +58,8 @@ expect:
 `run` can also carry:
 
 - `scope` — the run's scope, as a ready work item would give it;
+- `given.repos` — other repositories to build first, each exported by name
+  as an environment variable holding its path, for multi-repository cases;
 - `then: resume` — after the run, resume it with `run-role apply`;
 - `tamper: in/` — change the prepared input between prepare and apply;
 - `route: <transition>` with `item` — ask routing to move a work item.

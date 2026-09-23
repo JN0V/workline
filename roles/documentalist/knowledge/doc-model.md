@@ -13,6 +13,10 @@ status: draft | stable | deprecated
 ---
 ```
 
+A source in another repository is prefixed with that repository's name, as
+declared in the project's config (`api:src/auth/token.go`), and `checked` then
+holds one commit per repository (`checked: {api: 3f2a91c}`).
+
 **A doc is suspect** when a commit after `checked` touched one of its `sources`.
 Suspicion follows the chain: code → technical doc → product doc.
 
