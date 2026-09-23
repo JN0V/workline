@@ -116,8 +116,9 @@ Three trust zones, in the order the Linux Foundation uses for its issue triage:
 token), **apply** (trusted, no AI key).
 
 1. **Check.** The engine reads `role.yaml`, verifies `requires`, creates a run
-   directory `.workline/runs/<id>/` with `in/` and `out/`, and writes the merged
-   settings to `in/settings.json`.
+   directory with `in/` and `out/` inside the repository's git directory
+   (`.git/workline/runs/<id>/`, so a run never shows up as a change), and
+   writes the merged settings to `in/settings.json`.
 2. **Prepare — `pre`.** Gathers what the role needs into `in/`. If a decision
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
    call: the AI is paid for decisions, not for routine. The engine then records

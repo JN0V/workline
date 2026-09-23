@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/JN0V/workline/internal/agent"
@@ -23,13 +24,14 @@ import (
 
 // Options describe one run.
 type Options struct {
-	Repo     string            // repository the role works on
-	RolesDir string            // folder holding the roles
-	Role     string            // role name
-	Event    string            // event the role runs on
-	AI       string            // agent spec, see agent.Parse
-	Inputs   map[string]string // name -> value, written to in/input/<name>
-	Targets  map[string]string // name -> file an intention writes back to (e.g. the hook's message file)
+	Repo      string            // repository the role works on
+	RolesDir  string            // folder holding the roles
+	Role      string            // role name
+	Event     string            // event the role runs on
+	AI        string            // agent spec, see agent.Parse; empty = the project's setting
+	DefaultAI string            // used when neither AI nor the project says (the user's own default)
+	Inputs    map[string]string // name -> value, written to in/input/<name>
+	Targets   map[string]string // name -> file an intention writes back to (e.g. the hook's message file)
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
@@ -85,6 +87,12 @@ func run(o Options, res *Result) error {
 	if err != nil {
 		return err
 	}
+	if o.AI == "" {
+		o.AI = cfg.AI
+	}
+	if o.AI == "" {
+		o.AI = o.DefaultAI
+	}
 	ag, err := agent.Parse(o.AI)
 	if err != nil {
 		return err
@@ -124,12 +132,16 @@ func run(o Options, res *Result) error {
 	agentExternal := false
 	if _, err := os.Stat(filepath.Join(runDir, "in", "task.md")); err == nil && ag != nil {
 		res.AgentCalls++
-		if err := ag.Propose(runDir); err != nil {
-			if !errors.Is(err, agent.ErrUnavailable) {
-				return err
-			}
+		err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r})
+		switch {
+		case err == nil:
+		case errors.Is(err, agent.ErrUnavailable):
 			agentExternal = true
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})
+		case errors.Is(err, agent.ErrInvalidOutput):
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
+		default:
+			return err
 		}
 	}
 	intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
@@ -238,12 +250,26 @@ func apply(in intent.Intention, runDir string, targets map[string]string) error 
 	return fmt.Errorf("not implemented yet in this engine")
 }
 
+// keepRuns is how many past runs are kept for inspection.
+const keepRuns = 50
+
+// newRunDir creates the run's folder inside the repository's git directory,
+// where it is never tracked and never shows up as a change.
 func newRunDir(repo, roleName string) (string, error) {
+	base := filepath.Join(repo, ".workline", "runs")
+	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
+		base = filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
+	}
 	id := fmt.Sprintf("%s-%s", time.Now().UTC().Format("20060102T150405.000000000"), roleName)
-	dir := filepath.Join(repo, ".workline", "runs", id)
+	dir := filepath.Join(base, id)
 	for _, d := range []string{"in/input", "out"} {
 		if err := os.MkdirAll(filepath.Join(dir, d), 0o755); err != nil {
 			return "", err
+		}
+	}
+	if old, err := os.ReadDir(base); err == nil && len(old) > keepRuns {
+		for _, e := range old[:len(old)-keepRuns] { // names start with a timestamp, so the oldest come first
+			os.RemoveAll(filepath.Join(base, e.Name()))
 		}
 	}
 	return dir, nil
