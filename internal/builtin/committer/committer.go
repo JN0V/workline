@@ -148,13 +148,14 @@ func Pre(runDir, repo string) int {
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), findings); err != nil {
 		return fail(err)
 	}
-	diff, _ := exec.Command("git", "-C", repo, "diff", "--cached", "--stat").Output()
+	stat, _ := exec.Command("git", "-C", repo, "diff", "--cached", "--stat").Output()
+	diff, _ := exec.Command("git", "-C", repo, "diff", "--cached", "--unified=2").Output()
 	var task strings.Builder
 	fmt.Fprintf(&task, "This commit message was refused:\n\n```\n%s\n```\n\nWhy:\n", msg)
 	for _, f := range findings {
 		fmt.Fprintf(&task, "- %s: %s\n", f.Rule, f.Message)
 	}
-	fmt.Fprintf(&task, "\nStaged changes:\n\n```\n%s```\n", diff)
+	fmt.Fprintf(&task, "\nStaged changes:\n\n```\n%s```\n\n```diff\n%s```\n", stat, capText(string(diff), maxDiff))
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task.String()), 0o644); err != nil {
 		return fail(err)
 	}
@@ -237,6 +238,17 @@ func writeYAML(path string, v any) error {
 func fail(err error) int {
 	fmt.Fprintln(os.Stderr, "committer:", err)
 	return 99
+}
+
+// maxDiff keeps the diff within the role's context budget; the stat above it
+// still lists every file.
+const maxDiff = 8000
+
+func capText(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "\n... (diff cut here; the stat above lists every file)\n"
 }
 
 func quoteAll(in []string) []string {
