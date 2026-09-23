@@ -17,3 +17,8 @@ Topics raised and parked, so they are not lost. Newest last.
 - **Granularity of a task's scope.** The scope comes from the `ready` work item
   (routing spec). Still open: paths, modules or components, and how a module is
   declared.
+- **Release notes must not claim what is not built.** The first trial release
+  listed the documentalist as working, because its role *definition* was
+  committed as `feat(documentalist): …`. A change that only specifies a role is
+  `docs`, not `feat`; and the release manager's notes should be checked against
+  what the code can actually do (the "capability lie" Make My Dreams detected).
