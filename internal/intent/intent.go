@@ -5,6 +5,7 @@ package intent
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -60,4 +61,48 @@ func Kinds(in []Intention) []string {
 		k = append(k, i.Kind)
 	}
 	return k
+}
+
+// Merge returns the fallback proposals with the agent's in place of those of
+// the same kind (docs/spec/role-contract.md, "One run").
+func Merge(fallback, agent []Intention) []Intention {
+	proposed := map[string]bool{}
+	for _, a := range agent {
+		proposed[a.Kind] = true
+	}
+	var out []Intention
+	for _, f := range fallback {
+		if !proposed[f.Kind] {
+			out = append(out, f)
+		}
+	}
+	return append(out, agent...)
+}
+
+// Write saves proposals in the same shape Read expects. No proposals, no file.
+func Write(path string, in []Intention) error {
+	if len(in) == 0 {
+		return nil
+	}
+	list := make([]map[string]any, len(in))
+	for i, x := range in {
+		list[i] = map[string]any{x.Kind: x.Value}
+	}
+	data, err := yaml.Marshal(list)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+// applyOrder is the order intentions are applied in, whatever order they were
+// proposed in: files first, then what depends on them (a release commits and
+// tags what the patches wrote), then what only informs.
+var applyOrder = map[string]int{
+	"commit-message": 0, "patch": 1, "release": 2, "label": 3, "comment": 4, "issue": 5, "handoff": 6, "note": 7,
+}
+
+// SortForApply puts intentions in apply order, keeping the proposed order within a kind.
+func SortForApply(in []Intention) {
+	sort.SliceStable(in, func(i, j int) bool { return applyOrder[in[i].Kind] < applyOrder[in[j].Kind] })
 }

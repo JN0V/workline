@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -46,6 +47,7 @@ type Result struct {
 	AgentCalls int               `json:"agent-calls"`
 	Applied    []string          `json:"applied"`
 	Refused    []string          `json:"refused"`
+	Handoffs   []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
 	RunDir     string            `json:"run-dir"`
 }
 
@@ -148,6 +150,14 @@ func run(o Options, res *Result) error {
 	if err != nil {
 		return err
 	}
+	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
+	if err != nil {
+		return err
+	}
+	intents = intent.Merge(fallback, intents)
+	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
+		return err
+	}
 	if refused := invalid(r, intents); len(refused) > 0 {
 		res.Refused = intent.Kinds(intents)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "intention-refused", Message: fmt.Sprintf("not allowed for this role: %v", refused)})
@@ -195,12 +205,16 @@ func run(o Options, res *Result) error {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "input-changed", Message: "the prepared input changed before apply; nothing was applied"})
 		return nil
 	}
+	intent.SortForApply(intents)
+	settings := r.MergedSettings(cfg)
+	ap := applier{repo: o.Repo, runDir: runDir, targets: o.Targets, writes: r.Writes(settings), settings: settings}
 	for _, in := range intents {
-		if err := apply(in, runDir, o.Targets); err != nil {
+		if err := ap.apply(in); err != nil {
 			return fmt.Errorf("apply %s: %w", in.Kind, err)
 		}
 		res.Applied = append(res.Applied, in.Kind)
 	}
+	res.Handoffs = ap.handoffs
 	return nil
 }
 
@@ -229,25 +243,150 @@ func invalid(r *role.Role, in []intent.Intention) []string {
 	return bad
 }
 
-// apply carries out one intention. This version knows the local ones.
-func apply(in intent.Intention, runDir string, targets map[string]string) error {
+// applier carries out intentions. This version knows the local ones.
+type applier struct {
+	repo, runDir string
+	targets      map[string]string
+	writes       []string       // paths the role may write
+	settings     map[string]any // the role's merged settings
+	written      []string       // files changed by this run's patches
+	handoffs     []any          // next roles asked for, recorded for routing
+}
+
+func (a *applier) apply(in intent.Intention) error {
 	switch in.Kind {
 	case "commit-message":
 		msg, ok := in.Value.(string)
 		if !ok {
 			return errors.New("value must be text")
 		}
-		if err := os.WriteFile(filepath.Join(runDir, "out", "commit-message"), []byte(msg), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(a.runDir, "out", "commit-message"), []byte(msg), 0o644); err != nil {
 			return err
 		}
-		if t := targets["message"]; t != "" {
+		if t := a.targets["message"]; t != "" {
 			return os.WriteFile(t, []byte(msg+"\n"), 0o644)
 		}
 		return nil
 	case "note":
-		return os.WriteFile(filepath.Join(runDir, "out", "note.md"), []byte(fmt.Sprint(in.Value)), 0o644)
+		return os.WriteFile(filepath.Join(a.runDir, "out", "note.md"), []byte(fmt.Sprint(in.Value)), 0o644)
+	case "patch":
+		return a.patch(in.Value)
+	case "release":
+		return a.release(in.Value)
+	case "handoff":
+		a.handoffs = append(a.handoffs, in.Value)
+		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
 	}
 	return fmt.Errorf("not implemented yet in this engine")
+}
+
+// allowed reports whether a repository path is within the role's duties.writes.
+func (a *applier) allowed(path string) bool {
+	clean := filepath.ToSlash(filepath.Clean(path))
+	if strings.HasPrefix(clean, "../") || filepath.IsAbs(path) {
+		return false
+	}
+	for _, pat := range a.writes {
+		if pat == clean {
+			return true
+		}
+		if dir, ok := strings.CutSuffix(pat, "/**"); ok && strings.HasPrefix(clean, dir+"/") {
+			return true
+		}
+		if ok, _ := filepath.Match(pat, clean); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// patch applies a unified diff, or replaces one file with {file, content}.
+func (a *applier) patch(v any) error {
+	if m, ok := v.(map[string]any); ok {
+		file, _ := m["file"].(string)
+		content, ok := m["content"].(string)
+		if file == "" || !ok {
+			return errors.New("expected {file, content}")
+		}
+		if !a.allowed(file) {
+			return fmt.Errorf("%s is outside what this role may write", file)
+		}
+		if err := os.WriteFile(filepath.Join(a.repo, file), []byte(content), 0o644); err != nil {
+			return err
+		}
+		a.written = append(a.written, file)
+		return nil
+	}
+	diff, ok := v.(string)
+	if !ok {
+		return errors.New("expected a unified diff or {file, content}")
+	}
+	files, err := git(a.repo, strings.NewReader(diff), "apply", "--numstat", "-")
+	if err != nil {
+		return fmt.Errorf("unreadable diff: %w", err)
+	}
+	var touched []string
+	for _, line := range strings.Split(strings.TrimSpace(files), "\n") {
+		if f := strings.Fields(line); len(f) == 3 {
+			if !a.allowed(f[2]) {
+				return fmt.Errorf("%s is outside what this role may write", f[2])
+			}
+			touched = append(touched, f[2])
+		}
+	}
+	if _, err := git(a.repo, strings.NewReader(diff), "apply", "-"); err != nil {
+		return err
+	}
+	a.written = append(a.written, touched...)
+	return nil
+}
+
+// release commits what this run wrote, then tags it. Only the direct flow
+// exists locally; the merge-request flow needs a forge.
+func (a *applier) release(v any) error {
+	m, ok := v.(map[string]any)
+	version, _ := m["version"].(string)
+	notes, _ := m["notes"].(string)
+	if !ok || version == "" {
+		return errors.New("expected {version, notes}")
+	}
+	if flow, _ := a.settings["flow"].(string); flow != "direct" {
+		return fmt.Errorf("the %q flow needs a forge, which this engine cannot reach yet; set flow: direct", flow)
+	}
+	if len(a.written) > 0 {
+		if _, err := git(a.repo, nil, append([]string{"add", "--"}, a.written...)...); err != nil {
+			return err
+		}
+		if _, err := git(a.repo, nil, "commit", "-q", "-m", "chore(release): "+version); err != nil {
+			return err
+		}
+	}
+	head, err := git(a.repo, nil, "rev-parse", "HEAD")
+	if err != nil {
+		return err
+	}
+	if tagged, err := git(a.repo, nil, "rev-parse", "-q", "--verify", version+"^{commit}"); err == nil {
+		if tagged == head {
+			return nil // already released: applying again changes nothing
+		}
+		return fmt.Errorf("tag %s already exists on another commit", version)
+	}
+	if notes == "" {
+		notes = version
+	}
+	_, err = git(a.repo, nil, "tag", "-a", version, "-m", notes)
+	return err
+}
+
+func git(repo string, stdin io.Reader, args ...string) (string, error) {
+	cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+	cmd.Stdin = stdin
+	var out, errOut strings.Builder
+	cmd.Stdout, cmd.Stderr = &out, &errOut
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("git %s: %v: %s", args[0], err, strings.TrimSpace(errOut.String()))
+	}
+	return strings.TrimSpace(out.String()), nil
 }
 
 // keepRuns is how many past runs are kept for inspection.

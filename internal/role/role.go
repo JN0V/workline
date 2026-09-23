@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -20,7 +21,11 @@ type Role struct {
 	Uses       []string `yaml:"uses"`
 	Intentions []string `yaml:"intentions"`
 	Model      Model    `yaml:"model"`
-	Context    struct {
+	Duties     struct {
+		Reads  []string `yaml:"reads"`
+		Writes []string `yaml:"writes"`
+	} `yaml:"duties"`
+	Context struct {
 		Knowledge []string `yaml:"knowledge"`
 		Budget    int      `yaml:"budget"`
 	} `yaml:"context"`
@@ -125,4 +130,28 @@ func (r *Role) Enforcement(c *ProjectConfig) map[string]string {
 		return rc.Enforce
 	}
 	return map[string]string{}
+}
+
+// Writes returns the path patterns the role may write, with `$settings.<name>`
+// replaced by the setting's value (a string or a list of strings).
+func (r *Role) Writes(settings map[string]any) []string {
+	var out []string
+	for _, w := range r.Duties.Writes {
+		name, ok := strings.CutPrefix(w, "$settings.")
+		if !ok {
+			out = append(out, w)
+			continue
+		}
+		switch v := settings[name].(type) {
+		case string:
+			out = append(out, v)
+		case []any:
+			for _, x := range v {
+				if s, ok := x.(string); ok {
+					out = append(out, s)
+				}
+			}
+		}
+	}
+	return out
 }

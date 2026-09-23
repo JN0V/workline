@@ -121,12 +121,16 @@ token), **apply** (trusted, no AI key).
    writes the merged settings to `in/settings.json`.
 2. **Prepare — `pre`.** Gathers what the role needs into `in/`. If a decision
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
-   call: the AI is paid for decisions, not for routine. The engine then records
-   a digest of `in/`.
+   call: the AI is paid for decisions, not for routine. It may also write
+   `in/fallback.yaml`: the proposals to use when no agent answers — the release
+   manager's generated changelog, for example. The engine then records a
+   digest of `in/`.
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
    (`model-grid.md`), receives the facets, `in/` and `task.md`. It runs read-only
-   and writes one file: `out/intentions.yaml`.
+   and writes one file: `out/intentions.yaml`. The agent's proposals replace
+   the fallback ones of the same kind; fallback proposals of other kinds stay.
+   With no agent, or none that answered, the fallback proposals are used alone.
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
    example, the release manager's `post` refuses a version the commits did not
@@ -134,7 +138,9 @@ token), **apply** (trusted, no AI key).
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid
-   intentions are applied in order, and each one is recorded in
+   intentions are applied in the catalogue's order — files first, then what
+   depends on them, then what only informs — whatever order the agent used,
+   and each one is recorded in
    `out/applied.yaml` as it succeeds.
 
 ### When apply stops half-way
@@ -206,7 +212,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | Intention | Effect | Applied |
 |---|---|---|
 | `commit-message` | replace the message being written | locally |
-| `patch` | a unified diff, limited to `duties.writes` | locally or as a merge request |
+| `patch` | a unified diff, or `{file, content}` to replace one file; limited to `duties.writes` | locally or as a merge request |
 | `comment` | a comment on the issue or merge request | forge |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem found outside the task, without fixing it | forge, or `.workline/issues/` without one |
