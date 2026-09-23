@@ -6,30 +6,40 @@ pure function: same inputs, same answer, no AI.
 
 ## Work starts from a clear need
 
-No development starts without a clear expression of the need. That does not
+People own both ends of the line: they state the need and how the result will be
+judged, and they accept or reject what comes out. The machine builds in between.
+So no development starts without a clear expression of the need. That does not
 mean pages of specification; it means the work is no longer research.
 
 A work item — an issue on the forge, or a file in `.assembly/work/` without one
 — moves through these states:
 
 ```
-to-refine ──► ready ──► in-progress ──► review ──► done
+to-refine ──► ready ──► in-progress ──► review ──► validation ──► done
     ▲            │
     └────────────┘  (the need turns out unclear: back to refining)
 ```
 
-**Ready** means three things are written, even in one line each:
+**Ready** means four things are written, even in one line each:
 
 | Field | Question |
 |---|---|
-| Need | Who needs what, and why? |
-| Done when | How will we know it works? |
+| Need | Which user need does this answer — who needs what, and why? |
+| Verification | How will the machine prove it works: which tests, checks, thresholds? |
+| Validation | How will a person accept it: who, looking at what? |
 | Scope | What part of the project does it touch? |
 
-The engine checks that the three are present and not empty; it does not judge
-their quality. A person — or a product role, once it exists — moves an item to
+Verification is what the line checks on its own; validation is what a person
+decides at the end. Writing both before starting is what keeps the machine from
+grading its own work. The engine checks that the four are present and not
+empty; it does not judge their quality. A person — or a product role, once it exists — moves an item to
 `ready`. Development roles only take `ready` items, and the item's **scope**
 becomes the run's scope (see "Stay on the task" in the role contract).
+
+`review` is the machine's part: reviewers and gates run the verification.
+`validation` is the person's part: the item reaches `done` only when the person
+named in *Validation* accepts it. A rejection sends it back to `in-progress`
+with the reason, or to `to-refine` if the need itself was wrong.
 
 An item that needs exploration stays in `to-refine`. Research, spikes and
 prototypes happen there, and their outcome is a refined item, not merged code.
