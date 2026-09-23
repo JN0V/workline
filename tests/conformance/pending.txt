@@ -1,0 +1,23 @@
+# Cases the engine does not pass yet. The suite runs them anyway and fails
+# if one starts passing while still listed here.
+
+# Needs the documentalist's pre and post.
+documentalist/cascade-is-cut
+documentalist/suspect-across-repositories
+documentalist/unreachable-source-repository
+
+# Needs run scopes, patches and the simulated forge.
+engine/out-of-scope-patch-refused
+engine/partial-apply-resumes
+
+# Needs the gate runner.
+gates/missing-tool-is-error
+gates/threshold-required
+
+# Needs the release manager's pre and post (and git-cliff).
+release-manager/agent-cannot-choose-version
+release-manager/releases-without-ai
+
+# Needs routing.
+routing/item-not-ready
+routing/undeclared-handoff-refused
