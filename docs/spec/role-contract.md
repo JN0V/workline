@@ -257,7 +257,7 @@ wish; the ledger is where wishes become checks.
 
 ## Not in this version
 
-- Routing between roles (`routing.yml`) and gates (`gates.yml`): separate specs.
+- Routing between roles and gates: see `routing.md` and `gates.md`.
 - Running on a forge: the same run, with the forge adapter applying `comment`,
   `label`, `release` and merge-request `patch`.
 - Conformance tests: written next, before any engine code. They include a bench

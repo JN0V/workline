@@ -16,6 +16,6 @@ Topics raised and parked, so they are not lost. Newest last.
 - **Project name.** `assembly-line` is provisional; "Assemblyline" is a known
   malware-analysis platform. `takt` and `andon` are taken.
 - **Rebuild Make My Dreams on this framework**, once it works.
-- **Scope of a task.** Decide where the scope comes from (issue, spec, command
-  line, branch) and how fine it is (paths, modules, components). The contract
-  already refuses out-of-scope patches and adds an `issue` intention.
+- **Granularity of a task's scope.** The scope comes from the `ready` work item
+  (routing spec). Still open: paths, modules or components, and how a module is
+  declared.
