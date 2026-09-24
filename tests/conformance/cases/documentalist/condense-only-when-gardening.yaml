@@ -1,0 +1,5 @@
+case: documentalist/condense-only-when-gardening
+about: A merge request or a push does not turn into a rewrite of the docs; condensing waits for the scheduled run.
+given: {repo: untidy}
+run: {role: documentalist, event: merge-request, ai: "fake:condense-moves-a-part"}
+expect: {status: pass, agent-calls: 0, findings: [{rule: doc-too-long, where: docs/sessions.md}]}

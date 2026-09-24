@@ -1,0 +1,8 @@
+case: documentalist/condense-must-move-not-rewrite
+about: Condensing moves text; a part reworded on the way is refused, and nothing is applied.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: "fake:condense-rewrites"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: rewritten, where: docs/sessions.md}]
