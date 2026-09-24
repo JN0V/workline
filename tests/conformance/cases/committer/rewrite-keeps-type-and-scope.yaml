@@ -1,0 +1,9 @@
+case: committer/rewrite-keeps-type-and-scope
+about: A subject refused only for its length is shortened; a rewrite that changes the author's type or scope is refused.
+given: {repo: basic}
+run:
+  role: committer
+  event: commit-msg
+  input: {message: "ci: run the project's line in the templates and on workline's pull requests"}
+  ai: "fake:rewrite-changing-type"
+expect: {status: block, findings: [{rule: header-changed}]}
