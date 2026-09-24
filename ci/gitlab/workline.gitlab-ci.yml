@@ -1,0 +1,47 @@
+# workline on GitLab CI — include it from .gitlab-ci.yml:
+#   include: {local: ci/workline.gitlab-ci.yml}
+# Not yet tried on a live GitLab instance.
+#
+# Two jobs, two trust zones (docs/research/server-side.md):
+#   judge  runs the roles, no write token, stops before applying (--no-apply).
+#   apply  holds WORKLINE_GITLAB_TOKEN (a project access token with the `api`
+#          scope, stored as a protected, masked variable) and no AI key.
+variables:
+  WORKLINE_VERSION: main            # pin a tag or commit once releases exist
+  WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs
+
+.workline:
+  image: golang:1.27
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  before_script:
+    - go install github.com/JN0V/workline/cmd/workline@$WORKLINE_VERSION
+    - export PATH=$PATH:$(go env GOPATH)/bin
+    - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
+
+workline:judge:
+  extends: .workline
+  stage: test
+  script:
+    - >
+      workline run-role committer --event merge-request --ai none
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
+    - >
+      workline run-role documentalist --event merge-request --ai none --no-apply
+      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --json > docs.json || true
+  artifacts:
+    paths: [.workline-runs/, docs.json]
+    expire_in: 1 day
+
+workline:apply:
+  extends: .workline
+  stage: deploy
+  needs: [workline:judge]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
+  script:
+    - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - |
+      RUN=$(grep -o '"run-dir": *"[^"]*"' docs.json | cut -d'"' -f4)
+      if [ -n "$RUN" ]; then workline apply "$RUN"; fi

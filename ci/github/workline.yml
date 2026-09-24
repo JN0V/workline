@@ -1,0 +1,61 @@
+# workline on GitHub Actions — copy to .github/workflows/workline.yml.
+#
+# Two jobs, two trust zones (docs/research/server-side.md):
+#   judge  runs the roles; it can read the code, holds the AI key if any, and
+#          no write token. It stops before applying (--no-apply).
+#   apply  holds the write token and no AI key; it applies what judge proposed,
+#          after checking the prepared input did not change.
+name: workline
+on:
+  pull_request:
+permissions: {}
+
+env:
+  WORKLINE_VERSION: main            # pin a tag or commit once releases exist
+  WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
+
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    outputs:
+      run: ${{ steps.docs.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version: stable}
+      - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+
+      - name: Committer — every commit of the pull request
+        run: >
+          workline run-role committer --event merge-request --ai none
+          --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+
+      - name: Documentalist — what this change makes suspect (proposals only)
+        id: docs
+        run: |
+          workline run-role documentalist --event merge-request --ai none --no-apply \
+            --forge github --target merge-request:${{ github.event.pull_request.number }} --json > docs.json || true
+          echo "run=$(jq -r '.["run-dir"] // empty' docs.json)" >> "$GITHUB_OUTPUT"
+          jq -r '.summary // .status' docs.json
+
+      - uses: actions/upload-artifact@v4
+        if: steps.docs.outputs.run != ''
+        with: {name: workline-runs, path: .workline-runs, include-hidden-files: true}
+
+  apply:
+    needs: judge
+    if: needs.judge.outputs.run != '' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: write, issues: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version: stable}
+      - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with: {name: workline-runs, path: .workline-runs}
+      - run: workline apply "${{ needs.judge.outputs.run }}"
+        env: {GH_TOKEN: "${{ github.token }}"}
