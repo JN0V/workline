@@ -198,6 +198,7 @@ func Post(runDir string) int {
 			if err != nil {
 				return fail(err)
 			}
+			findings = append(findings, keepsHeader(original, msg, s)...)
 			kept := map[string]bool{}
 			for _, t := range Trailers(msg) {
 				kept[t] = true
@@ -320,6 +321,26 @@ func Trailers(message string) []string {
 // checkRange checks every commit of a merge request (base..head). Commits
 // already pushed are not rewritten: the findings go to the people who wrote
 // them, so no agent is asked.
+// keepsHeader refuses a rewrite that changes the type, the scope or the breaking
+// mark the author chose, when the original subject was well formed: only its
+// length, body or codes were refused, so what it says it is stays the author's
+// call. Adding a scope the author left out only makes it more precise.
+func keepsHeader(original, rewrite string, s Settings) []verdict.Finding {
+	format := regexp.MustCompile(`^(` + strings.Join(quoteAll(s.Types), "|") + `)(\([^()\s]+\))?(!?): \S`)
+	subject, _ := split(original)
+	was := format.FindStringSubmatch(subject)
+	if was == nil {
+		return nil // the header itself was wrong: the rewrite may change it
+	}
+	newSubject, _ := split(rewrite)
+	now := format.FindStringSubmatch(newSubject)
+	if now == nil || now[1] == was[1] && (now[2] == was[2] || was[2] == "") && now[3] == was[3] {
+		return nil // a malformed rewrite is already refused by Check
+	}
+	return []verdict.Finding{{Rule: "header-changed", Where: "subject",
+		Message: fmt.Sprintf("the rewrite changed %q into %q; keep the type and scope the author chose, and fix only what was refused", was[1]+was[2]+was[3], now[1]+now[2]+now[3])}}
+}
+
 func checkRange(runDir, repo, rng string) int {
 	var s Settings
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))

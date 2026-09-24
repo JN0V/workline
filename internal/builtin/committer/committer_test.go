@@ -76,3 +76,22 @@ func TestTrailersMustStayOnTheirOwnLines(t *testing.T) {
 		}
 	}
 }
+
+func TestKeepsHeader(t *testing.T) {
+	for _, c := range []struct {
+		original, rewrite string
+		refused           bool
+	}{
+		{"ci: run the line in the templates and on the pull requests", "ci: run the line in templates and pull requests", false},
+		{"ci: run the line in the templates", "refactor: use line routing", true},
+		{"fix(config): refuse unknown keys, instead of ignoring them", "fix: refuse unknown keys", true},
+		{"feat(api)!: drop the v1 routes", "feat(api): drop the v1 routes", true},
+		{"stop crashing on empty files", "fix(parser): stop crashing on empty files", false}, // the header was the problem
+		{"fix: AC-3", "fix(parser): stop crashing on an empty input file", false},            // a scope added, not changed
+	} {
+		got := len(keepsHeader(c.original, c.rewrite, defaults)) > 0
+		if got != c.refused {
+			t.Errorf("%q -> %q: refused = %v", c.original, c.rewrite, got)
+		}
+	}
+}
