@@ -288,6 +288,15 @@ func hookCmd(args []string) int {
 		}
 	}
 	if res.Status == verdict.Pass {
+		// A rewrite replaced what the person wrote: show what is committed.
+		if now, err := os.ReadFile(msgFile); err == nil && string(now) != string(data) {
+			fmt.Fprintln(os.Stderr, "workline: the commit goes on with this message instead of yours:")
+			for _, l := range strings.Split(strings.TrimRight(string(now), "\n"), "\n") {
+				if !strings.HasPrefix(l, "#") {
+					fmt.Fprintln(os.Stderr, "  │ "+l)
+				}
+			}
+		}
 		return 0
 	}
 	if len(res.Steps) == 0 || res.Steps[len(res.Steps)-1].Result == nil {
