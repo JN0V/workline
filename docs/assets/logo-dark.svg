@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" width="360" height="80" role="img" aria-labelledby="title">
+  <title id="title">workline</title>
+  <!-- the line: three posts, one job each, and the result a person accepts -->
+  <line stroke="#e6edf3" x1="8" y1="50" x2="104" y2="50" stroke-width="4" stroke-linecap="round"/>
+  <rect fill="#e6edf3" x="16" y="30" width="16" height="16" rx="3"/>
+  <rect fill="#e6edf3" x="46" y="30" width="16" height="16" rx="3"/>
+  <rect fill="#e6edf3" x="76" y="30" width="16" height="16" rx="3"/>
+  <circle fill="#3fb950" cx="120" cy="40" r="14"/>
+  <polyline stroke="#0d1117" points="113,40 118,46 128,34" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text fill="#e6edf3" x="148" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="36" font-weight="700" letter-spacing="-1">workline</text>
+</svg>

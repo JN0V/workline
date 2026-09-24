@@ -1,4 +1,9 @@
-# workline
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <img src="docs/assets/logo.svg" alt="workline" width="360">
+  </picture>
+</h1>
 
 A software factory for AI-assisted development: each role — committer, release
 manager, documentalist… — does one job with only the context it needs, tools do
