@@ -1,0 +1,7 @@
+case: engine/unknown-config-key-refused
+about: A key the engine does not know in .workline/config.yaml blocks, instead of being ignored — here a role taken from elsewhere, not built yet.
+given:
+  repo: basic
+  config: {roles: {committer: {from: "https://gitlab.example.com/tools/roles.git//committer"}}}
+run: {role: committer, event: commit-msg, input: {message: "fix: stop crashing on an empty input file"}, ai: none}
+expect: {status: block, findings: [{rule: config-invalid}]}

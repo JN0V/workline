@@ -1,0 +1,5 @@
+case: release-manager/releases-by-default
+about: With no settings at all, a release runs in the only flow that exists, the direct one.
+given: {repo: released}
+run: {route: release, ai: none}
+expect: {status: pass, files: {CHANGELOG.md: {contains: "## v1.3.0"}}}
