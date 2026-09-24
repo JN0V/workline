@@ -2,16 +2,39 @@
 
 ## Next, in order
 
-1. **Release manager, merge-request flow** — a release MR kept up to date, the
-   tag on merge; the natural flow in a team.
-2. **Publishing** — tagged, signed binaries, so CI installs a pinned version;
-   the repository is public, so `go install` works, but the templates still
-   follow `main`.
-3. **More agents** — Codex, Antigravity, OpenCode adapters, and a generic one
-   running any command given as the agent (prompt in, proposals out), so an
-   existing factory can plug its own; generate the model
-   grid from models.dev and Epoch (docs/spec/model-grid.md).
-4. **Next roles** — reviewer (independent vendor), architect, tester.
+The committer and the documentalist first: two roles that prove their worth on
+this repository before any other role is added.
+
+1. **Committer: rewrites that can be trusted, and seen.** The hook shows the
+   message it committed, not only "message rewritten". A rewrite keeps the
+   type, the scope and whatever was not refused (a subject too long is
+   shortened, not reworded), checked by `post`. This repository allows its own
+   references (`ADR-0001`) in subjects.
+2. **The line on the machine, before a push.** A `pre-push` hook runs the
+   `merge-request` line on the commits being pushed, with the person's agent:
+   the committer checks the range, the documentalist has suspect docs judged
+   and proposes its patches, reviewed before the push goes out.
+3. **Documentalist: act on what it reports.** The condense and split tasks,
+   judged mechanically (no MUST or SHOULD lost, whole parts moved, links in
+   place); derived blocks (`workline:derive`) for facts typed by hand; sources
+   declared in `.workline/config.yaml` for docs that cannot carry frontmatter,
+   like the root README.
+4. **Evaluation of both roles.** The "Evaluation" level of
+   docs/spec/conformance.md: a real agent on real cases — this repository's own
+   refused messages and suspect docs — graded, and the score kept over time.
+
+Then, once both work well here:
+
+- **Release manager, merge-request flow** — a release MR kept up to date, the
+  tag on merge; the natural flow in a team.
+- **Publishing** — tagged, signed binaries, so CI installs a pinned version;
+  the repository is public, so `go install` works, but the templates still
+  follow `main`.
+- **More agents** — Codex, Antigravity, OpenCode adapters, and a generic one
+  running any command given as the agent (prompt in, proposals out), so an
+  existing factory can plug its own; generate the model grid from models.dev
+  and Epoch (docs/spec/model-grid.md).
+- **Next roles** — reviewer (independent vendor), architect, tester.
 
 ## Parked
 
@@ -50,9 +73,6 @@ Topics raised and parked, so they are not lost. Newest last.
   so (`setting-missing`), but a deep merge would be less surprising.
 - **docs/spec/role-contract.md is over its budget** (314 lines for 200), found
   by the documentalist on this repository: split it into cards.
-- **Local events beyond `commit-msg`.** The global hook forwards every git
-  hook but runs roles only on `commit-msg`; `pre-push` could run the
-  documentalist before anything leaves the machine.
 - **Verdicts as SARIF.** The role contract says findings map to SARIF; nothing
   writes it yet. It would put workline's findings in GitHub code scanning and
   GitLab Code Quality, next to the other tools of an existing pipeline.
