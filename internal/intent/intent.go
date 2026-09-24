@@ -5,7 +5,9 @@ package intent
 import (
 	"fmt"
 	"os"
+	"path"
 	"sort"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -64,19 +66,56 @@ func Kinds(in []Intention) []string {
 }
 
 // Merge returns the fallback proposals with the agent's in place of those of
-// the same kind (docs/spec/role-contract.md, "One run").
+// the same kind (docs/spec/role-contract.md, "One run"). A patch replaces only
+// the fallback patches of the files it touches: the agent fixing one doc does
+// not drop what the role regenerated in another.
 func Merge(fallback, agent []Intention) []Intention {
 	proposed := map[string]bool{}
+	patched := map[string]bool{}
 	for _, a := range agent {
 		proposed[a.Kind] = true
+		if a.Kind == "patch" {
+			for _, f := range PatchFiles(a.Value) {
+				patched[f] = true
+			}
+		}
 	}
 	var out []Intention
 	for _, f := range fallback {
-		if !proposed[f.Kind] {
+		switch {
+		case f.Kind == "patch":
+			kept := true
+			for _, file := range PatchFiles(f.Value) {
+				kept = kept && !patched[file]
+			}
+			if kept {
+				out = append(out, f)
+			}
+		case !proposed[f.Kind]:
 			out = append(out, f)
 		}
 	}
 	return append(out, agent...)
+}
+
+// PatchFiles lists the files a patch names: its `file`, or the `+++` lines of
+// its diff. It reads names only; whether the diff applies is checked later.
+func PatchFiles(v any) []string {
+	if m, ok := v.(map[string]any); ok {
+		if f, ok := m["file"].(string); ok {
+			return []string{path.Clean(f)}
+		}
+		return nil
+	}
+	diff, _ := v.(string)
+	var files []string
+	for _, l := range strings.Split(diff, "\n") {
+		if p, ok := strings.CutPrefix(l, "+++ "); ok {
+			p, _, _ = strings.Cut(strings.TrimSpace(p), "\t")
+			files = append(files, path.Clean(strings.TrimPrefix(p, "b/")))
+		}
+	}
+	return files
 }
 
 // Write saves proposals in the same shape Read expects. No proposals, no file.
