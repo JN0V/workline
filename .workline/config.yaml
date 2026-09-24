@@ -9,6 +9,10 @@ roles:
     settings:
       # The role READMEs describe what the code does: they are docs too.
       docs: ["docs/**", "*.md", "roles/*/README.md"]
+      # Facts the docs quote, regenerated from the code rather than typed.
+      derive:
+        conformance-cases: "n=$(ls tests/conformance/cases/*/*.yaml | wc -l); p=$(grep -cvE '^(#|$)' tests/conformance/pending.txt || true); echo $((n - p))"
+        runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged.

@@ -14,8 +14,8 @@ manager, documentalist… — does one job with only the context it needs, tools
 the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
-Status (2026-09-24): used daily on its author's machine; every conformance case
-green in CI.
+Status (2026-09-24): used daily on its author's machine;
+<!-- workline:derive conformance-cases -->56<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|

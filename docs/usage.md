@@ -75,7 +75,8 @@ hook.
 | `~/.config/workline/config.yaml` | `ai:` — your default agent, when a project does not say |
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
 
-Runs are kept in `.git/workline/runs/` (the last 50), never in the working tree.
+Runs are kept in `.git/workline/runs/` (the last
+<!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree.
 
 ## `.workline/config.yaml`
 
@@ -86,6 +87,9 @@ roles:
   committer:
     settings: {subject-max: 60}          # a role's settings, see its role.yaml
     enforce: {internal-code: warn}       # block (default) | warn | off, per rule
+  documentalist:
+    settings:
+      derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: release-manager, to: documentalist}]

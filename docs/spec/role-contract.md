@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: d30d22a
+checked: 401c81b
 ---
 # Role contract — v1 (draft)
 
@@ -137,7 +137,8 @@ token), **apply** (trusted, no AI key).
    The agent runs on the model the grid resolves for the role's `model` needs
    (`model-grid.md`), receives the facets, `in/` and `task.md`. It runs read-only
    and writes one file: `out/intentions.yaml`. The agent's proposals replace
-   the fallback ones of the same kind; fallback proposals of other kinds stay.
+   the fallback ones of the same kind — for patches, only those of the files
+   the agent's patches touch; fallback proposals of other kinds stay.
    With no agent, or none that answered, the fallback proposals are used alone.
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
