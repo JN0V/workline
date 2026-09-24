@@ -2,16 +2,13 @@
 
 ## Next, in order
 
-1. **Documentalist, second slice** — size budgets (per doc, section, folder;
-   a minimum card size too), duplicates, dead links, identifiers gone from the
-   code, and the AI call that judges a suspect doc (docs/research/documentalist.md).
-2. **Release manager, merge-request flow** — a release MR kept up to date, the
+1. **Release manager, merge-request flow** — a release MR kept up to date, the
    tag on merge; the natural flow in a team.
-3. **Publishing** — tagged, signed binaries and a public repository, so CI can
+2. **Publishing** — tagged, signed binaries and a public repository, so CI can
    install workline (`go install` fails on a private module).
-4. **More agents** — Codex, Antigravity, OpenCode adapters; generate the model
+3. **More agents** — Codex, Antigravity, OpenCode adapters; generate the model
    grid from models.dev and Epoch (docs/spec/model-grid.md).
-5. **Next roles** — reviewer (independent vendor), architect, tester.
+4. **Next roles** — reviewer (independent vendor), architect, tester.
 
 ## Parked
 
@@ -37,3 +34,16 @@ Topics raised and parked, so they are not lost. Newest last.
   committed as `feat(documentalist): …`. A change that only specifies a role is
   `docs`, not `feat`; and the release manager's notes should be checked against
   what the code can actually do (the "capability lie" Make My Dreams detected).
+- **Documentalist, what is left.** Derived blocks (`workline:derive`), style
+  (vale), links to other sites (lychee), docs citing a superseded ADR,
+  freshness, the pending list as one tracking issue and its release gate,
+  backpressure (`max-open-merge-requests`), the checklist comment without AI,
+  and the other kinds of task: propagate, condense, duplicates, split.
+- **Let a project raise a rule to block.** `enforce` only lowers a rule
+  (block → warn → off); the documentalist's hygiene findings are reported and
+  cannot be made to block.
+- **Settings merge one level deep.** A project that sets
+  `budgets: {doc-lines: 300}` drops the other budgets; the documentalist says
+  so (`setting-missing`), but a deep merge would be less surprising.
+- **docs/spec/role-contract.md is over its budget** (314 lines for 200), found
+  by the documentalist on this repository: split it into cards.
