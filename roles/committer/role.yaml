@@ -15,6 +15,7 @@ model:
   capability: writing
   tier: light
   effort: low
+  promote-after: 1   # a refused rewrite is asked again once, of a stronger model
 
 context:
   knowledge: []

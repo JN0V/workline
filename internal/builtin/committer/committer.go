@@ -38,6 +38,9 @@ func Check(message string, s Settings) ([]verdict.Finding, error) {
 		out = append(out, verdict.Finding{Rule: rule, Where: "subject", Message: msg})
 	}
 
+	if second, ok := secondLine(message); ok && second != "" {
+		add("blank-after-subject", "the second line must be empty: git reads the whole first paragraph as the subject")
+	}
 	format := regexp.MustCompile(`^(` + strings.Join(quoteAll(s.Types), "|") + `)(\([^()\s]+\))?!?: \S`)
 	if !format.MatchString(subject) {
 		add("format", fmt.Sprintf("the subject must read `type(scope): summary`, with a type among %s", strings.Join(s.Types, ", ")))
@@ -176,6 +179,17 @@ func Post(runDir string) int {
 	if err != nil {
 		return fail(err)
 	}
+	messages := 0
+	for _, in := range intents {
+		if in.Kind == "commit-message" {
+			messages++
+		}
+	}
+	if messages > 1 {
+		return write(runDir, verdict.Verdict{Status: verdict.Block, Summary: "one commit, one message",
+			Findings: []verdict.Finding{{Rule: "several-messages", Where: "proposal",
+				Message: fmt.Sprintf("%d messages were proposed for one commit; to split it, return a note saying how", messages)}}})
+	}
 	for _, in := range intents {
 		switch in.Kind {
 		case "commit-message":
@@ -184,10 +198,14 @@ func Post(runDir string) int {
 			if err != nil {
 				return fail(err)
 			}
+			kept := map[string]bool{}
+			for _, t := range Trailers(msg) {
+				kept[t] = true
+			}
 			for _, t := range Trailers(original) {
-				if !strings.Contains(msg, t) {
+				if !kept[t] {
 					findings = append(findings, verdict.Finding{Rule: "trailer-dropped", Where: "trailers",
-						Message: fmt.Sprintf("the rewrite dropped %q; trailers are kept as written", t)})
+						Message: fmt.Sprintf("the rewrite dropped %q, or did not keep it on its own line in the last paragraph; trailers are kept as written", t)})
 				}
 			}
 			if len(findings) > 0 {
@@ -343,4 +361,25 @@ func checkRange(runDir, repo, rng string) int {
 func inputValue(runDir, name string) string {
 	data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
 	return strings.TrimSpace(string(data))
+}
+
+// secondLine returns the line after the subject, ignoring comments; ok is
+// false for a one-line message.
+func secondLine(message string) (string, bool) {
+	var lines []string
+	for _, l := range strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n") {
+		if !strings.HasPrefix(l, "#") {
+			lines = append(lines, strings.TrimRight(l, " \t"))
+		}
+	}
+	for len(lines) > 0 && lines[0] == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) < 2 {
+		return "", false
+	}
+	return lines[1], true
 }

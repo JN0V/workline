@@ -29,6 +29,8 @@ func TestCheck(t *testing.T) {
 		{"body too long", "fix: x\n\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13", []string{"body-length"}},
 		{"git comments ignored", "fix: x\n# Please enter the commit message", nil},
 		{"merge commits skipped", "Merge branch 'main' into feature", nil},
+		{"body glued to the subject", "docs: add docs\nThe body starts here.", []string{"blank-after-subject"}},
+		{"blank line after the subject", "docs: add docs\n\nThe body starts here.", nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -63,5 +65,14 @@ func TestTrailers(t *testing.T) {
 	}
 	if got := Trailers("fix: x"); got != nil {
 		t.Fatalf("no trailers: %q", got)
+	}
+}
+
+func TestTrailersMustStayOnTheirOwnLines(t *testing.T) {
+	glued := "fix: x\n\nBody.\nCo-Authored-By: A <a@b.c> Refs: BUG-64"
+	for _, tr := range Trailers(glued) {
+		if tr == "Co-Authored-By: A <a@b.c>" {
+			t.Fatal("a trailer glued to another line must not count as kept")
+		}
 	}
 }
