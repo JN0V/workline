@@ -1,0 +1,5 @@
+case: release-manager/root-bump-needs-a-reason
+about: Choosing the whole's version by hand without saying why is refused.
+given: {repo: packages, config: {roles: {release-manager: {settings: {flow: direct, changelog-format: keep-a-changelog, version-files: ["library.json", "Lib-*/library.json", "Lib-*/src/**"], packages: {glob: "Lib-*", version-file: library.json, version-patterns: ["metadata.version = \"{version}\";"], counts: ["src/**", "include/**"]}}}}}}
+run: {role: release-manager, event: release, ai: none, input: {root-bump: patch}}
+expect: {status: block, applied: []}

@@ -27,6 +27,9 @@ type Settings struct {
 		Scheme       string `json:"scheme"`
 		CalverFormat string `json:"calver-format"`
 	} `json:"versioning"`
+	ChangelogFormat string           `json:"changelog-format"` // "" or keep-a-changelog
+	Packages        *PackageSettings `json:"packages"`
+	Root            RootSettings     `json:"root"`
 }
 
 // Commit is one parsed conventional commit.
@@ -104,10 +107,18 @@ var sections = []struct{ title, kind string }{
 	{"Breaking changes", "breaking"}, {"Features", "feat"}, {"Fixes", "fix"}, {"Performance", "perf"},
 }
 
-// Section renders the changelog section for a version.
-func Section(version string, date time.Time, commits []Commit) string {
+// heading is the first line of a changelog section, in the project's format.
+func heading(s Settings, tag, version string, date time.Time) string {
+	if s.ChangelogFormat == "keep-a-changelog" {
+		return fmt.Sprintf("## [%s] - %s", version, date.Format("2006-01-02"))
+	}
+	return fmt.Sprintf("## %s — %s", tag, date.Format("2006-01-02"))
+}
+
+// Section renders a changelog section under the given heading line.
+func Section(head string, commits []Commit) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "## %s — %s\n", version, date.Format("2006-01-02"))
+	b.WriteString(head + "\n")
 	for _, s := range sections {
 		var lines []string
 		for _, c := range commits {
@@ -150,25 +161,38 @@ func Pre(runDir, repo string) int {
 	if last != "" {
 		rangeArg = last + "..HEAD"
 	}
-	log, err := git(repo, "log", "--format=%s%x1f%b%x1e", rangeArg)
+	log, err := git(repo, "log", "--format=%x1e%s%x1f%b%x1f", "--name-only", rangeArg)
 	if err != nil {
 		return fail(err)
 	}
+	var detailed []commit
 	var commits []Commit
 	for _, rec := range strings.Split(log, "\x1e") {
-		if subject, body, ok := strings.Cut(strings.TrimSpace(rec), "\x1f"); ok {
-			commits = append(commits, Parse(subject, body))
+		parts := strings.SplitN(rec, "\x1f", 3)
+		if len(parts) < 3 {
+			continue
 		}
-	}
-	bump := Bump(commits)
-	if bump == "" {
-		return 10 // nothing a user would notice since the last version
+		c := commit{Commit: Parse(strings.TrimSpace(parts[0]), parts[1])}
+		for _, f := range strings.Split(strings.TrimSpace(parts[2]), "\n") {
+			if f != "" {
+				c.files = append(c.files, f)
+			}
+		}
+		detailed = append(detailed, c)
+		commits = append(commits, c.Commit)
 	}
 	dateText, err := git(repo, "log", "-1", "--format=%cI")
 	if err != nil {
 		return fail(err)
 	}
 	date, _ := time.Parse(time.RFC3339, dateText)
+	if s.Packages != nil {
+		return prePackages(runDir, repo, s, last, detailed, date)
+	}
+	bump := Bump(commits)
+	if bump == "" {
+		return 10 // nothing a user would notice since the last version
+	}
 	current := strings.TrimPrefix(last, s.TagPrefix)
 	var next string
 	switch s.Versioning.Scheme {
@@ -185,13 +209,17 @@ func Pre(runDir, repo string) int {
 		return fail(fmt.Errorf("unknown versioning scheme %q", s.Versioning.Scheme))
 	}
 	version := s.TagPrefix + next
-	section := Section(version, date, commits)
-	old, _ := os.ReadFile(filepath.Join(repo, s.Changelog))
+	return finish(runDir, repo, s, version, Section(heading(s, version, next, date), commits), nil)
+}
 
-	fallback := []intent.Intention{
-		{Kind: "patch", Value: map[string]any{"file": s.Changelog, "content": Insert(string(old), section)}},
-		{Kind: "release", Value: map[string]any{"version": version, "notes": section}},
-	}
+// finish adds the changelog and the release to the fallback proposals, and
+// asks the agent for the notes.
+func finish(runDir, repo string, s Settings, version, section string, fallback []intent.Intention) int {
+	old, _ := os.ReadFile(filepath.Join(repo, s.Changelog))
+	fallback = append(fallback,
+		intent.Intention{Kind: "patch", Value: map[string]any{"file": s.Changelog, "content": Insert(string(old), section)}},
+		intent.Intention{Kind: "release", Value: map[string]any{"version": version, "notes": section}},
+	)
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}
@@ -275,11 +303,11 @@ func fail(err error) int {
 	return 99
 }
 
-// samePatch reports whether a proposed patch is the one pre generated.
+// samePatch reports whether a proposed patch is one pre generated.
 func samePatch(p intent.Intention, fallback []intent.Intention) bool {
 	for _, f := range fallback {
-		if f.Kind == "patch" {
-			return fmt.Sprint(f.Value) == fmt.Sprint(p.Value)
+		if f.Kind == "patch" && fmt.Sprint(f.Value) == fmt.Sprint(p.Value) {
+			return true
 		}
 	}
 	return false

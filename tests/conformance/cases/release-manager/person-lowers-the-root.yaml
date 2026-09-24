@@ -1,0 +1,10 @@
+case: release-manager/person-lowers-the-root
+about: A person may make the whole a smaller release than its packages, and the reason goes into the notes.
+given: {repo: packages, config: {roles: {release-manager: {settings: {flow: direct, changelog-format: keep-a-changelog, version-files: ["library.json", "Lib-*/library.json", "Lib-*/src/**"], packages: {glob: "Lib-*", version-file: library.json, version-patterns: ["metadata.version = \"{version}\";"], counts: ["src/**", "include/**"]}}}}}}
+run: {role: release-manager, event: release, ai: none, input: {root-bump: patch, root-reason: "a corrective release for the clock bug"}}
+expect:
+  status: pass
+  files:
+    library.json: {contains: '"version": "2.6.2"'}
+    Lib-Core/library.json: {contains: '"version": "1.11.0"'}
+    CHANGELOG.md: {contains: "a corrective release for the clock bug"}

@@ -59,7 +59,7 @@ func TestNextCalver(t *testing.T) {
 
 func TestSectionAndInsert(t *testing.T) {
 	d := time.Date(2026, 1, 3, 0, 0, 0, 0, time.UTC)
-	s := Section("v1.3.0", d, []Commit{
+	s := Section(heading(Settings{}, "v1.3.0", "1.3.0", d), []Commit{
 		Parse("feat(export): let users export CSV", ""),
 		Parse("fix: stop crashing on empty input", ""),
 		Parse("chore: tidy", ""),
@@ -78,5 +78,32 @@ func TestSectionAndInsert(t *testing.T) {
 	}
 	if !strings.HasPrefix(Insert("", s), "# Changelog\n\n## v1.3.0") {
 		t.Error("an empty changelog gets a title")
+	}
+}
+
+func TestKeepAChangelogHeading(t *testing.T) {
+	d := time.Date(2026, 1, 3, 0, 0, 0, 0, time.UTC)
+	if got := heading(Settings{ChangelogFormat: "keep-a-changelog"}, "v2.7.0", "2.7.0", d); got != "## [2.7.0] - 2026-01-03" {
+		t.Fatal(got)
+	}
+}
+
+func TestPackageBumps(t *testing.T) {
+	commits := []commit{
+		{Commit: Parse("feat(core): x", ""), files: []string{"Lib-Core/src/core.h"}},
+		{Commit: Parse("fix(ota): y", ""), files: []string{"Lib-OTA/tests/t.cpp"}},
+		{Commit: Parse("fix: z", ""), files: []string{"README.md"}},
+	}
+	got := PackageBumps([]string{"Lib-Core", "Lib-OTA"}, commits, []string{"src/**", "include/**"})
+	if got["Lib-Core"] != "minor" || got["Lib-OTA"] != "" {
+		t.Fatalf("bumps = %v", got)
+	}
+}
+
+func TestWithVersion(t *testing.T) {
+	in := `{"name": "x", "version": "1.9.1", "dependencies": [{"name": "y", "version": ">=1.0.0"}]}`
+	want := `{"name": "x", "version": "1.9.2", "dependencies": [{"name": "y", "version": ">=1.0.0"}]}`
+	if got := withVersion(in, "1.9.2"); got != want {
+		t.Fatalf("got %s", got)
 	}
 }

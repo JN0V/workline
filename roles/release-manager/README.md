@@ -14,33 +14,35 @@ What runs, for humans. The AI never reads this file.
 - **Apply**: commits the changelog, then tags. `flow: direct` only; the
   merge-request flow needs a forge.
 
-## Proposed: several packages in one repository
+## Several packages in one repository
 
-Worked from DomoticsCore, a library of twelve components released together.
-Its rules, and how each would be met:
+Worked from DomoticsCore, a library of twelve components released together,
+and tried on a copy of it: the release it computes is the one its own rules
+give, and its `tools/check_versions.py --check-tag` passes on the result.
 
 | DomoticsCore rule | How |
 |---|---|
-| Each component has its own semver, in its `library.json` | `packages`: each folder with a version file is a package, bumped from the commits that touched it |
-| The version is repeated in the sources (`metadata.version = "X.Y.Z";`) and must match | `version-patterns`: every match is rewritten by the same patch |
-| Changes to tests and examples do not move a component | `counts`: only these paths make a package move |
-| The root version says what the release is *for* (2.6.1 was a patch while two components took a minor) | the root's bump is proposed as the highest component bump; **a person** may lower it, with a reason that goes into the notes. Never the AI: the version is not its decision |
-| The tag is the root version | `tag: root` |
-| Versions move once, when a series ships | already true: only the release manager bumps |
-| `tools/check_versions.py` must pass | a check in the release gate, calling the project's own script |
-| No release while an open MEDIUM is unarbitrated | a check in the release gate |
-| Keep a Changelog format, with written notes in the entry | `changelog-format: keep-a-changelog`, notes written into the entry, not only on the tag |
+| Each component has its own semver, in its `library.json` | `packages`: each folder matching `glob` with a `version-file` is a package, bumped from the commits that touched it |
+| The version is repeated in the sources (`metadata.version = "X.Y.Z";`) and must match | `version-patterns`: every match under the package is rewritten with the same release |
+| Changes to tests and examples do not move a component | `counts`: only these paths, relative to the package, make it move |
+| The root version says what the release is *for* | the root moves by the largest package move, unless **a person** passes `--input root-bump=patch --input root-reason="…"`; the reason goes into the changelog. Never the AI |
+| The tag is the root version | the root's `version-file` must match the last tag, or the release stops |
+| `tools/check_versions.py` must pass | a gate calling the project's own script |
+| Keep a Changelog format | `changelog-format: keep-a-changelog` |
 
 ```yaml
 roles:
   release-manager:
     settings:
+      changelog-format: keep-a-changelog
+      version-files: ["library.json", "DomoticsCore-*/library.json",
+                      "DomoticsCore-*/include/**", "DomoticsCore-*/src/**"]   # what the role may write
       packages:
         glob: "DomoticsCore-*"
-        version-file: library.json        # the "version" key
+        version-file: library.json
         version-patterns: ['metadata.version = "{version}";']
         counts: ["include/**", "src/**"]
-      root: {version-file: library.json, bump: proposed}   # a person confirms or lowers it
-      tag: root
-      changelog-format: keep-a-changelog
 ```
+
+Not yet: build metadata (`+<build>`), the merge-request flow, dependency ranges
+between packages (a package whose dependency takes a major).

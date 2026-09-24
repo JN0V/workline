@@ -1,0 +1,12 @@
+case: release-manager/packages-move-independently
+about: Each package moves by its own commits; tests alone do not move one; the whole takes the largest move.
+given: {repo: packages, config: {roles: {release-manager: {settings: {flow: direct, changelog-format: keep-a-changelog, version-files: ["library.json", "Lib-*/library.json", "Lib-*/src/**"], packages: {glob: "Lib-*", version-file: library.json, version-patterns: ["metadata.version = \"{version}\";"], counts: ["src/**", "include/**"]}}}}}}
+run: {role: release-manager, event: release, ai: none}
+expect:
+  status: pass
+  files:
+    Lib-Core/library.json: {contains: '"version": "1.11.0"'}
+    Lib-Core/src/core.h: {contains: 'metadata.version = "1.11.0";'}
+    Lib-OTA/library.json: {contains: '"version": "1.9.1"'}
+    library.json: {contains: '"version": "2.7.0"'}
+    CHANGELOG.md: {contains: "Lib-Core 1.10.0 → 1.11.0"}
