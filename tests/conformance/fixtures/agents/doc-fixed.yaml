@@ -1,16 +1,18 @@
 # The documentalist's answer to "docs/tech/auth.md is suspect" in the
 # `documented` fixture after tokens went to two hours: fix the sentence, and
 # record the commit the doc was checked against (the fixture's HEAD, which is
-# deterministic because the fixture's dates are fixed).
+# deterministic because the fixture's dates are fixed), and who checked it —
+# a line more in the frontmatter, which is not a longer doc.
 - patch: |
     --- a/docs/tech/auth.md
     +++ b/docs/tech/auth.md
-    @@ -3,3 +3,3 @@ type: reference
+    @@ -3,3 +3,4 @@ type: reference
      sources: [src/auth/token.go]
     -checked: 9bf650b
     +checked: 1a8e5a4
+    +verified: agent:documentalist
      ---
-    @@ -9,2 +9,2 @@ checked: 9bf650b
+    @@ -9,2 +10,2 @@ checked: 9bf650b
      
     -Access tokens last one hour.
     +Access tokens last two hours.

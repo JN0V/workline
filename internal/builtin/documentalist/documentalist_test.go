@@ -1,6 +1,10 @@
 package documentalist
 
-import "testing"
+import (
+	"sort"
+	"strings"
+	"testing"
+)
 
 func TestSection(t *testing.T) {
 	doc := "---\nchecked: abc\n---\n# Auth\n\nIntro.\n\n## Token refresh\n\nOne hour.\n\n### Detail\n\nMore.\n\n## Sign out\n\nBye.\n"
@@ -28,6 +32,64 @@ func TestSplitSource(t *testing.T) {
 		if r != c.repo || p != c.path || a != c.anchor {
 			t.Errorf("splitSource(%q) = %q %q %q", c.in, r, p, a)
 		}
+	}
+}
+
+func TestJudgeHunks(t *testing.T) {
+	doc := "---\nchecked: abc\n---\n# T\n\nOne hour.\n<!-- workline:derive cmd=\"x\" -->\n3 roles\n<!-- workline:end -->\n"
+	diff := "--- a/d.md\n+++ b/d.md\n@@ -5,2 +5,2 @@\n\n-One hour.\n+Two hours.\n"
+	files, err := parseDiff(diff)
+	if err != nil || len(files) != 1 || files[0].path != "d.md" {
+		t.Fatalf("parseDiff = %v, %v", files, err)
+	}
+	if why := misquoted(doc, files[0]); why != "" {
+		t.Fatalf("a blank context line whose space was trimmed is still a quote: %s", why)
+	}
+	if got := applyHunks(doc, files[0]); !strings.Contains(got, "\nTwo hours.\n") || lineCount(got) != lineCount(doc) {
+		t.Fatalf("applyHunks = %q", got)
+	}
+	shifted, _ := parseDiff(strings.Replace(diff, "@@ -5,2 +5,2 @@", "@@ -4,2 +4,2 @@", 1))
+	if misquoted(doc, shifted[0]) == "" {
+		t.Fatal("a hunk citing the wrong lines must be refused, even if git apply would find them")
+	}
+	derived, _ := parseDiff("--- a/d.md\n+++ b/d.md\n@@ -7,3 +7,3 @@\n <!-- workline:derive cmd=\"x\" -->\n-3 roles\n+4 roles\n <!-- workline:end -->\n")
+	if !touchesDerived(doc, derived[0]) || touchesDerived(doc, files[0]) {
+		t.Fatal("only a change between derive markers touches a derived block")
+	}
+	if !checkedMatches("---\nsources: [a]\nchecked: 1a8e5a4\n---\n", map[string]string{"": "1a8e5a4238f3"}) ||
+		checkedMatches("---\nsources: [a]\nchecked: 1a8\n---\n", map[string]string{"": "1a8e5a4238f3"}) {
+		t.Fatal("checked must name the commit by at least 7 characters")
+	}
+}
+
+func TestHygiene(t *testing.T) {
+	para := "A session lasts as long as its token, and a token lasts one hour unless it is refreshed, after which the user signs in again.\n"
+	tree := Tree{
+		Docs: map[string]string{
+			"docs/a.md": "# A\n\n## Part one\n\n" + para + "\nSee [b](b.md#part-one), [again](b.md#part-one-1), [c](c.md), `code [x](nowhere.md)`.\n\n```\n[y](nowhere.md)\n```\n",
+			"docs/b.md": "# B\n\n## Part one\n\n" + strings.Replace(para, "signs in again", "must sign in again", 1) + "\n## Part one\n\nAgain.\n",
+		},
+		Files: map[string]bool{"docs/a.md": true, "docs/b.md": true},
+	}
+	var got []string
+	for _, p := range Hygiene(tree, Budgets{DocLines: 100, SectionWords: 100, FolderLines: 100, RootAgentFileLines: 100,
+		CardWords: struct {
+			Min int `json:"min"`
+			Max int `json:"max"`
+		}{1, 100}}, Duplicates{MinWords: 10, Similarity: 0.7}) {
+		got = append(got, p.Rule+" "+p.Where)
+	}
+	sort.Strings(got)
+	want := "dead-link docs/a.md|duplicate docs/a.md"
+	if strings.Join(got, "|") != want {
+		t.Fatalf("Hygiene = %v, want %s (repeated headings get -1, links in code are not links)", got, want)
+	}
+}
+
+func TestNamed(t *testing.T) {
+	got := named("Call `auth.RefreshToken()` and `Revoke`, not `go test ./...` nor `id`.\n\n```\n`Hidden`\n```\n")
+	if strings.Join(got, ",") != "RefreshToken,Revoke" {
+		t.Fatalf("named = %v", got)
 	}
 }
 

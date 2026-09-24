@@ -1,7 +1,7 @@
 You get one decision about documentation. `task.md` says which kind:
 
 - **suspect** — a source of this doc changed. Say whether the doc is still true.
-  If it is, return a `patch` that only updates `checked`. If not, return a
+  If it is, return a `patch` that only updates `checked` and `verified`. If not, return a
   `patch` fixing what is now wrong, and nothing else.
 - **propagate** — a technical section changed. Update the product doc that
   depends on it, for its reader: what they can do, what changed for them.

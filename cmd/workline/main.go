@@ -187,7 +187,7 @@ func builtin(args []string) int {
 	case "documentalist pre":
 		return documentalist.Pre(runDir, repo)
 	case "documentalist post":
-		return documentalist.Post(runDir)
+		return documentalist.Post(runDir, repo)
 	case "release-manager pre":
 		return releasemanager.Pre(runDir, repo)
 	case "release-manager post":

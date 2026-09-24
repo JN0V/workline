@@ -8,8 +8,9 @@ mission: The docs stay true to the code, short enough to be read, and the produc
 events: [merge-request, schedule, handoff]
 
 requires: [git]
-# Coming with the hygiene and duplicate checks: vale, lychee, jscpd — single
-# binaries, called rather than rewritten, listed in `uses` once actually used.
+# Budgets, duplicates and links inside the repository are checked by the engine
+# itself (ADR-0003). Coming: vale (style) and lychee (links to other sites),
+# listed in `uses` once actually called.
 
 # Rewriting docs for a reader is real writing; condensing well needs judgement.
 model:
