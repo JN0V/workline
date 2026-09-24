@@ -34,12 +34,15 @@ commits are already made: the verdict lists them, to fix with `git rebase -i`.
 - The rewrite must pass the same checks.
 - It must keep every trailer of the original (`Co-Authored-By:`, `Refs:`…), on
   its own line in the last paragraph (`trailer-dropped`).
+- A rewrite keeps the author's type, scope and breaking mark, when the header
+  was not what was refused; adding a scope the author left out is allowed
+  (`header-changed`).
 - One commit, one message: several proposals are refused (`several-messages`).
 - A `note` ends the run as `human`: a person splits the commit.
 
 A refused rewrite is asked once more, of a stronger model (`promote-after: 1`).
-A rewrite that passes replaces the message, and the commit goes on: read it in
-`git log`, since it is no longer the one you wrote.
+A rewrite that passes replaces the message, and the commit goes on; the hook
+prints the message committed, since it is no longer the one you wrote.
 
 ## Without AI
 
@@ -49,3 +52,18 @@ kept in the file git named, so nothing typed is lost.
 Not built yet: running the checks listed in `uses` (forbidden terms, identity,
 secrets); the global hook hands over to them instead, when they were installed
 before workline.
+
+## Tried for real
+
+On 2026-09-24, on four messages of this repository the hook had refused (three
+subjects over 72 characters, one naming `ADR-0001`), replayed with each
+commit's own diff and Claude (haiku):
+
+- before the instruction asked to keep the author's words, the rewrites
+  traded precise words for vague ones: "run the project's line in the
+  templates" became "refactor templates to use line routing", "specify"
+  became "test";
+- after, twice in a row, every rewrite kept the type, the scope and the
+  author's words, and only cut ("run the project's line in templates and on
+  workline's pull requests"). One took a second attempt: the first was 73
+  characters.
