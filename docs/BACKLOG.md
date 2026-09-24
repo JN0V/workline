@@ -2,13 +2,20 @@
 
 ## Next, in order
 
-1. **Release manager, merge-request flow** — a release MR kept up to date, the
+1. **Routing drives the forge too** — `workline route` gains `--forge`,
+   `--target` and `--no-apply`, and the CI templates call
+   `workline route merge-request` instead of each role, so one routing governs
+   the machine and the forge. Conformance cases first.
+2. **Release manager, merge-request flow** — a release MR kept up to date, the
    tag on merge; the natural flow in a team.
-2. **Publishing** — tagged, signed binaries and a public repository, so CI can
-   install workline (`go install` fails on a private module).
-3. **More agents** — Codex, Antigravity, OpenCode adapters; generate the model
+3. **Publishing** — tagged, signed binaries, so CI installs a pinned version;
+   the repository is public, so `go install` works, but the templates still
+   follow `main`.
+4. **More agents** — Codex, Antigravity, OpenCode adapters, and a generic one
+   running any command given as the agent (prompt in, proposals out), so an
+   existing factory can plug its own; generate the model
    grid from models.dev and Epoch (docs/spec/model-grid.md).
-4. **Next roles** — reviewer (independent vendor), architect, tester.
+5. **Next roles** — reviewer (independent vendor), architect, tester.
 
 ## Parked
 
@@ -47,3 +54,9 @@ Topics raised and parked, so they are not lost. Newest last.
   so (`setting-missing`), but a deep merge would be less surprising.
 - **docs/spec/role-contract.md is over its budget** (314 lines for 200), found
   by the documentalist on this repository: split it into cards.
+- **Local events beyond `commit-msg`.** The global hook forwards every git
+  hook but runs roles only on `commit-msg`; `pre-push` could run the
+  documentalist before anything leaves the machine.
+- **Verdicts as SARIF.** The role contract says findings map to SARIF; nothing
+  writes it yet. It would put workline's findings in GitHub code scanning and
+  GitLab Code Quality, next to the other tools of an existing pipeline.

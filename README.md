@@ -34,6 +34,53 @@ By default no AI is used: a refused message is explained, and you rewrite it.
 To let Claude Code rewrite it, add `ai: claude` to `~/.config/workline/config.yaml`
 (your default) or to a project's `.workline/config.yaml` (which wins).
 
+## Where it runs
+
+On your machine, on a forge, or both: each place fires its own events, and one
+routing (`routing.default.yaml`, changed in `.workline/config.yaml`) says which
+roles each event runs. A role behaves the same wherever it runs; only the
+trigger, the agent at hand and the way proposals are applied differ.
+
+| Event | Fired by | Roles by default |
+|---|---|---|
+| `commit-msg` | your machine: the global git hook | committer |
+| `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
+| `schedule` | the forge's scheduled pipelines, or you | documentalist |
+| `release` | wherever you run `workline route release` | release-manager |
+
+So the committer checks your messages as you write them, and again on the merge
+request for those without the hook; the documentalist runs on the forge. On a
+forge, one job judges without a write token and another applies without an AI
+key (`--no-apply`, then `workline apply`).
+
+Not wired yet: the CI templates call each role themselves rather than the
+routing, so a project's `routing:` does not reach its CI; and locally, only
+`commit-msg` runs roles.
+
+## Take only a part
+
+workline is one binary with its roles inside, and needs nothing but git. Any
+existing pipeline can call one role, and leave the rest:
+
+```sh
+workline run-role committer --event merge-request --ai none \
+  --input range=origin/main..HEAD --json    # exit code: 0 pass, 1 block, …
+workline run-role documentalist --event schedule --ai none --json
+workline gate release --json   # a gate declared in .workline/config.yaml: your scanners' SARIF, with thresholds
+```
+
+- The exit code carries the verdict; `--json` gives the findings to whatever
+  reads them.
+- The global hook hands over to the hooks that were there before; nothing
+  stops running.
+- `--no-apply` and `workline apply` fit a pipeline that keeps tokens apart.
+- A role is a folder (`role.yaml`, facets, `pre` and `post` in any language):
+  a team can replace one facet, fork one role, or write its own
+  ([role contract](docs/spec/role-contract.md)).
+
+Not there yet: verdicts as SARIF, for code-scanning and code-quality views;
+an agent other than Claude Code, or any command given as the agent.
+
 ## Develop
 
 ```sh
