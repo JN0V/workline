@@ -22,15 +22,21 @@ type Step struct {
 
 // Result is the outcome of an event on the line.
 type Result struct {
-	Status   string            `json:"status"`
-	Summary  string            `json:"summary,omitempty"`
-	Steps    []Step            `json:"steps"`
-	Findings []verdict.Finding `json:"findings,omitempty"`
+	Status     string            `json:"status"`
+	Summary    string            `json:"summary,omitempty"`
+	Steps      []Step            `json:"steps"`
+	Findings   []verdict.Finding `json:"findings,omitempty"` // every step's
+	AgentCalls int               `json:"agent-calls"`
+	// Pending lists the runs judged with NoApply, in the line's order: what
+	// `workline apply` is given in the job that holds the write token.
+	Pending []string `json:"pending,omitempty"`
 }
 
 // Run runs event's steps. base carries what every role run shares (repository,
-// roles, agent, inputs); Role and Event are set per step. The first step that
-// does not pass stops the line: it fails closed.
+// roles, agent, inputs, forge, target, scope, NoApply); Role and Event are set
+// per step. The first step that does not pass stops the line: it fails closed.
+// With NoApply, each step judges the tree as it is — no step sees what an
+// earlier one proposed — and handoffs wait, since nothing is applied yet.
 func Run(event string, base engine.Options) *Result {
 	res := &Result{Status: verdict.Pass, Steps: []Step{}}
 	cfg, err := routing.Load(base.Repo)
@@ -45,8 +51,9 @@ func Run(event string, base engine.Options) *Result {
 		if g, isGate := strings.CutPrefix(name, "gate:"); isGate {
 			v := gate.Run(base.Repo, g)
 			res.Steps = append(res.Steps, Step{Name: name, Status: v.Status, Gate: v})
+			res.Findings = append(res.Findings, v.Findings...)
 			if v.Status != verdict.Pass {
-				return stopped(res, name, v.Status, v.Findings)
+				return stopped(res, name, v.Status)
 			}
 			continue
 		}
@@ -57,6 +64,9 @@ func Run(event string, base engine.Options) *Result {
 		}
 	}
 	res.Summary = fmt.Sprintf("%s: %d steps passed", event, len(res.Steps))
+	if len(res.Pending) > 0 {
+		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
+	}
 	return res
 }
 
@@ -68,8 +78,13 @@ func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) bool
 		label += " (handoff)"
 	}
 	res.Steps = append(res.Steps, Step{Name: label, Status: r.Status, Result: r})
+	res.Findings = append(res.Findings, r.Findings...)
+	res.AgentCalls += r.AgentCalls
+	if r.ToApply {
+		res.Pending = append(res.Pending, r.RunDir)
+	}
 	if r.Status != verdict.Pass {
-		stopped(res, label, r.Status, r.Findings)
+		stopped(res, label, r.Status)
 		return false
 	}
 	for _, h := range r.Handoffs {
@@ -91,10 +106,9 @@ func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) bool
 	return true
 }
 
-func stopped(res *Result, step, status string, f []verdict.Finding) *Result {
+func stopped(res *Result, step, status string) *Result {
 	res.Status = status
 	res.Summary = fmt.Sprintf("stopped at %s (%s)", step, status)
-	res.Findings = append(res.Findings, f...)
 	return res
 }
 

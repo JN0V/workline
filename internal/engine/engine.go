@@ -60,6 +60,7 @@ type Result struct {
 	Refused    []string          `json:"refused"`
 	Handoffs   []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
 	RunDir     string            `json:"run-dir"`
+	ToApply    bool              `json:"to-apply,omitempty"` // judged with NoApply: `workline apply` still has work
 }
 
 // Exit codes of pre and post (docs/spec/role-contract.md, "Exit codes").
@@ -224,6 +225,12 @@ func run(o Options, res *Result) error {
 	}
 	if o.NoApply {
 		res.Summary = fmt.Sprintf("judged, not applied (%d proposals); apply with: workline apply %s", len(intents), runDir)
+		res.ToApply = true
+		for _, in := range intents {
+			if in.Kind == "handoff" {
+				res.Findings = append(res.Findings, deferred(r.Name, in.Value))
+			}
+		}
 		return nil
 	}
 	return applyAll(r, settings, st, runDir, intents, res)
@@ -323,13 +330,30 @@ func Resume(runDir string) *Result {
 			return err
 		}
 		res.Status = verdict.Pass
-		return applyAll(r, r.MergedSettings(cfg), st, runDir, intents, res)
+		if err := applyAll(r, r.MergedSettings(cfg), st, runDir, intents, res); err != nil {
+			return err
+		}
+		for _, h := range res.Handoffs {
+			res.Findings = append(res.Findings, deferred(r.Name, h))
+		}
+		return nil
 	}()
 	if err != nil {
 		res.Status = verdict.Block
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
 	}
 	return res
+}
+
+// deferred says that a handoff was recorded and its role not run: applying
+// runs no role, since the job that applies holds no AI key (--no-apply). It is
+// not a failure, but it must not pass silently.
+func deferred(from string, h any) verdict.Finding {
+	m, _ := h.(map[string]any)
+	to, _ := m["role"].(string)
+	reason, _ := m["reason"].(string)
+	return verdict.Finding{Rule: "handoff-deferred", Where: from,
+		Message: fmt.Sprintf("%s asked for %s (%s), which applying does not run; run it where an agent may judge: workline run-role %s --event handoff --input handoff-from=%s", from, to, reason, to, from)}
 }
 
 // outOfBounds lists the files patches would touch outside the role's duties

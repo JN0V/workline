@@ -354,8 +354,13 @@ func routeCmd(args []string) int {
 	ai := fs.String("ai", "", "agent for every role (default: the project's, else yours, else none)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	forgeSpec := fs.String("forge", "", "forge: github, gitlab, none, fake:<file> (default: the project's `forge` setting)")
+	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
+	var scope multi
+	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
+	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
 	inputs := pairs{}
-	fs.Var(inputs, "input", "input name=value (repeatable)")
+	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	_ = fs.Parse(args[1:])
 	abs, _ := filepath.Abs(*repo)
 	rolesDir, err := resolveRoles(*roles)
@@ -363,7 +368,13 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs})
+	t, err := parseTarget(*target)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
+		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
@@ -373,7 +384,14 @@ func routeCmd(args []string) int {
 			fmt.Fprintf(os.Stderr, "  %-28s %s\n", s.Name, s.Status)
 		}
 		for _, f := range res.Findings {
-			fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
+			where := ""
+			if f.Where != "" {
+				where = " " + f.Where
+			}
+			fmt.Fprintf(os.Stderr, "  %s%s: %s\n", f.Rule, where, f.Message)
+		}
+		if len(res.Pending) > 0 {
+			fmt.Fprintf(os.Stderr, "  to apply: workline apply %s\n", strings.Join(res.Pending, " "))
 		}
 	}
 	return exitFor(res.Status)
@@ -425,15 +443,48 @@ func exitFor(status string) int {
 	return 1
 }
 
+// applyCmd applies judged runs, in the order given — a line's pending runs
+// are listed in the line's order — and stops at the first that does not pass.
 func applyCmd(args []string) int {
-	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir> [--json]")
-		return 64
+	var dirs []string
+	for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		dirs, args = append(dirs, args[0]), args[1:]
 	}
 	fs := flag.NewFlagSet("apply", flag.ExitOnError)
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	_ = fs.Parse(args[1:])
-	res := engine.Resume(args[0])
+	lineFile := fs.String("line", "", "apply the runs `workline route --no-apply --json` listed as pending in this file")
+	_ = fs.Parse(args)
+	if *lineFile != "" {
+		data, err := os.ReadFile(*lineFile)
+		var l line.Result
+		if err == nil {
+			err = json.Unmarshal(data, &l)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		dirs = append(dirs, l.Pending...)
+		if len(dirs) == 0 {
+			fmt.Fprintln(os.Stderr, "pass — nothing to apply: the line proposed nothing")
+			return 0
+		}
+	}
+	if len(dirs) == 0 {
+		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir>... | --line <route result> [--json]")
+		return 64
+	}
+	res := engine.Resume(dirs[0])
+	for _, d := range dirs[1:] {
+		if res.Status != verdict.Pass {
+			break
+		}
+		next := engine.Resume(d)
+		res.Status, res.Summary, res.RunDir = next.Status, next.Summary, next.RunDir
+		res.Applied = append(res.Applied, next.Applied...)
+		res.Findings = append(res.Findings, next.Findings...)
+		res.Handoffs = append(res.Handoffs, next.Handoffs...)
+	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
