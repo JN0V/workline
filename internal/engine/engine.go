@@ -387,7 +387,7 @@ func patchFiles(repo string, v any) []string {
 		return nil
 	}
 	diff, _ := v.(string)
-	out, err := git(repo, strings.NewReader(diff), "apply", "--recount", "--numstat", "-")
+	out, err := git(repo, strings.NewReader(intent.NormalizeDiff(diff)), "apply", "--recount", "--numstat", "-")
 	if err != nil {
 		return nil
 	}
@@ -646,6 +646,7 @@ func (a *applier) patch(v any) error {
 	if !ok {
 		return errors.New("expected a unified diff or {file, content}")
 	}
+	diff = intent.NormalizeDiff(diff)
 	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--numstat", "-")
 	if err != nil {
 		return fmt.Errorf("unreadable diff: %w", err)

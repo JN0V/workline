@@ -145,3 +145,35 @@ var applyOrder = map[string]int{
 func SortForApply(in []Intention) {
 	sort.SliceStable(in, func(i, j int) bool { return applyOrder[in[i].Kind] < applyOrder[in[j].Kind] })
 }
+
+// NormalizeDiff adds the `diff --git` line each file of a diff needs, when an
+// agent left it out. git apply --recount relies on it to tell where a file
+// ends: without it, a new file's `--- /dev/null` is read as a line removed
+// from the file before. A file created or deleted also gets its mode line.
+func NormalizeDiff(diff string) string {
+	lines := strings.Split(diff, "\n")
+	var out []string
+	for i, l := range lines {
+		if strings.HasPrefix(l, "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ") &&
+			(i == 0 || !strings.HasPrefix(lines[i-1], "diff --git ") && !strings.HasPrefix(lines[i-1], "new file mode") &&
+				!strings.HasPrefix(lines[i-1], "deleted file mode") && !strings.HasPrefix(lines[i-1], "index ")) {
+			from := name(strings.TrimPrefix(l, "--- "), "a/")
+			to := name(strings.TrimPrefix(lines[i+1], "+++ "), "b/")
+			switch {
+			case from == "/dev/null":
+				out = append(out, "diff --git a/"+to+" b/"+to, "new file mode 100644")
+			case to == "/dev/null":
+				out = append(out, "diff --git a/"+from+" b/"+from, "deleted file mode 100644")
+			default:
+				out = append(out, "diff --git a/"+from+" b/"+to)
+			}
+		}
+		out = append(out, l)
+	}
+	return strings.Join(out, "\n")
+}
+
+func name(header, prefix string) string {
+	header, _, _ = strings.Cut(strings.TrimSpace(header), "\t")
+	return strings.TrimPrefix(header, prefix)
+}

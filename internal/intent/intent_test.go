@@ -28,3 +28,15 @@ func TestMergeKeepsFallbackPatchesOfOtherFiles(t *testing.T) {
 		t.Fatal("the patch kept for docs/a.md must be the agent's")
 	}
 }
+
+func TestNormalizeDiff(t *testing.T) {
+	in := "--- a/docs/a.md\n+++ b/docs/a.md\n@@ -1 +1 @@\n-x\n+y\n--- /dev/null\n+++ b/docs/new.md\n@@ -0,0 +1 @@\n+z\n"
+	want := "diff --git a/docs/a.md b/docs/a.md\n--- a/docs/a.md\n+++ b/docs/a.md\n@@ -1 +1 @@\n-x\n+y\n" +
+		"diff --git a/docs/new.md b/docs/new.md\nnew file mode 100644\n--- /dev/null\n+++ b/docs/new.md\n@@ -0,0 +1 @@\n+z\n"
+	if got := NormalizeDiff(in); got != want {
+		t.Fatalf("NormalizeDiff =\n%s\nwant\n%s", got, want)
+	}
+	if got := NormalizeDiff(want); got != want {
+		t.Fatal("a diff that has its headers is left as it is")
+	}
+}
