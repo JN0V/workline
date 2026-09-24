@@ -59,5 +59,9 @@ settings:
   duplicates:
     min-words: 40                    # shorter repeats are not worth merging
     similarity: 0.85
+  # Facts regenerated from the code, by name: a doc writes
+  # `<!-- workline:derive name -->…<!-- workline:end -->`, the command lives here,
+  # where only people change it. e.g. {conformance-cases: "ls tests/*.yaml | wc -l"}
+  derive: {}
   max-open-merge-requests: 5         # backpressure: stop proposing when this many wait; not read yet
   ai-max-calls: 10                   # per run

@@ -124,3 +124,18 @@ func TestHeaderComment(t *testing.T) {
 		t.Fatal("only a `<!-- workline` comment is a header")
 	}
 }
+
+func TestDeriveSkipsExamplesInCode(t *testing.T) {
+	doc := "Real: <!-- workline:derive n -->0<!-- workline:end -->.\n\n" +
+		"An example: `<!-- workline:derive name -->` and `<!-- workline:end -->`.\n\n" +
+		"```\n<!-- workline:derive other -->x<!-- workline:end -->\n```\n\n" +
+		"Block:\n<!-- workline:derive n -->\nold\n<!-- workline:end -->\n"
+	findings, fixed := Derive(t.TempDir(), map[string]string{"d.md": doc}, map[string]string{"n": "echo 3"})
+	if len(findings) != 1 || findings[0].Rule != "derived-stale" {
+		t.Fatalf("findings = %v: examples in code are not blocks", findings)
+	}
+	want := strings.Replace(strings.Replace(doc, "-->0<!--", "-->3<!--", 1), "-->\nold\n<!--", "-->\n3\n<!--", 1)
+	if fixed["d.md"] != want {
+		t.Fatalf("fixed =\n%s\nwant\n%s", fixed["d.md"], want)
+	}
+}

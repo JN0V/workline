@@ -197,7 +197,7 @@ func checkedMatches(content string, want map[string]string) bool {
 // derived blocks alone, not growing the doc, recording the commits the doc was
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, intents []intent.Intention) ([]verdict.Finding, map[string]bool, error) {
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, intents []intent.Intention, fallback []intent.Intention) ([]verdict.Finding, map[string]bool, error) {
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
 		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
@@ -206,8 +206,8 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	var tree Tree
 	after := map[string]string{}
 	for _, in := range intents {
-		if in.Kind != "patch" {
-			continue
+		if in.Kind != "patch" || isFallback(in, fallback) {
+			continue // the role's own regenerated blocks are not the agent's to judge
 		}
 		if tree.Docs == nil {
 			var err error
@@ -314,4 +314,14 @@ func wanted(want map[string]string) string {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ", ")
+}
+
+// isFallback says whether a patch is one pre proposed itself, unchanged.
+func isFallback(in intent.Intention, fallback []intent.Intention) bool {
+	for _, f := range fallback {
+		if f.Kind == in.Kind && fmt.Sprint(f.Value) == fmt.Sprint(in.Value) {
+			return true
+		}
+	}
+	return false
 }
