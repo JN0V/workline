@@ -1,3 +1,7 @@
+---
+sources: [internal/agent, internal/engine/engine.go]
+checked: d30d22a
+---
 # Model grid — v1 (draft)
 
 A role never names a model. It states what kind of thinking it needs, and the

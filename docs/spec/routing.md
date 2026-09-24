@@ -1,3 +1,7 @@
+---
+sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
+checked: d30d22a
+---
 # Routing — v1 (draft)
 
 Who works next is decided by a file, not by a model. Routing reads an event and

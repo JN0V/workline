@@ -1,3 +1,7 @@
+---
+sources: [internal/builtin/releasemanager, roles/release-manager/role.yaml]
+checked: d30d22a
+---
 # Release manager
 
 What runs, for humans. The AI never reads this file.

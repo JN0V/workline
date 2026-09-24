@@ -1,0 +1,6 @@
+# workline on its own repository.
+roles:
+  documentalist:
+    settings:
+      # The role READMEs describe what the code does: they are docs too.
+      docs: ["docs/**", "*.md", "roles/*/README.md"]

@@ -1,3 +1,7 @@
+---
+sources: [internal/gate]
+checked: d30d22a
+---
 # Gates — v1 (draft)
 
 A gate is a checkpoint the work must pass before going further: before merging,

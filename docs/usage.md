@@ -1,3 +1,7 @@
+---
+sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
+checked: d30d22a
+---
 # Using workline
 
 The commands, the files and the variables, as the engine reads them today.

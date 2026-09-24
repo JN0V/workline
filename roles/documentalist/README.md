@@ -1,3 +1,7 @@
+---
+sources: [internal/builtin/documentalist, roles/documentalist/role.yaml]
+checked: d30d22a
+---
 # Documentalist
 
 What runs, for humans. The AI never reads this file.
@@ -23,6 +27,8 @@ What runs, for humans. The AI never reads this file.
 
 Not built yet: derived blocks between `workline:derive` markers, style (vale),
 links to other sites (lychee), docs citing a superseded ADR, freshness.
+
+### Levels
 
 | Finding | Level |
 |---|---|

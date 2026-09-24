@@ -1,3 +1,7 @@
+---
+sources: [tests/conformance/runner_test.go]
+checked: d30d22a
+---
 # Conformance — v1 (draft)
 
 The specs say what must happen; these tests prove it does. They are written

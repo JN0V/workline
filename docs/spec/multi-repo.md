@@ -1,3 +1,7 @@
+---
+sources: [internal/builtin/documentalist/documentalist.go]
+checked: d30d22a
+---
 # Several repositories — v1 (draft)
 
 A product often spans several repositories: the code in one, the user guide in

@@ -1,3 +1,7 @@
+---
+sources: [internal/builtin/committer, roles/committer/role.yaml]
+checked: d30d22a
+---
 # Committer
 
 What runs, for humans. The AI never reads this file.

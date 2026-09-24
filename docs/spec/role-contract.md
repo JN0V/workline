@@ -1,3 +1,7 @@
+---
+sources: [internal/engine, internal/intent, internal/role, internal/agent]
+checked: d30d22a
+---
 # Role contract — v1 (draft)
 
 A role is one job on the line: it takes a precise input, produces a precise output,
