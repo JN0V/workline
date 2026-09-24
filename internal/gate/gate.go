@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -43,6 +44,9 @@ func Load(repo, name string) (*Gate, error) {
 	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
 	if err != nil {
 		return nil, fmt.Errorf("no gate %q: .workline/config.yaml: %w", name, err)
+	}
+	if err := role.CheckConfig(data); err != nil {
+		return nil, err
 	}
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf(".workline/config.yaml: %w", err)

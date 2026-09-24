@@ -105,8 +105,11 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := CheckConfig(data); err != nil {
+		return nil, err
+	}
 	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf(".workline/config.yaml: %w", err)
+		return nil, &ConfigError{err.Error()}
 	}
 	return &c, nil
 }

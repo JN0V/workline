@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/JN0V/workline"
+	"github.com/JN0V/workline/internal/role"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -35,6 +36,9 @@ func Load(repo string) (*Config, error) {
 	}
 	data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml"))
 	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	if err := role.CheckConfig(data); err != nil {
 		return nil, err
 	}
 	if err := yaml.Unmarshal(data, &project); err != nil {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/gate"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -41,7 +42,11 @@ func Run(event string, base engine.Options) *Result {
 	res := &Result{Status: verdict.Pass, Steps: []Step{}}
 	cfg, err := routing.Load(base.Repo)
 	if err != nil {
-		return failed(res, "routing", err.Error())
+		f := failed(res, "routing", err.Error())
+		if role.IsConfigError(err) {
+			f.Findings[len(f.Findings)-1].Rule = "config-invalid"
+		}
+		return f
 	}
 	steps, ok := cfg.Events[event]
 	if !ok {

@@ -78,7 +78,11 @@ func Run(o Options) *Result {
 	res := &Result{Applied: []string{}, Refused: []string{}}
 	if err := run(o, res); err != nil {
 		res.Status = verdict.Block
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
+		rule := "engine-error"
+		if role.IsConfigError(err) {
+			rule = "config-invalid"
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Message: err.Error()})
 	}
 	return res
 }
