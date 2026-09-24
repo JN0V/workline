@@ -44,20 +44,25 @@ with the reason, or to `to-refine` if the need itself was wrong.
 An item that needs exploration stays in `to-refine`. Research, spikes and
 prototypes happen there, and their outcome is a refined item, not merged code.
 
-## `routing.yml`
+## The line
+
+workline ships a default line (`routing.default.yaml`); a project changes it in
+the `routing:` section of `.workline/config.yaml`. An event it lists replaces
+the default one; a `handoffs` list it gives replaces the default list — an
+empty list forbids every handoff. `workline route <event>` runs an event's
+steps; the git hooks run `commit-msg` through the line too.
 
 ```yaml
-routing: 1
+routing:
+  events:                                 # event -> what runs, in order
+    commit-msg:    [committer]
+    merge-request: [committer, documentalist, gate:merge]
+    merge:         [release-manager]
+    schedule:      [documentalist]
+    release:       [gate:release, release-manager]
 
-on:                                   # event -> what runs, in order
-  commit-msg:    [committer]
-  merge-request: [committer, documentalist, gate:merge]
-  merge:         [release-manager]
-  schedule:      [documentalist]
-  release:       [gate:release, release-manager]
-
-handoffs:                             # the only handoffs a role may ask for
-  - {from: release-manager, to: documentalist}
+  handoffs:                             # the only handoffs a role may ask for
+    - {from: release-manager, to: documentalist}
 ```
 
 - Steps run in the listed order. The first step that ends in `block`,
@@ -73,7 +78,9 @@ handoffs:                             # the only handoffs a role may ask for
 
 On a forge, the state of a work item is a label (`workline:ready`,
 `workline:in-progress`…), readable by humans and by any CI. Without a forge, it
-is a field in the item's file. Either way, a state changes only through the
+is the `state:` line of the item's file in `.workline/work/<id>.md`, whose
+`## Need`, `## Verification`, `## Validation` and `## Scope` sections
+`workline item ready <id>` checks before moving it. Either way, a state changes only through the
 engine, one transition at a time, and each transition is logged.
 
 ## Not in this version

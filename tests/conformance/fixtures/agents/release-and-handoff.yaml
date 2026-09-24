@@ -1,0 +1,2 @@
+- release: {version: v1.3.0, notes: "You can now export your data as CSV."}
+- handoff: {role: documentalist, reason: "The export feature changes how the tool is used."}

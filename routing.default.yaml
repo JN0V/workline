@@ -1,0 +1,11 @@
+# The line as shipped. A project changes it in the `routing:` section of
+# .workline/config.yaml: each event it lists replaces this one, and a
+# `handoffs` list it gives replaces this list (an empty list forbids them all).
+events:
+  commit-msg:    [committer]
+  merge-request: [committer, documentalist]
+  schedule:      [documentalist]
+  release:       [release-manager]
+handoffs:
+  - {from: release-manager, to: documentalist}
+max-handoffs: 3

@@ -1,0 +1,9 @@
+case: routing/sequence-stops-at-first-block
+about: A step that does not pass stops the line; the steps after it do not run.
+given:
+  repo: basic
+  config:
+    gates: {merge: {checks: [{id: tests, run: "false", output: exit}]}}
+    routing: {events: {merge-request: ["gate:merge", committer]}}
+run: {route: merge-request}
+expect: {status: block, steps: ["gate:merge"]}

@@ -1,0 +1,7 @@
+case: routing/local-item-ready
+about: With need, verification, validation and scope written, the item becomes ready.
+given:
+  repo: basic
+  setup: ["mkdir -p .workline/work && printf '## Need\\nExport as CSV\\n\\n## Verification\\nA test exports three rows\\n\\n## Validation\\nThe product owner opens the file in a spreadsheet\\n\\n## Scope\\nsrc/export\\n' > .workline/work/7.md"]
+run: {route: ready, item: 7}
+expect: {status: pass, files: {.workline/work/7.md: {contains: "state: ready"}}}

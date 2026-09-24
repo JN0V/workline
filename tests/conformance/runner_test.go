@@ -78,6 +78,7 @@ type caseFile struct {
 		Refused    []string                  `yaml:"refused"`
 		Files      map[string]map[string]any `yaml:"files"`
 		Forge      map[string]any            `yaml:"forge"`
+		Steps      []string                  `yaml:"steps"`
 	} `yaml:"expect"`
 }
 
@@ -91,6 +92,9 @@ type result struct {
 	AgentCalls int      `json:"agent-calls"`
 	Applied    []string `json:"applied"`
 	Refused    []string `json:"refused"`
+	Steps      []struct {
+		Name string `json:"name"`
+	} `json:"steps"`
 }
 
 func TestConformance(t *testing.T) {
@@ -125,8 +129,8 @@ func TestConformance(t *testing.T) {
 
 // runCase returns what differs from the expectation; empty means it passes.
 func runCase(t *testing.T, c *caseFile) []string {
-	if len(c.Given.Forge) > 0 || c.Run.Then != "" || c.Run.Route != "" || len(c.Run.Scope) > 0 {
-		return []string{"the runner does not support forges, resume, routing or scopes yet"}
+	if len(c.Given.Forge) > 0 || c.Run.Then != "" || len(c.Run.Scope) > 0 {
+		return []string{"the runner does not support forges, resume or scopes yet"}
 	}
 	work := t.TempDir()
 	env := hermeticEnv()
@@ -155,8 +159,13 @@ func runCase(t *testing.T, c *caseFile) []string {
 
 	roles, _ := filepath.Abs("../../roles")
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
-	if c.Run.Gate != "" {
+	switch {
+	case c.Run.Gate != "":
 		args = []string{"gate", c.Run.Gate, "--repo", repo, "--json"}
+	case c.Run.Route == "ready" && c.Run.Item != 0:
+		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}
+	case c.Run.Route != "":
+		args = []string{"route", c.Run.Route, "--repo", repo, "--roles", roles, "--json"}
 	}
 	ai := c.Run.AI
 	if strings.HasPrefix(ai, "fake:") {
@@ -206,6 +215,15 @@ func compare(c *caseFile, r *result, repo string) []string {
 	}
 	if e.Applied != nil && fmt.Sprint(e.Applied) != fmt.Sprint(r.Applied) {
 		p = append(p, fmt.Sprintf("applied = %v, want %v", r.Applied, e.Applied))
+	}
+	if e.Steps != nil {
+		var got []string
+		for _, s := range r.Steps {
+			got = append(got, s.Name)
+		}
+		if fmt.Sprint(got) != fmt.Sprint(e.Steps) {
+			p = append(p, fmt.Sprintf("steps = %v, want %v", got, e.Steps))
+		}
 	}
 	if e.Refused != nil && fmt.Sprint(e.Refused) != fmt.Sprint(r.Refused) {
 		p = append(p, fmt.Sprintf("refused = %v, want %v", r.Refused, e.Refused))

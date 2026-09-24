@@ -1,0 +1,7 @@
+case: routing/local-item-not-ready
+about: A work item kept as a file cannot become ready without its validation criteria.
+given:
+  repo: basic
+  setup: ["mkdir -p .workline/work && printf '## Need\\nExport as CSV\\n\\n## Verification\\nA test exports three rows\\n\\n## Scope\\nsrc/export\\n' > .workline/work/7.md"]
+run: {route: ready, item: 7}
+expect: {status: block, findings: [{rule: not-ready, where: Validation}], files: {.workline/work/7.md: {contains: "## Need"}}}

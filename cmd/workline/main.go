@@ -3,6 +3,8 @@
 //	workline run-role <role> --event <event> [--ai none|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>]
 //	                  [--input name=value]... [--input-file name=path]... [--json]
+//	workline route <event> [--repo <dir>] [--ai ...] [--input name=value]... [--json]
+//	workline item ready <id> [--repo <dir>] [--json]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
@@ -24,8 +26,10 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/hooks"
+	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -44,6 +48,10 @@ func main() {
 		os.Exit(hookCmd(os.Args[2:]))
 	case "gate":
 		os.Exit(gateCmd(os.Args[2:]))
+	case "route":
+		os.Exit(routeCmd(os.Args[2:]))
+	case "item":
+		os.Exit(itemCmd(os.Args[2:]))
 	}
 	usage()
 }
@@ -240,18 +248,33 @@ func hookCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	res := engine.Run(engine.Options{
-		Repo: root, RolesDir: rolesDir, Role: "committer", Event: "commit-msg",
-		AI: os.Getenv("WORKLINE_AI"), DefaultAI: userDefaultAI(),
+	res := line.Run("commit-msg", engine.Options{
+		Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), DefaultAI: userDefaultAI(),
 		Inputs: map[string]string{"message": string(data)}, Targets: map[string]string{"message": msgFile},
 	})
-	if res.Status == verdict.Pass && len(res.Applied) == 0 && len(res.Findings) == 0 {
+	quiet := res.Status == verdict.Pass && len(res.Findings) == 0
+	for _, s := range res.Steps {
+		if s.Result != nil && (len(s.Result.Applied) > 0 || len(s.Result.Findings) > 0) {
+			quiet = false
+		}
+	}
+	if quiet {
 		return 0
 	}
-	fmt.Fprint(os.Stderr, "workline committer: ")
-	report(res)
+	for _, s := range res.Steps {
+		if s.Result != nil {
+			fmt.Fprintf(os.Stderr, "workline %s: ", s.Name)
+			report(s.Result)
+		}
+	}
 	if res.Status == verdict.Pass {
 		return 0
+	}
+	if len(res.Steps) == 0 || res.Steps[len(res.Steps)-1].Result == nil {
+		fmt.Fprintln(os.Stderr, "workline:", res.Summary)
+		for _, f := range res.Findings {
+			fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
+		}
 	}
 	fmt.Fprintln(os.Stderr, "commit aborted; your message is kept in", msgFile)
 	return 1
@@ -303,6 +326,73 @@ func gateCmd(args []string) int {
 	}
 	if v.Status == verdict.Pass {
 		return 0
+	}
+	return 1
+}
+
+func routeCmd(args []string) int {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		usage()
+	}
+	fs := flag.NewFlagSet("route", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository to work on")
+	ai := fs.String("ai", "", "agent for every role (default: the project's, else yours, else none)")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	inputs := pairs{}
+	fs.Var(inputs, "input", "input name=value (repeatable)")
+	_ = fs.Parse(args[1:])
+	abs, _ := filepath.Abs(*repo)
+	rolesDir, err := resolveRoles(*roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs})
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		fmt.Fprintf(os.Stderr, "%s — %s\n", res.Status, res.Summary)
+		for _, s := range res.Steps {
+			fmt.Fprintf(os.Stderr, "  %-28s %s\n", s.Name, s.Status)
+		}
+		for _, f := range res.Findings {
+			fmt.Fprintf(os.Stderr, "  %s: %s\n", f.Rule, f.Message)
+		}
+	}
+	return exitFor(res.Status)
+}
+
+func itemCmd(args []string) int {
+	if len(args) < 2 || args[0] != "ready" {
+		fmt.Fprintln(os.Stderr, "usage: workline item ready <id> [--repo <dir>] [--json]")
+		return 64
+	}
+	fs := flag.NewFlagSet("item", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository holding .workline/work/")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	_ = fs.Parse(args[2:])
+	abs, _ := filepath.Abs(*repo)
+	v := work.Ready(abs, args[1])
+	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(v.Status)
+}
+
+func exitFor(status string) int {
+	switch status {
+	case verdict.Pass:
+		return 0
+	case verdict.Human:
+		return 2
+	case verdict.BlockedExternal:
+		return 3
 	}
 	return 1
 }

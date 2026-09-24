@@ -8,6 +8,5 @@ engine/partial-apply-resumes
 
 
 
-# Needs routing.
+# Needs the simulated forge (work items as issues).
 routing/item-not-ready
-routing/undeclared-handoff-refused

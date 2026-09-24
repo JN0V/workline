@@ -20,6 +20,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -161,9 +162,13 @@ func run(o Options, res *Result) error {
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
 	}
-	if refused := invalid(r, intents); len(refused) > 0 {
-		res.Refused = intent.Kinds(intents)
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "intention-refused", Message: fmt.Sprintf("not allowed for this role: %v", refused)})
+	line, err := routing.Load(o.Repo)
+	if err != nil {
+		return err
+	}
+	if refused, why := invalid(r, intents, line); len(refused) > 0 {
+		res.Refused = refused // the set is refused whole; these are the kinds that caused it
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "intention-refused", Message: why})
 		intents = nil
 		_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
@@ -235,15 +240,23 @@ func statusForExit(code int) string {
 	return ""
 }
 
-// invalid returns the kinds that are not in the catalogue or not allowed for the role.
-func invalid(r *role.Role, in []intent.Intention) []string {
-	var bad []string
+// invalid returns the kinds that cannot be applied, and why: not in the
+// catalogue, not allowed for the role, or a handoff routing does not declare.
+func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]string, string) {
+	var bad, why []string
 	for _, i := range in {
-		if !intent.Catalogue[i.Kind] || !r.Allows(i.Kind) {
-			bad = append(bad, i.Kind)
+		switch {
+		case !intent.Catalogue[i.Kind] || !r.Allows(i.Kind):
+			bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("%s is not allowed for this role", i.Kind))
+		case i.Kind == "handoff":
+			m, _ := i.Value.(map[string]any)
+			to, _ := m["role"].(string)
+			if !line.Allowed(r.Name, to) {
+				bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("routing declares no handoff from %s to %q", r.Name, to))
+			}
 		}
 	}
-	return bad
+	return bad, strings.Join(why, "; ")
 }
 
 // applier carries out intentions. This version knows the local ones.

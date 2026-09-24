@@ -1,0 +1,7 @@
+case: routing/handoff-runs-next-role
+about: A declared handoff runs the next role on the "handoff" event, after the role that asked.
+given:
+  repo: released
+  config: {roles: {release-manager: {settings: {flow: direct}}}}
+run: {route: release, ai: "fake:release-and-handoff"}
+expect: {status: pass, steps: [release-manager, "documentalist (handoff)"]}
