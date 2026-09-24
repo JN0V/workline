@@ -1,0 +1,11 @@
+case: documentalist/header-comment-tracked
+about: A doc that cannot carry frontmatter, like a README shown on the forge, declares its sources in a workline comment instead, and is tracked the same.
+given:
+  repo: documented
+  setup:
+    - "sed -i '1s/.*/<!-- workline/; 5s/.*/-->/' docs/tech/auth.md && git commit -qam 'docs(auth): keep the header out of the rendered page'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md}]
