@@ -1,4 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-documentalist/condense-moves-a-part
-documentalist/condense-must-move-not-rewrite

@@ -400,6 +400,16 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// Gardening, with no suspect doc to judge: condense the doc most over its
+	// budget. A merge request or a push never turns into a rewrite of the docs.
+	if task == "" && os.Getenv("WORKLINE_EVENT") == "schedule" {
+		if c := pickCondense(problems); c != nil {
+			task = writeCondenseTask(c, problems, tree)
+			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
+				return fail(err)
+			}
+		}
+	}
 	for i := range findings {
 		if f := &findings[i]; f.Rule == "suspect" && judged[f.Where] == nil && task != "" {
 			f.Message += "\n(not put before the agent in this run: over ai-max-calls or the task's size)"
@@ -530,9 +540,26 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	refused, patched, err := judgePatches(repo, s, judged, intents, fallback)
-	if err != nil {
-		return fail(err)
+	var refused []verdict.Finding
+	patched := map[string]bool{}
+	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil {
+		var c condenseTask
+		if err := yaml.Unmarshal(data, &c); err != nil {
+			return fail(err)
+		}
+		refused, err = judgeCondense(repo, s, &c, intents, fallback)
+		if err != nil {
+			return fail(err)
+		}
+		for _, k := range c.Keys {
+			resolved[k] = len(refused) == 0 && proposedPatch(intents, fallback)
+		}
+	} else {
+		refused, patched, err = judgePatches(repo, s, judged, intents, fallback)
+		if err != nil {
+			return fail(err)
+		}
 	}
 	if len(refused) > 0 {
 		// Only the refusals: they are what the agent is asked again with, and
@@ -546,8 +573,8 @@ func Post(runDir, repo string) int {
 	blocking := 0
 	var kept []verdict.Finding
 	for _, f := range findings {
-		if f.Rule == "suspect" && patched[f.Where] {
-			continue // judged and patched in this run
+		if f.Rule == "suspect" && patched[f.Where] || resolved[f.Rule+" "+f.Where] {
+			continue // judged and patched, or condensed, in this run
 		}
 		if f.Level == "block" {
 			blocking++

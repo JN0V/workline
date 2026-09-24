@@ -223,7 +223,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-not-diff", "patch", "send a unified diff, not a whole file, so what it replaces can be checked against the doc")
 			continue
 		}
-		if _, err := gitIn(repo, diff, "apply", "--recount", "--check", "-"); err != nil {
+		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--check", "-"); err != nil {
 			refuse("patch-does-not-apply", "patch", err.Error())
 			continue
 		}
@@ -248,7 +248,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			now := applyHunks(old, f)
-			if byGit, err := gitApplied(f.path, old, diff); err != nil || byGit != now {
+			if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
 				refuse("patch-ambiguous", f.path, "git would apply this diff differently from how it reads; send a plain unified diff")
 				continue
 			}
@@ -281,8 +281,8 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 }
 
 // gitApplied returns what git apply makes of one file of a diff, so the judge
-// judges exactly what the engine will apply.
-func gitApplied(path, old, diff string) (string, error) {
+// judges exactly what the engine will apply. A new file is created by the diff.
+func gitApplied(path, old, diff string, isNew bool) (string, error) {
 	dir, err := os.MkdirTemp("", "workline-judge-")
 	if err != nil {
 		return "", err
@@ -292,10 +292,12 @@ func gitApplied(path, old, diff string) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(file, []byte(old), 0o644); err != nil {
-		return "", err
+	if !isNew {
+		if err := os.WriteFile(file, []byte(old), 0o644); err != nil {
+			return "", err
+		}
 	}
-	if _, err := gitIn(dir, diff, "apply", "--recount", "--include="+path, "-"); err != nil {
+	if _, err := gitIn(dir, intent.NormalizeDiff(diff), "apply", "--recount", "--include="+path, "-"); err != nil {
 		return "", err
 	}
 	data, err := os.ReadFile(file)

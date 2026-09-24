@@ -1,18 +1,22 @@
 # The same move, with the section reworded on the way: what a person wrote is
 # no longer there to be found.
 - patch: |
-    --- a/docs/sessions.md
-    +++ b/docs/sessions.md
-    @@ -7,5 +7,3 @@
-     they had not saved is kept in the browser until they come back to the page.
-     
-    -## Signing out
-    -
-    -Signing out ends the session.
-    +See [signing out](cards/signing-out.md).
     --- /dev/null
     +++ b/docs/cards/signing-out.md
     @@ -0,0 +1,3 @@
     +# Signing out
     +
     +A session is ended by signing out.
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -2,2 +2,4 @@
+     
+    +See also [signing out](cards/signing-out.md).
+    +
+     ## How long a session lasts
+    @@ -7,5 +9 @@ refreshed. When it expires, the user is asked to sign in again, and anything
+     they had not saved is kept in the browser until they come back to the page.
+    -
+    -## Signing out
+    -
+    -Signing out ends the session.
