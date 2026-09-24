@@ -1,0 +1,7 @@
+case: documentalist/derived-block-unknown
+about: A derive marker naming a command the project does not declare blocks; a fact that cannot be regenerated has not been checked.
+given:
+  repo: documented
+  setup: ["printf '\\nThe code holds <!-- workline:derive auth-files -->3<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"]
+run: {role: documentalist, event: schedule, ai: none}
+expect: {status: block, findings: [{rule: derive-unknown, where: docs/tech/auth.md}]}

@@ -1,0 +1,13 @@
+case: documentalist/derived-block-regenerated
+about: A fact typed between derive markers is regenerated from the command the project declares, without an agent.
+given:
+  repo: documented
+  setup: ["printf '\\nThe code holds <!-- workline:derive auth-files -->3<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"]
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  applied: [patch]
+  findings: [{rule: derived-stale, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "<!-- workline:derive auth-files -->1<!-- workline:end -->"}}
