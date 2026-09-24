@@ -20,6 +20,7 @@ model:
   tier: standard
   effort: medium
   promote-after: 1
+  timeout: 10m    # condensing a long doc is a long diff to write
 
 context:
   knowledge: [doc-model.md]

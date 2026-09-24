@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -41,6 +42,19 @@ type Model struct {
 	Tier         string `yaml:"tier"`
 	Effort       string `yaml:"effort"`
 	PromoteAfter int    `yaml:"promote-after"`
+	Timeout      string `yaml:"timeout"` // how long one answer may take, e.g. "10m"; default 3m
+}
+
+// AnswerTimeout is how long the agent may take for one answer.
+func (m Model) AnswerTimeout() (time.Duration, error) {
+	if m.Timeout == "" {
+		return 3 * time.Minute, nil
+	}
+	d, err := time.ParseDuration(m.Timeout)
+	if err != nil || d <= 0 {
+		return 0, fmt.Errorf("model.timeout %q is not a duration like 10m", m.Timeout)
+	}
+	return d, nil
 }
 
 // Load reads roles/<name>/role.yaml from rolesDir.

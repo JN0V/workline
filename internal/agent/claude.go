@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -45,7 +44,11 @@ func (claude) Propose(req Request) error {
 	if e := claudeEffort[req.Role.Model.Effort]; e != "" {
 		args = append(args, "--effort", e)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	limit, err := req.Role.Model.AnswerTimeout()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = os.TempDir()
@@ -54,7 +57,7 @@ func (claude) Propose(req Request) error {
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	if err := cmd.Run(); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return fmt.Errorf("%w: claude did not answer within 3 minutes", ErrUnavailable)
+			return fmt.Errorf("%w: claude did not answer within %s (the role's model.timeout)", ErrUnavailable, limit)
 		}
 		return fmt.Errorf("%w: claude failed: %s", ErrUnavailable, lastLine(errOut.String()+out.String()))
 	}
