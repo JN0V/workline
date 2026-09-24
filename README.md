@@ -10,7 +10,7 @@ manager, documentalist… — does one job with only the context it needs, tools
 the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
-Status (2026-09-24): used daily on its author's machine; 45 conformance cases
+Status (2026-09-24): used daily on its author's machine; every conformance case
 green in CI.
 
 | Works | Not yet |
@@ -18,8 +18,9 @@ green in CI.
 | **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages | |
 | **Release manager**: semver, calver, several packages in one repository, generated changelog, tag, forge release | the merge-request flow, build metadata |
 | **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository, identifiers gone from the code; Claude judges suspect docs, and its patches are checked | links to other sites, freshness, derived blocks, condensing and splitting by AI |
-| **Gates**, **routing** and handoffs, **work items** (local or forge issues) | |
-| **Forges**: GitHub (tried live), simulated; GitLab written | GitLab never run |
+| **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
+| **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
+| **Forges**: GitHub (comments and labels tried live), simulated; GitLab written | GitLab never run; GitHub issues and releases never run live |
 | Agents: Claude Code | Codex, Antigravity, OpenCode; the generated model grid |
 
 ## Try it
@@ -31,9 +32,10 @@ workline hooks install --global     # check every commit message on this machine
 workline hooks uninstall --global   # give core.hooksPath back as it was
 ```
 
-Global hooks hand over to whatever held `core.hooksPath` before, then to each
-repository's own hooks; nothing that ran before stops running. A repository
-opts out with an empty `.workline/off` file.
+Each global hook hands over to the one that held `core.hooksPath` before, or,
+when there was none for that hook, to the repository's own (`.githooks/`,
+`.git/hooks/`): nothing that ran before stops running. A repository opts out
+with an empty `.workline/off` file.
 
 By default no AI is used: a refused message is explained, and you rewrite it.
 To let Claude Code rewrite it, add `ai: claude` to `~/.config/workline/config.yaml`
@@ -55,7 +57,7 @@ flowchart LR
   subgraph forge["Forge: GitHub or GitLab"]
     mr["merge request"] -- merge-request --> judge["judge job<br/>committer, documentalist<br/>no write token"]
     judge -- proposals --> apply["apply job<br/>no AI key"]
-    schedule["schedule"] -- schedule --> documentalist["documentalist"]
+    schedule["schedule<br/>a pipeline you add"] -- schedule --> documentalist["documentalist"]
   end
   machine -- git push --> forge
   routing -.-> committer1
@@ -67,8 +69,8 @@ flowchart LR
 |---|---|---|
 | `commit-msg` | your machine: the global git hook | committer |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
-| `schedule` | the forge's scheduled pipelines, or you | documentalist |
-| `release` | wherever you run `workline route release` | release-manager |
+| `schedule` | you, or a scheduled pipeline you add (the templates have none yet) | documentalist |
+| `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | release-manager |
 
 So the committer checks your messages as you write them, and again on the merge
 request for those without the hook; the documentalist runs on the forge. On a
@@ -80,12 +82,13 @@ reaches its CI too. Not wired yet: locally, only `commit-msg` runs roles.
 
 ## Take only a part
 
-workline is one binary with its roles inside, and needs nothing but git. Any
-existing pipeline can call one role, and leave the rest:
+workline is one binary with its roles inside, and needs nothing but git (and
+`gh` or `glab` to reach a forge). Any existing pipeline can call one role, and
+leave the rest:
 
 ```sh
 workline run-role committer --event merge-request --ai none \
-  --input range=origin/main..HEAD --json    # exit code: 0 pass, 1 block, …
+  --input range=origin/main..HEAD --json    # exit code: 0 pass, 1 block, 2 human, 3 external
 workline run-role documentalist --event schedule --ai none --json
 workline gate release --json   # a gate declared in .workline/config.yaml: your scanners' SARIF, with thresholds
 ```
@@ -96,8 +99,8 @@ workline gate release --json   # a gate declared in .workline/config.yaml: your 
   stops running.
 - `--no-apply` and `workline apply` fit a pipeline that keeps tokens apart.
 - A role is a folder (`role.yaml`, facets, `pre` and `post` in any language):
-  a team can replace one facet, fork one role, or write its own
-  ([role contract](docs/spec/role-contract.md)).
+  a team can replace one facet (`.workline/roles/<role>/`), or run its own
+  roles with `--roles <dir>` ([role contract](docs/spec/role-contract.md)).
 
 Not there yet: verdicts as SARIF, for code-scanning and code-quality views;
 an agent other than Claude Code, or any command given as the agent.
@@ -113,6 +116,7 @@ test cache does not see.
 
 ## Read next
 
+- [Usage](docs/usage.md) — commands, options, exit codes, files, variables
 - [Principles](docs/PRINCIPLES.md) — the rules every choice is checked against
 - [Role contract](docs/spec/role-contract.md) — what a role is
 - [Decisions](docs/adr/) · [Research](docs/research/) · [Backlog](docs/BACKLOG.md)

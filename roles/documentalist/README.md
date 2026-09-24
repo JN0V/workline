@@ -45,7 +45,7 @@ far: the pending findings. Not yet: the tracking issue and the release gate.)
 **Code never rewrites the authority.** When the code disagrees with a doc marked
 as the truth (a spec, an ADR, the architecture), the doc is not updated to
 match: the documentalist opens an `issue` for the architect, because the code
-may be the one that is wrong.
+may be the one that is wrong. (Not built yet: the `truth` setting is not read.)
 
 Suspect docs become the agent's task, each with its lines numbered, what
 changed in its sources, and the commits its `checked` must name: at most

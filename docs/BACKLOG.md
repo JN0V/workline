@@ -60,3 +60,7 @@ Topics raised and parked, so they are not lost. Newest last.
   the job's checkout and lost: it should become a commit on the merge
   request's branch, or a suggestion. Today the templates run without AI, so
   nothing proposes one.
+- **An unknown option exits 2.** Go's option parser exits 2, which the exit
+  codes reserve for `human`; the CLI should say 64, as for other misuse.
+- **Scheduled runs in the CI templates.** The README says `schedule` runs the
+  documentalist; neither template has a scheduled job yet.

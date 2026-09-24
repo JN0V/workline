@@ -7,7 +7,8 @@ mission: Every commit is atomic, and its message tells a newcomer what changed a
 events: [commit-msg, merge-request]
 
 requires: [git]
-# The user's existing checks, run when installed; the verdict says when they are missing.
+# The user's existing checks, to run when installed, the verdict saying when they
+# are missing. Not read yet: the global hook hands over to them instead.
 uses: [forbidden-terms, git-identity-guard, gitleaks]
 
 # A commit message is short writing; a cheap, fast model is enough.

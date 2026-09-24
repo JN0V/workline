@@ -4,8 +4,9 @@
 # `routing:`; by default the committer, then the documentalist).
 #
 # Two jobs, two trust zones (docs/research/server-side.md):
-#   judge  runs the line; it can read the code, holds the AI key if any, and
-#          no write token. It stops before applying (--no-apply).
+#   judge  runs the line; it can read the code, and holds no write token. It
+#          stops before applying (--no-apply). It runs without AI (--ai none):
+#          to use one, give this job the key and change --ai.
 #   apply  holds the write token and no AI key; it applies what judge proposed,
 #          after checking the prepared input did not change.
 name: workline

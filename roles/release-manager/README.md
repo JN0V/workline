@@ -11,8 +11,9 @@ What runs, for humans. The AI never reads this file.
 - **Propose** (AI): writes the release notes only.
 - **Judge** (`post`, no AI): refuses a version the commits did not give, and any
   changelog other than the generated one.
-- **Apply**: commits the changelog, then tags. `flow: direct` only; the
-  merge-request flow needs a forge.
+- **Apply**: commits the changelog, then tags, and publishes the release on
+  the forge when there is one. `flow: direct`, the default, is the only flow
+  built; `merge-request` is refused until it is.
 
 ## Several packages in one repository
 

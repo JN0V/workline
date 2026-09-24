@@ -29,19 +29,20 @@ duties:
 
 intentions: [patch, issue, comment, label, note]
 
-# Without AI, every check still runs and still blocks. What needed judgement
-# (is this suspect doc still right? how to shorten this one?) becomes a
-# checklist for a human, who clears each item by marking the doc checked.
+# Without AI, every check still runs. What needed judgement (is this suspect doc
+# still right?) is reported for a person, who clears it by updating `checked`.
+# Not built yet: the checklist comment on the merge request.
 without-ai: report
 
 settings:
   docs: ["docs/**", "*.md"]
-  # Which side is right when they disagree, per glob.
+  # Which side is right when they disagree, per glob. Not read yet.
   truth:
     code: ["docs/reference/**"]      # the doc follows the code
     doc: ["docs/adr/**"]             # the code follows the doc
   # Cascades are cut. Only edges marked `now` are handled in the change itself;
-  # the others are recorded in one tracking issue and are due at a later moment.
+  # the others are reported as pending, due at a later moment (the one tracking
+  # issue that should hold them is not built yet).
   propagation:
     - {from: code, to: "docs/tech/**", when: now}
     - {from: "docs/tech/**", to: "docs/product/**", when: release}
@@ -51,10 +52,10 @@ settings:
     card-words: {min: 80, max: 400}  # too small is fragmentation, a smell too
     folder-lines: 2000
     root-agent-file-lines: 200       # AGENTS.md / CLAUDE.md: a routing file, not a dump
-  freshness:
+  freshness:                         # not read yet
     stale-after-days: 180
   duplicates:
     min-words: 40                    # shorter repeats are not worth merging
     similarity: 0.85
-  max-open-merge-requests: 5         # backpressure: stop proposing when this many wait
+  max-open-merge-requests: 5         # backpressure: stop proposing when this many wait; not read yet
   ai-max-calls: 10                   # per run
