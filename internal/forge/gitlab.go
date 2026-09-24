@@ -8,7 +8,7 @@ import (
 )
 
 // gitlab talks to GitLab through the glab CLI and its REST API. Not yet tried
-// against a live instance: the first use at work is its first real test.
+// against a live instance.
 type gitlab struct{ repo string }
 
 func (g *gitlab) api(args ...string) ([]byte, error) {
