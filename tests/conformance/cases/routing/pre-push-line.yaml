@@ -1,0 +1,12 @@
+case: routing/pre-push-line
+about: A project that routes pre-push gets its line run on the commits being pushed, docs judged and patched on the machine.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  config: {routing: {events: {pre-push: [committer, documentalist]}}}
+run: {route: pre-push, input: {range: "HEAD~1..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 1
+  steps: [committer, documentalist]
+  files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4"}}
