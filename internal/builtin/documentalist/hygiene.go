@@ -269,6 +269,7 @@ type paragraph struct {
 	from, to   int
 	shingles   map[string]bool
 	wordsCount int
+	text       string // its words, normalized: what identifies it wherever it moves
 }
 
 // duplicates finds passages written twice. Paragraphs are compared by the
@@ -295,7 +296,7 @@ func duplicates(t Tree, d Duplicates) []Problem {
 					text.WriteString(l.text + " ")
 				}
 				if ws := normalWords(text.String()); len(ws) >= d.MinWords {
-					paras = append(paras, paragraph{doc: p, from: cur[0].n, to: cur[len(cur)-1].n, shingles: shingles(ws), wordsCount: len(ws)})
+					paras = append(paras, paragraph{doc: p, from: cur[0].n, to: cur[len(cur)-1].n, shingles: shingles(ws), wordsCount: len(ws), text: strings.Join(ws, " ")})
 				}
 			}
 			cur = nil
@@ -315,7 +316,7 @@ func duplicates(t Tree, d Duplicates) []Problem {
 			a, b := paras[i], paras[j]
 			if sim := jaccard(a.shingles, b.shingles); sim >= d.Similarity {
 				out = append(out, Problem{Rule: "duplicate", Where: a.doc,
-					Key: fmt.Sprintf("duplicate %s %s", a.doc, b.doc),
+					Key: "duplicate " + pairKey(a.text, b.text),
 					Message: fmt.Sprintf("lines %d-%d repeat %s lines %d-%d (%.0f%% alike): keep the passage in the one place it belongs, and link to it",
 						a.from, a.to, b.doc, b.from, b.to, sim*100)})
 			}
@@ -436,4 +437,13 @@ func deadLink(t Tree, from, target string) string {
 		return "no heading gives the anchor #" + anchor
 	}
 	return ""
+}
+
+// pairKey names a pair of passages by their text, in a stable order, so a
+// duplicate moved to another doc is still the same duplicate.
+func pairKey(a, b string) string {
+	if b < a {
+		a, b = b, a
+	}
+	return a + " | " + b
 }
