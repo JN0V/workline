@@ -8,7 +8,9 @@ import (
 
 // github talks to GitHub through the gh CLI and its REST API. Issues and pull
 // requests share numbers, comments and labels there, so both use the issue
-// endpoints. Unverified against the live API: labels that do not exist yet.
+// endpoints. Tried live on 2026-09-24: comment, label added (GitHub creates a
+// missing label), label removed, and every write replayed without duplicates.
+// Not yet tried live: OpenIssue and Release.
 type github struct{ repo string }
 
 func (g *github) api(args ...string) ([]byte, error) {
