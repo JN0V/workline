@@ -2,8 +2,11 @@
 #   include: {local: ci/workline.gitlab-ci.yml}
 # Not yet tried on a live GitLab instance.
 #
+# The project's routing decides what runs on a merge request (.workline/config.yaml,
+# `routing:`; by default the committer, then the documentalist).
+#
 # Two jobs, two trust zones (docs/research/server-side.md):
-#   judge  runs the roles, no write token, stops before applying (--no-apply).
+#   judge  runs the line, no write token, stops before applying (--no-apply).
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token with the `api`
 #          scope, stored as a protected, masked variable) and no AI key.
 variables:
@@ -23,14 +26,16 @@ workline:judge:
   extends: .workline
   stage: test
   script:
+    - status=0
     - >
-      workline run-role committer --event merge-request --ai none
+      workline route merge-request --ai none --no-apply
+      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
-    - >
-      workline run-role documentalist --event merge-request --ai none --no-apply
-      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --json > docs.json || true
+      --json > line.json || status=$?
+    - exit $status
   artifacts:
-    paths: [.workline-runs/, docs.json]
+    when: always                    # steps that passed before one blocked are still applied
+    paths: [.workline-runs/, line.json]
     expire_in: 1 day
 
 workline:apply:
@@ -39,9 +44,8 @@ workline:apply:
   needs: [workline:judge]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
+      when: always
   script:
     - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - |
-      RUN=$(grep -o '"run-dir": *"[^"]*"' docs.json | cut -d'"' -f4)
-      if [ -n "$RUN" ]; then workline apply "$RUN"; fi
+    - workline apply --line line.json

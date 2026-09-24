@@ -1,4 +1,4 @@
-# workline's own CI: the tests, and workline checking its own pull requests.
+# workline's own CI: the tests, and workline running its own line on its pull requests.
 name: test
 on:
   push: {branches: [main]}
@@ -14,9 +14,9 @@ jobs:
         with: {go-version-file: go.mod}
       - run: go vet ./...
       - run: go test -count=1 ./...
-      - name: Committer — every commit of the pull request
+      - name: The line for this pull request, as the project routes it
         if: github.event_name == 'pull_request'
         run: |
           go build -o workline ./cmd/workline
-          ./workline run-role committer --event merge-request --ai none \
+          ./workline route merge-request --ai none \
             --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
