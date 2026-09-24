@@ -173,13 +173,13 @@ func run(o Options, res *Result) error {
 			res.Findings = append(res.Findings, v.Findings...)
 			return nil
 		}
-		retry := a.askedAgent && v.Status == verdict.Block && r.Model.PromoteAfter > 0 && failures+1 < maxAttempts
-		if !retry {
+		if !a.askedAgent || v.Status != verdict.Block {
 			break
 		}
 		failures++
-		if failures%r.Model.PromoteAfter == 0 {
-			tier = stepUp(tier)
+		var retry bool
+		if retry, tier = askAgain(failures, r.Model.PromoteAfter, tier); !retry {
+			break
 		}
 		var fb strings.Builder
 		for _, f := range v.Findings {
@@ -396,8 +396,19 @@ func patchFiles(repo string, v any) []string {
 	return files
 }
 
-// maxAttempts caps how many times an agent is asked for one decision.
-const maxAttempts = 2
+// askAgain says whether a refused proposal is asked for again, and on which
+// tier: `promote-after` refusals on the role's tier, then one last attempt a
+// tier up (docs/spec/model-grid.md). 0 never asks again. failures counts the
+// refusals so far, this one included.
+func askAgain(failures, promoteAfter int, tier string) (bool, string) {
+	if promoteAfter <= 0 || failures > promoteAfter {
+		return false, tier
+	}
+	if failures == promoteAfter {
+		return true, stepUp(tier)
+	}
+	return true, tier
+}
 
 var tiers = []string{"light", "standard", "frontier"}
 
