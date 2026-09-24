@@ -35,7 +35,11 @@ func (claude) Propose(req Request) error {
 	}
 	args := []string{"-p", "--output-format", "text", "--tools", "", "--strict-mcp-config",
 		"--no-session-persistence", "--system-prompt", system}
-	if m := claudeTier[req.Role.Model.Tier]; m != "" {
+	tier := req.Role.Model.Tier
+	if req.Tier != "" {
+		tier = req.Tier
+	}
+	if m := claudeTier[tier]; m != "" {
 		args = append(args, "--model", m)
 	}
 	if e := claudeEffort[req.Role.Model.Effort]; e != "" {
@@ -76,6 +80,11 @@ func proposalsFrom(answer string) ([]byte, error) {
 	var list []map[string]any
 	if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
 		return nil, fmt.Errorf("expected a YAML list of proposals")
+	}
+	for i, m := range list {
+		if len(m) != 1 {
+			return nil, fmt.Errorf("proposal %d holds %d kinds; each holds exactly one", i+1, len(m))
+		}
 	}
 	return []byte(s + "\n"), nil
 }

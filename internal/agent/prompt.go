@@ -9,7 +9,7 @@ import (
 
 // contracts describes each intention's shape, for the generated output contract.
 var contracts = map[string]string{
-	"commit-message": `- commit-message: "the full commit message"`,
+	"commit-message": "- commit-message: |\n    type(scope): subject\n\n    Body, if any.\n\n    Trailer: value",
 	"patch":          "- patch: |\n    a unified diff",
 	"comment":        `- comment: "text of the comment"`,
 	"label":          `- label: {add: [name], remove: [name]}`,
@@ -61,7 +61,10 @@ func Prompt(req Request) (system, user string, err error) {
 		return "", "", err
 	}
 	b.WriteString("# Task\n\n" + string(task) + "\n\n")
-	b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each one of:\n\n")
+	if fb, err := os.ReadFile(filepath.Join(req.RunDir, "out", "feedback.md")); err == nil {
+		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n")
+	}
+	b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
 	for _, k := range req.Role.Intentions {
 		b.WriteString(contracts[k] + "\n")
 	}

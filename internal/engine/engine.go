@@ -149,74 +149,49 @@ func run(o Options, res *Result) error {
 		return err
 	}
 
-	// 3. Propose — only when pre asked a question and an agent is available.
-	agentExternal := false
-	if _, err := os.Stat(filepath.Join(runDir, "in", "task.md")); err == nil && ag != nil {
-		res.AgentCalls++
-		err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r})
-		switch {
-		case err == nil:
-		case errors.Is(err, agent.ErrUnavailable):
-			agentExternal = true
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})
-		case errors.Is(err, agent.ErrInvalidOutput):
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
-		default:
-			return err
-		}
-	}
-	intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
-	if err != nil {
-		return err
-	}
-	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
-	if err != nil {
-		return err
-	}
-	intents = intent.Merge(fallback, intents)
-	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
-		return err
-	}
+	// 3. Propose and 4. Judge. A proposal the judge refuses is asked for again,
+	// with the reasons, when the role allows it — one tier up after
+	// `promote-after` refusals (docs/spec/model-grid.md).
 	line, err := routing.Load(o.Repo)
 	if err != nil {
 		return err
 	}
 	settings := r.MergedSettings(cfg)
-	if refused, why := invalid(r, intents, line); len(refused) > 0 {
-		res.Refused = refused // the set is refused whole; these are the kinds that caused it
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "intention-refused", Message: why})
-		intents = nil
-		_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	_, taskErr := os.Stat(filepath.Join(runDir, "in", "task.md"))
+	tier, failures := r.Model.Tier, 0
+	var intents []intent.Intention
+	var v *verdict.Verdict
+	for {
+		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
+		if err != nil {
+			return err
+		}
+		intents, v = a.intents, a.verdict
+		if a.external && v.Status != verdict.Pass {
+			res.Status, res.Summary = verdict.BlockedExternal, v.Summary
+			res.Findings = append(res.Findings, v.Findings...)
+			return nil
+		}
+		retry := a.askedAgent && v.Status == verdict.Block && r.Model.PromoteAfter > 0 && failures+1 < maxAttempts
+		if !retry {
+			break
+		}
+		failures++
+		if failures%r.Model.PromoteAfter == 0 {
+			tier = stepUp(tier)
+		}
+		var fb strings.Builder
+		for _, f := range v.Findings {
+			fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
+		}
+		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb.String()), 0o644); err != nil {
+			return err
+		}
+		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 	}
-	if bad := outOfBounds(o.Repo, intents, r.Writes(settings), o.Scope); len(bad) > 0 {
-		res.Refused = []string{"patch"}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "intention-refused",
-			Message: "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"})
-		intents = nil
-		_ = os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
-	}
-
-	// 4. Judge.
-	code, err = script(r, "post", o.Repo, env)
-	if err != nil {
-		return err
-	}
-	v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml"))
-	if err != nil {
-		return fmt.Errorf("post wrote no readable verdict: %w", err)
-	}
-	if want := statusForExit(code); want == "" {
-		return fmt.Errorf("post exited with code %d", code)
-	} else if want != v.Status {
-		return fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
-	}
-	verdict.Enforce(v, r.Enforcement(cfg))
 	res.Status, res.Summary = v.Status, v.Summary
 	res.Findings = append(res.Findings, v.Findings...)
-	if agentExternal && res.Status != verdict.Pass {
-		res.Status = verdict.BlockedExternal
-		return nil
-	}
 	if res.Status != verdict.Pass || len(intents) == 0 {
 		return nil
 	}
@@ -395,6 +370,97 @@ func patchFiles(repo string, v any) []string {
 		}
 	}
 	return files
+}
+
+// maxAttempts caps how many times an agent is asked for one decision.
+const maxAttempts = 2
+
+var tiers = []string{"light", "standard", "frontier"}
+
+func stepUp(tier string) string {
+	for i, t := range tiers {
+		if t == tier && i+1 < len(tiers) {
+			return tiers[i+1]
+		}
+	}
+	return tier
+}
+
+type attemptResult struct {
+	intents    []intent.Intention
+	verdict    *verdict.Verdict
+	findings   []verdict.Finding // why proposals were refused before judging
+	askedAgent bool
+	external   bool
+}
+
+// attempt asks the agent (when there is a question and an agent), merges the
+// fallback proposals, refuses what cannot be applied, and runs the judge.
+func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir string, env []string,
+	line *routing.Config, settings map[string]any, cfg *role.ProjectConfig, res *Result) (*attemptResult, error) {
+	a := &attemptResult{}
+	if hasTask && ag != nil {
+		a.askedAgent = true
+		res.AgentCalls++
+		err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier})
+		switch {
+		case err == nil:
+		case errors.Is(err, agent.ErrUnavailable):
+			a.external = true
+			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})
+		case errors.Is(err, agent.ErrInvalidOutput):
+			a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
+		default:
+			return nil, err
+		}
+	}
+	intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
+	if err != nil {
+		a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
+		intents = nil
+	}
+	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	intents = intent.Merge(fallback, intents)
+	os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
+		return nil, err
+	}
+	res.Refused = []string{}
+	if refused, why := invalid(r, intents, line); len(refused) > 0 {
+		res.Refused = refused // the set is refused whole; these are the kinds that caused it
+		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Message: why})
+		intents = nil
+		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	}
+	if bad := outOfBounds(o.Repo, intents, r.Writes(settings), o.Scope); len(bad) > 0 {
+		res.Refused = []string{"patch"}
+		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused",
+			Message: "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"})
+		intents = nil
+		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+	}
+	a.intents = intents
+
+	code, err := script(r, "post", o.Repo, env)
+	if err != nil {
+		return nil, err
+	}
+	v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("post wrote no readable verdict: %w", err)
+	}
+	if want := statusForExit(code); want == "" {
+		return nil, fmt.Errorf("post exited with code %d", code)
+	} else if want != v.Status {
+		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
+	}
+	verdict.Enforce(v, r.Enforcement(cfg))
+	v.Findings = append(a.findings, v.Findings...)
+	a.verdict = v
+	return a, nil
 }
 
 func statusForExit(code int) string {

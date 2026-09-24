@@ -26,6 +26,7 @@ type Request struct {
 	RunDir string
 	Repo   string
 	Role   *role.Role
+	Tier   string // overrides the role's tier, when a retry steps up
 }
 
 // Agent answers the question in in/task.md by writing out/intentions.yaml.
