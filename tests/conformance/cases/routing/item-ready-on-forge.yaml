@@ -1,0 +1,7 @@
+case: routing/item-ready-on-forge
+about: An issue with need, verification, validation and scope gets the workline:ready label.
+given:
+  repo: basic
+  forge: {issues: [{id: 8, body: "## Need\nExport as CSV\n## Verification\nA test exports three rows\n## Validation\nThe product owner opens it in a spreadsheet\n## Scope\nsrc/export", labels: [workline:to-refine], comments: []}]}
+run: {route: ready, item: 8}
+expect: {status: pass, forge: {issues: [{id: 8, labels: [workline:ready]}]}}

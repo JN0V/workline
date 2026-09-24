@@ -1,9 +1,11 @@
 case: engine/partial-apply-resumes
 about: If the forge fails half-way, resuming applies only what is left, without calling the agent again.
 given:
-  repo: basic
-  forge: {merge-requests: [{id: 1}], fail-on-write: 2}
-run: {role: documentalist, event: merge-request, ai: "fake:comment-and-label", then: resume}
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge: {merge-requests: [{id: 1, labels: [], comments: []}], fail-on-write: 2}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:comment-and-label", then: resume}
 expect:
+  status: pass
   agent-calls: 1
   forge: {merge-requests: [{id: 1, comments: 1, labels: [docs-checked]}]}

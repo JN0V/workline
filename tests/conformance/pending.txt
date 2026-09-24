@@ -1,12 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-
-
-# Needs run scopes, patches and the simulated forge.
-engine/out-of-scope-patch-refused
-engine/partial-apply-resumes
-
-
-
-# Needs the simulated forge (work items as issues).
-routing/item-not-ready

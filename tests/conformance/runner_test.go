@@ -60,6 +60,7 @@ type caseFile struct {
 	} `yaml:"given"`
 	Run struct {
 		Role   string            `yaml:"role"`
+		Target map[string]int    `yaml:"target"`
 		Event  string            `yaml:"event"`
 		Input  map[string]string `yaml:"input"`
 		AI     string            `yaml:"ai"`
@@ -90,6 +91,7 @@ type result struct {
 		Message string `json:"message"`
 	} `json:"findings"`
 	AgentCalls int      `json:"agent-calls"`
+	RunDir     string   `json:"run-dir"`
 	Applied    []string `json:"applied"`
 	Refused    []string `json:"refused"`
 	Steps      []struct {
@@ -129,9 +131,6 @@ func TestConformance(t *testing.T) {
 
 // runCase returns what differs from the expectation; empty means it passes.
 func runCase(t *testing.T, c *caseFile) []string {
-	if len(c.Given.Forge) > 0 || c.Run.Then != "" || len(c.Run.Scope) > 0 {
-		return []string{"the runner does not support forges, resume or scopes yet"}
-	}
 	work := t.TempDir()
 	env := hermeticEnv()
 
@@ -157,6 +156,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
 	}
 
+	forgeFile := ""
+	if len(c.Given.Forge) > 0 {
+		forgeFile = filepath.Join(work, "forge.json")
+		data, _ := json.Marshal(c.Given.Forge)
+		os.WriteFile(forgeFile, data, 0o644)
+	}
 	roles, _ := filepath.Abs("../../roles")
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
 	switch {
@@ -164,6 +169,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = []string{"gate", c.Run.Gate, "--repo", repo, "--json"}
 	case c.Run.Route == "ready" && c.Run.Item != 0:
 		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}
+		if forgeFile != "" {
+			args = append(args, "--forge", "fake:"+forgeFile)
+		}
 	case c.Run.Route != "":
 		args = []string{"route", c.Run.Route, "--repo", repo, "--roles", roles, "--json"}
 	}
@@ -178,6 +186,15 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for k, v := range c.Run.Input {
 		args = append(args, "--input", k+"="+v)
 	}
+	if forgeFile != "" && c.Run.Item == 0 {
+		args = append(args, "--forge", "fake:"+forgeFile)
+	}
+	for kind, id := range c.Run.Target {
+		args = append(args, "--target", fmt.Sprintf("%s:%d", kind, id))
+	}
+	for _, s := range c.Run.Scope {
+		args = append(args, "--scope", s)
+	}
 	if c.Run.Tamper != "" {
 		args = append(args, "--test-tamper-before-apply")
 	}
@@ -190,7 +207,27 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
-	return compare(c, &r, repo)
+	if c.Run.Then == "resume" {
+		if r.RunDir == "" {
+			return []string{"the first run reported no run folder to resume"}
+		}
+		resume := exec.Command(engineBin, "apply", r.RunDir, "--json")
+		resume.Env = env
+		stdout.Reset()
+		resume.Stdout, resume.Stderr = &stdout, &stderr
+		_ = resume.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("resume printed no result: %v\n%s", err, stderr.String())}
+		}
+		r2.AgentCalls += r.AgentCalls
+		r = r2
+	}
+	problems := compare(c, &r, repo)
+	if len(c.Expect.Forge) > 0 {
+		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
+	}
+	return problems
 }
 
 func compare(c *caseFile, r *result, repo string) []string {
@@ -236,9 +273,6 @@ func compare(c *caseFile, r *result, repo string) []string {
 		if text, ok := want["contains"].(string); ok && !strings.Contains(string(data), text) {
 			p = append(p, fmt.Sprintf("%s does not contain %q", path, text))
 		}
-	}
-	if len(e.Forge) > 0 {
-		p = append(p, "the runner cannot check forge state yet")
 	}
 	return p
 }
@@ -288,4 +322,45 @@ func readPending(t *testing.T) map[string]bool {
 		}
 	}
 	return out
+}
+
+// compareForge checks the simulated forge's state: for each listed item, by
+// id, `comments` is a count and `labels` the exact set.
+func compareForge(want map[string]any, file string) []string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{"no forge state to check: " + err.Error()}
+	}
+	var got map[string][]map[string]any
+	json.Unmarshal(data, &got)
+	var p []string
+	for kind, items := range want {
+		list, _ := items.([]any)
+		for _, w := range list {
+			wm, _ := w.(map[string]any)
+			var found map[string]any
+			for _, g := range got[kind] {
+				if fmt.Sprint(g["id"]) == fmt.Sprint(wm["id"]) {
+					found = g
+				}
+			}
+			if found == nil {
+				p = append(p, fmt.Sprintf("forge: no %s with id %v", kind, wm["id"]))
+				continue
+			}
+			if n, ok := wm["comments"]; ok {
+				c, _ := found["comments"].([]any)
+				if fmt.Sprint(len(c)) != fmt.Sprint(n) {
+					p = append(p, fmt.Sprintf("forge: %s %v has %d comments, want %v", kind, wm["id"], len(c), n))
+				}
+			}
+			if l, ok := wm["labels"]; ok {
+				gl, _ := found["labels"].([]any)
+				if fmt.Sprint(gl) != fmt.Sprint(l) {
+					p = append(p, fmt.Sprintf("forge: %s %v labels = %v, want %v", kind, wm["id"], gl, l))
+				}
+			}
+		}
+	}
+	return p
 }

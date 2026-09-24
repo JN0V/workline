@@ -1,5 +1,7 @@
 case: engine/out-of-scope-patch-refused
 about: A patch outside the run's scope is refused whole; nothing is written.
-given: {repo: basic}
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
 run: {role: documentalist, event: merge-request, scope: ["docs/**"], ai: "fake:out-of-scope-patch"}
 expect: {refused: [patch], applied: [], files: {"src/billing/invoice.go": {exists: false}}}
