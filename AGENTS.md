@@ -16,6 +16,9 @@ against it. Then only what the task needs:
   (docs/research/README.md), before designing anything new.
 - **Write it down in the repository**: decisions in docs/adr/, findings in
   docs/research/, parked topics in docs/BACKLOG.md. Not in chat, not in memory.
+- **Docs follow the code**: a doc that describes code names it in `sources`,
+  with the commit it was `checked` against. When the documentalist reports it
+  `suspect`, check it against the change, fix what is wrong, and move `checked`.
 - **Conformance first**: a behaviour starts as a case in tests/conformance/cases/;
   `pending.txt` lists what does not pass yet and must never lie.
 - **Try it for real** before calling it done (a copy of a real repository, a real
