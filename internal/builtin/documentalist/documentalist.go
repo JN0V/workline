@@ -48,18 +48,36 @@ type frontmatter struct {
 	Checked yaml.Node `yaml:"checked"`
 }
 
-// ParseDoc reads a doc's frontmatter. A doc without sources is not tracked.
-func ParseDoc(path string, content []byte) (*Doc, error) {
-	rest, ok := bytes.CutPrefix(content, []byte("---\n"))
-	if !ok {
-		return nil, nil
+// header returns a doc's header — YAML between `---` lines, or, where a
+// frontmatter would show on the forge (a README), between `<!-- workline` and
+// `-->` — and how many lines it takes. A doc without one has no header.
+func header(content string) (meta string, lines int) {
+	all := strings.Split(content, "\n")
+	var end string
+	switch {
+	case len(all) > 0 && all[0] == "---":
+		end = "---"
+	case len(all) > 0 && strings.TrimSpace(all[0]) == "<!-- workline":
+		end = "-->"
+	default:
+		return "", 0
 	}
-	block, _, ok := bytes.Cut(rest, []byte("\n---"))
-	if !ok {
+	for i := 1; i < len(all); i++ {
+		if strings.TrimSpace(all[i]) == end {
+			return strings.Join(all[1:i], "\n"), i + 1
+		}
+	}
+	return "", 0
+}
+
+// ParseDoc reads a doc's header. A doc without sources is not tracked.
+func ParseDoc(path string, content []byte) (*Doc, error) {
+	block, n := header(string(content))
+	if n == 0 {
 		return nil, nil
 	}
 	var fm frontmatter
-	if err := yaml.Unmarshal(block, &fm); err != nil {
+	if err := yaml.Unmarshal([]byte(block), &fm); err != nil {
 		return nil, fmt.Errorf("%s: frontmatter: %w", path, err)
 	}
 	if len(fm.Sources) == 0 {
@@ -86,15 +104,14 @@ func splitSource(s string) (repo, path, anchor string) {
 	return "", s, anchor
 }
 
-// body drops a doc's frontmatter: recording who checked a doc is not a change
-// of what it says.
+// body drops a doc's header: recording who checked a doc is not a change of
+// what it says.
 func body(content string) string {
-	if rest, ok := strings.CutPrefix(content, "---\n"); ok {
-		if _, after, ok := strings.Cut(rest, "\n---"); ok {
-			return after
-		}
+	_, n := header(content)
+	if n == 0 {
+		return content
 	}
-	return content
+	return strings.Join(strings.Split(content, "\n")[n:], "\n")
 }
 
 // Section returns the text under the heading whose slug is anchor, up to the

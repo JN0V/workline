@@ -82,15 +82,7 @@ type line struct {
 // scan splits a doc into lines, skipping its frontmatter.
 func scan(content string) []line {
 	all := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
-	start := 0
-	if len(all) > 0 && all[0] == "---" {
-		for i := 1; i < len(all); i++ {
-			if all[i] == "---" {
-				start = i + 1
-				break
-			}
-		}
-	}
+	_, start := header(content)
 	var out []line
 	fence := ""
 	for i := start; i < len(all); i++ {
@@ -134,18 +126,14 @@ func lineCount(content string) int {
 }
 
 func docType(content string) string {
-	rest, ok := strings.CutPrefix(content, "---\n")
-	if !ok {
-		return ""
-	}
-	block, _, ok := strings.Cut(rest, "\n---")
-	if !ok {
+	block, n := header(content)
+	if n == 0 {
 		return ""
 	}
 	var fm struct {
 		Type string `yaml:"type"`
 	}
-	_ = yaml.Unmarshal([]byte(block), &fm) // a broken frontmatter is reported by ParseDoc
+	_ = yaml.Unmarshal([]byte(block), &fm) // a broken header is reported by ParseDoc
 	return fm.Type
 }
 

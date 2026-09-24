@@ -47,7 +47,7 @@ func parseDiff(diff string) ([]fileDiff, error) {
 				return nil, fmt.Errorf("line %d: a hunk header must follow a file header, as `@@ -a,b +c,d @@`", i+1)
 			}
 			h := hunk{oldStart: atoi(m[1])}
-			for ; i+1 < len(lines) && !header(lines, i+1); i++ {
+			for ; i+1 < len(lines) && !diffHeader(lines, i+1); i++ {
 				hl := lines[i+1]
 				if strings.HasPrefix(hl, `\`) { // "\ No newline at end of file"
 					continue
@@ -76,8 +76,8 @@ func parseDiff(diff string) ([]fileDiff, error) {
 	return out, nil
 }
 
-// header says whether lines[i] starts a hunk or a file.
-func header(lines []string, i int) bool {
+// diffHeader says whether lines[i] starts a hunk or a file.
+func diffHeader(lines []string, i int) bool {
 	l := lines[i]
 	return strings.HasPrefix(l, "@@") || strings.HasPrefix(l, "diff ") || strings.HasPrefix(l, "index ") ||
 		strings.HasPrefix(l, "+++ ") || strings.HasPrefix(l, "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ")

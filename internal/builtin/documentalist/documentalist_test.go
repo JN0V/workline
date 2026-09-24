@@ -105,3 +105,22 @@ func TestParseDocKeepsCommitsAsWritten(t *testing.T) {
 		}
 	}
 }
+
+func TestHeaderComment(t *testing.T) {
+	doc := "<!-- workline\nsources: [cmd/workline]\nchecked: 11180e1\n-->\n<h1>Title</h1>\n\nText.\n"
+	d, err := ParseDoc("README.md", []byte(doc))
+	if err != nil || d == nil || d.Checked[""] != "11180e1" || d.Sources[0] != "cmd/workline" {
+		t.Fatalf("ParseDoc = %+v, %v", d, err)
+	}
+	a, _ := Section(doc, "")
+	b, _ := Section(strings.Replace(doc, "11180e1", "abcdef0", 1), "")
+	if a != b || strings.Contains(a, "sources") {
+		t.Fatalf("the header is not part of what the doc says: %q", a)
+	}
+	if lines := scan(doc); lines[0].text != "<h1>Title</h1>" || lines[0].n != 5 {
+		t.Fatalf("scan starts at %+v, want line 5", lines[0])
+	}
+	if d, _ := ParseDoc("x.md", []byte("<!-- a plain comment -->\n# T\n")); d != nil {
+		t.Fatal("only a `<!-- workline` comment is a header")
+	}
+}
