@@ -1,8 +1,8 @@
 # ADR-0001: Write the engine in Go, configure it in YAML, leave Windows out
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-09-24
 - **Date:** 2026-09-23
-- **Decided by:** Sébastien, after a BMAD party-mode round table (architect, developer,
+- **Decided by:** the project's author, after a BMAD party-mode round table (architect, developer,
   security engineer, open-source maintainer, devil's advocate)
 
 ## Context
@@ -69,3 +69,12 @@ in a large tree of transitive dependencies.
 - Contributors to the engine itself need Go.
 - If Windows support is ever needed natively, we reopen this ADR. The Go binary already
   compiles for Windows; the work would be in the role scripts.
+
+## Amendment (2026-09-24)
+
+- **Shipped roles carry their deterministic steps in the binary.** Their `pre`
+  and `post` call `workline builtin <role> pre|post`, so a core role needs
+  nothing but git and the engine. The conductor — engine, routing, apply —
+  holds no role logic, and each role still goes through the role contract like
+  any other: a role of its own replaces the scripts, not the engine.
+- **The CI check of `go.mod`'s direct dependencies is not built yet.**

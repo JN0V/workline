@@ -91,11 +91,11 @@ model:
   capability: writing
   tier: light
   effort: low
-  promote-after: 2        # failed attempts before trying the next tier; 0 = never
+  promote-after: 2        # refused attempts before one last try a tier up; 0 = never
 ```
 
-The ladder stops at `frontier`. The number of attempts is capped, and each one
-is logged with the model it used.
+The ladder stops at `frontier`. The number of attempts is capped at
+`promote-after` + 1: the last one is the only one a tier up.
 
 ## Independent judgement
 

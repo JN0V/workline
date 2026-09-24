@@ -34,7 +34,8 @@ decides at the end. Writing both before starting is what keeps the machine from
 grading its own work. The engine checks that the four are present and not
 empty; it does not judge their quality. A person — or a product role, once it exists — moves an item to
 `ready`. Development roles only take `ready` items, and the item's **scope**
-becomes the run's scope (see "Stay on the task" in the role contract).
+becomes the run's scope (see "Stay on the task" in the role contract). *Not
+built yet: the scope is given with `--scope`; no role takes items yet.*
 
 `review` is the machine's part: reviewers and gates run the verification.
 `validation` is the person's part: the item reaches `done` only when the person
@@ -95,7 +96,8 @@ On a forge, the state of a work item is a label (`workline:ready`,
 is the `state:` line of the item's file in `.workline/work/<id>.md`, whose
 `## Need`, `## Verification`, `## Validation` and `## Scope` sections
 `workline item ready <id>` checks before moving it. Either way, a state changes only through the
-engine, one transition at a time, and each transition is logged.
+engine, one transition at a time, and each transition is logged. *Built so far:
+the move to `ready`, and its check; transitions are not logged yet.*
 
 ## Not in this version
 

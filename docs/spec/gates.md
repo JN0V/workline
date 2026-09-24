@@ -7,8 +7,7 @@ rules. It never asks a model whether to pass.
 ## Where gates are declared
 
 In the `gates:` section of `.workline/config.yaml`, one entry per gate, run with
-`workline gate <name>` (and, once routing exists, as `gate:<name>` in a
-sequence):
+`workline gate <name>`, or as `gate:<name>` in a routing sequence:
 
 ```yaml
 gates:
@@ -40,8 +39,8 @@ gates:
   are for a later version.
 - A check with no threshold is refused when the file is loaded. The criteria
   are decided before the gate runs, never while reading the results.
-- `enforce`, baselines with expiry dates, and `warn` before `block` work as in
-  the role contract.
+- `enforce` and `warn` before `block` work as in the role contract; baselines
+  with expiry dates are not built yet, there or here.
 
 ## Three outcomes, not two
 
@@ -65,13 +64,15 @@ reported as advisory. The verdict comes from the rules either way.
 
 ## Verdict and report
 
-A gate writes the same `verdict.yaml` as a role, with one finding list per
-check. SARIF outputs are merged and posted on the merge request by the forge
-adapter (reviewdog-style), on GitHub and GitLab alike.
+A gate gives the same verdict as a role (`--json`), with the findings of every
+check, and keeps each check's output under `.git/workline/gates/`. *Not built
+yet:* merging the SARIF outputs and posting them on the merge request
+(reviewdog-style), on GitHub and GitLab alike.
 
 ## Protection
 
-`gates.yml`, `routing.yml` and the role folders can only be changed by people,
+The `gates:` and `routing:` sections of `.workline/config.yaml` and the role
+folders can only be changed by people,
 never by an agent's patch: they are outside every role's `duties.writes`, and
 should be protected on the forge (CODEOWNERS or equivalent). A gate the agent
 can edit is not a gate.

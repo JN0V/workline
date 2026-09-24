@@ -55,15 +55,22 @@ expect:
   applied: []
 ```
 
+`given` can also carry `repos`: other repositories to build first, each
+exported by name as an environment variable holding its path, for
+multi-repository cases.
+
 `run` can also carry:
 
+- `route: <event>` instead of `role` — run the event's whole line;
+- `gate: <name>` instead of `role` — run one gate;
+- `route: ready` with `item` — ask routing to move a work item;
+- `target` — the issue or merge request comments and labels go on
+  (`{merge-request: 1}`);
 - `scope` — the run's scope, as a ready work item would give it;
-- `given.repos` — other repositories to build first, each exported by name
-  as an environment variable holding its path, for multi-repository cases;
+- `no-apply: true` — judge, and stop before applying;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
   every run a line judged and did not apply;
-- `tamper: in/` — change the prepared input between prepare and apply;
-- `route: <transition>` with `item` — ask routing to move a work item.
+- `tamper: in/` — change the prepared input between prepare and apply.
 
 `expect` lists only what the case is about; anything not listed is not checked.
 
@@ -71,6 +78,7 @@ expect:
   `where` if given).
 - `agent-calls` — how many times the agent was called.
 - `applied` / `refused` — intentions applied or refused, by kind.
+- `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards.
 - `files` — paths that must exist, or contain a text, afterwards.
 

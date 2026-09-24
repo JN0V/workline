@@ -35,6 +35,9 @@ roles:
   documentalist: {from: "https://gitlab.example.com/tools/roles.git//documentalist", ref: v1.4.0}
 ```
 
+*Not built yet: the engine refuses `from` today. What exists is `--roles <dir>`
+or `WORKLINE_ROLES`, a folder of roles used instead of the shipped ones.*
+
 The engine fetches each role at its pinned version and records what it got —
 commit and content digest — in `.workline/roles.lock`, so every machine and
 every CI job runs the same role. A role fetched from elsewhere is still bound by
@@ -60,6 +63,7 @@ requires: [git]                 # binaries that must be on PATH; anything beyond
                                 # git and the engine is declared here, visibly
 uses: []                        # optional binaries: used when present; when
                                 # missing, the verdict says which check did not run
+                                # (not read yet)
 
 model:                          # what kind of thinking, never a model name
   capability: writing           # see model-grid.md
@@ -77,7 +81,7 @@ duties:
 
 intentions: [commit-message, note]   # subset of the catalogue below
 
-without-ai: block               # block | report | pass — see "No AI"
+without-ai: block               # block | report | pass — see "No AI" (not read yet)
 
 settings:                       # defaults, overridable per project
   subject-max: 72
@@ -140,8 +144,7 @@ token), **apply** (trusted, no AI key).
    and its `duties.writes`. An invalid intention set is refused whole. Valid
    intentions are applied in the catalogue's order — files first, then what
    depends on them, then what only informs — whatever order the agent used,
-   and each one is recorded in
-   `out/applied.yaml` as it succeeds.
+   and each one is recorded in `out/run.yaml` (`applied:`) as it succeeds.
 
 ### When apply stops half-way
 
@@ -149,11 +152,12 @@ Writes to git and to a forge are not transactional: a comment can be posted and
 the label call fail. So every intention is applied idempotently — a label that
 is already there, a comment carrying the run's marker, a tag that already points
 to the right commit all count as done — and `workline apply <run-dir>` resumes a
-run from `out/applied.yaml`, with the evidence of the original run, without
-calling the agent again.
+run from `out/run.yaml`, with the evidence of the original run, without calling
+the agent again.
 
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
-name or `none`) and `WORKLINE_ROLE`.
+name or `none`), `WORKLINE_ROLE`, and `WORKLINE_BIN` (the engine running them,
+which the shipped roles call for their built-in steps).
 
 ### Exit codes
 
@@ -184,6 +188,7 @@ forge that did not answer. It is not the role's verdict on the work, and it must
 never be read as one.
 
 Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab.
+*Not built yet: nothing writes SARIF; `--json` gives the findings.*
 
 ### Warn before block
 
@@ -202,7 +207,8 @@ start in `warn`, and move to `block` once the false positives are gone.
 
 A rule can also be adopted on existing code without fixing all past violations
 first: the violations present today are frozen in a baseline, with a date. Only
-new violations block; once the date passes, the frozen ones block too.
+new violations block; once the date passes, the frozen ones block too. *Not
+built yet.*
 
 ## Intentions
 
@@ -232,7 +238,8 @@ changes in one review, one commit and one release note, and the second fix gets
 none of the attention it deserves. So a role reports it and moves on.
 
 - A run can carry a **scope**: the paths or modules the task is about, taken
-  from the issue, the spec or the command line.
+  from the issue, the spec or the command line (`--scope`; only the command
+  line today).
 - A `patch` touching anything outside the scope is refused at apply, like a
   write outside `duties.writes`.
 - What the agent found there becomes an `issue` intention: what is wrong, where,
@@ -241,13 +248,15 @@ none of the attention it deserves. So a role reports it and moves on.
   duplicate.
 - The fix happens later, as its own task, through the normal line.
 
-The committer applies the same rule at commit time: a commit that mixes the task
-with an unrelated change is split, not merged.
+The committer applies the same rule to messages: several messages proposed for
+one commit are refused, with a note to split the commit instead.
 
 ## No AI
 
 When `--ai none`, or when the agent fails, the run still completes: `post` runs
-without intentions and `without-ai` states what that means.
+without intentions and `without-ai` states what that means. *Not read yet:
+each role's `post` decides on its own today. And when the agent could not be
+reached and `post` does not pass, the run ends `blocked-external`, not `block`.*
 
 - `block` — the check failed and only a human can fix it; the verdict says how.
 - `report` — the work is left as a note or a TODO for a human.
@@ -279,8 +288,8 @@ level that is enough — each one is heavier than the one before:
 | Other values: tag prefix, versioning scheme, limits, paths | **settings** | `.workline/config.yaml`, `roles.<name>.settings` |
 | A rule bites too hard, or is not wanted | **enforcement** | `roles.<name>.enforce`: `warn` or `off` per rule |
 | The AI should write differently: language, tone, sections | **facets** | `.workline/roles/<name>/policy.md` (or any facet), replacing the shipped one |
-| Extra checks on top of the role's own: release only from `main`, a migration needs a note… | **gates** | `gates.yml`, run by routing before or after the role |
-| Different logic: another way to compute versions, another convention | **a role of its own** | `roles.<name>.from` in the config, pinned — a fork of the shipped role, or a new one |
+| Extra checks on top of the role's own: release only from `main`, a migration needs a note… | **gates** | the `gates:` section of `.workline/config.yaml`, run by routing before or after the role |
+| Different logic: another way to compute versions, another convention | **a role of its own** | a folder of roles given by `--roles` or `WORKLINE_ROLES` today; `roles.<name>.from`, pinned, once built — a fork of the shipped role, or a new one |
 
 Settings, enforcement and facets change how a role behaves without touching its
 code. A gate adds checks without replacing anything. Only the last level
@@ -288,6 +297,9 @@ replaces the role's scripts, and the project then owns them — the shipped
 role's conformance cases are the way to check the fork still keeps the contract.
 
 ## Defects become guards
+
+*Not built yet: the ledger and the shared skill. Defects found so far are
+guarded by tests, recorded in the role's README ("Tried for real").*
 
 When a role lets a defect through, fixing the output is not enough. The defect
 is recorded in the role's `DEFECTS.md` (what happened, why, the countermeasure,
@@ -304,11 +316,10 @@ where the defect happened, and pass on the fixed tree. A guard that cannot fail
 protects nothing, and a guard that fails on everything gets switched off. A rule written only in `policy.md` is a
 wish; the ledger is where wishes become checks.
 
-## Not in this version
+## Not built yet
 
-- Routing between roles and gates: see `routing.md` and `gates.md`.
-- Running on a forge: the same run, with the forge adapter applying `comment`,
-  `label`, `release` and merge-request `patch`.
-- Conformance tests: written next, before any engine code. They include a bench
-  per role — fixture repositories and a simulated forge — so a role can be
-  graded on its own, with or without AI.
+What this contract describes and the engine does not do yet, each marked where
+it is described: roles taken from elsewhere (`from`, `roles.lock`), `uses`,
+`without-ai`, SARIF, baselines, the defect ledger. The rest is built and
+covered by the conformance cases (conformance.md); routing and gates are in
+routing.md and gates.md.
