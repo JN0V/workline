@@ -9,3 +9,7 @@ roles:
     settings:
       # The role READMEs describe what the code does: they are docs too.
       docs: ["docs/**", "*.md", "roles/*/README.md"]
+routing:
+  # Before a push, the committer checks the commits leaving the machine, and
+  # the documentalist has the docs they made suspect judged.
+  events: {pre-push: [committer, documentalist]}
