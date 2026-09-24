@@ -134,6 +134,9 @@ func internalCodes(subject string, s Settings) ([]string, error) {
 // Pre is the role's prepare step: check the message; if it fails, ask the
 // agent to rewrite it. Exit 10 when there is nothing to do.
 func Pre(runDir, repo string) int {
+	if rng := inputValue(runDir, "range"); rng != "" {
+		return checkRange(runDir, repo, rng)
+	}
 	s, msg, err := load(runDir)
 	if err != nil {
 		return fail(err)
@@ -294,4 +297,50 @@ func Trailers(message string) []string {
 		return nil // not a separate last paragraph: not trailers
 	}
 	return out
+}
+
+// checkRange checks every commit of a merge request (base..head). Commits
+// already pushed are not rewritten: the findings go to the people who wrote
+// them, so no agent is asked.
+func checkRange(runDir, repo, rng string) int {
+	var s Settings
+	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
+	if err != nil {
+		return fail(err)
+	}
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fail(err)
+	}
+	out, err := exec.Command("git", "-C", repo, "log", "--format=%h%x1f%B%x1e", rng).Output()
+	if err != nil {
+		return fail(fmt.Errorf("cannot read the commits of %s: %v", rng, err))
+	}
+	var findings []verdict.Finding
+	for _, rec := range strings.Split(string(out), "\x1e") {
+		hash, msg, ok := strings.Cut(strings.TrimSpace(rec), "\x1f")
+		if !ok {
+			continue
+		}
+		f, err := Check(msg, s)
+		if err != nil {
+			return fail(err)
+		}
+		for _, x := range f {
+			x.Where = "commit " + hash + ", " + x.Where
+			findings = append(findings, x)
+		}
+	}
+	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
+	if len(findings) > 0 {
+		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}
+	}
+	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
+		return fail(err)
+	}
+	return 10
+}
+
+func inputValue(runDir, name string) string {
+	data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
+	return strings.TrimSpace(string(data))
 }
