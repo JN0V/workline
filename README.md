@@ -1,3 +1,7 @@
+<!-- workline
+sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
+checked: 5b8b173
+-->
 <h1>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">

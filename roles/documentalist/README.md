@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist, roles/documentalist/role.yaml]
-checked: 82b6394
+checked: 5b8b173
 ---
 # Documentalist
 
@@ -9,7 +9,8 @@ What runs, for humans. The AI never reads this file.
 ## Prepare (`pre`, no AI)
 
 1. **Suspects.** For each doc, list commits since its `checked` commit that
-   touched its `sources`. Follow the chain: a suspect technical section makes
+   touched its `sources` (in its frontmatter, or in a `<!-- workline … -->`
+   comment at its top where a frontmatter would show, as in a README). Follow the chain: a suspect technical section makes
    the product docs depending on it suspect too.
 2. **Budgets.** Lines per doc, words per section (its own text, up to the next
    heading), card size (min and max: too small is fragmentation), lines per

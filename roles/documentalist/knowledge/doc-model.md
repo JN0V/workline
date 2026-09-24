@@ -13,6 +13,16 @@ status: draft | stable | deprecated
 ---
 ```
 
+A doc whose frontmatter would show on the forge — a README — carries the same
+fields in a comment at its very top instead:
+
+```
+<!-- workline
+sources: [cmd/workline, ci]
+checked: 3f2a91c
+-->
+```
+
 A source in another repository is prefixed with that repository's name, as
 declared in the project's config (`api:src/auth/token.go`), and `checked` then
 holds one commit per repository (`checked: {api: 3f2a91c}`).
