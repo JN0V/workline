@@ -1,0 +1,11 @@
+case: documentalist/miscounted-hunk-applied
+about: A hunk holding more lines than its header announces is applied as it reads; no line past the count is dropped.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-miscounted"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}

@@ -212,7 +212,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | Intention | Effect | Applied |
 |---|---|---|
 | `commit-message` | replace the message being written | locally |
-| `patch` | a unified diff, or `{file, content}` to replace one file; limited to `duties.writes` | locally or as a merge request |
+| `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), or `{file, content}` to replace one file; limited to `duties.writes` | locally or as a merge request |
 | `comment` | a comment on the issue or merge request | forge |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem found outside the task, without fixing it | forge, or `.workline/issues/` without one |

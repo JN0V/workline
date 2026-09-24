@@ -359,7 +359,7 @@ func patchFiles(repo string, v any) []string {
 		return nil
 	}
 	diff, _ := v.(string)
-	out, err := git(repo, strings.NewReader(diff), "apply", "--numstat", "-")
+	out, err := git(repo, strings.NewReader(diff), "apply", "--recount", "--numstat", "-")
 	if err != nil {
 		return nil
 	}
@@ -607,7 +607,7 @@ func (a *applier) patch(v any) error {
 	if !ok {
 		return errors.New("expected a unified diff or {file, content}")
 	}
-	files, err := git(a.repo, strings.NewReader(diff), "apply", "--numstat", "-")
+	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--numstat", "-")
 	if err != nil {
 		return fmt.Errorf("unreadable diff: %w", err)
 	}
@@ -620,7 +620,9 @@ func (a *applier) patch(v any) error {
 			touched = append(touched, f[2])
 		}
 	}
-	if _, err := git(a.repo, strings.NewReader(diff), "apply", "-"); err != nil {
+	// --recount: a diff is applied as its lines read. Agents often get the
+	// counts of a hunk header wrong, and git would drop the lines past them.
+	if _, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "-"); err != nil {
 		return err
 	}
 	a.written = append(a.written, touched...)
