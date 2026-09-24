@@ -5,16 +5,12 @@
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
 
-1. **The line on the machine, before a push.** A `pre-push` hook runs the
-   `merge-request` line on the commits being pushed, with the person's agent:
-   the committer checks the range, the documentalist has suspect docs judged
-   and proposes its patches, reviewed before the push goes out.
-2. **Documentalist: act on what it reports.** The condense and split tasks,
+1. **Documentalist: act on what it reports.** The condense and split tasks,
    judged mechanically (no MUST or SHOULD lost, whole parts moved, links in
    place); derived blocks (`workline:derive`) for facts typed by hand; sources
    declared in `.workline/config.yaml` for docs that cannot carry frontmatter,
    like the root README.
-3. **Evaluation of both roles.** The "Evaluation" level of
+2. **Evaluation of both roles.** The "Evaluation" level of
    docs/spec/conformance.md: a real agent on real cases — this repository's own
    refused messages and suspect docs — graded, and the score kept over time.
    The first four committer cases are in roles/committer/README.md ("Tried for

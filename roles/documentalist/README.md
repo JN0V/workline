@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist, roles/documentalist/role.yaml]
-checked: d30d22a
+checked: 82b6394
 ---
 # Documentalist
 
@@ -78,6 +78,14 @@ The judge reads a diff as its lines read, whatever counts its hunk headers
 announce, and compares its reading with git's: the engine applies with
 `git apply --recount`, so what was judged is what is applied.
 
+## Before a push
+
+A project that routes `pre-push` (`routing: {events: {pre-push: [committer,
+documentalist]}}`) has its suspect docs judged on the machine, with the
+person's agent, before the commits leave it. The patches land in the working
+tree and the push stops: the person reviews them, commits them, and pushes
+again. Without an agent, the suspect docs are listed and the push goes on.
+
 ## Without AI
 
 All checks still run. Suspect docs are reported for a person, who clears each
@@ -101,3 +109,12 @@ the `documented` fixture:
 
 On workline's own repository, without AI: no false positive; one real finding
 (docs/spec/role-contract.md is over its line budget).
+
+On 2026-09-24, before a push of workline itself (a copy, pushed to a local
+remote): the line found three docs whose code had changed since they were
+checked — two of them real, left behind by the day's own commits. Claude judged
+all three still true and said why, line by line. Its first patches set
+`checked` to the commit that had changed each source, not to the one the task
+gave: the task now says "your patch sets `checked: …`", and a refusal repeats
+the commit. The next run was right at the first attempt; the push stopped for
+review, the docs were committed, and the push went through.

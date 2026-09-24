@@ -55,7 +55,9 @@ workline ships a default line (`routing.default.yaml`); a project changes it in
 the `routing:` section of `.workline/config.yaml`. An event it lists replaces
 the default one; a `handoffs` list it gives replaces the default list — an
 empty list forbids every handoff. `workline route <event>` runs an event's
-steps; the git hooks run `commit-msg` through the line too.
+steps; the git hooks run `commit-msg` and `pre-push` through the line too.
+`pre-push` is not routed by default: the global hook reaches every repository
+on the machine, and a project opts in.
 
 ```yaml
 routing:

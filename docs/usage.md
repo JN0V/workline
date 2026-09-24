@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: d30d22a
+checked: 82b6394
 ---
 # Using workline
 
@@ -16,7 +16,7 @@ What a role does is in its own README (`roles/<name>/README.md`).
 | `workline apply <run-dir>...` or `--line <file>` | applies runs judged with `--no-apply`, or resumes a run stopped while applying; `--line` takes the runs a `route --no-apply --json` result lists as `pending` |
 | `workline gate <name>` | runs a gate declared in `.workline/config.yaml` |
 | `workline item ready <id>` | moves a work item to `ready`, once its Need, Verification, Validation and Scope are written (`--forge` reads it from the forge) |
-| `workline hooks install --global` / `uninstall --global` | takes `core.hooksPath` for every repository, and gives it back as it was |
+| `workline hooks install --global` / `uninstall --global` | takes `core.hooksPath` for every repository, and gives it back as it was; the hooks run the `commit-msg` and `pre-push` lines, then hand over to the hooks that were there |
 | `workline hooks install --repo` | writes `.githooks/commit-msg` in this repository; remove that file to uninstall |
 
 Options of `run-role` and `route`:
@@ -46,6 +46,22 @@ Options of `run-role` and `route`:
 
 `workline gate` returns 0 or 1. An unknown option exits 2, from Go's option
 parser, which a script cannot tell from `human` (docs/BACKLOG.md).
+
+## Before a push
+
+The `pre-push` hook runs the project's `pre-push` line on the commits being
+pushed, with the person's agent — only when `.workline/config.yaml` routes it,
+since the global hook reaches every repository:
+
+```yaml
+routing:
+  events: {pre-push: [committer, documentalist]}
+```
+
+A step that blocks stops the push. So does a doc the documentalist patched: it
+is in the working tree, to review, commit, and push again. Sizes and links the
+line reports on every run are only counted. `git push --no-verify` skips the
+hook.
 
 ## Files
 

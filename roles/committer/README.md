@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml]
-checked: d30d22a
+checked: 82b6394
 ---
 # Committer
 
@@ -8,8 +8,9 @@ What runs, for humans. The AI never reads this file.
 
 ## Check (`pre`, no AI)
 
-On `commit-msg` (the git hook), the message being written; on `merge-request`,
-every commit of the range given as `--input range=<base>..<head>`.
+On `commit-msg` (the git hook), the message being written; on `merge-request`
+and `pre-push`, every commit of the range given as `--input range=<base>..<head>`
+(the pre-push hook gives the commits being pushed).
 
 | Rule | Refuses |
 |---|---|

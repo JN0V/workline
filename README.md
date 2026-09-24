@@ -53,6 +53,7 @@ flowchart LR
   routing[("one routing<br/>.workline/config.yaml")]
   subgraph machine["Your machine"]
     commit["git commit"] -- commit-msg --> committer1["committer"]
+    push["git push"] -- pre-push --> local["the project's pre-push line"]
   end
   subgraph forge["Forge: GitHub or GitLab"]
     mr["merge request"] -- merge-request --> judge["judge job<br/>committer, documentalist<br/>no write token"]
@@ -61,6 +62,7 @@ flowchart LR
   end
   machine -- git push --> forge
   routing -.-> committer1
+  routing -.-> local
   routing -.-> judge
   routing -.-> documentalist
 ```
@@ -68,6 +70,7 @@ flowchart LR
 | Event | Fired by | Roles by default |
 |---|---|---|
 | `commit-msg` | your machine: the global git hook | committer |
+| `pre-push` | your machine, before the commits leave it, if the project routes it | none by default; workline itself: committer, documentalist |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
 | `schedule` | you, or a scheduled pipeline you add (the templates have none yet) | documentalist |
 | `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | release-manager |
@@ -78,7 +81,7 @@ forge, one job judges without a write token and another applies without an AI
 key (`--no-apply`, then `workline apply`).
 
 The CI templates run `workline route merge-request`, so a project's `routing:`
-reaches its CI too. Not wired yet: locally, only `commit-msg` runs roles.
+reaches its CI too.
 
 ## Take only a part
 
