@@ -1,11 +1,13 @@
 // Command workline runs the roles of the line.
 //
-//	workline run-role <role> --event <event> [--ai none|fake:<file>|unavailable:<reason>]
-//	                  [--repo <dir>] [--roles <dir>]
-//	                  [--input name=value]... [--input-file name=path]... [--json]
-//	workline route <event> [--repo <dir>] [--ai ...] [--input name=value]... [--json]
+// Every command and option is described in docs/usage.md.
+//
+//	workline run-role <role> --event <event> [--ai none|claude|fake:<file>|unavailable:<reason>]
+//	                  [--repo <dir>] [--roles <dir>] [--forge ...] [--target ...] [--scope ...]
+//	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
+//	workline route <event> [same options as run-role, but --input-file]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
-//	workline apply <run-dir> [--json]    (resume a run stopped while applying)
+//	workline apply <run-dir>... | --line <route result> [--json]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
@@ -153,11 +155,14 @@ func report(r *engine.Result) {
 		fmt.Fprintf(os.Stderr, "  handoff: %v\n", h)
 	}
 	for _, f := range r.Findings {
-		level := ""
+		level, where := "", ""
 		if f.Level != "" {
 			level = " (" + f.Level + ")"
 		}
-		fmt.Fprintf(os.Stderr, "  %s%s: %s\n", f.Rule, level, f.Message)
+		if f.Where != "" {
+			where = " " + f.Where
+		}
+		fmt.Fprintf(os.Stderr, "  %s%s%s: %s\n", f.Rule, where, level, f.Message)
 	}
 }
 
