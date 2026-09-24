@@ -1,0 +1,8 @@
+case: committer/merge-request-checks-every-commit
+about: On a merge request, every commit of the range is checked, and a bad one blocks without asking an agent.
+given:
+  repo: basic
+  setup:
+    - "git tag base && echo a >> main.go && git commit -qam 'fix: AC-3' && echo b >> main.go && git commit -qam 'feat: add a greeting'"
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, ai: "fake:good-commit-message"}
+expect: {status: block, agent-calls: 0, findings: [{rule: internal-code, where: "commit"}]}
