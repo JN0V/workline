@@ -1,5 +1,20 @@
 # Backlog
 
+## Next, in order
+
+1. **Documentalist, second slice** — size budgets (per doc, section, folder;
+   a minimum card size too), duplicates, dead links, identifiers gone from the
+   code, and the AI call that judges a suspect doc (docs/research/documentalist.md).
+2. **Release manager, merge-request flow** — a release MR kept up to date, the
+   tag on merge; the natural flow in a team.
+3. **Publishing** — tagged, signed binaries and a public repository, so CI can
+   install workline (`go install` fails on a private module).
+4. **More agents** — Codex, Antigravity, OpenCode adapters; generate the model
+   grid from models.dev and Epoch (docs/spec/model-grid.md).
+5. **Next roles** — reviewer (independent vendor), architect, tester.
+
+## Parked
+
 Topics raised and parked, so they are not lost. Newest last.
 
 - **Consolidate the test corpus.** Tests should prove behaviour over time, not

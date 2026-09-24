@@ -5,8 +5,17 @@ manager, documentalist… — does one job with only the context it needs, tools
 the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
-Status: early. The committer works; the other roles are specified and tested
-but not built yet.
+Status (2026-09-24): used daily on its author's machine; 38 conformance cases
+green in CI.
+
+| Works | Not yet |
+|---|---|
+| **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages | |
+| **Release manager**: semver, calver, several packages in one repository, generated changelog, tag, forge release | the merge-request flow, build metadata |
+| **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades | size budgets, duplicates, dead links, AI judgement of suspect docs |
+| **Gates**, **routing** and handoffs, **work items** (local or forge issues) | |
+| **Forges**: GitHub (tried live), simulated; GitLab written | GitLab never run |
+| Agents: Claude Code | Codex, Antigravity, OpenCode; the generated model grid |
 
 ## Try it
 
