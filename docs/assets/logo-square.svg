@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">workline</title>
+  <!-- the mark of logo.svg on a tile, so one version reads on any background -->
+  <rect width="256" height="256" rx="56" fill="#1f2328"/>
+  <g transform="translate(6 58) scale(1.75)">
+    <line stroke="#e6edf3" x1="8" y1="50" x2="104" y2="50" stroke-width="5" stroke-linecap="round"/>
+    <rect fill="#e6edf3" x="16" y="30" width="16" height="16" rx="3"/>
+    <rect fill="#e6edf3" x="46" y="30" width="16" height="16" rx="3"/>
+    <rect fill="#e6edf3" x="76" y="30" width="16" height="16" rx="3"/>
+    <circle fill="#3fb950" cx="120" cy="40" r="14"/>
+    <polyline stroke="#1f2328" points="113,40 118,46 128,34" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
