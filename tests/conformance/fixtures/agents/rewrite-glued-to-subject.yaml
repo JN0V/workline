@@ -1,0 +1,4 @@
+- commit-message: |-
+    docs: document the core log capture
+    Add references for the log capture and its measured costs.
+    Co-Authored-By: A <a@example.invalid> Refs: BUG-64

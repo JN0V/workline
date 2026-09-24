@@ -1,0 +1,9 @@
+case: committer/rewrite-glued-to-subject
+about: A rewrite whose body is glued to the subject, with trailers merged, is refused — after asking once more.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "docs: BUG-64 done\n\nCo-Authored-By: A <a@example.invalid>"}, ai: "fake:rewrite-glued-to-subject"}
+expect:
+  status: block
+  agent-calls: 2
+  applied: []
+  findings: [{rule: blank-after-subject}, {rule: trailer-dropped}]

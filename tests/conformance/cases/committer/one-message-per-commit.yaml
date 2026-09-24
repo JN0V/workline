@@ -1,0 +1,5 @@
+case: committer/one-message-per-commit
+about: Two messages proposed for one commit are refused; a split is proposed as a note.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:two-messages"}
+expect: {status: block, applied: [], findings: [{rule: several-messages}]}

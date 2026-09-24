@@ -1,0 +1,4 @@
+- commit-message: |
+    fix(parser): stop crashing on an empty input file
+- commit-message: |
+    docs: explain empty inputs
