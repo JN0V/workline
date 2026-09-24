@@ -59,17 +59,18 @@ type caseFile struct {
 		Forge  map[string]any      `yaml:"forge"`
 	} `yaml:"given"`
 	Run struct {
-		Role   string            `yaml:"role"`
-		Target map[string]int    `yaml:"target"`
-		Event  string            `yaml:"event"`
-		Input  map[string]string `yaml:"input"`
-		AI     string            `yaml:"ai"`
-		Scope  []string          `yaml:"scope"`
-		Tamper string            `yaml:"tamper"`
-		Then   string            `yaml:"then"`
-		Route  string            `yaml:"route"`
-		Item   int               `yaml:"item"`
-		Gate   string            `yaml:"gate"`
+		Role    string            `yaml:"role"`
+		Target  map[string]int    `yaml:"target"`
+		NoApply bool              `yaml:"no-apply"`
+		Event   string            `yaml:"event"`
+		Input   map[string]string `yaml:"input"`
+		AI      string            `yaml:"ai"`
+		Scope   []string          `yaml:"scope"`
+		Tamper  string            `yaml:"tamper"`
+		Then    string            `yaml:"then"`
+		Route   string            `yaml:"route"`
+		Item    int               `yaml:"item"`
+		Gate    string            `yaml:"gate"`
 	} `yaml:"run"`
 	Expect struct {
 		Status     string                    `yaml:"status"`
@@ -194,6 +195,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	for _, s := range c.Run.Scope {
 		args = append(args, "--scope", s)
+	}
+	if c.Run.NoApply {
+		args = append(args, "--no-apply")
 	}
 	if c.Run.Tamper != "" {
 		args = append(args, "--test-tamper-before-apply")
