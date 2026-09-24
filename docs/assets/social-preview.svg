@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="title">
+  <title id="title">workline — one role, one job; tools first, AI for judgement</title>
+  <!-- GitHub's social preview (Settings → General → Social preview), rendered to PNG -->
+  <rect width="1280" height="640" fill="#1f2328"/>
+  <g transform="translate(257 174) scale(2.4)">
+    <line stroke="#e6edf3" x1="8" y1="50" x2="104" y2="50" stroke-width="4" stroke-linecap="round"/>
+    <rect fill="#e6edf3" x="16" y="30" width="16" height="16" rx="3"/>
+    <rect fill="#e6edf3" x="46" y="30" width="16" height="16" rx="3"/>
+    <rect fill="#e6edf3" x="76" y="30" width="16" height="16" rx="3"/>
+    <circle fill="#3fb950" cx="120" cy="40" r="14"/>
+    <polyline stroke="#1f2328" points="113,40 118,46 128,34" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text fill="#e6edf3" x="148" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="36" font-weight="700" letter-spacing="-1">workline</text>
+  </g>
+  <text fill="#9198a1" x="640" y="404" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="40">One role, one job. Tools first, AI for judgement.</text>
+</svg>
