@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -394,14 +395,7 @@ func matchAny(globs []string, path string) bool {
 	return false
 }
 
-// match supports "dir/**" and filepath.Match patterns.
-func match(glob, path string) bool {
-	if dir, ok := strings.CutSuffix(glob, "/**"); ok {
-		return strings.HasPrefix(path, dir+"/")
-	}
-	ok, _ := filepath.Match(glob, path)
-	return ok
-}
+func match(glob, path string) bool { return pathglob.Match(glob, path) }
 
 func git(dir string, args ...string) (string, error) {
 	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)

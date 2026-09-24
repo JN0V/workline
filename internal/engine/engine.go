@@ -19,6 +19,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
@@ -302,18 +303,7 @@ func (a *applier) allowed(path string) bool {
 	if strings.HasPrefix(clean, "../") || filepath.IsAbs(path) {
 		return false
 	}
-	for _, pat := range a.writes {
-		if pat == clean {
-			return true
-		}
-		if dir, ok := strings.CutSuffix(pat, "/**"); ok && strings.HasPrefix(clean, dir+"/") {
-			return true
-		}
-		if ok, _ := filepath.Match(pat, clean); ok {
-			return true
-		}
-	}
-	return false
+	return pathglob.Any(a.writes, clean)
 }
 
 // patch applies a unified diff, or replaces one file with {file, content}.
