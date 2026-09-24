@@ -4,7 +4,8 @@
 //	                  [--repo <dir>] [--roles <dir>]
 //	                  [--input name=value]... [--input-file name=path]... [--json]
 //	workline route <event> [--repo <dir>] [--ai ...] [--input name=value]... [--json]
-//	workline item ready <id> [--repo <dir>] [--json]
+//	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
+//	workline apply <run-dir> [--json]    (resume a run stopped while applying)
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
@@ -24,6 +25,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/releasemanager"
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/line"
@@ -52,6 +54,8 @@ func main() {
 		os.Exit(routeCmd(os.Args[2:]))
 	case "item":
 		os.Exit(itemCmd(os.Args[2:]))
+	case "apply":
+		os.Exit(applyCmd(os.Args[2:]))
 	}
 	usage()
 }
@@ -85,6 +89,10 @@ func runRole(args []string) int {
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles (default: the roles built into this binary)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	tamper := fs.Bool("test-tamper-before-apply", false, "conformance tests only")
+	forgeSpec := fs.String("forge", "", "forge: github, gitlab, none, fake:<file> (default: the project's `forge` setting)")
+	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
+	var scope multi
+	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	inputs, inputFiles := pairs{}, pairs{}
 	fs.Var(inputs, "input", "input name=value (repeatable)")
 	fs.Var(inputFiles, "input-file", "input name=path, written back by intentions that target it (repeatable)")
@@ -107,9 +115,15 @@ func runRole(args []string) int {
 		return 1
 	}
 	absRoles, _ := filepath.Abs(rolesDir)
+	t, err := parseTarget(*target)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
 	res := engine.Run(engine.Options{
 		Repo: absRepo, RolesDir: absRoles, Role: name, Event: *event, AI: *ai,
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
+		Forge: *forgeSpec, Target: t, Scope: scope,
 	})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
@@ -371,10 +385,23 @@ func itemCmd(args []string) int {
 	}
 	fs := flag.NewFlagSet("item", flag.ExitOnError)
 	repo := fs.String("repo", ".", "repository holding .workline/work/")
+	forgeSpec := fs.String("forge", "", "read the item from this forge instead of .workline/work/")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	_ = fs.Parse(args[2:])
 	abs, _ := filepath.Abs(*repo)
-	v := work.Ready(abs, args[1])
+	var v *verdict.Verdict
+	if *forgeSpec != "" && *forgeSpec != "none" {
+		f, err := forge.Open(*forgeSpec, abs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 64
+		}
+		var id int
+		fmt.Sscan(args[1], &id)
+		v = work.ReadyOnForge(f, id)
+	} else {
+		v = work.Ready(abs, args[1])
+	}
 	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
@@ -395,4 +422,39 @@ func exitFor(status string) int {
 		return 3
 	}
 	return 1
+}
+
+func applyCmd(args []string) int {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir> [--json]")
+		return 64
+	}
+	fs := flag.NewFlagSet("apply", flag.ExitOnError)
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	_ = fs.Parse(args[1:])
+	res := engine.Resume(args[0])
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(res.Status)
+}
+
+type multi []string
+
+func (m *multi) String() string     { return strings.Join(*m, ",") }
+func (m *multi) Set(s string) error { *m = append(*m, s); return nil }
+
+func parseTarget(s string) (*forge.Target, error) {
+	if s == "" {
+		return nil, nil
+	}
+	kind, num, ok := strings.Cut(s, ":")
+	var id int
+	if _, err := fmt.Sscan(num, &id); !ok || err != nil || (kind != "issue" && kind != "merge-request") {
+		return nil, fmt.Errorf("--target must be issue:<n> or merge-request:<n>, not %q", s)
+	}
+	return &forge.Target{Kind: kind, ID: id}, nil
 }

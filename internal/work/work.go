@@ -4,12 +4,14 @@
 package work
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -50,15 +52,7 @@ func Ready(repo, id string) *verdict.Verdict {
 		return &verdict.Verdict{Status: verdict.Block, Summary: "no such work item",
 			Findings: []verdict.Finding{{Rule: "no-item", Where: id, Message: err.Error()}}}
 	}
-	sections := Sections(string(data))
-	var missing []verdict.Finding
-	for _, r := range Required {
-		if strings.TrimSpace(sections[r]) == "" {
-			missing = append(missing, verdict.Finding{Rule: "not-ready", Where: r,
-				Message: fmt.Sprintf("## %s is missing or empty", r)})
-		}
-	}
-	if len(missing) > 0 {
+	if missing := check(string(data)); len(missing) > 0 {
 		return &verdict.Verdict{Status: verdict.Block, Summary: "the item stays in to-refine", Findings: missing}
 	}
 	content := string(data)
@@ -71,4 +65,36 @@ func Ready(repo, id string) *verdict.Verdict {
 		return &verdict.Verdict{Status: verdict.Block, Findings: []verdict.Finding{{Rule: "engine-error", Message: err.Error()}}}
 	}
 	return &verdict.Verdict{Status: verdict.Pass, Summary: "item " + id + " is ready"}
+}
+
+// ReadyOnForge is Ready for an issue on a forge: the sections are read from its
+// description, and a ready issue gets the workline:ready label.
+func ReadyOnForge(f forge.Forge, id int) *verdict.Verdict {
+	is, err := f.Issue(id)
+	if err != nil {
+		status := verdict.Block
+		if errors.Is(err, forge.ErrUnreachable) {
+			status = verdict.BlockedExternal
+		}
+		return &verdict.Verdict{Status: status, Findings: []verdict.Finding{{Rule: "no-item", Where: fmt.Sprint(id), Message: err.Error()}}}
+	}
+	if missing := check(is.Body); len(missing) > 0 {
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the item stays in to-refine", Findings: missing}
+	}
+	if err := f.Label(forge.Target{Kind: "issue", ID: id}, []string{"workline:ready"}, []string{"workline:to-refine"}); err != nil {
+		return &verdict.Verdict{Status: verdict.BlockedExternal, Findings: []verdict.Finding{{Rule: "forge-unreachable", Message: err.Error()}}}
+	}
+	return &verdict.Verdict{Status: verdict.Pass, Summary: fmt.Sprintf("issue #%d is ready", id)}
+}
+
+func check(content string) []verdict.Finding {
+	sections := Sections(content)
+	var missing []verdict.Finding
+	for _, r := range Required {
+		if strings.TrimSpace(sections[r]) == "" {
+			missing = append(missing, verdict.Finding{Rule: "not-ready", Where: r,
+				Message: fmt.Sprintf("## %s is missing or empty", r)})
+		}
+	}
+	return missing
 }

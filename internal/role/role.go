@@ -86,7 +86,8 @@ func (r *Role) Allows(kind string) bool {
 
 // ProjectConfig is the part of .workline/config.yaml the engine reads today.
 type ProjectConfig struct {
-	AI    string `yaml:"ai"` // default agent for this project: none, claude...
+	AI    string `yaml:"ai"`    // default agent for this project: none, claude...
+	Forge string `yaml:"forge"` // github, gitlab, or none
 	Roles map[string]struct {
 		Settings map[string]any    `yaml:"settings"`
 		Enforce  map[string]string `yaml:"enforce"`

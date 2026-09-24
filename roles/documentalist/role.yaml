@@ -26,7 +26,7 @@ duties:
   reads: ["**"]
   writes: [$settings.docs]    # only documentation, never code
 
-intentions: [patch, issue, comment, note]
+intentions: [patch, issue, comment, label, note]
 
 # Without AI, every check still runs and still blocks. What needed judgement
 # (is this suspect doc still right? how to shorten this one?) becomes a
