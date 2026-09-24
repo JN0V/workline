@@ -60,7 +60,8 @@ expect:
 - `scope` — the run's scope, as a ready work item would give it;
 - `given.repos` — other repositories to build first, each exported by name
   as an environment variable holding its path, for multi-repository cases;
-- `then: resume` — after the run, resume it with `run-role apply`;
+- `then: resume` — after the run, resume it with `workline apply`: the run, or
+  every run a line judged and did not apply;
 - `tamper: in/` — change the prepared input between prepare and apply;
 - `route: <transition>` with `item` — ask routing to move a work item.
 

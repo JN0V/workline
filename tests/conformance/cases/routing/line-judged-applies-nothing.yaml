@@ -1,0 +1,12 @@
+case: routing/line-judged-applies-nothing
+about: A line judged with --no-apply runs every step, on the forge and target given, and writes nothing yet.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge: {merge-requests: [{id: 1, labels: [], comments: []}]}
+run: {route: merge-request, input: {range: "HEAD~1..HEAD"}, target: {merge-request: 1}, ai: "fake:comment-and-label", no-apply: true}
+expect:
+  status: pass
+  agent-calls: 1
+  steps: [committer, documentalist]
+  forge: {merge-requests: [{id: 1, comments: 0, labels: []}]}

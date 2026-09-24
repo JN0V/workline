@@ -1,0 +1,7 @@
+case: routing/apply-defers-handoff
+about: "`workline apply` records a handoff but runs no role; it says the next role is still to run."
+given:
+  repo: released
+  config: {roles: {release-manager: {settings: {flow: direct}}}}
+run: {route: release, ai: "fake:release-and-handoff", no-apply: true, then: resume}
+expect: {status: pass, applied: [patch, release, handoff], findings: [{rule: handoff-deferred}]}

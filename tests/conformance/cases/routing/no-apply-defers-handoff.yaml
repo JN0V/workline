@@ -1,0 +1,7 @@
+case: routing/no-apply-defers-handoff
+about: With --no-apply, a handoff cannot run in the judging job; the line says so instead of dropping it.
+given:
+  repo: released
+  config: {roles: {release-manager: {settings: {flow: direct}}}}
+run: {route: release, ai: "fake:release-and-handoff", no-apply: true}
+expect: {status: pass, steps: [release-manager], findings: [{rule: handoff-deferred}]}

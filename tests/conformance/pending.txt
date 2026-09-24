@@ -1,2 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+routing/line-judged-applies-nothing
+routing/line-judged-then-applied
+routing/no-apply-defers-handoff
+routing/apply-defers-handoff

@@ -93,6 +93,7 @@ type result struct {
 	} `json:"findings"`
 	AgentCalls int      `json:"agent-calls"`
 	RunDir     string   `json:"run-dir"`
+	Pending    []string `json:"pending"` // runs a line judged and did not apply
 	Applied    []string `json:"applied"`
 	Refused    []string `json:"refused"`
 	Steps      []struct {
@@ -212,10 +213,14 @@ func runCase(t *testing.T, c *caseFile) []string {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
 	if c.Run.Then == "resume" {
-		if r.RunDir == "" {
+		dirs := r.Pending
+		if len(dirs) == 0 && r.RunDir != "" {
+			dirs = []string{r.RunDir}
+		}
+		if len(dirs) == 0 {
 			return []string{"the first run reported no run folder to resume"}
 		}
-		resume := exec.Command(engineBin, "apply", r.RunDir, "--json")
+		resume := exec.Command(engineBin, append(append([]string{"apply"}, dirs...), "--json")...)
 		resume.Env = env
 		stdout.Reset()
 		resume.Stdout, resume.Stderr = &stdout, &stderr
