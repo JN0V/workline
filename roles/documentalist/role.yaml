@@ -3,9 +3,11 @@ name: documentalist
 mission: The docs stay true to the code, short enough to be read, and the product docs follow the technical ones.
 
 # merge-request: check what this change makes suspect, before it merges.
+# pre-push: the same on the machine, before the commits leave it, with the
+#           person's agent; its patches are reviewed before pushing again.
 # schedule: gardening — freshness, duplicates, budgets, across the whole repo.
 # handoff: from the release manager, when a release changes how the project is used.
-events: [merge-request, schedule, handoff]
+events: [merge-request, pre-push, schedule, handoff]
 
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine

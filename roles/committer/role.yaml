@@ -4,7 +4,8 @@ mission: Every commit is atomic, and its message tells a newcomer what changed a
 
 # commit-msg: the local git hook, on the message being written.
 # merge-request: CI, on every commit of the MR — the net for hooks that were skipped.
-events: [commit-msg, merge-request]
+# pre-push: the same on the machine, on the commits about to be pushed.
+events: [commit-msg, merge-request, pre-push]
 
 requires: [git]
 # The user's existing checks, to run when installed, the verdict saying when they

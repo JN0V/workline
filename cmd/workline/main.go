@@ -32,6 +32,7 @@ import (
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/rolefs"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
@@ -242,10 +243,14 @@ func hooksCmd(args []string) int {
 	return 0
 }
 
-// hookCmd is what the installed hooks call. Today only commit-msg does work.
+// hookCmd is what the installed hooks call: commit-msg and pre-push do work,
+// the others hand over.
 func hookCmd(args []string) int {
 	if len(args) == 0 {
 		usage()
+	}
+	if args[0] == "pre-push" && len(args) >= 2 {
+		return prePush(args[1])
 	}
 	if args[0] != "commit-msg" || len(args) < 2 {
 		return 0
@@ -307,6 +312,87 @@ func hookCmd(args []string) int {
 	}
 	fmt.Fprintln(os.Stderr, "commit aborted; your message is kept in", msgFile)
 	return 1
+}
+
+// prePushQuiet are the findings a push does not need to show: sizes and links
+// the line reports on every run, whatever is being pushed. They are counted,
+// and `workline route pre-push` shows them.
+var prePushQuiet = map[string]bool{
+	"doc-too-long": true, "section-too-long": true, "card-too-short": true, "card-too-long": true,
+	"folder-too-long": true, "agent-file-too-long": true, "links-not-checked": true, "nothing-tracked": true,
+}
+
+// prePush runs the project's pre-push line on the commits being pushed, with
+// the person's agent. Nothing runs unless the project routes pre-push: the
+// global hook reaches every repository on the machine. A doc the line patched
+// stops the push, so the person reviews it and pushes again.
+func prePush(remote string) int {
+	root, err := gitRoot(".")
+	if err != nil {
+		return 0
+	}
+	if _, err := os.Stat(filepath.Join(root, ".workline", "off")); err == nil {
+		return 0
+	}
+	cfg, err := routing.Load(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		fmt.Fprintln(os.Stderr, "push stopped; `git push --no-verify` skips workline")
+		return 1
+	}
+	if _, routed := cfg.Events["pre-push"]; !routed {
+		return 0
+	}
+	ranges, err := hooks.PushRanges(root, remote, os.Stdin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	for _, rng := range ranges {
+		res := line.Run("pre-push", engine.Options{
+			Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), DefaultAI: userDefaultAI(),
+			Inputs: map[string]string{"range": rng},
+		})
+		patched, advisory := false, 0
+		for _, s := range res.Steps {
+			if s.Result == nil {
+				continue
+			}
+			for _, a := range s.Result.Applied {
+				patched = patched || a == "patch"
+			}
+		}
+		for _, f := range res.Findings {
+			if prePushQuiet[f.Rule] {
+				advisory++
+				continue
+			}
+			where := ""
+			if f.Where != "" {
+				where = " " + f.Where
+			}
+			fmt.Fprintf(os.Stderr, "workline: %s%s: %s\n", f.Rule, where, strings.ReplaceAll(f.Message, "\n", "\n    "))
+		}
+		if advisory > 0 {
+			fmt.Fprintf(os.Stderr, "workline: %d more findings that do not stop the push: workline route pre-push --input range=%s\n", advisory, rng)
+		}
+		switch {
+		case res.Status != verdict.Pass:
+			fmt.Fprintf(os.Stderr, "workline: %s\npush stopped; `git push --no-verify` skips workline\n", res.Summary)
+			return 1
+		case patched:
+			stat, _ := exec.Command("git", "-C", root, "diff", "--stat").Output()
+			fmt.Fprintf(os.Stderr, "workline: the documentalist updated docs in your working tree:\n%s", stat)
+			fmt.Fprintln(os.Stderr, "push stopped: review them (git diff), commit them, and push again")
+			return 1
+		}
+	}
+	return 0
 }
 
 func gitRoot(dir string) (string, error) {

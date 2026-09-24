@@ -33,10 +33,24 @@ hook=$(basename "$0")
 [ -n "${WORKLINE_HOOK_RUNNING-}" ] && exit 0
 export WORKLINE_HOOK_RUNNING=1
 
+# Some hooks read what git sends on standard input (pre-push: the refs being
+# pushed). Every link of the chain gets its own copy.
+input=""
+case "$hook" in
+pre-push|post-rewrite)
+	input=$(mktemp) || exit 1
+	trap 'rm -f "$input"' EXIT
+	cat >"$input"
+	;;
+esac
+feed() {
+	if [ -n "$input" ]; then "$@" <"$input"; else "$@"; fi
+}
+
 bin=%q
 [ -x "$bin" ] || bin=$(command -v workline 2>/dev/null)
 if [ -n "$bin" ]; then
-	"$bin" hook "$hook" "$@" || exit $?
+	feed "$bin" hook "$hook" "$@" || exit $?
 else
 	echo "workline: binary not found — $hook was NOT checked." >&2
 fi
@@ -45,14 +59,16 @@ next_file=%q
 if [ -r "$next_file" ]; then
 	next=$(cat "$next_file")
 	if [ -x "$next/$hook" ] && [ ! "$next/$hook" -ef "$0" ]; then
-		exec "$next/$hook" "$@"
+		feed "$next/$hook" "$@"
+		exit $?
 	fi
 fi
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 git_dir=$(git rev-parse --git-dir 2>/dev/null) || exit 0
 for d in "$root/.githooks/$hook" "$git_dir/hooks/$hook"; do
 	if [ -x "$d" ] && [ ! "$d" -ef "$0" ]; then
-		exec "$d" "$@"
+		feed "$d" "$@"
+		exit $?
 	fi
 done
 exit 0
