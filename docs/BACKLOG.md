@@ -5,12 +5,7 @@
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
 
-1. **Documentalist: act on what it reports.** The condense and split tasks,
-   judged mechanically (no MUST or SHOULD lost, whole parts moved, links in
-   place); derived blocks (`workline:derive`) for facts typed by hand; sources
-   declared in `.workline/config.yaml` for docs that cannot carry frontmatter,
-   like the root README.
-2. **Evaluation of both roles.** The "Evaluation" level of
+1. **Evaluation of both roles.** The "Evaluation" level of
    docs/spec/conformance.md: a real agent on real cases — this repository's own
    refused messages and suspect docs — graded, and the score kept over time.
    The first four committer cases are in roles/committer/README.md ("Tried for
@@ -53,11 +48,11 @@ Topics raised and parked, so they are not lost. Newest last.
   committed as `feat(documentalist): …`. A change that only specifies a role is
   `docs`, not `feat`; and the release manager's notes should be checked against
   what the code can actually do (the "capability lie" Make My Dreams detected).
-- **Documentalist, what is left.** Derived blocks (`workline:derive`), style
-  (vale), links to other sites (lychee), docs citing a superseded ADR,
-  freshness, the pending list as one tracking issue and its release gate,
-  backpressure (`max-open-merge-requests`), the checklist comment without AI,
-  and the other kinds of task: propagate, condense, duplicates, split.
+- **Documentalist, what is left.** Style (vale), links to other sites
+  (lychee), docs citing a superseded ADR, freshness, the pending list as one
+  tracking issue and its release gate, backpressure
+  (`max-open-merge-requests`), the checklist comment without AI, and the tasks
+  still to build: propagate, duplicates, merging cards too short.
 - **Let a project raise a rule to block.** `enforce` only lowers a rule
   (block → warn → off); the documentalist's hygiene findings are reported and
   cannot be made to block.

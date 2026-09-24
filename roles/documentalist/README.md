@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist, roles/documentalist/role.yaml]
-checked: 401c81b
+checked: 347b403
 ---
 # Documentalist
 
@@ -64,9 +64,16 @@ may be the one that is wrong. (Not built yet: the `truth` setting is not read.)
 Suspect docs become the agent's task, each with its lines numbered, what
 changed in its sources, and the commits its `checked` must name: at most
 `ai-max-calls` docs per run, and no more than fits the role's context budget.
-Docs left out stay suspect for a person or a later run. Not built yet: stopping
-when `max-open-merge-requests` are waiting, and the other kinds of task
-(propagate, condense, duplicates, split).
+Docs left out stay suspect for a person or a later run.
+
+**Condensing, when gardening.** On `schedule`, with no suspect doc to judge,
+the doc most over its budget (a doc too long first, then an agent's entry
+point, a card, a section) becomes the task: bring it within budget by moving
+whole parts into a new doc, and linking to it. One doc a run. A merge request
+or a push never turns into a rewrite of the docs.
+
+Not built yet: stopping when `max-open-merge-requests` are waiting, and the
+other kinds of task (propagate, duplicates, split).
 
 ## Judge (`post`, no AI)
 
@@ -81,6 +88,13 @@ A patch is refused, and the agent asked again with the reasons, when it:
 - leaves `checked` short of the commits given, so the doc would stay suspect;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse.
+
+A condense patch is refused when it touches another existing doc; when a line
+that leaves the doc is found in no new doc, unchanged but for a heading's level
+— moved, not rewritten; a reference updated in place, keeping most of its
+words, is fine (`rewritten`); when a MUST or SHOULD is lost; when a new doc is
+not linked from the doc (`not-linked`); or when the budget problem it was for
+remains (`still-over-budget`).
 
 The judge reads a diff as its lines read, whatever counts its hunk headers
 announce, and compares its reading with git's: the engine applies with
@@ -126,3 +140,15 @@ all three still true and said why, line by line. Its first patches set
 gave: the task now says "your patch sets `checked: …`", and a refusal repeats
 the commit. The next run was right at the first attempt; the push stopped for
 review, the docs were committed, and the push went through.
+
+On 2026-09-24, gardening workline itself (a copy): the documentalist chose
+docs/spec/role-contract.md, 330 lines for a budget of 200. Three defects came
+out before it worked, each now guarded: the agent's time was capped at three
+minutes (a role now sets `model.timeout`); an answer holding a code block of
+its own was cut at that block (the answer is now read whole first); and a new
+file after another in one diff, without `diff --git` lines, was read by
+`git apply --recount` as lines of the first (those lines are now added). Then
+Claude moved 142 lines, unchanged, into role-outcome.md and role-adapting.md,
+each tracking the contract's sources, linked both ways — at the second
+attempt, the first citing a wrong line. That split is the one in this
+repository.
