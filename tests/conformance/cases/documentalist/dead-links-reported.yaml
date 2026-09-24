@@ -1,0 +1,9 @@
+case: documentalist/dead-links-reported
+about: A link to a missing file or heading is reported; links the role cannot check offline are said to be unchecked, not passed.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: dead-link, where: docs/auth.md}
+    - {rule: links-not-checked, where: docs/auth.md}

@@ -1,0 +1,9 @@
+# The fix, without recording the commit the doc was checked against: the doc
+# would stay suspect.
+- patch: |
+    --- a/docs/tech/auth.md
+    +++ b/docs/tech/auth.md
+    @@ -9,2 +9,2 @@ checked: 9bf650b
+     
+    -Access tokens last one hour.
+    +Access tokens last two hours.

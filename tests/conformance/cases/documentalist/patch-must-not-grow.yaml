@@ -1,0 +1,10 @@
+case: documentalist/patch-must-not-grow
+about: Fixing a suspect doc must not make it longer.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-and-grown"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: patch-grows, where: docs/tech/auth.md}]

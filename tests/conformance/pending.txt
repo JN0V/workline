@@ -1,2 +1,9 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+documentalist/budgets-reported
+documentalist/duplicates-reported
+documentalist/dead-links-reported
+documentalist/identifier-gone-reported
+documentalist/misquoted-patch-refused
+documentalist/suspect-doc-left-unchecked
+documentalist/patch-must-not-grow

@@ -1,0 +1,14 @@
+# The same fix, citing line 8 for what sits at lines 9-10. git apply alone
+# would find it a line further and apply it anyway.
+- patch: |
+    --- a/docs/tech/auth.md
+    +++ b/docs/tech/auth.md
+    @@ -3,3 +3,3 @@ type: reference
+     sources: [src/auth/token.go]
+    -checked: 9bf650b
+    +checked: 1a8e5a4
+     ---
+    @@ -8,2 +8,2 @@ checked: 9bf650b
+     
+    -Access tokens last one hour.
+    +Access tokens last two hours.

@@ -1,0 +1,7 @@
+case: documentalist/identifier-gone-reported
+about: A doc naming an identifier that was in the code when the doc was last edited, and is gone now, is reported.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: identifier-gone, where: docs/auth.md}]

@@ -1,0 +1,11 @@
+case: documentalist/suspect-doc-fixed
+about: The agent judges a suspect doc and fixes only what the change made wrong; the doc is checked again.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4"}}

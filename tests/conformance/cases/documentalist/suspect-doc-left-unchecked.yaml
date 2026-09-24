@@ -1,0 +1,10 @@
+case: documentalist/suspect-doc-left-unchecked
+about: A patch to a suspect doc that does not record the commit it was checked against is refused; the doc would stay suspect.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-not-checked"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: still-suspect, where: docs/tech/auth.md}]

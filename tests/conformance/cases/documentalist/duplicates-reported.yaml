@@ -1,0 +1,7 @@
+case: documentalist/duplicates-reported
+about: The same passage written in two docs is reported, so it can be kept in one place.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: duplicate, where: docs/faq.md}]
