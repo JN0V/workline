@@ -678,7 +678,7 @@ func (a *applier) release(v any) error {
 		return errors.New("expected {version, notes}")
 	}
 	if flow, _ := a.settings["flow"].(string); flow != "direct" {
-		return fmt.Errorf("the %q flow needs a forge, which this engine cannot reach yet; set flow: direct", flow)
+		return fmt.Errorf("the %q flow is not built yet; set flow: direct", flow)
 	}
 	if len(a.written) > 0 {
 		if _, err := git(a.repo, nil, append([]string{"add", "--"}, a.written...)...); err != nil {

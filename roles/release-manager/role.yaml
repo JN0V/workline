@@ -5,6 +5,7 @@ mission: Own the project's versions — decide the next one, and publish it with
 # release: someone decides to release now (manual run, or a schedule).
 # merge: a merge on the default branch; with the merge-request flow, it keeps the
 #        pending release merge request up to date, and releases once that is merged.
+#        Not built yet, and not routed by default.
 events: [release, merge]
 
 # The next version and the changelog come from the conventional commits the
@@ -29,12 +30,12 @@ duties:
 
 intentions: [patch, release, handoff, note]
 
-# Without AI, the release still happens with the changelog git-cliff generated.
+# Without AI, the release still happens with the changelog the engine generated.
 # The AI only adds a readable summary on top of it.
 without-ai: pass
 
 settings:
-  flow: merge-request         # merge-request | direct
+  flow: direct                # direct: tag and publish now | merge-request: not built yet
   tag-prefix: v
   # The release manager owns the versioning scheme; the committer only supplies
   # the signal (commit types). semver: MAJOR.MINOR.PATCH from the commits.
@@ -42,8 +43,8 @@ settings:
   versioning:
     scheme: semver            # semver | calver
     calver-format: YYYY.MM.MICRO
-    build: none               # none | ci-number | commit — appended as +<build>
+    build: none               # none | ci-number | commit — appended as +<build>; not read yet
   changelog: CHANGELOG.md
   version-files: []           # e.g. [package.json, Cargo.toml]; empty = tag only
-  # After a release, the documentalist checks that user docs match what shipped.
-  handoff-to: documentalist
+# After a release, the agent may hand over to the documentalist, so user docs
+# match what shipped; routing allows that handoff (routing.default.yaml).
