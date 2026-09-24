@@ -41,6 +41,23 @@ routing (`routing.default.yaml`, changed in `.workline/config.yaml`) says which
 roles each event runs. A role behaves the same wherever it runs; only the
 trigger, the agent at hand and the way proposals are applied differ.
 
+```mermaid
+flowchart LR
+  routing[("one routing<br/>.workline/config.yaml")]
+  subgraph machine["Your machine"]
+    commit["git commit"] -- commit-msg --> committer1["committer"]
+  end
+  subgraph forge["Forge: GitHub or GitLab"]
+    mr["merge request"] -- merge-request --> judge["judge job<br/>committer, documentalist<br/>no write token"]
+    judge -- proposals --> apply["apply job<br/>no AI key"]
+    schedule["schedule"] -- schedule --> documentalist["documentalist"]
+  end
+  machine -- git push --> forge
+  routing -.-> committer1
+  routing -. not yet .-> judge
+  routing -. not yet .-> documentalist
+```
+
 | Event | Fired by | Roles by default |
 |---|---|---|
 | `commit-msg` | your machine: the global git hook | committer |
