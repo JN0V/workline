@@ -70,19 +70,31 @@ func (claude) Propose(req Request) error {
 }
 
 // proposalsFrom extracts the YAML list from an answer, tolerating a code fence.
+// The answer itself is tried first: a proposal may hold a code fence of its
+// own (a doc's code block, moved by a patch). Only when it does not read is it
+// taken from between the first and the last fence lines.
 func proposalsFrom(answer string) ([]byte, error) {
 	s := strings.TrimSpace(answer)
-	if i := strings.Index(s, "```"); i >= 0 {
-		s = s[i+3:]
-		s = strings.TrimPrefix(strings.TrimPrefix(s, "yaml"), "yml")
-		if j := strings.Index(s, "```"); j >= 0 {
-			s = s[:j]
-		}
-	}
-	s = strings.TrimSpace(s)
 	var list []map[string]any
 	if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
-		return nil, fmt.Errorf("expected a YAML list of proposals")
+		lines := strings.Split(s, "\n")
+		first, last := -1, -1
+		for i, l := range lines {
+			if strings.HasPrefix(l, "```") {
+				if first < 0 {
+					first = i
+				}
+				last = i
+			}
+		}
+		if first < 0 || last == first {
+			return nil, fmt.Errorf("expected a YAML list of proposals")
+		}
+		s = strings.TrimSpace(strings.Join(lines[first+1:last], "\n"))
+		list = nil
+		if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
+			return nil, fmt.Errorf("expected a YAML list of proposals")
+		}
 	}
 	for i, m := range list {
 		if len(m) != 1 {
