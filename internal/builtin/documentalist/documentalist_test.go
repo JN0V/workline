@@ -30,3 +30,16 @@ func TestSplitSource(t *testing.T) {
 		}
 	}
 }
+
+func TestParseDocKeepsCommitsAsWritten(t *testing.T) {
+	for _, c := range []struct{ fm, repo, want string }{
+		{"checked: 11180e1", "", "11180e1"}, // a number, read as YAML
+		{"checked: 1234567", "", "1234567"},
+		{"checked: {api: 0012e45}", "api", "0012e45"},
+	} {
+		d, err := ParseDoc("d.md", []byte("---\nsources: [a.go]\n"+c.fm+"\n---\n"))
+		if err != nil || d.Checked[c.repo] != c.want {
+			t.Errorf("%s: checked = %v, %v", c.fm, d.Checked, err)
+		}
+	}
+}

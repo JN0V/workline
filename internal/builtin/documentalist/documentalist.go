@@ -39,7 +39,8 @@ type Doc struct {
 // frontmatter is the YAML block at the top of a doc.
 type frontmatter struct {
 	Sources []string `yaml:"sources"`
-	Checked any      `yaml:"checked"`
+	// A node, not a string: read as YAML, a commit like 11180e1 is a number.
+	Checked yaml.Node `yaml:"checked"`
 }
 
 // ParseDoc reads a doc's frontmatter. A doc without sources is not tracked.
@@ -60,12 +61,12 @@ func ParseDoc(path string, content []byte) (*Doc, error) {
 		return nil, nil
 	}
 	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}}
-	switch c := fm.Checked.(type) {
-	case string:
-		d.Checked[""] = c
-	case map[string]any:
-		for k, v := range c {
-			d.Checked[k] = fmt.Sprint(v)
+	switch c := fm.Checked; c.Kind {
+	case yaml.ScalarNode:
+		d.Checked[""] = c.Value
+	case yaml.MappingNode:
+		for i := 0; i+1 < len(c.Content); i += 2 {
+			d.Checked[c.Content[i].Value] = c.Content[i+1].Value
 		}
 	}
 	return d, nil
