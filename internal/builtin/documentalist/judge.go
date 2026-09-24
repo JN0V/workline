@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -257,7 +258,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			if !checkedMatches(now, want) {
-				refuse("still-suspect", f.path, "the patch does not set `checked` to the commits given in the task, so the doc would stay suspect")
+				refuse("still-suspect", f.path, fmt.Sprintf("the patch does not set `checked` to %s, the commit given in the task, so the doc would stay suspect", wanted(want)))
 				continue
 			}
 			after[f.path] = now
@@ -299,4 +300,18 @@ func gitApplied(path, old, diff string) (string, error) {
 	}
 	data, err := os.ReadFile(file)
 	return string(data), err
+}
+
+// wanted names the commits a doc's `checked` must hold, as the task gave them.
+func wanted(want map[string]string) string {
+	var parts []string
+	for repo, full := range want {
+		if repo == "" {
+			parts = append(parts, full[:7])
+		} else {
+			parts = append(parts, repo+": "+full[:7])
+		}
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ", ")
 }

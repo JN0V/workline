@@ -448,7 +448,7 @@ fixes what is now wrong, and nothing else.
 			return "", nil, err
 		}
 		var entry strings.Builder
-		fmt.Fprintf(&entry, "## %s\n\nWhen judged, its frontmatter says `%s`.\n\nWhy it is suspect:\n\n", p, checked)
+		fmt.Fprintf(&entry, "## %s\n\nWhatever you decide, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.\n\nWhy it is suspect:\n\n", p, checked)
 		for _, w := range sd.why {
 			fmt.Fprintf(&entry, "- %s\n", strings.ReplaceAll(w, "\n", "\n  "))
 		}
@@ -502,10 +502,9 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	if len(refused) > 0 {
-		v := verdict.Verdict{Status: verdict.Block, Summary: "the proposed patch was refused", Findings: append(refused, findings...)}
-		for i := range v.Findings {
-			v.Findings[i].Level = ""
-		}
+		// Only the refusals: they are what the agent is asked again with, and
+		// the docs they name are the suspect ones.
+		v := verdict.Verdict{Status: verdict.Block, Summary: "the proposed patch was refused", Findings: refused}
 		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 			return fail(err)
 		}
