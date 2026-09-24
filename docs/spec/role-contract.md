@@ -148,7 +148,7 @@ token), **apply** (trusted, no AI key).
 Writes to git and to a forge are not transactional: a comment can be posted and
 the label call fail. So every intention is applied idempotently — a label that
 is already there, a comment carrying the run's marker, a tag that already points
-to the right commit all count as done — and `run-role apply <run-id>` resumes a
+to the right commit all count as done — and `workline apply <run-dir>` resumes a
 run from `out/applied.yaml`, with the evidence of the original run, without
 calling the agent again.
 

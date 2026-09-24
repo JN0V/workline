@@ -74,6 +74,20 @@ routing:
 - Events caused by the engine's own writes (its comments, labels, commits) do
   not trigger routing, so two roles cannot wake each other forever.
 
+### On a forge: judge, then apply
+
+`workline route <event> --no-apply` runs the whole line in a job that holds no
+write token, with the forge and target of the merge request (`--forge`,
+`--target`; `--input` and `--scope` go to every step). Each step judges the tree
+as it is — no step sees what an earlier one proposed — and nothing is applied.
+The result lists the runs to apply, in the line's order (`pending`);
+`workline apply --line <result>` applies them in the job that holds the token
+and no AI key, and stops at the first that does not pass.
+
+Applying runs no role, so a handoff proposed under `--no-apply` is recorded
+and not run: both steps say so (`handoff-deferred`), with the command that runs
+it where an agent may judge.
+
 ## Where state lives
 
 On a forge, the state of a work item is a label (`workline:ready`,

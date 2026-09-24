@@ -2,20 +2,16 @@
 
 ## Next, in order
 
-1. **Routing drives the forge too** — `workline route` gains `--forge`,
-   `--target` and `--no-apply`, and the CI templates call
-   `workline route merge-request` instead of each role, so one routing governs
-   the machine and the forge. Conformance cases first.
-2. **Release manager, merge-request flow** — a release MR kept up to date, the
+1. **Release manager, merge-request flow** — a release MR kept up to date, the
    tag on merge; the natural flow in a team.
-3. **Publishing** — tagged, signed binaries, so CI installs a pinned version;
+2. **Publishing** — tagged, signed binaries, so CI installs a pinned version;
    the repository is public, so `go install` works, but the templates still
    follow `main`.
-4. **More agents** — Codex, Antigravity, OpenCode adapters, and a generic one
+3. **More agents** — Codex, Antigravity, OpenCode adapters, and a generic one
    running any command given as the agent (prompt in, proposals out), so an
    existing factory can plug its own; generate the model
    grid from models.dev and Epoch (docs/spec/model-grid.md).
-5. **Next roles** — reviewer (independent vendor), architect, tester.
+4. **Next roles** — reviewer (independent vendor), architect, tester.
 
 ## Parked
 
@@ -60,3 +56,7 @@ Topics raised and parked, so they are not lost. Newest last.
 - **Verdicts as SARIF.** The role contract says findings map to SARIF; nothing
   writes it yet. It would put workline's findings in GitHub code scanning and
   GitLab Code Quality, next to the other tools of an existing pipeline.
+- **Patches in the forge's apply job.** A `patch` applied there is written to
+  the job's checkout and lost: it should become a commit on the merge
+  request's branch, or a suggestion. Today the templates run without AI, so
+  nothing proposes one.

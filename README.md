@@ -59,8 +59,8 @@ flowchart LR
   end
   machine -- git push --> forge
   routing -.-> committer1
-  routing -. not yet .-> judge
-  routing -. not yet .-> documentalist
+  routing -.-> judge
+  routing -.-> documentalist
 ```
 
 | Event | Fired by | Roles by default |
@@ -75,9 +75,8 @@ request for those without the hook; the documentalist runs on the forge. On a
 forge, one job judges without a write token and another applies without an AI
 key (`--no-apply`, then `workline apply`).
 
-Not wired yet: the CI templates call each role themselves rather than the
-routing, so a project's `routing:` does not reach its CI; and locally, only
-`commit-msg` runs roles.
+The CI templates run `workline route merge-request`, so a project's `routing:`
+reaches its CI too. Not wired yet: locally, only `commit-msg` runs roles.
 
 ## Take only a part
 
