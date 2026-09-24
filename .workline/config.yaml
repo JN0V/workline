@@ -1,5 +1,10 @@
 # workline on its own repository.
 roles:
+  committer:
+    settings:
+      # The role's list, plus this repository's decision records: `ADR-0001`
+      # means something to anyone reading docs/adr/.
+      internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, 'RFC-[0-9]+', 'CVE-[0-9]+', 'ADR-[0-9]+']
   documentalist:
     settings:
       # The role READMEs describe what the code does: they are docs too.
