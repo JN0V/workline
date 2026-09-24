@@ -41,6 +41,9 @@ type Options struct {
 	Forge  string        // forge spec, see forge.Open; empty = the project's `forge` setting
 	Target *forge.Target // the issue or merge request comments and labels go on
 	Scope  []string      // paths the task is about; a patch outside is refused
+	// NoApply stops after judging: the proposals and what apply needs are kept
+	// in the run folder, for `workline apply` in another job holding the token.
+	NoApply bool
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
@@ -125,9 +128,14 @@ func run(o Options, res *Result) error {
 	switch code {
 	case exitOK:
 	case exitNothing:
+		// No question for the agent. A verdict pre wrote is final; none means pass.
 		res.Status, res.Summary = verdict.Pass, "nothing to do"
-		if v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml")); err == nil && v.Summary != "" {
-			res.Summary = v.Summary // the role's own words on why there is nothing to do
+		if v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml")); err == nil {
+			verdict.Enforce(v, r.Enforcement(cfg))
+			res.Status, res.Findings = v.Status, append(res.Findings, v.Findings...)
+			if v.Summary != "" {
+				res.Summary = v.Summary
+			}
 		}
 		return nil
 	case exitExternal:
@@ -238,6 +246,10 @@ func run(o Options, res *Result) error {
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets}
 	if err := st.save(runDir); err != nil {
 		return err
+	}
+	if o.NoApply {
+		res.Summary = fmt.Sprintf("judged, not applied (%d proposals); apply with: workline apply %s", len(intents), runDir)
+		return nil
 	}
 	return applyAll(r, settings, st, runDir, intents, res)
 }
@@ -649,6 +661,9 @@ func newRunDir(repo, roleName string) (string, error) {
 	base := filepath.Join(repo, ".workline", "runs")
 	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
 		base = filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
+	}
+	if d := os.Getenv("WORKLINE_RUNS_DIR"); d != "" {
+		base = d // in CI, somewhere an artifact can carry it to the job that applies
 	}
 	id := fmt.Sprintf("%s-%s", time.Now().UTC().Format("20060102T150405.000000000"), roleName)
 	dir := filepath.Join(base, id)

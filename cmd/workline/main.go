@@ -93,6 +93,7 @@ func runRole(args []string) int {
 	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
+	noApply := fs.Bool("no-apply", false, "stop after judging; apply later with `workline apply <run-dir>`")
 	inputs, inputFiles := pairs{}, pairs{}
 	fs.Var(inputs, "input", "input name=value (repeatable)")
 	fs.Var(inputFiles, "input-file", "input name=path, written back by intentions that target it (repeatable)")
@@ -123,7 +124,7 @@ func runRole(args []string) int {
 	res := engine.Run(engine.Options{
 		Repo: absRepo, RolesDir: absRoles, Role: name, Event: *event, AI: *ai,
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
-		Forge: *forgeSpec, Target: t, Scope: scope,
+		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply,
 	})
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")

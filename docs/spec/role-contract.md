@@ -163,7 +163,7 @@ name or `none`) and `WORKLINE_ROLE`.
 | 1 | error | block |
 | 2 | — | a human must decide |
 | 3 | an outside service failed (auth, quota, network) | same |
-| 10 | nothing to do, stop | — |
+| 10 | no question for the agent: stop; a verdict `pre` wrote is final, none means pass | — |
 
 Anything else is an error. An error is loud and blocks; it never passes.
 
