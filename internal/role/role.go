@@ -43,6 +43,36 @@ type Model struct {
 	Effort       string `yaml:"effort"`
 	PromoteAfter int    `yaml:"promote-after"`
 	Timeout      string `yaml:"timeout"` // how long one answer may take, e.g. "10m"; default 3m
+	// Tasks gives a kind of task, named by pre in in/task-kind, other needs
+	// than the role's: condensing a doc needs more than judging one.
+	Tasks map[string]Model `yaml:"tasks"`
+}
+
+// For returns the needs of a task of that kind: the role's, with what
+// model.tasks sets for the kind in their place.
+func (m Model) For(kind string) Model {
+	t, ok := m.Tasks[kind]
+	if !ok {
+		return m
+	}
+	out := m
+	out.Tasks = nil
+	if t.Capability != "" {
+		out.Capability = t.Capability
+	}
+	if t.Tier != "" {
+		out.Tier = t.Tier
+	}
+	if t.Effort != "" {
+		out.Effort = t.Effort
+	}
+	if t.PromoteAfter != 0 {
+		out.PromoteAfter = t.PromoteAfter
+	}
+	if t.Timeout != "" {
+		out.Timeout = t.Timeout
+	}
+	return out
 }
 
 // AnswerTimeout is how long the agent may take for one answer.

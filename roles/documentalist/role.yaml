@@ -21,6 +21,10 @@ model:
   effort: medium
   promote-after: 1
   timeout: 10m    # condensing a long doc is a long diff to write
+  tasks:
+    # Measured (tests/evaluation, 2026-09-25): Sonnet condensed 1 time in 3,
+    # Opus 3 in 3 with half the tokens of a Sonnet try stepped up to Opus.
+    condense: {tier: frontier}
 
 context:
   knowledge: [doc-model.md]

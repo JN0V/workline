@@ -42,6 +42,7 @@ func (r Request) tier() string {
 // so a score is only worth something next to the exact model.
 type Call struct {
 	Agent  string `json:"agent"`
+	Task   string `json:"task,omitempty"` // the kind of task, when pre named one
 	Tier   string `json:"tier,omitempty"`
 	Effort string `json:"effort,omitempty"` // the role's level, before the agent maps it
 	Asked  string `json:"asked,omitempty"`  // the model named to the agent: an alias or an exact id

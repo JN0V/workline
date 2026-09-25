@@ -165,6 +165,11 @@ func run(o Options, res *Result) error {
 	}
 	settings := r.MergedSettings(cfg)
 	_, taskErr := os.Stat(filepath.Join(runDir, "in", "task.md"))
+	if _, ok := r.Model.Tasks[taskKind(runDir)]; ok {
+		asked := *r // this task's needs, in place of the role's
+		asked.Model = r.Model.For(taskKind(runDir))
+		r = &asked
+	}
 	tier, failures := r.Model.Tier, 0
 	var intents []intent.Intention
 	var v *verdict.Verdict
@@ -402,6 +407,12 @@ func patchFiles(repo string, v any) []string {
 	return files
 }
 
+// taskKind is the kind of question pre named in in/task-kind, if any.
+func taskKind(runDir string) string {
+	data, _ := os.ReadFile(filepath.Join(runDir, "in", "task-kind"))
+	return strings.TrimSpace(string(data))
+}
+
 // askAgain says whether a refused proposal is asked for again, and on which
 // tier: `promote-after` refusals on the role's tier, then one last attempt a
 // tier up (docs/spec/model-grid.md). 0 never asks again. failures counts the
@@ -446,6 +457,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		start := time.Now()
 		call, err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier})
 		call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
+		call.Task = taskKind(runDir)
 		res.Calls = append(res.Calls, call)
 		if n := agent.Notice(agent.Seen(), call); n != "" {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})

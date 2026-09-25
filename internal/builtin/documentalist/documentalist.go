@@ -408,6 +408,9 @@ func Pre(runDir, repo string) int {
 			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
 				return fail(err)
 			}
+			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("condense\n"), 0o644); err != nil {
+				return fail(err)
+			}
 		}
 	}
 	for i := range findings {
