@@ -1,5 +1,5 @@
 ---
-sources: [tests/conformance/runner_test.go]
+sources: [tests/conformance/runner_test.go, tests/evaluation]
 checked: edfd466
 verified: agent:documentalist
 ---
@@ -112,6 +112,8 @@ the model grid).
 tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
   results.tsv                every run's score, appended: the history kept
+  summary/                   go run ./tests/evaluation/summary: per case and models,
+                             the runs, mean score, range, tokens and seconds
 ```
 
 ```sh
