@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 07a5d55
+checked: 448e8bf
 verified: agent:documentalist
 ---
 # Role contract — v1 (draft)
