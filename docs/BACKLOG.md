@@ -72,3 +72,7 @@ Topics raised and parked, so they are not lost. Newest last.
   codes reserve for `human`; the CLI should say 64, as for other misuse.
 - **Scheduled runs in the CI templates.** The README says `schedule` runs the
   documentalist; neither template has a scheduled job yet.
+- **Your config folder on macOS.** `config.yaml` and the global hooks follow
+  Go's config folder (`~/Library/Application Support/workline` on macOS), but
+  your own facets are looked for in `~/.config/workline/roles/`: one folder
+  for all, or both named in docs/usage.md.

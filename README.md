@@ -27,13 +27,23 @@ Status (2026-09-24): used daily on its author's machine;
 | **Forges**: GitHub (comments and labels tried live), simulated; GitLab written | GitLab never run; GitHub issues and releases never run live |
 | Agents: Claude Code | Codex, Antigravity, OpenCode; the generated model grid |
 
-## Try it
+## Install
+
+You need git and [Go](https://go.dev/dl/) 1.21 or later (Go fetches the
+version workline needs by itself). There are no released binaries yet.
 
 ```sh
-go build -o ~/.local/bin/workline ./cmd/workline
+go install github.com/JN0V/workline/cmd/workline@latest
+```
 
-workline hooks install --global     # check every commit message on this machine
-workline hooks uninstall --global   # give core.hooksPath back as it was
+The binary goes to `$(go env GOPATH)/bin`, usually `~/go/bin`: put that folder
+on your `PATH`. Run the same command again to update.
+
+### Check every commit on this machine
+
+```sh
+workline hooks install --global     # git's global core.hooksPath now goes through workline
+workline hooks uninstall --global   # gives core.hooksPath back as it was
 ```
 
 Each global hook hands over to the one that held `core.hooksPath` before, or,
@@ -41,9 +51,44 @@ when there was none for that hook, to the repository's own (`.githooks/`,
 `.git/hooks/`): nothing that ran before stops running. A repository opts out
 with an empty `.workline/off` file.
 
+Try it in any repository:
+
+```sh
+git commit --allow-empty -m "AC-3 fix the thing"
+# workline committer: block — rewrite the commit message
+#   format subject: the subject must read `type(scope): summary`…
+```
+
+### Let an AI rewrite what is refused (optional)
+
 By default no AI is used: a refused message is explained, and you rewrite it.
-To let Claude Code rewrite it, add `ai: claude` to `~/.config/workline/config.yaml`
-(your default) or to a project's `.workline/config.yaml` (which wins).
+To let an AI rewrite it:
+
+1. Install [Claude Code](https://docs.claude.com/en/docs/claude-code/setup),
+   run `claude` once and log in (a Claude subscription or an API key). workline
+   calls `claude -p` with that login: it holds no key of its own.
+2. Tell workline to use it, for all your repositories:
+
+   ```sh
+   mkdir -p ~/.config/workline
+   echo 'ai: claude' >> ~/.config/workline/config.yaml
+   ```
+
+   On macOS the file is `~/Library/Application Support/workline/config.yaml`.
+   A project's own `.workline/config.yaml` wins over yours, and
+   `WORKLINE_AI=none git commit …` turns the AI off for one commit.
+
+The same commit now goes through, rewritten:
+
+```text
+workline committer: pass — message rewritten
+workline: the commit goes on with this message instead of yours:
+  │ fix: fix the thing
+  │
+  │ Refs: AC-3
+```
+
+Claude Code is the only agent so far.
 
 ## Where it runs
 
@@ -115,6 +160,8 @@ an agent other than Claude Code, or any command given as the agent.
 ## Develop
 
 ```sh
+git clone https://github.com/JN0V/workline && cd workline
+go build -o ~/.local/bin/workline ./cmd/workline   # or anywhere on your PATH
 go test -count=1 ./...    # unit tests and the conformance suite
 ```
 
