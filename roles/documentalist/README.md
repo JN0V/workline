@@ -72,9 +72,6 @@ the doc most over its budget (a doc too long first, then an agent's entry
 point, a card, a section) becomes the task: bring it within budget by moving
 whole parts into a new doc, and linking to it. One doc a run. A merge request
 or a push never turns into a rewrite of the docs.
-It is asked of a frontier model: in the evaluation, a standard one condensed
-1 time in 3, and stepping up after a refusal cost twice the tokens of asking
-the frontier model first.
 
 Not built yet: stopping when `max-open-merge-requests` are waiting, and the
 other kinds of task (propagate, duplicates, split).
