@@ -31,7 +31,23 @@ against it. Then only what the task needs:
 ```sh
 go build -o ~/.local/bin/workline ./cmd/workline
 go test -count=1 ./...     # -count=1: the conformance suite builds the engine itself
+WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/   # real agent, costs tokens
 ```
 
 The engine is one Go binary (ADR-0001), configured in YAML; core roles need
 nothing but git and the engine.
+
+## workline runs on its own commits
+
+Where workline's global hooks are installed, this repository goes through its
+own line (.workline/config.yaml):
+
+- **commit-msg** — the committer. A subject over 72 characters, or holding a
+  code like `AC-3`, is refused, then rewritten by the agent; the hook prints
+  the message it committed. Check it: write subjects that pass.
+- **pre-push** — the committer on the commits pushed, then the documentalist:
+  docs made suspect are judged, patched in the working tree, and the push stops
+  for them to be reviewed and committed.
+- **forbidden-terms** — a gitignored `.forbidden-terms` link, when present,
+  points to terms that must never reach this public repository. Never commit
+  the list, nor copy its terms anywhere.
