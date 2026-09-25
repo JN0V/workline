@@ -41,12 +41,17 @@ func (r Request) tier() string {
 // answered. The same tier names a newer model when the agent's aliases move,
 // so a score is only worth something next to the exact model.
 type Call struct {
-	Agent   string  `json:"agent"`
-	Tier    string  `json:"tier,omitempty"`
-	Effort  string  `json:"effort,omitempty"`   // the role's level, before the agent maps it
-	Model   string  `json:"model,omitempty"`    // as the agent reports it; several joined by +
-	CostUSD float64 `json:"cost-usd,omitempty"` // as the agent reports it
-	Seconds float64 `json:"seconds"`
+	Agent  string `json:"agent"`
+	Tier   string `json:"tier,omitempty"`
+	Effort string `json:"effort,omitempty"` // the role's level, before the agent maps it
+	Model  string `json:"model,omitempty"`  // the one that wrote the answer, as the agent reports it
+	// What the call used, side calls included, as the agent reports it. On a
+	// subscription the tokens are what counts; the cost is the list price.
+	TokensIn     int     `json:"tokens-in,omitempty"`     // the whole input, cache included
+	TokensCached int     `json:"tokens-cached,omitempty"` // the part of it read from cache
+	TokensOut    int     `json:"tokens-out,omitempty"`
+	CostUSD      float64 `json:"cost-usd,omitempty"`
+	Seconds      float64 `json:"seconds"`
 }
 
 // Agent answers the question in in/task.md by writing out/intentions.yaml,

@@ -27,8 +27,10 @@ func TestProposalsFrom(t *testing.T) {
 func TestClaudeAnswer(t *testing.T) {
 	var call Call
 	r, ok := claudeAnswer([]byte(`{"result":"- ok: 1","is_error":false,"total_cost_usd":0.0134,
-		"modelUsage":{"claude-sonnet-5":{"outputTokens":900},"claude-haiku-4-5-20251001":{"outputTokens":40}}}`), &call)
-	if !ok || r.Result != "- ok: 1" || call.Model != "claude-sonnet-5" || call.CostUSD != 0.0134 {
+		"modelUsage":{"claude-sonnet-5":{"inputTokens":9,"cacheReadInputTokens":6000,"cacheCreationInputTokens":400,"outputTokens":900},
+		"claude-haiku-4-5-20251001":{"inputTokens":100,"outputTokens":40}}}`), &call)
+	if !ok || r.Result != "- ok: 1" || call.Model != "claude-sonnet-5" || call.CostUSD != 0.0134 ||
+		call.TokensIn != 6509 || call.TokensCached != 6000 || call.TokensOut != 940 {
 		t.Errorf("got %+v, %+v, %v", r, call, ok)
 	}
 	if _, ok := claudeAnswer([]byte("- ok: 1"), &call); ok {

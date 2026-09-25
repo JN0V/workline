@@ -82,12 +82,15 @@ type claudeResult struct {
 	IsError    bool    `json:"is_error"`
 	CostUSD    float64 `json:"total_cost_usd"`
 	ModelUsage map[string]struct {
-		OutputTokens int `json:"outputTokens"`
+		InputTokens              int `json:"inputTokens"`
+		OutputTokens             int `json:"outputTokens"`
+		CacheReadInputTokens     int `json:"cacheReadInputTokens"`
+		CacheCreationInputTokens int `json:"cacheCreationInputTokens"`
 	} `json:"modelUsage"`
 }
 
 // claudeAnswer reads Claude Code's JSON answer, and records in call the model
-// that wrote it and what the call cost. Claude Code may call a small model on
+// that wrote it and what the call used. Claude Code may call a small model on
 // the side; the model that wrote the most is the one answering, the others
 // count in the cost only. false: stdout was not that JSON.
 func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
@@ -100,6 +103,9 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 		if u.OutputTokens > most || (u.OutputTokens == most && m < call.Model) {
 			call.Model, most = m, u.OutputTokens
 		}
+		call.TokensIn += u.InputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
+		call.TokensCached += u.CacheReadInputTokens
+		call.TokensOut += u.OutputTokens
 	}
 	call.CostUSD = r.CostUSD
 	return r, true
