@@ -83,6 +83,13 @@ it is the part a script cannot be trusted with.
 6. No model at all: the role runs as `--ai none` and its `without-ai` rule applies.
 
 The engine logs which step answered, so a run on a fallback is visible, not silent.
+Each call records the tier and effort asked and the exact model that answered,
+as the agent reports it (`claude-haiku-4-5-20251001`, not `haiku`): an alias
+moves to a newer generation on its own, and a score is only worth something
+next to the model that earned it.
+
+*Built so far: the record. Not yet: the grid, pins; Claude's aliases stand for
+the tiers.*
 
 ## Stepping up after failures
 

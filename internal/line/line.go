@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/role"
@@ -28,6 +29,7 @@ type Result struct {
 	Steps      []Step            `json:"steps"`
 	Findings   []verdict.Finding `json:"findings,omitempty"` // every step's
 	AgentCalls int               `json:"agent-calls"`
+	Calls      []agent.Call      `json:"calls,omitempty"` // every step's
 	// Pending lists the runs judged with NoApply, in the line's order: what
 	// `workline apply` is given in the job that holds the write token.
 	Pending []string `json:"pending,omitempty"`
@@ -85,6 +87,7 @@ func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) bool
 	res.Steps = append(res.Steps, Step{Name: label, Status: r.Status, Result: r})
 	res.Findings = append(res.Findings, r.Findings...)
 	res.AgentCalls += r.AgentCalls
+	res.Calls = append(res.Calls, r.Calls...)
 	if r.ToApply {
 		res.Pending = append(res.Pending, r.RunDir)
 	}

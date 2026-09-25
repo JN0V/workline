@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,6 +57,7 @@ type Result struct {
 	Summary    string            `json:"summary,omitempty"`
 	Findings   []verdict.Finding `json:"findings,omitempty"`
 	AgentCalls int               `json:"agent-calls"`
+	Calls      []agent.Call      `json:"calls,omitempty"` // each call: what was asked, what answered
 	Applied    []string          `json:"applied"`
 	Refused    []string          `json:"refused"`
 	Handoffs   []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
@@ -441,7 +443,10 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	if hasTask && ag != nil {
 		a.askedAgent = true
 		res.AgentCalls++
-		err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier})
+		start := time.Now()
+		call, err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier})
+		call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
+		res.Calls = append(res.Calls, call)
 		switch {
 		case err == nil:
 		case errors.Is(err, agent.ErrUnavailable):

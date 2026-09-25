@@ -29,9 +29,30 @@ type Request struct {
 	Tier   string // overrides the role's tier, when a retry steps up
 }
 
-// Agent answers the question in in/task.md by writing out/intentions.yaml.
+// tier is the tier asked of the agent: the role's, unless a retry stepped up.
+func (r Request) tier() string {
+	if r.Tier != "" {
+		return r.Tier
+	}
+	return r.Role.Model.Tier
+}
+
+// Call records one question put to an agent: what was asked, and what
+// answered. The same tier names a newer model when the agent's aliases move,
+// so a score is only worth something next to the exact model.
+type Call struct {
+	Agent   string  `json:"agent"`
+	Tier    string  `json:"tier,omitempty"`
+	Effort  string  `json:"effort,omitempty"`   // the role's level, before the agent maps it
+	Model   string  `json:"model,omitempty"`    // as the agent reports it; several joined by +
+	CostUSD float64 `json:"cost-usd,omitempty"` // as the agent reports it
+	Seconds float64 `json:"seconds"`
+}
+
+// Agent answers the question in in/task.md by writing out/intentions.yaml,
+// and says what answered, even when it fails.
 type Agent interface {
-	Propose(Request) error
+	Propose(Request) (Call, error)
 }
 
 // Parse turns an agent spec into an agent. "none" (or "") returns nil: no agent.
@@ -56,16 +77,18 @@ func Parse(spec string) (Agent, error) {
 
 type fake struct{ file string }
 
-func (f fake) Propose(r Request) error {
+func (f fake) Propose(r Request) (Call, error) {
+	call := Call{Agent: "fake", Tier: r.tier(), Effort: r.Role.Model.Effort,
+		Model: strings.TrimSuffix(filepath.Base(f.file), ".yaml")}
 	data, err := os.ReadFile(f.file)
 	if err != nil {
-		return fmt.Errorf("fake agent: %w", err)
+		return call, fmt.Errorf("fake agent: %w", err)
 	}
-	return os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), data, 0o644)
+	return call, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), data, 0o644)
 }
 
 type unavailable struct{ reason string }
 
-func (u unavailable) Propose(Request) error {
-	return fmt.Errorf("%w: %s", ErrUnavailable, u.reason)
+func (u unavailable) Propose(r Request) (Call, error) {
+	return Call{Agent: "unavailable", Tier: r.tier(), Effort: r.Role.Model.Effort}, fmt.Errorf("%w: %s", ErrUnavailable, u.reason)
 }

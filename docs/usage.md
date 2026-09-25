@@ -32,7 +32,7 @@ Options of `run-role` and `route`:
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
-| `--json` | print the result as JSON: status, summary, findings, and for a line its steps and pending runs |
+| `--json` | print the result as JSON: status, summary, findings, each agent call (agent, tier, effort, the exact model that answered, cost, seconds), and for a line its steps and pending runs |
 
 ## Exit codes
 
