@@ -1,6 +1,7 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: d30d22a
+checked: edfd466
+verified: agent:documentalist
 ---
 # Conformance — v1 (draft)
 
