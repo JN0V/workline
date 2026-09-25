@@ -41,10 +41,11 @@ func (c claude) Propose(req Request) (Call, error) {
 	}
 	args := []string{"-p", "--output-format", "json", "--tools", "", "--strict-mcp-config",
 		"--no-session-persistence", "--system-prompt", system}
-	if m := claudeTier[call.Tier]; c.model != "" {
-		args = append(args, "--model", c.model)
-	} else if m != "" {
-		args = append(args, "--model", m)
+	if call.Asked = claudeTier[call.Tier]; c.model != "" {
+		call.Asked = c.model
+	}
+	if call.Asked != "" {
+		args = append(args, "--model", call.Asked)
 	}
 	if e := claudeEffort[call.Effort]; e != "" {
 		args = append(args, "--effort", e)

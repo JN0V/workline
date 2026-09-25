@@ -74,6 +74,7 @@ hook.
 | `.workline/issues/` | the issues roles open, without a forge |
 | `.workline/off` | empty: the global hook skips this repository |
 | `~/.config/workline/config.yaml` | `ai:` — your default agent, when a project does not say |
+| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
 
 Runs are kept in `.git/workline/runs/` (the last
@@ -112,6 +113,7 @@ replace the role's, key by key, one level deep.
 |---|---|
 | `WORKLINE_AI` | the agent the git hook uses |
 | `WORKLINE_ROLES` | a folder of roles, as `--roles` |
+| `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
 | `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
 
 A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,

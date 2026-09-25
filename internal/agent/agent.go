@@ -44,6 +44,7 @@ type Call struct {
 	Agent  string `json:"agent"`
 	Tier   string `json:"tier,omitempty"`
 	Effort string `json:"effort,omitempty"` // the role's level, before the agent maps it
+	Asked  string `json:"asked,omitempty"`  // the model named to the agent: an alias or an exact id
 	Model  string `json:"model,omitempty"`  // the one that wrote the answer, as the agent reports it
 	// What the call used, side calls included, as the agent reports it. On a
 	// subscription the tokens are what counts; the cost is the list price.
@@ -95,7 +96,7 @@ func Parse(spec string) (Agent, error) {
 type fake struct{ file string }
 
 func (f fake) Propose(r Request) (Call, error) {
-	call := Call{Agent: "fake", Tier: r.tier(), Effort: r.Role.Model.Effort,
+	call := Call{Agent: "fake", Tier: r.tier(), Effort: r.Role.Model.Effort, Asked: r.tier(),
 		Model: strings.TrimSuffix(filepath.Base(f.file), ".yaml")}
 	data, err := os.ReadFile(f.file)
 	if err != nil {

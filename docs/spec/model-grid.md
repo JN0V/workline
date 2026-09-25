@@ -89,10 +89,16 @@ as the agent reports it (`claude-haiku-4-5-20251001`, not `haiku`): an alias
 moves to a newer generation on its own, and a score is only worth something
 next to the model that earned it.
 
-*Built so far: the record, and forcing one model or effort for every role
-(`--ai claude:<model>@<effort>`, also in `ai:`), which the evaluation uses to
-compare them. Not yet: the grid, pins per role; Claude's aliases stand for the
-tiers.*
+Tiers follow the agents' aliases rather than pinned ids, so a new generation
+comes in without an update to workline; the engine notices when it does
+(`model-changed`, once per machine), and the evaluation measures it. A model is
+pinned only when a measurement shows the new one doing worse
+([ADR-0004](../adr/0004-follow-model-aliases-and-measure.md)).
+
+*Built so far: the record, the notice, and forcing one model or effort for
+every role (`--ai claude:<model>@<effort>`, also in `ai:`), which the
+evaluation uses to compare them. Not yet: the grid, pins per role; Claude's
+aliases stand for the tiers.*
 
 ## Stepping up after failures
 

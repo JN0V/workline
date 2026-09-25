@@ -447,6 +447,9 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		call, err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier})
 		call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 		res.Calls = append(res.Calls, call)
+		if n := agent.Notice(agent.Seen(), call); n != "" {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})
+		}
 		switch {
 		case err == nil:
 		case errors.Is(err, agent.ErrUnavailable):
