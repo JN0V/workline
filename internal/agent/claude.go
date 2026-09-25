@@ -16,16 +16,21 @@ import (
 
 // claude runs Claude Code headless. It gets no tools, no MCP servers and no
 // session, and runs outside the repository so the project's CLAUDE.md is not
-// loaded: the role's facets are its whole context.
-type claude struct{}
+// loaded: the role's facets are its whole context. model and effort, when
+// set, replace what the role's tier and effort ask: to compare models on the
+// same cases, or to run a project on one model.
+type claude struct{ model, effort string }
 
 // Until the model grid is generated (docs/spec/model-grid.md), Claude's own
 // aliases stand for the tiers.
 var claudeTier = map[string]string{"light": "haiku", "standard": "sonnet", "frontier": "opus"}
 var claudeEffort = map[string]string{"none": "low", "low": "low", "medium": "medium", "high": "high", "max": "max"}
 
-func (claude) Propose(req Request) (Call, error) {
+func (c claude) Propose(req Request) (Call, error) {
 	call := Call{Agent: "claude", Tier: req.tier(), Effort: req.Role.Model.Effort}
+	if c.effort != "" {
+		call.Effort = c.effort
+	}
 	bin, err := exec.LookPath("claude")
 	if err != nil {
 		return call, fmt.Errorf("%w: claude is not installed", ErrUnavailable)
@@ -36,7 +41,9 @@ func (claude) Propose(req Request) (Call, error) {
 	}
 	args := []string{"-p", "--output-format", "json", "--tools", "", "--strict-mcp-config",
 		"--no-session-persistence", "--system-prompt", system}
-	if m := claudeTier[call.Tier]; m != "" {
+	if m := claudeTier[call.Tier]; c.model != "" {
+		args = append(args, "--model", c.model)
+	} else if m != "" {
 		args = append(args, "--model", m)
 	}
 	if e := claudeEffort[call.Effort]; e != "" {

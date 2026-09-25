@@ -25,7 +25,7 @@ Options of `run-role` and `route`:
 | Option | |
 |---|---|
 | `--repo <dir>` | the repository (default: here) |
-| `--ai <agent>` | `none`, `claude`; default: `WORKLINE_AI` for the hook, else the project's `ai`, else yours, else none |
+| `--ai <agent>` | `none`, `claude`, or `claude:<model>@<effort>` to force a model (an alias or an exact id), an effort, or both, whatever the role's tier asks: `claude:opus`, `claude:@high`; default: `WORKLINE_AI` for the hook, else the project's `ai`, else yours, else none |
 | `--input name=value` | an input for the role (`route`: for every step), e.g. `range=<base>..<head>` for the committer on a merge request |
 | `--input-file name=path` | `run-role` only: an input read from a file, written back by the intention that targets it (the hook's message file) |
 | `--forge <forge>` | `github` (needs `gh`), `gitlab` (needs `glab`), `none`; default: the project's `forge` |

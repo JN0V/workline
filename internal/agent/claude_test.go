@@ -37,3 +37,22 @@ func TestClaudeAnswer(t *testing.T) {
 		t.Error("plain text read as Claude's JSON")
 	}
 }
+
+func TestParseClaude(t *testing.T) {
+	for spec, want := range map[string]claude{
+		"claude":                      {},
+		"claude:opus":                 {model: "opus"},
+		"claude:claude-sonnet-5@high": {model: "claude-sonnet-5", effort: "high"},
+		"claude:@max":                 {effort: "max"},
+	} {
+		a, err := Parse(spec)
+		if err != nil || a != want {
+			t.Errorf("%s: got %#v, %v", spec, a, err)
+		}
+	}
+	for _, spec := range []string{"claude:", "claude:opus@loud"} {
+		if _, err := Parse(spec); err == nil {
+			t.Errorf("%s: accepted", spec)
+		}
+	}
+}

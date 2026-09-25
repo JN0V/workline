@@ -63,7 +63,10 @@ type Agent interface {
 // Parse turns an agent spec into an agent. "none" (or "") returns nil: no agent.
 //
 //	none                  no AI; the role's without-ai rule applies
-//	claude                Claude Code, headless (claude -p)
+//	claude                Claude Code, headless (claude -p), on the model the role's tier asks
+//	claude:<model>        on that model, whatever the tier: an alias (sonnet) or an exact id
+//	claude:<model>@<effort>, claude:@<effort>
+//	                      and at that effort (none, low, medium, high, max), whatever the role's
 //	fake:<file>           replays the proposals in <file> (conformance tests)
 //	unavailable:<reason>  fails like an agent whose quota or login is gone
 func Parse(spec string) (Agent, error) {
@@ -72,12 +75,21 @@ func Parse(spec string) (Agent, error) {
 		return nil, nil
 	case spec == "claude":
 		return claude{}, nil
+	case strings.HasPrefix(spec, "claude:"):
+		model, effort, _ := strings.Cut(strings.TrimPrefix(spec, "claude:"), "@")
+		if _, ok := claudeEffort[effort]; effort != "" && !ok {
+			return nil, fmt.Errorf("agent %q: unknown effort %q (known: none, low, medium, high, max)", spec, effort)
+		}
+		if model == "" && effort == "" {
+			return nil, fmt.Errorf("agent %q: name a model, an effort, or both (claude:sonnet@high)", spec)
+		}
+		return claude{model: model, effort: effort}, nil
 	case strings.HasPrefix(spec, "fake:"):
 		return fake{file: strings.TrimPrefix(spec, "fake:")}, nil
 	case strings.HasPrefix(spec, "unavailable:"):
 		return unavailable{reason: strings.TrimPrefix(spec, "unavailable:")}, nil
 	}
-	return nil, fmt.Errorf("unknown agent %q (known: none, claude, fake:<file>, unavailable:<reason>)", spec)
+	return nil, fmt.Errorf("unknown agent %q (known: none, claude, claude:<model>@<effort>, fake:<file>, unavailable:<reason>)", spec)
 }
 
 type fake struct{ file string }
