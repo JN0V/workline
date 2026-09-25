@@ -80,3 +80,7 @@ last.
   Go's config folder (`~/Library/Application Support/workline` on macOS), but
   your own facets are looked for in `~/.config/workline/roles/`: one folder
   for all, or both named in docs/usage.md.
+- **A push that touches many docs takes several rounds.** The documentalist
+  puts before the agent only the suspect docs that fit its context budget in
+  one call, so a change making seven docs suspect stopped three pushes in a
+  row. It could ask several calls in one run, up to `ai-max-calls`.
