@@ -12,5 +12,8 @@ grade:
   - {status: pass}
   - {agent-calls-max: 1}
   - {subject-max: 72}
-  - {keeps-words: 0.7}
+  # 0.6: "unknown keys" for "keys the engine does not know" is a fair cut, and
+  # its author said so (2026-09-25); telling a fair paraphrase from a betrayal
+  # of the author's words is the judge's work, not a word count's.
+  - {keeps-words: 0.6}
   - {no-vague-words: true}

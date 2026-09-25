@@ -12,7 +12,8 @@ this repository before any other role is added.
    do: pin exact model ids per tier, so a new generation comes in only once
    measured; run it on a schedule; set each role's tier and effort on what the
    runs show; add a case for each defect a role lets through; grade with a
-   judge from another provider what no check can.
+   judge from another provider what no check can — first, whether a rewrite
+   keeps the author's meaning, which `keeps-words` only counts.
 
 Then, once both work well here:
 
