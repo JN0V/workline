@@ -114,7 +114,7 @@ the model grid).
 tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
   results.tsv                every run's score, appended: the history kept
-  schedule/                  run.sh and systemd units: a run every night
+  schedule/                  run.sh and systemd units: a run every week
   summary/                   go run ./tests/evaluation/summary: per case and models,
                              the runs, mean score, range, tokens and seconds; a
                              model that no longer answers is marked `replaced`
@@ -143,8 +143,10 @@ models.
 **Run often.** `tests/evaluation/schedule/run.sh` runs it on the local `main`,
 in a worktree of its own, and appends to this repository's `results.tsv`
 (`WORKLINE_EVAL_RESULTS`); the systemd user units next to it run it every
-night. It skips a night when the commit already has three runs
-(`WORKLINE_EVAL_RUNS`) and no model changed since the last one: the same code
-on the same models adds little, and a subscription counts the tokens.
+week, or at the next session when the machine was off. It skips the week when
+the last commit changing the engine, the roles or the cases already has three
+runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
+same models adds little, and a subscription counts the tokens. The `workline`
+column of `results.tsv` names that commit.
 
 *Not built yet:* the judge from another provider, for what no check can grade.

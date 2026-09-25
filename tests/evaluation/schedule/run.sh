@@ -6,7 +6,7 @@
 #
 #   tests/evaluation/schedule/run.sh [repository]   # WORKLINE_EVAL: the agent, default claude
 #
-# The systemd units next to it run it every night (docs/spec/conformance.md).
+# The systemd units next to it run it every week (docs/spec/conformance.md).
 set -eu
 repo=$(cd "${1:-$(dirname "$0")/../../..}" && pwd)
 agent=${WORKLINE_EVAL:-claude}
@@ -24,7 +24,9 @@ if [ -d "$tree" ]; then
 else
 	git -C "$repo" worktree add -q --detach "$tree" main
 fi
-commit=$(git -C "$tree" rev-parse --short HEAD)
+# the last commit changing what is evaluated (evaluated, in eval_test.go): a
+# commit of docs alone does not call for another run
+commit=$(git -C "$tree" log -1 --format=%h -- cmd internal roles ':(exclude)roles/*/README.md' go.mod tests/evaluation/cases)
 
 # runs of this commit so far: the fewest any case has had
 cases=$(ls "$tree"/tests/evaluation/cases/*/*.yaml | wc -l)

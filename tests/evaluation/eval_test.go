@@ -376,11 +376,17 @@ func hermetic() []string {
 	)
 }
 
-// worklineVersion is the commit being evaluated, marked when the tree has changes.
+// evaluated are the paths a score depends on: the engine, the roles (not
+// their READMEs, which no agent reads) and the cases. A commit touching
+// nothing else does not change what is evaluated.
+var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases"}
+
+// worklineVersion is the last commit changing what is evaluated, marked when
+// the tree has changes there. tests/evaluation/schedule/run.sh counts runs by it.
 func worklineVersion() string {
-	head, _ := exec.Command("git", "-C", "../..", "rev-parse", "--short", "HEAD").Output()
-	v := strings.TrimSpace(string(head))
-	if dirty, _ := exec.Command("git", "-C", "../..", "status", "--porcelain", "--", "cmd", "internal", "roles").Output(); len(dirty) > 0 {
+	last, _ := exec.Command("git", append([]string{"-C", "../..", "log", "-1", "--format=%h", "--"}, evaluated...)...).Output()
+	v := strings.TrimSpace(string(last))
+	if dirty, _ := exec.Command("git", append([]string{"-C", "../..", "status", "--porcelain", "--"}, evaluated...)...).Output(); len(dirty) > 0 {
 		v += "+changes"
 	}
 	return v
