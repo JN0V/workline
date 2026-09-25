@@ -119,7 +119,8 @@ WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/
 ```
 
 It runs only when `WORKLINE_EVAL` names the agent — it costs tokens — and says
-so when skipped. Besides the fixtures, a case can start from this repository
+so when skipped. The name is an `--ai` value, so `WORKLINE_EVAL=claude:haiku@medium`
+runs every case on one model and effort, to compare them with the roles' own. Besides the fixtures, a case can start from this repository
 itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 (a message the hook refused, replayed with the author's words in
 `run.message`); `given.workline-at: <sha>` checks it out as it was. Each check
