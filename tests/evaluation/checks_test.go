@@ -20,8 +20,8 @@ func TestChecks(t *testing.T) {
 }
 
 func TestAnsweredBy(t *testing.T) {
-	m, e, c := answeredBy([]call{{"low", "claude-haiku-4-5", 0.01}, {"low", "claude-sonnet-5", 0.02}})
-	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || c != "0.0300" {
-		t.Errorf("got %q %q %q", m, e, c)
+	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01}, {"low", "claude-sonnet-5", 2000, 70, 0.02}})
+	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || in != "3000" || out != "120" || c != "0.0300" {
+		t.Errorf("got %q %q %q %q %q", m, e, in, out, c)
 	}
 }

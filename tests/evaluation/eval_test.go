@@ -57,16 +57,18 @@ type result struct {
 }
 
 type call struct {
-	Effort  string  `json:"effort"`
-	Model   string  `json:"model"`
-	CostUSD float64 `json:"cost-usd"`
+	Effort    string  `json:"effort"`
+	Model     string  `json:"model"`
+	TokensIn  int     `json:"tokens-in"`
+	TokensOut int     `json:"tokens-out"`
+	CostUSD   float64 `json:"cost-usd"`
 }
 
 // answeredBy says which models answered, in order, `>` marking a step up, the
-// efforts asked, and the total cost: a score means little without them.
-func answeredBy(calls []call) (models, efforts, cost string) {
+// efforts asked, and what the calls used: a score means little without them.
+func answeredBy(calls []call) (models, efforts, tokensIn, tokensOut, cost string) {
 	var m, e []string
-	total := 0.0
+	total, in, out := 0.0, 0, 0
 	for _, c := range calls {
 		if len(m) == 0 || m[len(m)-1] != c.Model {
 			m = append(m, c.Model)
@@ -75,8 +77,10 @@ func answeredBy(calls []call) (models, efforts, cost string) {
 			e = append(e, c.Effort)
 		}
 		total += c.CostUSD
+		in += c.TokensIn
+		out += c.TokensOut
 	}
-	return strings.Join(m, ">"), strings.Join(e, ">"), fmt.Sprintf("%.4f", total)
+	return strings.Join(m, ">"), strings.Join(e, ">"), fmt.Sprint(in), fmt.Sprint(out), fmt.Sprintf("%.4f", total)
 }
 
 // run is what a case produced, for the checks to read.
@@ -144,9 +148,9 @@ func TestEvaluation(t *testing.T) {
 					}
 				}
 			}
-			models, efforts, cost := answeredBy(r.res.Calls)
+			models, efforts, tokensIn, tokensOut, cost := answeredBy(r.res.Calls)
 			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), models, efforts,
-				c.Case, score, fmt.Sprint(r.res.AgentCalls), cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()), strings.Join(failed, "; ")}, "\t")
+				c.Case, score, fmt.Sprint(r.res.AgentCalls), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()), strings.Join(failed, "; ")}, "\t")
 			record.Lock()
 			defer record.Unlock()
 			out, err := os.OpenFile("results.tsv", os.O_APPEND|os.O_WRONLY, 0o644)

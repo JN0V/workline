@@ -129,6 +129,8 @@ in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
 `lines-max`, `new-files-min`. A case's score is the points it earned; nothing
 passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
-the efforts asked and the cost: a score compares only with the same models.
+the efforts asked, the tokens in and out, and the cost at list price (on a
+subscription, the tokens are what counts): a score compares only with the same
+models.
 
 *Not built yet:* the judge from another provider, for what no check can grade.
