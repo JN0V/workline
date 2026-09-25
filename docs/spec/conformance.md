@@ -115,7 +115,8 @@ tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
   results.tsv                every run's score, appended: the history kept
   summary/                   go run ./tests/evaluation/summary: per case and models,
-                             the runs, mean score, range, tokens and seconds
+                             the runs, mean score, range, tokens and seconds; a
+                             model that no longer answers is marked `replaced`
 ```
 
 ```sh

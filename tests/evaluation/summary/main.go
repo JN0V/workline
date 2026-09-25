@@ -1,7 +1,8 @@
 // Summary reads results.tsv and prints, per case and per models and effort,
 // how many runs there were, the mean score and its range, and what a run used:
 // one run says little, since a model answers differently from one run to the
-// next.
+// next. Scores earned by a model that no longer answers on this machine (the
+// models-seen file, ADR-0004) are marked `replaced`.
 //
 //	go run ./tests/evaluation/summary [results.tsv]
 package main
@@ -15,6 +16,10 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+
+	"go.yaml.in/yaml/v3"
+
+	"github.com/JN0V/workline/internal/agent"
 )
 
 type key struct{ kase, models, effort string }
@@ -100,14 +105,43 @@ func main() {
 		return a.effort < b.effort
 	})
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "case\tmodels\teffort\truns\tscore\trange\tcalls\ttokens in\ttokens out\tseconds")
+	answering := currentModels(agent.Seen())
+	fmt.Fprintln(w, "case\tmodels\teffort\truns\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
 	for _, k := range keys {
 		g := groups[k]
 		lo, hi := bounds(g.scores)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, len(g.scores),
-			100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"))
+		note := ""
+		if answering != nil && k.models != "(not recorded)" {
+			for _, m := range strings.Split(k.models, ">") {
+				if !answering[m] {
+					note = "replaced"
+				}
+			}
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, len(g.scores),
+			100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"), note)
 	}
 	w.Flush()
+}
+
+// currentModels returns the models answering now, from the models-seen file;
+// nil when there is none, so nothing is marked.
+func currentModels(file string) map[string]bool {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil
+	}
+	var seen map[string]struct {
+		Model string `yaml:"model"`
+	}
+	if yaml.Unmarshal(data, &seen) != nil {
+		return nil
+	}
+	now := map[string]bool{}
+	for _, s := range seen {
+		now[s.Model] = true
+	}
+	return now
 }
 
 // add keeps a number, when the column holds one: older runs did not record
