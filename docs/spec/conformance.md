@@ -104,3 +104,26 @@ An evaluation case uses the same `given` and `run`, with a real agent, and adds
 behaviour", "the product doc keeps every MUST"). Grading is done by checks where
 possible, and by a judge from another provider where not (`independent-of` in
 the model grid).
+
+```
+tests/evaluation/
+  cases/<role>/<case>.yaml   one real situation each
+  results.tsv                every run's score, appended: the history kept
+```
+
+```sh
+WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/
+```
+
+It runs only when `WORKLINE_EVAL` names the agent — it costs tokens — and says
+so when skipped. Besides the fixtures, a case can start from this repository
+itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
+(a message the hook refused, replayed with the author's words in
+`run.message`); `given.workline-at: <sha>` checks it out as it was. Each check
+in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
+`keeps-words` (the share of the author's subject words kept), `no-vague-words`,
+`file-contains`, `file-lacks`, `checked-is-head`, `body-unchanged`,
+`lines-max`, `new-files-min`. A case's score is the points it earned; nothing
+passes or fails, the scores are compared from one run to the next.
+
+*Not built yet:* the judge from another provider, for what no check can grade.

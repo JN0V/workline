@@ -5,11 +5,11 @@
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
 
-1. **Evaluation of both roles.** The "Evaluation" level of
-   docs/spec/conformance.md: a real agent on real cases — this repository's own
-   refused messages and suspect docs — graded, and the score kept over time.
-   The first four committer cases are in roles/committer/README.md ("Tried for
-   real").
+1. **Evaluation, run often.** The evaluation exists (tests/evaluation/); its
+   scores are only worth their number of runs, since a model answers
+   differently from one run to the next. Run it on a schedule, add a case for
+   each defect a role lets through, and grade with a judge from another
+   provider what no check can.
 
 Then, once both work well here:
 
