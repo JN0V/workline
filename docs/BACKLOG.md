@@ -26,7 +26,10 @@ Then, once both work well here:
 
 ## Parked
 
-Topics raised and parked, so they are not lost. Newest last.
+Topics raised and parked, so they are not lost; removed once done. Newest
+last.
+
+### Roles and method
 
 - **Consolidate the test corpus.** Tests should prove behaviour over time, not
   the one fix just made. Before adding a test, look for one covering the same
@@ -40,27 +43,25 @@ Topics raised and parked, so they are not lost. Newest last.
   the framework handles it, e.g. what a role writes down for the next run
   instead of keeping it in context.
 - **Rebuild Make My Dreams on this framework**, once it works.
-- **Granularity of a task's scope.** The scope comes from the `ready` work item
-  (routing spec). Still open: paths, modules or components, and how a module is
-  declared.
 - **Release notes must not claim what is not built.** The first trial release
   listed the documentalist as working, because its role *definition* was
   committed as `feat(documentalist): …`. A change that only specifies a role is
   `docs`, not `feat`; and the release manager's notes should be checked against
   what the code can actually do (the "capability lie" Make My Dreams detected).
-- **Documentalist, what is left.** Style (vale), links to other sites
-  (lychee), docs citing a superseded ADR, freshness, the pending list as one
-  tracking issue and its release gate, backpressure
-  (`max-open-merge-requests`), the checklist comment without AI, and the tasks
-  still to build: propagate, duplicates, merging cards too short.
+- **Documentalist, what is left.** What roles/documentalist/README.md lists
+  as not built yet, and the task that merges cards too short.
+
+### Engine and CI
+
+- **Granularity of a task's scope.** The scope comes from the `ready` work item
+  (routing spec). Still open: paths, modules or components, and how a module is
+  declared.
 - **Let a project raise a rule to block.** `enforce` only lowers a rule
   (block → warn → off); the documentalist's hygiene findings are reported and
   cannot be made to block.
 - **Settings merge one level deep.** A project that sets
   `budgets: {doc-lines: 300}` drops the other budgets; the documentalist says
   so (`setting-missing`), but a deep merge would be less surprising.
-- **docs/spec/role-contract.md is over its budget** (314 lines for 200), found
-  by the documentalist on this repository: split it into cards.
 - **Verdicts as SARIF.** The role contract says findings map to SARIF; nothing
   writes it yet. It would put workline's findings in GitHub code scanning and
   GitLab Code Quality, next to the other tools of an existing pipeline.
