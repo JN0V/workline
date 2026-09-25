@@ -18,3 +18,10 @@ func TestChecks(t *testing.T) {
 		t.Error(why)
 	}
 }
+
+func TestAnsweredBy(t *testing.T) {
+	m, e, c := answeredBy([]call{{"low", "claude-haiku-4-5", 0.01}, {"low", "claude-sonnet-5", 0.02}})
+	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || c != "0.0300" {
+		t.Errorf("got %q %q %q", m, e, c)
+	}
+}

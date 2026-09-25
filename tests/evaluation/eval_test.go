@@ -47,12 +47,36 @@ type caseFile struct {
 type result struct {
 	Status     string `json:"status"`
 	AgentCalls int    `json:"agent-calls"`
+	Calls      []call `json:"calls"`
 	Findings   []struct {
 		Rule    string `json:"rule"`
 		Where   string `json:"where"`
 		Message string `json:"message"`
 	} `json:"findings"`
 	Applied []string `json:"applied"`
+}
+
+type call struct {
+	Effort  string  `json:"effort"`
+	Model   string  `json:"model"`
+	CostUSD float64 `json:"cost-usd"`
+}
+
+// answeredBy says which models answered, in order, `>` marking a step up, the
+// efforts asked, and the total cost: a score means little without them.
+func answeredBy(calls []call) (models, efforts, cost string) {
+	var m, e []string
+	total := 0.0
+	for _, c := range calls {
+		if len(m) == 0 || m[len(m)-1] != c.Model {
+			m = append(m, c.Model)
+		}
+		if len(e) == 0 || e[len(e)-1] != c.Effort {
+			e = append(e, c.Effort)
+		}
+		total += c.CostUSD
+	}
+	return strings.Join(m, ">"), strings.Join(e, ">"), fmt.Sprintf("%.4f", total)
 }
 
 // run is what a case produced, for the checks to read.
@@ -120,8 +144,9 @@ func TestEvaluation(t *testing.T) {
 					}
 				}
 			}
-			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), c.Case,
-				score, fmt.Sprint(r.res.AgentCalls), fmt.Sprintf("%.0f", time.Since(start).Seconds()), strings.Join(failed, "; ")}, "\t")
+			models, efforts, cost := answeredBy(r.res.Calls)
+			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), models, efforts,
+				c.Case, score, fmt.Sprint(r.res.AgentCalls), cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()), strings.Join(failed, "; ")}, "\t")
 			record.Lock()
 			defer record.Unlock()
 			out, err := os.OpenFile("results.tsv", os.O_APPEND|os.O_WRONLY, 0o644)

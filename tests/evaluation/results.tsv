@@ -1,10 +1,10 @@
-date	workline	agent	case	score	agent calls	seconds	failed checks
-2026-09-25T06:10:23Z	78f400d	claude	documentalist/fixes-a-doc-made-false	5/5	1	4	
-2026-09-25T06:10:26Z	78f400d	claude	documentalist/confirms-a-doc-still-true	3/4	1	7	checked-is-head: docs/tech/auth.md does not record 7dc525b
-2026-09-25T06:10:54Z	78f400d	claude	committer/shortens-a-test-subject	5/5	1	35	
-2026-09-25T06:10:56Z	78f400d	claude	committer/drops-a-reference-from-the-subject	5/5	1	37	
-2026-09-25T06:11:30Z	78f400d	claude	committer/shortens-a-ci-subject	5/5	1	72	
-2026-09-25T06:11:38Z	78f400d	claude	committer/shortens-a-fix-subject	5/5	1	80	
-2026-09-25T06:13:58Z	78f400d	claude	documentalist/condenses-the-role-contract	1/4	2	220	status: status block; lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
-2026-09-25T06:14:36Z	78f400d	claude	documentalist/confirms-a-doc-still-true	3/4	2	18	agent-calls-max: 2 calls
-2026-09-25T06:16:14Z	78f400d	claude	documentalist/condenses-the-role-contract	4/4	1	115	
+date	workline	agent	models	effort	case	score	agent calls	cost usd	seconds	failed checks
+2026-09-25T06:10:23Z	78f400d	claude			documentalist/fixes-a-doc-made-false	5/5	1		4	
+2026-09-25T06:10:26Z	78f400d	claude			documentalist/confirms-a-doc-still-true	3/4	1		7	checked-is-head: docs/tech/auth.md does not record 7dc525b
+2026-09-25T06:10:54Z	78f400d	claude			committer/shortens-a-test-subject	5/5	1		35	
+2026-09-25T06:10:56Z	78f400d	claude			committer/drops-a-reference-from-the-subject	5/5	1		37	
+2026-09-25T06:11:30Z	78f400d	claude			committer/shortens-a-ci-subject	5/5	1		72	
+2026-09-25T06:11:38Z	78f400d	claude			committer/shortens-a-fix-subject	5/5	1		80	
+2026-09-25T06:13:58Z	78f400d	claude			documentalist/condenses-the-role-contract	1/4	2		220	status: status block; lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
+2026-09-25T06:14:36Z	78f400d	claude			documentalist/confirms-a-doc-still-true	3/4	2		18	agent-calls-max: 2 calls
+2026-09-25T06:16:14Z	78f400d	claude			documentalist/condenses-the-role-contract	4/4	1		115	
