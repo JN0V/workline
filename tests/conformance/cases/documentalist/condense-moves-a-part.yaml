@@ -1,10 +1,11 @@
 case: documentalist/condense-moves-a-part
-about: When gardening, a doc over its budget is condensed by moving a whole part into a new doc, linked from where it was.
+about: When gardening, a doc over its budget is condensed by moving a whole part into a new doc, linked from where it was — asked of a frontier model, as the role asks for this kind of task.
 given: {repo: untidy}
 run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-part"}
 expect:
   status: pass
   agent-calls: 1
+  calls: [{task: condense, tier: frontier, effort: medium}]
   applied: [patch]
   files:
     docs/cards/signing-out.md: {contains: "Signing out ends the session."}

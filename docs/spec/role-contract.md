@@ -75,6 +75,8 @@ model:                          # what kind of thinking, never a model name
   tier: light
   effort: low
   timeout: 3m                   # how long one answer may take; 3m by default
+  tasks:                        # a kind of task that needs other thinking, as pre
+    condense: {tier: frontier}  # names it in in/task-kind; unset fields keep the role's
 
 context:
   knowledge: []                 # which knowledge/ files to load; none by default
@@ -133,8 +135,9 @@ token), **apply** (trusted, no AI key).
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
    call: the AI is paid for decisions, not for routine. It may also write
    `in/fallback.yaml`: the proposals to use when no agent answers — the release
-   manager's generated changelog, for example. The engine then records a
-   digest of `in/`.
+   manager's generated changelog, for example, and `in/task-kind`: one word
+   naming the kind of question, when `model.tasks` asks something else of it.
+   The engine then records a digest of `in/`.
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
    (`model-grid.md`), receives the facets, `in/` and `task.md`. It runs read-only

@@ -7,5 +7,6 @@ run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed"}
 expect:
   status: pass
   agent-calls: 1
+  calls: [{tier: standard}]   # only condensing asks for more
   applied: [patch]
   files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4"}}

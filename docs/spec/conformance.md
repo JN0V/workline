@@ -85,7 +85,7 @@ multi-repository cases.
   `where` if given).
 - `agent-calls` — how many times the agent was called.
 - `calls` — each call, in order: the fields listed must match (`agent`,
-  `tier`, `effort`, `asked`, `model`).
+  `task`, `tier`, `effort`, `asked`, `model`).
 - `applied` / `refused` — intentions applied or refused, by kind.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards.
