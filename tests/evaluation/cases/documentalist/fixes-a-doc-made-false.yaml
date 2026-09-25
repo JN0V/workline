@@ -1,0 +1,12 @@
+case: documentalist/fixes-a-doc-made-false
+about: The code changed what a doc says; the doc is fixed, only there, and checked again.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {file-contains: {docs/tech/auth.md: two hours}}
+  - {file-lacks: {docs/tech/auth.md: one hour}}
+  - {checked-is-head: docs/tech/auth.md}

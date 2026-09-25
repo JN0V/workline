@@ -1,0 +1,11 @@
+case: documentalist/confirms-a-doc-still-true
+about: The code changed without making the doc wrong; the doc is only checked again, not reworded.
+given:
+  repo: documented
+  setup: ["printf '\\n// Refresh returns a new token with the same lifetime.\\nfunc Refresh(t string) string { return t }\\n' >> src/auth/token.go && git commit -qam 'feat(auth): refresh tokens'"]
+run: {role: documentalist, event: merge-request}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {body-unchanged: docs/tech/auth.md}
+  - {checked-is-head: docs/tech/auth.md}

@@ -1,0 +1,9 @@
+case: documentalist/condenses-the-role-contract
+about: Gardening this repository as it was, with its role contract at 330 lines for a budget of 200; whole parts move into new docs.
+given: {workline-at: 2c0e022}
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 2}
+  - {lines-max: {docs/spec/role-contract.md: 200}}
+  - {new-files-min: 1}

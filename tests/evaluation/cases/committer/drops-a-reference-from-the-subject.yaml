@@ -1,0 +1,16 @@
+case: committer/drops-a-reference-from-the-subject
+about: A message this repository's hook refused, replayed on its own commit; the rewrite fixes what was refused and keeps the author's words.
+given: {workline-commit: ac53484}
+run:
+  role: committer
+  event: commit-msg
+  message: |-
+    docs: correct the specs and ADR-0001 against the code
+
+    Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {subject-max: 72}
+  - {keeps-words: 0.6}   # the reference has to go
+  - {no-vague-words: true}

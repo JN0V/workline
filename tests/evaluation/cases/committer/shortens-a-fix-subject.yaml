@@ -1,0 +1,16 @@
+case: committer/shortens-a-fix-subject
+about: A message this repository's hook refused, replayed on its own commit; the rewrite fixes what was refused and keeps the author's words.
+given: {workline-commit: 446d5a2}
+run:
+  role: committer
+  event: commit-msg
+  message: |-
+    fix(config): refuse keys the engine does not know, instead of ignoring them
+
+    Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {subject-max: 72}
+  - {keeps-words: 0.7}
+  - {no-vague-words: true}

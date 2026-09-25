@@ -1,0 +1,16 @@
+case: committer/shortens-a-ci-subject
+about: A message this repository's hook refused, replayed on its own commit; the rewrite fixes what was refused and keeps the author's words.
+given: {workline-commit: b9375ba}
+run:
+  role: committer
+  event: commit-msg
+  message: |-
+    ci: run the project's line in the templates and on workline's pull requests
+
+    Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {subject-max: 72}
+  - {keeps-words: 0.7}
+  - {no-vague-words: true}
