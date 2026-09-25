@@ -15,3 +15,41 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-25T16:37:56Z	35084db	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	4/5	1			0.0396	49	keeps-words: 62% of the author's words kept in "fix(config): refuse unknown keys instead of ignoring them"
 2026-09-25T16:38:25Z	35084db	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1			0.0566	79	
 2026-09-25T16:42:20Z	35084db	claude	claude-sonnet-5>claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	2			0.6071	314	
+2026-09-25T17:04:21Z	e50252f	claude	claude-sonnet-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4674	191	0.0137	5	
+2026-09-25T17:04:32Z	e50252f	claude	claude-sonnet-5>claude-opus-5-5	medium	documentalist/confirms-a-doc-still-true	3/4	2	9404	1065	0.0502	15	agent-calls-max: 2 calls
+2026-09-25T17:04:37Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/drops-a-reference-from-the-subject	5/5	1	7857	2042	0.0181	20	
+2026-09-25T17:04:46Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	5/5	1	7096	4005	0.0271	29	
+2026-09-25T17:05:07Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	5/5	1	9156	5326	0.0402	50	
+2026-09-25T17:05:07Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1	8891	5208	0.0392	50	
+2026-09-25T17:07:26Z	e50252f	claude	claude-sonnet-5>claude-opus-5-5	medium	documentalist/condenses-the-role-contract	1/4	2	33262	25214	0.4496	189	status: status block; lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
+2026-09-25T17:07:31Z	e50252f	claude	claude-sonnet-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4673	191	0.0137	5	
+2026-09-25T17:07:36Z	e50252f	claude	claude-sonnet-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4694	674	0.0186	9	
+2026-09-25T17:08:06Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	5/5	1	7095	4893	0.0316	39	
+2026-09-25T17:08:10Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1	8893	4279	0.0345	43	
+2026-09-25T17:08:18Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	4/5	1	9157	5656	0.0418	51	keeps-words: 62% of the author's words kept in "fix(config): refuse unknown config keys instead of ignoring them"
+2026-09-25T17:08:25Z	e50252f	claude	claude-haiku-4-5-20251001	low	committer/drops-a-reference-from-the-subject	5/5	1	7860	5582	0.0358	59	
+2026-09-25T17:09:02Z	e50252f	claude	claude-sonnet-5	medium	documentalist/condenses-the-role-contract	4/4	1	16566	13168	0.1751	95	
+2026-09-25T17:09:37Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-test-subject	5/5	1	8896	4249	0.0344	35	
+2026-09-25T17:09:41Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/fixes-a-doc-made-false	5/5	1	4136	4153	0.0249	39	
+2026-09-25T17:09:48Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/drops-a-reference-from-the-subject	5/5	1	7857	5007	0.0329	46	
+2026-09-25T17:10:04Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-ci-subject	5/5	1	7099	9674	0.0555	62	
+2026-09-25T17:10:20Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-fix-subject	5/5	1	9152	8729	0.0572	78	
+2026-09-25T17:10:40Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/confirms-a-doc-still-true	3/4	2	8361	13354	0.0751	98	agent-calls-max: 2 calls
+2026-09-25T17:10:51Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/condenses-the-role-contract	2/4	1	14823	12593	0.0850	109	lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
+2026-09-25T17:11:05Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/fixes-a-doc-made-false	5/5	1	4137	1204	0.0102	14	
+2026-09-25T17:11:18Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-test-subject	5/5	1	8891	3154	0.0289	27	
+2026-09-25T17:11:26Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/drops-a-reference-from-the-subject	5/5	1	7860	3422	0.0250	34	
+2026-09-25T17:11:39Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-ci-subject	5/5	1	7092	5111	0.0326	48	
+2026-09-25T17:11:39Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-fix-subject	4/5	1	9156	4696	0.0370	48	keeps-words: 62% of the author's words kept in "fix(config): refuse unknown keys instead of ignoring them"
+2026-09-25T17:12:52Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/confirms-a-doc-still-true	2/4	2	8392	12688	0.0718	121	agent-calls-max: 2 calls; checked-is-head: docs/tech/auth.md does not record 7dc525b
+2026-09-25T17:18:19Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/condenses-the-role-contract	1/4	2	29750	46107	0.2748	448	status: status block; lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
+2026-09-25T17:18:38Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/fixes-a-doc-made-false	5/5	1	4138	2312	0.0157	18	
+2026-09-25T17:18:52Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-test-subject	5/5	1	8892	3409	0.0302	32	
+2026-09-25T17:18:55Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/drops-a-reference-from-the-subject	5/5	1	7860	3547	0.0256	35	
+2026-09-25T17:19:10Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/confirms-a-doc-still-true	4/4	1	4154	4987	0.0291	50	
+2026-09-25T17:19:14Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-fix-subject	5/5	1	9157	8030	0.0537	55	
+2026-09-25T17:19:21Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	committer/shortens-a-ci-subject	5/5	1	7097	8975	0.0520	61	
+2026-09-25T17:23:09Z	e50252f	claude:haiku@medium	claude-haiku-4-5-20251001	medium	documentalist/condenses-the-role-contract	1/4	2	29713	34941	0.2189	290	status: status block; lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
+2026-09-25T17:24:20Z	e50252f	claude:opus	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16500	9132	0.2612	70	
+2026-09-25T17:25:47Z	e50252f	claude:opus	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16500	10915	0.2969	87	
+2026-09-25T17:27:16Z	e50252f	claude:opus	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16501	11297	0.3045	88	
