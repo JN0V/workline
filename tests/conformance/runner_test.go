@@ -81,6 +81,7 @@ type caseFile struct {
 		Files      map[string]map[string]any `yaml:"files"`
 		Forge      map[string]any            `yaml:"forge"`
 		Steps      []string                  `yaml:"steps"`
+		Calls      []map[string]string       `yaml:"calls"`
 	} `yaml:"expect"`
 }
 
@@ -91,11 +92,12 @@ type result struct {
 		Where   string `json:"where"`
 		Message string `json:"message"`
 	} `json:"findings"`
-	AgentCalls int      `json:"agent-calls"`
-	RunDir     string   `json:"run-dir"`
-	Pending    []string `json:"pending"` // runs a line judged and did not apply
-	Applied    []string `json:"applied"`
-	Refused    []string `json:"refused"`
+	AgentCalls int              `json:"agent-calls"`
+	Calls      []map[string]any `json:"calls"`
+	RunDir     string           `json:"run-dir"`
+	Pending    []string         `json:"pending"` // runs a line judged and did not apply
+	Applied    []string         `json:"applied"`
+	Refused    []string         `json:"refused"`
 	Steps      []struct {
 		Name string `json:"name"`
 	} `json:"steps"`
@@ -230,6 +232,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 			return []string{fmt.Sprintf("resume printed no result: %v\n%s", err, stderr.String())}
 		}
 		r2.AgentCalls += r.AgentCalls
+		r2.Calls = append(r.Calls, r2.Calls...)
 		r = r2
 	}
 	problems := compare(c, &r, repo)
@@ -258,6 +261,19 @@ func compare(c *caseFile, r *result, repo string) []string {
 	}
 	if e.AgentCalls != nil && *e.AgentCalls != r.AgentCalls {
 		p = append(p, fmt.Sprintf("agent calls = %d, want %d", r.AgentCalls, *e.AgentCalls))
+	}
+	if e.Calls != nil {
+		if len(r.Calls) != len(e.Calls) {
+			p = append(p, fmt.Sprintf("calls = %v, want %v", r.Calls, e.Calls))
+		} else {
+			for i, want := range e.Calls {
+				for k, v := range want {
+					if fmt.Sprint(r.Calls[i][k]) != v {
+						p = append(p, fmt.Sprintf("call %d: %s = %v, want %s", i+1, k, r.Calls[i][k], v))
+					}
+				}
+			}
+		}
 	}
 	if e.Applied != nil && fmt.Sprint(e.Applied) != fmt.Sprint(r.Applied) {
 		p = append(p, fmt.Sprintf("applied = %v, want %v", r.Applied, e.Applied))

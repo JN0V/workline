@@ -81,6 +81,8 @@ multi-repository cases.
 - `findings` — each listed finding must be present (matched by `rule`, and by
   `where` if given).
 - `agent-calls` — how many times the agent was called.
+- `calls` — each call, in order: the fields listed must match (`agent`,
+  `tier`, `effort`, `model`).
 - `applied` / `refused` — intentions applied or refused, by kind.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards.
