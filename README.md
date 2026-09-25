@@ -36,8 +36,14 @@ version workline needs by itself). There are no released binaries yet.
 go install github.com/JN0V/workline/cmd/workline@latest
 ```
 
-The binary goes to `$(go env GOPATH)/bin`, usually `~/go/bin`: put that folder
-on your `PATH`. Run the same command again to update.
+The binary goes to `$(go env GOPATH)/bin`, usually `~/go/bin`, which Go does
+not put on your `PATH`. If `workline` is not found, add it (`~/.zshrc` for zsh):
+
+```sh
+echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.bashrc && source ~/.bashrc
+```
+
+Run the same `go install` again to update.
 
 ### Check every commit on this machine
 
