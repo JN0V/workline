@@ -8,3 +8,10 @@ date	workline	agent	models	effort	case	score	agent calls	cost usd	seconds	failed
 2026-09-25T06:13:58Z	78f400d	claude			documentalist/condenses-the-role-contract	1/4	2		220	status: status block; lines-max: docs/spec/role-contract.md has 330 lines; new-files-min: 0 new files
 2026-09-25T06:14:36Z	78f400d	claude			documentalist/confirms-a-doc-still-true	3/4	2		18	agent-calls-max: 2 calls
 2026-09-25T06:16:14Z	78f400d	claude			documentalist/condenses-the-role-contract	4/4	1		115	
+2026-09-25T16:37:11Z	35084db	claude	claude-sonnet-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	0.0137	4	
+2026-09-25T16:37:14Z	35084db	claude	claude-sonnet-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	0.0166	8	
+2026-09-25T16:37:26Z	35084db	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	5/5	1	0.0161	19	
+2026-09-25T16:37:51Z	35084db	claude	claude-haiku-4-5-20251001	low	committer/drops-a-reference-from-the-subject	5/5	1	0.0273	45	
+2026-09-25T16:37:56Z	35084db	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	4/5	1	0.0396	49	keeps-words: 62% of the author's words kept in "fix(config): refuse unknown keys instead of ignoring them"
+2026-09-25T16:38:25Z	35084db	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1	0.0566	79	
+2026-09-25T16:42:20Z	35084db	claude	claude-sonnet-5>claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	2	0.6071	314	
