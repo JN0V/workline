@@ -1,0 +1,10 @@
+case: engine/model-change-noticed
+about: When the model asked is answered by another model than last time on this machine, the run says so, and still passes.
+given:
+  repo: basic
+  models-seen: {"fake:light": {model: an-older-model, since: "2026-09-01"}}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:good-commit-message"}
+expect:
+  status: pass
+  calls: [{asked: light, model: good-commit-message}]
+  findings: [{rule: model-changed}]

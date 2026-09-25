@@ -57,6 +57,7 @@ type caseFile struct {
 		Setup  []string            `yaml:"setup"`
 		Config map[string]any      `yaml:"config"`
 		Forge  map[string]any      `yaml:"forge"`
+		Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -136,7 +137,14 @@ func TestConformance(t *testing.T) {
 // runCase returns what differs from the expectation; empty means it passes.
 func runCase(t *testing.T, c *caseFile) []string {
 	work := t.TempDir()
-	env := hermeticEnv()
+	seen := filepath.Join(work, "models-seen.yaml")
+	env := append(hermeticEnv(), "WORKLINE_MODELS_SEEN="+seen)
+	if c.Given.Seen != nil {
+		data, _ := yaml.Marshal(c.Given.Seen)
+		if err := os.WriteFile(seen, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	names := make([]string, 0, len(c.Given.Repos))
 	for n := range c.Given.Repos {

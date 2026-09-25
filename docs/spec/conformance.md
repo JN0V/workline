@@ -60,7 +60,9 @@ expect:
   applied: []
 ```
 
-`given` can also carry `repos`: other repositories to build first, each
+`given` can also carry `models-seen`: the models this machine saw answer before
+the run (`{"fake:light": {model: …}}`), in the file `WORKLINE_MODELS_SEEN` names.
+It can also carry `repos`: other repositories to build first, each
 exported by name as an environment variable holding its path, for
 multi-repository cases.
 
@@ -83,7 +85,7 @@ multi-repository cases.
   `where` if given).
 - `agent-calls` — how many times the agent was called.
 - `calls` — each call, in order: the fields listed must match (`agent`,
-  `tier`, `effort`, `model`).
+  `tier`, `effort`, `asked`, `model`).
 - `applied` / `refused` — intentions applied or refused, by kind.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards.
