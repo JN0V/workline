@@ -53,3 +53,4 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-25T17:24:20Z	e50252f	claude:opus	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16500	9132	0.2612	70	
 2026-09-25T17:25:47Z	e50252f	claude:opus	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16500	10915	0.2969	87	
 2026-09-25T17:27:16Z	e50252f	claude:opus	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16501	11297	0.3045	88	
+2026-09-25T17:48:29Z	4e7085a+changes	claude	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16504	8751	0.2536	67	
