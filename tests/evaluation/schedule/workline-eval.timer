@@ -1,0 +1,11 @@
+# Every night; a night the machine was off runs at the next start (Persistent).
+[Unit]
+Description=workline evaluation, every night
+
+[Timer]
+OnCalendar=*-*-* 03:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

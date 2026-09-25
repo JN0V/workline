@@ -1,0 +1,11 @@
+# Runs the evaluation once (tests/evaluation/schedule/run.sh). Install:
+#   cp tests/evaluation/schedule/workline-eval.* ~/.config/systemd/user/
+#   sed -i "s|@REPO@|$PWD|" ~/.config/systemd/user/workline-eval.service
+#   systemctl --user daemon-reload && systemctl --user enable --now workline-eval.timer
+[Unit]
+Description=workline evaluation, with a real agent
+
+[Service]
+Type=oneshot
+ExecStart=@REPO@/tests/evaluation/schedule/run.sh @REPO@
+Nice=10

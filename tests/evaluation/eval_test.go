@@ -153,7 +153,11 @@ func TestEvaluation(t *testing.T) {
 				c.Case, score, fmt.Sprint(r.res.AgentCalls), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()), strings.Join(failed, "; ")}, "\t")
 			record.Lock()
 			defer record.Unlock()
-			out, err := os.OpenFile("results.tsv", os.O_APPEND|os.O_WRONLY, 0o644)
+			results := "results.tsv"
+			if f := os.Getenv("WORKLINE_EVAL_RESULTS"); f != "" {
+				results = f // a scheduled run, from another checkout, keeps the same history
+			}
+			out, err := os.OpenFile(results, os.O_APPEND|os.O_WRONLY, 0o644)
 			if err != nil {
 				t.Fatal(err)
 			}
