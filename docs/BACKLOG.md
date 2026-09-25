@@ -5,11 +5,14 @@
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
 
-1. **Evaluation, run often.** The evaluation exists (tests/evaluation/); its
-   scores are only worth their number of runs, since a model answers
-   differently from one run to the next. Run it on a schedule, add a case for
-   each defect a role lets through, and grade with a judge from another
-   provider what no check can.
+1. **Evaluation, run often.** The evaluation exists (tests/evaluation/), keeps
+   the exact models, efforts and tokens of each score, can force one model and
+   effort, and summarises the runs; its scores are only worth their number of
+   runs, since a model answers differently from one run to the next. Still to
+   do: pin exact model ids per tier, so a new generation comes in only once
+   measured; run it on a schedule; set each role's tier and effort on what the
+   runs show; add a case for each defect a role lets through; grade with a
+   judge from another provider what no check can.
 
 Then, once both work well here:
 
