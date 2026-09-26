@@ -11,3 +11,5 @@ expect:
   status: pass
   agent-calls: 2
   applied: [patch, patch]
+  no-findings:   # ttl.md, deferred by the first round, was patched by the second
+    - {rule: suspect, where: docs/tech/ttl.md}

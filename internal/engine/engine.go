@@ -75,7 +75,8 @@ const (
 )
 
 // maxRounds caps how many times one run of a role goes round, when its pre
-// leaves work for the next round (in/more).
+// leaves work for the next round (in/more: the findings it defers, one
+// "<rule> <where>" a line).
 const maxRounds = 5
 
 // Run executes one run and always returns a result with a status: an error
@@ -83,11 +84,19 @@ const maxRounds = 5
 // took less than there was to do and said so in in/more, and the round
 // passed and applied something, the role goes round again: the next round
 // sees what this one applied. Calls and applied intentions add up; a later
-// round's finding replaces an earlier one of the same rule and place.
+// round's finding replaces an earlier one of the same rule and place, and
+// what a round deferred is dropped: the next round reports what is left.
 func Run(o Options) *Result {
 	res := &Result{Applied: []string{}, Refused: []string{}}
+	deferred := map[string]bool{}
 	for round := 1; ; round++ {
-		earlier, applied := res.Findings, len(res.Applied)
+		var earlier []verdict.Finding
+		for _, f := range res.Findings {
+			if !deferred[f.Rule+" "+f.Where] {
+				earlier = append(earlier, f)
+			}
+		}
+		applied := len(res.Applied)
 		res.Findings = nil
 		if err := run(o, res); err != nil {
 			res.Status = verdict.Block
@@ -98,7 +107,11 @@ func Run(o Options) *Result {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Message: err.Error()})
 		}
 		res.Findings = supersede(earlier, res.Findings)
-		_, err := os.Stat(filepath.Join(res.RunDir, "in", "more"))
+		more, err := os.ReadFile(filepath.Join(res.RunDir, "in", "more"))
+		deferred = map[string]bool{}
+		for _, l := range strings.Split(string(more), "\n") {
+			deferred[strings.TrimSpace(l)] = true
+		}
 		if err != nil || res.Status != verdict.Pass || o.NoApply || len(res.Applied) == applied || round == maxRounds {
 			return res
 		}

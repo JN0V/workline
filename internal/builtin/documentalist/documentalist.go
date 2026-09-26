@@ -419,15 +419,15 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
-	left := false
+	var left strings.Builder
 	for i := range findings {
 		if f := &findings[i]; f.Rule == "suspect" && judged[f.Where] == nil && task != "" {
 			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
-			left = true
+			fmt.Fprintf(&left, "suspect %s\n", f.Where)
 		}
 	}
-	if left { // the engine runs another round, once this one is applied
-		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte("suspect docs left\n"), 0o644); err != nil {
+	if left.Len() > 0 { // the engine runs another round, once this one is applied
+		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte(left.String()), 0o644); err != nil {
 			return fail(err)
 		}
 	}

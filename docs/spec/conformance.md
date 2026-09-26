@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 0554e32
+checked: 4d8105d
 verified: agent:documentalist
 ---
 # Conformance — v1 (draft)
@@ -83,6 +83,7 @@ multi-repository cases.
 
 - `findings` — each listed finding must be present (matched by `rule`, and by
   `where` if given).
+- `no-findings` — findings that must not be there (by `rule` and `where`).
 - `agent-calls` — how many times the agent was called.
 - `calls` — each call, in order: the fields listed must match (`agent`,
   `task`, `tier`, `effort`, `asked`, `model`).

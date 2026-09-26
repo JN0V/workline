@@ -77,6 +77,7 @@ type caseFile struct {
 	Expect struct {
 		Status     string                    `yaml:"status"`
 		Findings   []map[string]string       `yaml:"findings"`
+		NoFindings []map[string]string       `yaml:"no-findings"` // findings that must not be there
 		AgentCalls *int                      `yaml:"agent-calls"`
 		Applied    []string                  `yaml:"applied"`
 		Refused    []string                  `yaml:"refused"`
@@ -276,6 +277,13 @@ func compare(c *caseFile, r *result, repo string) []string {
 		}
 		if !found {
 			p = append(p, fmt.Sprintf("missing finding %v (got %v)", want, r.Findings))
+		}
+	}
+	for _, bad := range e.NoFindings {
+		for _, f := range r.Findings {
+			if f.Rule == bad["rule"] && f.Where == bad["where"] {
+				p = append(p, fmt.Sprintf("finding %v should not be there: %s", bad, f.Message))
+			}
 		}
 	}
 	if e.AgentCalls != nil && *e.AgentCalls != r.AgentCalls {
