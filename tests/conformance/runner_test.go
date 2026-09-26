@@ -72,6 +72,7 @@ type caseFile struct {
 		Route   string            `yaml:"route"`
 		Item    int               `yaml:"item"`
 		Gate    string            `yaml:"gate"`
+		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
 	} `yaml:"run"`
 	Expect struct {
 		Status     string                    `yaml:"status"`
@@ -83,6 +84,9 @@ type caseFile struct {
 		Forge      map[string]any            `yaml:"forge"`
 		Steps      []string                  `yaml:"steps"`
 		Calls      []map[string]string       `yaml:"calls"`
+		SARIF       []map[string]any `yaml:"sarif"`        // results, by rule, uri, line, level
+		CodeQuality []map[string]any `yaml:"code-quality"` // issues, by check_name, path, line, severity
+		LeftOut     []string         `yaml:"left-out"`     // wheres found in neither report
 	} `yaml:"expect"`
 }
 
@@ -213,6 +217,10 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Tamper != "" {
 		args = append(args, "--test-tamper-before-apply")
 	}
+	sarifFile, cqFile := filepath.Join(work, "findings.sarif"), filepath.Join(work, "code-quality.json")
+	if c.Run.Reports {
+		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
+	}
 	cmd := exec.Command(engineBin, args...)
 	cmd.Env = env
 	var stdout, stderr bytes.Buffer
@@ -244,6 +252,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	problems := compare(c, &r, repo)
+	if c.Run.Reports {
+		problems = append(problems, compareReports(c, sarifFile, cqFile)...)
+	}
 	if len(c.Expect.Forge) > 0 {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
 	}
@@ -394,6 +405,101 @@ func compareForge(want map[string]any, file string) []string {
 					p = append(p, fmt.Sprintf("forge: %s %v labels = %v, want %v", kind, wm["id"], gl, l))
 				}
 			}
+		}
+	}
+	return p
+}
+
+// compareReports checks the SARIF and Code Quality files a run wrote.
+func compareReports(c *caseFile, sarifFile, cqFile string) []string {
+	var p []string
+	var sarif struct {
+		Version string `json:"version"`
+		Runs    []struct {
+			Results []struct {
+				RuleID    string `json:"ruleId"`
+				Level     string `json:"level"`
+				Locations []struct {
+					PhysicalLocation struct {
+						ArtifactLocation struct {
+							URI string `json:"uri"`
+						} `json:"artifactLocation"`
+						Region struct {
+							StartLine int `json:"startLine"`
+						} `json:"region"`
+					} `json:"physicalLocation"`
+				} `json:"locations"`
+				PartialFingerprints map[string]string `json:"partialFingerprints"`
+			} `json:"results"`
+		} `json:"runs"`
+	}
+	var cq []struct {
+		CheckName   string `json:"check_name"`
+		Severity    string `json:"severity"`
+		Fingerprint string `json:"fingerprint"`
+		Location    struct {
+			Path  string `json:"path"`
+			Lines struct {
+				Begin int `json:"begin"`
+			} `json:"lines"`
+		} `json:"location"`
+	}
+	for file, into := range map[string]any{sarifFile: &sarif, cqFile: &cq} {
+		data, err := os.ReadFile(file)
+		if err == nil {
+			err = json.Unmarshal(data, into)
+		}
+		if err != nil {
+			return []string{fmt.Sprintf("%s: %v", filepath.Base(file), err)}
+		}
+	}
+	if sarif.Version != "2.1.0" || len(sarif.Runs) != 1 {
+		p = append(p, fmt.Sprintf("SARIF version %q with %d runs, want 2.1.0 with one run", sarif.Version, len(sarif.Runs)))
+		return p
+	}
+	var got, gotCQ []map[string]any
+	uris := map[string]bool{}
+	for _, r := range sarif.Runs[0].Results {
+		if len(r.Locations) != 1 || len(r.PartialFingerprints) == 0 {
+			p = append(p, fmt.Sprintf("SARIF result %s has %d locations and %d fingerprints, want one and some", r.RuleID, len(r.Locations), len(r.PartialFingerprints)))
+			continue
+		}
+		l := r.Locations[0].PhysicalLocation
+		uris[l.ArtifactLocation.URI] = true
+		got = append(got, map[string]any{"rule": r.RuleID, "uri": l.ArtifactLocation.URI, "line": l.Region.StartLine, "level": r.Level})
+	}
+	for _, i := range cq {
+		if i.Fingerprint == "" {
+			p = append(p, "a Code Quality issue has no fingerprint")
+		}
+		uris[i.Location.Path] = true
+		gotCQ = append(gotCQ, map[string]any{"check_name": i.CheckName, "path": i.Location.Path, "line": i.Location.Lines.Begin, "severity": i.Severity})
+	}
+	has := func(list []map[string]any, want map[string]any) bool {
+		for _, g := range list {
+			ok := true
+			for k, v := range want {
+				ok = ok && fmt.Sprint(g[k]) == fmt.Sprint(v)
+			}
+			if ok {
+				return true
+			}
+		}
+		return false
+	}
+	for _, w := range c.Expect.SARIF {
+		if !has(got, w) {
+			p = append(p, fmt.Sprintf("SARIF lacks %v (got %v)", w, got))
+		}
+	}
+	for _, w := range c.Expect.CodeQuality {
+		if !has(gotCQ, w) {
+			p = append(p, fmt.Sprintf("Code Quality lacks %v (got %v)", w, gotCQ))
+		}
+	}
+	for _, w := range c.Expect.LeftOut {
+		if uris[w] {
+			p = append(p, fmt.Sprintf("%s is in a report, and should be left out", w))
 		}
 	}
 	return p

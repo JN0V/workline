@@ -67,9 +67,6 @@ last.
 - **Settings merge one level deep.** A project that sets
   `budgets: {doc-lines: 300}` drops the other budgets; the documentalist says
   so (`setting-missing`), but a deep merge would be less surprising.
-- **Verdicts as SARIF.** The role contract says findings map to SARIF; nothing
-  writes it yet. It would put workline's findings in GitHub code scanning and
-  GitLab Code Quality, next to the other tools of an existing pipeline.
 - **Patches in the forge's apply job.** A `patch` applied there is written to
   the job's checkout and lost: it should become a commit on the merge
   request's branch, or a suggestion. Today the templates run without AI, so

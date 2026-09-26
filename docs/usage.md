@@ -33,6 +33,7 @@ Options of `run-role` and `route`:
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
+| `--sarif <file>` / `--code-quality <file>` | also write the findings as SARIF (GitHub code scanning) or a GitLab Code Quality report; `route`: every step's (docs/spec/role-outcome.md) |
 | `--json` | print the result as JSON: status, summary, findings, each agent call (agent, tier, effort, the exact model that answered, tokens in, cached and out, cost, seconds), and for a line its steps and pending runs |
 
 ## Another agent

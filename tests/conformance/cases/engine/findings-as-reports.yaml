@@ -1,0 +1,12 @@
+case: engine/findings-as-reports
+about: Findings are written as SARIF for code scanning and as a Code Quality report for GitLab, each on the file and line it names; one that names no file is left out of both.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: none, reports: true}
+expect:
+  status: pass
+  sarif:
+    - {rule: documentalist/section-too-long, uri: docs/history.md, line: 3, level: note}
+    - {rule: documentalist/doc-too-long, uri: docs/sessions.md, line: 1, level: note}
+  code-quality:
+    - {check_name: documentalist/section-too-long, path: docs/history.md, line: 3, severity: info}
+  left-out: [docs]   # a folder, not a file

@@ -25,8 +25,14 @@ means something outside the role failed — an expired token, a used-up quota, a
 forge that did not answer. It is not the role's verdict on the work, and it must
 never be read as one.
 
-Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab.
-*Not built yet: nothing writes SARIF; `--json` gives the findings.*
+Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
+`--sarif` writes them for code scanning, `--code-quality` as GitLab's Code
+Quality report, rule `<role>/<rule>`, on the file and line `where` names — at
+the heading of its `#anchor`, else line 1. A finding that blocks is an
+`error` (`blocker`), one lowered by `enforce` a `warning` (`minor`), one from
+a run that passed a `note` (`info`). One whose `where` names no file — a
+commit's subject, a folder, a gate's check — is left out: both formats need a
+file, and `--json` still has it.
 
 ### Warn before block
 

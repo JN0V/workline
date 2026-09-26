@@ -5,6 +5,7 @@
 //	workline run-role <role> --event <event> [--ai none|claude|cmd:<command>|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>] [--forge ...] [--target ...] [--scope ...]
 //	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
+//	                  [--sarif <file>] [--code-quality <file>]
 //	workline route <event> [same options as run-role, but --input-file]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
 //	workline apply <run-dir>... | --line <route result> [--json]
@@ -31,6 +32,7 @@ import (
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/line"
+	wlreport "github.com/JN0V/workline/internal/report"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
@@ -97,6 +99,8 @@ func runRole(args []string) int {
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "stop after judging; apply later with `workline apply <run-dir>`")
+	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF, for code scanning")
+	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
 	inputs, inputFiles := pairs{}, pairs{}
 	fs.Var(inputs, "input", "input name=value (repeatable)")
 	fs.Var(inputFiles, "input-file", "input name=path, written back by intentions that target it (repeatable)")
@@ -129,6 +133,10 @@ func runRole(args []string) int {
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
 		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply,
 	})
+	if err := wlreport.Write(absRepo, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
@@ -459,6 +467,8 @@ func routeCmd(args []string) int {
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
+	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
+	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	_ = fs.Parse(args[1:])
@@ -475,6 +485,10 @@ func routeCmd(args []string) int {
 	}
 	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply})
+	if err := wlreport.Write(abs, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
