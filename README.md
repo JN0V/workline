@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
-checked: c6df7c6
+checked: fbbb1de
 verified: agent:documentalist
 -->
 <h1>
@@ -162,7 +162,7 @@ workline gate release --json   # a gate declared in .workline/config.yaml: your 
   roles with `--roles <dir>` ([role contract](docs/spec/role-contract.md)).
 
 Not there yet: verdicts as SARIF, for code-scanning and code-quality views;
-an agent other than Claude Code, or any command given as the agent.
+an agent other than Claude Code built in (`--ai cmd:<command>` runs any).
 
 ## Develop
 

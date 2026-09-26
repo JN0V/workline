@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 71f289a
+checked: fbbb1de
 verified: agent:documentalist
 ---
 # Model grid — v1 (draft)

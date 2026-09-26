@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 448e8bf
+checked: fbbb1de
 verified: agent:documentalist
 ---
 # Role contract — v1 (draft)
@@ -145,6 +145,8 @@ token), **apply** (trusted, no AI key).
    the fallback ones of the same kind — for patches, only those of the files
    the agent's patches touch; fallback proposals of other kinds stay.
    With no agent, or none that answered, the fallback proposals are used alone.
+   *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
+   read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
    example, the release manager's `post` refuses a version the commits did not
