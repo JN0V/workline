@@ -135,12 +135,16 @@ model:
   independent-of: developer   # never the provider the developer ran on
 ```
 
-If no other provider is available, the engine does not quietly fall back to the
-same one: the role runs as `--ai none`.
+Independence has levels: another provider, another model of the same
+provider, the same model in a context of its own, no AI. The role gets the
+best level available, and its verdict says which; a role or a project may
+require a minimum (`at-least: provider`), below which it runs as `--ai none`
+([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)).
 
 *Built so far: only in the evaluation, whose judge never runs on the graded
-agent's provider (docs/spec/conformance.md). The engine reads no
-`independent-of` yet; `cmd:<command>` runs any other agent (docs/usage.md).*
+agent's provider (docs/spec/conformance.md) — the levels are not built yet.
+The engine reads no `independent-of`; `cmd:<command>` runs any other agent
+(docs/usage.md).*
 
 ## Known limits
 

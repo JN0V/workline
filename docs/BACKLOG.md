@@ -12,10 +12,11 @@ this repository before any other role is added.
    the aliases and a change is noticed (ADR-0004); tiers were set on its
    measures (the documentalist condenses on `frontier`); a `judge` check asks
    what no check can grade of an agent `WORKLINE_JUDGE` names, never of the
-   graded one's provider, and any command can be that agent (`cmd:`). Left: a
-   judge that really is of another provider — the adapter, or a `cmd:` wrapper,
-   for the one you use — tried on the cases and set in the weekly run. Each
-   defect a role lets through becomes a case.
+   graded one's provider, and any command can be that agent (`cmd:`). Left: the
+   judge at the best independence available (ADR-0005) — another Claude model
+   now, marked as such; another provider when there is one — tried on the
+   cases and set in the weekly run. Each defect a role lets through becomes a
+   case.
 
 Then, once both work well here:
 
@@ -27,7 +28,16 @@ Then, once both work well here:
 - **More agents** — Codex, Antigravity, OpenCode adapters (any command already
   runs as `cmd:`, prompt in, proposals out); `independent-of` in the engine;
   generate the model grid from models.dev and Epoch (docs/spec/model-grid.md).
-- **Next roles** — reviewer (independent vendor), architect, tester.
+- **Next roles** — reviewer, architect, tester. The reviewer does not wait for
+  another provider: it takes the best independence available and says which
+  (ADR-0005). Among its first rules: a comment says why the code is there,
+  readable in five years without the bug; the bug's story belongs in the
+  commit message. The mechanical part (long comment blocks added, ticket
+  codes, "used to", "the bug was") before any AI.
+- **Which model reviews which.** Evaluation cases with defects planted on
+  purpose — a wrong edge case, a comment telling a bug's story — reviewed by
+  Opus, Sonnet and Haiku, at each independence level of ADR-0005: what each
+  one catches, and at what cost. Before the reviewer is built.
 
 ## Parked
 
