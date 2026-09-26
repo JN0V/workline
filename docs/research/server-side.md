@@ -18,6 +18,22 @@ role runs through one command, and thin CI templates call it on GitHub and GitLa
 - **codex-action**: the API key goes through a proxy, never into the job's env;
   `output-schema` forces structured output.
 
+## Reporting to the forge (2026-09)
+
+- **GitHub code scanning** reads SARIF 2.1.0 through
+  `github/codeql-action/upload-sarif`, with `security-events: write`; each
+  result needs a location in a file and `partialFingerprints`; one run per
+  tool and category per upload; 25,000 results per run. Free on public
+  repositories, GitHub Advanced Security on private ones.
+- **GitLab** ingests SARIF (`artifacts:reports:sarif`, GA in 19.2) on Ultimate
+  only, into the security widgets. Its **Code Quality** report
+  (`artifacts:reports:codequality`, CodeClimate JSON: `description`,
+  `check_name`, `fingerprint`, `severity`, `location.path`,
+  `location.lines.begin`) shows on every tier, in the merge request's Reports
+  tab. Converters exist (qodana/sarif-converter); writing both is simpler.
+- Sources: docs.github.com, "SARIF support for code scanning";
+  docs.gitlab.com, "SARIF reports" and "Code Quality".
+
 ## GitLab specifics
 
 - GitLab CI has **no native trigger on labels or comments** without Duo
