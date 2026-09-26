@@ -146,14 +146,17 @@ models.
 
 **The judge.** `judge: <question>` asks a yes-or-no question on what the role
 produced — "does the rewritten subject keep the author's meaning?" — of the
-agent `WORKLINE_JUDGE` names (an `--ai` value, often `cmd:`), with the case,
-the author's words, the role's and the change. Its facets are in
-`tests/evaluation/judge/`. A yes is a point, a no is lost with its reason. The
-judge never runs on the graded agent's provider: without `WORKLINE_JUDGE`, or
-with one of the same provider, the check is skipped, which is no point earned
-or lost and is said in the `failed checks` column; the `judge` column names
-the model that judged. A `cmd:` judge is taken to be of another provider:
-whoever names the command vouches for it.
+agent `WORKLINE_JUDGE` names (an `--ai` value: `claude:sonnet`, a `cmd:`),
+with the case, the author's words, the role's and the change. Its facets are
+in `tests/evaluation/judge/`. A yes is a point, a no is lost with its reason.
+The judge stands as far from the graded model as it can
+([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)): the
+`judge` column names its model and the level reached — `provider`, `model`
+(another model of the same provider), `context` (the same model, apart). A
+`cmd:` judge is taken to be of another provider: whoever names the command
+vouches for it. `WORKLINE_JUDGE_AT_LEAST` sets a floor. Without a judge, or
+below the floor, the check is skipped: no point earned or lost, said in the
+`failed checks` column. The judge's own tokens are not counted.
 
 **Run often.** `tests/evaluation/schedule/run.sh` runs it on the local `main`,
 in a worktree of its own, and appends to this repository's `results.tsv`
@@ -164,7 +167,8 @@ runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
 same models adds little, and a subscription counts the tokens. The `workline`
 column of `results.tsv` names that commit.
 
-*Tried so far:* the judge through `cmd:`, with Claude standing in for another
-provider (2026-09-26): it failed a rewrite that dropped a part of the subject,
-and passed a fair cut that `keeps-words` fails. *Not yet:* a judge of another
-provider, and the weekly run with one.
+*Tried so far* (2026-09-26): the judge through `cmd:`, and `claude:sonnet` at
+the `model` level on every judged case — it failed rewrites that dropped
+"judged" and "instead of ignoring them", and passed a fair cut that
+`keeps-words` fails. The weekly run asks `claude:sonnet` unless
+`WORKLINE_JUDGE` says otherwise. *Not yet:* a judge of another provider.

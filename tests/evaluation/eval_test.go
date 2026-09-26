@@ -7,13 +7,15 @@
 //
 //	WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/
 //
-// WORKLINE_JUDGE names the agent grading the `judge` checks, of another
-// provider than WORKLINE_EVAL's; without one, they are skipped.
+// WORKLINE_JUDGE names the agent grading the `judge` checks, at the best
+// independence it reaches (ADR-0005); without one, they are skipped.
+// WORKLINE_JUDGE_AT_LEAST (provider, model or context) sets a floor.
 package evaluation
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -94,7 +96,7 @@ type run struct {
 	repo, message, headBefore string
 	before                    map[string]string // files as they were before the run, when a check needs them
 	res                       result
-	judgedBy                  string // the model that answered the judge checks
+	judgedBy                  string // the model that answered the judge checks, and its independence
 }
 
 var (
@@ -418,17 +420,39 @@ func provider(spec string) string {
 	return p
 }
 
+// levels of independence, strongest first (ADR-0005).
+var levels = map[string]int{"provider": 3, "model": 2, "context": 1}
+
+// independence is how far the judge stands from the graded agent: another
+// provider, another model of it, or the same model in a context of its own.
+func independence(judgeSpec, judgeModel string, graded []call) string {
+	if p := provider(judgeSpec); p == "cmd" || p != provider(os.Getenv("WORKLINE_EVAL")) {
+		return "provider"
+	}
+	for _, c := range graded {
+		if c.Model == judgeModel {
+			return "context"
+		}
+	}
+	return "model"
+}
+
 // judge asks the agent WORKLINE_JUDGE names a yes-or-no question on what the
-// role produced: "" when it says yes, its reason when it says no. It never
-// shares the graded agent's provider, which shares its blind spots
-// (docs/spec/model-grid.md, "Independent judgement").
+// role produced: "" when it says yes, its reason when it says no. A judge
+// that shares the graded model shares its blind spots: the level it reached
+// is recorded with its model, and one below WORKLINE_JUDGE_AT_LEAST is not
+// counted (docs/spec/model-grid.md, "Independent judgement").
 func judge(question string, c *caseFile, r *run) (string, error) {
 	spec := os.Getenv("WORKLINE_JUDGE")
 	if spec == "" || spec == "none" {
 		return "", fmt.Errorf("no WORKLINE_JUDGE")
 	}
-	if p := provider(spec); p != "cmd" && p == provider(os.Getenv("WORKLINE_EVAL")) {
-		return "", fmt.Errorf("WORKLINE_JUDGE is of the graded agent's provider, %s", p)
+	floor := os.Getenv("WORKLINE_JUDGE_AT_LEAST")
+	if _, ok := levels[floor]; floor != "" && !ok {
+		return "", fmt.Errorf("WORKLINE_JUDGE_AT_LEAST %q is not provider, model or context", floor)
+	}
+	if floor == "provider" && independence(spec, "", nil) != "provider" {
+		return "", fmt.Errorf("WORKLINE_JUDGE is of the graded agent's provider, and at least another provider is asked")
 	}
 	ag, err := agent.Parse(spec)
 	if err != nil {
@@ -460,9 +484,18 @@ func judge(question string, c *caseFile, r *run) (string, error) {
 		return "", err
 	}
 	call, err := ag.Propose(agent.Request{RunDir: dir, Repo: dir, Role: judgeRole})
-	r.judgedBy = call.Model
+	level := independence(spec, call.Model, r.res.Calls)
+	r.judgedBy = call.Model + " (" + level + ")"
+	if errors.Is(err, agent.ErrInvalidOutput) {
+		// A note left unquoted is no YAML ("- note: no: …"), yet it says its verdict.
+		raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
+		return verdictOf(string(raw))
+	}
 	if err != nil {
 		return "", err
+	}
+	if levels[level] < levels[floor] {
+		return "", fmt.Errorf("the judge, %s, is independent only at the %s level; at least %s is asked", call.Model, level, floor)
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "out", "intentions.yaml"))
 	if err != nil {
@@ -472,12 +505,23 @@ func judge(question string, c *caseFile, r *run) (string, error) {
 	if err := yaml.Unmarshal(data, &notes); err != nil || len(notes) == 0 || notes[0]["note"] == "" {
 		return "", fmt.Errorf("the judge answered no note: %.200s", data)
 	}
-	verdict, why, _ := strings.Cut(notes[0]["note"], ":")
+	return verdictOf(notes[0]["note"])
+}
+
+// verdictOf reads the judge's note: "yes: why" is "", "no: why" is why. The
+// note may come raw, with its YAML around it.
+func verdictOf(note string) (string, error) {
+	s := strings.TrimSpace(note)
+	s = strings.TrimSpace(strings.TrimPrefix(s, "- note:"))
+	if len(s) > 1 && (s[0] == '"' || s[0] == '\'') && s[len(s)-1] == s[0] {
+		s = s[1 : len(s)-1] // the note quoted whole
+	}
+	verdict, why, _ := strings.Cut(s, ":")
 	switch strings.ToLower(strings.TrimSpace(verdict)) {
 	case "yes":
 		return "", nil
 	case "no":
 		return strings.Join(strings.Fields(why), " "), nil // one line of results.tsv
 	}
-	return "", fmt.Errorf("the judge said neither yes nor no: %.200s", notes[0]["note"])
+	return "", fmt.Errorf("the judge said neither yes nor no: %.200s", strings.Join(strings.Fields(note), " "))
 }

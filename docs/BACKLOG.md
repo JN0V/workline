@@ -12,11 +12,10 @@ this repository before any other role is added.
    the aliases and a change is noticed (ADR-0004); tiers were set on its
    measures (the documentalist condenses on `frontier`); a `judge` check asks
    what no check can grade of an agent `WORKLINE_JUDGE` names, never of the
-   graded one's provider, and any command can be that agent (`cmd:`). Left: the
-   judge at the best independence available (ADR-0005) — another Claude model
-   now, marked as such; another provider when there is one — tried on the
-   cases and set in the weekly run. Each defect a role lets through becomes a
-   case.
+   graded one's provider, and any command can be that agent (`cmd:`). The judge
+   takes the best independence available and says which (ADR-0005); the
+   weekly run judges on `claude:sonnet`. Left: a judge of another provider,
+   when there is one. Each defect a role lets through becomes a case.
 
 Then, once both work well here:
 
