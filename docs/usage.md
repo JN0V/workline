@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: fbbb1de
+checked: 0554e32
 verified: agent:documentalist
 ---
 # Using workline
@@ -12,7 +12,7 @@ What a role does is in its own README (`roles/<name>/README.md`).
 
 | Command | Does |
 |---|---|
-| `workline run-role <role> --event <event>` | runs one role once: prepare, propose, judge, apply |
+| `workline run-role <role> --event <event>` | runs one role: prepare, propose, judge, apply, again if `pre` left work for later (`in/more`), up to 5 rounds |
 | `workline route <event>` | runs the steps routing names for the event, in order; the first that does not pass stops the line |
 | `workline apply <run-dir>...` or `--line <file>` | applies runs judged with `--no-apply`, or resumes a run stopped while applying; `--line` takes the runs a `route --no-apply --json` result lists as `pending` |
 | `workline gate <name>` | runs a gate declared in `.workline/config.yaml` |

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist, roles/documentalist/role.yaml]
-checked: ec15288
+checked: 0554e32
 verified: agent:documentalist
 ---
 # Documentalist
