@@ -7,6 +7,7 @@
 #
 # Two jobs, two trust zones (docs/research/server-side.md):
 #   judge  runs the line, no write token, stops before applying (--no-apply).
+#   The findings show in the merge request's Code Quality report, on every tier.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token with the `api`
 #          scope, stored as a protected, masked variable) and no AI key.
 variables:
@@ -31,11 +32,12 @@ workline:judge:
       workline route merge-request --ai none --no-apply
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
-      --json > line.json || status=$?
+      --code-quality gl-code-quality.json --json > line.json || status=$?
     - exit $status
   artifacts:
     when: always                    # steps that passed before one blocked are still applied
     paths: [.workline-runs/, line.json]
+    reports: {codequality: gl-code-quality.json}
     expire_in: 1 day
 
 workline:apply:
