@@ -5,6 +5,7 @@
 # same code on the same models adds little after a few runs.
 #
 #   tests/evaluation/schedule/run.sh [repository]   # WORKLINE_EVAL: the agent, default claude
+#                                                    # WORKLINE_JUDGE: the judge, default claude:sonnet
 #
 # The systemd units next to it run it every week (docs/spec/conformance.md).
 set -eu
@@ -44,5 +45,5 @@ fi
 
 echo "workline eval: $commit, $agent (runs so far: $done_runs, model changed: $model_changed)"
 cd "$tree"
-WORKLINE_EVAL=$agent WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m ./tests/evaluation/
+WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m ./tests/evaluation/
 touch "$stamp" # after the run: the models it saw answer are not a change
