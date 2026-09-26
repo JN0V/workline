@@ -25,7 +25,7 @@ Status (2026-09-24): used daily on its author's machine;
 | **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository, identifiers gone from the code; Claude judges suspect docs, and its patches are checked | links to other sites, freshness, derived blocks, condensing and splitting by AI |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
-| **Forges**: GitHub (comments and labels tried live), simulated; GitLab written; findings as SARIF for code scanning and as GitLab's Code Quality report | GitLab never run; GitHub issues and releases never run live; neither report uploaded live |
+| **Forges**: GitHub (comments and labels tried live), simulated; GitLab written; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | GitLab never run; GitHub issues and releases never run live |
 | Agents: Claude Code | Codex, Antigravity, OpenCode; the generated model grid |
 
 ## Install
