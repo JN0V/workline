@@ -68,3 +68,15 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-25T18:04:50Z	c6df7c6	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1	4138	6919	0.0429	52	
 2026-09-25T18:04:54Z	c6df7c6	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	5/5	1	3240	5583	0.0312	56	
 2026-09-25T18:05:06Z	c6df7c6	claude	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	8741	8678	0.2435	68	
+2026-09-26T20:47:30Z	ad02a97	claude	claude-sonnet-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4671	198	0.0138	7		
+2026-09-26T20:47:32Z	ad02a97	claude	claude-sonnet-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4694	478	0.0167	9		
+2026-09-26T20:47:58Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	5/5	1	7097	3817	0.0262	35	judge skipped: agent answered without valid proposals: expected a YAML list of proposals	claude-sonnet-5 (model)
+2026-09-26T20:48:08Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	6/6	1	9154	4477	0.0359	45		claude-sonnet-5 (model)
+2026-09-26T20:48:19Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1	8893	5041	0.0383	56	judge skipped: the judge said neither yes nor no: The rewrite drops "judged" from "judged patches", turning it into plain "patches"; since the cases in the diff specifically cover patches produced and judged by an agent (misquoted-patch-refused, patc	claude-sonnet-5 (model)
+2026-09-26T20:48:21Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/drops-a-reference-from-the-subject	4/5	1	7859	4530	0.0305	58	keeps-words: 44% of the author's words kept in "docs: correct specs and mark incomplete features"; judge skipped: agent answered without valid proposals: expected a YAML list of proposals	claude-sonnet-5 (model)
+2026-09-26T20:48:41Z	ad02a97	claude	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	4/4	1	16498	8930	0.2572	78	judge skipped: agent answered without valid proposals: expected a YAML list of proposals	claude-sonnet-5 (model)
+2026-09-26T20:50:02Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/6	1	8893	5414	0.0402	45	judge: the rewrite drops 'judged' before 'patches', so it no longer says the patches are judged/checked, changing the meaning of that item.	claude-sonnet-5 (model)
+2026-09-26T20:50:11Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/drops-a-reference-from-the-subject	6/6	1	7862	5118	0.0335	54		claude-sonnet-5 (model)
+2026-09-26T20:50:17Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	5/6	1	9155	6008	0.0436	60	judge: the rewrite drops 'instead of ignoring them', losing the contrast that the fix changes behavior from silently ignoring unknown keys to refusing them.	claude-sonnet-5 (model)
+2026-09-26T20:50:22Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	6/6	1	7099	7076	0.0425	65		claude-sonnet-5 (model)
+2026-09-26T20:51:54Z	ad02a97	claude	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	5/5	1	16506	8864	0.2559	75		claude-sonnet-5 (model)
