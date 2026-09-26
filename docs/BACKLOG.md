@@ -10,11 +10,12 @@ this repository before any other role is added.
    summarises the runs (`go run ./tests/evaluation/summary`) and runs every
    week (tests/evaluation/schedule/, docs/spec/conformance.md); models follow
    the aliases and a change is noticed (ADR-0004); tiers were set on its
-   measures (the documentalist condenses on `frontier`). Left: grade with a
-   judge from another provider what no check can — first, whether a rewrite
-   keeps the author's meaning, which `keeps-words` only counts. It needs an
-   agent from another provider (see "More agents"). Meanwhile, each defect a
-   role lets through becomes a case.
+   measures (the documentalist condenses on `frontier`); a `judge` check asks
+   what no check can grade of an agent `WORKLINE_JUDGE` names, never of the
+   graded one's provider, and any command can be that agent (`cmd:`). Left: a
+   judge that really is of another provider — the adapter, or a `cmd:` wrapper,
+   for the one you use — tried on the cases and set in the weekly run. Each
+   defect a role lets through becomes a case.
 
 Then, once both work well here:
 
@@ -23,10 +24,9 @@ Then, once both work well here:
 - **Publishing** — tagged, signed binaries, so CI installs a pinned version;
   the repository is public, so `go install` works, but the templates still
   follow `main`.
-- **More agents** — Codex, Antigravity, OpenCode adapters, and a generic one
-  running any command given as the agent (prompt in, proposals out), so an
-  existing factory can plug its own; generate the model grid from models.dev
-  and Epoch (docs/spec/model-grid.md).
+- **More agents** — Codex, Antigravity, OpenCode adapters (any command already
+  runs as `cmd:`, prompt in, proposals out); `independent-of` in the engine;
+  generate the model grid from models.dev and Epoch (docs/spec/model-grid.md).
 - **Next roles** — reviewer (independent vendor), architect, tester.
 
 ## Parked

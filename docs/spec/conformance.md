@@ -51,7 +51,7 @@ run:
   role: committer                   # or: route: <event>, or: gate: <name>
   event: commit-msg
   input: {message: "fix: AC-3"}
-  ai: none                          # none | fake:<fixture> | unavailable:<reason>
+  ai: none                          # none | fake:<fixture> | unavailable:<reason> | cmd:<command>
 
 expect:
   status: block
@@ -133,12 +133,23 @@ itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
 `keeps-words` (the share of the author's subject words kept), `no-vague-words`,
 `file-contains`, `file-lacks`, `checked-is-head`, `body-unchanged`,
-`lines-max`, `new-files-min`. A case's score is the points it earned; nothing
+`lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
 passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
 the efforts asked, the tokens in and out, and the cost at list price (on a
 subscription, the tokens are what counts): a score compares only with the same
 models.
+
+**The judge.** `judge: <question>` asks a yes-or-no question on what the role
+produced — "does the rewritten subject keep the author's meaning?" — of the
+agent `WORKLINE_JUDGE` names (an `--ai` value, often `cmd:`), with the case,
+the author's words, the role's and the change. Its facets are in
+`tests/evaluation/judge/`. A yes is a point, a no is lost with its reason. The
+judge never runs on the graded agent's provider: without `WORKLINE_JUDGE`, or
+with one of the same provider, the check is skipped, which is no point earned
+or lost and is said in the `failed checks` column; the `judge` column names
+the model that judged. A `cmd:` judge is taken to be of another provider:
+whoever names the command vouches for it.
 
 **Run often.** `tests/evaluation/schedule/run.sh` runs it on the local `main`,
 in a worktree of its own, and appends to this repository's `results.tsv`
@@ -149,4 +160,7 @@ runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
 same models adds little, and a subscription counts the tokens. The `workline`
 column of `results.tsv` names that commit.
 
-*Not built yet:* the judge from another provider, for what no check can grade.
+*Tried so far:* the judge through `cmd:`, with Claude standing in for another
+provider (2026-09-26): it failed a rewrite that dropped a part of the subject,
+and passed a fair cut that `keeps-words` fails. *Not yet:* a judge of another
+provider, and the weekly run with one.

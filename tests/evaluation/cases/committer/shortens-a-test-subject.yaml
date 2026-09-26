@@ -14,3 +14,4 @@ grade:
   - {subject-max: 72}
   - {keeps-words: 0.7}
   - {no-vague-words: true}
+  - {judge: "Does the rewritten subject say what the author's subject said, without narrowing, widening or changing its meaning?"}

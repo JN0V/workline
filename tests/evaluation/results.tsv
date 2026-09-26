@@ -1,4 +1,4 @@
-date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	cost usd	seconds	failed checks
+date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	cost usd	seconds	failed checks	judge
 2026-09-25T06:10:23Z	78f400d	claude			documentalist/fixes-a-doc-made-false	5/5	1				4	
 2026-09-25T06:10:26Z	78f400d	claude			documentalist/confirms-a-doc-still-true	3/4	1				7	checked-is-head: docs/tech/auth.md does not record 7dc525b
 2026-09-25T06:10:54Z	78f400d	claude			committer/shortens-a-test-subject	5/5	1				35	

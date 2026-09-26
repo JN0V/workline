@@ -1,0 +1,12 @@
+contract: 1
+name: judge
+mission: Grade what a role produced, on one question no check can answer.
+
+# Not a role of the line: the evaluation asks it, never the engine.
+# It must run on another provider than the role it grades (WORKLINE_JUDGE).
+model:
+  capability: reasoning
+  tier: standard
+  effort: medium
+
+intentions: [note]

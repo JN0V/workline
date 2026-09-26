@@ -138,6 +138,10 @@ model:
 If no other provider is available, the engine does not quietly fall back to the
 same one: the role runs as `--ai none`.
 
+*Built so far: only in the evaluation, whose judge never runs on the graded
+agent's provider (docs/spec/conformance.md). The engine reads no
+`independent-of` yet; `cmd:<command>` runs any other agent (docs/usage.md).*
+
 ## Known limits
 
 - Benchmarks measure a model inside one harness. The same model scores

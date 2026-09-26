@@ -6,6 +6,9 @@
 // It calls a real agent and costs tokens, so it runs only when asked:
 //
 //	WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/
+//
+// WORKLINE_JUDGE names the agent grading the `judge` checks, of another
+// provider than WORKLINE_EVAL's; without one, they are skipped.
 package evaluation
 
 import (
@@ -23,6 +26,9 @@ import (
 	"time"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/role"
 )
 
 type caseFile struct {
@@ -88,6 +94,7 @@ type run struct {
 	repo, message, headBefore string
 	before                    map[string]string // files as they were before the run, when a check needs them
 	res                       result
+	judgedBy                  string // the model that answered the judge checks
 }
 
 var (
@@ -137,7 +144,7 @@ func TestEvaluation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			passed, failed := grade(&c, r)
+			passed, failed, skipped := grade(&c, r)
 			score := fmt.Sprintf("%d/%d", passed, passed+len(failed))
 			t.Logf("%s — %s, %d agent calls; failed: %s", c.Case, score, r.res.AgentCalls, strings.Join(failed, "; "))
 			if len(failed) > 0 { // what the run said, to see why
@@ -150,7 +157,8 @@ func TestEvaluation(t *testing.T) {
 			}
 			models, efforts, tokensIn, tokensOut, cost := answeredBy(r.res.Calls)
 			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), models, efforts,
-				c.Case, score, fmt.Sprint(r.res.AgentCalls), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()), strings.Join(failed, "; ")}, "\t")
+				c.Case, score, fmt.Sprint(r.res.AgentCalls), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()),
+				strings.Join(append(failed, skipped...), "; "), r.judgedBy}, "\t")
 			record.Lock()
 			defer record.Unlock()
 			results := "results.tsv"
@@ -234,12 +242,23 @@ func play(t *testing.T, c *caseFile) (*run, error) {
 	return r, nil
 }
 
-// grade runs a case's checks; each one is one point.
-func grade(c *caseFile, r *run) (int, []string) {
-	passed := 0
-	var failed []string
+// grade runs a case's checks; each one is one point. A judge check that
+// could not be asked is skipped: it is no point, earned or lost.
+func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 	for _, g := range c.Grade {
 		for kind, v := range g {
+			if kind == "judge" {
+				why, err := judge(fmt.Sprint(v), c, r)
+				switch {
+				case err != nil:
+					skipped = append(skipped, "judge skipped: "+err.Error())
+				case why != "":
+					failed = append(failed, "judge: "+why)
+				default:
+					passed++
+				}
+				continue
+			}
 			if why := check(kind, v, c, r); why != "" {
 				failed = append(failed, kind+": "+why)
 			} else {
@@ -247,7 +266,7 @@ func grade(c *caseFile, r *run) (int, []string) {
 			}
 		}
 	}
-	return passed, failed
+	return passed, failed, skipped
 }
 
 // vague are the words a rewrite reaches for when it drops the author's.
@@ -390,4 +409,75 @@ func worklineVersion() string {
 		v += "+changes"
 	}
 	return v
+}
+
+// provider is the agent a spec names: claude for claude:haiku@low. A command
+// is whatever it runs; whoever names one vouches for its provider.
+func provider(spec string) string {
+	p, _, _ := strings.Cut(spec, ":")
+	return p
+}
+
+// judge asks the agent WORKLINE_JUDGE names a yes-or-no question on what the
+// role produced: "" when it says yes, its reason when it says no. It never
+// shares the graded agent's provider, which shares its blind spots
+// (docs/spec/model-grid.md, "Independent judgement").
+func judge(question string, c *caseFile, r *run) (string, error) {
+	spec := os.Getenv("WORKLINE_JUDGE")
+	if spec == "" || spec == "none" {
+		return "", fmt.Errorf("no WORKLINE_JUDGE")
+	}
+	if p := provider(spec); p != "cmd" && p == provider(os.Getenv("WORKLINE_EVAL")) {
+		return "", fmt.Errorf("WORKLINE_JUDGE is of the graded agent's provider, %s", p)
+	}
+	ag, err := agent.Parse(spec)
+	if err != nil {
+		return "", err
+	}
+	judgeRole, err := role.Load(".", "judge")
+	if err != nil {
+		return "", err
+	}
+	dir, err := os.MkdirTemp("", "workline-judge-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(dir)
+	os.MkdirAll(filepath.Join(dir, "in"), 0o755)
+	os.MkdirAll(filepath.Join(dir, "out"), 0o755)
+	var task strings.Builder
+	fmt.Fprintf(&task, "## Question\n\n%s\n\n## The case\n\n%s\n\n", question, c.About)
+	if c.Run.Message != "" {
+		fmt.Fprintf(&task, "## What the author wrote\n\n```\n%s\n```\n\n## What the role made of it\n\n```\n%s\n```\n\n", c.Run.Message, r.message)
+	}
+	_ = exec.Command("git", "-C", r.repo, "add", "--intent-to-add", ".").Run() // new docs show in the diff
+	diff, _ := exec.Command("git", "-C", r.repo, "diff", "HEAD").Output()
+	if len(diff) > 60000 {
+		diff = append(diff[:60000], "\n[cut]\n"...)
+	}
+	fmt.Fprintf(&task, "## The change, as the working tree holds it after the role\n\n```diff\n%s```\n", diff)
+	if err := os.WriteFile(filepath.Join(dir, "in", "task.md"), []byte(task.String()), 0o644); err != nil {
+		return "", err
+	}
+	call, err := ag.Propose(agent.Request{RunDir: dir, Repo: dir, Role: judgeRole})
+	r.judgedBy = call.Model
+	if err != nil {
+		return "", err
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "out", "intentions.yaml"))
+	if err != nil {
+		return "", err
+	}
+	var notes []map[string]string
+	if err := yaml.Unmarshal(data, &notes); err != nil || len(notes) == 0 || notes[0]["note"] == "" {
+		return "", fmt.Errorf("the judge answered no note: %.200s", data)
+	}
+	verdict, why, _ := strings.Cut(notes[0]["note"], ":")
+	switch strings.ToLower(strings.TrimSpace(verdict)) {
+	case "yes":
+		return "", nil
+	case "no":
+		return strings.Join(strings.Fields(why), " "), nil // one line of results.tsv
+	}
+	return "", fmt.Errorf("the judge said neither yes nor no: %.200s", notes[0]["note"])
 }

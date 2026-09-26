@@ -7,3 +7,4 @@ grade:
   - {agent-calls-max: 2}
   - {lines-max: {docs/spec/role-contract.md: 200}}
   - {new-files-min: 1}
+  - {judge: "Does every rule the role contract stated before still hold, in it or in a doc it links to?"}

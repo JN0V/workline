@@ -25,3 +25,34 @@ func TestAnsweredBy(t *testing.T) {
 		t.Errorf("got %q %q %q %q %q", m, e, in, out, c)
 	}
 }
+
+func TestJudge(t *testing.T) {
+	c := &caseFile{}
+	c.About, c.Run.Message = "a rewrite", "fix: stop crashing on an empty file"
+	r := &run{repo: t.TempDir(), message: "refactor: file handling"}
+	answer := func(note string) string {
+		return `cmd:cat > /dev/null; echo 'model: a-judge' > "$WORKLINE_CALL"; echo '- note: "` + note + `"'`
+	}
+	t.Setenv("WORKLINE_EVAL", "claude")
+	t.Setenv("WORKLINE_JUDGE", answer("no: the crash is gone from it"))
+	if why, err := judge("Same meaning?", c, r); err != nil || why != "the crash is gone from it" || r.judgedBy != "a-judge" {
+		t.Errorf("a no is a lost point, with its reason: %q %v %q", why, err, r.judgedBy)
+	}
+	t.Setenv("WORKLINE_JUDGE", answer("yes: same meaning"))
+	if why, err := judge("Same meaning?", c, r); err != nil || why != "" {
+		t.Errorf("a yes is a point: %q %v", why, err)
+	}
+	t.Setenv("WORKLINE_JUDGE", answer("maybe"))
+	if _, err := judge("Same meaning?", c, r); err == nil {
+		t.Error("neither yes nor no is no verdict")
+	}
+	t.Setenv("WORKLINE_JUDGE", "claude:opus")
+	if _, err := judge("Same meaning?", c, r); err == nil {
+		t.Error("a judge of the graded agent's provider is refused")
+	}
+	t.Setenv("WORKLINE_JUDGE", "")
+	c.Grade = []map[string]any{{"judge": "Same meaning?"}}
+	if passed, failed, skipped := grade(c, r); passed != 0 || len(failed) != 0 || len(skipped) != 1 {
+		t.Errorf("without a judge, the check is skipped: %d %v %v", passed, failed, skipped)
+	}
+}

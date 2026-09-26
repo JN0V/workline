@@ -17,3 +17,4 @@ grade:
   # of the author's words is the judge's work, not a word count's.
   - {keeps-words: 0.6}
   - {no-vague-words: true}
+  - {judge: "Does the rewritten subject say what the author's subject said, without narrowing, widening or changing its meaning?"}

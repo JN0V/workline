@@ -1,4 +1,4 @@
-// Summary reads results.tsv and prints, per case and per models and effort,
+// Summary reads results.tsv and prints, per case, models, effort and judge,
 // how many runs there were, the mean score and its range, and what a run used:
 // one run says little, since a model answers differently from one run to the
 // next. Scores earned by a model that no longer answers on this machine (the
@@ -22,7 +22,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 )
 
-type key struct{ kase, models, effort string }
+type key struct{ kase, models, effort, judge string }
 
 type group struct {
 	scores              []float64 // share of the points earned
@@ -69,7 +69,7 @@ func main() {
 			}
 			return ""
 		}
-		k := key{get("case"), get("models"), get("effort")}
+		k := key{get("case"), get("models"), get("effort"), get("judge")}
 		if k.models == "" {
 			k.models = "(not recorded)"
 		}
@@ -102,11 +102,14 @@ func main() {
 		if a.models != b.models {
 			return a.models < b.models
 		}
-		return a.effort < b.effort
+		if a.effort != b.effort {
+			return a.effort < b.effort
+		}
+		return a.judge < b.judge
 	})
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	answering := currentModels(agent.Seen())
-	fmt.Fprintln(w, "case\tmodels\teffort\truns\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
+	fmt.Fprintln(w, "case\tmodels\teffort\tjudge\truns\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
 	for _, k := range keys {
 		g := groups[k]
 		lo, hi := bounds(g.scores)
@@ -118,7 +121,7 @@ func main() {
 				}
 			}
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, len(g.scores),
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, k.judge, len(g.scores),
 			100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"), note)
 	}
 	w.Flush()
