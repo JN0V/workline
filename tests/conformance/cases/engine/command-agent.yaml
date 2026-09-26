@@ -1,0 +1,19 @@
+case: engine/command-agent
+about: Any command can be the agent — the prompt on its input, the tier and effort in its environment, the proposals on its output, and what answered in the file it is given.
+given: {repo: basic}
+run:
+  role: committer
+  event: commit-msg
+  input: {message: "fix: AC-3"}
+  # It proposes only when it was given the prompt, the tier and the effort.
+  ai: |-
+    cmd:prompt=$(cat)
+    case "$prompt" in *"fix: AC-3"*) ;; *) exit 0 ;; esac
+    [ "$WORKLINE_TIER-$WORKLINE_EFFORT" = light-low ] || exit 0
+    printf 'model: a-command-model\ntokens-in: 1200\ntokens-out: 40\n' > "$WORKLINE_CALL"
+    echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [commit-message]
+  calls: [{agent: cmd, tier: light, effort: low, model: a-command-model}]

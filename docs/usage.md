@@ -25,7 +25,7 @@ Options of `run-role` and `route`:
 | Option | |
 |---|---|
 | `--repo <dir>` | the repository (default: here) |
-| `--ai <agent>` | `none`, `claude`, or `claude:<model>@<effort>` to force a model (an alias or an exact id), an effort, or both, whatever the role's tier asks: `claude:opus`, `claude:@high`; default: `WORKLINE_AI` for the hook, else the project's `ai`, else yours, else none |
+| `--ai <agent>` | `none`, `claude`, or `claude:<model>@<effort>` to force a model (an alias or an exact id), an effort, or both, whatever the role's tier asks: `claude:opus`, `claude:@high`; or `cmd:<command>`, any other agent (below); default: `WORKLINE_AI` for the hook, else the project's `ai`, else yours, else none |
 | `--input name=value` | an input for the role (`route`: for every step), e.g. `range=<base>..<head>` for the committer on a merge request |
 | `--input-file name=path` | `run-role` only: an input read from a file, written back by the intention that targets it (the hook's message file) |
 | `--forge <forge>` | `github` (needs `gh`), `gitlab` (needs `glab`), `none`; default: the project's `forge` |
@@ -34,6 +34,26 @@ Options of `run-role` and `route`:
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--json` | print the result as JSON: status, summary, findings, each agent call (agent, tier, effort, the exact model that answered, tokens in, cached and out, cost, seconds), and for a line its steps and pending runs |
+
+## Another agent
+
+`cmd:<command>` makes any command the agent: another provider's CLI, or a
+wrapper around your own. It runs with `sh -c`, outside the repository:
+
+- its input is the prompt, the role's persona first;
+- `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
+  `standard`, `frontier`; `none` to `max`), for it to pick its model;
+- its output is the answer: the YAML list of proposals, a code fence tolerated;
+- it may write what answered, in YAML, to the file `WORKLINE_CALL` names:
+  `model`, `tokens-in`, `tokens-cached`, `tokens-out`, `cost-usd`;
+- a non-zero exit, or no answer within the role's `model.timeout`, ends the
+  run as `blocked-external`, as a used-up quota does.
+
+Claude Code, run this way (the command the judge's trial used):
+
+```sh
+--ai 'cmd:echo "model: haiku" > "$WORKLINE_CALL"; claude -p --model haiku --tools ""'
+```
 
 ## Exit codes
 

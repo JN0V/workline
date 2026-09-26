@@ -1,0 +1,5 @@
+case: engine/command-agent-fails
+about: A command agent that exits with an error is unavailable, as a used-up quota is, never the role's own failure.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "cmd:echo 'usage limit reached' >&2; exit 1"}
+expect: {status: blocked-external, agent-calls: 1}

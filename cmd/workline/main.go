@@ -2,7 +2,7 @@
 //
 // Every command and option is described in docs/usage.md.
 //
-//	workline run-role <role> --event <event> [--ai none|claude|fake:<file>|unavailable:<reason>]
+//	workline run-role <role> --event <event> [--ai none|claude|cmd:<command>|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>] [--forge ...] [--target ...] [--scope ...]
 //	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
 //	workline route <event> [same options as run-role, but --input-file]
@@ -87,7 +87,7 @@ func runRole(args []string) int {
 	name := args[0]
 	fs := flag.NewFlagSet("run-role", flag.ExitOnError)
 	event := fs.String("event", "", "event the role runs on")
-	ai := fs.String("ai", "", "agent: none, claude, fake:<file>, unavailable:<reason> (default: the project's `ai` setting, else none)")
+	ai := fs.String("ai", "", "agent: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file>, unavailable:<reason> (default: the project's `ai` setting, else none)")
 	repo := fs.String("repo", ".", "repository to work on")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles (default: the roles built into this binary)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")

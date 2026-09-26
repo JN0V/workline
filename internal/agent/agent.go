@@ -69,6 +69,7 @@ type Agent interface {
 //	claude:<model>        on that model, whatever the tier: an alias (sonnet) or an exact id
 //	claude:<model>@<effort>, claude:@<effort>
 //	                      and at that effort (none, low, medium, high, max), whatever the role's
+//	cmd:<script>          runs <script> with sh -c: the prompt in, the proposals out (command.go)
 //	fake:<file>           replays the proposals in <file> (conformance tests)
 //	unavailable:<reason>  fails like an agent whose quota or login is gone
 func Parse(spec string) (Agent, error) {
@@ -86,12 +87,17 @@ func Parse(spec string) (Agent, error) {
 			return nil, fmt.Errorf("agent %q: name a model, an effort, or both (claude:sonnet@high)", spec)
 		}
 		return claude{model: model, effort: effort}, nil
+	case strings.HasPrefix(spec, "cmd:"):
+		if strings.TrimSpace(strings.TrimPrefix(spec, "cmd:")) == "" {
+			return nil, fmt.Errorf("agent %q: name the command to run (cmd:<command>)", spec)
+		}
+		return command{script: strings.TrimPrefix(spec, "cmd:")}, nil
 	case strings.HasPrefix(spec, "fake:"):
 		return fake{file: strings.TrimPrefix(spec, "fake:")}, nil
 	case strings.HasPrefix(spec, "unavailable:"):
 		return unavailable{reason: strings.TrimPrefix(spec, "unavailable:")}, nil
 	}
-	return nil, fmt.Errorf("unknown agent %q (known: none, claude, claude:<model>@<effort>, fake:<file>, unavailable:<reason>)", spec)
+	return nil, fmt.Errorf("unknown agent %q (known: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file>, unavailable:<reason>)", spec)
 }
 
 type fake struct{ file string }
