@@ -4,14 +4,14 @@
 # `routing:`; by default the committer, then the documentalist).
 #
 # Two jobs, two trust zones (docs/research/server-side.md):
-#   judge  runs the line; it can read the code, and holds no write token. It
-#          stops before applying (--no-apply). It runs without AI (--ai none):
-#          to use one, give this job the key and change --ai.
+#   judge  runs the line; it can read the code, and holds no write token but
+#          code scanning's, which only uploads its findings as SARIF (free on
+#          public repositories; private ones need GitHub Advanced Security —
+#          remove that step otherwise). It stops before applying (--no-apply).
+#          It runs without AI (--ai none): to use one, give this job the key
+#          and change --ai.
 #   apply  holds the write token and no AI key; it applies what judge proposed,
 #          after checking the prepared input did not change.
-#   scan   may write code-scanning alerts only: it uploads judge's findings as
-#          SARIF (free on public repositories; private ones need GitHub
-#          Advanced Security — remove the job otherwise).
 name: workline
 on:
   pull_request:
@@ -24,7 +24,7 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
-    permissions: {contents: read}
+    permissions: {contents: read, security-events: write}
     outputs:
       proposed: ${{ steps.line.outputs.proposed }}
     steps:
@@ -50,8 +50,9 @@ jobs:
         if: steps.line.outputs.proposed == 'true'
         with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true}
 
-      - uses: actions/upload-artifact@v4
-        with: {name: workline-sarif, path: workline.sarif}
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        with: {sarif_file: workline.sarif, category: workline}
 
       - name: Verdict
         run: exit ${{ steps.line.outputs.status }}
@@ -74,13 +75,3 @@ jobs:
       - run: workline apply --line line.json
         env: {GH_TOKEN: "${{ github.token }}"}
 
-  scan:
-    needs: judge
-    if: always() && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    permissions: {contents: read, security-events: write}
-    steps:
-      - uses: actions/download-artifact@v4
-        with: {name: workline-sarif}
-      - uses: github/codeql-action/upload-sarif@v4
-        with: {sarif_file: workline.sarif, category: workline}
