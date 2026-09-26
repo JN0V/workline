@@ -394,7 +394,7 @@ func patchFiles(repo string, v any) []string {
 		return nil
 	}
 	diff, _ := v.(string)
-	out, err := git(repo, strings.NewReader(intent.NormalizeDiff(diff)), "apply", "--recount", "--numstat", "-")
+	out, err := git(repo, strings.NewReader(intent.NormalizeDiff(diff)), "apply", "--recount", "--unidiff-zero", "--numstat", "-")
 	if err != nil {
 		return nil
 	}
@@ -667,7 +667,7 @@ func (a *applier) patch(v any) error {
 		return errors.New("expected a unified diff or {file, content}")
 	}
 	diff = intent.NormalizeDiff(diff)
-	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--numstat", "-")
+	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-")
 	if err != nil {
 		return fmt.Errorf("unreadable diff: %w", err)
 	}
@@ -682,7 +682,8 @@ func (a *applier) patch(v any) error {
 	}
 	// --recount: a diff is applied as its lines read. Agents often get the
 	// counts of a hunk header wrong, and git would drop the lines past them.
-	if _, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "-"); err != nil {
+	// --unidiff-zero: a role's own diff may hold no context (intent.Merge).
+	if _, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "-"); err != nil {
 		return err
 	}
 	a.written = append(a.written, touched...)

@@ -68,7 +68,9 @@ func Kinds(in []Intention) []string {
 // Merge returns the fallback proposals with the agent's in place of those of
 // the same kind (docs/spec/role-contract.md, "One run"). A patch replaces only
 // the fallback patches of the files it touches: the agent fixing one doc does
-// not drop what the role regenerated in another.
+// not drop what the role regenerated in another. A fallback patch given as a
+// diff replaces nothing and is never replaced: it holds only the lines it
+// changes, and is applied after the agent's, beside them.
 func Merge(fallback, agent []Intention) []Intention {
 	proposed := map[string]bool{}
 	patched := map[string]bool{}
@@ -80,9 +82,12 @@ func Merge(fallback, agent []Intention) []Intention {
 			}
 		}
 	}
-	var out []Intention
+	var out, beside []Intention
 	for _, f := range fallback {
+		_, isDiff := f.Value.(string)
 		switch {
+		case f.Kind == "patch" && isDiff:
+			beside = append(beside, f)
 		case f.Kind == "patch":
 			kept := true
 			for _, file := range PatchFiles(f.Value) {
@@ -95,7 +100,7 @@ func Merge(fallback, agent []Intention) []Intention {
 			out = append(out, f)
 		}
 	}
-	return append(out, agent...)
+	return append(append(out, agent...), beside...)
 }
 
 // PatchFiles lists the files a patch names: its `file`, or the `+++` lines of

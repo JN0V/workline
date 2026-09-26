@@ -390,7 +390,13 @@ func Pre(runDir, repo string) int {
 	findings = append(findings, derivedFindings...)
 	var fallback []intent.Intention
 	for _, p := range sortedKeys(fixes) {
-		fallback = append(fallback, intent.Intention{Kind: "patch", Value: map[string]any{"file": p, "content": fixes[p]}})
+		// A diff of the derived lines alone: the agent's patch of the same doc
+		// then applies beside it, instead of replacing it (intent.Merge).
+		diff, err := zeroContextDiff(p, tree.Docs[p], fixes[p])
+		if err != nil {
+			return fail(err)
+		}
+		fallback = append(fallback, intent.Intention{Kind: "patch", Value: diff})
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
@@ -712,6 +718,32 @@ func gitIn(dir, stdin string, args ...string) (string, error) {
 		return "", fmt.Errorf("%s", strings.TrimSpace(errOut.String()))
 	}
 	return strings.TrimSpace(out.String()), nil
+}
+
+// zeroContextDiff is the diff from old to now of the file at path, with no
+// line of context: it applies wherever those lines still read as they did.
+func zeroContextDiff(path, old, now string) (string, error) {
+	dir, err := os.MkdirTemp("", "workline-derive-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(dir)
+	for side, content := range map[string]string{"a": old, "b": now} {
+		file := filepath.Join(dir, side, filepath.FromSlash(path))
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+			return "", err
+		}
+		if err := os.WriteFile(file, []byte(content), 0o644); err != nil {
+			return "", err
+		}
+	}
+	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "-U0", "a/"+path, "b/"+path)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if exit, ok := err.(*exec.ExitError); ok && exit.ExitCode() == 1 {
+		err = nil // the files differ, as they should
+	}
+	return string(out), err
 }
 
 func orDefault(s, d string) string {

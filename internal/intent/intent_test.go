@@ -40,3 +40,12 @@ func TestNormalizeDiff(t *testing.T) {
 		t.Fatal("a diff that has its headers is left as it is")
 	}
 }
+
+func TestMergeKeepsFallbackDiffsBeside(t *testing.T) {
+	derived := Intention{"patch", "--- a/README.md\n+++ b/README.md\n@@ -19 +19 @@\n-61\n+63\n"}
+	agent := []Intention{{"patch", "--- a/README.md\n+++ b/README.md\n@@ -3 +3 @@\n-checked: a\n+checked: b\n"}}
+	got := Merge([]Intention{derived}, agent)
+	if len(got) != 2 || got[0].Value != agent[0].Value || got[1].Value != derived.Value {
+		t.Fatalf("Merge = %v: a fallback diff stays, after the agent's patch of the same file", got)
+	}
+}

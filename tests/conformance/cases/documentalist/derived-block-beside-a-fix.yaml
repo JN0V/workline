@@ -1,0 +1,16 @@
+case: documentalist/derived-block-beside-a-fix
+about: A doc the agent fixes keeps its regenerated derived block; the agent's patch of the same doc does not undo it.
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "sed -i '6a The code holds <!-- workline:derive auth-files -->3<!-- workline:end --> files.' docs/tech/auth.md"
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-beside-derived"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: derived-stale, where: docs/tech/auth.md}]
+  files:
+    "docs/tech/auth.md": {contains: "<!-- workline:derive auth-files -->1<!-- workline:end -->"}
+  applied: [patch, patch]
