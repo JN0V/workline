@@ -69,4 +69,4 @@ settings:
   # where only people change it. e.g. {conformance-cases: "ls tests/*.yaml | wc -l"}
   derive: {}
   max-open-merge-requests: 5         # backpressure: stop proposing when this many wait; not read yet
-  ai-max-calls: 10                   # per run
+  ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round

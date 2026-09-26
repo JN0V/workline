@@ -74,19 +74,50 @@ const (
 	exitNothing  = 10
 )
 
+// maxRounds caps how many times one run of a role goes round, when its pre
+// leaves work for the next round (in/more).
+const maxRounds = 5
+
 // Run executes one run and always returns a result with a status: an error
-// inside the run becomes a blocking finding, never a silent pass.
+// inside the run becomes a blocking finding, never a silent pass. When pre
+// took less than there was to do and said so in in/more, and the round
+// passed and applied something, the role goes round again: the next round
+// sees what this one applied. Calls and applied intentions add up; a later
+// round's finding replaces an earlier one of the same rule and place.
 func Run(o Options) *Result {
 	res := &Result{Applied: []string{}, Refused: []string{}}
-	if err := run(o, res); err != nil {
-		res.Status = verdict.Block
-		rule := "engine-error"
-		if role.IsConfigError(err) {
-			rule = "config-invalid"
+	for round := 1; ; round++ {
+		earlier, applied := res.Findings, len(res.Applied)
+		res.Findings = nil
+		if err := run(o, res); err != nil {
+			res.Status = verdict.Block
+			rule := "engine-error"
+			if role.IsConfigError(err) {
+				rule = "config-invalid"
+			}
+			res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Message: err.Error()})
 		}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Message: err.Error()})
+		res.Findings = supersede(earlier, res.Findings)
+		_, err := os.Stat(filepath.Join(res.RunDir, "in", "more"))
+		if err != nil || res.Status != verdict.Pass || o.NoApply || len(res.Applied) == applied || round == maxRounds {
+			return res
+		}
 	}
-	return res
+}
+
+// supersede keeps the earlier findings no later one replaces, then the later ones.
+func supersede(earlier, later []verdict.Finding) []verdict.Finding {
+	seen := map[[2]string]bool{}
+	for _, f := range later {
+		seen[[2]string{f.Rule, f.Where}] = true
+	}
+	var out []verdict.Finding
+	for _, f := range earlier {
+		if !seen[[2]string{f.Rule, f.Where}] {
+			out = append(out, f)
+		}
+	}
+	return append(out, later...)
 }
 
 func run(o Options, res *Result) error {

@@ -96,6 +96,9 @@ multi-repository cases.
 - **Fake agent.** `fake:<fixture>` returns the proposals in
   `fixtures/agents/<fixture>.yaml`, without reading the prompt. It checks the
   engine's handling of proposals, not their quality.
+- **Command agent.** `cmd:sh "$FIXTURES/agents/<script>.sh"` runs a script
+  of the fixtures as the agent: one that reads the prompt, for a case where
+  each call asks something else (`FIXTURES` names the fixtures folder).
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
 - **Simulated forge.** An in-memory forge holding issues, labels, comments,

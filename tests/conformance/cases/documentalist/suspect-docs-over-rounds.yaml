@@ -1,0 +1,13 @@
+case: documentalist/suspect-docs-over-rounds
+about: More suspect docs than one call may take are judged over several rounds of the same run, each round seeing what the last one applied.
+given:
+  repo: documented
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/auth/token.go]\\nchecked: %s\\n---\\n# Token lifetime\\n\\nTokens are short-lived.\\n' $C > docs/tech/ttl.md && git add docs && git commit -qm 'docs: say tokens are short-lived'"
+    - "echo '// Checked on every request.' >> src/auth/token.go && git commit -qam 'docs(auth): say when tokens are checked'"
+  config: {roles: {documentalist: {settings: {ai-max-calls: 1}}}}
+run: {role: documentalist, event: merge-request, ai: 'cmd:sh "$FIXTURES/agents/confirm-each-doc.sh"'}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: [patch, patch]

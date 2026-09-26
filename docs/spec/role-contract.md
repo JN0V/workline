@@ -159,6 +159,12 @@ token), **apply** (trusted, no AI key).
    intentions are applied in the catalogue's order — files first, then what
    depends on them, then what only informs — whatever order the agent used,
    and each one is recorded in `out/run.yaml` (`applied:`) as it succeeds.
+6. **Again.** If `pre` took less than there was to do, it writes `in/more`.
+   When the run passed and applied something, the engine then runs the role
+   again, from step 2, in a new run folder that sees what was applied — five
+   rounds at most. The result adds up the rounds' calls and applied
+   intentions; a later round's finding replaces an earlier one of the same
+   rule and place. A run judged with `--no-apply` goes round once.
 
 ### When apply stops half-way
 

@@ -329,7 +329,8 @@ func build(dir, fixture string, setup, env []string) error {
 
 // hermeticEnv keeps the machine's git config and hooks out of the tests.
 func hermeticEnv() []string {
-	return append(os.Environ(),
+	fixtures, _ := filepath.Abs("fixtures")
+	return append(os.Environ(), "FIXTURES="+fixtures, // for a cmd: agent's script
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 		"GIT_AUTHOR_NAME=Fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
 		"GIT_COMMITTER_NAME=Fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",

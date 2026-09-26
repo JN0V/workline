@@ -419,9 +419,16 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
+	left := false
 	for i := range findings {
 		if f := &findings[i]; f.Rule == "suspect" && judged[f.Where] == nil && task != "" {
-			f.Message += "\n(not put before the agent in this run: over ai-max-calls or the task's size)"
+			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
+			left = true
+		}
+	}
+	if left { // the engine runs another round, once this one is applied
+		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte("suspect docs left\n"), 0o644); err != nil {
+			return fail(err)
 		}
 	}
 	sort.SliceStable(findings, func(i, j int) bool { return findings[i].Where < findings[j].Where })
