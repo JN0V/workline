@@ -5,15 +5,16 @@
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
 
-1. **Evaluation, run often.** The evaluation exists (tests/evaluation/), keeps
-   the exact models, efforts and tokens of each score, can force one model and
-   effort, and summarises the runs; its scores are only worth their number of
-   runs, since a model answers differently from one run to the next. Still to
-   do: pin exact model ids per tier, so a new generation comes in only once
-   measured; run it on a schedule; set each role's tier and effort on what the
-   runs show; add a case for each defect a role lets through; grade with a
+1. **Evaluation, the judge.** The evaluation keeps the exact model, effort and
+   tokens of each score, compares models (`WORKLINE_EVAL=claude:<model>@<effort>`),
+   summarises the runs (`go run ./tests/evaluation/summary`) and runs every
+   week (tests/evaluation/schedule/, docs/spec/conformance.md); models follow
+   the aliases and a change is noticed (ADR-0004); tiers were set on its
+   measures (the documentalist condenses on `frontier`). Left: grade with a
    judge from another provider what no check can — first, whether a rewrite
-   keeps the author's meaning, which `keeps-words` only counts.
+   keeps the author's meaning, which `keeps-words` only counts. It needs an
+   agent from another provider (see "More agents"). Meanwhile, each defect a
+   role lets through becomes a case.
 
 Then, once both work well here:
 
