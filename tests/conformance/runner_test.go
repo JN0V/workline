@@ -76,19 +76,19 @@ type caseFile struct {
 		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
 	} `yaml:"run"`
 	Expect struct {
-		Status     string                    `yaml:"status"`
-		Findings   []map[string]string       `yaml:"findings"`
-		NoFindings []map[string]string       `yaml:"no-findings"` // findings that must not be there
-		AgentCalls *int                      `yaml:"agent-calls"`
-		Applied    []string                  `yaml:"applied"`
-		Refused    []string                  `yaml:"refused"`
-		Files      map[string]map[string]any `yaml:"files"`
-		Forge      map[string]any            `yaml:"forge"`
-		Steps      []string                  `yaml:"steps"`
-		Calls      []map[string]string       `yaml:"calls"`
-		SARIF       []map[string]any `yaml:"sarif"`        // results, by rule, uri, line, level
-		CodeQuality []map[string]any `yaml:"code-quality"` // issues, by check_name, path, line, severity
-		LeftOut     []string         `yaml:"left-out"`     // wheres found in neither report
+		Status      string                    `yaml:"status"`
+		Findings    []map[string]string       `yaml:"findings"`
+		NoFindings  []map[string]string       `yaml:"no-findings"` // findings that must not be there
+		AgentCalls  *int                      `yaml:"agent-calls"`
+		Applied     []string                  `yaml:"applied"`
+		Refused     []string                  `yaml:"refused"`
+		Files       map[string]map[string]any `yaml:"files"`
+		Forge       map[string]any            `yaml:"forge"`
+		Steps       []string                  `yaml:"steps"`
+		Calls       []map[string]string       `yaml:"calls"`
+		SARIF       []map[string]any          `yaml:"sarif"`        // results, by rule, uri, line, level
+		CodeQuality []map[string]any          `yaml:"code-quality"` // issues, by check_name, path, line, severity
+		LeftOut     []string                  `yaml:"left-out"`     // wheres found in neither report
 	} `yaml:"expect"`
 }
 
