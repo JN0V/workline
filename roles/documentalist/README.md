@@ -32,15 +32,23 @@ What runs, for humans. The AI never reads this file.
    agent (`derived-stale`, applied as a patch). Commands live in the config,
    which only people change, never in a doc; they run wherever the line runs,
    CI included.
+7. **Superseded decisions.** A doc citing a superseded decision record, by a
+   link to its file or by its number (`ADR-0003`), without naming what
+   replaced it (`cites-superseded`), as coherence does. Records are the
+   numbered files of a folder named `adr`, `adrs` or `decisions`; a record is
+   superseded when its status says so — the frontmatter's `status`, a
+   `Status:` line, or the paragraph under a `Status` heading (adr-tools) — or
+   when another record's frontmatter `supersedes` it (MADR). What replaced it
+   is the record its status names. Records themselves are history, and may
+   cite it.
 
-Not built yet: style (vale), links to other sites (lychee), docs citing a
-superseded ADR, freshness.
+Not built yet: style (vale), links to other sites (lychee), freshness.
 
 ### Levels
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `identifier-gone`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `identifier-gone`, `cites-superseded`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |

@@ -16,13 +16,13 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->79<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->80<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|
 | **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages; secrets and forbidden terms in changes and messages (gitleaks), author identity | |
 | **Release manager**: semver, calver, several packages in one repository, generated changelog, tag, forge release | the merge-request flow, build metadata |
-| **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository, identifiers gone from the code; derived blocks; Claude judges suspect docs, and condenses a doc over budget, and its patches are checked | links to other sites, freshness, docs citing a superseded ADR, the `truth` setting, splitting and merging by AI |
+| **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository, identifiers gone from the code; docs citing a superseded decision; derived blocks; Claude judges suspect docs, and condenses a doc over budget, and its patches are checked | links to other sites, freshness, the `truth` setting, splitting and merging by AI |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
 | **Forges**: GitHub (comments and labels tried live), simulated; GitLab written; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | GitLab never run; GitHub issues and releases never run live |

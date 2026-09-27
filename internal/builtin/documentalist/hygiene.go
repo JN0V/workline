@@ -60,13 +60,14 @@ func (t Tree) exists(p string) bool {
 	return false
 }
 
-// Hygiene runs the checks that need no git history: budgets, duplicates and
-// links. A budget that is not set is said, never skipped silently.
+// Hygiene runs the checks that need no git history: budgets, duplicates,
+// links, and citations of superseded decisions. A budget that is not set is said, never skipped silently.
 func Hygiene(t Tree, b Budgets, d Duplicates) []Problem {
 	var out []Problem
 	out = append(out, budgets(t, b)...)
 	out = append(out, duplicates(t, d)...)
 	out = append(out, links(t)...)
+	out = append(out, supersededCited(t)...)
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Where < out[j].Where })
 	return out
 }
@@ -376,15 +377,7 @@ func links(t Tree) []Problem {
 			if l.code {
 				continue
 			}
-			text := codeSpan.ReplaceAllString(l.text, "")
-			var targets []string
-			for _, m := range inlineLink.FindAllStringSubmatch(text, -1) {
-				targets = append(targets, m[1])
-			}
-			if m := refLink.FindStringSubmatch(text); m != nil {
-				targets = append(targets, m[1])
-			}
-			for _, target := range targets {
+			for _, target := range linkTargets(codeSpan.ReplaceAllString(l.text, "")) {
 				if scheme.MatchString(target) {
 					if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
 						external++
@@ -405,9 +398,10 @@ func links(t Tree) []Problem {
 	return out
 }
 
-// deadLink says why a link inside the repository leads nowhere; empty if it is fine.
-func deadLink(t Tree, from, target string) string {
-	file, anchor, _ := strings.Cut(target, "#")
+// resolve is the file of the repository a link of doc from points to, and
+// the anchor it names.
+func resolve(from, target string) (file, anchor string) {
+	file, anchor, _ = strings.Cut(target, "#")
 	file, _, _ = strings.Cut(file, "?")
 	if u, err := url.PathUnescape(file); err == nil {
 		file = u
@@ -420,6 +414,24 @@ func deadLink(t Tree, from, target string) string {
 	default:
 		file = path.Join(path.Dir(from), file)
 	}
+	return file, anchor
+}
+
+// linkTargets are the targets of the links a line of prose holds.
+func linkTargets(text string) []string {
+	var targets []string
+	for _, m := range inlineLink.FindAllStringSubmatch(text, -1) {
+		targets = append(targets, m[1])
+	}
+	if m := refLink.FindStringSubmatch(text); m != nil {
+		targets = append(targets, m[1])
+	}
+	return targets
+}
+
+// deadLink says why a link inside the repository leads nowhere; empty if it is fine.
+func deadLink(t Tree, from, target string) string {
+	file, anchor := resolve(from, target)
 	if strings.HasPrefix(file, "../") || file == ".." {
 		return "it points outside the repository"
 	}

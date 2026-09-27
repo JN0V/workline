@@ -1,0 +1,26 @@
+case: documentalist/superseded-decision-cited
+about: A doc citing a superseded decision, by link or by number, without naming what replaced it is reported; the status is read as adr-tools, MADR and a "Status:" line write it. A doc naming both, and the records themselves, are not reported.
+given:
+  repo: untidy
+  setup:
+    - "mkdir -p docs/adr && printf '# ADR-0001: Use SQLite\\n\\n- **Status:** superseded by [ADR-0002](0002-use-postgres.md)\\n' > docs/adr/0001-use-sqlite.md"
+    - "printf '# ADR-0002: Use Postgres\\n\\n- **Status:** accepted; replaces ADR-0001\\n' > docs/adr/0002-use-postgres.md"
+    - "printf '# 3. Log to files\\n\\n## Status\\n\\nSuperseded by [4. Log to stdout](0004-log-to-stdout.md)\\n' > docs/adr/0003-log-to-files.md"
+    - "printf '# 4. Log to stdout\\n\\n## Status\\n\\nAccepted\\n' > docs/adr/0004-log-to-stdout.md"
+    - "printf -- '---\\nstatus: accepted\\n---\\n# No cache\\n' > docs/adr/0005-no-cache.md"
+    - "printf -- '---\\nstatus: accepted\\nsupersedes: ADR-0005\\n---\\n# Cache reads\\n' > docs/adr/0006-cache-reads.md"
+    - "printf '# Storage\\n\\nData lives in SQLite ([ADR-0001](adr/0001-use-sqlite.md)).\\n' > docs/storage.md"
+    - "printf '# History\\n\\nADR-0001 chose SQLite; ADR-0002 replaced it.\\n' > docs/history.md"
+    - "printf '# Logs\\n\\nLogs go to files ([the decision](adr/0003-log-to-files.md)).\\n' > docs/logs.md"
+    - "printf '# Cache\\n\\nNothing is cached, per ADR-5.\\n' > docs/cache.md"
+    - "git add docs && git commit -qm 'docs: record the decisions'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: cites-superseded, where: docs/storage.md}
+    - {rule: cites-superseded, where: docs/logs.md}
+    - {rule: cites-superseded, where: docs/cache.md}
+  no-findings:
+    - {rule: cites-superseded, where: docs/history.md}
+    - {rule: cites-superseded, where: docs/adr/0002-use-postgres.md}

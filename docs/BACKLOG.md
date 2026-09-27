@@ -19,10 +19,10 @@ this repository before any other role is added.
 2. **What is left of the committer and the documentalist**, before any new
    role:
    - documentalist: the `truth` setting (code contradicting a spec or an ADR
-     opens an issue), links to other sites (lychee), style (vale), docs citing
-     a superseded ADR, freshness, the other gardening tasks (propagate, merge
-     duplicates, split, merge cards too short), the checklist in the
-     merge-request comment, `max-open-merge-requests`;
+     opens an issue), links to other sites (lychee), style (vale), freshness,
+     the other gardening tasks (propagate, merge duplicates, split, merge
+     cards too short), the checklist in the merge-request comment,
+     `max-open-merge-requests`;
    - evaluation: more runs of condensing on Sonnet (one clean run so far;
      Opus has eight), to know whether `frontier` is needed.
 

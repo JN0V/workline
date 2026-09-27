@@ -86,6 +86,28 @@ func TestHygiene(t *testing.T) {
 	}
 }
 
+func TestSupersededCited(t *testing.T) {
+	tree := Tree{Docs: map[string]string{
+		"docs/adr/0001-a.md": "# ADR-0001\n\n- **Status:** superseded by [ADR-0002](0002-b.md)\n",
+		"docs/adr/0002-b.md": "# ADR-0002\n\n- **Status:** accepted\n",
+		"docs/adr/0003-c.md": "# ADR-0003\n\nStatus: superseded\n",
+		"docs/a.md":          "# A\n\nAs `ADR-0001` says.\n\nPer ADR-1.\n",
+		"docs/c.md":          "# C\n\nSee [it](adr/0003-c.md) and ADR-0002.\n",
+	}}
+	var got []string
+	for _, p := range supersededCited(tree) {
+		got = append(got, p.Where+": "+p.Message)
+	}
+	sort.Strings(got)
+	want := []string{
+		"docs/a.md: line 5 cites docs/adr/0001-a.md, which is superseded: cite what replaced it, docs/adr/0002-b.md, or name both where the old one still matters",
+		"docs/c.md: line 3 cites docs/adr/0003-c.md, which is superseded: its status does not say what replaced it: say it there",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("supersededCited =\n%s\nwant\n%s (a code span is not a citation)", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+}
+
 func TestNamed(t *testing.T) {
 	got := named("Call `auth.RefreshToken()` and `Revoke`, not `go test ./...` nor `id`.\n\n```\n`Hidden`\n```\n")
 	if strings.Join(got, ",") != "RefreshToken,Revoke" {
