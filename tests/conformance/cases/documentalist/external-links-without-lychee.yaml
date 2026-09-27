@@ -1,0 +1,9 @@
+case: documentalist/external-links-without-lychee
+about: When gardening without lychee, the links to other sites are counted and the verdict says lychee is missing; outside gardening, they are said to be checked then.
+given:
+  repo: untidy
+  env: {PATH: "/usr/bin:/bin"}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: links-not-checked, where: docs/auth.md, message: "lychee is not installed"}]

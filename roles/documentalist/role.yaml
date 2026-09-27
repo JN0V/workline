@@ -11,8 +11,10 @@ events: [merge-request, pre-push, schedule, handoff]
 
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine
-# itself (ADR-0003). Coming: vale (style) and lychee (links to other sites),
-# listed in `uses` once actually called.
+# itself (ADR-0003). Optional tools, run when installed; the verdict says when
+# one is missing. lychee: links to other sites, when gardening (README, "Links").
+# Coming: vale (style).
+uses: [lychee]
 
 # Rewriting docs for a reader is real writing; condensing well needs judgement.
 model:

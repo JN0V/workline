@@ -21,8 +21,13 @@ What runs, for humans. The AI never reads this file.
    three-word sequences; `similarity` 0.85 catches a passage copied and then
    lightly edited.
 4. **Links.** Every link to a file of the repository, and to a heading in it,
-   must lead somewhere. Links to other sites are counted and said to be
-   unchecked: that needs the network.
+   must lead somewhere. Links to other sites need the network, and break with
+   no change to the repository: on `schedule` only,
+   [lychee](https://lychee.cli.rs) checks them, with its own `lychee.toml` and
+   `.lycheeignore` if the project has them. A link answered by an HTTP error
+   is `external-link-broken`, at its line; one not reached (no network, a
+   timeout) is only counted. Otherwise, or without lychee, they are counted
+   and said to be unchecked (`links-not-checked`).
 5. **Identifiers gone.** A name in a code span that was in the code when the
    doc was last edited, and is gone now (DOCER). A name never in the code is
    not reported: it may be a product term.
@@ -42,13 +47,13 @@ What runs, for humans. The AI never reads this file.
    is the record its status names. Records themselves are history, and may
    cite it.
 
-Not built yet: style (vale), links to other sites (lychee), freshness.
+Not built yet: style (vale), freshness.
 
 ### Levels
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `identifier-gone`, `cites-superseded`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |

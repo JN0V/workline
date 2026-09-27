@@ -368,7 +368,8 @@ var (
 
 // links checks every link between files of the repository: the file must be
 // tracked, and the heading an anchor names must exist. Links to other sites
-// need the network; they are counted and said to be unchecked.
+// need the network; they are counted and said to be unchecked, and
+// ExternalLinks checks them when gardening.
 func links(t Tree) []Problem {
 	var out []Problem
 	for p, content := range t.Docs {
@@ -392,7 +393,7 @@ func links(t Tree) []Problem {
 		}
 		if external > 0 {
 			out = append(out, Problem{Rule: "links-not-checked", Where: p, Key: "links-not-checked " + p, Size: external,
-				Message: fmt.Sprintf("%d link(s) to other sites not checked: that needs the network, and no link checker is wired in yet", external)})
+				Message: fmt.Sprintf("%d link(s) to other sites not checked: that needs the network; lychee checks them when gardening (event schedule)", external)})
 		}
 	}
 	return out

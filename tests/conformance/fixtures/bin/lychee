@@ -1,0 +1,19 @@
+#!/bin/sh
+# Replays what lychee 0.24.2 answered for docs/links.md (see the case
+# documentalist/external-links-checked): one link gone, one not reached.
+cat <<'JSON'
+{
+  "total": 2, "unique": 2, "successful": 0, "errors": 1, "timeouts": 1,
+  "error_map": {
+    "docs/links.md": [
+      {"url": "https://example.org/gone", "status": {"text": "Rejected status code: 404 Not Found", "code": 404}, "span": {"line": 3, "column": 1}}
+    ]
+  },
+  "timeout_map": {
+    "docs/links.md": [
+      {"url": "https://example.net/slow", "status": {"text": "Timeout"}, "span": {"line": 4, "column": 1}}
+    ]
+  }
+}
+JSON
+exit 2

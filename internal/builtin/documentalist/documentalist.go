@@ -377,6 +377,13 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// Links to other sites need the network: checked when gardening only,
+	// since they break with no change to the repository.
+	if os.Getenv("WORKLINE_EVENT") == "schedule" {
+		if problems, err = withExternalLinks(repo, tree, problems); err != nil {
+			return fail(err)
+		}
+	}
 	for _, p := range append(problems, gone...) {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
 		if p.Rule == "setting-missing" {
@@ -779,4 +786,27 @@ func writeYAML(path string, v any) error {
 func fail(err error) int {
 	fmt.Fprintln(os.Stderr, "documentalist:", err)
 	return 99
+}
+
+// withExternalLinks replaces the count of links to other sites with what
+// lychee finds of them; without lychee, the count says it is missing.
+func withExternalLinks(repo string, tree Tree, problems []Problem) ([]Problem, error) {
+	docs := make([]string, 0, len(tree.Docs))
+	for p := range tree.Docs {
+		docs = append(docs, p)
+	}
+	found, ok, err := ExternalLinks(repo, docs)
+	if err != nil {
+		return nil, err
+	}
+	var out []Problem
+	for _, p := range problems {
+		if p.Rule != "links-not-checked" {
+			out = append(out, p)
+		} else if !ok {
+			p.Message = fmt.Sprintf("%d link(s) to other sites not checked: lychee is not installed (https://lychee.cli.rs)", p.Size)
+			out = append(out, p)
+		}
+	}
+	return append(out, found...), nil
 }

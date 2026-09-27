@@ -1,6 +1,8 @@
 case: documentalist/dead-links-reported
 about: A link to a missing file or heading is reported; links the role cannot check offline are said to be unchecked, not passed.
-given: {repo: untidy}
+given:
+  repo: untidy
+  env: {PATH: "/usr/bin:/bin"}   # no lychee: the links to other sites stay unchecked
 run: {role: documentalist, event: schedule, ai: none}
 expect:
   status: pass

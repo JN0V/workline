@@ -1,0 +1,15 @@
+case: documentalist/external-links-checked
+about: When gardening, lychee checks the links to other sites; a link answered by an HTTP error is reported at its line, one not reached is only counted.
+given:
+  repo: untidy
+  setup:
+    - "printf '# Links\\n\\n[gone](https://example.org/gone)\\n[slow](https://example.net/slow)\\n' > docs/links.md && git add docs && git commit -qm 'docs: link out'"
+  env: {PATH: "$FIXTURES/bin:$PATH"}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: external-link-broken, where: "docs/links.md:3", message: "404"}
+    - {rule: links-not-checked, where: docs/links.md, message: "could not be reached"}
+  no-findings:
+    - {rule: links-not-checked, where: docs/auth.md}

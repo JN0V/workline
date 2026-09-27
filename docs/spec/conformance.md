@@ -101,6 +101,9 @@ a `PATH` without a tool, or with a fake one first.
 - **Command agent.** `cmd:sh "$FIXTURES/agents/<script>.sh"` runs a script
   of the fixtures as the agent: one that reads the prompt, for a case where
   each call asks something else (`FIXTURES` names the fixtures folder).
+- **Fake tools.** `fixtures/bin/` holds tools that need the network, replaying
+  an answer the real one gave: `lychee` (recorded from 0.24.2). A case puts
+  them first: `env: {PATH: "$FIXTURES/bin:$PATH"}`.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
 - **Simulated forge.** An in-memory forge holding issues, labels, comments,
