@@ -93,3 +93,6 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-27T15:19:19Z	b3cfa30+changes	claude	claude-sonnet-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	5108	382	0.0168	7		
 2026-09-27T15:19:25Z	b3cfa30+changes	claude	claude-sonnet-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	5106	490	0.0179	6		
 2026-09-27T15:19:31Z	b3cfa30+changes	claude	claude-sonnet-5	medium	documentalist/opens-an-issue-when-code-disagrees-with-a-spec	5/5	1	5103	397	0.0170	6		
+2026-09-27T18:07:15Z	8b12bb5+changes	claude	claude-sonnet-5	medium	documentalist/merges-a-repeated-passage	5/5	1	4936	196	0.0145	4		
+2026-09-27T18:07:19Z	8b12bb5+changes	claude	claude-sonnet-5	medium	documentalist/merges-a-repeated-passage	5/5	1	4941	193	0.0145	4		
+2026-09-27T18:07:24Z	8b12bb5+changes	claude	claude-sonnet-5	medium	documentalist/merges-a-repeated-passage	5/5	1	4934	197	0.0145	5		

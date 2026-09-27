@@ -1,0 +1,10 @@
+case: documentalist/merges-a-repeated-passage
+about: Gardening a project whose FAQ repeats a passage of the sessions doc; the passage is kept where the topic lives, and the FAQ links to it.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 2}
+  - {file-contains: {docs/sessions.md: "A session lasts as long as its token"}}
+  - {file-lacks: {docs/faq.md: "A session lasts as long as its token"}}
+  - {file-contains: {docs/faq.md: "sessions.md"}}
