@@ -18,8 +18,7 @@ this repository before any other role is added.
    when there is one. Each defect a role lets through becomes a case.
 2. **What is left of the committer and the documentalist**, before any new
    role:
-   - documentalist: the `truth` setting (code contradicting a spec or an ADR
-     opens an issue), style (vale), the other gardening tasks (propagate,
+   - documentalist: style (vale), the other gardening tasks (propagate,
      merge duplicates, split, merge cards too short), the checklist in the
      merge-request comment, `max-open-merge-requests`;
    - evaluation: more runs of condensing on Sonnet (one clean run so far;

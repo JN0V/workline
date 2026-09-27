@@ -1,0 +1,14 @@
+case: documentalist/truth-disagreement-opens-an-issue
+about: When the code disagrees with a doc it follows, the doc is only checked again, and the disagreement goes to an issue — here a local one, with no forge.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:truth-disagrees"}
+expect:
+  status: pass
+  applied: [patch, issue]
+  files:
+    "docs/tech/auth.md": {contains: "Access tokens last one hour."}
+    ".workline/issues/the-code-disagrees-with-docs-tech-auth-md.md": {contains: "TokenTTL = 7200"}

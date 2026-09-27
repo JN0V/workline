@@ -30,9 +30,12 @@ type Settings struct {
 		To   string `json:"to"`
 		When string `json:"when"`
 	} `json:"propagation"`
-	Budgets    Budgets           `json:"budgets"`
-	Duplicates Duplicates        `json:"duplicates"`
-	Freshness  Freshness         `json:"freshness"`
+	Budgets    Budgets    `json:"budgets"`
+	Duplicates Duplicates `json:"duplicates"`
+	Freshness  Freshness  `json:"freshness"`
+	Truth      struct {
+		Doc []string `json:"doc"` // docs the code follows: never rewritten to match it
+	} `json:"truth"`
 	AIMaxCalls int               `json:"ai-max-calls"`
 	Derive     map[string]string `json:"derive"` // name -> command giving a derived block
 }
@@ -416,7 +419,7 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 
-	task, judged, err := suspectTask(suspects, s.AIMaxCalls, pl, repo)
+	task, judged, err := suspectTask(suspects, s, pl, repo)
 	if err != nil {
 		return fail(err)
 	}
@@ -424,7 +427,7 @@ func Pre(runDir, repo string) int {
 	// condense the doc most over its budget. A merge request or a push never
 	// turns into a rewrite of the docs.
 	if task == "" && len(stale) > 0 {
-		if task, judged, err = staleTask(stale, s.AIMaxCalls, pl, repo); err != nil {
+		if task, judged, err = staleTask(stale, s, pl, repo); err != nil {
 			return fail(err)
 		}
 	}
@@ -470,7 +473,7 @@ func Pre(runDir, repo string) int {
 // suspectTask writes the question for the agent: each suspect doc, with line
 // numbers, what changed in its sources, and the commits its `checked` must
 // name once judged. It returns those commits per doc, for the judge.
-func suspectTask(suspects map[string]*suspectDoc, maxDocs int, pl *places, repo string) (string, map[string]map[string]string, error) {
+func suspectTask(suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
 	return docTask(`Kind: suspect
 
 These docs may no longer be true, because something they depend on changed.
@@ -479,12 +482,13 @@ context lines, whose hunks cite the doc's lines by the numbers shown here.
 If the doc is still true, the patch only sets `+"`checked`"+`. If not, it also
 fixes what is now wrong, and nothing else.
 
-`, suspects, maxDocs, pl, repo)
+`, suspects, s, pl, repo)
 }
 
 // docTask writes a task putting docs before the agent, each with why it is
 // there and what it is judged against, under the header saying the kind.
-func docTask(header string, suspects map[string]*suspectDoc, maxDocs int, pl *places, repo string) (string, map[string]map[string]string, error) {
+func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
+	maxDocs := s.AIMaxCalls
 	paths := make([]string, 0, len(suspects))
 	for p := range suspects {
 		paths = append(paths, p)
@@ -533,6 +537,11 @@ func docTask(header string, suspects map[string]*suspectDoc, maxDocs int, pl *pl
 		fmt.Fprintf(&entry, "## %s\n\nWhatever you decide, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.\n\nWhy it is here:\n\n", p, checked)
 		for _, w := range sd.why {
 			fmt.Fprintf(&entry, "- %s\n", strings.ReplaceAll(w, "\n", "\n  "))
+		}
+		if isAuthority(s, p) {
+			fmt.Fprintf(&entry, "\nThis doc is an authority (`truth: doc`): the code follows it, not the reverse. Do not change what it says. "+
+				"If the code now disagrees with it, return an `issue` titled %q, saying where they disagree and quoting both; "+
+				"your patch then only sets `checked` and `verified`, the disagreement being tracked by the issue.\n", "The code disagrees with "+p)
 		}
 		for _, e := range sd.evidence {
 			entry.WriteString("\n" + e + "\n")
@@ -829,4 +838,10 @@ func withExternalLinks(repo string, tree Tree, problems []Problem) ([]Problem, e
 		}
 	}
 	return append(out, found...), nil
+}
+
+// isAuthority says whether the code follows this doc (settings.truth.doc):
+// when they disagree, an issue is opened, and the doc is never rewritten.
+func isAuthority(s Settings, path string) bool {
+	return matchAny(s.Truth.Doc, path)
 }

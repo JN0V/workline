@@ -248,6 +248,10 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			now := applyHunks(old, f)
+			if isAuthority(s, f.path) && body(now) != body(old) {
+				refuse("truth-doc-changed", f.path, "this doc is an authority (truth: doc): the code follows it, never the reverse; set only `checked` and `verified`, and open an issue where the code disagrees")
+				continue
+			}
 			if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
 				refuse("patch-ambiguous", f.path, "git would apply this diff differently from how it reads; send a plain unified diff")
 				continue

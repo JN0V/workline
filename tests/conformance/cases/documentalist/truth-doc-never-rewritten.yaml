@@ -1,0 +1,12 @@
+case: documentalist/truth-doc-never-rewritten
+about: A doc the code follows (settings.truth.doc) is never rewritten to match the code; a patch changing what it says is refused.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: truth-doc-changed, where: docs/tech/auth.md}]

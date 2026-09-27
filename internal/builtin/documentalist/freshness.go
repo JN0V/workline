@@ -139,7 +139,7 @@ func sourcesNow(d *Doc, pl *places) (evidence []string, ok bool) {
 }
 
 // staleTask asks the agent to read stale docs again against their sources.
-func staleTask(stale map[string]*suspectDoc, maxDocs int, pl *places, repo string) (string, map[string]map[string]string, error) {
+func staleTask(stale map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
 	return docTask(`Kind: stale
 
 No source of these docs changed since they were last confirmed, but that was
@@ -148,5 +148,5 @@ full below. If it is still true, return a patch that only sets `+"`checked`"+`
 and `+"`verified`"+`. If not, the patch also fixes what is now wrong, and nothing
 else. If the sources given do not let you tell, return a note instead.
 
-`, stale, maxDocs, pl, repo)
+`, stale, s, pl, repo)
 }

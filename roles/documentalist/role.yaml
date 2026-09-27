@@ -45,10 +45,11 @@ without-ai: report
 
 settings:
   docs: ["docs/**", "*.md"]
-  # Which side is right when they disagree, per glob. Not read yet.
+  # Which side is right when they disagree, per glob. A doc the code follows
+  # is never rewritten to match it: an issue is opened instead. Every other
+  # doc follows the code.
   truth:
-    code: ["docs/reference/**"]      # the doc follows the code
-    doc: ["docs/adr/**"]             # the code follows the doc
+    doc: ["docs/adr/**"]
   # Cascades are cut. Only edges marked `now` are handled in the change itself;
   # the others are reported as pending, due at a later moment (the one tracking
   # issue that should hold them is not built yet).

@@ -77,9 +77,12 @@ forgotten; nothing drags a small fix into a rewrite of the user guide. (Built so
 far: the pending findings. Not yet: the tracking issue and the release gate.)
 
 **Code never rewrites the authority.** When the code disagrees with a doc marked
-as the truth (a spec, an ADR, the architecture), the doc is not updated to
-match: the documentalist opens an `issue` for the architect, because the code
-may be the one that is wrong. (Not built yet: the `truth` setting is not read.)
+as the truth (`truth.doc`: a spec, an ADR, the architecture), the doc is not
+updated to match: the documentalist opens an `issue` for the architect,
+titled "The code disagrees with <doc>", because the code may be the one that
+is wrong. The doc is only checked again, the issue tracking the disagreement;
+a patch changing what it says is refused (`truth-doc-changed`). Every other
+doc follows the code.
 
 Suspect docs become the agent's task, each with its lines numbered, what
 changed in its sources, and the commits its `checked` must name: at most
