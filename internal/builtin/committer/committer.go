@@ -148,7 +148,40 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// What the commit carries is checked before its message: no rewrite
+	// fixes a secret, so the agent is not asked.
+	secrets, err := Secrets(repo, "")
+	if err != nil {
+		return fail(err)
+	}
+	var advisories, blocking []verdict.Finding
+	for _, f := range secrets {
+		if f.Level == "warn" {
+			advisories = append(advisories, f)
+		} else {
+			blocking = append(blocking, f)
+		}
+	}
+	if len(blocking) > 0 {
+		v := verdict.Verdict{Status: verdict.Block, Summary: "the commit carries what must not reach the repository",
+			Findings: append(append(blocking, findings...), advisories...)}
+		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
+			return fail(err)
+		}
+		return 10
+	}
+	if len(advisories) > 0 { // shown with whatever verdict the run ends on
+		if err := writeYAML(filepath.Join(runDir, "in", "advisories.yaml"), advisories); err != nil {
+			return fail(err)
+		}
+	}
 	if len(findings) == 0 {
+		if len(advisories) > 0 {
+			v := verdict.Verdict{Status: verdict.Pass, Summary: "the message is clear", Findings: advisories}
+			if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
+				return fail(err)
+			}
+		}
 		return 10
 	}
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), findings); err != nil {
@@ -243,6 +276,13 @@ func load(runDir string) (Settings, string, error) {
 }
 
 func write(runDir string, v verdict.Verdict) int {
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "advisories.yaml")); err == nil {
+		var advisories []verdict.Finding
+		if err := yaml.Unmarshal(data, &advisories); err != nil {
+			return fail(err)
+		}
+		v.Findings = append(v.Findings, advisories...)
+	}
 	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 		return fail(err)
 	}
@@ -369,9 +409,19 @@ func checkRange(runDir, repo, rng string) int {
 			findings = append(findings, x)
 		}
 	}
+	secrets, err := Secrets(repo, rng)
+	if err != nil {
+		return fail(err)
+	}
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
 	if len(findings) > 0 {
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}
+	}
+	for _, f := range secrets {
+		v.Findings = append(v.Findings, f)
+		if f.Level != "warn" {
+			v.Status, v.Summary = verdict.Block, "a commit carries what must not reach the repository: rewrite the history before it is pushed"
+		}
 	}
 	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 		return fail(err)

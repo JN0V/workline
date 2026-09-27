@@ -23,6 +23,31 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! …`,
 `amend! …`) are not checked. A message that passes asks no agent.
 
+### Secrets and forbidden terms
+
+What the commit adds (on `commit-msg`) or every commit of the range is
+scanned with [gitleaks](https://github.com/gitleaks/gitleaks), before the
+message: no rewrite fixes a secret, so a `leak` blocks without asking the
+agent, at its file and line. The match is never printed. Without gitleaks,
+the commit goes on and the verdict says so (`secrets-not-checked`).
+
+gitleaks' own rules find secrets. Terms that must never reach a repository
+are rules of the user's, in lists kept outside it, gitleaks taking the first
+config it finds:
+
+1. `GITLEAKS_CONFIG`, when set;
+2. the repository's `.gitleaks.toml`, gitignored: this repository's terms,
+   which may extend the common list (`[extend] path = "…"`);
+3. the common list, `workline/gitleaks.toml` in the user's config folder
+   (`~/.config/` on Linux), which extends gitleaks' rules
+   (`[extend] useDefault = true`);
+4. gitleaks' rules alone.
+
+A rule's id and description are printed: name no term in them. gitleaks lets
+its own config through, so the committer refuses a commit adding a private
+`.gitleaks.toml` — gitignored, or a link — (`term-list-staged`); one a
+project commits to share its allowlist is not private.
+
 ## Rewrite (the agent)
 
 On `commit-msg`, a refused message goes to the agent with the findings and the
@@ -50,9 +75,8 @@ prints the message committed, since it is no longer the one you wrote.
 A bad message still fails, with the findings; you rewrite it. The message is
 kept in the file git named, so nothing typed is lost.
 
-Not built yet: running the checks listed in `uses` (forbidden terms, identity,
-secrets); the global hook hands over to them instead, when they were installed
-before workline.
+Not built yet: checking the commit's identity against an allow list; the
+global hook hands over to the hooks that were installed before workline.
 
 ## Tried for real
 

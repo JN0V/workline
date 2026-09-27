@@ -1,0 +1,14 @@
+case: committer/forbidden-terms-common-and-repo
+about: Terms that must never reach a repository come from the user's common list and from the repository's own, which adds to it; both lists stay out of the repository.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf '[extend]\\nuseDefault = true\\n[[rules]]\\nid = \"common-term\"\\nregex = %s\\nkeywords = [\"zebrabanana\"]\\n' \"'(?i)zebrabanana'\" > \"$XDG_CONFIG_HOME/workline/gitleaks.toml\""
+    - "printf '[extend]\\npath = \"%s\"\\n[[rules]]\\nid = \"repo-term\"\\nregex = %s\\nkeywords = [\"kiwiquartz\"]\\n' \"$XDG_CONFIG_HOME/workline/gitleaks.toml\" \"'(?i)kiwiquartz'\" > .gitleaks.toml && echo .gitleaks.toml >> .gitignore && git add .gitignore && git commit -qm 'chore: keep the term list out'"
+    - "printf 'a zebrabanana\\na kiwiquartz\\n' > notes.md && git add notes.md"
+run: {role: committer, event: commit-msg, input: {message: "docs: add notes"}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: leak, where: "notes.md:1"}
+    - {rule: leak, where: "notes.md:2"}

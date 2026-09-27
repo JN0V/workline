@@ -58,6 +58,7 @@ type caseFile struct {
 		Config map[string]any      `yaml:"config"`
 		Forge  map[string]any      `yaml:"forge"`
 		Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
+		Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -143,7 +144,8 @@ func TestConformance(t *testing.T) {
 func runCase(t *testing.T, c *caseFile) []string {
 	work := t.TempDir()
 	seen := filepath.Join(work, "models-seen.yaml")
-	env := append(hermeticEnv(), "WORKLINE_MODELS_SEEN="+seen)
+	// The user's config folder stays out: their own lists and defaults are not the case's.
+	env := append(hermeticEnv(), "WORKLINE_MODELS_SEEN="+seen, "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
 	if c.Given.Seen != nil {
 		data, _ := yaml.Marshal(c.Given.Seen)
 		if err := os.WriteFile(seen, data, 0o644); err != nil {
@@ -224,6 +226,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	cmd := exec.Command(engineBin, args...)
 	cmd.Env = env
+	for k, v := range c.Given.Env {
+		cmd.Env = append(cmd.Env, k+"="+v)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	_ = cmd.Run() // the exit code mirrors the status, which is checked below

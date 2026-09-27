@@ -1,0 +1,10 @@
+case: committer/term-list-never-committed
+about: The repository's private gitleaks list, gitignored, is refused when forced into a commit; gitleaks itself would let it through.
+given:
+  repo: basic
+  setup:
+    - "printf '[[rules]]\\nid = \"repo-term\"\\nregex = %s\\n' \"'(?i)kiwiquartz'\" > .gitleaks.toml && echo .gitleaks.toml >> .gitignore && git add .gitignore && git add -f .gitleaks.toml"
+run: {role: committer, event: commit-msg, input: {message: "chore: add the term list"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: term-list-staged, where: .gitleaks.toml}]
