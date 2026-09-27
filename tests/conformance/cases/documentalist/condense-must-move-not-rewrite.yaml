@@ -1,6 +1,9 @@
 case: documentalist/condense-must-move-not-rewrite
 about: Condensing moves text; a part reworded on the way is refused, and nothing is applied.
-given: {repo: untidy}
+given:
+  repo: untidy
+  # no repeated passage: merging one would come before condensing
+  setup: ["git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"]
 run: {role: documentalist, event: schedule, ai: "fake:condense-rewrites"}
 expect:
   status: block

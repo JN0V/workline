@@ -38,6 +38,7 @@ var rootAgentFiles = []string{"AGENTS.md", "CLAUDE.md"}
 type Problem struct {
 	Rule, Where, Message, Key string
 	Size                      int
+	Other                     string // a duplicate: the other doc holding the passage
 }
 
 // Tree is what the hygiene checks look at: the docs' contents, and every file
@@ -316,7 +317,7 @@ func duplicates(t Tree, d Duplicates) []Problem {
 		for j := i + 1; j < len(paras); j++ {
 			a, b := paras[i], paras[j]
 			if sim := jaccard(a.shingles, b.shingles); sim >= d.Similarity {
-				out = append(out, Problem{Rule: "duplicate", Where: a.doc,
+				out = append(out, Problem{Rule: "duplicate", Where: a.doc, Other: b.doc,
 					Key: "duplicate " + pairKey(a.text, b.text),
 					Message: fmt.Sprintf("lines %d-%d repeat %s lines %d-%d (%.0f%% alike): keep the passage in the one place it belongs, and link to it",
 						a.from, a.to, b.doc, b.from, b.to, sim*100)})

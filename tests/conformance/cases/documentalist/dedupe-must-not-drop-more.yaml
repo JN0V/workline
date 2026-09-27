@@ -1,0 +1,8 @@
+case: documentalist/dedupe-must-not-drop-more
+about: Merging a repeated passage removes that passage only; a patch dropping text the kept doc does not hold is refused, and nothing is applied.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-drops-more"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: rewritten, where: docs/faq.md}]

@@ -56,3 +56,6 @@ On 2026-09-27, on workline's own repository:
 - the checklist, on a throwaway pull request of this repository on GitHub
   (#2): created, then edited in place on the next run, then emptied once the
   doc's `checked` moved; one comment throughout.
+- a repeated passage, on the `untidy` fixture with Claude (Sonnet): kept in
+  the sessions doc, the FAQ linking to its heading, at the first attempt, and
+  in three evaluation runs out of three.

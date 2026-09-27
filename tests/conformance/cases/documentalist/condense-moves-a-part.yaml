@@ -1,6 +1,9 @@
 case: documentalist/condense-moves-a-part
 about: When gardening, a doc over its budget is condensed by moving a whole part into a new doc, linked from where it was — asked of a frontier model, as the role asks for this kind of task.
-given: {repo: untidy}
+given:
+  repo: untidy
+  # no repeated passage: merging one would come before condensing
+  setup: ["git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"]
 run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-part"}
 expect:
   status: pass

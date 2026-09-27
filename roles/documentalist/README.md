@@ -97,14 +97,22 @@ full: the agent confirms it, fixes it, or says with a `note` that the sources
 do not tell. A doc whose sources are too large to be given in full stays for
 a person: confirming it unread would only fake its freshness.
 
-**Condensing, when gardening.** On `schedule`, with no suspect or stale doc,
+**Duplicates, when gardening.** On `schedule`, with no suspect or stale doc,
+the first passage written in two docs becomes the task: keep it in the doc it
+belongs to, and in the other a sentence and a link to it. It comes before
+condensing: two copies drift apart. The judge checks that what leaves a doc
+is found in the other, that it links to the one keeping it, that no MUST or
+SHOULD is lost, and that the passage is no longer repeated.
+
+**Condensing, when gardening.** On `schedule`, with no suspect or stale doc
+and no repeated passage,
 the doc most over its budget (a doc too long first, then an agent's entry
 point, a card, a section) becomes the task: bring it within budget by moving
 whole parts into a new doc, and linking to it. One doc a run. A merge request
 or a push never turns into a rewrite of the docs.
 
 Not built yet: stopping when `max-open-merge-requests` are waiting, and the
-other kinds of task (propagate, duplicates, split).
+other kinds of task (propagate, split).
 
 ## Judge (`post`, no AI)
 

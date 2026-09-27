@@ -1,0 +1,12 @@
+case: documentalist/dedupe-merges-a-passage
+about: When gardening, a passage written in two docs is kept in one, and the other links to it; this comes before condensing, since two copies drift apart.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: duplicates}]
+  applied: [patch]
+  files:
+    docs/faq.md: {contains: "(sessions.md#how-long-a-session-lasts)"}
+  no-findings: [{rule: duplicate, where: docs/faq.md}]

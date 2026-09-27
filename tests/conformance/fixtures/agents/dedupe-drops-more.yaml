@@ -1,0 +1,14 @@
+# A wrong answer to the same task: the FAQ's question goes too, though
+# sessions.md does not hold it.
+- patch: |
+    --- a/docs/faq.md
+    +++ b/docs/faq.md
+    @@ -1,7 +1,3 @@
+     # Questions
+     
+    -## How long am I signed in?
+    -
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page.
+    +See [how long a session lasts](sessions.md#how-long-a-session-lasts).

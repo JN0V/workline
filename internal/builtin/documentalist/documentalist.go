@@ -427,11 +427,23 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	// Gardening, with no suspect doc to judge: read stale docs again, else
-	// condense the doc most over its budget. A merge request or a push never
-	// turns into a rewrite of the docs.
+	// merge a repeated passage (two copies drift apart), else condense the
+	// doc most over its budget. A merge request or a push never turns into a
+	// rewrite of the docs.
 	if task == "" && len(stale) > 0 {
 		if task, judged, err = staleTask(stale, s, pl, repo); err != nil {
 			return fail(err)
+		}
+	}
+	if task == "" && os.Getenv("WORKLINE_EVENT") == "schedule" {
+		if d := pickDedupe(problems); d != nil {
+			task = writeDedupeTask(d, problems, tree)
+			if err := writeYAML(filepath.Join(runDir, "in", "dedupe.yaml"), d); err != nil {
+				return fail(err)
+			}
+			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("duplicates\n"), 0o644); err != nil {
+				return fail(err)
+			}
 		}
 	}
 	if task == "" && os.Getenv("WORKLINE_EVENT") == "schedule" {
@@ -598,6 +610,7 @@ func Post(runDir, repo string) int {
 	var refused []verdict.Finding
 	patched := map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
+	var mergedPair []string       // the two docs a duplicates patch merged
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil {
 		var c condenseTask
 		if err := yaml.Unmarshal(data, &c); err != nil {
@@ -609,6 +622,17 @@ func Post(runDir, repo string) int {
 		}
 		for _, k := range c.Keys {
 			resolved[k] = len(refused) == 0 && proposedPatch(intents, fallback)
+		}
+	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "dedupe.yaml")); err == nil {
+		var d dedupeTask
+		if err := yaml.Unmarshal(data, &d); err != nil {
+			return fail(err)
+		}
+		if refused, err = judgeDedupe(repo, s, &d, intents, fallback); err != nil {
+			return fail(err)
+		}
+		if len(refused) == 0 && proposedPatch(intents, fallback) {
+			mergedPair = d.Docs
 		}
 	} else {
 		refused, patched, err = judgePatches(repo, s, judged, intents, fallback)
@@ -628,7 +652,8 @@ func Post(runDir, repo string) int {
 	blocking := 0
 	var kept []verdict.Finding
 	for _, f := range findings {
-		if (f.Rule == "suspect" || f.Rule == "stale") && patched[f.Where] || resolved[f.Rule+" "+f.Where] {
+		if (f.Rule == "suspect" || f.Rule == "stale") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
+			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
 		}
 		if f.Level == "block" {
@@ -893,4 +918,12 @@ func checklist(findings []verdict.Finding) (intent.Intention, bool) {
 	}
 	value["body"] = b.String()
 	return intent.Intention{Kind: "comment", Value: value}, true
+}
+
+// otherOf is the doc of a pair that is not p.
+func otherOf(pair []string, p string) string {
+	if pair[0] == p {
+		return pair[1]
+	}
+	return pair[0]
 }
