@@ -37,3 +37,5 @@ func decode(data []byte, v any) error {
 	}
 	return nil
 }
+
+// A line added to try sticky comments live; this branch is thrown away.
