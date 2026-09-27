@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
 verified: agent:documentalist
-checked: 533a14a
+checked: e5e0710
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -65,7 +65,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), or `{file, content}` to replace one file; limited to `duties.writes` | locally or as a merge request |
 | `comment` | a comment on the issue or merge request | forge |
 | `label` | add or remove labels | forge |
-| `issue` | report a problem found outside the task, without fixing it | forge, or `.workline/issues/` without one |
+| `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec) | forge, or `.workline/issues/` without one |
 | `release` | tag a commit with a version and publish release notes | git and forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |

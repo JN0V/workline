@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
 verified: agent:documentalist
-checked: 533a14a
+checked: e5e0710
 status: draft
 ---
 # Adapting a role
