@@ -15,4 +15,4 @@ expect:
   applied: [comment]
   forge:
     merge-requests:
-      - {id: 1, comments: 1, comment-contains: "- [ ] `docs/tech/auth.md` — src/auth/token.go changed", comment-lacks: "docs/old.md"}
+      - {id: 1, comments: 1, comment-contains: "- [ ] `docs/tech/auth.md` — src/auth/token.go changed since it was checked (1a8e5a4)", comment-lacks: "docs/old.md"}

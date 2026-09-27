@@ -859,7 +859,16 @@ func checklist(findings []verdict.Finding) (intent.Intention, bool) {
 	}
 	var now, later strings.Builder
 	for _, f := range findings {
-		why, _, _ := strings.Cut(f.Message, "\n")
+		why, rest, _ := strings.Cut(f.Message, "\n")
+		var commits []string // the lines after "… changed since it was checked:" start with a commit
+		for _, l := range strings.Split(rest, "\n") {
+			if fs := strings.Fields(l); len(fs) > 0 && !strings.HasPrefix(l, "(") {
+				commits = append(commits, fs[0])
+			}
+		}
+		if len(commits) > 0 {
+			why = strings.TrimSuffix(why, ":") + " (" + strings.Join(commits, ", ") + ")"
+		}
 		switch f.Rule {
 		case "suspect":
 			fmt.Fprintf(&now, "- [ ] `%s` — %s\n", f.Where, why)
