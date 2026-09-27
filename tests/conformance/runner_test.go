@@ -394,7 +394,8 @@ func readPending(t *testing.T) map[string]bool {
 }
 
 // compareForge checks the simulated forge's state: for each listed item, by
-// id, `comments` is a count and `labels` the exact set.
+// id, `comments` is a count, `labels` the exact set, and `comment-contains`
+// / `comment-lacks` texts some comment holds, or none does.
 func compareForge(want map[string]any, file string) []string {
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -422,6 +423,21 @@ func compareForge(want map[string]any, file string) []string {
 				if fmt.Sprint(len(c)) != fmt.Sprint(n) {
 					p = append(p, fmt.Sprintf("forge: %s %v has %d comments, want %v", kind, wm["id"], len(c), n))
 				}
+			}
+			comments, _ := found["comments"].([]any)
+			held := func(text string) bool {
+				for _, c := range comments {
+					if strings.Contains(fmt.Sprint(c), text) {
+						return true
+					}
+				}
+				return false
+			}
+			if t, ok := wm["comment-contains"]; ok && !held(fmt.Sprint(t)) {
+				p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm["id"], t, comments))
+			}
+			if t, ok := wm["comment-lacks"]; ok && held(fmt.Sprint(t)) {
+				p = append(p, fmt.Sprintf("forge: a comment on %s %v holds %q", kind, wm["id"], t))
 			}
 			if l, ok := wm["labels"]; ok {
 				gl, _ := found["labels"].([]any)

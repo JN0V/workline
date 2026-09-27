@@ -90,7 +90,9 @@ a `PATH` without a tool, or with a fake one first.
   `task`, `tier`, `effort`, `asked`, `model`).
 - `applied` / `refused` — intentions applied or refused, by kind.
 - `steps` — for a line, the steps that ran, in order.
-- `forge` — fields the simulated forge must hold afterwards.
+- `forge` — fields the simulated forge must hold afterwards: per item, by
+  `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
+  and `comment-lacks` (a text some comment holds, or none does).
 - `files` — paths that must exist, or contain a text, afterwards.
 
 ## The fakes
