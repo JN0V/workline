@@ -16,6 +16,16 @@ this repository before any other role is added.
    takes the best independence available and says which (ADR-0005); the
    weekly run judges on `claude:sonnet`. Left: a judge of another provider,
    when there is one. Each defect a role lets through becomes a case.
+2. **What is left of the committer and the documentalist**, before any new
+   role:
+   - committer: terms in commit messages (gitleaks reads the changes only);
+   - documentalist: the `truth` setting (code contradicting a spec or an ADR
+     opens an issue), links to other sites (lychee), style (vale), docs citing
+     a superseded ADR, freshness, the other gardening tasks (propagate, merge
+     duplicates, split, merge cards too short), the checklist in the
+     merge-request comment, `max-open-merge-requests`;
+   - evaluation: more runs of condensing on Sonnet (one clean run so far;
+     Opus has eight), to know whether `frontier` is needed.
 
 Then, once both work well here:
 
@@ -62,8 +72,6 @@ last.
   committed as `feat(documentalist): …`. A change that only specifies a role is
   `docs`, not `feat`; and the release manager's notes should be checked against
   what the code can actually do (the "capability lie" Make My Dreams detected).
-- **Documentalist, what is left.** What roles/documentalist/README.md lists
-  as not built yet, and the task that merges cards too short.
 
 ### Engine and CI
 
