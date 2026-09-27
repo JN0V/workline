@@ -69,7 +69,10 @@ rule, in a config kept outside the repository. A config extends another
 (`[extend] path`), which extends gitleaks' own rules (`useDefault = true`):
 tried, a repository's list, the common list and the default rules all apply at
 once. `--redact` keeps every match out of the log. gitleaks lets its own
-config through when it is staged. Refusing a commit whose author or committer
+config through when it is staged. `gitleaks git` reads what commits change,
+never their messages; `gitleaks stdin` scans any text with the same configs
+(taking `.gitleaks.toml` from its working directory), so messages go through
+it. Refusing a commit whose author or committer
 address is not allowed has no standard tool: every project writes a small
 hook reading `git var GIT_AUTHOR_IDENT` (the effective identity, `-c`
 included).
