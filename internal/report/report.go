@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/engine"
@@ -80,19 +81,30 @@ type placed struct {
 }
 
 // place finds the file and line a finding names: a file of the repository,
-// at the heading its #anchor names if any, else at its first line.
+// at the line its :<line> gives, at the heading its #anchor names, else at
+// its first line. A file a range of commits held, and no longer holds, is
+// still placed: code scanning shows it on the commit.
 func place(repo string, items []Item) []placed {
 	var out []placed
 	for _, i := range items {
 		path, anchor, _ := strings.Cut(i.Where, "#")
+		line := 0
+		if p, n, ok := strings.Cut(path, ":"); ok {
+			if v, err := strconv.Atoi(n); err == nil && v > 0 {
+				path, line = p, v
+			}
+		}
 		path = filepath.ToSlash(filepath.Clean(path))
 		if i.Where == "" || filepath.IsAbs(path) || strings.HasPrefix(path, "../") {
 			continue
 		}
-		if st, err := os.Stat(filepath.Join(repo, path)); err != nil || !st.Mode().IsRegular() {
+		if st, err := os.Stat(filepath.Join(repo, path)); line == 0 && (err != nil || !st.Mode().IsRegular()) {
 			continue
 		}
-		out = append(out, placed{i, path, headingLine(filepath.Join(repo, path), anchor)})
+		if line == 0 {
+			line = headingLine(filepath.Join(repo, path), anchor)
+		}
+		out = append(out, placed{i, path, line})
 	}
 	return out
 }

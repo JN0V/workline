@@ -1,0 +1,10 @@
+case: engine/leak-as-report
+about: A secret found by the committer is reported at its file and line, in SARIF and in the Code Quality report, as an error.
+given:
+  repo: basic
+  setup: ["printf 'name = x\\naws_key = AKIA%s\\n' QYLPMN5HHHFPZAM2 > config.ini && git add config.ini"]
+run: {role: committer, event: commit-msg, input: {message: "feat(config): read the key from the file"}, ai: none, reports: true}
+expect:
+  status: block
+  sarif: [{rule: committer/leak, uri: config.ini, line: 2, level: error}]
+  code-quality: [{check_name: committer/leak, path: config.ini, line: 2, severity: blocker}]
