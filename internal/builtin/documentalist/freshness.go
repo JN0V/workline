@@ -3,6 +3,7 @@ package documentalist
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/JN0V/workline/internal/verdict"
@@ -59,4 +60,93 @@ func staleDocs(docs []*Doc, pl *places, f Freshness, now time.Time, skip func(st
 		}
 	}
 	return out
+}
+
+// staleSourceChars caps what the sources of one stale doc may take in a task.
+// A doc whose sources do not fit is left for a person: confirming it without
+// reading them would only fake its freshness.
+const staleSourceChars = 20000
+
+// staleForAgent picks the stale docs to put before the agent, each with its
+// sources as they are now; a doc whose sources do not fit says so.
+func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *places) map[string]*suspectDoc {
+	out := map[string]*suspectDoc{}
+	for i := range findings {
+		f := &findings[i]
+		d := byPath[f.Where]
+		if f.Rule != "stale" || d == nil {
+			continue
+		}
+		now, ok := sourcesNow(d, pl)
+		if !ok {
+			f.Message += "\n(its sources are too large to be put before the agent: a person reads it again)"
+			continue
+		}
+		out[d.Path] = &suspectDoc{doc: d, why: []string{f.Message}, evidence: now}
+	}
+	return out
+}
+
+// sourcesNow is each source of a doc as it is now: a section of a doc, or
+// every text file under a path. ok is false past staleSourceChars, or when a
+// source cannot be read.
+func sourcesNow(d *Doc, pl *places) (evidence []string, ok bool) {
+	size := 0
+	add := func(title, lang, text string) bool {
+		size += len(text)
+		evidence = append(evidence, fmt.Sprintf("%s, as it is now:\n\n```%s\n%s\n```", title, lang, strings.TrimRight(text, "\n")))
+		return size <= staleSourceChars
+	}
+	for _, src := range d.Sources {
+		name, path, anchor := splitSource(src)
+		where, err := pl.get(name)
+		if err != nil {
+			return nil, false
+		}
+		if strings.HasSuffix(path, ".md") {
+			content, err := git(where.dir, "show", where.rev+":"+path)
+			if err != nil {
+				return nil, false
+			}
+			section, _ := Section(content, anchor)
+			if !add(src, "markdown", section) {
+				return nil, false
+			}
+			continue
+		}
+		files, err := git(where.dir, "ls-tree", "-r", "--name-only", where.rev, "--", path)
+		if err != nil || files == "" {
+			return nil, false
+		}
+		for _, f := range strings.Split(files, "\n") {
+			content, err := git(where.dir, "show", where.rev+":"+f)
+			if err != nil {
+				return nil, false
+			}
+			if strings.ContainsRune(content, 0) {
+				continue // not text
+			}
+			title := f
+			if name != "" {
+				title = name + ":" + f
+			}
+			if !add(title, "", content) {
+				return nil, false
+			}
+		}
+	}
+	return evidence, true
+}
+
+// staleTask asks the agent to read stale docs again against their sources.
+func staleTask(stale map[string]*suspectDoc, maxDocs int, pl *places, repo string) (string, map[string]map[string]string, error) {
+	return docTask(`Kind: stale
+
+No source of these docs changed since they were last confirmed, but that was
+long ago. Read each one again against its sources as they are now, given in
+full below. If it is still true, return a patch that only sets `+"`checked`"+`
+and `+"`verified`"+`. If not, the patch also fixes what is now wrong, and nothing
+else. If the sources given do not let you tell, return a note instead.
+
+`, stale, maxDocs, pl, repo)
 }

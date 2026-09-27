@@ -53,7 +53,7 @@ What runs, for humans. The AI never reads this file.
    again drifts from a world that changed around it (Google's freshness
    dates). Docs already suspect or pending are left out.
 
-Not built yet: style (vale); stale docs as the agent's task.
+Not built yet: style (vale).
 
 ### Levels
 
@@ -88,7 +88,13 @@ Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay
 suspect for a person or a later run.
 
-**Condensing, when gardening.** On `schedule`, with no suspect doc to judge,
+**Stale docs, when gardening.** On `schedule`, with no suspect doc to judge,
+the stale docs become the task, each with its sources as they are now, in
+full: the agent confirms it, fixes it, or says with a `note` that the sources
+do not tell. A doc whose sources are too large to be given in full stays for
+a person: confirming it unread would only fake its freshness.
+
+**Condensing, when gardening.** On `schedule`, with no suspect or stale doc,
 the doc most over its budget (a doc too long first, then an agent's entry
 point, a card, a section) becomes the task: bring it within budget by moving
 whole parts into a new doc, and linking to it. One doc a run. A merge request

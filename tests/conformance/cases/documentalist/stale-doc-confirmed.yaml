@@ -1,0 +1,13 @@
+case: documentalist/stale-doc-confirmed
+about: When gardening, stale docs are put before the agent with their sources as they are now; a doc it confirms is checked again, and is no longer stale.
+given:
+  repo: documented
+  setup: ["mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      freshness: {stale-after-days: 30}\\n' > .workline/config.yaml"]
+run: {role: documentalist, event: schedule, ai: "fake:stale-confirmed"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "checked: 5d033b4"}}
+  findings: [{rule: stale, where: docs/product/sign-in.md}]
+  no-findings: [{rule: stale, where: docs/tech/auth.md}]

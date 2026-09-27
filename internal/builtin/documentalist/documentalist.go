@@ -310,6 +310,7 @@ func Pre(runDir, repo string) int {
 		byPath[d.Path] = d
 	}
 	suspects := map[string]*suspectDoc{}
+	var stale map[string]*suspectDoc // docs confirmed too long ago, whose sources fit in a task
 	// A doc is suspect when one of its own sources changed since it was checked.
 	for _, d := range docs {
 		for _, src := range d.Sources {
@@ -388,6 +389,7 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, staleDocs(docs, pl, s.Freshness, time.Now(), func(p string) bool {
 			return suspects[p] != nil || hasPending(findings, p)
 		})...)
+		stale = staleForAgent(findings, byPath, pl)
 	}
 	for _, p := range append(problems, gone...) {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
@@ -418,8 +420,14 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	// Gardening, with no suspect doc to judge: condense the doc most over its
-	// budget. A merge request or a push never turns into a rewrite of the docs.
+	// Gardening, with no suspect doc to judge: read stale docs again, else
+	// condense the doc most over its budget. A merge request or a push never
+	// turns into a rewrite of the docs.
+	if task == "" && len(stale) > 0 {
+		if task, judged, err = staleTask(stale, s.AIMaxCalls, pl, repo); err != nil {
+			return fail(err)
+		}
+	}
 	if task == "" && os.Getenv("WORKLINE_EVENT") == "schedule" {
 		if c := pickCondense(problems); c != nil {
 			task = writeCondenseTask(c, problems, tree)
@@ -433,9 +441,10 @@ func Pre(runDir, repo string) int {
 	}
 	var left strings.Builder
 	for i := range findings {
-		if f := &findings[i]; f.Rule == "suspect" && judged[f.Where] == nil && task != "" {
+		f := &findings[i]
+		if f.Rule == "suspect" && judged[f.Where] == nil && task != "" || f.Rule == "stale" && stale[f.Where] != nil && judged[f.Where] == nil && task != "" {
 			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
-			fmt.Fprintf(&left, "suspect %s\n", f.Where)
+			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
 	}
 	if left.Len() > 0 { // the engine runs another round, once this one is applied
@@ -462,21 +471,27 @@ func Pre(runDir, repo string) int {
 // numbers, what changed in its sources, and the commits its `checked` must
 // name once judged. It returns those commits per doc, for the judge.
 func suspectTask(suspects map[string]*suspectDoc, maxDocs int, pl *places, repo string) (string, map[string]map[string]string, error) {
+	return docTask(`Kind: suspect
+
+These docs may no longer be true, because something they depend on changed.
+For each one, say whether it still is, with a patch: a unified diff with
+context lines, whose hunks cite the doc's lines by the numbers shown here.
+If the doc is still true, the patch only sets `+"`checked`"+`. If not, it also
+fixes what is now wrong, and nothing else.
+
+`, suspects, maxDocs, pl, repo)
+}
+
+// docTask writes a task putting docs before the agent, each with why it is
+// there and what it is judged against, under the header saying the kind.
+func docTask(header string, suspects map[string]*suspectDoc, maxDocs int, pl *places, repo string) (string, map[string]map[string]string, error) {
 	paths := make([]string, 0, len(suspects))
 	for p := range suspects {
 		paths = append(paths, p)
 	}
 	sort.Strings(paths)
 	var b strings.Builder
-	b.WriteString(`Kind: suspect
-
-These docs may no longer be true, because something they depend on changed.
-For each one, say whether it still is, with a patch: a unified diff with
-context lines, whose hunks cite the doc's lines by the numbers shown here.
-If the doc is still true, the patch only sets ` + "`checked`" + `. If not, it also
-fixes what is now wrong, and nothing else.
-
-`)
+	b.WriteString(header)
 	judged := map[string]map[string]string{}
 	for _, p := range paths {
 		if maxDocs > 0 && len(judged) >= maxDocs {
@@ -515,7 +530,7 @@ fixes what is now wrong, and nothing else.
 			return "", nil, err
 		}
 		var entry strings.Builder
-		fmt.Fprintf(&entry, "## %s\n\nWhatever you decide, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.\n\nWhy it is suspect:\n\n", p, checked)
+		fmt.Fprintf(&entry, "## %s\n\nWhatever you decide, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.\n\nWhy it is here:\n\n", p, checked)
 		for _, w := range sd.why {
 			fmt.Fprintf(&entry, "- %s\n", strings.ReplaceAll(w, "\n", "\n  "))
 		}
@@ -601,7 +616,7 @@ func Post(runDir, repo string) int {
 	blocking := 0
 	var kept []verdict.Finding
 	for _, f := range findings {
-		if f.Rule == "suspect" && patched[f.Where] || resolved[f.Rule+" "+f.Where] {
+		if (f.Rule == "suspect" || f.Rule == "stale") && patched[f.Where] || resolved[f.Rule+" "+f.Where] {
 			continue // judged and patched, or condensed, in this run
 		}
 		if f.Level == "block" {
