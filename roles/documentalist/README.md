@@ -150,39 +150,5 @@ request that never had one.
 
 ## Tried for real
 
-On 2026-09-24, with Claude (sonnet, then opus when asked again), on copies of
-the `documented` fixture:
-
-- tokens moved from one hour to two, three runs: the agent's answer was right
-  each time, in one call; the first run lost the fix to the defect below, the
-  two after it applied it;
-- a function added, the doc still true: the first answer was refused for
-  growing the doc's body; the second, one tier up, moved `checked` and nothing
-  else, and opened an issue for a comment the new code contradicts;
-- two defects found this way, now guarded: a hunk header counting fewer lines
-  than it holds made git drop the fix itself (hence `--recount`), and a commit
-  like `11180e1` was read by YAML as a number, so the doc passed for unchecked.
-
-On workline's own repository, without AI: no false positive; one real finding
-(docs/spec/role-contract.md is over its line budget).
-
-On 2026-09-24, before a push of workline itself (a copy, pushed to a local
-remote): the line found three docs whose code had changed since they were
-checked — two of them real, left behind by the day's own commits. Claude judged
-all three still true and said why, line by line. Its first patches set
-`checked` to the commit that had changed each source, not to the one the task
-gave: the task now says "your patch sets `checked: …`", and a refusal repeats
-the commit. The next run was right at the first attempt; the push stopped for
-review, the docs were committed, and the push went through.
-
-On 2026-09-24, gardening workline itself (a copy): the documentalist chose
-docs/spec/role-contract.md, 330 lines for a budget of 200. Three defects came
-out before it worked, each now guarded: the agent's time was capped at three
-minutes (a role now sets `model.timeout`); an answer holding a code block of
-its own was cut at that block (the answer is now read whole first); and a new
-file after another in one diff, without `diff --git` lines, was read by
-`git apply --recount` as lines of the first (those lines are now added). Then
-Claude moved 142 lines, unchanged, into role-outcome.md and role-adapting.md,
-each tracking the contract's sources, linked both ways — at the second
-attempt, the first citing a wrong line. That split is the one in this
-repository.
+Each try on a real repository or with a real agent, what it showed, and the
+defects it found, now guarded, are in [tried.md](tried.md), newest last.

@@ -46,7 +46,8 @@ role's conformance cases are the way to check the fork still keeps the contract.
 ## Defects become guards
 
 *Not built yet: the ledger and the shared skill. Defects found so far are
-guarded by tests, recorded in the role's README ("Tried for real").*
+guarded by tests, recorded in the role's README ("Tried for real"), or in the
+page it links to.*
 
 When a role lets a defect through, fixing the output is not enough. The defect
 is recorded in the role's `DEFECTS.md` (what happened, why, the countermeasure,
