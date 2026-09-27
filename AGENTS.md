@@ -48,6 +48,9 @@ own line (.workline/config.yaml):
 - **pre-push** — the committer on the commits pushed, then the documentalist:
   docs made suspect are judged, patched in the working tree, and the push stops
   for them to be reviewed and committed.
-- **forbidden-terms** — a gitignored `.forbidden-terms` link, when present,
-  points to terms that must never reach this public repository. Never commit
-  the list, nor copy its terms anywhere.
+- **secrets and forbidden terms** — the committer scans each commit with
+  gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
+  that must never reach this public repository, as gitleaks rules. Never
+  commit the list, nor copy its terms anywhere; audit with `gitleaks git`
+  (the whole history), not `gitleaks dir`, which skips a file it takes for an
+  archive.
