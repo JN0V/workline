@@ -61,3 +61,15 @@ Bencher (statistical thresholds, any CI).
 conftest / OPA: Rego rules over the JSON outputs, e.g. "no high finding and
 p95 under 200 ms". qgate: baseline pinned to a commit so existing debt does not
 block adoption. cupcake: OPA policies for agents.
+
+## Secrets and forbidden terms (2026-09-27)
+
+gitleaks (v8.30) covers a local "forbidden terms" script: a term is a custom
+rule, in a config kept outside the repository. A config extends another
+(`[extend] path`), which extends gitleaks' own rules (`useDefault = true`):
+tried, a repository's list, the common list and the default rules all apply at
+once. `--redact` keeps every match out of the log. gitleaks lets its own
+config through when it is staged. Refusing a commit whose author or committer
+address is not allowed has no standard tool: every project writes a small
+hook reading `git var GIT_AUTHOR_IDENT` (the effective identity, `-c`
+included).
