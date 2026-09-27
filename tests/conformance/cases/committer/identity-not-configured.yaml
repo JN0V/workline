@@ -1,0 +1,10 @@
+case: committer/identity-not-configured
+about: Without an allow list, identities are not checked, and nothing is said; the check is plugged in by whoever wants it.
+given:
+  repo: basic
+  setup: ["echo x >> main.go && git add main.go"]
+  env: {GIT_AUTHOR_EMAIL: someone@elsewhere.invalid}
+run: {role: committer, event: commit-msg, input: {message: "feat: add x"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: identity, where: author}]

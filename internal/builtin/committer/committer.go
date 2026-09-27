@@ -25,6 +25,7 @@ type Settings struct {
 	Types              []string `json:"types"`
 	InternalCodes      []string `json:"internal-codes"`
 	InternalCodesAllow []string `json:"internal-codes-allow"`
+	AllowedIdentities  []string `json:"allowed-identities"`
 }
 
 // Check returns what is wrong with a commit message. An empty result means it passes.
@@ -154,6 +155,11 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	who, err := Identity(repo, "", s)
+	if err != nil {
+		return fail(err)
+	}
+	secrets = append(secrets, who...)
 	var advisories, blocking []verdict.Finding
 	for _, f := range secrets {
 		if f.Level == "warn" {
@@ -163,7 +169,7 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	if len(blocking) > 0 {
-		v := verdict.Verdict{Status: verdict.Block, Summary: "the commit carries what must not reach the repository",
+		v := verdict.Verdict{Status: verdict.Block, Summary: "the commit carries what must not reach the repository, or an identity not allowed",
 			Findings: append(append(blocking, findings...), advisories...)}
 		if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {
 			return fail(err)
@@ -413,6 +419,11 @@ func checkRange(runDir, repo, rng string) int {
 	if err != nil {
 		return fail(err)
 	}
+	who, err := Identity(repo, rng, s)
+	if err != nil {
+		return fail(err)
+	}
+	secrets = append(secrets, who...)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
 	if len(findings) > 0 {
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}
@@ -420,7 +431,7 @@ func checkRange(runDir, repo, rng string) int {
 	for _, f := range secrets {
 		v.Findings = append(v.Findings, f)
 		if f.Level != "warn" {
-			v.Status, v.Summary = verdict.Block, "a commit carries what must not reach the repository: rewrite the history before it is pushed"
+			v.Status, v.Summary = verdict.Block, "a commit carries what must not reach the repository, or an identity not allowed: rewrite the history before it is pushed"
 		}
 	}
 	if err := verdict.Write(filepath.Join(runDir, "out", "verdict.yaml"), &v); err != nil {

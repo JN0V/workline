@@ -1,0 +1,10 @@
+case: committer/identity-from-the-user-list
+about: The allow list may also be the user's own, one pattern a line in their config folder, never in the repository; an address it allows passes.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf '# mine\\n^fixture@example\\\\.invalid$\\n' > \"$XDG_CONFIG_HOME/workline/allowed-identities\""
+    - "echo x >> main.go && git add main.go"
+run: {role: committer, event: commit-msg, input: {message: "feat: add x"}, ai: none}
+expect:
+  status: pass

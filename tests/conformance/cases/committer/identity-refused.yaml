@@ -1,0 +1,11 @@
+case: committer/identity-refused
+about: An author address outside the allow list blocks the commit, even when given for this commit alone; the committer's address is checked the same.
+given:
+  repo: basic
+  setup: ["echo x >> main.go && git add main.go"]
+  config: {roles: {committer: {settings: {allowed-identities: ['^fixture@example\.invalid$']}}}}
+  env: {GIT_AUTHOR_EMAIL: someone@elsewhere.invalid}   # as git commit --author or -c user.email would give it
+run: {role: committer, event: commit-msg, input: {message: "feat: add x"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: identity, where: author}]

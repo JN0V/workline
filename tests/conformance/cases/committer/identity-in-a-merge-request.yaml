@@ -1,0 +1,11 @@
+case: committer/identity-in-a-merge-request
+about: On a merge request, the author and committer of every commit of the range are checked against the allow list.
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb feature && echo x >> main.go && GIT_AUTHOR_EMAIL=someone@elsewhere.invalid git commit -qam 'feat: add x'"
+  config: {roles: {committer: {settings: {allowed-identities: ['^fixture@example\.invalid$']}}}}
+run: {role: committer, event: merge-request, input: {range: "main..feature"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: identity, where: author}]

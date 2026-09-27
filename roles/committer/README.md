@@ -48,6 +48,16 @@ its own config through, so the committer refuses a commit adding a private
 `.gitleaks.toml` — gitignored, or a link — (`term-list-staged`); one a
 project commits to share its allowlist is not private.
 
+### Identity
+
+An author or committer address outside the allow list blocks (`identity`):
+the one git will record, on `commit-msg` — `git var`, so an address given for
+one commit (`-c user.email`, `--author`) is caught too — and those of every
+commit of the range. The list is the project's `allowed-identities` setting
+(patterns; noreply addresses, for a public repository) and the user's own, one
+pattern a line, in `workline/allowed-identities` in their config folder. Both
+empty, identities are not checked, and nothing is said.
+
 ## Rewrite (the agent)
 
 On `commit-msg`, a refused message goes to the agent with the findings and the
@@ -75,8 +85,7 @@ prints the message committed, since it is no longer the one you wrote.
 A bad message still fails, with the findings; you rewrite it. The message is
 kept in the file git named, so nothing typed is lost.
 
-Not built yet: checking the commit's identity against an allow list; the
-global hook hands over to the hooks that were installed before workline.
+The global hook still hands over to the hooks installed before workline.
 
 ## Tried for real
 

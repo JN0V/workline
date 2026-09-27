@@ -41,3 +41,6 @@ settings:
   internal-codes: ['\b[A-Z]{1,4}(-NEW)?-[0-9]+\b']
   # Standard identifiers that look like codes but are not.
   internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, 'RFC-[0-9]+', 'CVE-[0-9]+']
+  # Author and committer addresses allowed, as patterns; with the user's own
+  # list (README, "Identity"). Both empty: identities are not checked.
+  allowed-identities: []
