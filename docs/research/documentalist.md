@@ -53,3 +53,9 @@ not content dumps. Japanese practice converges on ≤200 lines at the root.
   [N. Title](file)" under the old record's `## Status`; MADR puts
   `status: superseded by ADR-NNNN` in its frontmatter. Records live in
   `doc/adr` (adr-tools), `docs/adr` (log4brains) or `docs/decisions` (MADR).
+- lychee 0.24.2 (2026-09-27): `--format json` gives, per file, each failed
+  link with its line and its HTTP status code; a link not reached (no
+  network, a proxy down) has no code, and a timeout goes to `timeout_map`.
+  Exit code 2 when a link fails. Example domains (`example.com`,
+  `.invalid`) are excluded by default, with no request made; `lychee.toml`
+  and `.lycheeignore` are read from the working directory.
