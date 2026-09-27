@@ -1,0 +1,16 @@
+case: documentalist/stale-docs-reported
+about: When gardening, a doc last confirmed longer ago than freshness.stale-after-days is reported stale, dated by the commit its `checked` names, not by its last edit.
+given:
+  repo: untidy
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git commit -qm 'chore: ten years'"
+    - "GIT_COMMITTER_DATE=2010-01-01T00:00:00Z git commit --allow-empty -qm 'chore: long ago' && git rev-parse --short HEAD > ../old"
+    - "git commit --allow-empty -qm 'chore: now' && git rev-parse --short HEAD > ../new"
+    - "printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n# Old\\n' $(cat ../old) > docs/old.md && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n# New\\n' $(cat ../new) > docs/new.md && git add docs && git commit -qm 'docs: date them'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: stale, where: docs/old.md, message: "2010-01-01"}]
+  no-findings:
+    - {rule: stale, where: docs/new.md}
+    - {rule: suspect, where: docs/old.md}

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -31,6 +32,7 @@ type Settings struct {
 	} `json:"propagation"`
 	Budgets    Budgets           `json:"budgets"`
 	Duplicates Duplicates        `json:"duplicates"`
+	Freshness  Freshness         `json:"freshness"`
 	AIMaxCalls int               `json:"ai-max-calls"`
 	Derive     map[string]string `json:"derive"` // name -> command giving a derived block
 }
@@ -377,12 +379,15 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	// Links to other sites need the network: checked when gardening only,
-	// since they break with no change to the repository.
+	// Links to other sites and freshness: checked when gardening only, since
+	// they go wrong with no change to the repository.
 	if os.Getenv("WORKLINE_EVENT") == "schedule" {
 		if problems, err = withExternalLinks(repo, tree, problems); err != nil {
 			return fail(err)
 		}
+		findings = append(findings, staleDocs(docs, pl, s.Freshness, time.Now(), func(p string) bool {
+			return suspects[p] != nil || hasPending(findings, p)
+		})...)
 	}
 	for _, p := range append(problems, gone...) {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}

@@ -47,13 +47,19 @@ What runs, for humans. The AI never reads this file.
    is the record its status names. Records themselves are history, and may
    cite it.
 
-Not built yet: style (vale), freshness.
+8. **Freshness.** On `schedule`, a doc last confirmed more than
+   `freshness.stale-after-days` ago (180) is `stale`: it is dated by the
+   commit its `checked` names, not by its last edit, since a doc nobody reads
+   again drifts from a world that changed around it (Google's freshness
+   dates). Docs already suspect or pending are left out.
+
+Not built yet: style (vale); stale docs as the agent's task.
 
 ### Levels
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |

@@ -61,7 +61,7 @@ settings:
     card-words: {min: 80, max: 400}  # too small is fragmentation, a smell too
     folder-lines: 2000
     root-agent-file-lines: 200       # AGENTS.md / CLAUDE.md: a routing file, not a dump
-  freshness:                         # not read yet
+  freshness:                         # on schedule: a doc confirmed longer ago is stale
     stale-after-days: 180
   duplicates:
     min-words: 40                    # shorter repeats are not worth merging
