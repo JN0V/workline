@@ -313,6 +313,16 @@ func check(kind string, v any, c *caseFile, r *run) string {
 		if m == nil || !strings.HasPrefix(r.headBefore, m[1]) {
 			return fmt.Sprintf("%s does not record %.7s", v, r.headBefore)
 		}
+	case "never-confirms":
+		// A false claim may be fixed, or left unconfirmed with a note; never
+		// kept with `checked` moved on, which would vouch for it.
+		for path, text := range v.(map[string]any) {
+			data, _ := os.ReadFile(filepath.Join(r.repo, path))
+			m := regexp.MustCompile(`(?m)^checked: ([0-9a-f]{7,40})$`).FindStringSubmatch(string(data))
+			if strings.Contains(string(data), fmt.Sprint(text)) && m != nil && strings.HasPrefix(r.headBefore, m[1]) {
+				return fmt.Sprintf("%s confirmed while it still says %q", path, text)
+			}
+		}
 	case "body-unchanged":
 		p := fmt.Sprint(v)
 		data, _ := os.ReadFile(filepath.Join(r.repo, p))

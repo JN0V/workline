@@ -141,7 +141,8 @@ itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
 `keeps-words` (the share of the author's subject words kept), `no-vague-words`,
 `file-contains`, `file-lacks`, `checked-is-head`, `body-unchanged`,
-`lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
+`never-confirms` (a claim fixed, or left unconfirmed, never checked again as
+it is), `lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
 passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
 the efforts asked, the tokens in and out, and the cost at list price (on a

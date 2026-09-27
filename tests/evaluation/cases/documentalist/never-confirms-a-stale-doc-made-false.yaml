@@ -1,0 +1,13 @@
+case: documentalist/never-confirms-a-stale-doc-made-false
+about: A doc edited into a claim its sources do not back, with no source changed, is stale when gardening; it is fixed or left unconfirmed with a note, never checked again as it is. Claude confirmed it once in four runs (2026-09-27).
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      freshness: {stale-after-days: 30}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: read docs again after a month'"
+    - "sed -i 's/one hour without doing anything/a whole day without doing anything/' docs/product/sign-in.md && git commit -qam 'docs: say a day'"
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 2}
+  - {never-confirms: {docs/product/sign-in.md: a whole day}}
+  - {checked-is-head: docs/tech/auth.md}

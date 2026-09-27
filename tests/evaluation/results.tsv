@@ -80,3 +80,13 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-26T20:50:17Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	5/6	1	9155	6008	0.0436	60	judge: the rewrite drops 'instead of ignoring them', losing the contrast that the fix changes behavior from silently ignoring unknown keys to refusing them.	claude-sonnet-5 (model)
 2026-09-26T20:50:22Z	ad02a97	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	6/6	1	7099	7076	0.0425	65		claude-sonnet-5 (model)
 2026-09-26T20:51:54Z	ad02a97	claude	claude-opus-5-5	medium	documentalist/condenses-the-role-contract	5/5	1	16506	8864	0.2559	75		claude-sonnet-5 (model)
+2026-09-27T14:32:11Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	5312	626	0.0198	9		
+2026-09-27T14:32:25Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	5307	675	0.0203	13		
+2026-09-27T14:32:37Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	5307	948	0.0230	12		
+2026-09-27T14:32:44Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	5309	642	0.0200	8		
+2026-09-27T14:32:56Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4937	475	0.0173	7		
+2026-09-27T14:32:56Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4914	249	0.0149	7		
+2026-09-27T14:32:58Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	5313	576	0.0193	9		
+2026-09-27T14:33:02Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/fixes-a-doc-made-false	5/5	1	4914	191	0.0144	4		
+2026-09-27T14:33:09Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/never-confirms-a-stale-doc-made-false	4/4	1	5306	819	0.0217	11		
+2026-09-27T14:33:11Z	b128e6a+changes	claude	claude-sonnet-5	medium	documentalist/confirms-a-doc-still-true	4/4	1	4933	610	0.0186	13		
