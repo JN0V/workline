@@ -49,8 +49,8 @@ not content dumps. Japanese practice converges on ≤200 lines at the root.
 - Google's SWE book: each doc has an owner and a freshness date.
 - Superseded decisions (2026-09-27): coherence reads `supersedes:` in the
   successor's frontmatter, and reports a doc citing the old id, by link or by
-  `ADR-###`, without naming the new one. adr-tools writes "Superseded by
-  [N. Title](file)" under the old record's `## Status`; MADR puts
+  `ADR-###`, without naming the new one. adr-tools writes
+  `Superseded by [N. Title](file)` under the old record's `## Status`; MADR puts
   `status: superseded by ADR-NNNN` in its frontmatter. Records live in
   `doc/adr` (adr-tools), `docs/adr` (log4brains) or `docs/decisions` (MADR).
 - lychee 0.24.2 (2026-09-27): `--format json` gives, per file, each failed
