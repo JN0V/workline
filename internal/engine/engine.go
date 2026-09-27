@@ -667,7 +667,7 @@ func (a *applier) apply(in intent.Intention) error {
 		if title == "" {
 			return errors.New("an issue needs a title")
 		}
-		body += fmt.Sprintf("\n\nFound by the %s role, outside the task it was working on.", a.role)
+		body += fmt.Sprintf("\n\nOpened by the %s role.", a.role)
 		if a.forge == nil {
 			return a.localIssue(title, body)
 		}
