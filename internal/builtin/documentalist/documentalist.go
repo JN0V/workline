@@ -415,6 +415,9 @@ func Pre(runDir, repo string) int {
 		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: diff})
 	}
+	if c, ok := checklist(findings); ok {
+		fallback = append(fallback, c)
+	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}
@@ -844,4 +847,41 @@ func withExternalLinks(repo string, tree Tree, problems []Problem) ([]Problem, e
 // when they disagree, an issue is opened, and the doc is never rewritten.
 func isAuthority(s Settings, path string) bool {
 	return matchAny(s.Truth.Doc, path)
+}
+
+// checklist is the comment that lists, on a merge request run without an
+// agent, the docs a person must read again: one comment, edited on each run.
+// A doc leaves it when its `checked` moves; with none left, the comment says
+// so, and none is opened when there never was one.
+func checklist(findings []verdict.Finding) (intent.Intention, bool) {
+	if os.Getenv("WORKLINE_AI") != "none" || !strings.HasPrefix(os.Getenv("WORKLINE_TARGET"), "merge-request:") {
+		return intent.Intention{}, false
+	}
+	var now, later strings.Builder
+	for _, f := range findings {
+		why, _, _ := strings.Cut(f.Message, "\n")
+		switch f.Rule {
+		case "suspect":
+			fmt.Fprintf(&now, "- [ ] `%s` — %s\n", f.Where, why)
+		case "pending":
+			fmt.Fprintf(&later, "- `%s` — %s\n", f.Where, why)
+		}
+	}
+	value := map[string]any{"sticky": "checklist"}
+	if now.Len() == 0 && later.Len() == 0 {
+		value["body"] = "**Docs to check**: none left."
+		value["update-only"] = true
+		return intent.Intention{Kind: "comment", Value: value}, true
+	}
+	var b strings.Builder
+	b.WriteString("**Docs to check** — the documentalist ran without an agent. Read each doc against this change; " +
+		"once it is right, move its `checked` to the commit it was read against. This list is rebuilt on each push.\n\n")
+	if now.Len() > 0 {
+		b.WriteString(now.String())
+	}
+	if later.Len() > 0 {
+		b.WriteString("\nDue later, not in this merge request:\n\n" + later.String())
+	}
+	value["body"] = b.String()
+	return intent.Intention{Kind: "comment", Value: value}, true
 }

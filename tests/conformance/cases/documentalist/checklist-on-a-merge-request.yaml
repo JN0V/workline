@@ -1,0 +1,18 @@
+case: documentalist/checklist-on-a-merge-request
+about: Without an agent, on a merge request, the docs to read again are listed in one comment; the next run edits it rather than adding another, and a doc whose `checked` moved leaves the list.
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  forge:
+    merge-requests:
+      - id: 1
+        labels: []
+        comments: ["**Docs to check** — an older list, with `docs/old.md`.\n\n<!-- workline:sticky=documentalist/checklist -->"]
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "- [ ] `docs/tech/auth.md` — src/auth/token.go changed", comment-lacks: "docs/old.md"}

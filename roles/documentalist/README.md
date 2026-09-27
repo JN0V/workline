@@ -142,8 +142,11 @@ again. Without an agent, the suspect docs are listed and the push goes on.
 ## Without AI
 
 All checks still run. Suspect docs are reported for a person, who clears each
-one by updating `checked`. Not built yet: the checklist in the merge-request
-comment.
+one by updating `checked`. On a merge request, with a forge, they are listed
+in one comment, a checklist edited on each run rather than a new comment each
+push: a doc leaves it when its `checked` moves, the docs due later are listed
+apart, and with none left the comment says so. None is opened on a merge
+request that never had one.
 
 ## Tried for real
 

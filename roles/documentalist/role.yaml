@@ -40,7 +40,7 @@ intentions: [patch, issue, comment, label, note]
 
 # Without AI, every check still runs. What needed judgement (is this suspect doc
 # still right?) is reported for a person, who clears it by updating `checked`.
-# Not built yet: the checklist comment on the merge request.
+# On a merge request, with a forge, they are listed in one comment, edited on each run.
 without-ai: report
 
 settings:

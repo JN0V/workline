@@ -1,0 +1,9 @@
+case: documentalist/no-checklist-when-none-was-open
+about: A merge request with nothing to read again gets no comment at all.
+given:
+  repo: documented
+  forge: {merge-requests: [{id: 1, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  forge: {merge-requests: [{id: 1, comments: 0}]}
