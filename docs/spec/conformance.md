@@ -64,7 +64,8 @@ expect:
 the run (`{"fake:light": {model: …}}`), in the file `WORKLINE_MODELS_SEEN` names.
 It can also carry `repos`: other repositories to build first, each
 exported by name as an environment variable holding its path, for
-multi-repository cases.
+multi-repository cases. `env` sets variables for the run (`$VAR` expands):
+a `PATH` without a tool, or with a fake one first.
 
 `run` can also carry:
 
@@ -82,7 +83,7 @@ multi-repository cases.
 `expect` lists only what the case is about; anything not listed is not checked.
 
 - `findings` — each listed finding must be present (matched by `rule`, and by
-  `where` if given).
+  `where` and a part of its `message` if given).
 - `no-findings` — findings that must not be there (by `rule` and `where`).
 - `agent-calls` — how many times the agent was called.
 - `calls` — each call, in order: the fields listed must match (`agent`,

@@ -58,7 +58,7 @@ type caseFile struct {
 		Config map[string]any      `yaml:"config"`
 		Forge  map[string]any      `yaml:"forge"`
 		Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
-		Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool
+		Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -227,7 +227,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	cmd := exec.Command(engineBin, args...)
 	cmd.Env = env
 	for k, v := range c.Given.Env {
-		cmd.Env = append(cmd.Env, k+"="+v)
+		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
 	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -276,7 +276,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 	for _, want := range e.Findings {
 		found := false
 		for _, f := range r.Findings {
-			if f.Rule == want["rule"] && strings.Contains(f.Where, want["where"]) {
+			if f.Rule == want["rule"] && strings.Contains(f.Where, want["where"]) && strings.Contains(f.Message, want["message"]) {
 				found = true
 			}
 		}
@@ -349,6 +349,17 @@ func build(dir, fixture string, setup, env []string) error {
 		}
 	}
 	return nil
+}
+
+// lookup is the value a variable has in env, the last one set winning.
+func lookup(env []string, name string) string {
+	v := ""
+	for _, kv := range env {
+		if k, val, ok := strings.Cut(kv, "="); ok && k == name {
+			v = val
+		}
+	}
+	return v
 }
 
 // hermeticEnv keeps the machine's git config and hooks out of the tests.
