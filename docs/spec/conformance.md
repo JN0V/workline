@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: c64bcde
+checked: d77c33b
 verified: agent:documentalist
 ---
 # Conformance — v1 (draft)

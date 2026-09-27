@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml]
-checked: c64bcde
+checked: d77c33b
 verified: agent:documentalist
 ---
 # Committer
