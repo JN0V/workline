@@ -33,6 +33,7 @@ jobs:
       - uses: actions/setup-go@v5
         with: {go-version: stable}
       - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+      - run: go install github.com/zricethezav/gitleaks/v8@v8.30.1   # secrets, for the committer
 
       - name: The line for this pull request (proposals only)
         id: line

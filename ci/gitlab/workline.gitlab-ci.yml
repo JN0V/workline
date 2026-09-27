@@ -20,6 +20,7 @@ variables:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   before_script:
     - go install github.com/JN0V/workline/cmd/workline@$WORKLINE_VERSION
+    - go install github.com/zricethezav/gitleaks/v8@v8.30.1   # secrets, for the committer
     - export PATH=$PATH:$(go env GOPATH)/bin
     - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
 
