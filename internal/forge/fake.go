@@ -109,6 +109,25 @@ func (f *Fake) Comment(t Target, body, marker string) error {
 	})
 }
 
+func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(t)
+		if err != nil {
+			return err
+		}
+		for i, c := range it.Comments {
+			if strings.Contains(c, marker) {
+				it.Comments[i] = body + "\n\n" + marker
+				return nil
+			}
+		}
+		if create {
+			it.Comments = append(it.Comments, body+"\n\n"+marker)
+		}
+		return nil
+	})
+}
+
 func (f *Fake) Label(t Target, add, remove []string) error {
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(t)

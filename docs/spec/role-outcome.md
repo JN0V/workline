@@ -63,7 +63,7 @@ refuses. The catalogue is closed and belongs to the engine:
 |---|---|---|
 | `commit-message` | replace the message being written | locally |
 | `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), or `{file, content}` to replace one file; limited to `duties.writes` | locally or as a merge request |
-| `comment` | a comment on the issue or merge request | forge |
+| `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened) | forge |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec) | forge, or `.workline/issues/` without one |
 | `release` | tag a commit with a version and publish release notes | git and forge |

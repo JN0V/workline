@@ -30,6 +30,10 @@ type Forge interface {
 	Issue(id int) (*Issue, error)
 	// Comment posts body on t unless a comment carrying marker is already there.
 	Comment(t Target, body, marker string) error
+	// Sticky keeps one comment carrying marker on t, edited to body on each
+	// run instead of a new one each time; with create false, it only edits
+	// one already there.
+	Sticky(t Target, body, marker string, create bool) error
 	// Label adds and removes labels; adding one already there changes nothing.
 	Label(t Target, add, remove []string) error
 	// OpenIssue creates an issue, or comments on an open one with the same title.

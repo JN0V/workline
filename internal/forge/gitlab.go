@@ -1,6 +1,8 @@
 package forge
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -48,6 +50,36 @@ func (g *gitlab) Comment(t Target, body, marker string) error {
 		return err
 	}
 	if strings.Contains(string(out), marker) {
+		return nil
+	}
+	_, err = g.api("-X", "POST", path(t)+"/notes", "-f", "body="+body+"\n\n"+marker)
+	return err
+}
+
+func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
+	out, err := g.api("--paginate", path(t)+"/notes?per_page=100")
+	if err != nil {
+		return err
+	}
+	type note struct {
+		ID   int    `json:"id"`
+		Body string `json:"body"`
+	}
+	var notes []note
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
+		var page []note
+		if err := dec.Decode(&page); err != nil {
+			return fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		notes = append(notes, page...)
+	}
+	for _, n := range notes {
+		if strings.Contains(n.Body, marker) {
+			_, err = g.api("-X", "PUT", fmt.Sprintf("%s/notes/%d", path(t), n.ID), "-f", "body="+body+"\n\n"+marker)
+			return err
+		}
+	}
+	if !create {
 		return nil
 	}
 	_, err = g.api("-X", "POST", path(t)+"/notes", "-f", "body="+body+"\n\n"+marker)

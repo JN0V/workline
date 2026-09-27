@@ -56,6 +56,23 @@ func (g *github) Comment(t Target, body, marker string) error {
 	return err
 }
 
+func (g *github) Sticky(t Target, body, marker string, create bool) error {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID),
+		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | .id", marker))
+	if err != nil {
+		return err
+	}
+	if id := strings.Fields(string(out)); len(id) > 0 {
+		_, err = g.api("-X", "PATCH", "repos/{owner}/{repo}/issues/comments/"+id[0], "-f", "body="+body+"\n\n"+marker)
+		return err
+	}
+	if !create {
+		return nil
+	}
+	_, err = g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+body+"\n\n"+marker)
+	return err
+}
+
 func (g *github) Label(t Target, add, remove []string) error {
 	if len(add) > 0 {
 		args := []string{"-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/labels", t.ID)}

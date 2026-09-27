@@ -643,12 +643,26 @@ func (a *applier) apply(in intent.Intention) error {
 	case "release":
 		return a.release(in.Value)
 	case "comment":
+		// A sticky comment, {body, sticky: key}, is one comment edited on
+		// each run; with update-only, it is never created.
 		body, _ := in.Value.(string)
+		m, sticky := in.Value.(map[string]any)
+		if sticky {
+			body, _ = m["body"].(string)
+		}
 		if err := a.needForge("comment"); err != nil {
 			return err
 		}
 		if a.target == nil {
 			return errors.New("a comment needs a target issue or merge request (--target)")
+		}
+		if sticky {
+			key, _ := m["sticky"].(string)
+			if key == "" {
+				return errors.New("a sticky comment needs a key: {body, sticky: key}")
+			}
+			only, _ := m["update-only"].(bool)
+			return a.forge.Sticky(*a.target, body, forge.Marker("sticky="+a.role+"/"+key), !only)
 		}
 		return a.forge.Comment(*a.target, body, a.marker())
 	case "label":
@@ -872,13 +886,17 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 		ai = "none"
 	}
 	self, _ := os.Executable()
-	return append(os.Environ(),
+	env := append(os.Environ(),
 		"WORKLINE_RUN_DIR="+runDir,
 		"WORKLINE_EVENT="+o.Event,
 		"WORKLINE_AI="+ai,
 		"WORKLINE_ROLE="+roleName,
 		"WORKLINE_BIN="+self,
 	)
+	if o.Target != nil && o.Forge != "" && o.Forge != "none" { // where a comment would go
+		env = append(env, fmt.Sprintf("WORKLINE_TARGET=%s:%d", o.Target.Kind, o.Target.ID))
+	}
+	return env
 }
 
 // script runs roles/<name>/<step> in the repository and returns its exit code.

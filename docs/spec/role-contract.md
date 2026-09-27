@@ -177,8 +177,9 @@ run from `out/run.yaml`, with the evidence of the original run, without calling
 the agent again.
 
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
-name or `none`), `WORKLINE_ROLE`, and `WORKLINE_BIN` (the engine running them,
-which the shipped roles call for their built-in steps).
+name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
+which the shipped roles call for their built-in steps), and `WORKLINE_TARGET`
+(`merge-request:12`, `issue:3`) when a forge and a target are given.
 
 ### Exit codes
 

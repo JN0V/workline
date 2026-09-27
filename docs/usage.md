@@ -138,5 +138,6 @@ replace the role's, key by key, one level deep.
 | `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
 
 A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
-`WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`. A role run by a handoff
+`WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`, and `WORKLINE_TARGET`
+(`merge-request:12`) when a forge and a target are given. A role run by a handoff
 receives the inputs `handoff-from` and `handoff-reason`.
