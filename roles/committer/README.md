@@ -29,8 +29,12 @@ Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! 
 What the commit adds (on `commit-msg`) or every commit of the range is
 scanned with [gitleaks](https://github.com/gitleaks/gitleaks), before the
 message: no rewrite fixes a secret, so a `leak` blocks without asking the
-agent, at its file and line. The match is never printed. Without gitleaks,
-the commit goes on and the verdict says so (`secrets-not-checked`).
+agent, at its file and line. The message is scanned too (`gitleaks stdin`),
+without what git strips from it (comments, the diff of `commit -v`): a `leak`
+there names its line, and the agent is not asked either, since the message
+would carry the match to it. A rewrite is scanned like the message it
+replaces. The match is never printed. Without gitleaks, the commit goes on
+and the verdict says so (`secrets-not-checked`).
 
 gitleaks' own rules find secrets. Terms that must never reach a repository
 are rules of the user's, in lists kept outside it, gitleaks taking the first

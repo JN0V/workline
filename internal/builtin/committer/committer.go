@@ -150,11 +150,17 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	// What the commit carries is checked before its message: no rewrite
-	// fixes a secret, so the agent is not asked.
+	// fixes a secret, so the agent is not asked. Nor is it for one in the
+	// message: the message would carry it to the agent.
 	secrets, err := Secrets(repo, "")
 	if err != nil {
 		return fail(err)
 	}
+	said, err := MessageLeaks(repo, []Message{{Text: msg}})
+	if err != nil {
+		return fail(err)
+	}
+	secrets = append(secrets, said...)
 	who, err := Identity(repo, "", s)
 	if err != nil {
 		return fail(err)
@@ -208,8 +214,9 @@ func Pre(runDir, repo string) int {
 }
 
 // Post is the role's judge step: a rewritten message must pass the same
-// checks; with no rewrite, the original findings stand.
-func Post(runDir string) int {
+// checks, and carry no secret or term; with no rewrite, the original
+// findings stand.
+func Post(runDir, repo string) int {
 	s, original, err := load(runDir)
 	if err != nil {
 		return fail(err)
@@ -238,6 +245,11 @@ func Post(runDir string) int {
 				return fail(err)
 			}
 			findings = append(findings, keepsHeader(original, msg, s)...)
+			said, err := MessageLeaks(repo, []Message{{Text: msg}})
+			if err != nil {
+				return fail(err)
+			}
+			findings = append(findings, said...)
 			kept := map[string]bool{}
 			for _, t := range Trailers(msg) {
 				kept[t] = true
@@ -401,11 +413,13 @@ func checkRange(runDir, repo, rng string) int {
 		return fail(fmt.Errorf("cannot read the commits of %s: %v", rng, err))
 	}
 	var findings []verdict.Finding
+	var messages []Message
 	for _, rec := range strings.Split(string(out), "\x1e") {
 		hash, msg, ok := strings.Cut(strings.TrimSpace(rec), "\x1f")
 		if !ok {
 			continue
 		}
+		messages = append(messages, Message{Commit: hash, Text: msg})
 		f, err := Check(msg, s)
 		if err != nil {
 			return fail(err)
@@ -419,11 +433,15 @@ func checkRange(runDir, repo, rng string) int {
 	if err != nil {
 		return fail(err)
 	}
+	said, err := MessageLeaks(repo, messages)
+	if err != nil {
+		return fail(err)
+	}
 	who, err := Identity(repo, rng, s)
 	if err != nil {
 		return fail(err)
 	}
-	secrets = append(secrets, who...)
+	secrets = append(append(secrets, said...), who...)
 	v := verdict.Verdict{Status: verdict.Pass, Summary: "every commit message is clear"}
 	if len(findings) > 0 {
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}

@@ -197,7 +197,7 @@ func builtin(args []string) int {
 	case "committer pre":
 		return committer.Pre(runDir, repo)
 	case "committer post":
-		return committer.Post(runDir)
+		return committer.Post(runDir, repo)
 	case "documentalist pre":
 		return documentalist.Pre(runDir, repo)
 	case "documentalist post":

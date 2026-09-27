@@ -18,7 +18,6 @@ this repository before any other role is added.
    when there is one. Each defect a role lets through becomes a case.
 2. **What is left of the committer and the documentalist**, before any new
    role:
-   - committer: terms in commit messages (gitleaks reads the changes only);
    - documentalist: the `truth` setting (code contradicting a spec or an ADR
      opens an issue), links to other sites (lychee), style (vale), docs citing
      a superseded ADR, freshness, the other gardening tasks (propagate, merge

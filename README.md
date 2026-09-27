@@ -20,7 +20,7 @@ Status (2026-09-24): used daily on its author's machine;
 
 | Works | Not yet |
 |---|---|
-| **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages; secrets and forbidden terms (gitleaks), author identity | terms in commit messages |
+| **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages; secrets and forbidden terms in changes and messages (gitleaks), author identity | |
 | **Release manager**: semver, calver, several packages in one repository, generated changelog, tag, forge release | the merge-request flow, build metadata |
 | **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository, identifiers gone from the code; derived blocks; Claude judges suspect docs, and condenses a doc over budget, and its patches are checked | links to other sites, freshness, docs citing a superseded ADR, the `truth` setting, splitting and merging by AI |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |

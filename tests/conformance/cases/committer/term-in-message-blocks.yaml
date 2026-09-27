@@ -1,0 +1,15 @@
+case: committer/term-in-message-blocks
+about: A term of the lists in the commit message blocks the commit, and the agent is not asked, since the message would carry the term to it; what git strips (comment lines, the diff under the scissors of commit -v) is not read.
+given:
+  repo: basic
+  setup:
+    - "printf '[extend]\\nuseDefault = true\\n[[rules]]\\nid = \"repo-term\"\\nregex = %s\\nkeywords = [\"kiwiquartz\"]\\n' \"'(?i)kiwiquartz'\" > .gitleaks.toml && echo .gitleaks.toml >> .gitignore && git add .gitignore && git commit -qm 'chore: keep the term list out'"
+    - "echo change >> README.md && git add README.md"
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3\n\nAsked by kiwiquartz.\n# kiwiquartz in a comment\n# ------------------------ >8 ------------------------\n+kiwiquartz in the diff"}, ai: "fake:good-commit-message"}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: leak, where: "commit message, line 3"}]
+  no-findings:
+    - {rule: leak, where: "commit message, line 4"}
+    - {rule: leak, where: "commit message, line 6"}
