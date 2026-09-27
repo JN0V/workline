@@ -134,18 +134,9 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 			}
 			switch {
 			case f.path == c.Doc:
-				old := after[f.path]
-				if why := misquoted(old, f); why != "" {
-					refuse("misquoted", f.path, why)
-					continue
-				}
-				if touchesDerived(old, f) {
-					refuse("derived-block", f.path, "the patch changes lines between workline:derive markers; they are regenerated from the code, never written")
-					continue
-				}
-				now := applyHunks(old, f)
-				if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
-					refuse("patch-ambiguous", f.path, "git would apply this diff differently from how it reads; send a plain unified diff")
+				now, bad, why := applyDoc(after[f.path], f, diff)
+				if bad != "" {
+					refuse(bad, f.path, why)
 					continue
 				}
 				after[f.path] = now
@@ -242,6 +233,23 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		}
 	}
 	return refused, nil
+}
+
+// applyDoc applies one file of a patch to an existing doc, as git will: the
+// lines it cites must be quoted as they are, and it must leave derived blocks
+// alone. rule and why say what is wrong, if anything.
+func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
+	if why := misquoted(old, f); why != "" {
+		return "", "misquoted", why
+	}
+	if touchesDerived(old, f) {
+		return "", "derived-block", "the patch changes lines between workline:derive markers; they are regenerated from the code, never written"
+	}
+	now = applyHunks(old, f)
+	if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
+		return "", "patch-ambiguous", "git would apply this diff differently from how it reads; send a plain unified diff"
+	}
+	return now, "", ""
 }
 
 // editedInPlace says whether a line left the doc only to come back changed a
