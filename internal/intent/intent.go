@@ -96,8 +96,8 @@ func Merge(fallback, agent []Intention) []Intention {
 			if kept {
 				out = append(out, f)
 			}
-		case !proposed[f.Kind]:
-			out = append(out, f)
+		case !proposed[f.Kind] || sticky(f):
+			out = append(out, f) // a role's sticky proposal is its own record, not an alternative to the agent's
 		}
 	}
 	return append(append(out, agent...), beside...)
@@ -188,4 +188,14 @@ func NormalizeDiff(diff string) string {
 func name(header, prefix string) string {
 	header, _, _ = strings.Cut(strings.TrimSpace(header), "\t")
 	return strings.TrimPrefix(header, prefix)
+}
+
+// sticky says whether a proposal keeps one comment or issue in place.
+func sticky(in Intention) bool {
+	m, ok := in.Value.(map[string]any)
+	if !ok {
+		return false
+	}
+	_, key := m["sticky"]
+	return key
 }

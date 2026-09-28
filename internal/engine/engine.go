@@ -902,6 +902,16 @@ func (a *applier) apply(in intent.Intention) error {
 		if title == "" {
 			return errors.New("an issue needs a title")
 		}
+		if sticky, _ := m["sticky"].(bool); sticky {
+			// One issue kept in place, its body rewritten on each run; with
+			// update-only, never opened to say nothing.
+			if err := a.needForge("issue"); err != nil {
+				return err
+			}
+			only, _ := m["update-only"].(bool)
+			_, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only)
+			return err
+		}
 		body += fmt.Sprintf("\n\nOpened by the %s role.", a.role)
 		if a.forge == nil {
 			return a.localIssue(title, body)
@@ -1114,6 +1124,9 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 		"WORKLINE_ROLE="+roleName,
 		"WORKLINE_BIN="+self,
 	)
+	if o.Forge != "" && o.Forge != "none" {
+		env = append(env, "WORKLINE_FORGE="+o.Forge) // what the role may write to
+	}
 	if o.Target != nil && o.Forge != "" && o.Forge != "none" { // where a comment would go
 		env = append(env, fmt.Sprintf("WORKLINE_TARGET=%s:%d", o.Target.Kind, o.Target.ID))
 	}

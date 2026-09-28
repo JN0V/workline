@@ -57,3 +57,13 @@ func TestPatchFilesNamesADeletedFile(t *testing.T) {
 		t.Fatalf("PatchFiles = %s, want the deleted file by its own path", got)
 	}
 }
+
+func TestMergeKeepsStickyProposalsBesideTheAgents(t *testing.T) {
+	tracking := Intention{Kind: "issue", Value: map[string]any{"title": "Docs due", "body": "- a.md", "sticky": true}}
+	plain := Intention{Kind: "issue", Value: map[string]any{"title": "Something else", "body": "x"}}
+	agent := []Intention{{Kind: "issue", Value: map[string]any{"title": "The code disagrees with a.md", "body": "y"}}}
+	got := Merge([]Intention{tracking, plain}, agent)
+	if len(got) != 2 || got[0].Value.(map[string]any)["title"] != "Docs due" {
+		t.Fatalf("Merge = %v: the role's sticky issue stays beside the agent's; its plain one gives way", got)
+	}
+}
