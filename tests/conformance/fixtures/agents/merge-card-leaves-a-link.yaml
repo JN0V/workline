@@ -1,0 +1,21 @@
+# A wrong answer to the same task: the card is merged and deleted, but the
+# link to it is left pointing nowhere.
+- patch: |
+    --- a/docs/cards/refresh.md
+    +++ /dev/null
+    @@ -1,6 +0,0 @@
+    ----
+    -type: card
+    ----
+    -# Refresh
+    -
+    -A refresh is silent.
+    --- a/docs/cards/tokens.md
+    +++ b/docs/cards/tokens.md
+    @@ -6,2 +6,6 @@
+     An access token proves who the user is. It lasts one hour, and the
+     client refreshes it before it expires, so the user stays signed in.
+    +
+    +## Refresh
+    +
+    +A refresh is silent.

@@ -12,6 +12,8 @@ You get one decision about documentation. `task.md` says which kind:
   companion doc, and link to them. Do not squeeze sentences.
 - **duplicates** — the same content appears in several places. Keep it in the
   one place it belongs and replace the others with a link.
+- **merge-card** — a card is too short to stand alone. Add its text, as it is,
+  to the card it belongs with, delete it, and point its links there.
 - **split** — a doc covers several concepts. Propose cards, one concept each.
 
 If the right answer needs a decision only the project can make, return a `note`

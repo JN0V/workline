@@ -19,8 +19,8 @@ this repository before any other role is added.
 2. **What is left of the committer and the documentalist**, before any new
    role:
    - documentalist: style (vale), the other gardening tasks (propagate,
-     split, merge cards too short), and opening merge requests when
-     gardening, then `max-open-merge-requests`;
+     split), and opening merge requests when gardening, then
+     `max-open-merge-requests`;
    - evaluation: more runs of condensing on Sonnet (one clean run so far;
      Opus has eight), to know whether `frontier` is needed.
 

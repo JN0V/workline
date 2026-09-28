@@ -59,3 +59,7 @@ On 2026-09-27, on workline's own repository:
 - a repeated passage, on the `untidy` fixture with Claude (Sonnet): kept in
   the sessions doc, the FAQ linking to its heading, at the first attempt, and
   in three evaluation runs out of three.
+- a card too short, on the `documented` fixture with two cards, with Claude
+  (Sonnet): merged into the other card, deleted, its link pointed there, at
+  the first attempt — under a second top-level title, which the task now
+  forbids; then three evaluation runs out of three.

@@ -111,6 +111,13 @@ point, a card, a section) becomes the task: bring it within budget by moving
 whole parts into a new doc, and linking to it. One doc a run. A merge request
 or a push never turns into a rewrite of the docs.
 
+**Merging cards, when gardening.** Last, with nothing else to do, a card too
+short to stand alone goes into the card it belongs with, chosen by the agent
+among the others, those of its folder first: its text added as it is, under a
+heading, the card deleted, and every link to it pointed there. The judge
+checks that the text is found in one card, which loses nothing, that the docs
+linking to it change those links only, and that no link is left dangling.
+
 Not built yet: stopping when `max-open-merge-requests` are waiting, and the
 other kinds of task (propagate, split).
 

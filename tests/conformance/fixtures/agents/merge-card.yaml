@@ -1,0 +1,28 @@
+# The documentalist's answer to "docs/cards/refresh.md is too short" in the
+# `documented` fixture with two cards: the text goes into the tokens card,
+# the short card is deleted, and the link to it follows it.
+- patch: |
+    --- a/docs/cards/refresh.md
+    +++ /dev/null
+    @@ -1,6 +0,0 @@
+    ----
+    -type: card
+    ----
+    -# Refresh
+    -
+    -A refresh is silent.
+    --- a/docs/cards/tokens.md
+    +++ b/docs/cards/tokens.md
+    @@ -6,2 +6,6 @@
+     An access token proves who the user is. It lasts one hour, and the
+     client refreshes it before it expires, so the user stays signed in.
+    +
+    +## Refresh
+    +
+    +A refresh is silent.
+    --- a/docs/product/sign-in.md
+    +++ b/docs/product/sign-in.md
+    @@ -8,2 +8,2 @@
+     You stay signed in for one hour without doing anything.
+    -See [refreshing](../cards/refresh.md).
+    +See [refreshing](../cards/tokens.md#refresh).

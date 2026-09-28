@@ -457,6 +457,18 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
+	// Last, a card too short to stand alone goes into the one it belongs with.
+	if task == "" && os.Getenv("WORKLINE_EVENT") == "schedule" {
+		if m := pickMergeCard(problems, tree); m != nil {
+			task = writeMergeCardTask(m, problems, tree)
+			if err := writeYAML(filepath.Join(runDir, "in", "merge-card.yaml"), m); err != nil {
+				return fail(err)
+			}
+			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("merge-card\n"), 0o644); err != nil {
+				return fail(err)
+			}
+		}
+	}
 	var left strings.Builder
 	for i := range findings {
 		f := &findings[i]
@@ -623,6 +635,15 @@ func Post(runDir, repo string) int {
 		for _, k := range c.Keys {
 			resolved[k] = len(refused) == 0 && proposedPatch(intents, fallback)
 		}
+	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "merge-card.yaml")); err == nil {
+		var m mergeCardTask
+		if err := yaml.Unmarshal(data, &m); err != nil {
+			return fail(err)
+		}
+		if refused, err = judgeMergeCard(repo, s, &m, intents, fallback); err != nil {
+			return fail(err)
+		}
+		resolved["card-too-short "+m.Card] = len(refused) == 0 && proposedPatch(intents, fallback)
 	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "dedupe.yaml")); err == nil {
 		var d dedupeTask
 		if err := yaml.Unmarshal(data, &d); err != nil {
