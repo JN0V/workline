@@ -232,3 +232,25 @@ func (f *Fake) MergeRequestBranch(id int) (string, bool, error) {
 	}
 	return it.Branch, !it.Fork, nil
 }
+
+func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
+	id := 0
+	err := f.write(func(s *FakeState) error {
+		for i := range s.Issues {
+			if s.Issues[i].Title == title && !s.Issues[i].Closed {
+				s.Issues[i].Body, id = body, s.Issues[i].ID
+				return nil
+			}
+		}
+		if !create {
+			return nil
+		}
+		id = 1
+		for _, it := range s.Issues {
+			id = max(id, it.ID+1)
+		}
+		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body, Labels: []string{}, Comments: []string{}})
+		return nil
+	})
+	return id, err
+}

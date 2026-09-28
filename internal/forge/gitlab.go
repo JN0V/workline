@@ -210,3 +210,34 @@ func (g *gitlab) MergeRequestBranch(id int) (string, bool, error) {
 	}
 	return mr.Source, mr.SourceProject == mr.TargetProject, nil
 }
+
+func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {
+	out, err := g.api("projects/:id/issues?state=opened&in=title&per_page=100&search=" + url.QueryEscape(title))
+	if err != nil {
+		return 0, err
+	}
+	var found []struct {
+		IID   int    `json:"iid"`
+		Title string `json:"title"`
+	}
+	if err := decode(out, &found); err != nil {
+		return 0, err
+	}
+	for _, f := range found {
+		if f.Title == title {
+			_, err := g.api("-X", "PUT", fmt.Sprintf("projects/:id/issues/%d", f.IID), "-f", "description="+body)
+			return f.IID, err
+		}
+	}
+	if !create {
+		return 0, nil
+	}
+	out, err = g.api("-X", "POST", "projects/:id/issues", "-f", "title="+title, "-f", "description="+body)
+	if err != nil {
+		return 0, err
+	}
+	var created struct {
+		IID int `json:"iid"`
+	}
+	return created.IID, decode(out, &created)
+}

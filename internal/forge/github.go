@@ -180,3 +180,28 @@ func (g *github) MergeRequestBranch(id int) (string, bool, error) {
 	branch, here, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
 	return branch, here == "true", nil
 }
+
+func (g *github) KeepIssue(title, body string, create bool) (int, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state=open&per_page=100", "--jq", ".[] | select(.pull_request == null) | [.number, .title] | @tsv")
+	if err != nil {
+		return 0, err
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if num, t, ok := strings.Cut(line, "\t"); ok && t == title {
+			var id int
+			fmt.Sscan(num, &id)
+			_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "body="+body)
+			return id, err
+		}
+	}
+	if !create {
+		return 0, nil
+	}
+	out, err = g.api("-X", "POST", "repos/{owner}/{repo}/issues", "-f", "title="+title, "-f", "body="+body, "--jq", ".number")
+	if err != nil {
+		return 0, err
+	}
+	var id int
+	fmt.Sscan(strings.TrimSpace(string(out)), &id)
+	return id, nil
+}

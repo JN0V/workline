@@ -38,6 +38,9 @@ type Forge interface {
 	Label(t Target, add, remove []string) error
 	// OpenIssue creates an issue, or comments on an open one with the same title.
 	OpenIssue(title, body, marker string) (int, error)
+	// KeepIssue rewrites the body of the open issue with this title, or opens
+	// it when there is none and create is true: one issue, kept in place.
+	KeepIssue(title, body string, create bool) (int, error)
 	// Release publishes notes for an existing tag, unless already published.
 	Release(tag, notes string) error
 	// OpenMergeRequest opens a merge request from branch into base, or
