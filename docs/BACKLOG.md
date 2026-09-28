@@ -19,8 +19,7 @@ this repository before any other role is added.
 2. **What is left of the committer and the documentalist**, before any new
    role:
    - documentalist: style (vale), the other gardening tasks (propagate,
-     split), and opening merge requests when gardening, then
-     `max-open-merge-requests`;
+     split);
    - evaluation: more runs of condensing on Sonnet (one clean run so far;
      Opus has eight), to know whether `frontier` is needed.
 
@@ -81,14 +80,13 @@ last.
 - **Settings merge one level deep.** A project that sets
   `budgets: {doc-lines: 300}` drops the other budgets; the documentalist says
   so (`setting-missing`), but a deep merge would be less surprising.
-- **Patches in the forge's apply job.** A `patch` applied there is written to
-  the job's checkout and lost: it should become a commit on the merge
-  request's branch, or a suggestion. Today the templates run without AI, so
-  nothing proposes one.
+- **Patches in a merge request's apply job.** Gardening's patches become a
+  merge request of their own (ADR-0006); a patch proposed on a merge request
+  is still written to the job's checkout and lost: it should become a commit
+  on that merge request's branch, or a suggestion. Today the templates run
+  without AI, so nothing proposes one.
 - **An unknown option exits 2.** Go's option parser exits 2, which the exit
   codes reserve for `human`; the CLI should say 64, as for other misuse.
-- **Scheduled runs in the CI templates.** The README says `schedule` runs the
-  documentalist; neither template has a scheduled job yet.
 - **Your config folder on macOS.** `config.yaml` and the global hooks follow
   Go's config folder (`~/Library/Application Support/workline` on macOS), but
   your own facets are looked for in `~/.config/workline/roles/`: one folder

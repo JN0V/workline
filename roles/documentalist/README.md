@@ -118,8 +118,14 @@ heading, the card deleted, and every link to it pointed there. The judge
 checks that the text is found in one card, which loses nothing, that the docs
 linking to it change those links only, and that no link is left dangling.
 
-Not built yet: stopping when `max-open-merge-requests` are waiting, and the
-other kinds of task (propagate, split).
+**One merge request per task.** Run with `--open-merge-request` (the CI
+templates' scheduled jobs), a gardening task's patch goes on a branch of its
+own, `workline/documentalist/<task>`, with a merge request titled after the
+task; running the task again updates it (ADR-0006). While
+`max-open-merge-requests` of them wait for review, gardening proposes nothing
+(`gardening-paused`), and what it finds is still reported.
+
+Not built yet: the other kinds of task (propagate, split).
 
 ## Judge (`post`, no AI)
 

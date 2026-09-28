@@ -1,0 +1,16 @@
+case: documentalist/gardening-paused-at-the-limit
+about: While max-open-merge-requests of the documentalist's merge requests wait for review, gardening proposes nothing, and says so; what it finds is still reported.
+given:
+  repo: untidy
+  setup:
+    - "printf '      max-open-merge-requests: 1\\n' >> .workline/config.yaml"
+  forge:
+    merge-requests:
+      - {id: 3, branch: "workline/documentalist/condense-docs-sessions-md", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: gardening-paused, message: "1 merge requests"}
+    - {rule: duplicate, where: docs/faq.md}

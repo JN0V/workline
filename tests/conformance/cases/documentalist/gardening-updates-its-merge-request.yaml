@@ -1,0 +1,16 @@
+case: documentalist/gardening-updates-its-merge-request
+about: Running a gardening task again updates the merge request already open for its branch, rather than opening another.
+given:
+  repo: untidy
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge:
+    merge-requests:
+      - {id: 7, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "an older title", labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+expect:
+  status: pass
+  forge:
+    merge-requests:
+      - {id: 7, title: "docs: keep a repeated passage in one place"}
+      - {id: 8, absent: true}

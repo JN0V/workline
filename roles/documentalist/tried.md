@@ -63,3 +63,10 @@ On 2026-09-27, on workline's own repository:
   (Sonnet): merged into the other card, deleted, its link pointed there, at
   the first attempt — under a second top-level title, which the task now
   forbids; then three evaluation runs out of three.
+- a merge request per gardening task, with Claude, a local bare remote and
+  the simulated forge: the first attempt was refused by the machine's own
+  commit hook, the fixture's identity not being allowed, and left the patch
+  staged — it is now left unstaged, as the patches wrote it; with an allowed
+  identity, the branch was pushed with one commit, the merge request opened,
+  the tree back on main and clean, and a second run updated the same merge
+  request.

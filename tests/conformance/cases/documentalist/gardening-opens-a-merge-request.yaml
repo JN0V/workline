@@ -1,0 +1,16 @@
+case: documentalist/gardening-opens-a-merge-request
+about: Gardening with --open-merge-request puts the patch on a branch of its task, pushed, with a merge request open for it; the working tree goes back to the branch it was on, clean.
+given:
+  repo: untidy
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+expect:
+  status: pass
+  applied: [patch]
+  forge:
+    merge-requests:
+      - {id: 1, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place"}
+  files:
+    docs/faq.md: {contains: "A session lasts as long as its token"}

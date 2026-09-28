@@ -71,5 +71,5 @@ settings:
   # `<!-- workline:derive name -->…<!-- workline:end -->`, the command lives here,
   # where only people change it. e.g. {conformance-cases: "ls tests/*.yaml | wc -l"}
   derive: {}
-  max-open-merge-requests: 5         # backpressure: stop proposing when this many wait; not read yet
+  max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
