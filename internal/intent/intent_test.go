@@ -2,6 +2,7 @@ package intent
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -47,5 +48,12 @@ func TestMergeKeepsFallbackDiffsBeside(t *testing.T) {
 	got := Merge([]Intention{derived}, agent)
 	if len(got) != 2 || got[0].Value != agent[0].Value || got[1].Value != derived.Value {
 		t.Fatalf("Merge = %v: a fallback diff stays, after the agent's patch of the same file", got)
+	}
+}
+
+func TestPatchFilesNamesADeletedFile(t *testing.T) {
+	diff := "--- a/docs/cards/a.md\n+++ /dev/null\n@@ -1,2 +0,0 @@\n-# A\n-Short.\n--- a/docs/cards/b.md\n+++ b/docs/cards/b.md\n@@ -1 +1,2 @@\n # B\n+Short.\n"
+	if got := strings.Join(PatchFiles(diff), ","); got != "docs/cards/a.md,docs/cards/b.md" {
+		t.Fatalf("PatchFiles = %s, want the deleted file by its own path", got)
 	}
 }

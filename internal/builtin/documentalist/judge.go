@@ -15,8 +15,9 @@ import (
 
 // fileDiff is one file of a unified diff.
 type fileDiff struct {
-	path  string
-	hunks []hunk
+	path    string
+	deleted bool // +++ /dev/null: path is the file the diff deletes
+	hunks   []hunk
 }
 
 // hunk is one hunk; each line keeps its ' ', '-' or '+' prefix.
@@ -40,6 +41,11 @@ func parseDiff(diff string) ([]fileDiff, error) {
 		case strings.HasPrefix(l, "+++ "):
 			p := strings.TrimSpace(strings.TrimPrefix(l, "+++ "))
 			p, _, _ = strings.Cut(p, "\t")
+			if p == "/dev/null" && i > 0 && strings.HasPrefix(lines[i-1], "--- ") {
+				old, _, _ := strings.Cut(strings.TrimSpace(strings.TrimPrefix(lines[i-1], "--- ")), "\t")
+				out = append(out, fileDiff{path: strings.TrimPrefix(old, "a/"), deleted: true})
+				continue
+			}
 			out = append(out, fileDiff{path: strings.TrimPrefix(p, "b/")})
 		case strings.HasPrefix(l, "@@"):
 			m := hunkHeader.FindStringSubmatch(l)

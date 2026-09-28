@@ -114,9 +114,16 @@ func PatchFiles(v any) []string {
 	}
 	diff, _ := v.(string)
 	var files []string
+	old := ""
 	for _, l := range strings.Split(diff, "\n") {
+		if p, ok := strings.CutPrefix(l, "--- "); ok {
+			old, _, _ = strings.Cut(strings.TrimSpace(p), "\t")
+		}
 		if p, ok := strings.CutPrefix(l, "+++ "); ok {
 			p, _, _ = strings.Cut(strings.TrimSpace(p), "\t")
+			if p == "/dev/null" { // a deletion: the file is the one it deletes
+				p = strings.TrimPrefix(old, "a/")
+			}
 			files = append(files, path.Clean(strings.TrimPrefix(p, "b/")))
 		}
 	}
