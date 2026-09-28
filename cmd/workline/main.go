@@ -100,6 +100,7 @@ func runRole(args []string) int {
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "stop after judging; apply later with `workline apply <run-dir>`")
 	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge)")
+	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
 	inputs, inputFiles := pairs{}, pairs{}
@@ -132,7 +133,7 @@ func runRole(args []string) int {
 	res := engine.Run(engine.Options{
 		Repo: absRepo, RolesDir: absRoles, Role: name, Event: *event, AI: *ai,
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
-		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR,
+		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
 	})
 	if err := wlreport.Write(absRepo, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -469,6 +470,7 @@ func routeCmd(args []string) int {
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
 	openMR := fs.Bool("open-merge-request", false, "put what the patches write on a branch of the role, and open a merge request for it (needs a forge)")
+	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
 	inputs := pairs{}
@@ -486,7 +488,7 @@ func routeCmd(args []string) int {
 		return 64
 	}
 	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
-		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR})
+		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
 	if err := wlreport.Write(abs, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1

@@ -32,6 +32,7 @@ Options of `run-role` and `route`:
 | `--target issue:<n>` / `merge-request:<n>` | where comments and labels go |
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
+| `--push-to-merge-request` | with a forge and `--target merge-request:<n>`: what the patches write is committed to that merge request's branch and pushed, without force; from a fork, or when the branch moved on, the diff goes in one comment instead |
 | `--open-merge-request` | with a forge: what the patches write goes on a branch `workline/<role>/<task>`, pushed, with a merge request opened or updated for it; the role is told how many of its merge requests are open (ADR-0006) |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--sarif <file>` / `--code-quality <file>` | also write the findings as SARIF (GitHub code scanning) or a GitLab Code Quality report; `route`: every step's (docs/spec/role-outcome.md) |

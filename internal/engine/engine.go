@@ -50,6 +50,9 @@ type Options struct {
 	// OpenMergeRequest puts what the patches wrote on a branch of the role's,
 	// and opens a merge request for it, or updates the one open (ADR-0006).
 	OpenMergeRequest bool
+	// PushToMergeRequest commits what the patches wrote to the branch of the
+	// merge request the run targets; from a fork, the diff goes in a comment.
+	PushToMergeRequest bool
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
@@ -300,7 +303,7 @@ func run(o Options, res *Result) error {
 		o.Forge = cfg.Forge
 	}
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
-		OpenMergeRequest: o.OpenMergeRequest}
+		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
@@ -333,6 +336,10 @@ type runState struct {
 	OpenMergeRequest bool     `yaml:"open-merge-request,omitempty"`
 	Written          []string `yaml:"written,omitempty"`
 	MergeRequest     int      `yaml:"merge-request,omitempty"`
+	// PushToMergeRequest: the patches go to the targeted merge request's
+	// branch; Pushed once they did, as a commit or as a comment.
+	PushToMergeRequest bool `yaml:"push-to-merge-request,omitempty"`
+	Pushed             bool `yaml:"pushed,omitempty"`
 }
 
 func (s *runState) save(runDir string) error {
@@ -398,7 +405,102 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		}
 	}
 	res.MergeRequest = st.MergeRequest
+	if st.PushToMergeRequest && len(st.Written) > 0 && !st.Pushed {
+		if f == nil || st.Target == nil || st.Target.Kind != "merge-request" {
+			return errors.New("--push-to-merge-request needs a forge and --target merge-request:<n>")
+		}
+		finding, err := pushToMergeRequest(f, st, runDir)
+		if errors.Is(err, forge.ErrUnreachable) {
+			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while pushing to the merge request; resume with: workline apply %s", runDir)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("push to the merge request: %w", err)
+		}
+		st.Pushed = true
+		if err := st.save(runDir); err != nil {
+			return err
+		}
+		res.Findings = append(res.Findings, finding)
+	}
 	return nil
+}
+
+// pushToMergeRequest commits what the run's patches wrote to the branch of
+// the merge request it targets, as pre-commit.ci and autofix.ci do: a
+// suggestion can only sit on lines the merge request changes, and a doc made
+// suspect by a change of code usually has none. From a fork, or when the
+// branch moved on, the diff goes in one comment instead, for the author to
+// apply. The working tree goes back to where it was.
+func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Finding, error) {
+	var mr struct{ Title string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		yaml.Unmarshal(data, &mr)
+	}
+	if mr.Title == "" {
+		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
+	}
+	diff, err := git(st.Repo, nil, append([]string{"diff", "--"}, st.Written...)...)
+	if err != nil {
+		return verdict.Finding{}, err
+	}
+	branch, here, err := f.MergeRequestBranch(st.Target.ID)
+	if err != nil {
+		return verdict.Finding{}, err
+	}
+	why := "it comes from a fork, where this job cannot push"
+	if here {
+		why, err = commitOnto(st, branch, mr.Title)
+		if err != nil {
+			return verdict.Finding{}, err
+		}
+		if why == "" {
+			return verdict.Finding{Rule: "pushed", Level: "warn", Where: branch,
+				Message: fmt.Sprintf("the patches were committed to %s (%q)", branch, mr.Title)}, nil
+		}
+	}
+	body := fmt.Sprintf("**Proposed by workline's %s**, not pushed: %s. Apply it with `git apply`:\n\n```diff\n%s\n```", st.Role, why, diff)
+	if err := f.Sticky(*st.Target, body, forge.Marker("sticky="+st.Role+"/patch"), true); err != nil {
+		return verdict.Finding{}, err
+	}
+	return verdict.Finding{Rule: "patch-as-comment", Level: "warn", Message: "the patches went in a comment: " + why}, nil
+}
+
+// commitOnto commits the written files on top of branch, fetched from
+// origin, and pushes it, without force. It says why when it could not: the
+// patches do not apply there, or the branch moved on meanwhile.
+func commitOnto(st runState, branch, title string) (why string, err error) {
+	orig, err := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD") // back on the branch it was on
+	if err != nil {
+		if orig, err = git(st.Repo, nil, "rev-parse", "HEAD"); err != nil { // or where CI left it
+			return "", err
+		}
+	}
+	back := func() {
+		git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+		git(st.Repo, nil, "checkout", "-q", orig)
+	}
+	if _, err := git(st.Repo, nil, "fetch", "-q", "origin", branch); err != nil {
+		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+	}
+	// The patches ride along to the branch's tip; git refuses if they collide there.
+	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", "FETCH_HEAD"); err != nil {
+		back()
+		return "the docs changed on the branch since this run read them", nil
+	}
+	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title}} {
+		if _, err := git(st.Repo, nil, s...); err != nil {
+			back()
+			return "", err
+		}
+	}
+	if _, err := git(st.Repo, nil, "push", "-q", "origin", "HEAD:refs/heads/"+branch); err != nil {
+		back()
+		return "the branch moved on while this run worked", nil
+	}
+	_, err = git(st.Repo, nil, "checkout", "-q", orig)
+	return "", err
 }
 
 // branchPrefix is where a role's merge requests come from (ADR-0006).
