@@ -11,6 +11,7 @@
 //	workline apply <run-dir>... | --line <route result> [--json]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
+//	workline doctor [--repo <dir>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -27,6 +28,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/releasemanager"
+	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
@@ -61,12 +63,14 @@ func main() {
 		os.Exit(itemCmd(os.Args[2:]))
 	case "apply":
 		os.Exit(applyCmd(os.Args[2:]))
+	case "doctor":
+		os.Exit(doctorCmd(os.Args[2:]))
 	}
 	usage()
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo")
+	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo\n       workline doctor [--repo <dir>] [--json]")
 	os.Exit(64)
 }
 
@@ -627,4 +631,47 @@ func parseTarget(s string) (*forge.Target, error) {
 		return nil, fmt.Errorf("--target must be issue:<n> or merge-request:<n>, not %q", s)
 	}
 	return &forge.Target{Kind: kind, ID: id}, nil
+}
+
+// doctorCmd says what is set up on this machine and in the repository, and
+// the command that sets up what is missing. It exits 1 only on an error:
+// something missing that workline was set up to use.
+func doctorCmd(args []string) int {
+	fs := flag.NewFlagSet("doctor", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository to look at; outside one, the machine only")
+	asJSON := fs.Bool("json", false, "print the report as JSON")
+	_ = fs.Parse(args)
+	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	root, _ := gitRoot(*repo)
+	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI()})
+	if *asJSON {
+		out, _ := json.MarshalIndent(r, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		mark := map[string]string{doctor.OK: "✓", doctor.Note: "·", doctor.Warn: "!", doctor.Error: "✗"}
+		area := ""
+		for _, c := range r.Checks {
+			if c.Area != area {
+				area = c.Area
+				title := "This machine"
+				if area == "repository" {
+					title = "This repository (" + root + ")"
+				}
+				fmt.Printf("%s\n", title)
+			}
+			fmt.Printf("  %s %s\n", mark[c.Level], c.Message)
+			if c.Fix != "" {
+				fmt.Printf("      %s\n", c.Fix)
+			}
+		}
+		fmt.Printf("\n%s\n", r.Summary)
+	}
+	if r.Status != verdict.Pass {
+		return 1
+	}
+	return 0
 }

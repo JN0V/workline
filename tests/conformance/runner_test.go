@@ -75,6 +75,7 @@ type caseFile struct {
 		Route   string            `yaml:"route"`
 		Item    int               `yaml:"item"`
 		Gate    string            `yaml:"gate"`
+		Doctor  bool              `yaml:"doctor"`
 		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
 	} `yaml:"run"`
 	Expect struct {
@@ -189,6 +190,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 	switch {
 	case c.Run.Gate != "":
 		args = []string{"gate", c.Run.Gate, "--repo", repo, "--json"}
+	case c.Run.Doctor:
+		args = []string{"doctor", "--repo", repo, "--json"}
 	case c.Run.Route == "ready" && c.Run.Item != 0:
 		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}
 		if forgeFile != "" {

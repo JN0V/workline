@@ -1,0 +1,13 @@
+case: setup/doctor-names-what-is-missing
+about: On a machine without the global hooks, an agent or the tools the roles use, the doctor names each one, and a missing optional tool does not fail it.
+given:
+  repo: basic
+  env: {PATH: "/usr/bin:/bin"}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: hooks-not-installed}
+    - {rule: agent-none}
+    - {rule: tool-missing, where: gitleaks, message: "secrets and forbidden terms"}
+    - {rule: tool-missing, where: lychee}

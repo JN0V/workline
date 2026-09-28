@@ -44,7 +44,9 @@ not put on your `PATH`. If `workline` is not found, add it (`~/.zshrc` for zsh):
 echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.bashrc && source ~/.bashrc
 ```
 
-Run the same `go install` again to update.
+Run the same `go install` again to update. `workline doctor` then says what
+is set up and what is missing — the global hooks, an agent, the tools the
+roles use (gitleaks, lychee) — each with the command that installs it.
 
 ### Check every commit on this machine
 

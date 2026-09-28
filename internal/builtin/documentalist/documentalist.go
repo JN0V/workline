@@ -19,6 +19,7 @@ import (
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/tools"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -881,6 +882,31 @@ func trackedDocs(t Tree, globs []string) ([]*Doc, error) {
 	return docs, nil
 }
 
+// Coverage lists the docs under the docs globs that declare their sources,
+// and those that do not: only the first can ever be found suspect.
+func Coverage(repo string, globs []string) (tracked, untracked []string, err error) {
+	t, err := loadTree(repo, globs)
+	if err != nil {
+		return nil, nil, err
+	}
+	docs, err := trackedDocs(t, globs)
+	if err != nil {
+		return nil, nil, err
+	}
+	has := map[string]bool{}
+	for _, d := range docs {
+		tracked = append(tracked, d.Path)
+		has[d.Path] = true
+	}
+	for p := range t.Docs {
+		if matchAny(globs, p) && !has[p] {
+			untracked = append(untracked, p)
+		}
+	}
+	sort.Strings(untracked)
+	return tracked, untracked, nil
+}
+
 func matchAny(globs []string, path string) bool {
 	for _, g := range globs {
 		if match(g, path) {
@@ -978,7 +1004,7 @@ func withExternalLinks(repo string, tree Tree, problems []Problem) ([]Problem, e
 		if p.Rule != "links-not-checked" {
 			out = append(out, p)
 		} else if !ok {
-			p.Message = fmt.Sprintf("%d link(s) to other sites not checked: lychee is not installed (https://lychee.cli.rs)", p.Size)
+			p.Message = fmt.Sprintf("%d link(s) to other sites not checked: lychee is not installed; to install it: %s", p.Size, tools.Lookup("lychee").Install())
 			out = append(out, p)
 		}
 	}

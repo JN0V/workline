@@ -71,6 +71,7 @@ a `PATH` without a tool, or with a fake one first.
 
 - `route: <event>` instead of `role` — run the event's whole line;
 - `gate: <name>` instead of `role` — run one gate;
+- `doctor: true` instead of `role` — run `workline doctor` on the repository;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`);

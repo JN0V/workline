@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JN0V/workline/internal/tools"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -34,7 +35,7 @@ func Secrets(repo, rng string) ([]verdict.Finding, error) {
 	}
 	if _, err := exec.LookPath("gitleaks"); err != nil {
 		return append(findings, verdict.Finding{Rule: "secrets-not-checked", Level: "warn",
-			Message: "gitleaks is not installed, so neither secrets nor forbidden terms were looked for (https://github.com/gitleaks/gitleaks)"}), nil
+			Message: "gitleaks is not installed, so neither secrets nor forbidden terms were looked for; to install it: " + tools.Lookup("gitleaks").Install()}), nil
 	}
 	args := []string{"git"}
 	if rng == "" {

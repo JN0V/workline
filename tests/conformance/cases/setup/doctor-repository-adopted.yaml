@@ -1,0 +1,13 @@
+case: setup/doctor-repository-adopted
+about: In a repository that routes the documentalist before a push and whose docs all declare their sources, the doctor finds nothing to say about it.
+given:
+  repo: documented
+  config:
+    routing: {events: {pre-push: [committer, documentalist]}}
+run: {doctor: true}
+expect:
+  status: pass
+  no-findings:
+    - {rule: documentalist-not-before-push}
+    - {rule: nothing-tracked}
+    - {rule: docs-untracked}

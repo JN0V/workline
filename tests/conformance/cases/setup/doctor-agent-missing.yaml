@@ -1,0 +1,10 @@
+case: setup/doctor-agent-missing
+about: "A project whose agent is claude, on a machine without claude, fails the doctor: every call would fail."
+given:
+  repo: basic
+  env: {PATH: "/usr/bin:/bin"}
+  config: {ai: claude}
+run: {doctor: true}
+expect:
+  status: block
+  findings: [{rule: agent-missing, message: "`claude` is not on your PATH"}]

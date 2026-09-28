@@ -19,6 +19,7 @@ What a role does is in its own README (`roles/<name>/README.md`).
 | `workline item ready <id>` | moves a work item to `ready`, once its Need, Verification, Validation and Scope are written (`--forge` reads it from the forge) |
 | `workline hooks install --global` / `uninstall --global` | takes `core.hooksPath` for every repository, and gives it back as it was; the hooks run the `commit-msg` and `pre-push` lines, then hand over to the hooks that were there |
 | `workline hooks install --repo` | writes `.githooks/commit-msg` in this repository; remove that file to uninstall |
+| `workline doctor` | says what is set up on this machine (git, the global hooks, the agent, the tools the roles use) and in this repository (whether the documentalist runs before a push, how many docs declare their sources), with the command that sets up each thing missing; changes nothing. It exits 1 only on an error — the agent named cannot be called, the config does not load — never for a tool left out; `--json` prints every check |
 
 Options of `run-role` and `route`:
 
