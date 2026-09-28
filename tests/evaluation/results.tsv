@@ -122,3 +122,5 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-28T10:57:14Z	abda049+changes	claude	claude-opus-5-5>claude-sonnet-5	medium	documentalist/splits-a-card-too-long	4/4	1	7365	1278	0.0495	16		
 2026-09-28T10:57:28Z	abda049+changes	claude	claude-opus-5-5>claude-sonnet-5	medium	documentalist/splits-a-card-too-long	4/4	1	7363	1045	0.0466	14		
 2026-09-28T10:57:41Z	abda049+changes	claude	claude-opus-5-5>claude-sonnet-5	medium	documentalist/splits-a-card-too-long	4/4	1	7359	920	0.0444	13		
+2026-09-28T11:09:23Z	3a8c1fc+changes	claude	claude-sonnet-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4998	198	0.0147	4		
+2026-09-28T11:09:27Z	3a8c1fc+changes	claude	claude-sonnet-5	medium	documentalist/propagates-a-product-doc-at-release	5/5	1	4994	203	0.0147	4		

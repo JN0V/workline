@@ -1,0 +1,12 @@
+case: documentalist/propagates-a-product-doc-at-release
+about: The technical doc now says tokens last two hours; at the release, the product doc following it is brought up to date for its reader, and checked again.
+given:
+  repo: documented
+  setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]
+run: {role: documentalist, event: release}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {file-contains: {docs/product/sign-in.md: two hours}}
+  - {file-lacks: {docs/product/sign-in.md: one hour}}
+  - {checked-is-head: docs/product/sign-in.md}
