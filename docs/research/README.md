@@ -12,6 +12,7 @@ stars and dates were checked against the GitHub API that day.
 | [documentalist.md](documentalist.md) | Focused: how to keep docs true, short and linked to product docs |
 | [gates.md](gates.md) | Tools for review, architecture, security, performance and test integrity |
 | [model-selection.md](model-selection.md) | How to pick a model per role without naming one |
+| [install-and-adoption.md](install-and-adoption.md) | How other CLIs diagnose a machine, set it up and adopt a repository |
 
 ## Method
 
