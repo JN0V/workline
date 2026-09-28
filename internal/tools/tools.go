@@ -15,6 +15,9 @@ type Tool struct {
 	Name string
 	// For says who needs it and what goes unchecked without it.
 	For string
+	// Local: what runs on a machine uses it (a commit, a push); otherwise it
+	// serves what usually runs on a forge, gardening, and is offered only.
+	Local bool
 	// Ways to install it, most fitting first; the first whose program is on
 	// this machine is the one given.
 	Ways []Way
@@ -29,7 +32,7 @@ type Way struct {
 }
 
 var known = map[string]Tool{
-	"gitleaks": {Name: "gitleaks", For: "the committer: secrets and forbidden terms",
+	"gitleaks": {Name: "gitleaks", For: "the committer: secrets and forbidden terms", Local: true,
 		Page: "https://github.com/gitleaks/gitleaks/releases",
 		Ways: []Way{
 			{Needs: "brew", Command: "brew install gitleaks"},
@@ -43,7 +46,7 @@ var known = map[string]Tool{
 			{Needs: "brew", Command: "brew install lychee"},
 			{Needs: "cargo", Command: "cargo install lychee"},
 		}},
-	"claude": {Name: "claude", For: "the agent `claude`: refused messages rewritten, suspect docs judged",
+	"claude": {Name: "claude", For: "the agent `claude`: refused messages rewritten, suspect docs judged", Local: true,
 		Page: "https://docs.claude.com/en/docs/claude-code/setup",
 		Ways: []Way{
 			// The installer the setup page recommends; it keeps itself up to date.

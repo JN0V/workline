@@ -77,6 +77,7 @@ type caseFile struct {
 		Gate    string            `yaml:"gate"`
 		Doctor  bool              `yaml:"doctor"`
 		Init    bool              `yaml:"init"`
+		Setup   []string          `yaml:"setup"`   // workline setup, with these options
 		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
 	} `yaml:"run"`
 	Expect struct {
@@ -197,6 +198,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = []string{"doctor", "--repo", repo, "--json"}
 	case c.Run.Init:
 		args = []string{"init", "--repo", repo, "--roles", roles, "--json"}
+	case c.Run.Setup != nil:
+		args = append(append([]string{"setup"}, c.Run.Setup...), "--json")
 	case c.Run.Route == "ready" && c.Run.Item != 0:
 		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}
 		if forgeFile != "" {
@@ -242,7 +245,13 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
 	}
 	cmd := exec.Command(engineBin, args...)
+	cmd.Dir = repo
 	cmd.Env = env
+	if c.Run.Setup != nil { // the machine's git config, which setup changes, is the case's own
+		global := filepath.Join(work, "gitconfig")
+		os.WriteFile(global, nil, 0o644)
+		cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+global)
+	}
 	for k, v := range c.Given.Env {
 		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
 	}

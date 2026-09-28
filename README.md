@@ -44,9 +44,18 @@ not put on your `PATH`. If `workline` is not found, add it (`~/.zshrc` for zsh):
 echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.bashrc && source ~/.bashrc
 ```
 
-Run the same `go install` again to update. `workline doctor` then says what
-is set up and what is missing — the global hooks, an agent, the tools the
-roles use (gitleaks, lychee) — each with the command that installs it.
+Run the same `go install` again to update. Then set up this machine:
+
+```sh
+workline setup    # asks, then does: the global hooks, your agent, the tools the roles use
+```
+
+It asks whether to check every commit (the global hooks, below), which agent
+judges (none, or Claude Code: below), and installs the tools the roles use —
+gitleaks for secrets, the `claude` CLI — each with the command it shows
+first. Run it again to change your answers; `--yes` takes the defaults. It
+ends with `workline doctor`, which says at any time what is set up and what
+is missing, each with the command that sets it up.
 
 In a repository, `workline init` has the documentalist run before each push,
 and, with an agent, proposes for each doc the code it describes, for you to
@@ -54,6 +63,8 @@ review and commit: until a doc names its `sources`, nothing tells when it
 goes wrong.
 
 ### Check every commit on this machine
+
+`workline setup` does this when you say yes; by hand:
 
 ```sh
 workline hooks install --global     # git's global core.hooksPath now goes through workline
@@ -76,7 +87,8 @@ git commit --allow-empty -m "AC-3 fix the thing"
 ### Let an AI rewrite what is refused (optional)
 
 By default no AI is used: a refused message is explained, and you rewrite it.
-To let an AI rewrite it:
+To let an AI rewrite it (`workline setup` installs Claude Code and does step
+2; you still log in once):
 
 1. Install [Claude Code](https://docs.claude.com/en/docs/claude-code/setup),
    run `claude` once and log in (a Claude subscription or an API key). workline

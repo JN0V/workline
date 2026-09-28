@@ -11,6 +11,7 @@
 //	workline apply <run-dir>... | --line <route result> [--json]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
+//	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
 //	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
@@ -38,6 +39,7 @@ import (
 	wlreport "github.com/JN0V/workline/internal/report"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/setup"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 	"go.yaml.in/yaml/v3"
@@ -68,12 +70,14 @@ func main() {
 		os.Exit(doctorCmd(os.Args[2:]))
 	case "init":
 		os.Exit(initCmd(os.Args[2:]))
+	case "setup":
+		os.Exit(setupCmd(os.Args[2:]))
 	}
 	usage()
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--json]")
+	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo\n       workline setup [--hooks yes|no] [--ai <agent>] [--install <tool,...>|none] [--yes]\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--json]")
 	os.Exit(64)
 }
 
@@ -637,6 +641,77 @@ func parseTarget(s string) (*forge.Target, error) {
 		return nil, fmt.Errorf("--target must be issue:<n> or merge-request:<n>, not %q", s)
 	}
 	return &forge.Target{Kind: kind, ID: id}, nil
+}
+
+// setupCmd sets workline up on this machine, asking what to enable, then
+// shows the doctor's report. Run again, it reconfigures.
+func setupCmd(args []string) int {
+	fs := flag.NewFlagSet("setup", flag.ExitOnError)
+	hooksOn := fs.String("hooks", "", "yes or no: the global git hooks (default: ask)")
+	ai := fs.String("ai", "", "your agent: none, claude, claude:<model>@<effort>, cmd:<command> (default: ask)")
+	install := fs.String("install", "", "the tools to install, comma-separated, all, or none (default: ask)")
+	yes := fs.Bool("yes", false, "take the default of every question not answered by a flag")
+	asJSON := fs.Bool("json", false, "print the doctor's report, at the end, as JSON")
+	_ = fs.Parse(args)
+	var a setup.Answers
+	a.Hooks, a.AI, a.Yes = *hooksOn, *ai, *yes
+	if *install != "" {
+		a.Install = []string{}
+		if *install != "none" {
+			a.Install = strings.Split(*install, ",")
+		}
+	}
+	bin, err := os.Executable()
+	if err == nil {
+		bin, err = filepath.EvalSymlinks(bin)
+	}
+	var paths hooks.Paths
+	if err == nil {
+		paths, err = hooks.DefaultPaths()
+	}
+	rolesDir := ""
+	if err == nil {
+		rolesDir, err = resolveRoles(os.Getenv("WORKLINE_ROLES"))
+	}
+	cfgDir, _ := os.UserConfigDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	err = setup.Run(a, setup.Machine{
+		In: os.Stdin, Out: os.Stderr, Interactive: terminal(os.Stdin),
+		Bin: bin, Hooks: paths, UserConfig: filepath.Join(cfgDir, "workline", "config.yaml"),
+		Tools: doctor.UsedTools(rolesDir), Install: setup.Shell(os.Stderr),
+	})
+	if err != nil {
+		if *asJSON {
+			out, _ := json.MarshalIndent(&engine.Result{Status: verdict.Block, Summary: err.Error(), Applied: []string{}, Refused: []string{},
+				Findings: []verdict.Finding{{Rule: "setup-stopped", Message: err.Error()}}}, "", "  ")
+			fmt.Println(string(out))
+		} else {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+		}
+		if strings.HasPrefix(err.Error(), "no terminal") {
+			return 64
+		}
+		return 1
+	}
+	if *asJSON {
+		return doctorCmd([]string{"--json"})
+	}
+	fmt.Println()
+	return doctorCmd(nil)
+}
+
+// terminal says whether f is a terminal a person types in: a character
+// device, but not /dev/null, which is one too.
+func terminal(f *os.File) bool {
+	st, err := f.Stat()
+	if err != nil || st.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	null, err := os.Stat(os.DevNull)
+	return err != nil || !os.SameFile(st, null)
 }
 
 // doctorCmd says what is set up on this machine and in the repository, and

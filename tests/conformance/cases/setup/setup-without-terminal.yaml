@@ -1,0 +1,10 @@
+case: setup/setup-without-terminal
+about: Without a terminal to ask on, setup changes nothing and names the options that answer its questions.
+given:
+  repo: basic
+run: {setup: []}
+expect:
+  status: block
+  findings: [{rule: setup-stopped, message: "--hooks yes|no, --ai none|claude, --install"}]
+  files:
+    ../config/workline/config.yaml: {exists: false}

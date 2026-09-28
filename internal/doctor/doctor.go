@@ -119,14 +119,19 @@ func machine(r *Report, o Options) {
 
 	agent(r, "machine", o.AI, "WORKLINE_AI", o.UserAI, "your config")
 
-	for _, name := range usedTools(o.RolesDir) {
+	for _, name := range UsedTools(o.RolesDir) {
 		t := tools.Lookup(name)
 		if t.Present() {
 			r.add(Check{Area: "machine", Rule: "tool", Where: name, Level: OK, Message: name + " — " + orName(t.For)})
 			continue
 		}
-		r.add(Check{Area: "machine", Rule: "tool-missing", Where: name, Level: Warn,
-			Message: name + " is not installed, so this does not run: " + orName(t.For), Fix: t.Install()})
+		// A tool for what usually runs on a forge, gardening, is not missed here.
+		level := Warn
+		if !t.Local && t.For != "" {
+			level = Note
+		}
+		r.add(Check{Area: "machine", Rule: "tool-missing", Where: name, Level: level,
+			Message: name + " is not installed, so this does not run here: " + orName(t.For), Fix: t.Install()})
 	}
 }
 
@@ -140,7 +145,7 @@ func agent(r *Report, area, first, firstFrom, second, secondFrom string) {
 	if spec == "" || spec == "none" {
 		r.add(Check{Area: area, Rule: "agent-none", Level: Note,
 			Message: "no agent: every check runs, and what needs judgement goes to a person (a refused message is explained, not rewritten)",
-			Fix:     "echo 'ai: claude' >> " + userConfig()})
+			Fix:     "workline setup"})
 		return
 	}
 	name, _, _ := strings.Cut(spec, ":")
@@ -236,17 +241,8 @@ func repository(r *Report, o Options) {
 	}
 }
 
-// userConfig is the user's config file, where `ai:` names their agent.
-func userConfig() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "~/.config/workline/config.yaml"
-	}
-	return filepath.Join(dir, "workline", "config.yaml")
-}
-
-// usedTools lists the tools the roles use, each once, sorted.
-func usedTools(rolesDir string) []string {
+// UsedTools lists the tools the roles use, each once, sorted.
+func UsedTools(rolesDir string) []string {
 	entries, err := os.ReadDir(rolesDir)
 	if err != nil {
 		return nil

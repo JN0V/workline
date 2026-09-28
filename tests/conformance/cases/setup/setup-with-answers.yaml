@@ -1,0 +1,15 @@
+case: setup/setup-with-answers
+about: Answered by its options, setup installs the global hooks, records the agent, installs no tool, and ends with the doctor's report.
+given:
+  repo: basic
+  env: {PATH: "/usr/bin:/bin"}
+run: {setup: [--hooks, "yes", --ai, none, --install, none]}
+expect:
+  status: pass
+  no-findings: [{rule: hooks-not-installed}]
+  findings:
+    - {rule: agent-none}
+    - {rule: tool-missing, where: gitleaks}
+  files:
+    ../config/workline/config.yaml: {contains: "ai: none"}
+    ../config/workline/hooks/commit-msg: {exists: true}
