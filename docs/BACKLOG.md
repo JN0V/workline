@@ -16,23 +16,14 @@ this repository before any other role is added.
    takes the best independence available and says which (ADR-0005); the
    weekly run judges on `claude:sonnet`. Left: a judge of another provider,
    when there is one. Each defect a role lets through becomes a case.
-2. **Finish the documentalist**, before any other role. Tried on another
-   machine (2026-09-28), two gaps:
-   - **An install that sets everything up**, interactive and run again to
-     reconfigure: it asks what to enable (the global hooks, the agent, the
-     roles run on this machine), installs or names the tools each role uses
-     (gitleaks, lychee, the claude CLI, from the roles' `uses`), installs the
-     hooks, and ends with a `workline doctor` that says what is missing and
-     the command that installs it (as `flutter doctor`, `brew doctor`). Today
-     the README's install lists neither tool, and gitleaks' warning
-     (`secrets-not-checked`) gives no command.
-   - **Adoption in a repository**: on another repository the documentalist
-     most likely never ran — `pre-push` is not routed by default, no doc
-     declares `sources`, so none is tracked, and its findings stay quiet
-     before a push. A `workline init` that routes `pre-push` and, with an
-     agent, proposes each doc's `sources` for a person to confirm; `doctor`
-     says, for the repository, whether the documentalist runs and how many
-     docs it tracks.
+2. **Try the install and the adoption on the other machine**, where their
+   gaps were found (2026-09-28). Built since: `workline setup` asks what to
+   enable and installs the tools, `workline doctor` says what is missing with
+   its command, `workline init` routes `pre-push` and has the agent propose
+   each doc's `sources` (tried on copies of this repository and of a firmware
+   project). Left: running them there, on a real repository, and what the
+   first push asks a person to review — the docs suspect since they were last
+   edited.
 
 Then, once both work well here:
 
@@ -98,6 +89,16 @@ last.
   so (`setting-missing`), but a deep merge would be less surprising.
 - **An unknown option exits 2.** Go's option parser exits 2, which the exit
   codes reserve for `human`; the CLI should say 64, as for other misuse.
+- **A refused answer is not kept.** When the judge refuses an agent's answer,
+  only the refusal stays in the run folder: a diff git could not apply
+  (adopting a repository, twice) could not be studied. Keep it beside the
+  refusal.
+- **A finding of an earlier round outlives what it said.** The engine keeps a
+  round's finding that no later round reports again; `nothing-tracked`, true
+  before the first round applied, was still shown after it. `init` no longer
+  reports it; the rule itself holds for any finding a round makes untrue.
+- **Installing lychee on Linux without brew or cargo.** `setup` then only
+  names the page; its release binaries could be fetched, pinned.
 - **Your config folder on macOS.** `config.yaml` and the global hooks follow
   Go's config folder (`~/Library/Application Support/workline` on macOS), but
   your own facets are looked for in `~/.config/workline/roles/`: one folder

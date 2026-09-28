@@ -73,6 +73,8 @@ a `PATH` without a tool, or with a fake one first.
 - `gate: <name>` instead of `role` — run one gate;
 - `doctor: true` instead of `role` — run `workline doctor` on the repository;
 - `init: true` instead of `role` — run `workline init` on the repository;
+- `setup: [<option>...]` instead of `role` — run `workline setup` with these
+  options, on a git config of the case's own;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`);
