@@ -1,0 +1,10 @@
+case: documentalist/product-doc-waits-for-the-release
+about: A technical doc changed; the product doc following it along an edge due at the release is pending until then, not rewritten in this merge request.
+given:
+  repo: documented
+  setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]
+run: {role: documentalist, event: merge-request, ai: none}
+expect:
+  status: pass
+  findings: [{rule: pending, where: docs/product/sign-in.md, message: "due at release"}]
+  no-findings: [{rule: suspect, where: docs/product/sign-in.md}]

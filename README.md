@@ -22,7 +22,7 @@ Status (2026-09-24): used daily on its author's machine;
 |---|---|
 | **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages; secrets and forbidden terms in changes and messages (gitleaks), author identity | |
 | **Release manager**: semver, calver, several packages in one repository, generated changelog, tag, forge release | the merge-request flow, build metadata |
-| **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository and, when gardening, to other sites (lychee), identifiers gone from the code; docs citing a superseded decision; docs not confirmed for too long; derived blocks; Claude judges suspect and stale docs, opens an issue when the code disagrees with a spec, merges a repeated passage and a card too short, condenses a doc over budget, splits a card holding several concepts (checked by a second model), and its patches are checked | propagating to product docs at release, style |
+| **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository and, when gardening, to other sites (lychee), identifiers gone from the code; docs citing a superseded decision; docs not confirmed for too long; derived blocks; Claude judges suspect and stale docs, opens an issue when the code disagrees with a spec, brings product docs up to date at the release, which waits for them, merges a repeated passage and a card too short, condenses a doc over budget, splits a card holding several concepts (checked by a second model), and its patches are checked | style |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
 | **Forges**: GitHub (comments, a comment edited in place, and labels tried live), simulated; GitLab written; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | GitLab never run; GitHub issues and releases never run live |
@@ -129,7 +129,7 @@ flowchart LR
 | `pre-push` | your machine, before the commits leave it, if the project routes it | none by default; workline itself: committer, documentalist |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
 | `schedule` | you, or a scheduled pipeline: the [GitHub Actions](ci/github/workline-gardening.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template, each task a merge request of its own (ADR-0006) | documentalist |
-| `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | release-manager |
+| `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | documentalist (docs due at the release), then release-manager |
 
 So the committer checks your messages as you write them, and again on the merge
 request for those without the hook; the documentalist runs on the forge. On a

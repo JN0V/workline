@@ -1,0 +1,14 @@
+case: documentalist/tracking-issue-emptied-in-place
+about: With nothing due any more, the tracking issue already open says so, and no other is opened.
+given:
+  repo: documented
+  forge:
+    issues:
+      - {id: 4, title: "Docs due at the next release", body: "- `docs/product/sign-in.md` — due at release", labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 4, body-contains: "Nothing is due"}
+      - {id: 5, absent: true}

@@ -317,7 +317,8 @@ func Pre(runDir, repo string) int {
 		byPath[d.Path] = d
 	}
 	suspects := map[string]*suspectDoc{}
-	var stale map[string]*suspectDoc // docs confirmed too long ago, whose sources fit in a task
+	var stale map[string]*suspectDoc      // docs confirmed too long ago, whose sources fit in a task
+	propagate := map[string]*suspectDoc{} // docs due now, at the moment their edge names
 	// A doc is suspect when one of its own sources changed since it was checked.
 	for _, d := range docs {
 		for _, src := range d.Sources {
@@ -344,11 +345,27 @@ func Pre(runDir, repo string) int {
 			}
 			if commits != "" {
 				why := fmt.Sprintf("%s changed since it was checked:\n%s", src, commits)
-				findings = append(findings, verdict.Finding{Rule: "suspect", Where: d.Path, Message: why})
-				sd := suspects[d.Path]
+				// A doc following another doc along an edge due later waits for
+				// that moment (a product doc, for the release), then is propagated.
+				into := suspects
+				if when := edge(s, path, d.Path); name == "" && strings.HasSuffix(path, ".md") && when != "" && when != "now" {
+					if os.Getenv("WORKLINE_EVENT") != when {
+						if !hasPending(findings, d.Path) {
+							findings = append(findings, verdict.Finding{Rule: "pending", Where: d.Path,
+								Message: fmt.Sprintf("%s changed since it was checked; due at %s", src, when)})
+						}
+						continue
+					}
+					findings = append(findings, verdict.Finding{Rule: "due", Where: d.Path, Level: "block",
+						Message: fmt.Sprintf("%s changed since it was checked, and this %s is when it follows: until it does, the %s waits", src, when, when)})
+					into = propagate
+				} else {
+					findings = append(findings, verdict.Finding{Rule: "suspect", Where: d.Path, Message: why})
+				}
+				sd := into[d.Path]
 				if sd == nil {
 					sd = &suspectDoc{doc: d}
-					suspects[d.Path] = sd
+					into[d.Path] = sd
 				}
 				sd.why = append(sd.why, why)
 				sd.evidence = append(sd.evidence, fmt.Sprintf("What changed in %s:\n\n%s", src, evidence(where.dir, checked, where.rev, path, anchor)))
@@ -422,6 +439,9 @@ func Pre(runDir, repo string) int {
 	if c, ok := checklist(findings); ok {
 		fallback = append(fallback, c)
 	}
+	if i, ok := trackingIssue(findings); ok {
+		fallback = append(fallback, i)
+	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}
@@ -430,13 +450,40 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// Due now (at the release): each doc is brought up to date for its reader.
+	if task == "" && len(propagate) > 0 {
+		if task, judged, err = docTask(`Kind: propagate
+
+These docs follow technical docs that changed, and are updated now, at the
+moment their edge names. For each, update it for its reader — what they can
+do, what changed for them — from what changed in its sources below, and say
+nothing those changes do not back. A patch: a unified diff with context lines,
+whose hunks cite the doc's lines by the numbers shown here. It may grow the
+doc when its reader really gained something to know.
+
+`, propagate, s, pl, repo); err != nil {
+			return fail(err)
+		}
+		if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("propagate\n"), 0o644); err != nil {
+			return fail(err)
+		}
+	}
 	// Backpressure: while enough of the role's merge requests wait for review,
 	// gardening proposes nothing more; what it finds is still reported.
 	gardening := os.Getenv("WORKLINE_EVENT") == "schedule"
 	if n, err := strconv.Atoi(os.Getenv("WORKLINE_OPEN_MERGE_REQUESTS")); err == nil && gardening &&
 		s.MaxOpenMergeRequests > 0 && n >= s.MaxOpenMergeRequests {
 		task, judged, stale, gardening = "", nil, nil, false
-		os.Remove(filepath.Join(runDir, "in", "fallback.yaml")) // derived blocks too would open one more
+		var kept []intent.Intention // derived blocks too would open one more merge request
+		for _, f := range fallback {
+			if f.Kind != "patch" {
+				kept = append(kept, f)
+			}
+		}
+		os.Remove(filepath.Join(runDir, "in", "fallback.yaml"))
+		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), kept); err != nil {
+			return fail(err)
+		}
 		findings = append(findings, verdict.Finding{Rule: "gardening-paused",
 			Message: fmt.Sprintf("%d merge requests of the documentalist wait for review (max-open-merge-requests: %d): no task proposed until fewer wait", n, s.MaxOpenMergeRequests)})
 	}
@@ -501,7 +548,7 @@ func Pre(runDir, repo string) int {
 	var left strings.Builder
 	for i := range findings {
 		f := &findings[i]
-		if f.Rule == "suspect" && judged[f.Where] == nil && task != "" || f.Rule == "stale" && stale[f.Where] != nil && judged[f.Where] == nil && task != "" {
+		if (f.Rule == "suspect" || f.Rule == "due") && judged[f.Where] == nil && task != "" || f.Rule == "stale" && stale[f.Where] != nil && judged[f.Where] == nil && task != "" {
 			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
@@ -694,7 +741,8 @@ func Post(runDir, repo string) int {
 			mergedPair = d.Docs
 		}
 	} else {
-		refused, patched, err = judgePatches(repo, s, judged, intents, fallback)
+		kind, _ := os.ReadFile(filepath.Join(runDir, "in", "task-kind"))
+		refused, patched, err = judgePatches(repo, s, judged, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 		if err != nil {
 			return fail(err)
 		}
@@ -708,16 +756,19 @@ func Post(runDir, repo string) int {
 		}
 		return 1
 	}
-	blocking := 0
+	blocking, due := 0, 0
 	var kept []verdict.Finding
 	for _, f := range findings {
-		if (f.Rule == "suspect" || f.Rule == "stale") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
+		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
 		}
 		if f.Level == "block" {
 			blocking++
 			f.Level = ""
+		}
+		if f.Rule == "due" {
+			due++
 		}
 		kept = append(kept, f)
 	}
@@ -728,6 +779,8 @@ func Post(runDir, repo string) int {
 	}
 	v := verdict.Verdict{Status: verdict.Pass, Findings: kept}
 	switch {
+	case due > 0 && due == blocking:
+		v.Status, v.Summary = verdict.Block, fmt.Sprintf("%d docs due at this moment are not up to date yet: they wait for an agent, or a person", due)
 	case blocking > 0:
 		v.Status, v.Summary = verdict.Block, "some sources could not be judged, or some checks could not run"
 	case len(intents) > 0:
@@ -1013,6 +1066,8 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	switch kind {
 	case "stale":
 		title = "docs: read again the docs not confirmed for too long"
+	case "propagate":
+		title = "docs: bring the product docs up to date for the release"
 	case "condense", "split":
 		var c condenseTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
@@ -1045,4 +1100,28 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	}
 	body.WriteString("\nRunning the same task again updates this merge request; commits added to its branch by hand are overwritten.\n")
 	return map[string]string{"key": key, "title": title, "body": body.String()}
+}
+
+// trackingIssue is the one issue listing the docs due later — at the release,
+// by default — kept in place on the forge when gardening, which sees the main
+// branch: a merge request's run would list what is not merged yet. With none
+// due, it says so in an issue already open, and opens none.
+func trackingIssue(findings []verdict.Finding) (intent.Intention, bool) {
+	if os.Getenv("WORKLINE_FORGE") == "" || os.Getenv("WORKLINE_EVENT") != "schedule" {
+		return intent.Intention{}, false
+	}
+	var list strings.Builder
+	for _, f := range findings {
+		if f.Rule == "pending" {
+			why, _, _ := strings.Cut(f.Message, "\n")
+			fmt.Fprintf(&list, "- `%s` — %s\n", f.Where, why)
+		}
+	}
+	value := map[string]any{"title": "Docs due at the next release", "sticky": true}
+	if list.Len() == 0 {
+		value["body"], value["update-only"] = "Nothing is due: every doc that follows another is up to date.", true
+	} else {
+		value["body"] = "These docs follow docs that changed, and are brought up to date at the moment their edge names — the release, by default — when the documentalist runs before the release manager; until then, the release waits for them.\n\n" + list.String()
+	}
+	return intent.Intention{Kind: "issue", Value: value}, true
 }

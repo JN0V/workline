@@ -1,0 +1,17 @@
+# The documentalist's answer, at the release, to "docs/product/sign-in.md
+# follows docs/tech/auth.md, which now says two hours": updated for its
+# reader, a sentence more, and checked against the release's commit.
+- patch: |
+    --- a/docs/product/sign-in.md
+    +++ b/docs/product/sign-in.md
+    @@ -3,6 +3,8 @@ type: concept
+     sources: [docs/tech/auth.md#token-refresh]
+    -checked: 9bf650b
+    +checked: 7438800
+    +verified: agent:documentalist
+     ---
+     # Staying signed in
+     
+    -You stay signed in for one hour without doing anything.
+    +You stay signed in for two hours without doing anything.
+    +That is twice as long as before this release.

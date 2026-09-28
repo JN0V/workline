@@ -91,3 +91,8 @@ On 2026-09-27, on workline's own repository:
   as the CI's apply job would, on the detached merge checkout, the
   documentalist committed the count to the pull request's own branch, on top
   of the author's commit, and left the tree clean.
+- propagating, on the `documented` fixture with the technical doc saying two
+  hours: pending on a merge request, blocking the release without an agent,
+  and at the release, with Claude (Sonnet), the product doc brought to two
+  hours and checked again, at the first attempt and in two evaluation runs
+  out of two.

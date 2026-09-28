@@ -18,8 +18,7 @@ this repository before any other role is added.
    when there is one. Each defect a role lets through becomes a case.
 2. **What is left of the committer and the documentalist**, before any new
    role:
-   - documentalist: propagating (with the pending docs' tracking issue and
-     the release gate), style (vale).
+   - documentalist: style (vale).
 
 Then, once both work well here:
 

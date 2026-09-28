@@ -1,0 +1,12 @@
+case: documentalist/release-propagates-product-docs
+about: At the release, a product doc due then is brought up to date for its reader, and may grow when its reader gained something to know; then it no longer holds the release.
+given:
+  repo: documented
+  setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]
+run: {role: documentalist, event: release, ai: "fake:propagate"}
+expect:
+  status: pass
+  calls: [{task: propagate}]
+  applied: [patch]
+  files: {docs/product/sign-in.md: {contains: "two hours"}}
+  no-findings: [{rule: due, where: docs/product/sign-in.md}]

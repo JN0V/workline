@@ -67,7 +67,7 @@ routing:
     merge-request: [committer, documentalist, gate:merge]
     merge:         [release-manager]
     schedule:      [documentalist]
-    release:       [gate:release, release-manager]
+    release:       [gate:release, documentalist, release-manager]   # docs due at the release first
 
   handoffs:                             # the only handoffs a role may ask for
     - {from: release-manager, to: documentalist}

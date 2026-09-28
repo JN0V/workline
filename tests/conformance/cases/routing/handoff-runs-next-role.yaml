@@ -4,4 +4,4 @@ given:
   repo: released
   config: {roles: {release-manager: {settings: {flow: direct}}}}
 run: {route: release, ai: "fake:release-and-handoff"}
-expect: {status: pass, steps: [release-manager, "documentalist (handoff)"]}
+expect: {status: pass, steps: [documentalist, release-manager, "documentalist (handoff)"]}

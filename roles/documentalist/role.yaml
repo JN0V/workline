@@ -7,7 +7,9 @@ mission: The docs stay true to the code, short enough to be read, and the produc
 #           person's agent; its patches are reviewed before pushing again.
 # schedule: gardening — freshness, duplicates, budgets, across the whole repo.
 # handoff: from the release manager, when a release changes how the project is used.
-events: [merge-request, pre-push, schedule, handoff]
+# release: before the release manager: the docs due at the release are brought
+#          up to date; until they are, the release waits.
+events: [merge-request, pre-push, schedule, handoff, release]
 
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine
@@ -52,8 +54,8 @@ settings:
   truth:
     doc: ["docs/adr/**"]
   # Cascades are cut. Only edges marked `now` are handled in the change itself;
-  # the others are reported as pending, due at a later moment (the one tracking
-  # issue that should hold them is not built yet).
+  # the others are pending, listed in one tracking issue, until the event they
+  # name (`release`), which runs the documentalist first and waits for them.
   propagation:
     - {from: code, to: "docs/tech/**", when: now}
     - {from: "docs/tech/**", to: "docs/product/**", when: release}

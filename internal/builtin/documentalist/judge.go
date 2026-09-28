@@ -203,7 +203,7 @@ func checkedMatches(content string, want map[string]string) bool {
 // derived blocks alone, not growing the doc, recording the commits the doc was
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, intents []intent.Intention, fallback []intent.Intention) ([]verdict.Finding, map[string]bool, error) {
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, error) {
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
 		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
@@ -263,7 +263,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			// The frontmatter records who checked the doc; only the body counts.
-			if n, o := len(scan(now)), len(scan(old)); n > o {
+			if n, o := len(scan(now)), len(scan(old)); n > o && !mayGrow {
 				refuse("patch-grows", f.path, fmt.Sprintf("the patch makes the doc %d lines longer; fix what is wrong without adding to it", n-o))
 				continue
 			}

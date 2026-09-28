@@ -1,0 +1,13 @@
+case: documentalist/tracking-issue-lists-due-docs
+about: When gardening, with a forge, the docs due at the release are listed in one issue, kept in place.
+given:
+  repo: documented
+  setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]
+  forge: {issues: []}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  applied: [issue]
+  forge:
+    issues:
+      - {id: 1, title: "Docs due at the next release", body-contains: "`docs/product/sign-in.md` — docs/tech/auth.md#token-refresh changed"}

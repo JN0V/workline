@@ -61,7 +61,7 @@ Not built yet: style (vale).
 |---|---|
 | `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
-| `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
+| `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |
 
 Findings are reported rather than blocking while they are new (warn before
@@ -73,8 +73,16 @@ inside the change. Every other suspect goes on a pending list — one tracking
 issue, updated in place — with the moment it is due: the release gate refuses
 to release while product docs due `at release` are still pending, and the
 release manager hands them to the documentalist in one batch. Nothing is
-forgotten; nothing drags a small fix into a rewrite of the user guide. (Built so
-far: the pending findings. Not yet: the tracking issue and the release gate.)
+forgotten; nothing drags a small fix into a rewrite of the user guide.
+
+A doc following another doc along an edge due later stays `pending` until
+then, even once the doc it follows is fixed and merged. On `release`, the
+documentalist runs before the release manager: each doc due at the release is
+`due`, and becomes the `propagate` task — brought up to date for its reader,
+growing when the reader gained something to know. A `due` doc left as it was
+blocks, so the line stops and nothing is released. When gardening, with a
+forge, the docs due are listed in one issue, "Docs due at the next release",
+kept in place.
 
 **Code never rewrites the authority.** When the code disagrees with a doc marked
 as the truth (`truth.doc`: a spec, an ADR, the architecture), the doc is not

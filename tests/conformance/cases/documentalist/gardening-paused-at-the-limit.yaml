@@ -11,7 +11,7 @@ run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-
 expect:
   status: pass
   agent-calls: 0
-  applied: []
+  applied: [issue]   # no patch: the tracking issue only, kept if already open
   findings:
     - {rule: gardening-paused, message: "1 merge requests"}
     - {rule: duplicate, where: docs/faq.md}
