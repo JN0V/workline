@@ -1,0 +1,3 @@
+# Two notes in one answer, each for a person to read.
+- note: "docs/tech/auth.md: the sources do not say how long a token lasts now; a person should say."
+- note: "src/auth/token.go has no test for the token's lifetime."

@@ -1,0 +1,10 @@
+case: engine/notes-are-kept
+about: Every note the agent leaves reaches the result, for a person to read, two in one answer as well.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:two-notes"}
+expect:
+  status: pass
+  applied: [note, note]
+  notes: ["a person should say", "no test for the token"]

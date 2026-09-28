@@ -69,6 +69,7 @@ type Result struct {
 	Applied      []string          `json:"applied"`
 	Refused      []string          `json:"refused"`
 	Handoffs     []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
+	Notes        []string          `json:"notes,omitempty"`    // what the agent left for a person: a round's notes each
 	RunDir       string            `json:"run-dir"`
 	ToApply      bool              `json:"to-apply,omitempty"`      // judged with NoApply: `workline apply` still has work
 	MergeRequest int               `json:"merge-request,omitempty"` // the merge request the patches went to
@@ -116,6 +117,9 @@ func Run(o Options) *Result {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Message: err.Error()})
 		}
 		res.Findings = supersede(earlier, res.Findings)
+		if n, err := os.ReadFile(filepath.Join(res.RunDir, "out", "note.md")); err == nil && strings.TrimSpace(string(n)) != "" {
+			res.Notes = append(res.Notes, strings.TrimSpace(string(n)))
+		}
 		more, err := os.ReadFile(filepath.Join(res.RunDir, "in", "more"))
 		deferred = map[string]bool{}
 		for _, l := range strings.Split(string(more), "\n") {
@@ -858,7 +862,14 @@ func (a *applier) apply(in intent.Intention) error {
 		}
 		return nil
 	case "note":
-		return os.WriteFile(filepath.Join(a.runDir, "out", "note.md"), []byte(fmt.Sprint(in.Value)), 0o644)
+		// Several notes of one answer are all kept, one after the other.
+		f, err := os.OpenFile(filepath.Join(a.runDir, "out", "note.md"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		_, err = fmt.Fprintf(f, "%s\n\n", strings.TrimSpace(fmt.Sprint(in.Value)))
+		return err
 	case "patch":
 		return a.patch(in.Value)
 	case "release":

@@ -95,6 +95,7 @@ a `PATH` without a tool, or with a fake one first.
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   and `comment-lacks` (a text some comment holds, or none does),
   `body-contains` (a text its body holds).
+- `notes` — texts the agent's notes must hold, all rounds together.
 - `files` — paths that must exist, or contain a text, afterwards.
 
 ## The fakes

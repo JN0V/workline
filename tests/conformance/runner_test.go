@@ -93,6 +93,7 @@ type caseFile struct {
 		SARIF       []map[string]any             `yaml:"sarif"`        // results, by rule, uri, line, level
 		CodeQuality []map[string]any             `yaml:"code-quality"` // issues, by check_name, path, line, severity
 		LeftOut     []string                     `yaml:"left-out"`     // wheres found in neither report
+		Notes       []string                     `yaml:"notes"`        // texts the agent's notes hold
 	} `yaml:"expect"`
 }
 
@@ -107,6 +108,7 @@ type result struct {
 	Calls      []map[string]any `json:"calls"`
 	RunDir     string           `json:"run-dir"`
 	Pending    []string         `json:"pending"` // runs a line judged and did not apply
+	Notes      []string         `json:"notes"`
 	Applied    []string         `json:"applied"`
 	Refused    []string         `json:"refused"`
 	Steps      []struct {
@@ -341,6 +343,11 @@ func compare(c *caseFile, r *result, repo string) []string {
 			if err != nil || !strings.Contains(string(out), text) {
 				p = append(p, fmt.Sprintf("origin's %s does not hold %q in %s", branch, text, path))
 			}
+		}
+	}
+	for _, text := range e.Notes {
+		if !strings.Contains(strings.Join(r.Notes, "\n"), text) {
+			p = append(p, fmt.Sprintf("no note holds %q (notes: %q)", text, r.Notes))
 		}
 	}
 	for path, want := range e.Files {

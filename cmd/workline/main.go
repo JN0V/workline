@@ -179,6 +179,9 @@ func report(r *engine.Result) {
 		}
 		fmt.Fprintf(os.Stderr, "  %s%s%s: %s\n", f.Rule, where, level, f.Message)
 	}
+	for _, n := range r.Notes {
+		fmt.Fprintf(os.Stderr, "  note from the agent: %s\n", strings.ReplaceAll(n, "\n", "\n    "))
+	}
 }
 
 // resolveRoles returns the given folder, or the built-in roles extracted to the cache.

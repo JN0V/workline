@@ -37,7 +37,7 @@ Options of `run-role` and `route`:
 | `--open-merge-request` | with a forge: what the patches write goes on a branch `workline/<role>/<task>`, pushed, with a merge request opened or updated for it; the role is told how many of its merge requests are open (ADR-0006) |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--sarif <file>` / `--code-quality <file>` | also write the findings as SARIF (GitHub code scanning) or a GitLab Code Quality report; `route`: every step's (docs/spec/role-outcome.md) |
-| `--json` | print the result as JSON: status, summary, findings, each agent call (agent, tier, effort, the exact model that answered, tokens in, cached and out, cost, seconds), and for a line its steps and pending runs |
+| `--json` | print the result as JSON: status, summary, findings, the agent's notes, each agent call (agent, tier, effort, the exact model that answered, tokens in, cached and out, cost, seconds), and for a line its steps and pending runs |
 
 ## Another agent
 
