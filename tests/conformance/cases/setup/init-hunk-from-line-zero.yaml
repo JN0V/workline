@@ -1,0 +1,10 @@
+case: setup/init-hunk-from-line-zero
+about: A header inserted by a hunk numbered from line 0, with the doc's first line as context, is read as git reads it, from line 1, and taken.
+given:
+  repo: basic
+run: {init: true, ai: "fake:sources-at-line-zero"}
+expect:
+  status: pass
+  applied: [patch]
+  files:
+    README.md: {contains: "sources: [main.go]"}

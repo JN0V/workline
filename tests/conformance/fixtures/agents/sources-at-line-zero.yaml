@@ -1,0 +1,11 @@
+# The README's sources, the hunk numbered from line 0, as an insertion before
+# the first line is often written; git reads it from line 1.
+- patch: |
+    --- a/README.md
+    +++ b/README.md
+    @@ -0,0 +1,5 @@
+    +<!-- workline
+    +sources: [main.go]
+    +checked: f40c217
+    +-->
+     # Project

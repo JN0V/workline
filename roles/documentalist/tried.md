@@ -113,3 +113,7 @@ On 2026-09-27, on workline's own repository:
   call, the task over the role's budget — its changelog, 134 kB, was put
   before the agent whole. A doc now shows its first lines only, enough to
   tell what it describes.
+  Run again: 14 docs adopted in five rounds, then the rounds ran out; three
+  answers were refused for a hunk numbered from line 0 (`@@ -0,0 +1,4 @@`,
+  the doc's first line as context), which git reads from line 1 and the
+  judge took for a line that does not exist: now read as git does.

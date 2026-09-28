@@ -70,6 +70,9 @@ func parseDiff(diff string) ([]fileDiff, error) {
 				}
 				h.lines = append(h.lines, hl)
 			}
+			if h.oldStart == 0 && h.oldCount > 0 {
+				h.oldStart = 1 // an insertion before the first line, quoting it: git reads it from line 1
+			}
 			if h.oldCount == 0 && h.oldStart > 0 && m[2] != "0" {
 				return nil, fmt.Errorf("the hunk at line %d quotes no line of the doc; give context lines", h.oldStart)
 			}
