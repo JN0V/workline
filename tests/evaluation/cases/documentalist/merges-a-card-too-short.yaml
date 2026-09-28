@@ -1,0 +1,16 @@
+case: documentalist/merges-a-card-too-short
+about: Gardening a project whose refresh card is five words; its text goes into the tokens card, under a heading of its own, the card is deleted, and the link to it follows it.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline docs/cards && printf 'roles:\\n  documentalist:\\n    settings:\\n      budgets: {doc-lines: 200, section-words: 400, card-words: {min: 8, max: 400}, folder-lines: 2000, root-agent-file-lines: 200}\\n      freshness: {stale-after-days: 3650}\\n' > .workline/config.yaml"
+    - "printf -- '---\\ntype: card\\n---\\n# Tokens\\n\\nAn access token proves who the user is. It lasts one hour, and the\\nclient refreshes it before it expires, so the user stays signed in.\\n' > docs/cards/tokens.md"
+    - "printf -- '---\\ntype: card\\n---\\n# Refresh\\n\\nA refresh is silent.\\n' > docs/cards/refresh.md"
+    - "printf 'See [refreshing](../cards/refresh.md).\\n' >> docs/product/sign-in.md && git add docs && git commit -qm 'docs: add cards'"
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 2}
+  - {file-contains: {docs/cards/tokens.md: "A refresh is silent."}}
+  - {file-contains: {docs/cards/tokens.md: "## Refresh"}}
+  - {file-lacks: {docs/product/sign-in.md: "cards/refresh.md"}}

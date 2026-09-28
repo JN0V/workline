@@ -110,3 +110,6 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-09-28T05:08:41Z	e4452bd	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-ci-subject	5/5	1	7098	3574	0.0250	29	judge skipped: no WORKLINE_JUDGE	
 2026-09-28T05:08:41Z	e4452bd	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-test-subject	5/5	1	8894	3536	0.0308	29	judge skipped: no WORKLINE_JUDGE	
 2026-09-28T05:08:56Z	e4452bd	claude	claude-haiku-4-5-20251001	low	committer/shortens-a-fix-subject	5/5	1	9157	5579	0.0414	44	judge skipped: no WORKLINE_JUDGE	
+2026-09-28T05:12:13Z	e4452bd+changes	claude	claude-sonnet-5	medium	documentalist/merges-a-card-too-short	5/5	1	5099	579	0.0187	8		
+2026-09-28T05:12:17Z	e4452bd+changes	claude	claude-sonnet-5	medium	documentalist/merges-a-card-too-short	5/5	1	5097	363	0.0166	5		
+2026-09-28T05:12:23Z	e4452bd+changes	claude	claude-sonnet-5	medium	documentalist/merges-a-card-too-short	5/5	1	5098	363	0.0166	5		
