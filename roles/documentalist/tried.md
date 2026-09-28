@@ -109,3 +109,7 @@ On 2026-09-27, on workline's own repository:
   found a doc behind the changelog, and one possibly replaced by another:
   every note is now in the result, and shown. Sonnet alone, on this
   repository, after the slash was taken: right at each first attempt.
+- adopting DomoticsCore (2026-09-28), 64 docs: the run failed before any
+  call, the task over the role's budget — its changelog, 134 kB, was put
+  before the agent whole. A doc now shows its first lines only, enough to
+  tell what it describes.

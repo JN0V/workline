@@ -21,6 +21,10 @@ import (
 // treeMaxLines caps the listing of the repository given with the task.
 const treeMaxLines = 400
 
+// docShownChars caps what one doc shows of itself: its first lines tell what
+// it describes, and a changelog of years would not fit the role's budget.
+const docShownChars = 12000
+
 // noSources reports each doc under the docs globs whose header does not say
 // what code it describes, with the header that would track it.
 func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[string]string, error) {
@@ -96,7 +100,13 @@ lines by the numbers shown; the body stays as it is. A doc describing no code
 			form = fmt.Sprintf(form, last[p][:7])
 		}
 		fmt.Fprintf(&entry, "## %s\n\nIts `checked` is %s, the commit that last changed it. %s\n\nThe doc, with its line numbers:\n\n```\n", p, last[p][:7], form)
-		for i, l := range strings.Split(strings.TrimSuffix(content, "\n"), "\n") {
+		lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+		shown := 0
+		for i, l := range lines {
+			if shown += len(l) + 8; shown > docShownChars && i > 0 {
+				fmt.Fprintf(&entry, "     | … %d more lines, not shown\n", len(lines)-i)
+				break
+			}
 			fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)
 		}
 		entry.WriteString("```\n\n")

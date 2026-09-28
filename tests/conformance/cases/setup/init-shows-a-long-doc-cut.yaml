@@ -1,0 +1,13 @@
+case: setup/init-shows-a-long-doc-cut
+about: A doc too long for the role's budget — a changelog of years — is put before the agent cut to its first lines, and adopted, instead of the whole run failing.
+given:
+  repo: basic
+  setup: ["seq 1 40000 | sed 's/^/- a change, numbered /' >> README.md && git commit -qam 'docs: keep every change in the README'"]
+# A command agent: its prompt is built, and measured against the budget.
+run: {init: true, ai: 'cmd:cat "$FIXTURES/agents/sources-long-doc.yaml"'}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files:
+    README.md: {contains: "sources: []"}
