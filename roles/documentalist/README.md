@@ -161,6 +161,12 @@ announce, and compares its reading with git's: the engine applies with
 
 ## Before a push
 
+On a merge request, run with `--push-to-merge-request` (the CI templates),
+the docs fixed are committed to the merge request's own branch, as
+pre-commit.ci does: a suggestion can only sit on lines the merge request
+changes, and a doc made wrong by a change of code usually has none. From a
+fork, the fix goes in one comment, as a diff to apply.
+
 A project that routes `pre-push` (`routing: {events: {pre-push: [committer,
 documentalist]}}`) has its suspect docs judged on the machine, with the
 person's agent, before the commits leave it. The patches land in the working

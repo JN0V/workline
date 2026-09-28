@@ -1,0 +1,13 @@
+case: documentalist/patch-as-comment-from-a-fork
+about: A merge request from a fork cannot be pushed to from this job; the patch goes in one comment, as a diff to apply, and nothing is pushed.
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, fork: true, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: pass
+  findings: [{rule: patch-as-comment, message: "fork"}]
+  forge: {merge-requests: [{id: 1, comments: 1, comment-contains: "+Access tokens last two hours."}]}

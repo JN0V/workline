@@ -86,3 +86,8 @@ On 2026-09-27, on workline's own repository:
 - condensing on Sonnet, four more runs: three right, one moving nothing;
   with the two of 2026-09-25, four in six, writing more tokens than Opus,
   which is right ten times in ten: condensing stays on `frontier`.
+- a doc fixed on a merge request, on GitHub (2026-09-28): a throwaway pull
+  request (#4) added a conformance case, so the README's count was stale; run
+  as the CI's apply job would, on the detached merge checkout, the
+  documentalist committed the count to the pull request's own branch, on top
+  of the author's commit, and left the tree clean.

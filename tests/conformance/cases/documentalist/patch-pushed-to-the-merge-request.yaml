@@ -1,0 +1,15 @@
+case: documentalist/patch-pushed-to-the-merge-request
+about: On a merge request run with --push-to-merge-request, the doc the change made wrong is fixed by a commit on the merge request's own branch, pushed; a suggestion could not reach a doc the merge request does not touch.
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: pushed, where: feature}]
+  pushed: {feature: {docs/tech/auth.md: "Access tokens last two hours."}}
+  forge: {merge-requests: [{id: 1, comments: 0}]}

@@ -19,7 +19,7 @@ this repository before any other role is added.
 2. **What is left of the committer and the documentalist**, before any new
    role:
    - documentalist: propagating (with the pending docs' tracking issue and
-     the release gate), style (vale), a patch proposed on a merge request.
+     the release gate), style (vale).
 
 Then, once both work well here:
 
@@ -78,11 +78,6 @@ last.
 - **Settings merge one level deep.** A project that sets
   `budgets: {doc-lines: 300}` drops the other budgets; the documentalist says
   so (`setting-missing`), but a deep merge would be less surprising.
-- **Patches in a merge request's apply job.** Gardening's patches become a
-  merge request of their own (ADR-0006); a patch proposed on a merge request
-  is still written to the job's checkout and lost: it should become a commit
-  on that merge request's branch, or a suggestion. Today the templates run
-  without AI, so nothing proposes one.
 - **An unknown option exits 2.** Go's option parser exits 2, which the exit
   codes reserve for `human`; the CLI should say 64, as for other misuse.
 - **Your config folder on macOS.** `config.yaml` and the global hooks follow
