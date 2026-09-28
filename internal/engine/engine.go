@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -45,6 +46,9 @@ type Options struct {
 	// NoApply stops after judging: the proposals and what apply needs are kept
 	// in the run folder, for `workline apply` in another job holding the token.
 	NoApply bool
+	// OpenMergeRequest puts what the patches wrote on a branch of the role's,
+	// and opens a merge request for it, or updates the one open (ADR-0006).
+	OpenMergeRequest bool
 
 	// TamperBeforeApply changes the prepared input between propose and apply.
 	// It exists only for the conformance test that proves apply notices.
@@ -53,16 +57,17 @@ type Options struct {
 
 // Result is what a run reports.
 type Result struct {
-	Status     string            `json:"status"`
-	Summary    string            `json:"summary,omitempty"`
-	Findings   []verdict.Finding `json:"findings,omitempty"`
-	AgentCalls int               `json:"agent-calls"`
-	Calls      []agent.Call      `json:"calls,omitempty"` // each call: what was asked, what answered
-	Applied    []string          `json:"applied"`
-	Refused    []string          `json:"refused"`
-	Handoffs   []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
-	RunDir     string            `json:"run-dir"`
-	ToApply    bool              `json:"to-apply,omitempty"` // judged with NoApply: `workline apply` still has work
+	Status       string            `json:"status"`
+	Summary      string            `json:"summary,omitempty"`
+	Findings     []verdict.Finding `json:"findings,omitempty"`
+	AgentCalls   int               `json:"agent-calls"`
+	Calls        []agent.Call      `json:"calls,omitempty"` // each call: what was asked, what answered
+	Applied      []string          `json:"applied"`
+	Refused      []string          `json:"refused"`
+	Handoffs     []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
+	RunDir       string            `json:"run-dir"`
+	ToApply      bool              `json:"to-apply,omitempty"`      // judged with NoApply: `workline apply` still has work
+	MergeRequest int               `json:"merge-request,omitempty"` // the merge request the patches went to
 }
 
 // Exit codes of pre and post (docs/spec/role-contract.md, "Exit codes").
@@ -169,7 +174,25 @@ func run(o Options, res *Result) error {
 	if err := writeInputs(runDir, o.Inputs, r.MergedSettings(cfg)); err != nil {
 		return err
 	}
+	if o.Forge == "" {
+		o.Forge = cfg.Forge
+	}
 	env := scriptEnv(runDir, r.Name, o)
+	if o.OpenMergeRequest {
+		// The role decides what it proposes when enough of its merge requests wait.
+		f, err := forge.Open(o.Forge, o.Repo)
+		if err != nil {
+			return err
+		}
+		if f == nil {
+			return errors.New("--open-merge-request needs a forge (--forge)")
+		}
+		n, err := f.OpenMergeRequests(branchPrefix(r.Name))
+		if err != nil {
+			return err
+		}
+		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n))
+	}
 
 	// 2. Prepare.
 	code, err := script(r, "pre", o.Repo, env)
@@ -274,7 +297,8 @@ func run(o Options, res *Result) error {
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
-	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets}
+	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
+		OpenMergeRequest: o.OpenMergeRequest}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
@@ -302,6 +326,11 @@ type runState struct {
 	Digest   string            `yaml:"digest"`
 	Targets  map[string]string `yaml:"targets,omitempty"`
 	Applied  []int             `yaml:"applied"`
+	// OpenMergeRequest: the patches go to a merge request; Written are the
+	// files they wrote, and MergeRequest the one opened, once it is.
+	OpenMergeRequest bool     `yaml:"open-merge-request,omitempty"`
+	Written          []string `yaml:"written,omitempty"`
+	MergeRequest     int      `yaml:"merge-request,omitempty"`
 }
 
 func (s *runState) save(runDir string) error {
@@ -340,13 +369,96 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return fmt.Errorf("apply %s: %w", in.Kind, err)
 		}
 		st.Applied = append(st.Applied, i)
+		for _, w := range ap.written { // a resumed run adds to what the first attempt wrote
+			if !slices.Contains(st.Written, w) {
+				st.Written = append(st.Written, w)
+			}
+		}
 		if err := st.save(runDir); err != nil {
 			return err
 		}
 		res.Applied = append(res.Applied, in.Kind)
 	}
 	res.Handoffs = ap.handoffs
+	if st.OpenMergeRequest && len(st.Written) > 0 && st.MergeRequest == 0 {
+		id, err := openMergeRequest(f, st, runDir)
+		if errors.Is(err, forge.ErrUnreachable) {
+			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while opening the merge request; resume with: workline apply %s", runDir)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("open a merge request: %w", err)
+		}
+		st.MergeRequest = id
+		if err := st.save(runDir); err != nil {
+			return err
+		}
+	}
+	res.MergeRequest = st.MergeRequest
 	return nil
+}
+
+// branchPrefix is where a role's merge requests come from (ADR-0006).
+func branchPrefix(roleName string) string { return "workline/" + roleName + "/" }
+
+// openMergeRequest commits what the run's patches wrote on the role's branch
+// for this task, force-pushes it, opens its merge request or updates the one
+// open, and puts the working tree back on the branch it was on. The role
+// names the task's key and the title in out/merge-request.yaml.
+func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
+	var mr struct{ Key, Title, Body string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		if err := yaml.Unmarshal(data, &mr); err != nil {
+			return 0, fmt.Errorf("out/merge-request.yaml: %w", err)
+		}
+	}
+	if mr.Key == "" {
+		mr.Key = st.Role
+	}
+	if mr.Title == "" {
+		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
+	}
+	base, err := git(st.Repo, nil, "symbolic-ref", "--short", "HEAD")
+	if err != nil {
+		return 0, errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
+	}
+	branch := branchPrefix(st.Role) + slugify(mr.Key)
+	steps := [][]string{
+		{"checkout", "-q", "-B", branch},
+		append([]string{"add", "--"}, st.Written...),
+		{"commit", "-q", "-m", mr.Title},
+		{"push", "-q", "--force", "origin", branch},
+	}
+	for _, s := range steps {
+		if _, err := git(st.Repo, nil, s...); err != nil {
+			// Back where it was: the patches in the working tree, unstaged.
+			git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+			git(st.Repo, nil, "checkout", "-q", base)
+			if s[0] == "push" {
+				return 0, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+			}
+			return 0, err
+		}
+	}
+	if _, err := git(st.Repo, nil, "checkout", "-q", base); err != nil {
+		return 0, err
+	}
+	return f.OpenMergeRequest(branch, base, mr.Title, mr.Body)
+}
+
+// slugify keeps a branch name to lowercase letters, digits and dashes.
+func slugify(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(s) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
+			b.WriteRune('-')
+		}
+	}
+	return strings.Trim(b.String(), "-")
 }
 
 // Resume applies what an interrupted run had not applied yet, from what that
