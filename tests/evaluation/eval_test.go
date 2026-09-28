@@ -181,7 +181,9 @@ func TestEvaluation(t *testing.T) {
 func play(t *testing.T, c *caseFile) (*run, error) {
 	work := t.TempDir()
 	repo := filepath.Join(work, "repo")
-	env := hermetic()
+	// The user's config folder stays out: their allowed identities and term
+	// lists are not the case's, and would refuse the fixture's commits.
+	env := append(hermetic(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
 	self, _ := filepath.Abs("../..")
 	switch {
 	case c.Given.WorklineCommit != "":
