@@ -89,10 +89,6 @@ last.
   so (`setting-missing`), but a deep merge would be less surprising.
 - **An unknown option exits 2.** Go's option parser exits 2, which the exit
   codes reserve for `human`; the CLI should say 64, as for other misuse.
-- **A refused answer is not kept.** When the judge refuses an agent's answer,
-  only the refusal stays in the run folder: a diff git could not apply
-  (adopting a repository, twice) could not be studied. Keep it beside the
-  refusal.
 - **A finding of an earlier round outlives what it said.** The engine keeps a
   round's finding that no later round reports again; `nothing-tracked`, true
   before the first round applied, was still shown after it. `init` no longer

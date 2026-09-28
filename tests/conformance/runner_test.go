@@ -96,6 +96,7 @@ type caseFile struct {
 		CodeQuality []map[string]any             `yaml:"code-quality"` // issues, by check_name, path, line, severity
 		LeftOut     []string                     `yaml:"left-out"`     // wheres found in neither report
 		Notes       []string                     `yaml:"notes"`        // texts the agent's notes hold
+		RefusedKept int                          `yaml:"refused-kept"` // refused answers kept in the run folders
 	} `yaml:"expect"`
 }
 
@@ -355,6 +356,12 @@ func compare(c *caseFile, r *result, repo string) []string {
 			if err != nil || !strings.Contains(string(out), text) {
 				p = append(p, fmt.Sprintf("origin's %s does not hold %q in %s", branch, text, path))
 			}
+		}
+	}
+	if e.RefusedKept > 0 {
+		kept, _ := filepath.Glob(filepath.Join(repo, ".git", "workline", "runs", "*", "out", "refused-*.yaml"))
+		if len(kept) != e.RefusedKept {
+			p = append(p, fmt.Sprintf("%d refused answers kept, want %d", len(kept), e.RefusedKept))
 		}
 	}
 	for _, text := range e.Notes {

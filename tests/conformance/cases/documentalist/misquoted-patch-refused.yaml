@@ -1,5 +1,5 @@
 case: documentalist/misquoted-patch-refused
-about: A patch whose removed lines are not at the lines it cites is refused, the agent is asked again, and nothing is applied.
+about: A patch whose removed lines are not at the lines it cites is refused, the agent is asked again, and nothing is applied; the answer refused before the last is kept in the run folder, as the last is.
 given:
   repo: documented
   setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
@@ -7,5 +7,6 @@ run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-misquoted"}
 expect:
   status: block
   agent-calls: 2
+  refused-kept: 1   # the first; the last stays in out/intentions.yaml
   applied: []
   findings: [{rule: misquoted, where: docs/tech/auth.md}]

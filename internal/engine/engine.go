@@ -274,7 +274,8 @@ func run(o Options, res *Result) error {
 		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb.String()), 0o644); err != nil {
 			return err
 		}
-		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
+		// The refused answer is kept beside its refusal, to be studied.
+		os.Rename(filepath.Join(runDir, "out", "intentions.yaml"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d.yaml", failures)))
 		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
