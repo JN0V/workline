@@ -1,0 +1,59 @@
+# workline gardening its own repository: ci/github/workline-gardening.yml,
+# with the engine built from this checkout rather than installed. Without AI:
+# it only regenerates derived blocks, each time as one pull request
+# (ADR-0006). Needs Settings → Actions → General → "Allow GitHub Actions to
+# create and approve pull requests".
+name: workline gardening
+on:
+  schedule: [{cron: "0 6 * * 1"}]   # Mondays, 06:00 UTC
+  workflow_dispatch:
+permissions: {}
+
+env:
+  WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
+
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: read}
+    outputs:
+      proposed: ${{ steps.line.outputs.proposed }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - run: mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/workline" ./cmd/workline && echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: The schedule line (proposals only)
+        id: line
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          status=0
+          workline route schedule --ai none --no-apply --forge github --open-merge-request --json > line.json || status=$?
+          echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          jq -r '"\(.status) — \(.summary)", ((.findings // [])[] | "  \(.rule) \(.where // ""): \(.message // "")")' line.json
+          exit $status
+
+      - uses: actions/upload-artifact@v4
+        if: steps.line.outputs.proposed == 'true'
+        with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true}
+
+  apply:
+    needs: judge
+    if: needs.judge.outputs.proposed == 'true'
+    runs-on: ubuntu-latest
+    permissions: {contents: write, pull-requests: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - run: mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/workline" ./cmd/workline && echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@v4
+        with: {name: workline-runs}
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          workline apply --line line.json
+        env: {GH_TOKEN: "${{ github.token }}"}
