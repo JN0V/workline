@@ -104,7 +104,13 @@ lines by the numbers shown; the body stays as it is. A doc describing no code
 		shown := 0
 		for i, l := range lines {
 			if shown += len(l) + 8; shown > docShownChars && i > 0 {
-				fmt.Fprintf(&entry, "     | … %d more lines, not shown\n", len(lines)-i)
+				// What is cut still says what it covers, by its headings.
+				fmt.Fprintf(&entry, "     | … %d more lines, not shown; their headings:\n", len(lines)-i)
+				for _, rest := range scan(strings.Join(lines[i:], "\n")) {
+					if rest.heading > 0 {
+						fmt.Fprintf(&entry, "%4d | %s\n", i+rest.n, rest.text)
+					}
+				}
 				break
 			}
 			fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)

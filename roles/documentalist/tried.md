@@ -117,3 +117,6 @@ On 2026-09-27, on workline's own repository:
   answers were refused for a hunk numbered from line 0 (`@@ -0,0 +1,4 @@`,
   the doc's first line as context), which git reads from line 1 and the
   judge took for a line that does not exist: now read as git does.
+  After two more runs, 63 of 64: the last, cut to its first lines, was left
+  by the agent, which said, rightly, that the sections cut were unknown to
+  it. A doc cut now lists the headings of what is not shown.
