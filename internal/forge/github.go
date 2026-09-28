@@ -122,3 +122,52 @@ func (g *github) Release(tag, notes string) error {
 	_, err := g.api("-X", "POST", "repos/{owner}/{repo}/releases", "-f", "tag_name="+tag, "-f", "name="+tag, "-f", "body="+notes)
 	return err
 }
+
+// openPulls lists the open pull requests as number and head branch.
+func (g *github) openPulls() (map[string]int, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq", ".[] | [.number, .head.ref] | @tsv")
+	if err != nil {
+		return nil, err
+	}
+	pulls := map[string]int{}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if num, branch, ok := strings.Cut(line, "\t"); ok {
+			var id int
+			fmt.Sscan(num, &id)
+			pulls[branch] = id
+		}
+	}
+	return pulls, nil
+}
+
+func (g *github) OpenMergeRequest(branch, base, title, body string) (int, error) {
+	pulls, err := g.openPulls()
+	if err != nil {
+		return 0, err
+	}
+	if id, ok := pulls[branch]; ok {
+		_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "-f", "title="+title, "-f", "body="+body)
+		return id, err
+	}
+	out, err := g.api("-X", "POST", "repos/{owner}/{repo}/pulls", "-f", "title="+title, "-f", "head="+branch, "-f", "base="+base, "-f", "body="+body, "--jq", ".number")
+	if err != nil {
+		return 0, err
+	}
+	var id int
+	fmt.Sscan(strings.TrimSpace(string(out)), &id)
+	return id, nil
+}
+
+func (g *github) OpenMergeRequests(prefix string) (int, error) {
+	pulls, err := g.openPulls()
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for branch := range pulls {
+		if strings.HasPrefix(branch, prefix) {
+			n++
+		}
+	}
+	return n, nil
+}

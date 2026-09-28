@@ -40,6 +40,12 @@ type Forge interface {
 	OpenIssue(title, body, marker string) (int, error)
 	// Release publishes notes for an existing tag, unless already published.
 	Release(tag, notes string) error
+	// OpenMergeRequest opens a merge request from branch into base, or
+	// updates the title and body of the one already open from branch.
+	OpenMergeRequest(branch, base, title, body string) (int, error)
+	// OpenMergeRequests counts the open merge requests whose branch starts
+	// with prefix.
+	OpenMergeRequests(prefix string) (int, error)
 }
 
 // ErrUnreachable marks a forge that did not answer: the run is blocked by

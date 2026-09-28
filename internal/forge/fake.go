@@ -24,6 +24,9 @@ type FakeState struct {
 // FakeItem is an issue or a merge request.
 type FakeItem struct {
 	ID       int      `json:"id"`
+	Branch   string   `json:"branch,omitempty"` // a merge request's source branch
+	Base     string   `json:"base,omitempty"`
+	Closed   bool     `json:"closed,omitempty"`
 	Title    string   `json:"title,omitempty"`
 	Body     string   `json:"body,omitempty"`
 	Labels   []string `json:"labels"`
@@ -182,4 +185,37 @@ func (f *Fake) Release(tag, notes string) error {
 		s.Releases = append(s.Releases, FakeRel{Tag: tag, Notes: notes})
 		return nil
 	})
+}
+
+func (f *Fake) OpenMergeRequest(branch, base, title, body string) (int, error) {
+	id := 0
+	err := f.write(func(s *FakeState) error {
+		for i := range s.MergeRequests {
+			if m := &s.MergeRequests[i]; m.Branch == branch && !m.Closed {
+				m.Title, m.Body, id = title, body, m.ID
+				return nil
+			}
+		}
+		for _, m := range s.MergeRequests {
+			id = max(id, m.ID)
+		}
+		id++
+		s.MergeRequests = append(s.MergeRequests, FakeItem{ID: id, Branch: branch, Base: base, Title: title, Body: body, Labels: []string{}, Comments: []string{}})
+		return nil
+	})
+	return id, err
+}
+
+func (f *Fake) OpenMergeRequests(prefix string) (int, error) {
+	s, err := f.load()
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, m := range s.MergeRequests {
+		if !m.Closed && m.Branch != "" && strings.HasPrefix(m.Branch, prefix) {
+			n++
+		}
+	}
+	return n, nil
 }

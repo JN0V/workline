@@ -134,3 +134,63 @@ func (g *gitlab) Release(tag, notes string) error {
 	_, err := g.api("-X", "POST", "projects/:id/releases", "-f", "tag_name="+tag, "-f", "description="+notes)
 	return err
 }
+
+// openMergeRequests lists the open merge requests as iid by source branch.
+func (g *gitlab) openMergeRequests() (map[string]int, error) {
+	out, err := g.api("--paginate", "projects/:id/merge_requests?state=opened&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	type mr struct {
+		IID    int    `json:"iid"`
+		Source string `json:"source_branch"`
+	}
+	open := map[string]int{}
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
+		var page []mr
+		if err := dec.Decode(&page); err != nil {
+			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		for _, m := range page {
+			open[m.Source] = m.IID
+		}
+	}
+	return open, nil
+}
+
+func (g *gitlab) OpenMergeRequest(branch, base, title, body string) (int, error) {
+	open, err := g.openMergeRequests()
+	if err != nil {
+		return 0, err
+	}
+	if id, ok := open[branch]; ok {
+		_, err := g.api("-X", "PUT", fmt.Sprintf("projects/:id/merge_requests/%d", id), "-f", "title="+title, "-f", "description="+body)
+		return id, err
+	}
+	out, err := g.api("-X", "POST", "projects/:id/merge_requests", "-f", "source_branch="+branch, "-f", "target_branch="+base,
+		"-f", "title="+title, "-f", "description="+body, "-f", "remove_source_branch=true")
+	if err != nil {
+		return 0, err
+	}
+	var created struct {
+		IID int `json:"iid"`
+	}
+	if err := decode(out, &created); err != nil {
+		return 0, err
+	}
+	return created.IID, nil
+}
+
+func (g *gitlab) OpenMergeRequests(prefix string) (int, error) {
+	open, err := g.openMergeRequests()
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for branch := range open {
+		if strings.HasPrefix(branch, prefix) {
+			n++
+		}
+	}
+	return n, nil
+}
