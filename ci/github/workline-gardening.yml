@@ -1,0 +1,73 @@
+# workline gardening on GitHub Actions — copy to .github/workflows/workline-gardening.yml.
+#
+# Weekly, the project's `schedule` line runs (by default the documentalist):
+# each task it takes up becomes a pull request of its own, on a branch
+# workline/<role>/<task>, updated when the task runs again, and no more are
+# proposed while max-open-merge-requests of them wait (ADR-0006).
+#
+# Two jobs, two trust zones, as for pull requests (workline.yml):
+#   judge  runs the line without AI (--ai none): it only regenerates derived
+#          blocks. To garden with an agent, give this job the key and change
+#          --ai. It reads the open pull requests, and writes nothing.
+#   apply  holds the write token and no AI key: it commits, pushes the
+#          branch, and opens or updates the pull request.
+#
+# The repository must let Actions create pull requests (Settings → Actions →
+# General → "Allow GitHub Actions to create and approve pull requests"). A pull
+# request opened with the job's own token does not trigger workflows: to run
+# your checks on it, give the apply job another token.
+name: workline gardening
+on:
+  schedule: [{cron: "0 6 * * 1"}]   # Mondays, 06:00 UTC
+  workflow_dispatch:
+permissions: {}
+
+env:
+  WORKLINE_VERSION: main            # pin a tag or commit once releases exist
+  WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
+
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pull-requests: read}
+    outputs:
+      proposed: ${{ steps.line.outputs.proposed }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version: stable}
+      - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+
+      - name: The schedule line (proposals only)
+        id: line
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          status=0
+          workline route schedule --ai none --no-apply --forge github --open-merge-request --json > line.json || status=$?
+          echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          jq -r '"\(.status) — \(.summary)", ((.findings // [])[] | "  \(.rule) \(.where // ""): \(.message // "")")' line.json
+          exit $status
+
+      - uses: actions/upload-artifact@v4
+        if: steps.line.outputs.proposed == 'true'
+        with: {name: workline-runs, path: "line.json\n.workline-runs", include-hidden-files: true}
+
+  apply:
+    needs: judge
+    if: needs.judge.outputs.proposed == 'true'
+    runs-on: ubuntu-latest
+    permissions: {contents: write, pull-requests: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version: stable}
+      - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with: {name: workline-runs}
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          workline apply --line line.json
+        env: {GH_TOKEN: "${{ github.token }}"}

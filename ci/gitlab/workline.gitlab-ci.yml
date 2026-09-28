@@ -52,3 +52,43 @@ workline:apply:
     - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
     - workline apply --line line.json
+
+# Gardening: in a scheduled pipeline (CI/CD → Schedules, weekly), the project's
+# `schedule` line runs (by default the documentalist); each task it takes up
+# becomes a merge request of its own, on a branch workline/<role>/<task>,
+# updated when the task runs again, and no more are proposed while
+# max-open-merge-requests of them wait (ADR-0006). WORKLINE_GITLAB_TOKEN also
+# needs the `write_repository` scope, to push the branch. Without AI, only
+# derived blocks are regenerated.
+.workline:garden:
+  image: golang:1.27
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN
+  before_script:
+    - go install github.com/JN0V/workline/cmd/workline@$WORKLINE_VERSION
+    - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
+    - export PATH=$PATH:$(go env GOPATH)/bin
+    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+
+workline:garden:judge:
+  extends: .workline:garden
+  stage: test
+  script:
+    - status=0
+    - workline route schedule --ai none --no-apply --forge gitlab --open-merge-request --json > line.json || status=$?
+    - exit $status
+  artifacts:
+    when: always
+    paths: [.workline-runs/, line.json]
+    expire_in: 1 day
+
+workline:garden:apply:
+  extends: .workline:garden
+  stage: deploy
+  needs: [workline:garden:judge]
+  script:
+    - git config user.name "workline"
+    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - workline apply --line line.json

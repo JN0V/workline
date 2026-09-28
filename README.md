@@ -128,7 +128,7 @@ flowchart LR
 | `commit-msg` | your machine: the global git hook | committer |
 | `pre-push` | your machine, before the commits leave it, if the project routes it | none by default; workline itself: committer, documentalist |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
-| `schedule` | you, or a scheduled pipeline you add (the templates have none yet) | documentalist |
+| `schedule` | you, or a scheduled pipeline: the [GitHub Actions](ci/github/workline-gardening.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template, each task a merge request of its own (ADR-0006) | documentalist |
 | `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | release-manager |
 
 So the committer checks your messages as you write them, and again on the merge
