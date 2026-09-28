@@ -65,6 +65,7 @@ type caseFile struct {
 		Target  map[string]int    `yaml:"target"`
 		NoApply bool              `yaml:"no-apply"`
 		OpenMR  bool              `yaml:"open-merge-request"`
+		PushMR  bool              `yaml:"push-to-merge-request"`
 		Event   string            `yaml:"event"`
 		Input   map[string]string `yaml:"input"`
 		AI      string            `yaml:"ai"`
@@ -77,19 +78,20 @@ type caseFile struct {
 		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
 	} `yaml:"run"`
 	Expect struct {
-		Status      string                    `yaml:"status"`
-		Findings    []map[string]string       `yaml:"findings"`
-		NoFindings  []map[string]string       `yaml:"no-findings"` // findings that must not be there
-		AgentCalls  *int                      `yaml:"agent-calls"`
-		Applied     []string                  `yaml:"applied"`
-		Refused     []string                  `yaml:"refused"`
-		Files       map[string]map[string]any `yaml:"files"`
-		Forge       map[string]any            `yaml:"forge"`
-		Steps       []string                  `yaml:"steps"`
-		Calls       []map[string]string       `yaml:"calls"`
-		SARIF       []map[string]any          `yaml:"sarif"`        // results, by rule, uri, line, level
-		CodeQuality []map[string]any          `yaml:"code-quality"` // issues, by check_name, path, line, severity
-		LeftOut     []string                  `yaml:"left-out"`     // wheres found in neither report
+		Status      string                       `yaml:"status"`
+		Findings    []map[string]string          `yaml:"findings"`
+		NoFindings  []map[string]string          `yaml:"no-findings"` // findings that must not be there
+		AgentCalls  *int                         `yaml:"agent-calls"`
+		Applied     []string                     `yaml:"applied"`
+		Refused     []string                     `yaml:"refused"`
+		Files       map[string]map[string]any    `yaml:"files"`
+		Pushed      map[string]map[string]string `yaml:"pushed"` // branch -> path -> a text the remote's branch holds there
+		Forge       map[string]any               `yaml:"forge"`
+		Steps       []string                     `yaml:"steps"`
+		Calls       []map[string]string          `yaml:"calls"`
+		SARIF       []map[string]any             `yaml:"sarif"`        // results, by rule, uri, line, level
+		CodeQuality []map[string]any             `yaml:"code-quality"` // issues, by check_name, path, line, severity
+		LeftOut     []string                     `yaml:"left-out"`     // wheres found in neither report
 	} `yaml:"expect"`
 }
 
@@ -218,6 +220,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.OpenMR {
 		args = append(args, "--open-merge-request")
 	}
+	if c.Run.PushMR {
+		args = append(args, "--push-to-merge-request")
+	}
 	if c.Run.NoApply {
 		args = append(args, "--no-apply")
 	}
@@ -325,6 +330,15 @@ func compare(c *caseFile, r *result, repo string) []string {
 	}
 	if e.Refused != nil && fmt.Sprint(e.Refused) != fmt.Sprint(r.Refused) {
 		p = append(p, fmt.Sprintf("refused = %v, want %v", r.Refused, e.Refused))
+	}
+	for branch, files := range e.Pushed {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		for path, text := range files {
+			out, err := exec.Command("git", "-C", repo, "show", "origin/"+branch+":"+path).Output()
+			if err != nil || !strings.Contains(string(out), text) {
+				p = append(p, fmt.Sprintf("origin's %s does not hold %q in %s", branch, text, path))
+			}
+		}
 	}
 	for path, want := range e.Files {
 		data, err := os.ReadFile(filepath.Join(repo, path))
