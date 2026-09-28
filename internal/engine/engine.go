@@ -22,6 +22,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
@@ -268,6 +269,7 @@ func run(o Options, res *Result) error {
 		}
 		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
+		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
 	res.Status, res.Summary = v.Status, v.Summary
 	res.Findings = append(res.Findings, v.Findings...)
@@ -673,6 +675,11 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
 	}
 	verdict.Enforce(v, r.Enforcement(cfg))
+	if v.Status == verdict.Pass && a.askedAgent {
+		if err := askJudge(o, res, runDir, v, a); err != nil {
+			return nil, err
+		}
+	}
 	v.Findings = append(a.findings, v.Findings...)
 	a.verdict = v
 	return a, nil
@@ -1055,4 +1062,55 @@ func dirDigest(dir string) (string, error) {
 		h.Write(data)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// askJudge puts the question a role's judge step could not answer
+// (out/judge.yaml: {question, material}) to a judge, at the best independence
+// available from the agent that answered (ADR-0005): WORKLINE_JUDGE when set,
+// else another Claude model, else the same agent in a context of its own. A
+// "no" refuses the proposal with the judge's reason, so the agent is asked
+// again; a judge that cannot answer blocks, since nothing unjudged is applied.
+func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *attemptResult) error {
+	data, err := os.ReadFile(filepath.Join(runDir, "out", "judge.yaml"))
+	if err != nil {
+		return nil // nothing the checks could not answer
+	}
+	var q struct{ Question, Material string }
+	if err := yaml.Unmarshal(data, &q); err != nil || q.Question == "" {
+		return fmt.Errorf("out/judge.yaml: a question is needed: %v", err)
+	}
+	var authorModels []string
+	for _, c := range res.Calls {
+		if c.Task != "judge" { // an earlier round's judge is not an author
+			authorModels = append(authorModels, c.Model)
+		}
+	}
+	last := ""
+	if len(authorModels) > 0 {
+		last = authorModels[len(authorModels)-1]
+	}
+	spec := os.Getenv("WORKLINE_JUDGE")
+	if spec == "" {
+		spec = judge.Pick(o.AI, last)
+	}
+	judgeRole, err := role.Load(o.RolesDir, "judge")
+	if err != nil {
+		return err
+	}
+	ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
+	res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
+	level := judge.Independence(spec, ans.Model, o.AI, authorModels)
+	who := fmt.Sprintf("independence: %s (%s → %s)", level, last, ans.Model)
+	switch {
+	case err != nil:
+		a.external = true
+		v.Status, v.Summary = verdict.Block, "the judge could not answer"
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "judge-unavailable", Message: err.Error() + "; " + who})
+	case !ans.Yes:
+		v.Status, v.Summary = verdict.Block, "the judge refused the proposal"
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged-no", Message: ans.Why + " (" + who + ")"})
+	default:
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged", Level: "warn", Message: "yes: " + ans.Why + " (" + who + ")"})
+	}
+	return nil
 }

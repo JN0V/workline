@@ -1,6 +1,6 @@
 # ADR-0005: Independent judgement takes the best level available, and says which
 
-- **Status:** accepted, not built
+- **Status:** accepted; built for the judge step and the evaluation (2026-09-28), not yet for `independent-of`
 - **Date:** 2026-09-26
 
 ## Context

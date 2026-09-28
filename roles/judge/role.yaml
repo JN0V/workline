@@ -1,0 +1,13 @@
+contract: 1
+name: judge
+mission: Answer, yes or no, one question on what a role produced that no check can answer.
+
+# Not a role of the line: no event runs it. The engine asks it when a role's
+# judge step has such a question (out/judge.yaml), the evaluation to grade;
+# always at the best independence available from the agent judged (ADR-0005).
+model:
+  capability: reasoning
+  tier: standard
+  effort: medium
+
+intentions: [note]

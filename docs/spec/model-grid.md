@@ -141,10 +141,10 @@ best level available, and its verdict says which; a role or a project may
 require a minimum (`at-least: provider`), below which it runs as `--ai none`
 ([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)).
 
-*Built so far: only in the evaluation, whose judge never runs on the graded
-agent's provider (docs/spec/conformance.md) — the levels are not built yet.
-The engine reads no `independent-of`; `cmd:<command>` runs any other agent
-(docs/usage.md).*
+*Built so far: the evaluation's judge, and the engine's judge step
+(role-contract.md, "Judge"), which pick the best level and say which; the
+engine reads no `independent-of` nor `at-least` yet. `cmd:<command>` runs any
+other agent (docs/usage.md).*
 
 ## Known limits
 

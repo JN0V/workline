@@ -1,6 +1,6 @@
-Answer the question below about what the role produced, from the case, what the
-author wrote and what the role produced. Judge only what the question asks:
-other defects are graded elsewhere.
+Answer the question below about what the role produced, from what is given
+with it. Judge only what the question asks: other defects are checked
+elsewhere.
 
 Answer "yes" when the answer to the question is yes without a doubt, and "no"
 otherwise. Your whole answer is one note, in double quotes, whose first word is

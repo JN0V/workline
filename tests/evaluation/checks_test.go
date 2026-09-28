@@ -46,14 +46,6 @@ func TestJudge(t *testing.T) {
 	if _, err := judge("Same meaning?", c, r); err == nil {
 		t.Error("neither yes nor no is no verdict")
 	}
-	graded := []call{{Model: "claude-haiku-4-5"}}
-	for spec, model := range map[string]string{"cmd:x": "provider", "claude:opus": "model", "claude:haiku": "context"} {
-		want := model
-		answered := map[string]string{"cmd:x": "any", "claude:opus": "claude-opus-5-5", "claude:haiku": "claude-haiku-4-5"}[spec]
-		if got := independence(spec, answered, graded); got != want {
-			t.Errorf("%s answered by %s: independence %s, want %s", spec, answered, got, want)
-		}
-	}
 	t.Setenv("WORKLINE_JUDGE", "claude:opus")
 	t.Setenv("WORKLINE_JUDGE_AT_LEAST", "provider")
 	if _, err := judge("Same meaning?", c, r); err == nil {
@@ -64,20 +56,5 @@ func TestJudge(t *testing.T) {
 	c.Grade = []map[string]any{{"judge": "Same meaning?"}}
 	if passed, failed, skipped := grade(c, r); passed != 0 || len(failed) != 0 || len(skipped) != 1 {
 		t.Errorf("without a judge, the check is skipped: %d %v %v", passed, failed, skipped)
-	}
-}
-
-func TestVerdictOf(t *testing.T) {
-	for note, want := range map[string]string{
-		`yes: same meaning`:            "",
-		`- note: no: 'judged' is gone`: "'judged' is gone",
-		`- note: "No: it narrows it."`: "it narrows it.",
-	} {
-		if got, err := verdictOf(note); err != nil || got != want {
-			t.Errorf("verdictOf(%q) = %q, %v; want %q", note, got, err, want)
-		}
-	}
-	if _, err := verdictOf("The rewrite drops a word"); err == nil {
-		t.Error("a note without yes or no is no verdict")
 	}
 }

@@ -15,8 +15,8 @@ package evaluation
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+	wjudge "github.com/JN0V/workline/internal/judge"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,7 +29,6 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -427,28 +426,6 @@ func worklineVersion() string {
 
 // provider is the agent a spec names: claude for claude:haiku@low. A command
 // is whatever it runs; whoever names one vouches for its provider.
-func provider(spec string) string {
-	p, _, _ := strings.Cut(spec, ":")
-	return p
-}
-
-// levels of independence, strongest first (ADR-0005).
-var levels = map[string]int{"provider": 3, "model": 2, "context": 1}
-
-// independence is how far the judge stands from the graded agent: another
-// provider, another model of it, or the same model in a context of its own.
-func independence(judgeSpec, judgeModel string, graded []call) string {
-	if p := provider(judgeSpec); p == "cmd" || p != provider(os.Getenv("WORKLINE_EVAL")) {
-		return "provider"
-	}
-	for _, c := range graded {
-		if c.Model == judgeModel {
-			return "context"
-		}
-	}
-	return "model"
-}
-
 // judge asks the agent WORKLINE_JUDGE names a yes-or-no question on what the
 // role produced: "" when it says yes, its reason when it says no. A judge
 // that shares the graded model shares its blind spots: the level it reached
@@ -459,81 +436,44 @@ func judge(question string, c *caseFile, r *run) (string, error) {
 	if spec == "" || spec == "none" {
 		return "", fmt.Errorf("no WORKLINE_JUDGE")
 	}
+	graded := os.Getenv("WORKLINE_EVAL")
 	floor := os.Getenv("WORKLINE_JUDGE_AT_LEAST")
-	if _, ok := levels[floor]; floor != "" && !ok {
+	if _, ok := wjudge.Levels[floor]; floor != "" && !ok {
 		return "", fmt.Errorf("WORKLINE_JUDGE_AT_LEAST %q is not provider, model or context", floor)
 	}
-	if floor == "provider" && independence(spec, "", nil) != "provider" {
+	if floor == "provider" && wjudge.Independence(spec, "", graded, nil) != "provider" {
 		return "", fmt.Errorf("WORKLINE_JUDGE is of the graded agent's provider, and at least another provider is asked")
 	}
-	ag, err := agent.Parse(spec)
+	judgeRole, err := role.Load("../../roles", "judge")
 	if err != nil {
 		return "", err
 	}
-	judgeRole, err := role.Load(".", "judge")
-	if err != nil {
-		return "", err
-	}
-	dir, err := os.MkdirTemp("", "workline-judge-")
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(dir)
-	os.MkdirAll(filepath.Join(dir, "in"), 0o755)
-	os.MkdirAll(filepath.Join(dir, "out"), 0o755)
-	var task strings.Builder
-	fmt.Fprintf(&task, "## Question\n\n%s\n\n## The case\n\n%s\n\n", question, c.About)
+	var material strings.Builder
+	fmt.Fprintf(&material, "## The case\n\n%s\n\n", c.About)
 	if c.Run.Message != "" {
-		fmt.Fprintf(&task, "## What the author wrote\n\n```\n%s\n```\n\n## What the role made of it\n\n```\n%s\n```\n\n", c.Run.Message, r.message)
+		fmt.Fprintf(&material, "## What the author wrote\n\n```\n%s\n```\n\n## What the role made of it\n\n```\n%s\n```\n\n", c.Run.Message, r.message)
 	}
 	_ = exec.Command("git", "-C", r.repo, "add", "--intent-to-add", ".").Run() // new docs show in the diff
 	diff, _ := exec.Command("git", "-C", r.repo, "diff", "HEAD").Output()
 	if len(diff) > 60000 {
 		diff = append(diff[:60000], "\n[cut]\n"...)
 	}
-	fmt.Fprintf(&task, "## The change, as the working tree holds it after the role\n\n```diff\n%s```\n", diff)
-	if err := os.WriteFile(filepath.Join(dir, "in", "task.md"), []byte(task.String()), 0o644); err != nil {
-		return "", err
+	fmt.Fprintf(&material, "## The change, as the working tree holds it after the role\n\n```diff\n%s```\n", diff)
+	ans, err := wjudge.Ask(spec, judgeRole, question, material.String())
+	var models []string
+	for _, call := range r.res.Calls {
+		models = append(models, call.Model)
 	}
-	call, err := ag.Propose(agent.Request{RunDir: dir, Repo: dir, Role: judgeRole})
-	level := independence(spec, call.Model, r.res.Calls)
-	r.judgedBy = call.Model + " (" + level + ")"
-	if errors.Is(err, agent.ErrInvalidOutput) {
-		// A note left unquoted is no YAML ("- note: no: …"), yet it says its verdict.
-		raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-		return verdictOf(string(raw))
-	}
+	level := wjudge.Independence(spec, ans.Model, graded, models)
+	r.judgedBy = ans.Model + " (" + level + ")"
 	if err != nil {
 		return "", err
 	}
-	if levels[level] < levels[floor] {
-		return "", fmt.Errorf("the judge, %s, is independent only at the %s level; at least %s is asked", call.Model, level, floor)
+	if wjudge.Levels[level] < wjudge.Levels[floor] {
+		return "", fmt.Errorf("the judge, %s, is independent only at the %s level; at least %s is asked", ans.Model, level, floor)
 	}
-	data, err := os.ReadFile(filepath.Join(dir, "out", "intentions.yaml"))
-	if err != nil {
-		return "", err
-	}
-	var notes []map[string]string
-	if err := yaml.Unmarshal(data, &notes); err != nil || len(notes) == 0 || notes[0]["note"] == "" {
-		return "", fmt.Errorf("the judge answered no note: %.200s", data)
-	}
-	return verdictOf(notes[0]["note"])
-}
-
-// verdictOf reads the judge's note: "yes: why" is "", "no: why" is why. The
-// note may come raw, with its YAML around it.
-func verdictOf(note string) (string, error) {
-	s := strings.TrimSpace(note)
-	s = strings.TrimSpace(strings.TrimPrefix(s, "- note:"))
-	if len(s) > 1 && (s[0] == '"' || s[0] == '\'') && s[len(s)-1] == s[0] {
-		s = s[1 : len(s)-1] // the note quoted whole
-	}
-	verdict, why, _ := strings.Cut(s, ":")
-	switch strings.ToLower(strings.TrimSpace(verdict)) {
-	case "yes":
+	if ans.Yes {
 		return "", nil
-	case "no":
-		return strings.Join(strings.Fields(why), " "), nil // one line of results.tsv
 	}
-	return "", fmt.Errorf("the judge said neither yes nor no: %.200s", strings.Join(strings.Fields(note), " "))
+	return ans.Why, nil
 }
