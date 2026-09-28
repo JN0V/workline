@@ -436,6 +436,7 @@ func Pre(runDir, repo string) int {
 	if n, err := strconv.Atoi(os.Getenv("WORKLINE_OPEN_MERGE_REQUESTS")); err == nil && gardening &&
 		s.MaxOpenMergeRequests > 0 && n >= s.MaxOpenMergeRequests {
 		task, judged, stale, gardening = "", nil, nil, false
+		os.Remove(filepath.Join(runDir, "in", "fallback.yaml")) // derived blocks too would open one more
 		findings = append(findings, verdict.Finding{Rule: "gardening-paused",
 			Message: fmt.Sprintf("%d merge requests of the documentalist wait for review (max-open-merge-requests: %d): no task proposed until fewer wait", n, s.MaxOpenMergeRequests)})
 	}

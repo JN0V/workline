@@ -70,3 +70,9 @@ On 2026-09-27, on workline's own repository:
   identity, the branch was pushed with one commit, the merge request opened,
   the tree back on main and clean, and a second run updated the same merge
   request.
+- the same on GitHub (2026-09-28), from a clone of this repository, without
+  AI, a derived block made stale: pull request #3 opened from
+  `workline/documentalist/derived`, one commit, the README's count; a second
+  run updated it; with `max-open-merge-requests: 1`, the next run paused —
+  but still regenerated the block, which could have opened one merge request
+  too many: a paused run now proposes no patch at all.
