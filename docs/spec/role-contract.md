@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 251133d
+checked: 6013a50
 verified: agent:documentalist
 ---
 # Role contract — v1 (draft)
@@ -185,7 +185,8 @@ the agent again.
 
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
 name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
-which the shipped roles call for their built-in steps), `WORKLINE_TARGET`
+which the shipped roles call for their built-in steps), `WORKLINE_FORGE` (the
+configured forge, when one is set), `WORKLINE_TARGET`
 (`merge-request:12`, `issue:3`) when a forge and a target are given, and
 `WORKLINE_OPEN_MERGE_REQUESTS`, the role's open merge requests, when the run
 opens one (ADR-0006).

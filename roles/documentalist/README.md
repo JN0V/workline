@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist, roles/documentalist/role.yaml]
-checked: 251133d
+checked: 6013a50
 verified: agent:documentalist
 ---
 # Documentalist
@@ -70,9 +70,9 @@ block, docs/spec/role-contract.md); a project turns one off with `enforce`.
 **Cascades are cut.** A change of code can make a technical doc suspect, which
 makes a product doc suspect, and so on. Only the edges marked `now` are handled
 inside the change. Every other suspect goes on a pending list — one tracking
-issue, updated in place — with the moment it is due: the release gate refuses
-to release while product docs due `at release` are still pending, and the
-release manager hands them to the documentalist in one batch. Nothing is
+issue, updated in place — with the moment it is due: on `release`, the
+documentalist runs first, and the release waits until the docs due then are
+up to date. Nothing is
 forgotten; nothing drags a small fix into a rewrite of the user guide.
 
 A doc following another doc along an edge due later stays `pending` until
@@ -139,8 +139,6 @@ card of its own that it links to. The judge checks what condensing checks, and
 that each new doc is a card; then a judge model — not the one that split it —
 is asked whether each card holds one concept, the one its title names. A no
 goes back to the agent with its reason.
-
-Not built yet: the other kind of task (propagate).
 
 ## Judge (`post`, no AI)
 

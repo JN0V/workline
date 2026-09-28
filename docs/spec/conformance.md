@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 251133d
+checked: 6013a50
 verified: agent:documentalist
 ---
 # Conformance — v1 (draft)
@@ -92,7 +92,8 @@ a `PATH` without a tool, or with a fake one first.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
-  and `comment-lacks` (a text some comment holds, or none does).
+  and `comment-lacks` (a text some comment holds, or none does),
+  `body-contains` (a text its body holds).
 - `files` — paths that must exist, or contain a text, afterwards.
 
 ## The fakes

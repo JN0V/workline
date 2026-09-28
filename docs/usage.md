@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 251133d
+checked: 6013a50
 verified: agent:documentalist
 ---
 # Using workline
@@ -140,7 +140,7 @@ replace the role's, key by key, one level deep.
 | `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
 
 A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
-`WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`, `WORKLINE_TARGET`
-(`merge-request:12`) when a forge and a target are given, and
+`WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`, `WORKLINE_FORGE` when a
+forge is given, `WORKLINE_TARGET` (`merge-request:12`) with a target too, and
 `WORKLINE_OPEN_MERGE_REQUESTS` with `--open-merge-request`. A role run by a handoff
 receives the inputs `handoff-from` and `handoff-reason`.
