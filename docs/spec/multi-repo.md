@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go]
-checked: e4452bd
+checked: facab23
 verified: agent:documentalist
 ---
 # Several repositories — v1 (draft)
