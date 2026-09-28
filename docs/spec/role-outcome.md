@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
 verified: agent:documentalist
-checked: facab23
+checked: 8cd6e37
 status: draft
 ---
 # Role outcome — verdict and intentions

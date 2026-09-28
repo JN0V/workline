@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: facab23
+checked: 8cd6e37
 verified: agent:documentalist
 ---
 # Conformance — v1 (draft)
