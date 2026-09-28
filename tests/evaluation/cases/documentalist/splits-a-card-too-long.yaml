@@ -1,0 +1,13 @@
+case: documentalist/splits-a-card-too-long
+about: Gardening a project whose sessions card also explains signing out, over its word budget; signing out moves, as written, into a card of its own, which the judge model the engine asks finds holds one concept.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline docs/cards && printf 'roles:\\n  documentalist:\\n    settings:\\n      budgets: {doc-lines: 200, section-words: 400, card-words: {min: 5, max: 30}, folder-lines: 2000, root-agent-file-lines: 200}\\n      freshness: {stale-after-days: 3650}\\n' > .workline/config.yaml"
+    - "printf -- '---\\ntype: card\\n---\\n# Sessions\\n\\nA session lasts as long as its token, and a token lasts one hour unless it is refreshed.\\n\\n## Signing out\\n\\nSigning out ends the session at once, on every device the user signed in on.\\n' > docs/cards/sessions.md && git add docs && git commit -qm 'docs: add a card'"
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 2}
+  - {new-files-min: 1}
+  - {file-lacks: {docs/cards/sessions.md: "on every device"}}
