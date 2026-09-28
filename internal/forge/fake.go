@@ -27,6 +27,7 @@ type FakeItem struct {
 	Branch   string   `json:"branch,omitempty"` // a merge request's source branch
 	Base     string   `json:"base,omitempty"`
 	Closed   bool     `json:"closed,omitempty"`
+	Fork     bool     `json:"fork,omitempty"` // a merge request from a fork
 	Title    string   `json:"title,omitempty"`
 	Body     string   `json:"body,omitempty"`
 	Labels   []string `json:"labels"`
@@ -218,4 +219,16 @@ func (f *Fake) OpenMergeRequests(prefix string) (int, error) {
 		}
 	}
 	return n, nil
+}
+
+func (f *Fake) MergeRequestBranch(id int) (string, bool, error) {
+	s, err := f.load()
+	if err != nil {
+		return "", false, err
+	}
+	it, err := s.item(Target{Kind: "merge-request", ID: id})
+	if err != nil {
+		return "", false, err
+	}
+	return it.Branch, !it.Fork, nil
 }

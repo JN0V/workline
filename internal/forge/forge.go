@@ -46,6 +46,9 @@ type Forge interface {
 	// OpenMergeRequests counts the open merge requests whose branch starts
 	// with prefix.
 	OpenMergeRequests(prefix string) (int, error)
+	// MergeRequestBranch is the branch a merge request comes from, and
+	// whether it lives in this repository (not in a fork).
+	MergeRequestBranch(id int) (branch string, here bool, err error)
 }
 
 // ErrUnreachable marks a forge that did not answer: the run is blocked by

@@ -171,3 +171,12 @@ func (g *github) OpenMergeRequests(prefix string) (int, error) {
 	}
 	return n, nil
 }
+
+func (g *github) MergeRequestBranch(id int) (string, bool, error) {
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "--jq", "[.head.ref, (.head.repo.full_name == .base.repo.full_name)] | @tsv")
+	if err != nil {
+		return "", false, err
+	}
+	branch, here, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
+	return branch, here == "true", nil
+}
