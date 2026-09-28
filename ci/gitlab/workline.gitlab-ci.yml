@@ -9,7 +9,10 @@
 #   judge  runs the line, no write token, stops before applying (--no-apply).
 #   The findings show in the merge request's Code Quality report, on every tier.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token with the `api`
-#          scope, stored as a protected, masked variable) and no AI key.
+#          and `write_repository` scopes, stored as a protected, masked
+#          variable) and no AI key. A doc fix is committed to the merge
+#          request's branch (--push-to-merge-request); from a fork, it is left
+#          in a comment as a diff to apply.
 variables:
   WORKLINE_VERSION: main            # pin a tag or commit once releases exist
   WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs
@@ -30,7 +33,7 @@ workline:judge:
   script:
     - status=0
     - >
-      workline route merge-request --ai none --no-apply
+      workline route merge-request --ai none --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
       --code-quality gl-code-quality.json --json > line.json || status=$?
@@ -51,6 +54,9 @@ workline:apply:
   script:
     - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - git config user.name "workline"
+    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline apply --line line.json
 
 # Gardening: in a scheduled pipeline (CI/CD → Schedules, weekly), the project's
