@@ -1,0 +1,15 @@
+case: documentalist/zz-try-push
+about: With no doc left to read again, the merge request's list says so; no list is opened where there was none.
+given:
+  repo: documented
+  forge:
+    merge-requests:
+      - id: 1
+        labels: []
+        comments: ["**Docs to check** — `docs/tech/auth.md`\n\n<!-- workline:sticky=documentalist/checklist -->"]
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  forge:
+    merge-requests:
+      - {id: 1, comments: 1, comment-contains: "none left", comment-lacks: "docs/tech/auth.md"}
