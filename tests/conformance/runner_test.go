@@ -414,7 +414,8 @@ func readPending(t *testing.T) map[string]bool {
 // compareForge checks the simulated forge's state: for each listed item, by
 // id, `comments` is a count, `labels` the exact set, `comment-contains` /
 // `comment-lacks` texts some comment holds, or none does, `branch`, `base`
-// and `title` a merge request's, and `absent: true` no item with that id.
+// and `title` an item's, `body-contains` a text its body holds, and
+// `absent: true` no item with that id.
 func compareForge(want map[string]any, file string) []string {
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -442,6 +443,9 @@ func compareForge(want map[string]any, file string) []string {
 			if found == nil {
 				p = append(p, fmt.Sprintf("forge: no %s with id %v", kind, wm["id"]))
 				continue
+			}
+			if t, ok := wm["body-contains"]; ok && !strings.Contains(fmt.Sprint(found["body"]), fmt.Sprint(t)) {
+				p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it to hold %q", kind, wm["id"], found["body"], t))
 			}
 			for _, k := range []string{"branch", "base", "title"} {
 				if w, ok := wm[k]; ok && fmt.Sprint(found[k]) != fmt.Sprint(w) {
