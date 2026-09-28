@@ -18,10 +18,8 @@ this repository before any other role is added.
    when there is one. Each defect a role lets through becomes a case.
 2. **What is left of the committer and the documentalist**, before any new
    role:
-   - documentalist: style (vale), the other gardening tasks (propagate,
-     split);
-   - evaluation: more runs of condensing on Sonnet (one clean run so far;
-     Opus has eight), to know whether `frontier` is needed.
+   - documentalist: propagating (with the pending docs' tracking issue and
+     the release gate), style (vale), a patch proposed on a merge request.
 
 Then, once both work well here:
 

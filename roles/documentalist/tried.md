@@ -76,3 +76,13 @@ On 2026-09-27, on workline's own repository:
   run updated it; with `max-open-merge-requests: 1`, the next run paused —
   but still regenerated the block, which could have opened one merge request
   too many: a paused run now proposes no patch at all.
+- splitting a card, on the `documented` fixture, Opus splitting and Sonnet
+  judging: right at the first attempt by hand; measured, the judge said no
+  twice in two runs, taking the sentence on how long a token lasts, in the
+  sessions card, for a second concept, and Opus's second try was then refused
+  for rewording a line. The question now says a sentence explaining the
+  concept by what it depends on stays within it: three runs out of three
+  since, the judge naming why each card holds one concept.
+- condensing on Sonnet, four more runs: three right, one moving nothing;
+  with the two of 2026-09-25, four in six, writing more tokens than Opus,
+  which is right ten times in ten: condensing stays on `frontier`.

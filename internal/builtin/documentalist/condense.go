@@ -14,13 +14,57 @@ import (
 )
 
 // condensable are the budget problems condensing answers, strongest first.
-// A folder over budget, or a card under it, needs another kind of move.
-var condensable = []string{"doc-too-long", "agent-file-too-long", "card-too-long", "section-too-long"}
+// A folder over budget needs another kind of move; a card too long is split
+// into cards, and one too short merged into another.
+var condensable = []string{"doc-too-long", "agent-file-too-long", "section-too-long"}
 
 // condenseTask is what the judge needs to know about a condense run.
 type condenseTask struct {
-	Doc  string   `yaml:"doc"`
-	Keys []string `yaml:"keys"` // the budget problems the patch must resolve
+	Doc   string   `yaml:"doc"`
+	Keys  []string `yaml:"keys"`            // the budget problems the patch must resolve
+	Split bool     `yaml:"split,omitempty"` // a card split into cards, one concept each
+}
+
+// pickSplit chooses the one card a gardening run splits: the first too long,
+// which covers more than one concept.
+func pickSplit(problems []Problem) *condenseTask {
+	for _, p := range problems {
+		if p.Rule == "card-too-long" {
+			return &condenseTask{Doc: p.Where, Keys: []string{p.Key}, Split: true}
+		}
+	}
+	return nil
+}
+
+// writeSplitTask writes the question for the agent: the card with its line
+// numbers, and why it is too long.
+func writeSplitTask(c *condenseTask, problems []Problem, t Tree) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Kind: split\n\n%s is a card too long to hold one concept:\n\n", c.Doc)
+	for _, p := range problems {
+		if contains(c.Keys, p.Key) {
+			fmt.Fprintf(&b, "- %s %s: %s\n", p.Rule, p.Where, p.Message)
+		}
+	}
+	b.WriteString(`
+Split it into cards, one concept each: the card keeps its first concept, and
+each other concept moves, its lines as they are, into a new card beside it —
+a frontmatter with ` + "`type: card`" + ` (and the card's ` + "`sources`" + `, if it has any),
+a title naming that one concept — with a sentence and a link to it left in
+the card. Do not squeeze sentences, drop a rule written as MUST or SHOULD, or
+touch any other doc. One patch, a unified diff; a new card is created with
+--- /dev/null and +++ b/<path>. A second model reads the cards afterwards and
+refuses a card that holds more than one concept.
+
+The card as it is now, with its line numbers:
+
+` + "```" + `
+`)
+	for i, l := range strings.Split(strings.TrimSuffix(t.Docs[c.Doc], "\n"), "\n") {
+		fmt.Fprintf(&b, "%4d | %s\n", i+1, l)
+	}
+	b.WriteString("```\n")
+	return b.String()
 }
 
 // pickCondense chooses the one doc a gardening run condenses: the first with
@@ -88,9 +132,9 @@ var rule = regexp.MustCompile(`\b(MUST|SHOULD)\b`)
 // the lines cited, every removed line found unchanged in a new doc (headings
 // may change level), no MUST or SHOULD lost, each new doc linked from the
 // doc, the budget problems resolved, and no new problem anywhere.
-func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback []intent.Intention) ([]verdict.Finding, error) {
+func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback []intent.Intention) ([]verdict.Finding, string, error) {
 	if !proposedPatch(intents, fallback) {
-		return nil, nil // no agent, or a note instead: the findings are reported as they are
+		return nil, "", nil // no agent, or a note instead: the findings are reported as they are
 	}
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
@@ -98,7 +142,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 	}
 	tree, err := loadTree(repo, s.Docs)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	after := map[string]string{}
 	for p, content := range tree.Docs {
@@ -158,10 +202,17 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		}
 	}
 	if len(refused) > 0 {
-		return refused, nil
+		return refused, "", nil
 	}
 	if len(created) == 0 {
-		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "condensing moves parts into a new doc; none was created"}}, nil
+		return []verdict.Finding{{Rule: "nothing-moved", Where: c.Doc, Message: "condensing moves parts into a new doc; none was created"}}, "", nil
+	}
+	if c.Split {
+		for _, p := range created {
+			if docType(after[p]) != "card" {
+				refuse("not-a-card", p, "splitting a card makes cards: give "+p+" a frontmatter with `type: card`")
+			}
+		}
 	}
 	// Moved, not rewritten.
 	moved := map[string]bool{}
@@ -217,7 +268,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 		}
 	}
 	if len(refused) > 0 {
-		return refused, nil
+		return refused, "", nil
 	}
 	// The budget problems resolved, and nothing new.
 	old := map[string]Problem{}
@@ -232,7 +283,15 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	return refused, nil
+	if len(refused) > 0 || !c.Split {
+		return refused, "", nil
+	}
+	// What no check can tell: one concept a card. The judge reads them all.
+	var m strings.Builder
+	for _, p := range append([]string{c.Doc}, created...) {
+		fmt.Fprintf(&m, "## %s\n\n```markdown\n%s\n```\n\n", p, strings.TrimRight(after[p], "\n"))
+	}
+	return nil, m.String(), nil
 }
 
 // applyDoc applies one file of a patch to an existing doc, as git will: the

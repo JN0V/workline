@@ -107,7 +107,7 @@ SHOULD is lost, and that the passage is no longer repeated.
 **Condensing, when gardening.** On `schedule`, with no suspect or stale doc
 and no repeated passage,
 the doc most over its budget (a doc too long first, then an agent's entry
-point, a card, a section) becomes the task: bring it within budget by moving
+point, a section) becomes the task: bring it within budget by moving
 whole parts into a new doc, and linking to it. One doc a run. A merge request
 or a push never turns into a rewrite of the docs.
 
@@ -125,7 +125,14 @@ task; running the task again updates it (ADR-0006). While
 `max-open-merge-requests` of them wait for review, gardening proposes nothing
 (`gardening-paused`), and what it finds is still reported.
 
-Not built yet: the other kinds of task (propagate, split).
+**Splitting a card, when gardening.** Next, a card too long holds more than
+one concept: it keeps its first, and each other one moves, as written, into a
+card of its own that it links to. The judge checks what condensing checks, and
+that each new doc is a card; then a judge model — not the one that split it —
+is asked whether each card holds one concept, the one its title names. A no
+goes back to the agent with its reason.
+
+Not built yet: the other kind of task (propagate).
 
 ## Judge (`post`, no AI)
 

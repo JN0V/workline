@@ -24,9 +24,10 @@ model:
   promote-after: 1
   timeout: 10m    # condensing a long doc is a long diff to write
   tasks:
-    # Measured (tests/evaluation, 2026-09-25): Sonnet condensed 1 time in 3,
-    # Opus 3 in 3 with half the tokens of a Sonnet try stepped up to Opus.
+    # Measured (tests/evaluation, 2026-09-25 and 28): Sonnet condensed 4 times
+    # in 6, writing 13 to 19k tokens; Opus 10 in 10, writing 9 to 11k.
     condense: {tier: frontier}
+    split: {tier: frontier}          # the same move, a card at a time; 3 in 3 on Opus
 
 context:
   knowledge: [doc-model.md]

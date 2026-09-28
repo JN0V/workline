@@ -474,6 +474,18 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
+	// A card too long holds more than one concept: split into cards.
+	if task == "" && gardening {
+		if c := pickSplit(problems); c != nil {
+			task = writeSplitTask(c, problems, tree)
+			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
+				return fail(err)
+			}
+			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("split\n"), 0o644); err != nil {
+				return fail(err)
+			}
+		}
+	}
 	// Last, a card too short to stand alone goes into the one it belongs with.
 	if task == "" && gardening {
 		if m := pickMergeCard(problems, tree); m != nil {
@@ -645,9 +657,18 @@ func Post(runDir, repo string) int {
 		if err := yaml.Unmarshal(data, &c); err != nil {
 			return fail(err)
 		}
-		refused, err = judgeCondense(repo, s, &c, intents, fallback)
+		var material string
+		refused, material, err = judgeCondense(repo, s, &c, intents, fallback)
 		if err != nil {
 			return fail(err)
+		}
+		if material != "" { // the engine asks a judge what no check can tell
+			q := map[string]string{"material": material,
+				"question": "Does each of these cards hold one concept, the one its title names? A sentence explaining that concept by what it depends on stays within it; " +
+					"a second concept is a part that could stand as a card of its own, under a title of its own."}
+			if err := writeYAML(filepath.Join(runDir, "out", "judge.yaml"), q); err != nil {
+				return fail(err)
+			}
 		}
 		for _, k := range c.Keys {
 			resolved[k] = len(refused) == 0 && proposedPatch(intents, fallback)
@@ -992,10 +1013,13 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	switch kind {
 	case "stale":
 		title = "docs: read again the docs not confirmed for too long"
-	case "condense":
+	case "condense", "split":
 		var c condenseTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
-			docs, key, title = []string{c.Doc}, "condense "+c.Doc, "docs: condense "+c.Doc
+			docs, key, title = []string{c.Doc}, kind+" "+c.Doc, "docs: condense "+c.Doc
+			if c.Split {
+				title = "docs: split " + c.Doc + " into cards"
+			}
 		}
 	case "duplicates":
 		var d dedupeTask

@@ -1,0 +1,21 @@
+# The documentalist's answer to "docs/cards/sessions.md is too long" in the
+# `documented` fixture: signing out moves, as written, into a card of its own.
+- patch: |
+    --- a/docs/cards/sessions.md
+    +++ b/docs/cards/sessions.md
+    @@ -6,5 +6,3 @@
+     A session lasts as long as its token, and a token lasts one hour unless it is refreshed.
+     
+    -## Signing out
+    -
+    -Signing out ends the session at once, on every device the user signed in on.
+    +See [signing out](signing-out.md).
+    --- /dev/null
+    +++ b/docs/cards/signing-out.md
+    @@ -0,0 +1,6 @@
+    +---
+    +type: card
+    +---
+    +# Signing out
+    +
+    +Signing out ends the session at once, on every device the user signed in on.

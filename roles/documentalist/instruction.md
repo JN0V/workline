@@ -14,7 +14,9 @@ You get one decision about documentation. `task.md` says which kind:
   one place it belongs and replace the others with a link.
 - **merge-card** — a card is too short to stand alone. Add its text, as it is,
   to the card it belongs with, delete it, and point its links there.
-- **split** — a doc covers several concepts. Propose cards, one concept each.
+- **split** — a card too long covers several concepts. Keep the first, move
+  each other one, as written, into a card of its own, and link to it; a second
+  model then checks each card holds one concept.
 
 If the right answer needs a decision only the project can make, return a `note`
 instead of guessing.

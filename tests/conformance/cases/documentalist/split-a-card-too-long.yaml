@@ -1,0 +1,17 @@
+case: documentalist/split-a-card-too-long
+about: When gardening, a card too long is split into cards, one concept each, its parts moved as written; a judge model, not the author, confirms each card holds one concept, and says at which independence.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline docs/cards && printf 'roles:\\n  documentalist:\\n    settings:\\n      budgets: {doc-lines: 200, section-words: 400, card-words: {min: 5, max: 30}, folder-lines: 2000, root-agent-file-lines: 200}\\n      freshness: {stale-after-days: 3650}\\n' > .workline/config.yaml"
+    - "printf -- '---\\ntype: card\\n---\\n# Sessions\\n\\nA session lasts as long as its token, and a token lasts one hour unless it is refreshed.\\n\\n## Signing out\\n\\nSigning out ends the session at once, on every device the user signed in on.\\n' > docs/cards/sessions.md && git add docs && git commit -qm 'docs: add a card'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: documentalist, event: schedule, ai: "fake:split-card"}
+expect:
+  status: pass
+  calls: [{task: split, tier: frontier}, {task: judge, model: judge-yes}]
+  applied: [patch]
+  files:
+    docs/cards/signing-out.md: {contains: "type: card"}
+    docs/cards/sessions.md: {contains: "(signing-out.md)"}
+  findings: [{rule: judged, message: "independence:"}]
