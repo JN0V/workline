@@ -64,6 +64,7 @@ type caseFile struct {
 		Role    string            `yaml:"role"`
 		Target  map[string]int    `yaml:"target"`
 		NoApply bool              `yaml:"no-apply"`
+		OpenMR  bool              `yaml:"open-merge-request"`
 		Event   string            `yaml:"event"`
 		Input   map[string]string `yaml:"input"`
 		AI      string            `yaml:"ai"`
@@ -213,6 +214,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	for _, s := range c.Run.Scope {
 		args = append(args, "--scope", s)
+	}
+	if c.Run.OpenMR {
+		args = append(args, "--open-merge-request")
 	}
 	if c.Run.NoApply {
 		args = append(args, "--no-apply")
@@ -394,8 +398,9 @@ func readPending(t *testing.T) map[string]bool {
 }
 
 // compareForge checks the simulated forge's state: for each listed item, by
-// id, `comments` is a count, `labels` the exact set, and `comment-contains`
-// / `comment-lacks` texts some comment holds, or none does.
+// id, `comments` is a count, `labels` the exact set, `comment-contains` /
+// `comment-lacks` texts some comment holds, or none does, `branch`, `base`
+// and `title` a merge request's, and `absent: true` no item with that id.
 func compareForge(want map[string]any, file string) []string {
 	data, err := os.ReadFile(file)
 	if err != nil {
@@ -414,9 +419,20 @@ func compareForge(want map[string]any, file string) []string {
 					found = g
 				}
 			}
+			if absent, _ := wm["absent"].(bool); absent {
+				if found != nil {
+					p = append(p, fmt.Sprintf("forge: %s %v exists, want none", kind, wm["id"]))
+				}
+				continue
+			}
 			if found == nil {
 				p = append(p, fmt.Sprintf("forge: no %s with id %v", kind, wm["id"]))
 				continue
+			}
+			for _, k := range []string{"branch", "base", "title"} {
+				if w, ok := wm[k]; ok && fmt.Sprint(found[k]) != fmt.Sprint(w) {
+					p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm["id"], k, found[k], w))
+				}
 			}
 			if n, ok := wm["comments"]; ok {
 				c, _ := found["comments"].([]any)
