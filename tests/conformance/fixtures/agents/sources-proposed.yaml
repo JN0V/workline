@@ -1,0 +1,21 @@
+# The documentalist's answer to "these docs declare no sources" in the `basic`
+# fixture with a folder and a decision added: the README describes main.go and
+# src/ — a folder written with its slash, as agents do — and is dated by the
+# commit that last changed it (the fixture's first, deterministic); the
+# decision describes no code.
+- patch: |
+    --- a/README.md
+    +++ b/README.md
+    @@ -1,1 +1,5 @@
+    +<!-- workline
+    +sources: [main.go, src/]
+    +checked: f40c217
+    +-->
+     # Project
+    --- a/docs/why-go.md
+    +++ b/docs/why-go.md
+    @@ -1,1 +1,4 @@
+    +---
+    +sources: []
+    +---
+     # Why Go

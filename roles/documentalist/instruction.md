@@ -17,6 +17,9 @@ You get one decision about documentation. `task.md` says which kind:
 - **split** — a card too long covers several concepts. Keep the first, move
   each other one, as written, into a card of its own, and link to it; a second
   model then checks each card holds one concept.
+- **sources** — a doc says nothing of the code it describes. Add to its header
+  the files or folders whose change could make it wrong, with the `checked`
+  given; `sources: []` for a doc describing no code. The body stays as it is.
 
 If the right answer needs a decision only the project can make, return a `note`
 instead of guessing.

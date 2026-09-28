@@ -27,6 +27,9 @@ A source in another repository is prefixed with that repository's name, as
 declared in the project's config (`api:src/auth/token.go`), and `checked` then
 holds one commit per repository (`checked: {api: 3f2a91c}`).
 
+A doc describing no code — a decision record, a backlog, a changelog — says
+so with `sources: []`, and has no `checked`.
+
 **A doc is suspect** when a commit after `checked` touched one of its `sources`.
 Suspicion follows the chain: code → technical doc → product doc.
 

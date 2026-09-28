@@ -308,8 +308,9 @@ func Pre(runDir, repo string) int {
 	pl := &places{repo: repo, gitDir: gitDir, cfg: cfg, known: map[string]place{}}
 
 	var findings []verdict.Finding
-	if len(docs) == 0 {
+	if len(docs) == 0 && os.Getenv("WORKLINE_EVENT") != "init" {
 		// Not an error, but never a silent "all good": say what was looked at.
+		// On init, each doc is said with the header that would track it.
 		findings = append(findings, verdict.Finding{Rule: "nothing-tracked",
 			Message: fmt.Sprintf("no doc declares its sources under %v, so none can be found suspect", s.Docs)})
 	}
@@ -447,8 +448,19 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 
-	task, judged, err := suspectTask(suspects, s, pl, repo)
-	if err != nil {
+	// Adopting a repository: the docs saying nothing of their sources are the
+	// task; the suspect ones wait for the next run, once the person has
+	// reviewed what this one proposes.
+	adopting := os.Getenv("WORKLINE_EVENT") == "init"
+	var task string
+	var judged map[string]map[string]string
+	if adopting {
+		var more []verdict.Finding
+		if more, task, judged, err = adoption(runDir, repo, tree, s); err != nil {
+			return fail(err)
+		}
+		findings = append(findings, more...)
+	} else if task, judged, err = suspectTask(suspects, s, pl, repo); err != nil {
 		return fail(err)
 	}
 	// Due now (at the release): each doc is brought up to date for its reader.
@@ -548,6 +560,9 @@ doc when its reader really gained something to know.
 	}
 	var left strings.Builder
 	for i := range findings {
+		if adopting {
+			break // adoption said itself what it left for the next round
+		}
 		f := &findings[i]
 		if (f.Rule == "suspect" || f.Rule == "due") && judged[f.Where] == nil && task != "" || f.Rule == "stale" && stale[f.Where] != nil && judged[f.Where] == nil && task != "" {
 			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
@@ -743,7 +758,11 @@ func Post(runDir, repo string) int {
 		}
 	} else {
 		kind, _ := os.ReadFile(filepath.Join(runDir, "in", "task-kind"))
-		refused, patched, err = judgePatches(repo, s, judged, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+		if strings.TrimSpace(string(kind)) == "sources" {
+			refused, patched, err = judgeSources(repo, s, judged, intents, fallback)
+		} else {
+			refused, patched, err = judgePatches(repo, s, judged, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+		}
 		if err != nil {
 			return fail(err)
 		}
@@ -760,7 +779,7 @@ func Post(runDir, repo string) int {
 	blocking, due := 0, 0
 	var kept []verdict.Finding
 	for _, f := range findings {
-		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
+		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
 		}
@@ -882,29 +901,48 @@ func trackedDocs(t Tree, globs []string) ([]*Doc, error) {
 	return docs, nil
 }
 
-// Coverage lists the docs under the docs globs that declare their sources,
-// and those that do not: only the first can ever be found suspect.
-func Coverage(repo string, globs []string) (tracked, untracked []string, err error) {
+// Coverage sorts the docs under the docs globs: those declaring their
+// sources, which alone can be found suspect; those declaring none
+// (`sources: []`), which describe no code; and those declaring nothing.
+func Coverage(repo string, globs []string) (tracked, none, untracked []string, err error) {
 	t, err := loadTree(repo, globs)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	docs, err := trackedDocs(t, globs)
-	if err != nil {
-		return nil, nil, err
-	}
-	has := map[string]bool{}
-	for _, d := range docs {
-		tracked = append(tracked, d.Path)
-		has[d.Path] = true
-	}
-	for p := range t.Docs {
-		if matchAny(globs, p) && !has[p] {
+	for p, content := range t.Docs {
+		if !matchAny(globs, p) {
+			continue
+		}
+		declared, sources := declaresSources(content)
+		switch {
+		case len(sources) > 0:
+			tracked = append(tracked, p)
+		case declared:
+			none = append(none, p)
+		default:
 			untracked = append(untracked, p)
 		}
 	}
+	sort.Strings(tracked)
+	sort.Strings(none)
 	sort.Strings(untracked)
-	return tracked, untracked, nil
+	return tracked, none, untracked, nil
+}
+
+// declaresSources says whether a doc's header has a `sources` key, even an
+// empty one, and what it lists. A header that does not parse declares nothing.
+func declaresSources(content string) (bool, []string) {
+	block, n := header(content)
+	if n == 0 {
+		return false, nil
+	}
+	var fm struct {
+		Sources *[]string `yaml:"sources"`
+	}
+	if yaml.Unmarshal([]byte(block), &fm) != nil || fm.Sources == nil {
+		return false, nil
+	}
+	return true, *fm.Sources
 }
 
 func matchAny(globs []string, path string) bool {

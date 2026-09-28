@@ -96,3 +96,16 @@ On 2026-09-27, on workline's own repository:
   and at the release, with Claude (Sonnet), the product doc brought to two
   hours and checked again, at the first attempt and in two evaluation runs
   out of two.
+- adopting a repository (`workline init`, 2026-09-28), with Claude, on a copy
+  of this repository (18 docs saying nothing of their sources) and of a small
+  firmware project (12 docs, none declaring any): each doc got its sources, or
+  `sources: []` for a decision, a changelog, a research card, in three or four
+  rounds of 22 to 38k tokens in. Sonnet's answer was refused in six rounds of
+  seven, then Opus's taken: folders written `roles/`, with the slash, taken
+  for missing; a blank line between the header and the title, taken for a
+  change of the doc (three rounds); a diff git could not apply (two). The
+  first two are now taken, and guarded. And a second note of one answer
+  overwrote the first, and no note reached the person — yet the notes had
+  found a doc behind the changelog, and one possibly replaced by another:
+  every note is now in the result, and shown. Sonnet alone, on this
+  repository, after the slash was taken: right at each first attempt.

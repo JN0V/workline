@@ -1,0 +1,12 @@
+# The README's sources, the header followed by a blank line before the title,
+# as agents often write it.
+- patch: |
+    --- a/README.md
+    +++ b/README.md
+    @@ -1,1 +1,6 @@
+    +<!-- workline
+    +sources: [main.go]
+    +checked: f40c217
+    +-->
+    +
+     # Project

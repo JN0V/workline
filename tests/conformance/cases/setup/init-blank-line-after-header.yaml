@@ -1,0 +1,11 @@
+case: setup/init-blank-line-after-header
+about: A header followed by a blank line before the doc's first line leaves the doc itself as it was, and is taken.
+given:
+  repo: basic
+run: {init: true, ai: "fake:sources-blank-line"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files:
+    README.md: {contains: "sources: [main.go]"}

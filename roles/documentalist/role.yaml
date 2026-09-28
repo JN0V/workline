@@ -9,7 +9,9 @@ mission: The docs stay true to the code, short enough to be read, and the produc
 # handoff: from the release manager, when a release changes how the project is used.
 # release: before the release manager: the docs due at the release are brought
 #          up to date; until they are, the release waits.
-events: [merge-request, pre-push, schedule, handoff, release]
+# init: `workline init` adopting a repository: the docs saying nothing of the
+#       code they describe get their `sources` proposed, for a person to review.
+events: [merge-request, pre-push, schedule, handoff, release, init]
 
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine

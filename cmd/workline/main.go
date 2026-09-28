@@ -12,6 +12,7 @@
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline doctor [--repo <dir>] [--json]
+//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -65,12 +66,14 @@ func main() {
 		os.Exit(applyCmd(os.Args[2:]))
 	case "doctor":
 		os.Exit(doctorCmd(os.Args[2:]))
+	case "init":
+		os.Exit(initCmd(os.Args[2:]))
 	}
 	usage()
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo\n       workline doctor [--repo <dir>] [--json]")
+	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--json]")
 	os.Exit(64)
 }
 
@@ -677,4 +680,69 @@ func doctorCmd(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// initCmd adopts a repository: pre-push is routed to the committer and the
+// documentalist, and the docs that say nothing of their sources are put
+// before the agent, whose proposals land in the working tree for a person to
+// review. Running it again only does what is left.
+func initCmd(args []string) int {
+	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository to adopt")
+	ai := fs.String("ai", "", "agent proposing each doc's sources (default: the project's, else yours, else none)")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	_ = fs.Parse(args)
+	root, err := gitRoot(*repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+		return 64
+	}
+	rolesDir, err := resolveRoles(*roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	steps, changed, err := routing.RoutePrePush(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	config := "pre-push runs " + strings.Join(steps, ", ") + ", as the project set it"
+	if changed {
+		config = "pre-push now runs " + strings.Join(steps, ", ") + " (.workline/config.yaml)"
+	}
+	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
+	if *asJSON {
+		out, _ := json.MarshalIndent(struct {
+			*engine.Result
+			Config string `json:"config"`
+		}{res, config}, "", "  ")
+		fmt.Println(string(out))
+		return exitFor(res.Status)
+	}
+	// Only what adoption is about: the rest is what any run reports, and
+	// `workline doctor` or the next push says it.
+	fmt.Fprintln(os.Stderr, "workline init:", config)
+	fmt.Fprintf(os.Stderr, "workline init: %s — %s\n", res.Status, res.Summary)
+	suspect := map[string]bool{}
+	for _, f := range res.Findings {
+		switch {
+		case f.Rule == "suspect":
+			suspect[f.Where] = true
+		case f.Rule == "no-sources" || res.Status != verdict.Pass && f.Level == "" && !prePushQuiet[f.Rule]:
+			fmt.Fprintf(os.Stderr, "  %s %s: %s\n", f.Rule, f.Where, f.Message)
+		}
+	}
+	for _, n := range res.Notes {
+		fmt.Fprintf(os.Stderr, "  note from the agent: %s\n", strings.ReplaceAll(n, "\n", "\n    "))
+	}
+	if stat, _ := exec.Command("git", "-C", root, "status", "--short").Output(); len(stat) > 0 {
+		fmt.Fprintf(os.Stderr, "\nIn your working tree:\n%s", stat)
+		fmt.Fprintln(os.Stderr, "Review it (git diff): commit what is right, restore what is not (git restore <file>).")
+	}
+	if len(suspect) > 0 {
+		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push has them judged.\n", len(suspect))
+	}
+	return exitFor(res.Status)
 }

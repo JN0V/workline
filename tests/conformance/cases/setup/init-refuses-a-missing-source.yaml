@@ -1,0 +1,12 @@
+case: setup/init-refuses-a-missing-source
+about: A proposed source the repository does not hold is refused, the agent is asked again, and nothing is written to the doc.
+given:
+  repo: basic
+run: {init: true, ai: "fake:sources-missing"}
+expect:
+  status: block
+  agent-calls: 2
+  applied: []
+  findings: [{rule: source-missing, where: README.md, message: "src/main.go"}]
+  files:
+    README.md: {lacks: "sources:"}

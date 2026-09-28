@@ -1,0 +1,11 @@
+case: setup/init-without-ai
+about: Without an agent, adopting a repository still routes pre-push, and lists each doc saying nothing of its sources with the commit its `checked` would name.
+given:
+  repo: basic
+run: {init: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: no-sources, where: README.md, message: "checked: f40c217"}]
+  files:
+    .workline/config.yaml: {contains: "pre-push: [committer, documentalist]"}

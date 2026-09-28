@@ -1,0 +1,11 @@
+case: setup/init-keeps-a-chosen-pre-push
+about: A project that routes pre-push already keeps its choice.
+given:
+  repo: basic
+  config:
+    routing: {events: {pre-push: [committer]}}
+run: {init: true, ai: none}
+expect:
+  status: pass
+  files:
+    .workline/config.yaml: {lacks: "documentalist"}

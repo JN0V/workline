@@ -1,0 +1,10 @@
+# The README's sources proposed with a file the repository does not hold.
+- patch: |
+    --- a/README.md
+    +++ b/README.md
+    @@ -1,1 +1,5 @@
+    +<!-- workline
+    +sources: [src/main.go]
+    +checked: f40c217
+    +-->
+     # Project

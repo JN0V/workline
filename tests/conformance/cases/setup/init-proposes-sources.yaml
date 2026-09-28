@@ -1,0 +1,15 @@
+case: setup/init-proposes-sources
+about: "Adopting a repository routes pre-push to the committer and the documentalist, and the agent's sources for each doc land in the working tree: code for one, none for a decision."
+given:
+  repo: basic
+  setup: ["mkdir docs src && printf '# Why Go\n\nWe chose Go.\n' > docs/why-go.md && printf 'package src\n' > src/src.go && git add . && git commit -qm 'docs: say why Go'"]
+run: {init: true, ai: "fake:sources-proposed"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  no-findings: [{rule: no-sources}]
+  files:
+    README.md: {contains: "sources: [main.go, src/]"}
+    docs/why-go.md: {contains: "sources: []"}
+    .workline/config.yaml: {contains: "pre-push: [committer, documentalist]"}

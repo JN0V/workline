@@ -59,7 +59,7 @@ Not built yet: style (vale).
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`) | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |
@@ -178,6 +178,22 @@ documentalist]}}`) has its suspect docs judged on the machine, with the
 person's agent, before the commits leave it. The patches land in the working
 tree and the push stops: the person reviews them, commits them, and pushes
 again. Without an agent, the suspect docs are listed and the push goes on.
+
+## Adopting a repository
+
+On a repository where no doc says what code it describes, nothing can be
+found suspect. `workline init` routes `pre-push` to the committer and the
+documentalist, unless the project routes it already, then runs the
+documentalist on `init`: each doc under `docs` whose header has no `sources`
+is put before the agent with the repository's files, and the agent proposes
+the code it describes — `sources: []` for a doc describing none, a decision
+or a changelog. Its `checked` is the commit that last changed the doc, never
+HEAD: the doc was written against the code as it was then, so a source
+changed since makes it suspect, to be judged on the next push, rather than
+vouched for unread. The judge refuses a patch touching more than the header,
+a source the repository does not hold, or another `checked`. The patches land
+in the working tree for the person to review and commit. Without an agent,
+each doc is listed (`no-sources`) with the commit its `checked` would name.
 
 ## Without AI
 

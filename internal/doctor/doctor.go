@@ -200,7 +200,7 @@ func repository(r *Report, o Options) {
 	} else {
 		r.add(Check{Area: "repository", Rule: "documentalist-not-before-push", Where: where, Level: Warn,
 			Message: "the documentalist does not run before a push here (pre-push routes: " + orNone(prePush) + "): docs go stale unseen until a merge request, if CI runs workline",
-			Fix:     "add `routing: {events: {pre-push: [committer, documentalist]}}` to .workline/config.yaml"})
+			Fix:     "workline init"})
 	}
 
 	d, err := role.Load(o.RolesDir, "documentalist")
@@ -209,29 +209,30 @@ func repository(r *Report, o Options) {
 		return
 	}
 	globs := stringList(d.MergedSettings(cfg)["docs"])
-	tracked, untracked, err := documentalist.Coverage(o.Repo, globs)
+	tracked, none, untracked, err := documentalist.Coverage(o.Repo, globs)
 	if err != nil {
 		r.add(Check{Area: "repository", Rule: "docs-unreadable", Where: where, Level: Error, Message: err.Error()})
 		return
 	}
-	total := len(tracked) + len(untracked)
+	total := len(tracked) + len(none) + len(untracked)
+	described := fmt.Sprintf("%d docs declare their sources", len(tracked))
+	if len(none) > 0 {
+		described += fmt.Sprintf(", %d describe no code (`sources: []`)", len(none))
+	}
 	switch {
 	case total == 0:
 		r.add(Check{Area: "repository", Rule: "no-docs", Where: where, Level: Note,
 			Message: fmt.Sprintf("no doc under %v: the documentalist has nothing to look after", globs)})
 	case len(untracked) == 0:
-		r.add(Check{Area: "repository", Rule: "docs-tracked", Where: where, Level: OK,
-			Message: fmt.Sprintf("%d docs declare their sources, all of them", total)})
+		r.add(Check{Area: "repository", Rule: "docs-tracked", Where: where, Level: OK, Message: described})
 	case len(tracked) == 0:
 		r.add(Check{Area: "repository", Rule: "nothing-tracked", Where: where, Level: Warn,
 			Message: fmt.Sprintf("none of the %d docs declares its sources, so none can be found suspect: the documentalist only checks sizes and links", total),
-			Fix:     "declare the code each doc describes, as `sources` in its header (workline's roles/documentalist/README.md)"})
+			Fix:     "workline init   # proposes their sources, with an agent; without one, lists them"})
 	default:
-		// Some docs describe no code (decisions, a backlog): not declaring
-		// sources may be right, so it is said, not warned about.
-		r.add(Check{Area: "repository", Rule: "docs-untracked", Where: where, Level: Note,
-			Message: fmt.Sprintf("%d of %d docs declare their sources; these do not, so they are never found suspect: %s", len(tracked), total, sample(untracked)),
-			Fix:     "declare the code each doc describes, as `sources` in its header (workline's roles/documentalist/README.md)"})
+		r.add(Check{Area: "repository", Rule: "docs-untracked", Where: where, Level: Warn,
+			Message: fmt.Sprintf("%s; %d say nothing, so they are never found suspect: %s", described, len(untracked), sample(untracked)),
+			Fix:     "workline init   # proposes their sources, with an agent; without one, lists them"})
 	}
 }
 

@@ -48,6 +48,11 @@ Run the same `go install` again to update. `workline doctor` then says what
 is set up and what is missing — the global hooks, an agent, the tools the
 roles use (gitleaks, lychee) — each with the command that installs it.
 
+In a repository, `workline init` has the documentalist run before each push,
+and, with an agent, proposes for each doc the code it describes, for you to
+review and commit: until a doc names its `sources`, nothing tells when it
+goes wrong.
+
 ### Check every commit on this machine
 
 ```sh

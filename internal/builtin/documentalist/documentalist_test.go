@@ -1,6 +1,7 @@
 package documentalist
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"testing"
@@ -169,5 +170,19 @@ func TestEditedInPlace(t *testing.T) {
 	}
 	if editedInPlace("Signing out ends the session.", []string{"A session is ended by signing out."}) {
 		t.Error("a sentence reworded is a rewrite")
+	}
+}
+
+func TestDeclaresSources(t *testing.T) {
+	for content, want := range map[string]string{
+		"# Title\n":                                  "false []",
+		"---\ntype: card\n---\n# Title\n":            "false []",
+		"---\nsources: []\n---\n# Title\n":           "true []",
+		"<!-- workline\nsources: [a.go]\n-->\n# T\n": "true [a.go]",
+	} {
+		declared, sources := declaresSources(content)
+		if got := fmt.Sprint(declared, " ", sources); got != want {
+			t.Errorf("%q: got %s, want %s", content, got, want)
+		}
 	}
 }
