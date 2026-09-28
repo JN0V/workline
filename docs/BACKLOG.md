@@ -16,9 +16,23 @@ this repository before any other role is added.
    takes the best independence available and says which (ADR-0005); the
    weekly run judges on `claude:sonnet`. Left: a judge of another provider,
    when there is one. Each defect a role lets through becomes a case.
-2. **What is left of the committer and the documentalist**, before any new
-   role:
-   - documentalist: style (vale).
+2. **Finish the documentalist**, before any other role. Tried on another
+   machine (2026-09-28), two gaps:
+   - **An install that sets everything up**, interactive and run again to
+     reconfigure: it asks what to enable (the global hooks, the agent, the
+     roles run on this machine), installs or names the tools each role uses
+     (gitleaks, lychee, the claude CLI, from the roles' `uses`), installs the
+     hooks, and ends with a `workline doctor` that says what is missing and
+     the command that installs it (as `flutter doctor`, `brew doctor`). Today
+     the README's install lists neither tool, and gitleaks' warning
+     (`secrets-not-checked`) gives no command.
+   - **Adoption in a repository**: on another repository the documentalist
+     most likely never ran — `pre-push` is not routed by default, no doc
+     declares `sources`, so none is tracked, and its findings stay quiet
+     before a push. A `workline init` that routes `pre-push` and, with an
+     agent, proposes each doc's `sources` for a person to confirm; `doctor`
+     says, for the repository, whether the documentalist runs and how many
+     docs it tracks.
 
 Then, once both work well here:
 
@@ -60,6 +74,11 @@ last.
   the framework handles it, e.g. what a role writes down for the next run
   instead of keeping it in context.
 - **Rebuild Make My Dreams on this framework**, once it works.
+- **Style (vale).** Parked 2026-09-28: without AI, the risk for a doc is to
+  be wrong or out of reach, which the checks already cover; a style linter
+  adds a binary, rules to keep and findings people learn to ignore. Worth it
+  when a project already keeps a vale config: run vale when `.vale.ini`
+  exists, as lychee is run, and report without blocking.
 - **Release notes must not claim what is not built.** The first trial release
   listed the documentalist as working, because its role *definition* was
   committed as `feat(documentalist): …`. A change that only specifies a role is
