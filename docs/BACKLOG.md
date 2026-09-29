@@ -20,16 +20,19 @@ this repository before any other role is added.
    (2026-09-29) — the range honoured, the push approval with its page,
    `workline docs` and `d`, reviewed per doc, the header as a comment.
    DomoticsCore adopted and pushed, 14 docs fixed; 40 left for point 3.
-   Left: not tried yet, Claude Code run from a terminal (may its shell reach
-   that terminal?) and a push from an editor's button (ADR-0007, "Tried").
+   Left, first: the approval asks where the person is — the terminal, else
+   the editor the push came from (VSCodium's Source Control, or Claude Code
+   in it asked to push), else a desktop dialog (ADR-0008, proposed;
+   docs/research/push-approval.md). Not tried yet: Claude Code run from a
+   terminal (may its shell reach that terminal?).
 3. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
-   documentalist could not judge; roles/documentalist/tried.md). One agent
-   per source, each judging the doc against that source alone, the verdicts
-   put together; a fix of what is found wrong accepted without moving
-   `checked`, the doc staying suspect; a doc the agent answered with a note
-   not asked again until its sources change. Measure it against judging
-   whole, on the evaluation, before adopting it; and whether a light model
-   confirms as well as a standard one.
+   documentalist could not judge; roles/documentalist/tried.md). ADR-0009,
+   proposed: the doc whole with a share of its sources per part, packed to
+   fill a task (806 doc-file pairs, not one call each); a closed answer per
+   part, merged without AI, one call fixing what is wrong; `checked` not
+   moved; `parts-max` pointing out docs whose sources are too wide. Next:
+   the evaluation case with planted defects, whole against parts, light
+   against standard; then the spec and the code.
 4. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.
