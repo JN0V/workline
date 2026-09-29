@@ -724,6 +724,13 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 		call.Task = taskKind(runDir)
 		res.Calls = append(res.Calls, call)
+		// Kept with the run: what each call cost, to be read afterwards.
+		if data, err := json.Marshal(call); err == nil {
+			if f, err := os.OpenFile(filepath.Join(runDir, "out", "calls.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+				f.Write(append(data, '\n'))
+				f.Close()
+			}
+		}
 		if n := agent.Notice(agent.Seen(), call); n != "" {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})
 		}

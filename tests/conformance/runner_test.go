@@ -97,6 +97,7 @@ type caseFile struct {
 		LeftOut     []string                     `yaml:"left-out"`     // wheres found in neither report
 		Notes       []string                     `yaml:"notes"`        // texts the agent's notes hold
 		RefusedKept int                          `yaml:"refused-kept"` // refused answers kept in the run folders
+		CallsKept   int                          `yaml:"calls-kept"`   // agent calls recorded in the run folders
 	} `yaml:"expect"`
 }
 
@@ -362,6 +363,17 @@ func compare(c *caseFile, r *result, repo string) []string {
 		kept, _ := filepath.Glob(filepath.Join(repo, ".git", "workline", "runs", "*", "out", "refused-*.yaml"))
 		if len(kept) != e.RefusedKept {
 			p = append(p, fmt.Sprintf("%d refused answers kept, want %d", len(kept), e.RefusedKept))
+		}
+	}
+	if e.CallsKept > 0 {
+		n := 0
+		files, _ := filepath.Glob(filepath.Join(repo, ".git", "workline", "runs", "*", "out", "calls.jsonl"))
+		for _, f := range files {
+			data, _ := os.ReadFile(f)
+			n += strings.Count(string(data), "\n")
+		}
+		if n != e.CallsKept {
+			p = append(p, fmt.Sprintf("%d agent calls kept, want %d", n, e.CallsKept))
 		}
 	}
 	for _, text := range e.Notes {

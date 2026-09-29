@@ -100,6 +100,7 @@ a `PATH` without a tool, or with a fake one first.
   `body-contains` (a text its body holds).
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `refused-kept` — how many refused answers the run folders keep.
+- `calls-kept` — how many agent calls the run folders record.
 - `files` — paths that must exist, or contain a text, or lack one (`lacks`),
   afterwards.
 

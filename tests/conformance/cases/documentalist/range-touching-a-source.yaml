@@ -1,0 +1,12 @@
+case: documentalist/range-touching-a-source
+about: A doc whose source a commit of the range touched is judged, and what the call cost is kept with the run.
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls-kept: 1
+  applied: [patch]
