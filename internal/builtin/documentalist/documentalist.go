@@ -211,21 +211,55 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 // docs: recording who checked a doc changes nothing it says, and would
 // otherwise make the docs naming a folder of docs suspect at every check.
 func headersOnly(dir, commit, path string) bool {
-	files, err := git(dir, "diff-tree", "--no-commit-id", "--name-only", "-r", commit, "--", path)
-	if err != nil || files == "" {
-		return false
-	}
-	for _, f := range strings.Split(files, "\n") {
-		if !strings.HasSuffix(f, ".md") {
+	under := strings.TrimSuffix(path, "/")
+	files := commitFiles(dir, commit)
+	found := false
+	for i := range files {
+		f := &files[i]
+		if f.path != under && !strings.HasPrefix(f.path, under+"/") {
+			continue
+		}
+		if !strings.HasSuffix(f.path, ".md") {
 			return false
 		}
-		before, err1 := git(dir, "show", commit+"^:"+f)
-		after, err2 := git(dir, "show", commit+":"+f)
-		if err1 != nil || err2 != nil || body(before) != body(after) {
+		if f.headerOnly == nil {
+			before, err1 := git(dir, "show", commit+"^:"+f.path)
+			after, err2 := git(dir, "show", commit+":"+f.path)
+			same := err1 == nil && err2 == nil && body(before) == body(after)
+			f.headerOnly = &same
+		}
+		if !*f.headerOnly {
 			return false
 		}
+		found = true
 	}
-	return true
+	return found
+}
+
+// changedFile is a file a commit changed; headerOnly, once read, says
+// whether it is a doc whose header alone changed.
+type changedFile struct {
+	path       string
+	headerOnly *bool
+}
+
+// commitFilesSeen keeps what each commit changed: the same commits come back
+// for every source of every doc, thousands of times on a large repository.
+var commitFilesSeen = map[string][]changedFile{}
+
+func commitFiles(dir, commit string) []changedFile {
+	key := dir + "\x00" + commit
+	if files, ok := commitFilesSeen[key]; ok {
+		return files
+	}
+	var files []changedFile
+	if out, err := git(dir, "diff-tree", "--no-commit-id", "--name-only", "-r", commit); err == nil && out != "" {
+		for _, f := range strings.Split(out, "\n") {
+			files = append(files, changedFile{path: f})
+		}
+	}
+	commitFilesSeen[key] = files
+	return files
 }
 
 // evidenceLines caps what one source's change shows the agent.
@@ -400,8 +434,14 @@ func Pre(runDir, repo string) int {
 			}
 			where, err := pl.get(name)
 			var commits string
+			gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/"))
+			// A doc the commits did not touch is only left for gardening:
+			// once it is found suspect, its other sources need no reading.
+			if !gone && ranged && hasSuspect(findings, d.Path) && !docTouched(d, touched) {
+				continue
+			}
 			// A source gone is said, and what removed it makes the doc suspect.
-			if gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/")); err == nil && gone {
+			if err == nil && gone {
 				findings = append(findings, verdict.Finding{Rule: "source-gone", Where: d.Path,
 					Message: fmt.Sprintf("names %s as a source, which no longer exists: name what replaced it, or drop it", src)})
 				commits, err = git(where.dir, "log", "--format=%h %s", checked+".."+where.rev, "--", path)
