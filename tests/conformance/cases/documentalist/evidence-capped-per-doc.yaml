@@ -1,0 +1,14 @@
+case: documentalist/evidence-capped-per-doc
+about: "What changed in a doc's sources is shown within one budget for the doc, not one per source: past it, a source shows only how much changed, and the command that shows the rest, so naming more files does not grow the task."
+given:
+  repo: documented
+  setup:
+    - "for f in a b c d e; do seq 1 200 | sed \"s/^/var $f/\" > src/auth/$f.go; done && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/a.go, src/auth/b.go, src/auth/c.go, src/auth/d.go, src/auth/e.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): split the auth package'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "for f in a b c d e; do seq 1 200 | sed \"s/^/const $f/\" > src/auth/$f.go; done && git commit -qam 'refactor(auth): make the values constant'"
+# A command agent: it answers only when a source is shown as a summary, past the doc's share.
+run: {role: documentalist, event: merge-request, ai: "cmd:grep -q 'not shown, past this doc' && echo '- note: judged on what was shown'"}
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["judged on what was shown"]

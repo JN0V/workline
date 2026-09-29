@@ -101,7 +101,8 @@ a patch changing what it says is refused (`truth-doc-changed`). Every other
 doc follows the code.
 
 Suspect docs become the agent's task, each with its lines numbered, what
-changed in its sources, and the commits its `checked` must name: at most
+changed in its sources — 240 lines of diff a doc, whatever the number of
+sources, the rest summed up with the command showing it — and the commits its `checked` must name: at most
 `ai-max-calls` docs per call, and no more than fits the role's context budget.
 Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay

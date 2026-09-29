@@ -233,27 +233,27 @@ const evidenceLines = 80
 
 // evidence shows the agent what changed in a source: the diff of a file, or a
 // doc section before and after.
-func evidence(dir, checked, rev, path, anchor string) string {
+func evidence(dir, checked, rev, path, anchor string, max int) string {
 	if !strings.HasSuffix(path, ".md") {
 		diff, err := git(dir, "diff", checked, rev, "--", path)
 		if err != nil {
 			return "(the diff could not be read: " + err.Error() + ")"
 		}
-		return "```diff\n" + truncate(diff) + "\n```"
+		return "```diff\n" + truncate(diff, max) + "\n```"
 	}
 	before, _ := git(dir, "show", checked+":"+path)
 	after, _ := git(dir, "show", rev+":"+path)
 	old, _ := Section(before, anchor)
 	now, _ := Section(after, anchor)
-	return "Before:\n\n```markdown\n" + truncate(old) + "\n```\n\nNow:\n\n```markdown\n" + truncate(now) + "\n```"
+	return "Before:\n\n```markdown\n" + truncate(old, max) + "\n```\n\nNow:\n\n```markdown\n" + truncate(now, max) + "\n```"
 }
 
-func truncate(s string) string {
+func truncate(s string, max int) string {
 	lines := strings.Split(s, "\n")
-	if len(lines) <= evidenceLines {
+	if len(lines) <= max {
 		return s
 	}
-	return strings.Join(lines[:evidenceLines], "\n") + fmt.Sprintf("\n… (%d more lines)", len(lines)-evidenceLines)
+	return strings.Join(lines[:max], "\n") + fmt.Sprintf("\n… (%d more lines)", len(lines)-max)
 }
 
 type projectRepos struct {
@@ -310,6 +310,26 @@ type suspectDoc struct {
 	// tooLarge: the doc, with what changed in its sources, does not fit in a
 	// task alone; judged by a person, never confirmed unread.
 	tooLarge bool
+	shown    int // lines of evidence shown so far, within docEvidenceLines
+}
+
+// docEvidenceLines is what one doc shows of what changed in all its sources:
+// one budget for the doc, so naming more files does not grow its task.
+// Measured on DomoticsCore (2026-09-29): 80 lines a source made a doc naming
+// ten files cost more than one naming their folder.
+const docEvidenceLines = 240
+
+// evidenceFor is what changed in one source, within what is left of the
+// doc's budget; past it, how much changed, and how to see it.
+func (sd *suspectDoc) evidenceFor(dir, checked, rev, path, anchor string) string {
+	left := min(evidenceLines, docEvidenceLines-sd.shown)
+	if left <= 0 {
+		stat, _ := git(dir, "diff", "--shortstat", checked, rev, "--", path)
+		return fmt.Sprintf("(not shown, past this doc's share of the task: %s; `git diff %s %s -- %s` shows it)", strings.TrimSpace(stat), checked, rev, path)
+	}
+	e := evidence(dir, checked, rev, path, anchor, left)
+	sd.shown += min(left, strings.Count(e, "\n"))
+	return e
 }
 
 // taskMaxChars keeps the task well inside the role's context budget (16000
@@ -426,7 +446,7 @@ func Pre(runDir, repo string) int {
 					into[d.Path] = sd
 				}
 				sd.why = append(sd.why, why)
-				sd.evidence = append(sd.evidence, fmt.Sprintf("What changed in %s:\n\n%s", src, evidence(where.dir, checked, where.rev, path, anchor)))
+				sd.evidence = append(sd.evidence, fmt.Sprintf("What changed in %s:\n\n%s", src, sd.evidenceFor(where.dir, checked, where.rev, path, anchor)))
 			}
 		}
 	}

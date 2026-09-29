@@ -125,3 +125,9 @@ On 2026-09-27, on workline's own repository:
   what changed in its folder sources, over the role's budget. A doc too large
   for a task alone is now left for a person, saying so, and the others are
   judged; cutting it would have its `checked` vouch for lines never read.
+  Stopped after four runs, about a million tokens in, 46 docs still to
+  judge. Their sources named whole folders; narrowed to the files each doc
+  names (2663 files behind them down to 911), they cost more, not less: the
+  diff shown was capped at 80 lines a source. It is now 240 lines a doc:
+  estimated 517k tokens to 338k for the 42 left, and 12 docs too large for a
+  task down to 2.
