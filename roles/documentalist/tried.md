@@ -147,3 +147,13 @@ On 2026-09-27, on workline's own repository:
   vouch for the rest from diffs, and a fix that leaves `checked` alone is
   refused; the doc it noted comes first again on the next run. About 1.3
   million tokens in, over the whole catch-up.
+- a push on DomoticsCore (2026-09-29), three commits, no agent: nearly three
+  minutes before any word, then the question; a person who had gone away
+  found the push refused. 3,247 git calls — every commit of every source of
+  every suspect doc, those left for gardening included — and six searches of
+  the whole code for the names the docs cite, at each doc's last edit, up to
+  40 seconds each. Each commit is now read once, a doc left for gardening is
+  not read further once found suspect, and a push searches only the names its
+  commits removed: six seconds, the same findings. The hook now says it runs;
+  and the ten minutes to answer counted from the first question, so judging
+  the docs with `d` could use them up: each question now has its own.

@@ -83,7 +83,8 @@ yet, and asks, on the terminal, `Push? [y]es / [N]o / [v]iew / [d]ocs`; `d`
 is `workline docs` there and then — once the docs are committed, the push
 stops and you push again, since it cannot carry a commit made during it; `v` writes a page showing each commit, its message and its changes
 (`.git/workline/push.html`) and opens it with the system's default program.
-No answer in ten minutes is a no. Without a terminal — an agent, an editor's
+A question left ten minutes without an answer is a no; each question has its
+own ten minutes, so judging the docs with `d` does not eat into them. Without a terminal — an agent, an editor's
 button — the push is refused, saying so. It holds in every repository the
 global hooks reach, `.workline/off` too; only your own config turns it off,
 `approve-push: false`, which no project can (ADR-0007). `git push
