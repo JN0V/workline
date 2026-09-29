@@ -1,0 +1,5 @@
+case: committer/public-name-kept-by-the-agent
+about: "What only looks like a code, a chip's name like ESP32, is the agent's to judge: a rewrite keeping it passes. A code with a dash is never kept."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: read the ESP32 flash size"}, ai: "fake:public-name-kept"}
+expect: {status: pass, agent-calls: 1, applied: [commit-message]}

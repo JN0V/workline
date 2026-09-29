@@ -1,0 +1,5 @@
+case: committer/standard-names-without-dash-pass
+about: Names everyone knows, with no dash — SHA256, IPv6, x86, v2 — are not taken for codes.
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: hash with SHA256 over IPv6 on x86 and arm64, as in v12"}, ai: none}
+expect: {status: pass}

@@ -1,0 +1,5 @@
+case: committer/code-without-dash-in-subject
+about: "A code with no dash, a function number like F207, may be internal: without AI it blocks, for a person to judge, as AC-3 does."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: migrate from f207"}, ai: none}
+expect: {status: block, findings: [{rule: possible-internal-code, message: "f207"}], agent-calls: 0}

@@ -25,6 +25,7 @@ type Settings struct {
 	Types              []string `json:"types"`
 	InternalCodes      []string `json:"internal-codes"`
 	InternalCodesAllow []string `json:"internal-codes-allow"`
+	InternalCodesMaybe []string `json:"internal-codes-maybe"`
 	AllowedIdentities  []string `json:"allowed-identities"`
 }
 
@@ -60,7 +61,27 @@ func Check(message string, s Settings) ([]verdict.Finding, error) {
 	for _, c := range codes {
 		add("internal-code", fmt.Sprintf("%q means nothing outside the project; say what changed, and put the reference in a trailer (Refs: %s)", c, c))
 	}
+	maybe, err := possibleCodes(subject, s)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range maybe {
+		add("possible-internal-code", fmt.Sprintf("%q may be a reference internal to the project (a ticket, a function, a requirement): if so, say what changed and put it in a trailer (Refs: %s); if it is a public name, a chip or a standard, keep it", c, c))
+	}
 	return out, nil
+}
+
+// possibleCodes finds what looks like a code with no dash, F207: often
+// internal, as often a public name, ESP32. Which one needs judgement.
+func possibleCodes(subject string, s Settings) ([]string, error) {
+	codes, err := internalCodes(subject, Settings{InternalCodes: s.InternalCodesMaybe, InternalCodesAllow: s.InternalCodesAllow})
+	var out []string
+	for _, c := range codes {
+		if sure, _ := internalCodes(c, Settings{InternalCodes: s.InternalCodes}); len(sure) == 0 {
+			out = append(out, c)
+		}
+	}
+	return out, err
 }
 
 // split returns the subject and the body lines that count against the limit:
@@ -118,7 +139,7 @@ func skipped(subject string) bool {
 func internalCodes(subject string, s Settings) ([]string, error) {
 	cleaned := subject
 	for _, a := range s.InternalCodesAllow {
-		re, err := regexp.Compile(`\b` + a + `\b`)
+		re, err := regexp.Compile(`(?i)\b` + a + `\b`)
 		if err != nil {
 			return nil, fmt.Errorf("internal-codes-allow %q: %w", a, err)
 		}
@@ -240,9 +261,15 @@ func Post(runDir, repo string) int {
 		switch in.Kind {
 		case "commit-message":
 			msg, _ := in.Value.(string)
-			findings, err := Check(msg, s)
+			checked, err := Check(msg, s)
 			if err != nil {
 				return fail(err)
+			}
+			var findings []verdict.Finding
+			for _, f := range checked {
+				if f.Rule != "possible-internal-code" { // the agent judged it: kept, a public name
+					findings = append(findings, f)
+				}
 			}
 			findings = append(findings, keepsHeader(original, msg, s)...)
 			said, err := MessageLeaks(repo, []Message{{Text: msg}})
@@ -412,7 +439,7 @@ func checkRange(runDir, repo, rng string) int {
 	if err != nil {
 		return fail(fmt.Errorf("cannot read the commits of %s: %v", rng, err))
 	}
-	var findings []verdict.Finding
+	var findings, advisories []verdict.Finding
 	var messages []Message
 	for _, rec := range strings.Split(string(out), "\x1e") {
 		hash, msg, ok := strings.Cut(strings.TrimSpace(rec), "\x1f")
@@ -426,6 +453,11 @@ func checkRange(runDir, repo, rng string) int {
 		}
 		for _, x := range f {
 			x.Where = "commit " + hash + ", " + x.Where
+			if x.Rule == "possible-internal-code" {
+				x.Level = "warn" // judged when it was committed, by an agent or a person
+				advisories = append(advisories, x)
+				continue
+			}
 			findings = append(findings, x)
 		}
 	}
@@ -446,6 +478,7 @@ func checkRange(runDir, repo, rng string) int {
 	if len(findings) > 0 {
 		v = verdict.Verdict{Status: verdict.Block, Summary: "some commit messages need rewriting (git rebase -i)", Findings: findings}
 	}
+	v.Findings = append(v.Findings, advisories...)
 	for _, f := range secrets {
 		v.Findings = append(v.Findings, f)
 		if f.Level != "warn" {

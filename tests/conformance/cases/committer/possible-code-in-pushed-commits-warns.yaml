@@ -1,0 +1,8 @@
+case: committer/possible-code-in-pushed-commits-warns
+about: "On the commits pushed, checked without an agent, a code with no dash is said and does not stop the push: the commit hook judged it already."
+given:
+  repo: basic
+  setup:
+    - "echo x >> README.md && git commit -qam 'fix: read the ESP32 flash size'"
+run: {role: committer, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect: {status: pass, findings: [{rule: possible-internal-code, message: "ESP32"}]}
