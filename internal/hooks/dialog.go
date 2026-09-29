@@ -40,3 +40,16 @@ func desktopDialog() (func(question, title string) (string, error), bool) {
 		}
 	}, true
 }
+
+// notifySend is run by its absolute path, as zenity is.
+const notifySend = "/usr/bin/notify-send"
+
+// notify shows a desktop notification that stays until dismissed, so a
+// question asked in a corner of the editor is not missed. It only informs:
+// where it cannot be shown, nothing changes.
+func notify(summary, body string) {
+	if os.Getenv("DISPLAY") == "" && os.Getenv("WAYLAND_DISPLAY") == "" {
+		return
+	}
+	exec.Command(notifySend, "--app-name", "workline", "--urgency", "critical", "--icon", "dialog-question", "workline: "+summary, body).Run()
+}

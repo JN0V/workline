@@ -58,20 +58,16 @@ type Push struct {
 	// whether a docs commit was made, which this push can no longer carry.
 	Docs func(in *bufio.Reader, out io.Writer) (committed bool)
 	// Via names the channels the person allows, among terminal, editor and
-	// dialog; empty, all of them.
+	// dialog, in the order to try them; empty, all of them, in that order.
 	Via []string
 }
 
-func (p Push) via(channel string) bool {
+// channels are those the person allows, in the order they are tried.
+func (p Push) channels() []string {
 	if len(p.Via) == 0 {
-		return true
+		return []string{"terminal", "editor", "dialog"}
 	}
-	for _, c := range p.Via {
-		if c == channel {
-			return true
-		}
-	}
-	return false
+	return p.Via
 }
 
 // Approve asks a person whether the push goes, on the first channel that
@@ -80,24 +76,26 @@ func (p Push) via(channel string) bool {
 // the pushing process: without any, no person can answer, and the push does
 // not go.
 func Approve(p Push, errOut io.Writer) bool {
-	if p.via("terminal") {
-		if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
-			defer tty.Close()
-			return ask(p, answerReader{tty}, tty, review.Open)
-		}
-	}
-	if p.via("editor") {
-		if socket, ok := editorSocket("/proc", os.Getppid()); ok {
-			fmt.Fprintln(errOut, "workline: asking in the editor window the push came from…")
-			return askOnce(p, errOut, func(question, title string) (string, error) {
-				return askEditor(socket, question, title, answerTimeout)
-			}, review.Open)
-		}
-	}
-	if p.via("dialog") {
-		if dialog, ok := desktopDialog(); ok {
-			fmt.Fprintln(errOut, "workline: asking in a window on the desktop…")
-			return askOnce(p, errOut, dialog, review.Open)
+	for _, channel := range p.channels() {
+		switch channel {
+		case "terminal":
+			if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
+				defer tty.Close()
+				return ask(p, answerReader{tty}, tty, review.Open)
+			}
+		case "editor":
+			if socket, ok := editorSocket("/proc", os.Getppid()); ok {
+				fmt.Fprintln(errOut, "workline: asking in the editor window the push came from, at the top…")
+				notify("A push waits for you", "Answer at the top of the editor window: y pushes, v shows the commits.")
+				return askOnce(p, errOut, func(question, title string) (string, error) {
+					return askEditor(socket, question, title, answerTimeout)
+				}, review.Open)
+			}
+		case "dialog":
+			if dialog, ok := desktopDialog(); ok {
+				fmt.Fprintln(errOut, "workline: asking in a window on the desktop…")
+				return askOnce(p, errOut, dialog, review.Open)
+			}
 		}
 	}
 	fmt.Fprintln(errOut, "workline: a person approves every push, and none could be asked here (no terminal, editor window or desktop): push stopped.")
