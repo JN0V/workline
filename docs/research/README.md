@@ -13,6 +13,7 @@ stars and dates were checked against the GitHub API that day.
 | [gates.md](gates.md) | Tools for review, architecture, security, performance and test integrity |
 | [model-selection.md](model-selection.md) | How to pick a model per role without naming one |
 | [install-and-adoption.md](install-and-adoption.md) | How other CLIs diagnose a machine, set it up and adopt a repository |
+| [push-approval.md](push-approval.md) | How a git hook asks a person with no terminal: an editor's button, an agent's shell |
 
 ## Method
 
