@@ -19,9 +19,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -347,14 +349,37 @@ var prePushQuiet = map[string]bool{
 }
 
 // prePush runs the project's pre-push line on the commits being pushed, with
-// the person's agent. Nothing runs unless the project routes pre-push: the
-// global hook reaches every repository on the machine. A doc the line patched
-// stops the push, so the person reviews it and pushes again.
+// the person's agent, then asks the person to approve the push (ADR-0007).
+// The line runs only when the project routes pre-push, since the global hook
+// reaches every repository on the machine; the approval runs everywhere, and
+// only the person's own config turns it off. A doc the line patched stops the
+// push, so the person reviews it and pushes again.
 func prePush(remote string) int {
 	root, err := gitRoot(".")
 	if err != nil {
 		return 0
 	}
+	stdin, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	refs, err := hooks.PushedRefs(root, remote, bytes.NewReader(stdin))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if code := prePushLine(root, refs); code != 0 {
+		return code
+	}
+	if !userConfig().approvePush() || hooks.Approve(root, remote, refs, os.Stderr) {
+		return 0
+	}
+	return 1
+}
+
+// prePushLine runs the project's pre-push line on each range pushed.
+func prePushLine(root string, refs []hooks.Ref) int {
 	if _, err := os.Stat(filepath.Join(root, ".workline", "off")); err == nil {
 		return 0
 	}
@@ -367,17 +392,16 @@ func prePush(remote string) int {
 	if _, routed := cfg.Events["pre-push"]; !routed {
 		return 0
 	}
-	ranges, err := hooks.PushRanges(root, remote, os.Stdin)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline:", err)
-		return 1
-	}
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	for _, rng := range ranges {
+	for _, ref := range refs {
+		rng := ref.Range
+		if rng == "" {
+			continue
+		}
 		res := line.Run("pre-push", engine.Options{
 			Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), DefaultAI: userDefaultAI(),
 			Inputs: map[string]string{"range": rng},
@@ -426,25 +450,32 @@ func gitRoot(dir string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// userDefaultAI reads `ai:` from ~/.config/workline/config.yaml, the agent a
-// person wants by default when a project does not say.
-func userDefaultAI() string {
-	cfg, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	data, err := os.ReadFile(filepath.Join(cfg, "workline", "config.yaml"))
-	if err != nil {
-		return ""
-	}
-	var c struct {
-		AI string `yaml:"ai"`
-	}
-	if yaml.Unmarshal(data, &c) != nil {
-		return ""
-	}
-	return c.AI
+// personal is the person's own config (~/.config/workline/config.yaml): what
+// they want wherever they work, which no project can change.
+type personal struct {
+	AI          string `yaml:"ai"`           // the agent, when a project does not say
+	ApprovePush *bool  `yaml:"approve-push"` // a person approves every push; on unless false
 }
+
+func (p personal) approvePush() bool { return p.ApprovePush == nil || *p.ApprovePush }
+
+func userConfig() personal {
+	var c personal
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return c
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "workline", "config.yaml"))
+	if err != nil {
+		return c
+	}
+	yaml.Unmarshal(data, &c)
+	return c
+}
+
+// userDefaultAI is the agent a person wants by default when a project does
+// not say.
+func userDefaultAI() string { return userConfig().AI }
 
 func gateCmd(args []string) int {
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
@@ -728,7 +759,8 @@ func doctorCmd(args []string) int {
 		return 1
 	}
 	root, _ := gitRoot(*repo)
-	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI()})
+	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI(),
+		NoPushApproval: !userConfig().approvePush()})
 	if *asJSON {
 		out, _ := json.MarshalIndent(r, "", "  ")
 		fmt.Println(string(out))

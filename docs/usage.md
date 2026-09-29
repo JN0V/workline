@@ -76,6 +76,17 @@ parser, which a script cannot tell from `human` (docs/BACKLOG.md).
 
 ## Before a push
 
+**A person approves every push.** Once the line below has passed, the hook
+lists the commits leaving and asks, on the terminal, `Push? [y]es / [N]o /
+[v]iew`; `v` writes a page showing each commit, its message and its changes
+(`.git/workline/push.html`) and opens it with the system's default program.
+No answer in ten minutes is a no. Without a terminal — an agent, an editor's
+button — the push is refused, saying so. It holds in every repository the
+global hooks reach, `.workline/off` too; only your own config turns it off,
+`approve-push: false`, which no project can (ADR-0007). `git push
+--no-verify` still skips it: it stops an agent pushing by habit, not one set
+on it.
+
 The `pre-push` hook runs the project's `pre-push` line on the commits being
 pushed, with the person's agent — only when `.workline/config.yaml` routes it,
 since the global hook reaches every repository:
@@ -99,7 +110,7 @@ hook.
 | `.workline/work/<id>.md` | a work item, without a forge |
 | `.workline/issues/` | the issues roles open, without a forge |
 | `.workline/off` | empty: the global hook skips this repository |
-| `~/.config/workline/config.yaml` | `ai:` — your default agent, when a project does not say |
+| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: false` lets pushes leave without you approving them |
 | `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
 

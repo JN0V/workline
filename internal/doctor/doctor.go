@@ -50,6 +50,8 @@ type Options struct {
 	RolesDir string
 	AI       string // WORKLINE_AI, which the hooks use first
 	UserAI   string // `ai:` in the user's config
+	// NoPushApproval: the person turned the push approval off (ADR-0007).
+	NoPushApproval bool
 }
 
 // Run looks at the machine, then at the repository when there is one.
@@ -115,6 +117,14 @@ func machine(r *Report, o Options) {
 				r.add(Check{Area: "machine", Rule: "hooks", Level: OK, Message: "global git hooks installed in " + p.Hooks})
 			}
 		}
+	}
+
+	if o.NoPushApproval {
+		r.add(Check{Area: "machine", Rule: "push-approval-off", Level: Note,
+			Message: "pushes leave without a person approving them (`approve-push: false` in your config): an agent can push too"})
+	} else {
+		r.add(Check{Area: "machine", Rule: "push-approval", Level: OK,
+			Message: "a person approves every push, on a terminal; an agent's push is refused"})
 	}
 
 	agent(r, "machine", o.AI, "WORKLINE_AI", o.UserAI, "your config")

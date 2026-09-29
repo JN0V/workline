@@ -64,3 +64,13 @@ the usual guard against agents (agent-git-guard; docs/research).
   remain the barrier for what matters.
 - Pushing from an editor's button is refused: a person pushes from a
   terminal, or turns the approval off.
+
+## Tried
+
+- 2026-09-29, the approval, in a pseudo-terminal on a throwaway repository
+  pushing to a local bare one: `n` stopped the push, nothing reached the
+  remote; `v` wrote the page — the commit, its message, its diff, the
+  content escaped — and handed it to the system's opener; `y` pushed. Run
+  from an agent's shell (Claude Code in the editor), `/dev/tty` cannot be
+  opened: refused. Not tried yet: Claude Code run from a terminal, whose
+  shell may reach that terminal; a push from the editor's button.

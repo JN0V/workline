@@ -145,7 +145,7 @@ flowchart LR
 | Event | Fired by | Roles by default |
 |---|---|---|
 | `commit-msg` | your machine: the global git hook | committer |
-| `pre-push` | your machine, before the commits leave it, if the project routes it | none by default; workline itself: committer, documentalist |
+| `pre-push` | your machine, before the commits leave it, if the project routes it; then you approve the push, on a terminal (an agent's push is refused) | none by default; workline itself: committer, documentalist |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
 | `schedule` | you, or a scheduled pipeline: the [GitHub Actions](ci/github/workline-gardening.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template, each task a merge request of its own (ADR-0006) | documentalist |
 | `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | documentalist (docs due at the release), then release-manager |
