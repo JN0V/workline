@@ -10,10 +10,11 @@ What runs, for humans. The AI never reads this file.
 ## Prepare (`pre`, no AI)
 
 1. **Suspects.** For each doc, list commits since its `checked` commit that
-   touched its `sources` — a commit changing only docs' headers, who checked
-   them, is no change — (in its frontmatter, or in a `<!-- workline … -->`
-   comment at its top where a frontmatter would show, as in a README). Follow the chain: a suspect technical section makes
-   the product docs depending on it suspect too.
+   touched its `sources`, named in a `<!-- workline … -->` comment at its top,
+   which no rendering shows, or in a frontmatter the doc has. A commit
+   changing only docs' headers, who checked them, is no change. Follow the
+   chain: a suspect technical section makes the product docs depending on it
+   suspect too.
 2. **Budgets.** Lines per doc, words per section (its own text, up to the next
    heading), card size (min and max: too small is fragmentation), lines per
    folder, lines of the agents' entry points at the root (`AGENTS.md`,

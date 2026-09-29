@@ -1,0 +1,10 @@
+# A decision's header, written as the comment the task asks for.
+- patch: |
+    --- a/docs/why-go.md
+    +++ b/docs/why-go.md
+    @@ -1,1 +1,4 @@
+    +<!-- workline
+    +sources: []
+    +-->
+     # Why Go
+- note: "README.md: left for another round."

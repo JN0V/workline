@@ -3,7 +3,6 @@ package documentalist
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -53,15 +52,13 @@ func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[stri
 }
 
 // headerForm says where a doc's header goes: inside the one it has, else a
-// frontmatter, else — for a README, which forges show first — a comment.
-func headerForm(p, content string) string {
+// comment, which no preview, forge or PDF shows, where a frontmatter would
+// show on a forge and in a PDF (ADR-0007).
+func headerForm(content string) string {
 	if _, n := header(content); n > 0 {
 		return "It has a header already (its first lines): add `sources` and `checked` inside it, keeping what is there."
 	}
-	if strings.EqualFold(path.Base(p), "README.md") {
-		return "It has no header. Add one at line 1, as a comment, since a forge shows this file first:\n\n```\n<!-- workline\nsources: [...]\nchecked: %s\n-->\n```"
-	}
-	return "It has no header. Add one at line 1:\n\n```\n---\nsources: [...]\nchecked: %s\n---\n```"
+	return "It has no header. Add one at line 1, as a comment, which no rendering shows:\n\n```\n<!-- workline\nsources: [...]\nchecked: %s\n-->\n```"
 }
 
 // sourcesTask asks the agent to name the code each doc describes.
@@ -95,7 +92,7 @@ lines by the numbers shown; the body stays as it is. A doc describing no code
 		}
 		content := t.Docs[p]
 		var entry strings.Builder
-		form := headerForm(p, content)
+		form := headerForm(content)
 		if strings.Contains(form, "%s") {
 			form = fmt.Sprintf(form, last[p][:7])
 		}

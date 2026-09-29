@@ -1,0 +1,12 @@
+case: setup/init-asks-for-a-comment
+about: A doc with no header, a README or not, is asked for its header as a comment, which no preview, forge or PDF shows (ADR-0007).
+given:
+  repo: basic
+  setup: ["mkdir docs && printf '# Why Go\n\nWe chose Go.\n' > docs/why-go.md && git add . && git commit -qm 'docs: say why Go'"]
+# A command agent: it answers only when the prompt asks for a comment for the doc that is not a README.
+run: {init: true, ai: 'cmd:awk "/^## docs\/why-go.md/{d=1} d&&/as a comment, which no rendering shows/{f=1} END{exit !f}" && cat "$FIXTURES/agents/sources-as-comment.yaml"'}
+expect:
+  status: pass
+  applied: [patch, note]
+  files:
+    docs/why-go.md: {contains: "<!-- workline"}

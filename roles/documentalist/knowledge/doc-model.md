@@ -1,6 +1,17 @@
 # How the docs are organised
 
-**Every doc says what it depends on**, in its frontmatter:
+**Every doc says what it depends on**, in a comment at its very top, which
+no preview, forge or PDF shows:
+
+```
+<!-- workline
+sources: [src/auth/token.go, docs/tech/auth.md#token-refresh]
+checked: 3f2a91c
+-->
+```
+
+A doc with a frontmatter of its own keeps these fields there, beside its
+others:
 
 ```yaml
 ---
@@ -11,16 +22,6 @@ verified: human:alice | agent:documentalist   # who last confirmed it is true
 checked: 3f2a91c                               # commit it was last confirmed against
 status: draft | stable | deprecated
 ---
-```
-
-A doc whose frontmatter would show on the forge — a README — carries the same
-fields in a comment at its very top instead:
-
-```
-<!-- workline
-sources: [cmd/workline, ci]
-checked: 3f2a91c
--->
 ```
 
 A source in another repository is prefixed with that repository's name, as
