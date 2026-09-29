@@ -1,0 +1,14 @@
+case: documentalist/suspect-doc-too-large
+about: "A suspect doc too large to fit in a task alone is left for a person, saying so, and the others are judged: the run never fails on it, and no doc is confirmed unread."
+given:
+  repo: documented
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '<!-- workline\\nsources: [src/auth/token.go]\\nchecked: %s\\n-->\\n# Every token, ever\\n\\n' $C > docs/tech/a-big.md && seq 1 20000 | sed 's/^/- token number /' >> docs/tech/a-big.md && git add -A && git commit -qm 'docs: list every token'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+# A command agent: its prompt is built, and measured against the budget.
+run: {role: documentalist, event: merge-request, ai: "cmd:echo '- note: docs/tech/auth.md judged'"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: suspect, where: docs/tech/a-big.md, message: "too large"}]
+  no-findings: [{rule: engine-error}]

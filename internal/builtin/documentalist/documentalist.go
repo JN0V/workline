@@ -307,6 +307,9 @@ type suspectDoc struct {
 	doc      *Doc
 	why      []string
 	evidence []string
+	// tooLarge: the doc, with what changed in its sources, does not fit in a
+	// task alone; judged by a person, never confirmed unread.
+	tooLarge bool
 }
 
 // taskMaxChars keeps the task well inside the role's context budget (16000
@@ -625,7 +628,25 @@ doc when its reader really gained something to know.
 			break // adoption said itself what it left for the next round
 		}
 		f := &findings[i]
-		if (f.Rule == "suspect" || f.Rule == "due") && judged[f.Where] == nil && task != "" || f.Rule == "stale" && stale[f.Where] != nil && judged[f.Where] == nil && task != "" {
+		// Only the docs this run could put before the agent are left for its
+		// next round: not those left for gardening, nor those too large.
+		var sd *suspectDoc
+		switch f.Rule {
+		case "suspect":
+			sd = suspects[f.Where]
+		case "due":
+			sd = propagate[f.Where]
+		case "stale":
+			sd = stale[f.Where]
+		}
+		if sd == nil || judged[f.Where] != nil {
+			continue
+		}
+		if sd.tooLarge {
+			f.Message += "\n(too large to be put before the agent whole, with what changed in its sources: a person judges it)"
+			continue
+		}
+		if task != "" {
 			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
@@ -731,7 +752,11 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)
 		}
 		entry.WriteString("```\n\n")
-		if len(judged) > 0 && b.Len()+entry.Len() > taskMaxChars {
+		if len(header)+entry.Len() > taskMaxChars {
+			sd.tooLarge = true
+			continue
+		}
+		if b.Len()+entry.Len() > taskMaxChars {
 			break
 		}
 		b.WriteString(entry.String())

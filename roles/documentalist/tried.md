@@ -120,3 +120,8 @@ On 2026-09-27, on workline's own repository:
   After two more runs, 63 of 64: the last, cut to its first lines, was left
   by the agent, which said, rightly, that the sections cut were unknown to
   it. A doc cut now lists the headings of what is not shown.
+- catching DomoticsCore up (2026-09-29), its 53 suspect docs judged in one
+  go: the first call failed before a token was spent, its first doc, with
+  what changed in its folder sources, over the role's budget. A doc too large
+  for a task alone is now left for a person, saying so, and the others are
+  judged; cutting it would have its `checked` vouch for lines never read.
