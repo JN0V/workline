@@ -61,3 +61,37 @@ func TestPushNeedsAPerson(t *testing.T) {
 		})
 	}
 }
+
+// Without a terminal, as an agent runs it, `workline docs` has the docs the
+// commits not pushed yet made suspect judged, and leaves the changes in the
+// working tree for a person: nothing is committed.
+func TestDocsWithoutTerminal(t *testing.T) {
+	work := t.TempDir()
+	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
+	remote, repo := filepath.Join(work, "remote.git"), filepath.Join(work, "repo")
+	if out, err := exec.Command("git", "init", "-q", "--bare", remote).CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	if err := build(repo, "documented", []string{
+		"git remote add origin " + remote, "git push -q origin main",
+		"sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'",
+	}, env); err != nil {
+		t.Fatal(err)
+	}
+	roles, _ := filepath.Abs("../../roles")
+	agent, _ := filepath.Abs("fixtures/agents/doc-fixed.yaml")
+	cmd := exec.Command(engineBin, "docs", "--ai", "fake:"+agent)
+	cmd.Dir, cmd.Env = repo, append(env, "WORKLINE_ROLES="+roles)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	out, err := cmd.CombinedOutput()
+	if err != nil || !strings.Contains(string(out), "for a person to review") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	doc, _ := os.ReadFile(filepath.Join(repo, "docs/tech/auth.md"))
+	if !strings.Contains(string(doc), "two hours") {
+		t.Errorf("the doc was not brought up to date:\n%s", doc)
+	}
+	if log, _ := exec.Command("git", "-C", repo, "log", "-1", "--format=%s").Output(); !strings.HasPrefix(string(log), "feat(auth)") {
+		t.Errorf("something was committed without a person: %s", log)
+	}
+}

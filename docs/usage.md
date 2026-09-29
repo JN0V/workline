@@ -21,6 +21,7 @@ What a role does is in its own README (`roles/<name>/README.md`).
 | `workline hooks install --repo` | writes `.githooks/commit-msg` in this repository; remove that file to uninstall |
 | `workline setup` | sets up this machine, asking: the global hooks, your agent (`ai:` in your config), the tools the roles use, each installed with the command it shows; then prints `workline doctor`. Run again, it offers what is set up as the default. `--hooks yes\|no`, `--ai <agent>` and `--install <tool,...>\|all\|none` answer a question; `--yes` takes the defaults; without a terminal, every question must be answered so |
 | `workline init` | adopts this repository: routes `pre-push` to the committer and the documentalist in `.workline/config.yaml`, unless the project routes it already, and has the agent propose the `sources` of each doc that says nothing of them, in the working tree for you to review and commit (roles/documentalist/README.md); without an agent, lists them. Run it again to do what is left |
+| `workline docs` | has the docs your commits not pushed yet made suspect judged by your agent, then asks you, doc by doc, to keep or drop each change (`v` shows it); those kept go in one `docs:` commit, alone (ADR-0007). Without a terminal, the changes stay in the working tree for a person. Docs with changes not committed are refused, so the agent's are reviewed alone |
 | `workline doctor` | says what is set up on this machine (git, the global hooks, the agent, the tools the roles use) and in this repository (whether the documentalist runs before a push, how many docs declare their sources), with the command that sets up each thing missing; changes nothing. It exits 1 only on an error — the agent named cannot be called, the config does not load — never for a tool left out; `--json` prints every check |
 
 Options of `run-role` and `route`:
@@ -77,8 +78,10 @@ parser, which a script cannot tell from `human` (docs/BACKLOG.md).
 ## Before a push
 
 **A person approves every push.** Once the line below has passed, the hook
-lists the commits leaving and asks, on the terminal, `Push? [y]es / [N]o /
-[v]iew`; `v` writes a page showing each commit, its message and its changes
+lists the commits leaving, and the docs they made suspect and nobody judged
+yet, and asks, on the terminal, `Push? [y]es / [N]o / [v]iew / [d]ocs`; `d`
+is `workline docs` there and then — once the docs are committed, the push
+stops and you push again, since it cannot carry a commit made during it; `v` writes a page showing each commit, its message and its changes
 (`.git/workline/push.html`) and opens it with the system's default program.
 No answer in ten minutes is a no. Without a terminal — an agent, an editor's
 button — the push is refused, saying so. It holds in every repository the
@@ -88,18 +91,21 @@ global hooks reach, `.workline/off` too; only your own config turns it off,
 on it.
 
 The `pre-push` hook runs the project's `pre-push` line on the commits being
-pushed, with the person's agent — only when `.workline/config.yaml` routes it,
-since the global hook reaches every repository:
+pushed, with no agent — a push never waits on one — only when
+`.workline/config.yaml` routes it, since the global hook reaches every
+repository:
 
 ```yaml
 routing:
   events: {pre-push: [committer, documentalist]}
 ```
 
-A step that blocks stops the push. So does a doc the documentalist patched: it
-is in the working tree, to review, commit, and push again. Sizes and links the
-line reports on every run are only counted. `git push --no-verify` skips the
-hook.
+A step that blocks stops the push. The docs the commits made suspect are
+listed with the question, to judge with `d`; those made suspect before are
+left for gardening. A derived block the documentalist regenerated stops the
+push too: it is in the working tree, to review, commit, and push again. Sizes
+and links the line reports on every run are only counted. `git push
+--no-verify` skips the hook.
 
 ## Files
 

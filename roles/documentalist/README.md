@@ -186,10 +186,10 @@ judged, whole, against every source that changed; the other suspect docs
 are reported, left for gardening (ADR-0007).
 
 A project that routes `pre-push` (`routing: {events: {pre-push: [committer,
-documentalist]}}`) has those docs judged on the machine, with the
-person's agent, before the commits leave it. The patches land in the working
-tree and the push stops: the person reviews them, commits them, and pushes
-again. Without an agent, the suspect docs are listed and the push goes on.
+documentalist]}}`) has those docs listed at the push, without an agent: a
+push never waits on one. The person has them judged when their code is done
+— `workline docs`, or `d` at the push — reviews each change, and those kept
+go in one `docs:` commit before the push (ADR-0007).
 
 ## Adopting a repository
 

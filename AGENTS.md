@@ -45,9 +45,10 @@ own line (.workline/config.yaml):
 - **commit-msg** — the committer. A subject over 72 characters, or holding a
   code like `AC-3`, is refused, then rewritten by the agent; the hook prints
   the message it committed. Check it: write subjects that pass.
-- **pre-push** — the committer on the commits pushed, then the documentalist:
-  docs made suspect are judged, patched in the working tree, and the push stops
-  for them to be reviewed and committed.
+- **pre-push** — the committer on the commits pushed, then the documentalist,
+  with no agent: it lists the docs they made suspect. Then a person approves
+  the push on a terminal: an agent's push is refused, so ask the person to
+  push. Have the docs judged first with `workline docs` (ADR-0007).
 - **secrets and forbidden terms** — the committer scans each commit with
   gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
   that must never reach this public repository, as gitleaks rules. Never

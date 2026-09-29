@@ -13,12 +13,14 @@
 //	workline hooks install|uninstall --global | --repo
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
+//	workline docs [--repo <dir>] [--ai ...]
 //	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"flag"
@@ -39,6 +41,7 @@ import (
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/line"
 	wlreport "github.com/JN0V/workline/internal/report"
+	"github.com/JN0V/workline/internal/review"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/setup"
@@ -74,6 +77,8 @@ func main() {
 		os.Exit(initCmd(os.Args[2:]))
 	case "setup":
 		os.Exit(setupCmd(os.Args[2:]))
+	case "docs":
+		os.Exit(docsCmd(os.Args[2:]))
 	}
 	usage()
 }
@@ -369,41 +374,57 @@ func prePush(remote string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	if code := prePushLine(root, refs); code != 0 {
+	code, suspect := prePushLine(root, refs)
+	if code != 0 {
 		return code
 	}
-	if !userConfig().approvePush() || hooks.Approve(root, remote, refs, os.Stderr) {
+	if !userConfig().approvePush() {
+		return 0
+	}
+	rng := ""
+	for _, r := range refs {
+		if r.Range != "" {
+			rng = r.Range
+			break
+		}
+	}
+	push := hooks.Push{Repo: root, Remote: remote, Refs: refs, Suspect: suspect,
+		Docs: func(in *bufio.Reader, out io.Writer) bool { return judgeDocs(root, rng, "", in, out) }}
+	if hooks.Approve(push, os.Stderr) {
 		return 0
 	}
 	return 1
 }
 
-// prePushLine runs the project's pre-push line on each range pushed.
-func prePushLine(root string, refs []hooks.Ref) int {
+// prePushLine runs the project's pre-push line on each range pushed, with no
+// agent: a push never waits on one (ADR-0007). It returns the docs the
+// commits made suspect, for the person to judge before they leave.
+func prePushLine(root string, refs []hooks.Ref) (int, []string) {
 	if _, err := os.Stat(filepath.Join(root, ".workline", "off")); err == nil {
-		return 0
+		return 0, nil
 	}
 	cfg, err := routing.Load(root)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		fmt.Fprintln(os.Stderr, "push stopped; `git push --no-verify` skips workline")
-		return 1
+		return 1, nil
 	}
 	if _, routed := cfg.Events["pre-push"]; !routed {
-		return 0
+		return 0, nil
 	}
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
-		return 1
+		return 1, nil
 	}
+	var suspect []string
 	for _, ref := range refs {
 		rng := ref.Range
 		if rng == "" {
 			continue
 		}
 		res := line.Run("pre-push", engine.Options{
-			Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), DefaultAI: userDefaultAI(),
+			Repo: root, RolesDir: rolesDir, AI: "none",
 			Inputs: map[string]string{"range": rng},
 		})
 		patched, advisory := false, 0
@@ -416,6 +437,12 @@ func prePushLine(root string, refs []hooks.Ref) int {
 			}
 		}
 		for _, f := range res.Findings {
+			if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") {
+				if !contains(suspect, f.Where) {
+					suspect = append(suspect, f.Where)
+				}
+				continue // listed with the push, to be judged: `d`
+			}
 			if prePushQuiet[f.Rule] {
 				advisory++
 				continue
@@ -432,15 +459,113 @@ func prePushLine(root string, refs []hooks.Ref) int {
 		switch {
 		case res.Status != verdict.Pass:
 			fmt.Fprintf(os.Stderr, "workline: %s\npush stopped; `git push --no-verify` skips workline\n", res.Summary)
-			return 1
+			return 1, nil
 		case patched:
 			stat, _ := exec.Command("git", "-C", root, "diff", "--stat").Output()
 			fmt.Fprintf(os.Stderr, "workline: the documentalist updated docs in your working tree:\n%s", stat)
 			fmt.Fprintln(os.Stderr, "push stopped: review them (git diff), commit them, and push again")
-			return 1
+			return 1, nil
 		}
 	}
+	return 0, suspect
+}
+
+func contains(l []string, s string) bool {
+	for _, x := range l {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+// docsCmd has the docs the commits not pushed yet made suspect judged, then
+// each change reviewed on the terminal and those kept committed (ADR-0007).
+// Without a terminal, the changes stay in the working tree for a person.
+func docsCmd(args []string) int {
+	fs := flag.NewFlagSet("docs", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository")
+	ai := fs.String("ai", "", "agent judging the docs (default: the project's, else yours, else none)")
+	_ = fs.Parse(args)
+	root, err := gitRoot(*repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+		return 64
+	}
+	rng, err := unpushed(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if rng == "" {
+		fmt.Fprintln(os.Stderr, "workline: no commit waits to be pushed: no doc to judge")
+		return 0
+	}
+	var in *bufio.Reader
+	out := io.Writer(os.Stderr)
+	if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
+		defer tty.Close()
+		in, out = bufio.NewReader(tty), tty
+	}
+	judgeDocs(root, rng, *ai, in, out)
 	return 0
+}
+
+// unpushed is the range of the commits no remote has.
+func unpushed(root string) (string, error) {
+	out, err := exec.Command("git", "-C", root, "rev-list", "--reverse", "HEAD", "--not", "--remotes").Output()
+	if err != nil {
+		return "", err
+	}
+	first, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\n")
+	if first == "" {
+		return "", nil
+	}
+	if parent, err := exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", first+"^").Output(); err == nil {
+		return strings.TrimSpace(string(parent)) + "..HEAD", nil
+	}
+	return "HEAD", nil
+}
+
+// judgeDocs runs the documentalist on the range, with the agent, then has
+// the person review each doc it changed; in is nil without a terminal. It
+// says whether a docs commit was made.
+func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
+	if dirty, _ := exec.Command("git", "-C", root, "status", "--porcelain", "--", "*.md").Output(); len(dirty) > 0 {
+		fmt.Fprintf(out, "workline: docs have changes not committed:\n%scommit or stash them first, so what the documentalist proposes is reviewed alone\n", dirty)
+		return false
+	}
+	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
+	if err != nil {
+		fmt.Fprintln(out, "workline:", err)
+		return false
+	}
+	fmt.Fprintln(out, "workline: the documentalist judges the docs these commits made suspect…")
+	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "pre-push",
+		AI: ai, DefaultAI: userDefaultAI(), Inputs: map[string]string{"range": rng}})
+	for _, f := range res.Findings {
+		if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") || f.Level == "block" {
+			fmt.Fprintf(out, "  %s %s: %s\n", f.Rule, f.Where, strings.SplitN(f.Message, "\n", 2)[0])
+		}
+	}
+	for _, n := range res.Notes {
+		fmt.Fprintf(out, "  note from the agent: %s\n", strings.ReplaceAll(n, "\n", "\n    "))
+	}
+	changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
+	docs := strings.Fields(string(changed))
+	if len(docs) == 0 {
+		fmt.Fprintf(out, "workline: %s — no doc changed\n", res.Status)
+		return false
+	}
+	if in == nil {
+		fmt.Fprintf(out, "workline: %d doc(s) changed in your working tree, for a person to review (git diff), commit what is right, restore the rest\n", len(docs))
+		return false
+	}
+	committed, err := review.Docs(root, docs, in, out, review.Open)
+	if err != nil {
+		fmt.Fprintln(out, "workline:", err)
+	}
+	return committed
 }
 
 func gitRoot(dir string) (string, error) {

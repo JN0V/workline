@@ -40,7 +40,7 @@ func TestAsk(t *testing.T) {
 	} {
 		var out bytes.Buffer
 		viewed := ""
-		got := ask(repo, "origin", refs, strings.NewReader(c.typed), &out, func(p string) error { viewed = p; return nil })
+		got := ask(Push{Repo: repo, Remote: "origin", Refs: refs}, strings.NewReader(c.typed), &out, func(p string) error { viewed = p; return nil })
 		if got != c.want || (viewed != "") != c.viewed {
 			t.Errorf("typed %q: approved %v, page %q; want %v, viewed %v\n%s", c.typed, got, viewed, c.want, c.viewed, out.String())
 		}
@@ -55,7 +55,7 @@ func TestAsk(t *testing.T) {
 		}
 	}
 	var out bytes.Buffer
-	if !ask(repo, "origin", []Ref{{Local: "refs/heads/main", Remote: "refs/heads/main"}}, strings.NewReader(""), &out, nil) {
+	if !ask(Push{Repo: repo, Remote: "origin", Refs: []Ref{{Local: "refs/heads/main", Remote: "refs/heads/main"}}}, strings.NewReader(""), &out, nil) {
 		t.Errorf("nothing to push was not let through: %s", out.String())
 	}
 }
