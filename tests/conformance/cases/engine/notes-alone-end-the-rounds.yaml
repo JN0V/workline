@@ -1,0 +1,13 @@
+case: engine/notes-alone-end-the-rounds
+about: "A round whose answer is only notes changed nothing the next would see: the run does not go round again to ask the same thing."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {ai-max-calls: 1}}}
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '<!-- workline\\nsources: [src/auth/token.go]\\nchecked: %s\\n-->\\n# Tokens\\n\\nOne hour.\\n' $C > docs/tech/tokens.md && git add -A && git commit -qm 'docs: say how long tokens last'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:two-notes"}
+expect:
+  status: pass
+  agent-calls: 1

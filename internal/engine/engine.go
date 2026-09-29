@@ -125,10 +125,21 @@ func Run(o Options) *Result {
 		for _, l := range strings.Split(string(more), "\n") {
 			deferred[strings.TrimSpace(l)] = true
 		}
-		if err != nil || res.Status != verdict.Pass || o.NoApply || len(res.Applied) == applied || round == maxRounds {
+		if err != nil || res.Status != verdict.Pass || o.NoApply || !changedSomething(res.Applied[applied:]) || round == maxRounds {
 			return res
 		}
 	}
+}
+
+// changedSomething says whether a round applied what the next one would
+// see: a note changes nothing, and going round again would ask the same.
+func changedSomething(applied []string) bool {
+	for _, kind := range applied {
+		if kind != "note" {
+			return true
+		}
+	}
+	return false
 }
 
 // supersede keeps the earlier findings no later one replaces, then the later ones.
