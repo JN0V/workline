@@ -16,14 +16,14 @@ this repository before any other role is added.
    takes the best independence available and says which (ADR-0005); the
    weekly run judges on `claude:sonnet`. Left: a judge of another provider,
    when there is one. Each defect a role lets through becomes a case.
-2. **Try the install and the adoption on the other machine**, where their
-   gaps were found (2026-09-28). Built since: `workline setup` asks what to
-   enable and installs the tools, `workline doctor` says what is missing with
-   its command, `workline init` routes `pre-push` and has the agent propose
-   each doc's `sources` (tried on copies of this repository and of a firmware
-   project). Left: running them there, on a real repository, and what the
-   first push asks a person to review — the docs suspect since they were last
-   edited.
+2. **Docs after the code, every push approved** (ADR-0007), in order: the
+   documentalist judges only what the range changed, a header-only change is
+   no change, code no doc describes and sources gone are reported; the push
+   approval (`y/N/v`, the page); `workline docs` and `d`, reviewed per doc;
+   the header as a comment; DomoticsCore caught up in one reviewed pass.
+3. **Try the install and the adoption on the other machine**, where their
+   gaps were found (2026-09-28): `workline setup`, `workline doctor`,
+   `workline init` there, on a real repository.
 
 Then, once both work well here:
 
