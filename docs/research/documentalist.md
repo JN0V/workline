@@ -59,3 +59,23 @@ not content dumps. Japanese practice converges on ≤200 lines at the root.
   Exit code 2 when a link fails. Example domains (`example.com`,
   `.invalid`) are excluded by default, with no request made; `lychee.toml`
   and `.lycheeignore` are read from the working directory.
+
+## Commercial doc agents (2026-09-29)
+
+Missed by the first pass, which looked for mechanisms in open source. None
+runs at commit or push: they act on the merge request or after the merge.
+
+| Tool | Does | When, and how |
+|---|---|---|
+| [Swimm](https://docs.swimm.io/continuous-integration/github-app/) | The closest: detects when code a doc embeds changes; renames fixed silently, the rest proposed | A check on each pull request; accepted changes go in one commit of their own. Paid, docs in its own format |
+| [Mintlify](https://www.mintlify.com/docs/agent/suggestions) | A docs host; its agent proposes updates | After a merge, as a pull request in the docs repository, reviewers taken from the code's authors. Paid, docs hosted there |
+| [Dosu](https://dosu.dev/blog/august-2025-dosu-drop) | Names the docs a pull request concerns, updates them | A comment on the pull request, then a docs pull request after the merge. A third party with write access |
+| [CodeRabbit](https://docs.coderabbit.ai/finishing-touches/docstrings) | Code review; docstrings on request | A follow-up pull request. Not Markdown docs kept true |
+| [Promptless](https://github.com/Promptless/promptless.ai/pull/1057) | Proposed doc changes in a review queue, per file, to edit or reject | On a pull request, a merge, or a sweep of recent merges |
+
+What none covers: working without AI and offline, on a machine and any
+forge, with any agent; propagation from technical to product docs, cut at
+the release; size budgets, duplicates, cards, derived facts. What to take:
+detection without AI first, the AI only on what changed and never inside the
+push, its changes in one commit of their own, reviewed per doc, the rest in
+a merge request later.
