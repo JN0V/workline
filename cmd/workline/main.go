@@ -417,6 +417,7 @@ func prePushLine(root string, refs []hooks.Ref) (int, []string) {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1, nil
 	}
+	fmt.Fprintf(os.Stderr, "workline: checking the commits pushed (%s), no agent…\n", strings.Join(cfg.Events["pre-push"], ", "))
 	var suspect []string
 	for _, ref := range refs {
 		rng := ref.Range

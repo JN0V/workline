@@ -45,8 +45,8 @@ func PushedRefs(repo, remote string, stdin io.Reader) ([]Ref, error) {
 	return out, s.Err()
 }
 
-// answerTimeout: a push nobody answers is not approved.
-const answerTimeout = 10 * time.Minute
+// answerTimeout: a question nobody answers does not approve the push.
+var answerTimeout = 10 * time.Minute
 
 // Push is what the person is asked to approve.
 type Push struct {
@@ -71,8 +71,17 @@ func Approve(p Push, errOut io.Writer) bool {
 		return false
 	}
 	defer tty.Close()
-	tty.SetReadDeadline(time.Now().Add(answerTimeout))
-	return ask(p, tty, tty, review.Open)
+	return ask(p, answerReader{tty}, tty, review.Open)
+}
+
+// answerReader gives the person answerTimeout for each answer, not for the
+// whole push: judging the docs (`d`) can take longer than that, and the
+// question after it must still wait for them.
+type answerReader struct{ tty *os.File }
+
+func (r answerReader) Read(b []byte) (int, error) {
+	r.tty.SetReadDeadline(time.Now().Add(answerTimeout))
+	return r.tty.Read(b)
 }
 
 // ask lists the push on out and reads the answer from in; view opens a page.
