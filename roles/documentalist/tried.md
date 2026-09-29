@@ -131,3 +131,9 @@ On 2026-09-27, on workline's own repository:
   diff shown was capped at 80 lines a source. It is now 240 lines a doc:
   estimated 517k tokens to 338k for the 42 left, and 12 docs too large for a
   task down to 2.
+  Run again, on Sonnet 5.5 once the alias moved: five calls on one doc, the
+  agent rightly refusing to vouch for it on diffs cut short, and the engine
+  taking its note for progress. A round leaving only notes now ends the run;
+  a doc whose changes do not fit is judged against its sources as they are
+  now, like a stale one — 26 of the 42 left had more changes than a task
+  shows, up to 17,099 lines of diff.

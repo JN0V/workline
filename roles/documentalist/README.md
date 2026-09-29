@@ -102,7 +102,9 @@ doc follows the code.
 
 Suspect docs become the agent's task, each with its lines numbered, what
 changed in its sources — 240 lines of diff a doc, whatever the number of
-sources, the rest summed up with the command showing it — and the commits its `checked` must name: at most
+sources; a doc far behind, whose changes do not fit, is judged against its
+sources as they are now, in full, or goes to a person when they do not fit
+either — and the commits its `checked` must name: at most
 `ai-max-calls` docs per call, and no more than fits the role's context budget.
 Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay

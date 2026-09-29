@@ -1,0 +1,13 @@
+case: documentalist/far-behind-sources-too-large
+about: "A doc far behind its sources, whose sources as they are now do not fit in a task either, goes to a person, saying so: no agent is asked to vouch for what it cannot read."
+given:
+  repo: documented
+  setup:
+    - "for f in a b c d e; do seq 1 3000 | sed \"s/^/var $f/\" > src/auth/$f.go; done && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/a.go, src/auth/b.go, src/auth/c.go, src/auth/d.go, src/auth/e.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): split the auth package'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "for f in a b c d e; do seq 1 3000 | sed \"s/^/const $f/\" > src/auth/$f.go; done && git commit -qam 'refactor(auth): make the values constant'"
+run: {role: documentalist, event: merge-request, ai: "cmd:echo '- note: should not be asked'"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "a person judges it"}]

@@ -310,7 +310,8 @@ type suspectDoc struct {
 	// tooLarge: the doc, with what changed in its sources, does not fit in a
 	// task alone; judged by a person, never confirmed unread.
 	tooLarge bool
-	shown    int // lines of evidence shown so far, within docEvidenceLines
+	shown    int  // lines of evidence shown so far, within docEvidenceLines
+	capped   bool // more changed than docEvidenceLines shows
 }
 
 // docEvidenceLines is what one doc shows of what changed in all its sources:
@@ -324,11 +325,13 @@ const docEvidenceLines = 240
 func (sd *suspectDoc) evidenceFor(dir, checked, rev, path, anchor string) string {
 	left := min(evidenceLines, docEvidenceLines-sd.shown)
 	if left <= 0 {
+		sd.capped = true
 		stat, _ := git(dir, "diff", "--shortstat", checked, rev, "--", path)
 		return fmt.Sprintf("(not shown, past this doc's share of the task: %s; `git diff %s %s -- %s` shows it)", strings.TrimSpace(stat), checked, rev, path)
 	}
 	e := evidence(dir, checked, rev, path, anchor, left)
 	sd.shown += min(left, strings.Count(e, "\n"))
+	sd.capped = sd.capped || strings.Contains(e, " more lines)")
 	return e
 }
 
@@ -450,6 +453,23 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
+	// A doc far behind its sources is judged against them as they are now:
+	// what changed would not fit, and reading months of diffs cut short
+	// lets nobody vouch for it. Sources too large for that go to a person.
+	for _, into := range []map[string]*suspectDoc{suspects, propagate} {
+		for _, sd := range into {
+			if !sd.capped {
+				continue
+			}
+			now, ok := sourcesNow(sd.doc, pl)
+			if !ok {
+				sd.tooLarge = true
+				continue
+			}
+			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
+		}
+	}
+
 	// The cascade is cut: a doc depending on a suspect doc is pending, unless
 	// the propagation edge between them says `now`.
 	for grew := true; grew; {
@@ -663,7 +683,7 @@ doc when its reader really gained something to know.
 			continue
 		}
 		if sd.tooLarge {
-			f.Message += "\n(too large to be put before the agent whole, with what changed in its sources: a person judges it)"
+			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: a person judges it)"
 			continue
 		}
 		if task != "" {
@@ -723,6 +743,9 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			break
 		}
 		sd := suspects[p]
+		if sd.tooLarge {
+			continue // a person judges it
+		}
 		want := map[string]string{}
 		var short []string
 		names := make([]string, 0, len(sd.doc.Checked))
