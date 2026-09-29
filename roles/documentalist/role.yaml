@@ -76,5 +76,9 @@ settings:
   # `<!-- workline:derive name -->…<!-- workline:end -->`, the command lives here,
   # where only people change it. e.g. {conformance-cases: "ls tests/*.yaml | wc -l"}
   derive: {}
+  # The code the project wants described, as globs, e.g. ["src/**"]: a file
+  # of it the commits add, under no doc's sources, is reported (undocumented);
+  # when gardening, every such file. Empty: nothing is reported.
+  documented: []
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round

@@ -43,6 +43,9 @@ type Settings struct {
 	} `json:"truth"`
 	AIMaxCalls int               `json:"ai-max-calls"`
 	Derive     map[string]string `json:"derive"` // name -> command giving a derived block
+	// Documented: the code the project wants described; a file of it no
+	// doc names in its sources is reported.
+	Documented []string `json:"documented"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -371,7 +374,12 @@ func Pre(runDir, repo string) int {
 			}
 			where, err := pl.get(name)
 			var commits string
-			if err == nil {
+			// A source gone is said, and what removed it makes the doc suspect.
+			if gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/")); err == nil && gone {
+				findings = append(findings, verdict.Finding{Rule: "source-gone", Where: d.Path,
+					Message: fmt.Sprintf("names %s as a source, which no longer exists: name what replaced it, or drop it", src)})
+				commits, err = git(where.dir, "log", "--format=%h %s", checked+".."+where.rev, "--", path)
+			} else if err == nil {
 				commits, err = changed(where.dir, checked, where.rev, path, anchor)
 			}
 			if _, ok := err.(external); ok {
@@ -444,6 +452,14 @@ func Pre(runDir, repo string) int {
 			}
 		}
 	}
+
+	var added map[string]bool
+	if ranged {
+		if added, err = addedFiles(runDir, repo); err != nil {
+			return fail(err)
+		}
+	}
+	findings = append(findings, undocumented(tree, docs, s.Documented, added, ranged)...)
 
 	// Hygiene: what needs no judgement is reported by the checks themselves.
 	problems := Hygiene(tree, s.Budgets, s.Duplicates)
@@ -969,6 +985,25 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 	return touched, true, nil
 }
 
+// addedFiles returns the files the commits of the run's range added.
+func addedFiles(runDir, repo string) (map[string]bool, error) {
+	data, err := os.ReadFile(filepath.Join(runDir, "in", "input", "range"))
+	if err != nil {
+		return nil, err
+	}
+	out, err := git(repo, "log", "--diff-filter=A", "--name-only", "--format=", strings.TrimSpace(string(data)))
+	if err != nil {
+		return nil, err
+	}
+	added := map[string]bool{}
+	for _, f := range strings.Split(out, "\n") {
+		if f != "" {
+			added[f] = true
+		}
+	}
+	return added, nil
+}
+
 // touches says whether one of the files is path, or under it.
 func touches(files map[string]bool, path string) bool {
 	dir := strings.TrimSuffix(path, "/")
@@ -978,6 +1013,49 @@ func touches(files map[string]bool, path string) bool {
 		}
 	}
 	return false
+}
+
+// undocumented reports, by folder, the files matching the documented globs
+// that no doc names in its sources: those the commits add, given a range,
+// else all of them.
+func undocumented(t Tree, docs []*Doc, globs []string, added map[string]bool, ranged bool) []verdict.Finding {
+	if len(globs) == 0 {
+		return nil
+	}
+	var sources []string
+	for _, d := range docs {
+		for _, src := range d.Sources {
+			if name, path, _ := splitSource(src); name == "" {
+				sources = append(sources, strings.TrimSuffix(path, "/"))
+			}
+		}
+	}
+	byDir := map[string][]string{}
+	for f := range t.Files {
+		if ranged && !added[f] || !matchAny(globs, f) {
+			continue
+		}
+		covered := false
+		for _, s := range sources {
+			covered = covered || f == s || strings.HasPrefix(f, s+"/")
+		}
+		if !covered {
+			byDir[filepath.Dir(f)] = append(byDir[filepath.Dir(f)], filepath.Base(f))
+		}
+	}
+	var out []verdict.Finding
+	dirs := make([]string, 0, len(byDir))
+	for d := range byDir {
+		dirs = append(dirs, d)
+	}
+	sort.Strings(dirs)
+	for _, d := range dirs {
+		files := byDir[d]
+		sort.Strings(files)
+		out = append(out, verdict.Finding{Rule: "undocumented", Where: d,
+			Message: fmt.Sprintf("no doc names these in its sources, so no doc goes wrong when they change: %s; add them to the sources of the doc that describes them, or write one", strings.Join(files, ", "))})
+	}
+	return out
 }
 
 // docTouched says whether the commits touched one of the doc's own sources.

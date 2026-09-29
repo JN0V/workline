@@ -1,0 +1,13 @@
+case: documentalist/source-gone-reported
+about: A source that no longer exists — a file moved, a doc deleted — is reported with the doc naming it, and what removed it reaches the doc as any change does — here pending, a product doc waiting for the release — never a check that could not run.
+given:
+  repo: documented
+  setup:
+    - "git mv src/auth/token.go src/auth/tokens.go && git commit -qm 'refactor(auth): name the file after its tokens'"
+    - "git rm -q docs/tech/auth.md && git commit -qm 'docs: drop the auth doc'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: source-gone, where: docs/product/sign-in.md, message: "docs/tech/auth.md"}
+    - {rule: pending, where: docs/product/sign-in.md}

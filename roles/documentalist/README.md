@@ -48,7 +48,13 @@ What runs, for humans. The AI never reads this file.
    is the record its status names. Records themselves are history, and may
    cite it.
 
-8. **Freshness.** On `schedule`, a doc last confirmed more than
+8. **Code no doc describes.** A file matching the project's `documented`
+   globs that no doc names in its sources, by folder (`undocumented`): those
+   the commits add, given a range; all of them when gardening. A source that
+   no longer exists is `source-gone`, and what removed it reaches the doc as
+   any change does.
+
+9. **Freshness.** On `schedule`, a doc last confirmed more than
    `freshness.stale-after-days` ago (180) is `stale`: it is dated by the
    commit its `checked` names, not by its last edit, since a doc nobody reads
    again drifts from a world that changed around it (Google's freshness
@@ -60,7 +66,7 @@ Not built yet: style (vale).
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`) | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |

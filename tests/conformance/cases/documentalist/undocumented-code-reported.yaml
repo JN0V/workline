@@ -1,0 +1,15 @@
+case: documentalist/undocumented-code-reported
+about: A file the commits add, among those the project wants documented, under no doc's sources, is reported by folder — one next to a file a doc names too; a file outside those globs is not.
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {documented: ["src/**"]}}}
+  setup:
+    - "mkdir -p src/billing && echo 'package billing' > src/billing/invoice.go && echo 'package auth' > src/auth/refresh.go && echo '# notes' > NOTES.txt && git add -A && git commit -qm 'feat: bill users'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: undocumented, where: src/billing, message: "invoice.go"}
+    - {rule: undocumented, where: src/auth, message: "refresh.go"}
+  no-findings: [{rule: undocumented, where: "."}]
