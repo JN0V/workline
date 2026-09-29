@@ -88,6 +88,16 @@ last.
   `docs`, not `feat`; and the release manager's notes should be checked against
   what the code can actually do (the "capability lie" Make My Dreams detected).
 
+- **Rethink docs at the push: too many questions, and some lead nowhere**
+  (2026-09-29, to discuss). The push names the docs its commits made
+  suspect; the person took it as a step to follow, answered `d` in the
+  editor's box, where only the terminal can judge them, and the push
+  stopped. Questions at each push that cannot be acted on where the person
+  is wear the process out. Options: leave every doc to gardening (ADR-0006)
+  and have the push only say so; or judge and review from the editor too;
+  or ask only when the commits made a doc wrong for sure. Also: the
+  "left for gardening" list is long in the push's output.
+
 ### Engine and CI
 
 - **Granularity of a task's scope.** The scope comes from the `ready` work item
