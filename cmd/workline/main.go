@@ -486,11 +486,32 @@ func docsCmd(args []string) int {
 	fs := flag.NewFlagSet("docs", flag.ExitOnError)
 	repo := fs.String("repo", ".", "repository")
 	ai := fs.String("ai", "", "agent judging the docs (default: the project's, else yours, else none)")
+	reviewOnly := fs.Bool("review", false, "no agent: review, doc by doc, the doc changes already in the working tree")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
 		return 64
+	}
+	if *reviewOnly {
+		// What an agent left in the working tree, or gardening run by hand.
+		changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
+		docs := strings.Fields(string(changed))
+		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+		switch {
+		case len(docs) == 0:
+			fmt.Fprintln(os.Stderr, "workline: no doc changed in the working tree")
+			return 0
+		case err != nil:
+			fmt.Fprintln(os.Stderr, "workline: reviewing needs a person, on a terminal")
+			return 64
+		}
+		defer tty.Close()
+		if _, err := review.Docs(root, docs, bufio.NewReader(tty), tty, review.Open); err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		return 0
 	}
 	rng, err := unpushed(root)
 	if err != nil {
