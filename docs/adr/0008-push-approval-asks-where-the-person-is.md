@@ -1,6 +1,6 @@
 # ADR-0008: The push approval asks the person where they are: terminal, editor, or desktop
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-09-29
 - **Amends:** ADR-0007, whose approval refused any push without a terminal
 
@@ -53,7 +53,10 @@ agent cannot substitute one of its own.
   commits made suspect, and says to run `workline docs`.
 - **Linux first.** Ancestors and sockets are read from `/proc`; on macOS and
   Windows the editor channel is skipped, saying so, until it is tried there.
-- `approve-push: false` in the person's own config still turns it all off.
+- `approve-push: false` in the person's own config still turns it all off;
+  `approve-push-via` lists the channels allowed, in the order to try them.
+- **The editor's box is easily missed** at the top of the window: a desktop
+  notification, kept until dismissed, says a push waits there.
 
 ## Consequences
 
@@ -70,9 +73,13 @@ agent cannot substitute one of its own.
 - Two editor windows: the question goes to the one the push came from, not
   the one in focus.
 
-## To try before accepting
+## Tried
 
-On this machine, VSCodium on Wayland: a push from Source Control; Claude
-Code asked to push; a push while the terminal is also open (the terminal
-wins); no answer for ten minutes; Escape; and the dialog, with the editor
-channel off.
+- 2026-09-29, on this machine, VSCodium 1.117 on Wayland: Claude Code, in
+  the editor, ran `git push` to a throwaway repository with a local bare
+  remote. The hook found the window among its parents and asked there. At
+  the first attempt the person did not see the box, and the push stopped on
+  an empty answer: the desktop notification was added. At the second, `y`
+  in the box, and the commit reached the remote.
+- Not tried yet: a push from Source Control's button; `v` from the box;
+  the dialog; ten minutes with no answer; two windows open.

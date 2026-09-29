@@ -47,8 +47,9 @@ own line (.workline/config.yaml):
   the message it committed. Check it: write subjects that pass.
 - **pre-push** — the committer on the commits pushed, then the documentalist,
   with no agent: it lists the docs they made suspect. Then a person approves
-  the push on a terminal: an agent's push is refused, so ask the person to
-  push. Have the docs judged first with `workline docs` (ADR-0007).
+  the push: on a terminal, else in the editor window it came from — an
+  agent's push waits there for the person's `y` (ADR-0008). Push only when
+  the person asks. Have the docs judged first with `workline docs` (ADR-0007).
 - **secrets and forbidden terms** — the committer scans each commit with
   gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
   that must never reach this public repository, as gitleaks rules. Never

@@ -20,11 +20,11 @@ this repository before any other role is added.
    (2026-09-29) — the range honoured, the push approval with its page,
    `workline docs` and `d`, reviewed per doc, the header as a comment.
    DomoticsCore adopted and pushed, 14 docs fixed; 40 left for point 3.
-   Left, first: the approval asks where the person is — the terminal, else
-   the editor the push came from (VSCodium's Source Control, or Claude Code
-   in it asked to push), else a desktop dialog (ADR-0008, proposed;
-   docs/research/push-approval.md). Not tried yet: Claude Code run from a
-   terminal (may its shell reach that terminal?).
+   The approval asks where the person is — the terminal, else the editor
+   window the push came from, else a desktop dialog (ADR-0008): tried from
+   Claude Code in VSCodium. Left: Source Control's button; Claude Code run
+   from a terminal (may its shell reach that terminal?); the editor and a
+   dialog on macOS and Windows, kdialog on Linux.
 3. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
    documentalist could not judge; roles/documentalist/tried.md). ADR-0009,
    proposed: the doc whole with a share of its sources per part, packed to

@@ -84,9 +84,17 @@ is `workline docs` there and then — once the docs are committed, the push
 stops and you push again, since it cannot carry a commit made during it; `v` writes a page showing each commit, its message and its changes
 (`.git/workline/push.html`) and opens it with the system's default program.
 A question left ten minutes without an answer is a no; each question has its
-own ten minutes, so judging the docs with `d` does not eat into them. Without a terminal — an agent, an editor's
-button — the push is refused, saying so. It holds in every repository the
-global hooks reach, `.workline/off` too; only your own config turns it off,
+own ten minutes, so judging the docs with `d` does not eat into them. Without a terminal — an agent's shell, an editor's
+button — the question goes to the editor window the push came from (VS Code,
+VSCodium), found among the hook's parent processes, never from what the
+pushing process sets: an input box at the top of the window, with a desktop
+notification so it is not missed; `y` pushes, `v` opens the page and asks
+again, anything else stops. With no editor, a desktop dialog (zenity); with
+neither, the push is refused, saying so. `d` needs the terminal: the question
+names the docs, for `workline docs`. `approve-push-via: [terminal, dialog,
+editor]` in your own config changes the order, or leaves channels out
+(ADR-0008). It holds in every repository the global hooks reach,
+`.workline/off` too; only your own config turns it off,
 `approve-push: false`, which no project can (ADR-0007). `git push
 --no-verify` still skips it: it stops an agent pushing by habit, not one set
 on it.
@@ -117,7 +125,7 @@ and links the line reports on every run are only counted. `git push
 | `.workline/work/<id>.md` | a work item, without a forge |
 | `.workline/issues/` | the issues roles open, without a forge |
 | `.workline/off` | empty: the global hook skips this repository |
-| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: false` lets pushes leave without you approving them |
+| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: false` lets pushes leave without you approving them; `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
 | `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
 
