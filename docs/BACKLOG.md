@@ -16,11 +16,12 @@ this repository before any other role is added.
    takes the best independence available and says which (ADR-0005); the
    weekly run judges on `claude:sonnet`. Left: a judge of another provider,
    when there is one. Each defect a role lets through becomes a case.
-2. **Docs after the code, every push approved** (ADR-0007), in order: the
-   documentalist judges only what the range changed, a header-only change is
-   no change, code no doc describes and sources gone are reported; the push
-   approval (`y/N/v`, the page); `workline docs` and `d`, reviewed per doc;
-   the header as a comment; DomoticsCore caught up in one reviewed pass.
+2. **Docs after the code, every push approved** (ADR-0007): built and tried
+   (2026-09-29) — the range honoured, the push approval with its page,
+   `workline docs` and `d`, reviewed per doc, the header as a comment.
+   DomoticsCore adopted and pushed, 14 docs fixed; 40 left for point 3.
+   Left: not tried yet, Claude Code run from a terminal (may its shell reach
+   that terminal?) and a push from an editor's button (ADR-0007, "Tried").
 3. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
    documentalist could not judge; roles/documentalist/tried.md). One agent
    per source, each judging the doc against that source alone, the verdicts
