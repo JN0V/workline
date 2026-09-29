@@ -169,7 +169,18 @@ func slug(heading string) string {
 // rev the revision to compare with (HEAD, or a branch for another repository).
 func changed(dir, checked, rev, path, anchor string) (string, error) {
 	if !strings.HasSuffix(path, ".md") {
-		return git(dir, "log", "--format=%h %s", checked+".."+rev, "--", path)
+		out, err := git(dir, "log", "--format=%H %h %s", checked+".."+rev, "--", path)
+		if err != nil || out == "" {
+			return out, err
+		}
+		var kept []string
+		for _, l := range strings.Split(out, "\n") {
+			full, rest, _ := strings.Cut(l, " ")
+			if !headersOnly(dir, full, path) {
+				kept = append(kept, rest)
+			}
+		}
+		return strings.Join(kept, "\n"), nil
 	}
 	before, err := git(dir, "show", checked+":"+path)
 	if err != nil {
@@ -191,6 +202,27 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 		return "", nil
 	}
 	return git(dir, "log", "--format=%h %s", checked+".."+rev, "--", path)
+}
+
+// headersOnly says whether a commit changed, under path, only the headers of
+// docs: recording who checked a doc changes nothing it says, and would
+// otherwise make the docs naming a folder of docs suspect at every check.
+func headersOnly(dir, commit, path string) bool {
+	files, err := git(dir, "diff-tree", "--no-commit-id", "--name-only", "-r", commit, "--", path)
+	if err != nil || files == "" {
+		return false
+	}
+	for _, f := range strings.Split(files, "\n") {
+		if !strings.HasSuffix(f, ".md") {
+			return false
+		}
+		before, err1 := git(dir, "show", commit+"^:"+f)
+		after, err2 := git(dir, "show", commit+":"+f)
+		if err1 != nil || err2 != nil || body(before) != body(after) {
+			return false
+		}
+	}
+	return true
 }
 
 // evidenceLines caps what one source's change shows the agent.
@@ -307,6 +339,12 @@ func Pre(runDir, repo string) int {
 	}
 	pl := &places{repo: repo, gitDir: gitDir, cfg: cfg, known: map[string]place{}}
 
+	// Given the commits of a push or a merge request, only the docs they
+	// made suspect are the task; the others are reported, for gardening.
+	touched, ranged, err := rangeFiles(runDir, repo)
+	if err != nil {
+		return fail(err)
+	}
 	var findings []verdict.Finding
 	if len(docs) == 0 && os.Getenv("WORKLINE_EVENT") != "init" {
 		// Not an error, but never a silent "all good": say what was looked at.
@@ -343,6 +381,13 @@ func Pre(runDir, repo string) int {
 			if err != nil {
 				findings = append(findings, verdict.Finding{Rule: "unknown", Where: d.Path, Level: "block",
 					Message: fmt.Sprintf("cannot tell whether %s changed since %s: %v", src, checked, err)})
+				continue
+			}
+			if commits != "" && ranged && !docTouched(d, touched) {
+				if !hasSuspect(findings, d.Path) {
+					findings = append(findings, verdict.Finding{Rule: "suspect", Where: d.Path,
+						Message: fmt.Sprintf("%s changed since it was checked, but not changed by these commits: left for gardening\n%s", src, commits)})
+				}
 				continue
 			}
 			if commits != "" {
@@ -899,6 +944,62 @@ func trackedDocs(t Tree, globs []string) ([]*Doc, error) {
 		}
 	}
 	return docs, nil
+}
+
+// rangeFiles returns the files the commits of the run's `range` input
+// touched; ranged is false when the run was given no range.
+func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err error) {
+	data, err := os.ReadFile(filepath.Join(runDir, "in", "input", "range"))
+	if os.IsNotExist(err) || err == nil && strings.TrimSpace(string(data)) == "" {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	out, err := git(repo, "log", "--name-only", "--format=", strings.TrimSpace(string(data)))
+	if err != nil {
+		return nil, false, err
+	}
+	touched = map[string]bool{}
+	for _, f := range strings.Split(out, "\n") {
+		if f != "" {
+			touched[f] = true
+		}
+	}
+	return touched, true, nil
+}
+
+// touches says whether one of the files is path, or under it.
+func touches(files map[string]bool, path string) bool {
+	dir := strings.TrimSuffix(path, "/")
+	for f := range files {
+		if f == dir || strings.HasPrefix(f, dir+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// docTouched says whether the commits touched one of the doc's own sources.
+// Such a doc is judged whole, every changed source with it: moving
+// `checked` vouches for all of them.
+func docTouched(d *Doc, touched map[string]bool) bool {
+	for _, src := range d.Sources {
+		if name, path, _ := splitSource(src); name == "" && touches(touched, path) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasSuspect says whether a doc is reported suspect already.
+func hasSuspect(f []verdict.Finding, where string) bool {
+	for _, x := range f {
+		if x.Rule == "suspect" && x.Where == where {
+			return true
+		}
+	}
+	return false
 }
 
 // Coverage sorts the docs under the docs globs: those declaring their

@@ -1,0 +1,13 @@
+case: documentalist/range-judges-the-whole-doc
+about: "A doc the commits made suspect through one source is judged against every source that changed, the ones changed before these commits too: its new `checked` vouches for all of them."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/^sources: \\[src\\/auth\\/token.go\\]/sources: [src\\/auth\\/token.go, src\\/auth\\/NOTES]/' docs/tech/auth.md && echo 'old' > src/auth/NOTES && git add -A && git commit -qm 'docs: name the notes as a source'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "echo 'tokens may change' > src/auth/NOTES && git commit -qam 'docs: note a change to come'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "src/auth/NOTES changed since it was checked:"}]

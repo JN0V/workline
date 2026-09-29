@@ -1,0 +1,11 @@
+case: documentalist/header-change-is-no-change
+about: A doc naming a folder of docs as its source is not made suspect by a commit that only moved another doc's `checked`; recording who checked a doc changes nothing it says.
+given:
+  repo: documented
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [docs/tech]\\nchecked: %s\\n---\\n# Index\\n\\nThe technical docs.\\n' $C > docs/index.md && git add -A && git commit -qm 'docs: index the technical docs'"
+    - "sed -i 's/^checked: .*/&\\nverified: human:alice/' docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/index.md}]

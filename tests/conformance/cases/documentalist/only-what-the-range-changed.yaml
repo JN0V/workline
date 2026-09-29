@@ -1,0 +1,12 @@
+case: documentalist/only-what-the-range-changed
+about: "Given the commits being pushed, a doc is judged only if one of them touched its sources: a doc made suspect by an earlier commit is reported, left for gardening, and no agent is called for it."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "echo 'package main' > main.go && git add main.go && git commit -qm 'feat: add an entry point'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "not changed by these commits"}]

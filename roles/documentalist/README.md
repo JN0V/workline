@@ -10,7 +10,8 @@ What runs, for humans. The AI never reads this file.
 ## Prepare (`pre`, no AI)
 
 1. **Suspects.** For each doc, list commits since its `checked` commit that
-   touched its `sources` (in its frontmatter, or in a `<!-- workline … -->`
+   touched its `sources` — a commit changing only docs' headers, who checked
+   them, is no change — (in its frontmatter, or in a `<!-- workline … -->`
    comment at its top where a frontmatter would show, as in a README). Follow the chain: a suspect technical section makes
    the product docs depending on it suspect too.
 2. **Budgets.** Lines per doc, words per section (its own text, up to the next
@@ -173,8 +174,13 @@ pre-commit.ci does: a suggestion can only sit on lines the merge request
 changes, and a doc made wrong by a change of code usually has none. From a
 fork, the fix goes in one comment, as a diff to apply.
 
+Given the commits of a push or a merge request (`range`), only the docs they
+made suspect — one of their own sources touched by those commits — are
+judged, whole, against every source that changed; the other suspect docs
+are reported, left for gardening (ADR-0007).
+
 A project that routes `pre-push` (`routing: {events: {pre-push: [committer,
-documentalist]}}`) has its suspect docs judged on the machine, with the
+documentalist]}}`) has those docs judged on the machine, with the
 person's agent, before the commits leave it. The patches land in the working
 tree and the push stops: the person reviews them, commits them, and pushes
 again. Without an agent, the suspect docs are listed and the push goes on.

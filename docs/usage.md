@@ -104,7 +104,9 @@ hook.
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
 
 Runs are kept in `.git/workline/runs/` (the last
-<!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree.
+<!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
+agent call with what it cost in `out/calls.jsonl`, each refused answer in
+`out/refused-<n>.yaml`.
 
 ## `.workline/config.yaml`
 
