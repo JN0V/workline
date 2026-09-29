@@ -216,8 +216,11 @@ func askOnce(p Push, out io.Writer, question func(question, title string) (strin
 			return true
 		case "v", "view", "voir":
 			showPage(p, out, view)
+		case "":
+			fmt.Fprintln(out, "workline: push stopped: nothing typed (Escape, or Enter on an empty box).")
+			return false
 		default:
-			fmt.Fprintln(out, "workline: push stopped.")
+			fmt.Fprintf(out, "workline: push stopped: %q is not y.\n", answer)
 			return false
 		}
 	}
