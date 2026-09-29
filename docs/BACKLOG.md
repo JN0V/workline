@@ -21,7 +21,15 @@ this repository before any other role is added.
    no change, code no doc describes and sources gone are reported; the push
    approval (`y/N/v`, the page); `workline docs` and `d`, reviewed per doc;
    the header as a comment; DomoticsCore caught up in one reviewed pass.
-3. **Try the install and the adoption on the other machine**, where their
+3. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
+   documentalist could not judge; roles/documentalist/tried.md). One agent
+   per source, each judging the doc against that source alone, the verdicts
+   put together; a fix of what is found wrong accepted without moving
+   `checked`, the doc staying suspect; a doc the agent answered with a note
+   not asked again until its sources change. Measure it against judging
+   whole, on the evaluation, before adopting it; and whether a light model
+   confirms as well as a standard one.
+4. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.
 

@@ -140,3 +140,10 @@ On 2026-09-27, on workline's own repository:
   Then one doc blocked the run: both Sonnet 5.5 and Opus wrote its patch as
   two hunks overlapping on a line of context, which git refuses, and git's
   message taught them nothing. Such hunks are now merged before judging.
+  Where it stopped: 14 docs fixed, for a person to review; 40 left. 30 of
+  them are far behind sources that do not fit a task even as they are now
+  (large headers). The other 10 are refused by the agent itself: it finds
+  what is wrong — a version 1.4.1 where the code says 1.11.0 — but cannot
+  vouch for the rest from diffs, and a fix that leaves `checked` alone is
+  refused; the doc it noted comes first again on the next run. About 1.3
+  million tokens in, over the whole catch-up.
