@@ -79,3 +79,49 @@ the release; size budgets, duplicates, cards, derived facts. What to take:
 detection without AI first, the AI only on what changed and never inside the
 push, its changes in one commit of their own, reviewed per doc, the rest in
 a merge request later.
+
+## Judging a doc in parts (2026-09-29)
+
+For a doc far behind sources too large for one task. Verification research
+splits by claim: FActScore, SAFE, VeriScore, RefChecker break the text into
+claims and check each against evidence, cut in chunks when too long
+(MiniCheck: claim × chunk, supported if any chunk supports it). Splitting by
+source is the same grid batched by chunk, with known failures: a claim true
+only across two sources, a claim about code since deleted (every part says
+"not here"), "not here" read as "false", the same line flagged by several
+parts ([LLM×MapReduce](https://arxiv.org/abs/2410.09342)).
+
+- **Aggregation**: [RefChecker](https://github.com/amazon-science/RefChecker)
+  (434★), strict: any contradiction makes it wrong, all entailed makes it
+  right, the rest neutral. For code, support must not outvote a
+  contradiction: a deprecated path supports what the current one contradicts.
+  LLM×MapReduce has each part return a structured answer — the facts, the
+  reason, a confidence — merged in a last pass.
+- **Claim extraction costs more than it gives**: MiniCheck's authors measured
+  GPT-4 +0.3 points for 2 to 4 times the cost; Claimify, the best extractor,
+  still loses 16% of the content. Line ranges of the doc serve as claims.
+- **Whole or in parts**: accuracy falls as the context grows (lost in the
+  middle, Chroma's context rot; FIND: recall −2.6% per 10k tokens of input).
+  Divide and conquer wins when that loss grows faster than the dependencies
+  between parts (arXiv 2506.16411), where a weaker model in parts can beat a
+  stronger one reading the whole. Nothing settles our case: measure it.
+- **Fan-out costs**: Anthropic's multi-agent research system spends about 15
+  times a chat's tokens; [drift-detect](https://github.com/agent-sh/drift-detect)
+  went back from several agents to one call, 77% fewer tokens; agentics'
+  wiki writer forbids sub-agents and caches a summary per source file.
+  [Delfini](https://github.com/Legends-of-Tech/delfini) drops the quotes an
+  agent gives that are not at the lines it cites.
+- **Small models as checkers** (LLM-AggreFact): gpt-4o-mini 74.0 against
+  gpt-4o 75.9, MiniCheck-7B 77.4; short documents, one claim, no reasoning
+  across distant evidence. On long documents larger models win (FIND). No
+  Haiku figure published.
+- **Measuring**: FIND plants inconsistencies in long documents, matches found
+  against planted, and checks precision by hand — many "false positives" were
+  real errors. Spread planted defects through the doc; FIND's cluster early.
+
+Measured on DomoticsCore, the 40 docs left (2026-09-29): 305 source files,
+806 pairs of a doc and a file. One call per file is out of reach; packing
+files into parts that fill a task, 393 calls, about 3.2 million tokens in,
+149 sources that are docs left out. Most go to a few docs naming whole
+libraries (`docs/index.md`: 168 files); at most 8 parts a doc, 22 docs in 81
+calls. Four docs are themselves too long to leave room for any source.
