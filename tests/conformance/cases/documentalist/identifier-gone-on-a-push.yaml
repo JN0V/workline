@@ -1,0 +1,7 @@
+case: documentalist/identifier-gone-on-a-push
+about: On a push, an identifier a doc names is reported gone when one of the commits pushed removed it.
+given: {repo: untidy}
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: identifier-gone, where: docs/auth.md, message: "Revoke"}]

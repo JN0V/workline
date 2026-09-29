@@ -1,0 +1,10 @@
+case: documentalist/identifier-gone-earlier-left-for-gardening
+about: "On a push, an identifier removed before the commits pushed is not searched for: gardening reports it. Searching the whole code at each doc's last edit took minutes on a push."
+given:
+  repo: untidy
+  setup:
+    - "echo 'package auth' > src/more.go && git add src/more.go && git commit -qm 'feat(auth): add a file'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: identifier-gone, where: docs/auth.md}]

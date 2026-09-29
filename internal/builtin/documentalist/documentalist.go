@@ -546,7 +546,12 @@ func Pre(runDir, repo string) int {
 
 	// Hygiene: what needs no judgement is reported by the checks themselves.
 	problems := Hygiene(tree, s.Budgets, s.Duplicates)
-	gone, err := IdentifiersGone(repo, tree.Docs)
+	var gone []Problem
+	if ranged {
+		gone, err = IdentifiersRemoved(repo, rangeOf(runDir), tree.Docs)
+	} else {
+		gone, err = IdentifiersGone(repo, tree.Docs)
+	}
 	if err != nil {
 		return fail(err)
 	}
@@ -1091,6 +1096,12 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 		}
 	}
 	return touched, true, nil
+}
+
+// rangeOf is the range of commits the run was given.
+func rangeOf(runDir string) string {
+	data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", "range"))
+	return strings.TrimSpace(string(data))
 }
 
 // addedFiles returns the files the commits of the run's range added.

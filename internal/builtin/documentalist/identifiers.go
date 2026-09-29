@@ -108,3 +108,49 @@ func inCode(repo, rev string, names map[string]bool) (map[string]bool, error) {
 	}
 	return found, nil
 }
+
+// word is a name as it may appear on a line of code.
+var word = regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]{2,}`)
+
+// IdentifiersRemoved reports, for the commits of a range, the identifiers a
+// doc names that these commits removed from the code and that are gone now.
+// It searches the code for those names only: IdentifiersGone searches it at
+// each doc's last edit, minutes on a large repository, too long for a push;
+// what went earlier is left for gardening.
+func IdentifiersRemoved(repo, rng string, docs map[string]string) ([]Problem, error) {
+	removed := map[string]bool{}
+	diff, err := git(repo, "log", "-p", "-U0", "--format=", rng, "--", ".", ":(exclude,glob)**/*.md")
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range strings.Split(diff, "\n") {
+		if strings.HasPrefix(l, "-") && !strings.HasPrefix(l, "---") {
+			for _, w := range word.FindAllString(l, -1) {
+				removed[w] = true
+			}
+		}
+	}
+	want := map[string]bool{}
+	for _, content := range docs {
+		for _, id := range named(content) {
+			if removed[id] {
+				want[id] = true
+			}
+		}
+	}
+	now, err := inCode(repo, "HEAD", want)
+	if err != nil {
+		return nil, err
+	}
+	var out []Problem
+	for p, content := range docs {
+		for _, id := range named(content) {
+			if want[id] && !now[id] {
+				out = append(out, Problem{Rule: "identifier-gone", Where: p, Key: "identifier-gone " + p + " " + id,
+					Message: fmt.Sprintf("`%s` is gone from the code: the commits pushed removed it", id)})
+			}
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Key < out[j].Key })
+	return out, nil
+}
