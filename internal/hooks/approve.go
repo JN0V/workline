@@ -57,21 +57,52 @@ type Push struct {
 	// Docs has the docs judged and reviewed on the same terminal; it says
 	// whether a docs commit was made, which this push can no longer carry.
 	Docs func(in *bufio.Reader, out io.Writer) (committed bool)
+	// Via names the channels the person allows, among terminal, editor and
+	// dialog; empty, all of them.
+	Via []string
 }
 
-// Approve asks a person, on their terminal, whether the push goes: the
-// commits it sends are listed, `v` opens a page showing them in full. The
-// terminal is opened here, never given: without one — an agent, an editor's
-// button — no person can answer, and the push does not go.
-func Approve(p Push, errOut io.Writer) bool {
-	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
-	if err != nil {
-		fmt.Fprintln(errOut, "workline: a person approves every push, and there is no terminal to ask on (an agent, or an editor's button): push stopped.")
-		fmt.Fprintln(errOut, "  Push from a terminal, or turn this off in your own config: `approve-push: false`.")
-		return false
+func (p Push) via(channel string) bool {
+	if len(p.Via) == 0 {
+		return true
 	}
-	defer tty.Close()
-	return ask(p, answerReader{tty}, tty, review.Open)
+	for _, c := range p.Via {
+		if c == channel {
+			return true
+		}
+	}
+	return false
+}
+
+// Approve asks a person whether the push goes, on the first channel that
+// reaches one (ADR-0008): the terminal the hook opens, `d` included; else the
+// editor window the push came from; else a desktop dialog. None given by
+// the pushing process: without any, no person can answer, and the push does
+// not go.
+func Approve(p Push, errOut io.Writer) bool {
+	if p.via("terminal") {
+		if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
+			defer tty.Close()
+			return ask(p, answerReader{tty}, tty, review.Open)
+		}
+	}
+	if p.via("editor") {
+		if socket, ok := editorSocket("/proc", os.Getppid()); ok {
+			fmt.Fprintln(errOut, "workline: asking in the editor window the push came from…")
+			return askOnce(p, errOut, func(question, title string) (string, error) {
+				return askEditor(socket, question, title, answerTimeout)
+			}, review.Open)
+		}
+	}
+	if p.via("dialog") {
+		if dialog, ok := desktopDialog(); ok {
+			fmt.Fprintln(errOut, "workline: asking in a window on the desktop…")
+			return askOnce(p, errOut, dialog, review.Open)
+		}
+	}
+	fmt.Fprintln(errOut, "workline: a person approves every push, and none could be asked here (no terminal, editor window or desktop): push stopped.")
+	fmt.Fprintln(errOut, "  Push from a terminal or from the editor, or turn this off in your own config: `approve-push: false`.")
+	return false
 }
 
 // answerReader gives the person answerTimeout for each answer, not for the
@@ -84,12 +115,14 @@ func (r answerReader) Read(b []byte) (int, error) {
 	return r.tty.Read(b)
 }
 
-// ask lists the push on out and reads the answer from in; view opens a page.
-func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
+// describe lists what the push sends, one line a ref then its commits, and
+// counts the commits.
+func describe(p Push) (string, int) {
+	var b strings.Builder
 	n := 0
 	for _, r := range p.Refs {
 		if r.Delete {
-			fmt.Fprintf(out, "workline: deletes %s on %s\n", r.Remote, p.Remote)
+			fmt.Fprintf(&b, "workline: deletes %s on %s\n", r.Remote, p.Remote)
 			continue
 		}
 		if r.Range == "" {
@@ -100,8 +133,15 @@ func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
 		stat, _ := git(p.Repo, "diff", "--shortstat", rangeBase(p.Repo, r.Range), rangeHead(r.Range))
 		c := strings.Count(log, "\n") + 1
 		n += c
-		fmt.Fprintf(out, "workline: %d commit(s) to %s %s — %s\n%s\n", c, p.Remote, strings.TrimPrefix(r.Remote, "refs/heads/"), strings.TrimSpace(stat), log)
+		fmt.Fprintf(&b, "workline: %d commit(s) to %s %s — %s\n%s\n", c, p.Remote, strings.TrimPrefix(r.Remote, "refs/heads/"), strings.TrimSpace(stat), log)
 	}
+	return b.String(), n
+}
+
+// ask lists the push on out and reads the answer from in; view opens a page.
+func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
+	listed, n := describe(p)
+	fmt.Fprint(out, listed)
 	if n == 0 && !anyDelete(p.Refs) {
 		return true // nothing leaves the machine
 	}
@@ -123,15 +163,7 @@ func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
 		case "y", "yes", "o", "oui":
 			return true
 		case "v", "view", "voir":
-			page, err := pushPage(p)
-			if err == nil {
-				err = view(page)
-			}
-			if err != nil {
-				fmt.Fprintf(out, "workline: the page could not be opened (%v); it is %s\n", err, page)
-			} else {
-				fmt.Fprintf(out, "workline: opened %s\n", page)
-			}
+			showPage(p, out, view)
 		case "d", "docs":
 			if p.Docs == nil || len(p.Suspect) == 0 {
 				fmt.Fprintln(out, "workline: no doc to judge.")
@@ -145,6 +177,62 @@ func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
 			fmt.Fprintln(out, "workline: push stopped.")
 			return false
 		}
+	}
+}
+
+// askOnce asks with one question at a time, in a window: the editor's input
+// box or a dialog. What leaves is written to out, where git shows it; the
+// window says how many commits, where, and what to answer. Judging the docs
+// needs a terminal: the question names them, and `workline docs`.
+func askOnce(p Push, out io.Writer, question func(question, title string) (string, error), view func(string) error) bool {
+	listed, n := describe(p)
+	fmt.Fprint(out, listed)
+	if n == 0 && !anyDelete(p.Refs) {
+		return true
+	}
+	var where []string
+	for _, r := range p.Refs {
+		if r.Range != "" || r.Delete {
+			where = append(where, strings.TrimPrefix(r.Remote, "refs/heads/"))
+		}
+	}
+	title := fmt.Sprintf("workline: push %d commit(s) to %s %s?", n, p.Remote, strings.Join(where, ", "))
+	if anyDelete(p.Refs) {
+		title = fmt.Sprintf("workline: push to %s %s, deleting a branch?", p.Remote, strings.Join(where, ", "))
+	}
+	if len(p.Suspect) > 0 {
+		title += fmt.Sprintf(" %d doc(s) made suspect, not judged yet: `workline docs` judges them.", len(p.Suspect))
+		fmt.Fprintf(out, "workline: %d doc(s) these commits made suspect, not judged yet: %s\n", len(p.Suspect), strings.Join(p.Suspect, ", "))
+	}
+	for {
+		answer, err := question("y pushes · v shows the commits · anything else stops", title)
+		if err != nil {
+			fmt.Fprintf(out, "workline: no answer (%v): push stopped.\n", err)
+			return false
+		}
+		switch strings.ToLower(answer) {
+		case "y", "yes", "o", "oui":
+			fmt.Fprintln(out, "workline: approved.")
+			return true
+		case "v", "view", "voir":
+			showPage(p, out, view)
+		default:
+			fmt.Fprintln(out, "workline: push stopped.")
+			return false
+		}
+	}
+}
+
+// showPage writes the page of the push and opens it.
+func showPage(p Push, out io.Writer, view func(string) error) {
+	page, err := pushPage(p)
+	if err == nil {
+		err = view(page)
+	}
+	if err != nil {
+		fmt.Fprintf(out, "workline: the page could not be opened (%v); it is %s\n", err, page)
+	} else {
+		fmt.Fprintf(out, "workline: opened %s\n", page)
 	}
 }
 

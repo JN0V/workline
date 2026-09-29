@@ -389,7 +389,8 @@ func prePush(remote string) int {
 		}
 	}
 	push := hooks.Push{Repo: root, Remote: remote, Refs: refs, Suspect: suspect,
-		Docs: func(in *bufio.Reader, out io.Writer) bool { return judgeDocs(root, rng, "", in, out) }}
+		Docs: func(in *bufio.Reader, out io.Writer) bool { return judgeDocs(root, rng, "", in, out) },
+		Via:  userConfig().ApproveVia}
 	if hooks.Approve(push, os.Stderr) {
 		return 0
 	}
@@ -602,6 +603,9 @@ func gitRoot(dir string) (string, error) {
 type personal struct {
 	AI          string `yaml:"ai"`           // the agent, when a project does not say
 	ApprovePush *bool  `yaml:"approve-push"` // a person approves every push; on unless false
+	// ApproveVia: where a push may be approved, among terminal, editor and
+	// dialog (ADR-0008); all of them unless said.
+	ApproveVia []string `yaml:"approve-push-via"`
 }
 
 func (p personal) approvePush() bool { return p.ApprovePush == nil || *p.ApprovePush }

@@ -17,7 +17,7 @@ func TestPushNeedsAPerson(t *testing.T) {
 		name, config string
 		pushed       bool
 	}{
-		{name: "no terminal", pushed: false},
+		{name: "no terminal", config: "approve-push-via: [terminal]\n", pushed: false}, // no editor window nor dialog, whoever runs the tests
 		{name: "turned off by the person", config: "approve-push: false\n", pushed: true},
 	} {
 		t.Run(c.name, func(t *testing.T) {
