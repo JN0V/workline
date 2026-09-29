@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -182,7 +183,112 @@ func NormalizeDiff(diff string) string {
 		}
 		out = append(out, l)
 	}
+	return mergeOverlapping(strings.Join(out, "\n"))
+}
+
+var hunkHeader = regexp.MustCompile(`^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
+
+// mergeOverlapping joins two hunks of a file that overlap on lines both give
+// as the same context: agents write a change twice over that way, and git
+// apply refuses it. Hunks overlapping otherwise are left for git to refuse.
+func mergeOverlapping(diff string) string {
+	type hunk struct {
+		header             string // kept as written unless the hunk is merged
+		merged             bool
+		oldStart, newStart int
+		lines              []string
+	}
+	oldLines := func(h hunk) []string {
+		var o []string
+		for _, l := range h.lines {
+			if l == "" || l[0] == ' ' || l[0] == '-' {
+				o = append(o, l)
+			}
+		}
+		return o
+	}
+	emit := func(out []string, h hunk) []string {
+		if !h.merged {
+			return append(append(out, h.header), h.lines...)
+		}
+		oldN, newN := 0, 0
+		for _, l := range h.lines {
+			switch {
+			case l == "" || l[0] == ' ':
+				oldN, newN = oldN+1, newN+1
+			case l[0] == '-':
+				oldN++
+			case l[0] == '+':
+				newN++
+			}
+		}
+		return append(append(out, fmt.Sprintf("@@ -%d,%d +%d,%d @@", h.oldStart, oldN, h.newStart, newN)), h.lines...)
+	}
+	lines := strings.Split(diff, "\n")
+	var out []string
+	var cur *hunk
+	flush := func() {
+		if cur != nil {
+			out = emit(out, *cur)
+			cur = nil
+		}
+	}
+	for i := 0; i < len(lines); i++ {
+		m := hunkHeader.FindStringSubmatch(lines[i])
+		if m == nil {
+			if cur != nil && (lines[i] == "" || strings.ContainsRune(" -+\\", rune(lines[i][0]))) &&
+				!(strings.HasPrefix(lines[i], "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ")) {
+				cur.lines = append(cur.lines, lines[i])
+				continue
+			}
+			flush()
+			out = append(out, lines[i])
+			continue
+		}
+		next := hunk{header: lines[i]}
+		fmt.Sscan(m[1], &next.oldStart)
+		fmt.Sscan(m[2], &next.newStart)
+		if cur != nil {
+			have := oldLines(*cur)
+			overlap := cur.oldStart + len(have) - next.oldStart
+			// The next hunk's own lines, up to the next header.
+			j := i + 1
+			for ; j < len(lines) && !hunkHeader.MatchString(lines[j]) && !strings.HasPrefix(lines[j], "diff --git ") &&
+				!(strings.HasPrefix(lines[j], "--- ") && j+1 < len(lines) && strings.HasPrefix(lines[j+1], "+++ ")); j++ {
+				next.lines = append(next.lines, lines[j])
+			}
+			if overlap > 0 && overlap <= len(next.lines) && sameContext(have[len(have)-overlap:], next.lines[:overlap]) {
+				cur.lines = append(cur.lines, next.lines[overlap:]...)
+				cur.merged = true
+				i = j - 1
+				continue
+			}
+			flush()
+			cur = &next
+			i = j - 1
+			continue
+		}
+		cur = &next
+	}
+	flush()
 	return strings.Join(out, "\n")
+}
+
+// sameContext says whether both runs are the same lines, all context.
+func sameContext(a, b []string) bool {
+	for k := range a {
+		ca, cb := a[k], b[k]
+		if ca == "" {
+			ca = " "
+		}
+		if cb == "" {
+			cb = " "
+		}
+		if ca[0] != ' ' || cb[0] != ' ' || ca != cb {
+			return false
+		}
+	}
+	return true
 }
 
 func name(header, prefix string) string {

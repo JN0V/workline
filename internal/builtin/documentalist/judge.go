@@ -33,6 +33,7 @@ var hunkHeader = regexp.MustCompile(`^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@
 // wrong, and the engine applies with git apply --recount, which reads it the
 // same way.
 func parseDiff(diff string) ([]fileDiff, error) {
+	diff = intent.NormalizeDiff(diff) // read as git will: overlapping hunks merged
 	lines := strings.Split(strings.TrimSuffix(diff, "\n"), "\n")
 	var out []fileDiff
 	for i := 0; i < len(lines); i++ {

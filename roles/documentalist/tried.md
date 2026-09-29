@@ -137,3 +137,6 @@ On 2026-09-27, on workline's own repository:
   a doc whose changes do not fit is judged against its sources as they are
   now, like a stale one — 26 of the 42 left had more changes than a task
   shows, up to 17,099 lines of diff.
+  Then one doc blocked the run: both Sonnet 5.5 and Opus wrote its patch as
+  two hunks overlapping on a line of context, which git refuses, and git's
+  message taught them nothing. Such hunks are now merged before judging.

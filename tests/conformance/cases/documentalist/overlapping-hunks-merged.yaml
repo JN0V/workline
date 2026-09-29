@@ -1,0 +1,11 @@
+case: documentalist/overlapping-hunks-merged
+about: Two hunks overlapping on lines of context both quote the same way are one change written twice over; they are merged, judged and applied, instead of refused for a form git will not read.
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-overlapping"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}

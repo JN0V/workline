@@ -67,3 +67,22 @@ func TestMergeKeepsStickyProposalsBesideTheAgents(t *testing.T) {
 		t.Fatalf("Merge = %v: the role's sticky issue stays beside the agent's; its plain one gives way", got)
 	}
 }
+
+func TestNormalizeDiffMergesOverlappingHunks(t *testing.T) {
+	// Lines 1-6 of a doc; hunks at 1, 3 (overlapping on line 3) and 6 (apart).
+	in := "diff --git a/d.md b/d.md\n--- a/d.md\n+++ b/d.md\n" +
+		"@@ -1,3 +1,3 @@\n-a\n+A\n b\n c\n" +
+		"@@ -3,2 +3,2 @@\n c\n-d\n+D\n" +
+		"@@ -6,1 +6,1 @@\n-f\n+F\n"
+	want := "diff --git a/d.md b/d.md\n--- a/d.md\n+++ b/d.md\n" +
+		"@@ -1,4 +1,4 @@\n-a\n+A\n b\n c\n-d\n+D\n" +
+		"@@ -6,1 +6,1 @@\n-f\n+F\n"
+	if got := NormalizeDiff(in); got != want {
+		t.Fatalf("NormalizeDiff =\n%s\nwant\n%s", got, want)
+	}
+	// Overlapping on a line one hunk changes: not the same change twice, left to git.
+	clash := "diff --git a/d.md b/d.md\n--- a/d.md\n+++ b/d.md\n@@ -1,2 +1,2 @@\n a\n-b\n+B\n@@ -2,1 +2,1 @@\n-b\n+X\n"
+	if got := NormalizeDiff(clash); got != clash {
+		t.Fatalf("hunks disagreeing were merged:\n%s", got)
+	}
+}
