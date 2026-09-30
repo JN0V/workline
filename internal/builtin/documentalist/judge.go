@@ -267,8 +267,10 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			// The frontmatter records who checked the doc; only the body counts.
-			if n, o := len(scan(now)), len(scan(old)); n > o && !mayGrow {
-				refuse("patch-grows", f.path, fmt.Sprintf("the patch makes the doc %d lines longer; fix what is wrong without adding to it", n-o))
+			// Truth before size: a fix may say what the code now does, by a
+			// tenth of the doc at most; padding beyond that is refused.
+			if n, o := len(scan(now)), len(scan(old)); n > o+o/10 && !mayGrow {
+				refuse("patch-grows", f.path, fmt.Sprintf("the patch makes the doc %d lines longer, past a tenth of it (%d); fix what is wrong, and say only what the code now does", n-o, o/10))
 				continue
 			}
 			if !checkedMatches(now, want) {
@@ -287,12 +289,18 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		before[p.Key] = p
 	}
 	for _, p := range Hygiene(Tree{Docs: after, Files: tree.Files}, s.Budgets, s.Duplicates) {
-		if old, ok := before[p.Key]; !ok || p.Size > old.Size {
+		// A budget already exceeded may grow by what a fix allows: it stays
+		// reported, for condensing. Any other problem, or a new one, refuses.
+		if old, ok := before[p.Key]; !ok || p.Size > old.Size && !budgetRule[p.Rule] {
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
 	return refused, patched, nil
 }
+
+// budgetRule are the size rules a fix may make a little worse, within what
+// patch-grows allows a doc.
+var budgetRule = map[string]bool{"doc-too-long": true, "section-too-long": true, "folder-too-long": true, "card-too-long": true}
 
 // gitApplied returns what git apply makes of one file of a diff, so the judge
 // judges exactly what the engine will apply. A new file is created by the diff.

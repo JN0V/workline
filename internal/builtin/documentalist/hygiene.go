@@ -154,7 +154,7 @@ func budgets(t Tree, b Budgets) []Problem {
 	}
 	folders := map[string]int{}
 	for p, content := range t.Docs {
-		n := lineCount(content)
+		n := len(scan(content)) // the body: the header records who checked the doc, it says nothing
 		folders[path.Dir(p)] += n
 		if b.DocLines > 0 && n > b.DocLines {
 			out = append(out, Problem{Rule: "doc-too-long", Where: p, Key: "doc-too-long " + p, Size: n,

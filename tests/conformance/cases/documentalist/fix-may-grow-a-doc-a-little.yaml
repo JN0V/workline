@@ -1,0 +1,13 @@
+case: documentalist/fix-may-grow-a-doc-a-little
+about: "Truth before size: a fix of a doc already over its budget may make it longer by a tenth at most, to say what the code now does; the budget is still reported, for condensing, and does not refuse the fix."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      budgets: {doc-lines: 12, section-words: 400, card-words: {min: 80, max: 400}, folder-lines: 2000, root-agent-file-lines: 200}\\n' > .workline/config.yaml && for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do echo \"Sessions note $i.\" >> docs/tech/auth.md; done && git add -A && git commit -qm 'docs: say more about sessions'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-within-a-tenth"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: doc-too-long, where: docs/tech/auth.md}]
+  no-findings: [{rule: patch-grows, where: docs/tech/auth.md}, {rule: patch-introduces, where: docs/tech/auth.md}]
