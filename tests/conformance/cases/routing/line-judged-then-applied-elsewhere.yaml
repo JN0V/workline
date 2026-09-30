@@ -1,0 +1,12 @@
+case: routing/line-judged-then-applied-elsewhere
+about: "Judged in one CI job, applied in another, on another runner: the roles built into the engine, gone with the first runner's cache, are taken again from the engine applying."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge: {merge-requests: [{id: 1, labels: [], comments: []}]}
+run: {route: merge-request, input: {range: "HEAD~1..HEAD"}, target: {merge-request: 1}, ai: "fake:comment-and-label", no-apply: true, then: resume-elsewhere}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [label, comment]
+  forge: {merge-requests: [{id: 1, comments: 1, labels: [docs-checked]}]}
