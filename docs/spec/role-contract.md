@@ -138,6 +138,19 @@ token), **apply** (trusted, no AI key).
    manager's generated changelog, for example, and `in/task-kind`: one word
    naming the kind of question, when `model.tasks` asks something else of it.
    The engine then records a digest of `in/`.
+
+   **In parts** (ADR-0009). A question too large for one call is written as
+   several instead: `in/parts/<name>/task.md`, each whole in itself, and no
+   `in/task.md`. The engine asks each part in a context of its own, one after
+   the other, on the tier `model.tasks.part` names, each call counted and
+   kept like any other; a part answers only `claim` intentions, which are
+   never applied: they inform. The answers are put back as
+   `in/parts/<name>/answer.yaml`, and `pre` runs again, with
+   `WORKLINE_PARTS=answered`, to put them together — no AI — and write the
+   one question that follows, `in/task.md`, or none. Only then is the digest
+   recorded. A part that fails, or answers what is not a claim, is said
+   (`part-unanswered`), never read as an answer; without an agent, no part is
+   asked, and `pre` runs again with none answered.
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
    (`model-grid.md`), receives the facets, `in/` and `task.md`. It runs read-only

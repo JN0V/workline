@@ -69,6 +69,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `release` | tag a commit with a version and publish release notes | git and forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
+| `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported` | never: read by `pre`, which puts the parts' claims together |
 
 A role that needs another intention asks for it to be added here; it does not
 invent one. Intentions that reach the forge are applied by a separate step that
