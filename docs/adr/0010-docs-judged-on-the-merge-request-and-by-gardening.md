@@ -61,6 +61,14 @@ push of a merge request.
 - The AI in CI: the owner's Claude token first, its volume capped; Copilot
   CLI on a free plan measured through the evaluation, to compare.
 
+## Tried
+
+- 2026-09-30, a throwaway pull request on workline (#10): Claude judged the
+  doc the change made false, the App committed the fix to the branch, the
+  checks ran again unattended, the loop guard held
+  (roles/documentalist/tried.md). Left: `checked` names the head of the
+  branch, not GitHub's merge commit; the agent stays off an example.
+
 ## Consequences
 
 - A push costs seconds and asks one question, the approval.

@@ -164,3 +164,16 @@ On 2026-09-27, on workline's own repository:
   that no longer existed; rebased, suspect again. A `checked` main does not
   hold now stands for the commit that brought it there: the squash, or the
   rebased commit. DomoticsCore's push check went from 6.1 to 7.4 seconds.
+- a doc fixed on a pull request by CI (2026-09-30, workline, throwaway PR
+  #10): `max-handoffs` raised to 5 in routing.default.yaml, the routing spec
+  saying 3. Three attempts. The apply job first failed: the run named the
+  roles cache of the judge's runner, gone on its own; then installed an
+  engine the Go proxy remembered from before the fix. Both fixed. Then
+  Claude (Sonnet 5.5, 4,651 tokens in, 1,138 out) brought the spec to 5,
+  the GitHub App committed it to the branch with `Workline-Role:`, the
+  checks ran again with no one approving them, and the line did not judge
+  the App's commit. Two faults seen in that commit: the agent also aligned
+  an example of the spec, which shows a project's routing, not the default,
+  to the default — off its task; and `checked` named the merge commit
+  GitHub builds for a pull request, which no branch holds: the commit that
+  brought it stands for it, but the head of the branch should be named.
