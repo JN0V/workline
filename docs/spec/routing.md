@@ -80,7 +80,9 @@ routing:
 - A chain of handoffs is capped (`max-handoffs`, default 3). A loop stops with a
   verdict, not with a timeout.
 - Events caused by the engine's own writes (its comments, labels, commits) do
-  not trigger routing, so two roles cannot wake each other forever.
+  not trigger routing, so two roles cannot wake each other forever. Its
+  commits carry a `Workline-Role: <role>` trailer; a line given a range whose
+  last commit carries one judges nothing.
 
 ### On a forge: judge, then apply
 
