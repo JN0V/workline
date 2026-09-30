@@ -99,7 +99,7 @@ func Approve(p Push, errOut io.Writer) bool {
 		}
 	}
 	fmt.Fprintln(errOut, "workline: a person approves every push, and none could be asked here (no terminal, editor window or desktop): push stopped.")
-	fmt.Fprintln(errOut, "  Push from a terminal or from the editor, or turn this off in your own config: `approve-push: false`.")
+	fmt.Fprintln(errOut, "  Push from a terminal or from the editor, or stop asking in your own config: remove `approve-push: true`.")
 	return false
 }
 
@@ -203,7 +203,7 @@ func askOnce(p Push, out io.Writer, question func(question, title string) (strin
 		fmt.Fprintf(out, "workline: %d doc(s) these commits made suspect, not judged yet: %s\n", len(p.Suspect), strings.Join(p.Suspect, ", "))
 	}
 	for {
-		answer, err := question("y pushes · v shows the commits · anything else stops", title)
+		answer, err := question("Type y then Enter to push, v to see the commits; Enter alone stops", title)
 		if err != nil {
 			fmt.Fprintf(out, "workline: no answer (%v): push stopped.\n", err)
 			return false

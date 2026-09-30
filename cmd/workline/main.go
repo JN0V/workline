@@ -602,13 +602,13 @@ func gitRoot(dir string) (string, error) {
 // they want wherever they work, which no project can change.
 type personal struct {
 	AI          string `yaml:"ai"`           // the agent, when a project does not say
-	ApprovePush *bool  `yaml:"approve-push"` // a person approves every push; on unless false
+	ApprovePush *bool  `yaml:"approve-push"` // a person approves every push; off unless true (ADR-0011)
 	// ApproveVia: where a push may be approved, among terminal, editor and
 	// dialog (ADR-0008); all of them unless said.
 	ApproveVia []string `yaml:"approve-push-via"`
 }
 
-func (p personal) approvePush() bool { return p.ApprovePush == nil || *p.ApprovePush }
+func (p personal) approvePush() bool { return p.ApprovePush != nil && *p.ApprovePush }
 
 func userConfig() personal {
 	var c personal
