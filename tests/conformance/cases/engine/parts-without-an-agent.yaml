@@ -1,0 +1,15 @@
+case: engine/parts-without-an-agent
+about: "Without an agent, no part is asked: pre runs again with none answered, and the doc judged in parts goes to a person, saying so."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  applied: []
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts only with an agent: a person judges it"}]

@@ -1,0 +1,18 @@
+case: documentalist/judged-in-parts-misquoted-claim-dropped
+about: "A part's claim whose quote is not at the lines it cites is dropped, and said. It may have been the one saying what is wrong: the doc is not recorded as judged in parts, and is judged in parts again on a later run."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-misquoted"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: []
+  findings:
+    - {rule: claims-dropped, where: docs/tech/auth.md, message: "1 claims of its parts"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "judged in parts again on a later run"}
+  files: {"docs/tech/auth.md": {lacks: "judged-in-parts"}}

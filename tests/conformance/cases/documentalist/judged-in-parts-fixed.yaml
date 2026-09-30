@@ -1,0 +1,18 @@
+case: documentalist/judged-in-parts-fixed
+about: "A suspect doc whose sources do not fit a task is judged in parts, when the project says so: a contradiction one part finds is fixed by one last call, `checked` does not move, and the header records the commit it was judged in parts at; the doc stays suspect, saying so."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 3
+  applied: [patch, patch]   # the agent's fix, then the header the role records
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts at 2d741e7: 2 parts, 1 claims kept"}]
+  # The fix; `checked` as the setup left it; the commit it was judged in parts at.
+  files:
+    "docs/tech/auth.md": {contains: "checked: 845334e\njudged-in-parts: 2d741e7\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last two hours.\n"}

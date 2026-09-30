@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/role"
+	"go.yaml.in/yaml/v3"
 )
 
 // ErrUnavailable means the agent could not be reached for a reason outside the
@@ -102,12 +103,28 @@ func Parse(spec string) (Agent, error) {
 
 type fake struct{ file string }
 
+// fakeCalls counts, per fixture, the calls this engine made of it: a fixture
+// answering each call differently gives the Nth call its Nth answer.
+var fakeCalls = map[string]int{}
+
+// Propose replays the fixture: a list of proposals, the same for every call,
+// or `calls: [[...], [...]]`, one list a call in order, the last past the end.
 func (f fake) Propose(r Request) (Call, error) {
 	call := Call{Agent: "fake", Tier: r.tier(), Effort: r.Role.Model.Effort, Asked: r.tier(),
 		Model: strings.TrimSuffix(filepath.Base(f.file), ".yaml")}
 	data, err := os.ReadFile(f.file)
 	if err != nil {
 		return call, fmt.Errorf("fake agent: %w", err)
+	}
+	n := fakeCalls[f.file]
+	fakeCalls[f.file]++
+	var byCall struct {
+		Calls []any `yaml:"calls"`
+	}
+	if yaml.Unmarshal(data, &byCall) == nil && len(byCall.Calls) > 0 {
+		if data, err = yaml.Marshal(byCall.Calls[min(n, len(byCall.Calls)-1)]); err != nil {
+			return call, fmt.Errorf("fake agent: %w", err)
+		}
 	}
 	return call, os.WriteFile(filepath.Join(r.RunDir, "out", "intentions.yaml"), data, 0o644)
 }

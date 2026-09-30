@@ -1,0 +1,20 @@
+case: engine/parts-asked-each-in-its-own-context
+about: "A question pre writes in parts is asked a part at a time, each call counted and kept, on the tier model.tasks.part names; the answers go back to pre, run again, which writes the one question that follows."
+given:
+  repo: documented
+  # auth.md also names a source too large for a task: judged in parts, two of them.
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 3
+  calls-kept: 3
+  # The fix is asked only because pre read the first part's claim.
+  calls:
+    - {task: part, tier: standard}
+    - {task: part, tier: standard}
+    - {task: fix, tier: standard}

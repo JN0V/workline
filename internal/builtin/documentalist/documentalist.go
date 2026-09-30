@@ -46,6 +46,12 @@ type Settings struct {
 	// Documented: the code the project wants described; a file of it no
 	// doc names in its sources is reported.
 	Documented []string `json:"documented"`
+	// JudgeInParts judges a doc whose sources do not fit a task in parts,
+	// instead of leaving it to a person (ADR-0009); PartsMax caps the parts
+	// of one doc, PartsMaxPerRun those asked in one run.
+	JudgeInParts   bool `json:"judge-in-parts"`
+	PartsMax       int  `json:"parts-max"`
+	PartsMaxPerRun int  `json:"parts-max-per-run"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -53,13 +59,17 @@ type Doc struct {
 	Path    string
 	Sources []string
 	Checked map[string]string // repository name ("" = this one) -> commit
+	// JudgedInParts is the commit the doc was last judged in parts at: it is
+	// not put before an agent again until a source changes after it.
+	JudgedInParts string
 }
 
 // frontmatter is the YAML block at the top of a doc.
 type frontmatter struct {
 	Sources []string `yaml:"sources"`
 	// A node, not a string: read as YAML, a commit like 11180e1 is a number.
-	Checked yaml.Node `yaml:"checked"`
+	Checked       yaml.Node `yaml:"checked"`
+	JudgedInParts yaml.Node `yaml:"judged-in-parts"`
 }
 
 // header returns a doc's header — YAML between `---` lines, or, where a
@@ -97,7 +107,7 @@ func ParseDoc(path string, content []byte) (*Doc, error) {
 	if len(fm.Sources) == 0 {
 		return nil, nil
 	}
-	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}}
+	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}, JudgedInParts: fm.JudgedInParts.Value}
 	switch c := fm.Checked; c.Kind {
 	case yaml.ScalarNode:
 		d.Checked[""] = c.Value
@@ -373,6 +383,10 @@ type suspectDoc struct {
 	tooLarge bool
 	shown    int  // lines of evidence shown so far, within docEvidenceLines
 	capped   bool // more changed than docEvidenceLines shows
+	// note says what became of a doc judged in parts, or why it was not:
+	// such a doc is not put in a task of its own.
+	note     string
+	deferred bool // left for the run's next round
 }
 
 // docEvidenceLines is what one doc shows of what changed in all its sources:
@@ -552,6 +566,7 @@ func Pre(runDir, repo string) int {
 			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
 		}
 	}
+	holdJudgedInParts(suspects, repo)
 
 	// The cascade is cut: a doc depending on a suspect doc is pending, unless
 	// the propagation edge between them says `now`.
@@ -655,8 +670,40 @@ func Pre(runDir, repo string) int {
 	} else if task, judged, err = suspectTask(suspects, s, pl, repo); err != nil {
 		return fail(err)
 	}
+	// Docs too large to be judged whole are judged in parts, when the
+	// project says so (ADR-0009): the parts first, then one call to fix. A
+	// run asking parts asks nothing else: the rest waits for the next.
+	inParts := map[string]string{}
+	partsAsked := 0
+	var partsFallback []intent.Intention
+	inPartsTask := func(docs map[string]*suspectDoc) error {
+		if task != "" || adopting || !s.JudgeInParts {
+			return nil
+		}
+		var cands []*suspectDoc
+		for _, p := range sortedDocs(docs) {
+			if sd := docs[p]; sd.tooLarge && sd.note == "" {
+				cands = append(cands, sd)
+			}
+		}
+		t, j, fb, ip, err := partsFor(runDir, repo, cands, s, &partsAsked, &findings)
+		if err != nil {
+			return err
+		}
+		task, judged, partsFallback = t, j, append(partsFallback, fb...)
+		for p, at := range ip {
+			inParts[p] = at
+		}
+		if task != "" {
+			return os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("fix\n"), 0o644)
+		}
+		return nil
+	}
+	if err := inPartsTask(suspects); err != nil {
+		return fail(err)
+	}
 	// Due now (at the release): each doc is brought up to date for its reader.
-	if task == "" && len(propagate) > 0 {
+	if task == "" && partsAsked == 0 && len(propagate) > 0 {
 		if task, judged, err = docTask(`Kind: propagate
 
 These docs follow technical docs that changed, and are updated now, at the
@@ -678,13 +725,15 @@ doc when its reader really gained something to know.
 	gardening := os.Getenv("WORKLINE_EVENT") == "schedule"
 	if n, err := strconv.Atoi(os.Getenv("WORKLINE_OPEN_MERGE_REQUESTS")); err == nil && gardening &&
 		s.MaxOpenMergeRequests > 0 && n >= s.MaxOpenMergeRequests {
-		task, judged, stale, gardening = "", nil, nil, false
+		task, judged, stale, gardening, inParts, partsFallback, partsAsked = "", nil, nil, false, map[string]string{}, nil, 0
+		os.RemoveAll(filepath.Join(runDir, "in", "parts"))
 		var kept []intent.Intention // derived blocks too would open one more merge request
 		for _, f := range fallback {
 			if f.Kind != "patch" {
 				kept = append(kept, f)
 			}
 		}
+		fallback = kept
 		os.Remove(filepath.Join(runDir, "in", "fallback.yaml"))
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), kept); err != nil {
 			return fail(err)
@@ -696,7 +745,8 @@ doc when its reader really gained something to know.
 	// merge a repeated passage (two copies drift apart), else condense the
 	// doc most over its budget. A merge request or a push never turns into a
 	// rewrite of the docs.
-	if task == "" && len(stale) > 0 {
+	holdJudgedInParts(stale, repo)
+	if task == "" && partsAsked == 0 && len(stale) > 0 {
 		if task, judged, err = staleTask(stale, s, pl, repo); err != nil {
 			return fail(err)
 		}
@@ -704,7 +754,19 @@ doc when its reader really gained something to know.
 			return fail(err)
 		}
 	}
-	if task == "" && gardening {
+	if err := inPartsTask(stale); err != nil {
+		return fail(err)
+	}
+	if len(partsFallback) > 0 { // the header of each doc judged in parts records when
+		os.Remove(filepath.Join(runDir, "in", "fallback.yaml"))
+		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), append(fallback, partsFallback...)); err != nil {
+			return fail(err)
+		}
+		if err := writeYAML(filepath.Join(runDir, "in", "in-parts.yaml"), inParts); err != nil {
+			return fail(err)
+		}
+	}
+	if task == "" && partsAsked == 0 && gardening {
 		if d := pickDedupe(problems); d != nil {
 			task = writeDedupeTask(d, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "dedupe.yaml"), d); err != nil {
@@ -715,7 +777,7 @@ doc when its reader really gained something to know.
 			}
 		}
 	}
-	if task == "" && gardening {
+	if task == "" && partsAsked == 0 && gardening {
 		if c := pickCondense(problems); c != nil {
 			task = writeCondenseTask(c, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
@@ -727,7 +789,7 @@ doc when its reader really gained something to know.
 		}
 	}
 	// A card too long holds more than one concept: split into cards.
-	if task == "" && gardening {
+	if task == "" && partsAsked == 0 && gardening {
 		if c := pickSplit(problems); c != nil {
 			task = writeSplitTask(c, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
@@ -739,7 +801,7 @@ doc when its reader really gained something to know.
 		}
 	}
 	// Last, a card too short to stand alone goes into the one it belongs with.
-	if task == "" && gardening {
+	if task == "" && partsAsked == 0 && gardening {
 		if m := pickMergeCard(problems, tree); m != nil {
 			task = writeMergeCardTask(m, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "merge-card.yaml"), m); err != nil {
@@ -767,15 +829,27 @@ doc when its reader really gained something to know.
 		case "stale":
 			sd = stale[f.Where]
 		}
-		if sd == nil || judged[f.Where] != nil {
+		if sd == nil || judged[f.Where] != nil && sd.note == "" {
+			continue
+		}
+		if sd.note != "" {
+			f.Message += "\n" + sd.note
+			if sd.deferred {
+				fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
+			}
+			continue
+		}
+		if sd.tooLarge && s.JudgeInParts && (task != "" || partsAsked > 0) && f.Rule != "due" {
+			f.Message += "\n(to be judged in parts in a later round: this round asks something else)"
+			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 			continue
 		}
 		if sd.tooLarge {
 			f.Message += "\n(too large to be put before the agent — the doc with what changed in its sources, or with its sources as they are now: a person judges it)"
 			continue
 		}
-		if task != "" {
-			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size)"
+		if task != "" || partsAsked > 0 {
+			f.Message += "\n(not put before the agent in this round: over ai-max-calls or the task's size, or the round judges docs in parts)"
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
 	}
@@ -831,8 +905,8 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			break
 		}
 		sd := suspects[p]
-		if sd.tooLarge {
-			continue // a person judges it
+		if sd.tooLarge || sd.note != "" {
+			continue // a person judges it, or it is judged in parts
 		}
 		want := map[string]string{}
 		var short []string
@@ -978,7 +1052,13 @@ func Post(runDir, repo string) int {
 		if strings.TrimSpace(string(kind)) == "sources" {
 			refused, patched, err = judgeSources(repo, s, judged, intents, fallback)
 		} else {
-			refused, patched, err = judgePatches(repo, s, judged, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			inParts := map[string]string{}
+			if data, err := os.ReadFile(filepath.Join(runDir, "in", "in-parts.yaml")); err == nil {
+				if err := yaml.Unmarshal(data, &inParts); err != nil {
+					return fail(err)
+				}
+			}
+			refused, patched, err = judgePatches(repo, s, judged, inParts, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 		}
 		if err != nil {
 			return fail(err)
@@ -1034,6 +1114,15 @@ func Post(runDir, repo string) int {
 		return 1
 	}
 	return 0
+}
+
+func sortedDocs(m map[string]*suspectDoc) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func sortedKeys(m map[string]string) []string {

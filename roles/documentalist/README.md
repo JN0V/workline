@@ -74,7 +74,7 @@ Not built yet: style (vale).
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |
@@ -116,6 +116,39 @@ either — and the commits its `checked` must name: at most
 Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay
 suspect for a person or a later run.
+
+**Judged in parts** (ADR-0009), when the project sets `judge-in-parts: true`
+(off by default, until the evaluation has measured it). A suspect or stale
+doc whose sources, as they are now, do not fit a task is judged in parts
+instead of going to a person: each part holds the doc whole, then a share of
+its source files packed to fill the task; a file larger than a part is cut
+into consecutive pieces, each read, so no line goes unread. Sources that are
+docs are left out: following a doc is propagation, not evidence. Each part
+answers with `claim`s only — a range of the doc's lines `contradicted`,
+`partial` or `supported`, quoting the doc and the source — and the engine
+asks each in a context of its own (docs/spec/role-contract.md, "In parts").
+Then, with no AI, a claim whose quotes are not at the lines it cites is
+dropped (`claims-dropped`), and the doc is not recorded as judged — the claim
+dropped may have been the one saying what is wrong: its parts are asked
+again on a later run; contradicted and supported by no other part is
+wrong, supported by another a conflict, partial to be read together; a line
+naming a name from the code that no part speaks of is `uncovered`, for a
+person. One last call (`fix`) gets the doc and only the source lines the
+parts cited, and patches what is wrong; the judge refuses a fix that moves
+`checked` (`checked-moved-in-parts`). The header records the commit it was
+judged in parts at, `judged-in-parts`, found wrong or not, and the doc stays
+suspect, saying so: nobody read it whole. It is not put before an agent
+again until one of its sources changes after that commit; a person clears
+it by reading it whole and moving `checked`.
+
+Not judged in parts, and left to a person, saying why: a doc leaving less
+than a quarter of a task for its sources (condense or split it first); one
+with sources in another repository; one needing more than `parts-max` parts
+(8), reported `sources-too-wide` with how many it would take — narrow its
+sources or split the doc; one whose parts did not all answer (the engine says
+`part-unanswered`: nothing they found is kept, it is judged again later).
+At most `parts-max-per-run` parts (16) are asked in a run; a doc past it
+waits for the next round. A run asking parts asks nothing else.
 
 **Stale docs, when gardening.** On `schedule`, with no suspect doc to judge,
 the stale docs become the task, each with its sources as they are now, in

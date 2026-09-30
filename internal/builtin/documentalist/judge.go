@@ -207,12 +207,15 @@ func checkedMatches(content string, want map[string]string) bool {
 // derived blocks alone, not growing the doc, recording the commits the doc was
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, error) {
+// A doc judged in parts (inParts) is fixed with `checked` left where it is:
+// nobody read it whole, so it stays suspect.
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, error) {
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
 		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
 	patched := map[string]bool{}
+	fixed := 0
 	var tree Tree
 	after := map[string]string{}
 	for _, in := range intents {
@@ -273,15 +276,25 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				refuse("patch-grows", f.path, fmt.Sprintf("the patch makes the doc %d lines longer, past a tenth of it (%d); fix what is wrong, and say only what the code now does", n-o, o/10))
 				continue
 			}
+			if _, ok := inParts[f.path]; ok {
+				if checkedOf(now) != checkedOf(old) {
+					refuse("checked-moved-in-parts", f.path, "the patch moves `checked`, but the doc was judged in parts: nobody read it whole against its sources, so `checked` stays where it is; fix what the parts found wrong, and leave the header as it is")
+					continue
+				}
+				after[f.path] = now
+				fixed++
+				continue
+			}
 			if !checkedMatches(now, want) {
 				refuse("still-suspect", f.path, fmt.Sprintf("the patch does not set `checked` to %s, the commit given in the task, so the doc would stay suspect", wanted(want)))
 				continue
 			}
 			after[f.path] = now
 			patched[f.path] = true
+			fixed++
 		}
 	}
-	if len(refused) > 0 || len(patched) == 0 {
+	if len(refused) > 0 || fixed == 0 {
 		return refused, patched, nil
 	}
 	before := map[string]Problem{}
@@ -296,6 +309,15 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		}
 	}
 	return refused, patched, nil
+}
+
+// checkedOf is what a doc's header says in `checked`, as written.
+func checkedOf(content string) string {
+	d, err := ParseDoc("", []byte(content))
+	if err != nil || d == nil {
+		return ""
+	}
+	return fmt.Sprint(d.Checked)
 }
 
 // budgetRule are the size rules a fix may make a little worse, within what

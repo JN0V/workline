@@ -1,0 +1,17 @@
+case: documentalist/judged-in-parts-asked-again-after-a-change
+about: "A doc judged in parts is judged in parts again once one of its sources changes after the commit it was judged at."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && git commit -qam 'refactor(auth): make the table constant'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^type: reference/judged-in-parts: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc in parts'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 3
+  applied: [patch, patch]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}

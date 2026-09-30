@@ -1,0 +1,20 @@
+# docs/tech/auth.md judged in parts, in the `documented` fixture once it
+# names src/auth/big.go too, and tokens went to two hours: the first part
+# holds token.go, which contradicts line 10; the second, the rest of
+# big.go, says nothing of the doc; then the fix, leaving the header alone.
+calls:
+  - - claim:
+        lines: "10"
+        status: contradicted
+        quote: "Access tokens last one hour."
+        source: {path: src/auth/token.go, lines: "4", quote: "const TokenTTL = 7200"}
+        why: "7200 seconds is two hours"
+  - []
+  - - patch: |
+        --- a/docs/tech/auth.md
+        +++ b/docs/tech/auth.md
+        @@ -8,3 +8,3 @@
+         ## Token refresh
+
+        -Access tokens last one hour.
+        +Access tokens last two hours.

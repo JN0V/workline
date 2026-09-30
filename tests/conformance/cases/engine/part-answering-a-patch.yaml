@@ -1,0 +1,18 @@
+case: engine/part-answering-a-patch
+about: "A part that answers with anything but claims is said (part-unanswered), and its answer is never read as one: the doc judged in parts is left, nothing is applied."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-one-answers-a-patch"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: []
+  findings:
+    - {rule: part-unanswered, where: 01-docs-tech-auth-md-1, message: "it answered patch"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "1 of its 2 parts got no answer"}
+  files: {"docs/tech/auth.md": {contains: "Access tokens last one hour.", lacks: "judged-in-parts"}}
