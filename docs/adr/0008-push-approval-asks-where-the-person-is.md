@@ -1,6 +1,6 @@
 # ADR-0008: The push approval asks the person where they are: terminal, editor, or desktop
 
-- **Status:** accepted
+- **Status:** accepted; amended by ADR-0011: the approval is off unless asked for
 - **Date:** 2026-09-29
 - **Amends:** ADR-0007, whose approval refused any push without a terminal
 

@@ -16,15 +16,12 @@ this repository before any other role is added.
    takes the best independence available and says which (ADR-0005); the
    weekly run judges on `claude:sonnet`. Left: a judge of another provider,
    when there is one. Each defect a role lets through becomes a case.
-2. **Docs after the code, every push approved** (ADR-0007): built and tried
-   (2026-09-29) — the range honoured, the push approval with its page,
-   `workline docs` and `d`, reviewed per doc, the header as a comment.
-   DomoticsCore adopted and pushed, 14 docs fixed; 40 left for point 3.
-   The approval asks where the person is — the terminal, else the editor
-   window the push came from, else a desktop dialog (ADR-0008): tried from
-   Claude Code in VSCodium. Left: Source Control's button; Claude Code run
-   from a terminal (may its shell reach that terminal?); the editor and a
-   dialog on macOS and Windows, kdialog on Linux.
+2. **The review is on the merge request** (ADR-0011, 2026-09-30): the push
+   approval (ADR-0007, 0008) is off unless a person asks for it; an agent
+   pushes a branch and opens the pull request, never merges. Left: tell an
+   agent from a person on the forge — a bot account or a GitHub App with no
+   right to merge — so the rule is a check, not a wish; the editor and a
+   dialog on macOS and Windows, for those who ask for the approval.
 3. **Docs judged on the merge request and by gardening** (ADR-0010,
    proposed, 2026-09-30): the push only counts; `d` goes. First, what
    `checked` names after a squash merge, on a throwaway pull request; then

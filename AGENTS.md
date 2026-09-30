@@ -46,10 +46,10 @@ own line (.workline/config.yaml):
   code like `AC-3`, is refused, then rewritten by the agent; the hook prints
   the message it committed. Check it: write subjects that pass.
 - **pre-push** — the committer on the commits pushed, then the documentalist,
-  with no agent: it lists the docs they made suspect. Then a person approves
-  the push: on a terminal, else in the editor window it came from — an
-  agent's push waits there for the person's `y` (ADR-0008). Push only when
-  the person asks. Have the docs judged first with `workline docs` (ADR-0007).
+  with no agent: it lists the docs they made suspect. The review is on the
+  pull request (ADR-0011): `main` takes pull requests only, the checks
+  green. Push a branch and open the pull request when the person asks;
+  never merge it, never turn auto-merge on: the person does.
 - **secrets and forbidden terms** — the committer scans each commit with
   gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
   that must never reach this public repository, as gitleaks rules. Never
