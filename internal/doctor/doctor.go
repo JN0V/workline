@@ -50,7 +50,7 @@ type Options struct {
 	RolesDir string
 	AI       string // WORKLINE_AI, which the hooks use first
 	UserAI   string // `ai:` in the user's config
-	// NoPushApproval: the person turned the push approval off (ADR-0007).
+	// NoPushApproval: the person has not asked to approve each push (ADR-0011).
 	NoPushApproval bool
 }
 
@@ -121,10 +121,10 @@ func machine(r *Report, o Options) {
 
 	if o.NoPushApproval {
 		r.add(Check{Area: "machine", Rule: "push-approval-off", Level: Note,
-			Message: "pushes leave without a person approving them (`approve-push: false` in your config): an agent can push too"})
+			Message: "pushes leave without a person approving them: the review is on the pull request (ADR-0011); `approve-push: true` in your config asks at each push"})
 	} else {
 		r.add(Check{Area: "machine", Rule: "push-approval", Level: OK,
-			Message: "a person approves every push, on a terminal; an agent's push is refused"})
+			Message: "a person approves every push: on the terminal, else in the editor window, else in a dialog"})
 	}
 
 	agent(r, "machine", o.AI, "WORKLINE_AI", o.UserAI, "your config")

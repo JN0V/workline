@@ -9,16 +9,16 @@ import (
 	"testing"
 )
 
-// A person approves every push (ADR-0007). Run with no terminal, as an agent
-// or an editor's button pushes, the push is refused and nothing reaches the
-// remote; the person's own config turns the approval off.
+// The push approval is the person's choice (ADR-0011): off by default, the
+// review being on the pull request. Asked for, with no terminal to ask on,
+// the push is refused and nothing reaches the remote.
 func TestPushNeedsAPerson(t *testing.T) {
 	for _, c := range []struct {
 		name, config string
 		pushed       bool
 	}{
-		{name: "no terminal", config: "approve-push-via: [terminal]\n", pushed: false}, // no editor window nor dialog, whoever runs the tests
-		{name: "turned off by the person", config: "approve-push: false\n", pushed: true},
+		{name: "off by default: the review is on the pull request", pushed: true},
+		{name: "asked for, no terminal", config: "approve-push: true\napprove-push-via: [terminal]\n", pushed: false}, // no editor window nor dialog, whoever runs the tests
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			work := t.TempDir()
