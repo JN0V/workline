@@ -352,6 +352,8 @@ var prePushQuiet = map[string]bool{
 	"doc-too-long": true, "section-too-long": true, "card-too-short": true, "card-too-long": true,
 	"folder-too-long": true, "agent-file-too-long": true, "links-not-checked": true, "nothing-tracked": true,
 	"pending": true, // due at a later moment, the release, which says so
+	// About the whole repository, not what is pushed: gardening's.
+	"dead-link": true, "duplicate": true, "cites-superseded": true,
 }
 
 // prePush runs the project's pre-push line on the commits being pushed, with
