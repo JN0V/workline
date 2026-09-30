@@ -79,9 +79,8 @@ parser, which a script cannot tell from `human` (docs/BACKLOG.md).
 
 **The review is on the merge request, not the push** (ADR-0011). A push
 asks nothing, unless you set `approve-push: true` in your own config: then
-the hook lists the commits leaving, and the docs they made suspect, and asks
-`Push? [y]es / [N]o / [v]iew / [d]ocs` on the terminal; `d` is `workline
-docs` there and then; `v` writes a page showing each commit, its message and
+the hook lists the commits leaving, and asks `Push? [y]es / [N]o / [v]iew`
+on the terminal; `v` writes a page showing each commit, its message and
 its changes (`.git/workline/push.html`) and opens it. Each question waits ten
 minutes; none answered is a no. Without a terminal — an agent's shell, an
 editor's button — the question goes to the editor window the push came from
@@ -103,9 +102,10 @@ routing:
   events: {pre-push: [committer, documentalist]}
 ```
 
-A step that blocks stops the push. The docs the commits made suspect are
-listed with the question, to judge with `d`; those made suspect before are
-left for gardening. A derived block the documentalist regenerated stops the
+A step that blocks stops the push. The docs suspect are only counted, in one
+line — those these commits made so, those before — never listed nor asked
+about: they are judged on the merge request, by gardening, or when you run
+`workline docs` (ADR-0010). A derived block the documentalist regenerated stops the
 push too: it is in the working tree, to review, commit, and push again. Sizes
 and links the line reports on every run are only counted. `git push
 --no-verify` skips the hook.
