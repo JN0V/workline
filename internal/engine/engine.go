@@ -505,7 +505,7 @@ func commitOnto(st runState, branch, title string) (why string, err error) {
 		back()
 		return "the docs changed on the branch since this run read them", nil
 	}
-	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title}} {
+	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", OwnTrailer + ": " + st.Role}} {
 		if _, err := git(st.Repo, nil, s...); err != nil {
 			back()
 			return "", err
@@ -518,6 +518,10 @@ func commitOnto(st runState, branch, title string) (why string, err error) {
 	_, err = git(st.Repo, nil, "checkout", "-q", orig)
 	return "", err
 }
+
+// OwnTrailer marks the commits the engine makes itself, naming the role, so
+// that they do not wake the line again (docs/spec/routing.md).
+const OwnTrailer = "Workline-Role"
 
 // branchPrefix is where a role's merge requests come from (ADR-0006).
 func branchPrefix(roleName string) string { return "workline/" + roleName + "/" }
@@ -547,7 +551,7 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	steps := [][]string{
 		{"checkout", "-q", "-B", branch},
 		append([]string{"add", "--"}, st.Written...),
-		{"commit", "-q", "-m", mr.Title},
+		{"commit", "-q", "-m", mr.Title, "-m", OwnTrailer + ": " + st.Role},
 		{"push", "-q", "--force", "origin", branch},
 	}
 	for _, s := range steps {

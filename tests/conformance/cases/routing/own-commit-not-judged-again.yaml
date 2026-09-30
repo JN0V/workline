@@ -1,0 +1,12 @@
+case: routing/own-commit-not-judged-again
+about: "A merge request whose last commit is workline's own — its trailer says so — is not judged again: the fix it pushed would otherwise wake the line, which would pay to judge it, and push again."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours' -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "HEAD~2..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []
