@@ -67,7 +67,8 @@ jobs:
             ((.steps // [])[] | select(.result.calls) | .name as $n | .result.calls[] |
               "- agent, \($n): \(.model // .asked // "?") \(.["tokens-in"] // 0) tokens in, \(.["tokens-out"] // 0) out"),
             ((.steps // [])[] | .name as $n | (.result.notes // [])[] | "- note from the agent, \($n): \(split("\n")[0])"),
-            ((.findings // [])[] | "- \(.rule) \(.where // ""): \(.message // "" | split("\n")[0])")' line.json)
+            ((.findings // [])[] | (.message // "" | split("\n")) as $l |
+              "- \(.rule) \(.where // ""): \($l[0])\(if ($l | length) > 1 and ($l[-1] | startswith("(")) then " " + $l[-1] else "" end)")' line.json)
           echo "$report"
           { echo "### workline ($ai)"; echo; echo "$report"; } >> "$GITHUB_STEP_SUMMARY"
 
