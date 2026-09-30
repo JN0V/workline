@@ -29,6 +29,10 @@ this repository before any other role is added.
    cache, caps), the release gate, `workline docs` from a ref. Main takes
    pull requests on workline and DomoticsCore since 2026-09-30.
    Measure Copilot CLI on a free plan through the evaluation, beside Claude.
+   Tried on workline (PR #10): judged, fixed by the App, checks rerun, loop
+   guard held. Next: an evaluation case where the agent must leave an
+   example alone (it aligned one to the default, off its task); the
+   verdict cache and per-run caps; the GitLab template; DomoticsCore.
 4. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
    documentalist could not judge; roles/documentalist/tried.md). ADR-0009,
    proposed: the doc whole with a share of its sources per part, packed to

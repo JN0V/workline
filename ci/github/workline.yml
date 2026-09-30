@@ -45,8 +45,10 @@ jobs:
       proposed: ${{ steps.line.outputs.proposed }}
       engine: ${{ steps.engine.outputs.version }}
     steps:
+      # The branch's head, not the merge GitHub builds for a pull request: a
+      # doc checked here names a commit the branch holds.
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
       - uses: actions/setup-go@v5
         with: {go-version: stable}
       # The engine at one commit, for both jobs: a branch is resolved here, from
