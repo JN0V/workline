@@ -19,7 +19,8 @@ What runs, for humans. The AI never reads this file.
    never blocking. Follow the
    chain: a suspect technical section makes the product docs depending on it
    suspect too.
-2. **Budgets.** Lines per doc, words per section (its own text, up to the next
+2. **Budgets.** Lines per doc (its body: the header records who checked it,
+   it says nothing), words per section (its own text, up to the next
    heading), card size (min and max: too small is fragmentation), lines per
    folder, lines of the agents' entry points at the root (`AGENTS.md`,
    `CLAUDE.md`).
@@ -166,10 +167,16 @@ A patch is refused, and the agent asked again with the reasons, when it:
 - quotes lines that are not at the numbers its hunks cite — git apply alone
   would find them elsewhere and apply anyway;
 - changes lines between `workline:derive` markers;
-- makes a doc's body longer (the frontmatter does not count);
+- makes a doc's body longer by more than a tenth of it (the header does not
+  count): a fix may say what the code now does, never pad;
 - leaves `checked` short of the commits given, so the doc would stay suspect;
 - brings a budget, link or duplicate problem the tree did not have, or makes
-  one worse.
+  one worse — but a size already over budget may grow by what a fix allows,
+  and stays reported, for condensing: truth before size.
+
+Asked again as often as the role allows and still refused, a doc's fix is
+left out (`left-out`, saying why), and the other docs' fixes are judged again
+without it and applied; the doc stays as it was, suspect.
 
 A condense patch is refused when it touches another existing doc; when a line
 that leaves the doc is found in no new doc, unchanged but for a heading's level
