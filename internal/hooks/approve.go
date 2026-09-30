@@ -52,11 +52,6 @@ var answerTimeout = 10 * time.Minute
 type Push struct {
 	Repo, Remote string
 	Refs         []Ref
-	// Suspect: the docs these commits made suspect and nobody judged yet.
-	Suspect []string
-	// Docs has the docs judged and reviewed on the same terminal; it says
-	// whether a docs commit was made, which this push can no longer carry.
-	Docs func(in *bufio.Reader, out io.Writer) (committed bool)
 	// Via names the channels the person allows, among terminal, editor and
 	// dialog, in the order to try them; empty, all of them, in that order.
 	Via []string
@@ -71,7 +66,7 @@ func (p Push) channels() []string {
 }
 
 // Approve asks a person whether the push goes, on the first channel that
-// reaches one (ADR-0008): the terminal the hook opens, `d` included; else the
+// reaches one (ADR-0008): the terminal the hook opens; else the
 // editor window the push came from; else a desktop dialog. None given by
 // the pushing process: without any, no person can answer, and the push does
 // not go.
@@ -144,12 +139,6 @@ func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
 		return true // nothing leaves the machine
 	}
 	question := "Push? [y]es / [N]o / [v]iew "
-	if len(p.Suspect) > 0 {
-		fmt.Fprintf(out, "workline: %d doc(s) these commits made suspect, not judged yet: %s\n", len(p.Suspect), strings.Join(p.Suspect, ", "))
-		if p.Docs != nil {
-			question = "Push? [y]es / [N]o / [v]iew / [d]ocs "
-		}
-	}
 	lines := bufio.NewReader(in)
 	for {
 		answer, ok := review.Choice(lines, out, question)
@@ -162,15 +151,6 @@ func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
 			return true
 		case "v", "view", "voir":
 			showPage(p, out, view)
-		case "d", "docs":
-			if p.Docs == nil || len(p.Suspect) == 0 {
-				fmt.Fprintln(out, "workline: no doc to judge.")
-				continue
-			}
-			if p.Docs(lines, out) {
-				fmt.Fprintln(out, "workline: the docs are committed; this push can no longer carry them: push again.")
-				return false
-			}
 		default:
 			fmt.Fprintln(out, "workline: push stopped.")
 			return false
@@ -180,8 +160,7 @@ func ask(p Push, in io.Reader, out io.Writer, view func(string) error) bool {
 
 // askOnce asks with one question at a time, in a window: the editor's input
 // box or a dialog. What leaves is written to out, where git shows it; the
-// window says how many commits, where, and what to answer. Judging the docs
-// needs a terminal: the question names them, and `workline docs`.
+// window says how many commits, where, and what to answer.
 func askOnce(p Push, out io.Writer, question func(question, title string) (string, error), view func(string) error) bool {
 	listed, n := describe(p)
 	fmt.Fprint(out, listed)
@@ -197,10 +176,6 @@ func askOnce(p Push, out io.Writer, question func(question, title string) (strin
 	title := fmt.Sprintf("workline: push %d commit(s) to %s %s?", n, p.Remote, strings.Join(where, ", "))
 	if anyDelete(p.Refs) {
 		title = fmt.Sprintf("workline: push to %s %s, deleting a branch?", p.Remote, strings.Join(where, ", "))
-	}
-	if len(p.Suspect) > 0 {
-		title += fmt.Sprintf(" %d doc(s) made suspect, not judged yet: `workline docs` judges them.", len(p.Suspect))
-		fmt.Fprintf(out, "workline: %d doc(s) these commits made suspect, not judged yet: %s\n", len(p.Suspect), strings.Join(p.Suspect, ", "))
 	}
 	for {
 		answer, err := question("Type y then Enter to push, v to see the commits; Enter alone stops", title)

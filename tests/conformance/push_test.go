@@ -95,3 +95,43 @@ func TestDocsWithoutTerminal(t *testing.T) {
 		t.Errorf("something was committed without a person: %s", log)
 	}
 }
+
+// The push only counts the docs (ADR-0010): one line, how many its commits
+// made suspect and how many were before, and the command that judges them;
+// never the docs one by one with their commits, never a question.
+func TestPushCountsTheDocs(t *testing.T) {
+	work := t.TempDir()
+	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"), "GIT_CONFIG_GLOBAL="+filepath.Join(work, "gitconfig"))
+	os.WriteFile(filepath.Join(work, "gitconfig"), nil, 0o644)
+	remote, repo := filepath.Join(work, "remote.git"), filepath.Join(work, "repo")
+	if out, err := exec.Command("git", "init", "-q", "--bare", remote).CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	if err := build(repo, "documented", []string{
+		"mkdir -p .workline && printf 'routing:\\n  events: {pre-push: [documentalist]}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: check docs before a push'",
+		"git remote add origin " + remote, "git push -q origin main",
+		"sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'",
+	}, env); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) (string, error) {
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir, cmd.Env = repo, env
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		out, err := cmd.CombinedOutput()
+		return string(out), err
+	}
+	if out, err := run(engineBin, "hooks", "install", "--global"); err != nil {
+		t.Fatal(out)
+	}
+	out, err := run("git", "push", "origin", "main")
+	if err != nil {
+		t.Fatalf("the push was stopped:\n%s", out)
+	}
+	if !strings.Contains(out, "docs suspect: 1 made so by these commits, 0 before") || !strings.Contains(out, "workline docs") {
+		t.Errorf("the push does not count the docs in one line:\n%s", out)
+	}
+	if strings.Contains(out, "changed since it was checked") || strings.Contains(out, "feat(auth): keep users") {
+		t.Errorf("the push lists the docs and their commits:\n%s", out)
+	}
+}

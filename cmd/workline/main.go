@@ -351,6 +351,9 @@ func hookCmd(args []string) int {
 var prePushQuiet = map[string]bool{
 	"doc-too-long": true, "section-too-long": true, "card-too-short": true, "card-too-long": true,
 	"folder-too-long": true, "agent-file-too-long": true, "links-not-checked": true, "nothing-tracked": true,
+	"pending": true, // due at a later moment, the release, which says so
+	// About the whole repository, not what is pushed: gardening's.
+	"dead-link": true, "duplicate": true, "cites-superseded": true,
 }
 
 // prePush runs the project's pre-push line on the commits being pushed, with
@@ -374,23 +377,14 @@ func prePush(remote string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	code, suspect := prePushLine(root, refs)
+	code := prePushLine(root, refs)
 	if code != 0 {
 		return code
 	}
 	if !userConfig().approvePush() {
 		return 0
 	}
-	rng := ""
-	for _, r := range refs {
-		if r.Range != "" {
-			rng = r.Range
-			break
-		}
-	}
-	push := hooks.Push{Repo: root, Remote: remote, Refs: refs, Suspect: suspect,
-		Docs: func(in *bufio.Reader, out io.Writer) bool { return judgeDocs(root, rng, "", in, out) },
-		Via:  userConfig().ApproveVia}
+	push := hooks.Push{Repo: root, Remote: remote, Refs: refs, Via: userConfig().ApproveVia}
 	if hooks.Approve(push, os.Stderr) {
 		return 0
 	}
@@ -398,28 +392,29 @@ func prePush(remote string) int {
 }
 
 // prePushLine runs the project's pre-push line on each range pushed, with no
-// agent: a push never waits on one (ADR-0007). It returns the docs the
-// commits made suspect, for the person to judge before they leave.
-func prePushLine(root string, refs []hooks.Ref) (int, []string) {
+// agent: a push never waits on one (ADR-0007). It counts the suspect docs,
+// never lists them: they are judged on the merge request, by gardening or
+// with `workline docs` (ADR-0010).
+func prePushLine(root string, refs []hooks.Ref) int {
 	if _, err := os.Stat(filepath.Join(root, ".workline", "off")); err == nil {
-		return 0, nil
+		return 0
 	}
 	cfg, err := routing.Load(root)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		fmt.Fprintln(os.Stderr, "push stopped; `git push --no-verify` skips workline")
-		return 1, nil
+		return 1
 	}
 	if _, routed := cfg.Events["pre-push"]; !routed {
-		return 0, nil
+		return 0
 	}
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
-		return 1, nil
+		return 1
 	}
 	fmt.Fprintf(os.Stderr, "workline: checking the commits pushed (%s), no agent…\n", strings.Join(cfg.Events["pre-push"], ", "))
-	var suspect []string
+	var suspect, before []string
 	for _, ref := range refs {
 		rng := ref.Range
 		if rng == "" {
@@ -439,11 +434,15 @@ func prePushLine(root string, refs []hooks.Ref) (int, []string) {
 			}
 		}
 		for _, f := range res.Findings {
-			if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") {
-				if !contains(suspect, f.Where) {
-					suspect = append(suspect, f.Where)
+			if f.Rule == "suspect" { // counted, never listed: the push only counts (ADR-0010)
+				into := &suspect
+				if strings.Contains(f.Message, "left for gardening") {
+					into = &before
 				}
-				continue // listed with the push, to be judged: `d`
+				if !contains(*into, f.Where) {
+					*into = append(*into, f.Where)
+				}
+				continue
 			}
 			if prePushQuiet[f.Rule] {
 				advisory++
@@ -461,15 +460,18 @@ func prePushLine(root string, refs []hooks.Ref) (int, []string) {
 		switch {
 		case res.Status != verdict.Pass:
 			fmt.Fprintf(os.Stderr, "workline: %s\npush stopped; `git push --no-verify` skips workline\n", res.Summary)
-			return 1, nil
+			return 1
 		case patched:
 			stat, _ := exec.Command("git", "-C", root, "diff", "--stat").Output()
 			fmt.Fprintf(os.Stderr, "workline: the documentalist updated docs in your working tree:\n%s", stat)
 			fmt.Fprintln(os.Stderr, "push stopped: review them (git diff), commit them, and push again")
-			return 1, nil
+			return 1
 		}
 	}
-	return 0, suspect
+	if len(suspect)+len(before) > 0 {
+		fmt.Fprintf(os.Stderr, "workline: docs suspect: %d made so by these commits, %d before — `workline docs` judges them\n", len(suspect), len(before))
+	}
+	return 0
 }
 
 func contains(l []string, s string) bool {

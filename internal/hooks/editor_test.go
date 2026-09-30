@@ -100,14 +100,14 @@ func TestAskInTheEditor(t *testing.T) {
 		socket, asked := editorServer(t, c.answers...)
 		viewed := false
 		var out strings.Builder
-		got := askOnce(Push{Repo: repo, Remote: "origin", Refs: refs, Suspect: []string{"docs/a.md"}}, &out,
+		got := askOnce(Push{Repo: repo, Remote: "origin", Refs: refs}, &out,
 			func(q, title string) (string, error) { return askEditor(socket, q, title, answerTimeout) },
 			func(string) error { viewed = true; return nil })
 		if got != c.want || viewed != c.viewed {
 			t.Errorf("answers %q: approved %v, viewed %v; want %v, %v\n%s", c.answers, got, viewed, c.want, c.viewed, out.String())
 		}
 		argv := (*asked)[0]
-		if strings.Contains(strings.ToLower(argv[2]), "password") || !strings.Contains(argv[4], "push 1 commit(s) to origin main") || !strings.Contains(argv[4], "workline docs") {
+		if strings.Contains(strings.ToLower(argv[2]), "password") || !strings.Contains(argv[4], "push 1 commit(s) to origin main") {
 			t.Errorf("asked %q", argv)
 		}
 		if !strings.Contains(out.String(), "feat: the change to push") {
