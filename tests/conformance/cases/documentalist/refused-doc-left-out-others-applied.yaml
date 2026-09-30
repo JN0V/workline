@@ -1,0 +1,14 @@
+case: documentalist/refused-doc-left-out-others-applied
+about: "A doc whose fix is refused, still after the agent was asked again, is left out: the fixes of the other docs are judged again without it and applied; it stays suspect, and the finding says why it was left."
+given:
+  repo: documented
+  setup:
+    - "c=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/auth/token.go]\\nchecked: %s\\n---\\n# Tokens\\n\\nA token lasts one hour.\\n' $c > docs/tech/tokens.md && git add docs/tech/tokens.md && git commit -qm 'docs: describe tokens'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:one-doc-fixed-one-padded"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: left-out, where: docs/tech/tokens.md, message: "patch-grows"}, {rule: suspect, where: docs/tech/tokens.md}]
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}]
+  files: {docs/tech/auth.md: {contains: "two hours"}, docs/tech/tokens.md: {contains: "one hour"}}
