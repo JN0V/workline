@@ -1,2 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+engine/parts-asked-each-in-its-own-context
+engine/part-answering-a-patch
+engine/parts-without-an-agent

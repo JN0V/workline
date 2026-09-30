@@ -219,24 +219,22 @@ func run(o Options, res *Result) error {
 	if err != nil {
 		return err
 	}
-	switch code {
-	case exitOK:
-	case exitNothing:
-		// No question for the agent. A verdict pre wrote is final; none means pass.
-		res.Status, res.Summary = verdict.Pass, "nothing to do"
-		if v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml")); err == nil {
-			verdict.Enforce(v, r.Enforcement(cfg))
-			res.Status, res.Findings = v.Status, append(res.Findings, v.Findings...)
-			if v.Summary != "" {
-				res.Summary = v.Summary
-			}
+	if stop, err := prepared(code, r, cfg, runDir, res); stop || err != nil {
+		return err
+	}
+	// A question too large for one call is asked in parts; pre then puts
+	// their answers together, and writes the one question that follows.
+	if parts, _ := filepath.Glob(filepath.Join(runDir, "in", "parts", "*", "task.md")); len(parts) > 0 {
+		if err := askParts(r, o, ag, runDir, parts, res); err != nil {
+			return err
 		}
-		return nil
-	case exitExternal:
-		res.Status, res.Summary = verdict.BlockedExternal, "pre: an outside service failed"
-		return nil
-	default:
-		return fmt.Errorf("pre exited with code %d", code)
+		code, err := script(r, "pre", o.Repo, append(env[:len(env):len(env)], "WORKLINE_PARTS=answered"))
+		if err != nil {
+			return err
+		}
+		if stop, err := prepared(code, r, cfg, runDir, res); stop || err != nil {
+			return err
+		}
 	}
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {
@@ -350,6 +348,133 @@ func run(o Options, res *Result) error {
 		return nil
 	}
 	return applyAll(r, settings, st, runDir, intents, res)
+}
+
+// prepared reads pre's exit code: stop is true when the run ends there, with
+// no question for the agent or an outside service failed.
+func prepared(code int, r *role.Role, cfg *role.ProjectConfig, runDir string, res *Result) (stop bool, err error) {
+	switch code {
+	case exitOK:
+		return false, nil
+	case exitNothing:
+		// No question for the agent. A verdict pre wrote is final; none means pass.
+		res.Status, res.Summary = verdict.Pass, "nothing to do"
+		if v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml")); err == nil {
+			verdict.Enforce(v, r.Enforcement(cfg))
+			res.Status, res.Findings = v.Status, append(res.Findings, v.Findings...)
+			if v.Summary != "" {
+				res.Summary = v.Summary
+			}
+		}
+		return true, nil
+	case exitExternal:
+		res.Status, res.Summary = verdict.BlockedExternal, "pre: an outside service failed"
+		return true, nil
+	}
+	return true, fmt.Errorf("pre exited with code %d", code)
+}
+
+// askParts asks each part of a question (in/parts/<name>/task.md), sorted by
+// name, in a context of its own, on the tier model.tasks.part names, and puts
+// each answer back as in/parts/<name>/answer.yaml. A part answers only
+// claims, which inform and are never applied: a part that fails, or answers
+// anything else, is said, and its answer never given back as one. Without an
+// agent, no part is asked.
+func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []string, res *Result) error {
+	if ag == nil {
+		return nil
+	}
+	sort.Strings(tasks)
+	asked := *r // a part's needs, and the one intention it may answer with
+	asked.Model = r.Model.For("part")
+	asked.Intentions = []string{"claim"}
+	gone := "" // the agent could not be reached: the other parts would fail the same
+	for _, task := range tasks {
+		name := filepath.Base(filepath.Dir(task))
+		unanswered := func(why string) {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-unanswered", Where: name, Level: "warn",
+				Message: "this part of the question got no answer that can be read (" + why + "): what it holds was judged by no one"})
+		}
+		if gone != "" {
+			unanswered("not asked: " + gone)
+			continue
+		}
+		dir := filepath.Join(runDir, "parts", name)
+		for _, d := range []string{"in", "out"} {
+			if err := os.MkdirAll(filepath.Join(dir, d), 0o755); err != nil {
+				return err
+			}
+		}
+		data, err := os.ReadFile(task)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(dir, "in", "task.md"), data, 0o644); err != nil {
+			return err
+		}
+		err = callAgent(ag, agent.Request{RunDir: dir, Repo: o.Repo, Role: &asked, Tier: asked.Model.Tier}, "part", runDir, res)
+		switch {
+		case errors.Is(err, agent.ErrUnavailable):
+			gone = err.Error()
+			unanswered(gone)
+			continue
+		case errors.Is(err, agent.ErrInvalidOutput):
+			unanswered(err.Error())
+			continue
+		case err != nil:
+			return err
+		}
+		claims, err := intent.Read(filepath.Join(dir, "out", "intentions.yaml"))
+		if err != nil {
+			unanswered(err.Error())
+			continue
+		}
+		var other []string
+		for _, c := range claims {
+			if c.Kind != "claim" {
+				other = append(other, c.Kind)
+			}
+		}
+		if len(other) > 0 {
+			unanswered("it answered " + strings.Join(other, ", ") + "; a part answers with claims only")
+			continue
+		}
+		answer := []byte("[]\n") // nothing to say of this share is an answer too
+		if len(claims) > 0 {
+			list := make([]map[string]any, len(claims))
+			for i, c := range claims {
+				list[i] = map[string]any{c.Kind: c.Value}
+			}
+			if answer, err = yaml.Marshal(list); err != nil {
+				return err
+			}
+		}
+		if err := os.WriteFile(filepath.Join(filepath.Dir(task), "answer.yaml"), answer, 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// callAgent asks the agent once and records the call: in the result, and
+// with the run (out/calls.jsonl), what it cost, to be read afterwards.
+func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
+	res.AgentCalls++
+	start := time.Now()
+	call, err := ag.Propose(req)
+	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
+	call.Task = task
+	res.Calls = append(res.Calls, call)
+	if data, err := json.Marshal(call); err == nil {
+		if f, err := os.OpenFile(filepath.Join(runDir, "out", "calls.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+			f.Write(append(data, '\n'))
+			f.Close()
+		}
+	}
+	if n := agent.Notice(agent.Seen(), call); n != "" {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})
+	}
+	return err
 }
 
 // runState is what a later `workline apply` needs to resume a run.
@@ -765,22 +890,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	a := &attemptResult{}
 	if hasTask && ag != nil {
 		a.askedAgent = true
-		res.AgentCalls++
-		start := time.Now()
-		call, err := ag.Propose(agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier})
-		call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
-		call.Task = taskKind(runDir)
-		res.Calls = append(res.Calls, call)
-		// Kept with the run: what each call cost, to be read afterwards.
-		if data, err := json.Marshal(call); err == nil {
-			if f, err := os.OpenFile(filepath.Join(runDir, "out", "calls.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-				f.Write(append(data, '\n'))
-				f.Close()
-			}
-		}
-		if n := agent.Notice(agent.Seen(), call); n != "" {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})
-		}
+		err := callAgent(ag, agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier}, taskKind(runDir), runDir, res)
 		switch {
 		case err == nil:
 		case errors.Is(err, agent.ErrUnavailable):
@@ -975,6 +1085,8 @@ func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]strin
 	var bad, why []string
 	for _, i := range in {
 		switch {
+		case i.Kind == "claim":
+			bad, why = append(bad, i.Kind), append(why, "a claim answers a part of a question (in/parts), never the question itself")
 		case !intent.Catalogue[i.Kind] || !r.Allows(i.Kind):
 			bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("%s is not allowed for this role", i.Kind))
 		case i.Kind == "handoff":

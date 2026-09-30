@@ -1,0 +1,7 @@
+# A claim given as the answer to a whole question, not to a part of one.
+- claim:
+    lines: "10"
+    status: contradicted
+    quote: "Access tokens last one hour."
+    source: {path: src/auth/token.go, lines: "4", quote: "const TokenTTL = 7200"}
+    why: "7200 seconds is two hours"

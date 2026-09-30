@@ -1,0 +1,10 @@
+case: engine/claim-answers-only-a-part
+about: "A claim answers a part of a question, never the question itself: given as a role's answer, it is refused, and nothing is applied."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:claim-as-an-answer"}
+expect:
+  refused: [claim]
+  applied: []
+  findings: [{rule: intention-refused, message: "a claim answers a part of a question"}]
