@@ -1,0 +1,10 @@
+case: documentalist/checked-names-no-known-commit
+about: "A `checked` naming a commit main does not hold, which no commit of main brought — written but not committed yet: the doc is suspect, saying why, judged against its sources as they are now; the run does not block on it."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/^checked: .*/checked: 0456def/' docs/tech/auth.md"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "0456def"}]
