@@ -25,6 +25,7 @@ import (
 	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
@@ -519,6 +520,22 @@ func commitOnto(st runState, branch, title string) (why string, err error) {
 	return "", err
 }
 
+// rolesHere is where the roles a run was judged with are on this machine. A
+// run judged on another — CI's judge job, applied by its apply job — names
+// the cache the engine's built-in roles were extracted to there; here they
+// are extracted again from this engine.
+func rolesHere(dir string) string {
+	if _, err := os.Stat(dir); err == nil {
+		return dir
+	}
+	if strings.HasPrefix(filepath.Base(dir), "roles-") {
+		if here, err := rolefs.Dir(); err == nil {
+			return here
+		}
+	}
+	return dir
+}
+
 // OwnTrailer marks the commits the engine makes itself, naming the role, so
 // that they do not wake the line again (docs/spec/routing.md).
 const OwnTrailer = "Workline-Role"
@@ -608,7 +625,7 @@ func Resume(runDir string) *Result {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "input-changed", Message: "the prepared input changed since the run; nothing was applied"})
 			return nil
 		}
-		r, err := role.Load(st.RolesDir, st.Role)
+		r, err := role.Load(rolesHere(st.RolesDir), st.Role)
 		if err != nil {
 			return err
 		}

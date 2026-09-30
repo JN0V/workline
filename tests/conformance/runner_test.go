@@ -246,6 +246,20 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
 	}
+	// Judged on one machine, applied on another (CI's two jobs): each its own
+	// cache, the first gone by the time the second applies.
+	// With the roles built into the engine, as CI installs it: no --roles.
+	judgeCache := ""
+	if c.Run.Then == "resume-elsewhere" {
+		judgeCache = t.TempDir()
+		env = append(env, "XDG_CACHE_HOME="+judgeCache)
+		for i, a := range args {
+			if a == "--roles" {
+				args = append(args[:i:i], args[i+2:]...)
+				break
+			}
+		}
+	}
 	cmd := exec.Command(engineBin, args...)
 	cmd.Dir = repo
 	cmd.Env = env
@@ -264,7 +278,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
-	if c.Run.Then == "resume" {
+	if c.Run.Then == "resume" || c.Run.Then == "resume-elsewhere" {
 		dirs := r.Pending
 		if len(dirs) == 0 && r.RunDir != "" {
 			dirs = []string{r.RunDir}
@@ -274,6 +288,10 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		resume := exec.Command(engineBin, append(append([]string{"apply"}, dirs...), "--json")...)
 		resume.Env = env
+		if judgeCache != "" {
+			os.RemoveAll(judgeCache)
+			resume.Env = append(env, "XDG_CACHE_HOME="+t.TempDir())
+		}
 		stdout.Reset()
 		resume.Stdout, resume.Stderr = &stdout, &stderr
 		_ = resume.Run()
