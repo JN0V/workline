@@ -8,4 +8,4 @@ events:
   release:       [documentalist, release-manager]   # docs due at the release first: they gate it
 handoffs:
   - {from: release-manager, to: documentalist}
-max-handoffs: 3
+max-handoffs: 5
