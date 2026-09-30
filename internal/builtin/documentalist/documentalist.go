@@ -52,6 +52,11 @@ type Settings struct {
 	JudgeInParts   bool `json:"judge-in-parts"`
 	PartsMax       int  `json:"parts-max"`
 	PartsMaxPerRun int  `json:"parts-max-per-run"`
+	// For measuring whole against parts on the same doc (tests/evaluation):
+	// PartsAlways judges in parts even a doc that fits whole, PartChars
+	// caps the sources' share of a part, so that small sources still split.
+	PartsAlways bool `json:"parts-always"`
+	PartChars   int  `json:"part-chars"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -567,6 +572,14 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	holdJudgedInParts(suspects, repo)
+
+	if s.JudgeInParts && s.PartsAlways { // measuring: every suspect doc in parts
+		for _, into := range []map[string]*suspectDoc{suspects, propagate} {
+			for _, sd := range into {
+				sd.tooLarge = true
+			}
+		}
+	}
 
 	// The cascade is cut: a doc depending on a suspect doc is pending, unless
 	// the propagation edge between them says `now`.

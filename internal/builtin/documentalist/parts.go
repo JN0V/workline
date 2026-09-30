@@ -97,7 +97,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	var fixes strings.Builder
 	judged, inParts = map[string]map[string]string{}, map[string]string{}
 	for i, sd := range cands {
-		plans, why, err := planParts(sd.doc, repo)
+		plans, why, err := planParts(sd.doc, repo, s.PartChars)
 		if err != nil {
 			return "", nil, nil, nil, err
 		}
@@ -192,7 +192,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 // into consecutive pieces, each read, so no line goes unread. Sources that
 // are docs are left out: a doc following another is propagation, not
 // evidence. why says why the doc cannot be judged in parts.
-func planParts(d *Doc, repo string) (plans []partPlan, why string, err error) {
+func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, err error) {
 	content, err := os.ReadFile(filepath.Join(repo, d.Path))
 	if err != nil {
 		return nil, "", err
@@ -200,6 +200,9 @@ func planParts(d *Doc, repo string) (plans []partPlan, why string, err error) {
 	room := taskMaxChars - len(partsTaskHeader) - len(numberedDoc(d.Path, string(content)))
 	if room < taskMaxChars/4 {
 		return nil, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
+	}
+	if share > 0 && share < room { // measuring: smaller parts than a task holds
+		room = share
 	}
 	var files []string
 	for _, src := range d.Sources {
