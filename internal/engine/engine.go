@@ -419,8 +419,20 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			unanswered(gone)
 			continue
 		case errors.Is(err, agent.ErrInvalidOutput):
-			unanswered(err.Error())
-			continue
+			// One item written wrong spoils the whole list for a YAML
+			// reader: the items are read one by one, the broken ones kept
+			// as unreadable claims, which the role counts as dropped.
+			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
+			read, broken := claimsOneByOne(string(raw))
+			if read == 0 {
+				unanswered(err.Error())
+				continue
+			}
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-partly-read", Where: name, Level: "warn",
+				Message: fmt.Sprintf("the answer to this part was not valid as a whole: %d claims read one by one, %d that could not be read counted as dropped", read, len(broken))})
+			if err := intent.Write(filepath.Join(dir, "out", "intentions.yaml"), append(claimsRead(string(raw)), broken...)); err != nil {
+				return err
+			}
 		case err != nil:
 			return err
 		}
@@ -454,6 +466,47 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		}
 	}
 	return nil
+}
+
+// answerItems cuts an answer into its top-level list items: each starts
+// with "- " at the start of a line and runs to the next.
+func answerItems(answer string) []string {
+	var items []string
+	for _, l := range strings.Split(answer, "\n") {
+		switch {
+		case strings.HasPrefix(l, "- "):
+			items = append(items, l+"\n")
+		case len(items) > 0 && (strings.HasPrefix(l, " ") || l == ""):
+			items[len(items)-1] += l + "\n"
+		}
+	}
+	return items
+}
+
+// claimsRead are the items of an answer that read as a claim each.
+func claimsRead(answer string) []intent.Intention {
+	var out []intent.Intention
+	for _, item := range answerItems(answer) {
+		var one []map[string]any
+		if yaml.Unmarshal([]byte(item), &one) == nil && len(one) == 1 && len(one[0]) == 1 && one[0]["claim"] != nil {
+			out = append(out, intent.Intention{Kind: "claim", Value: one[0]["claim"]})
+		}
+	}
+	return out
+}
+
+// claimsOneByOne counts the items that read as claims, and returns the
+// others as claims with nothing to check, which the role drops.
+func claimsOneByOne(answer string) (int, []intent.Intention) {
+	read := len(claimsRead(answer))
+	var broken []intent.Intention
+	for _, item := range answerItems(answer) {
+		var one []map[string]any
+		if yaml.Unmarshal([]byte(item), &one) != nil || len(one) != 1 || len(one[0]) != 1 || one[0]["claim"] == nil {
+			broken = append(broken, intent.Intention{Kind: "claim", Value: map[string]any{"unreadable": strings.TrimSpace(item)}})
+		}
+	}
+	return read, broken
 }
 
 // callAgent asks the agent once and records the call: in the result, and

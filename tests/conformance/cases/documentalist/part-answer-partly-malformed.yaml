@@ -1,0 +1,18 @@
+case: documentalist/part-answer-partly-malformed
+about: "A part's answer that is not valid YAML as a whole — one item broken, as a real agent once wrote — is read item by item: the claims that read are kept and fixed, the broken ones count as dropped, so the doc is judged in parts again on a later run."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/parts-malformed.sh"}
+expect:
+  status: pass
+  agent-calls: 3
+  applied: [patch]
+  findings:
+    - {rule: part-partly-read, where: 01-docs-tech-auth-md-1}
+    - {rule: claims-dropped, where: docs/tech/auth.md}
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.", lacks: "judged-in-parts"}}
