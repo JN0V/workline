@@ -43,12 +43,21 @@ jobs:
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
       proposed: ${{ steps.line.outputs.proposed }}
+      engine: ${{ steps.engine.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: actions/setup-go@v5
         with: {go-version: stable}
-      - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+      # The engine at one commit, for both jobs: a branch is resolved here, from
+      # GitHub itself, since the module proxy may keep an old answer for it.
+      - id: engine
+        env: {GOPROXY: direct}
+        run: |
+          v=$(cd "$RUNNER_TEMP" && go list -m -json "github.com/JN0V/workline@$WORKLINE_VERSION" | jq -r .Version)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          go install "github.com/JN0V/workline/cmd/workline@$v"
+          echo "workline $v"
       - run: go install github.com/zricethezav/gitleaks/v8@v8.30.1   # secrets, for the committer
       - name: Claude, when the repository gives its token
         if: env.HAS_CLAUDE == 'true'
@@ -114,7 +123,8 @@ jobs:
           token: ${{ steps.app.outputs.token || github.token }}
       - uses: actions/setup-go@v5
         with: {go-version: stable}
-      - run: go install github.com/JN0V/workline/cmd/workline@${{ env.WORKLINE_VERSION }}
+      - run: go install "github.com/JN0V/workline/cmd/workline@${{ needs.judge.outputs.engine }}"
+        env: {GOPROXY: direct}
       - uses: actions/download-artifact@v4
         with: {name: workline-runs}
       - env:
