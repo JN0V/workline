@@ -1,0 +1,10 @@
+case: routing/own-commit-then-the-author-s
+about: "Once the author pushes after workline's commit, the merge request is judged again, whole."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours' -m 'Workline-Role: documentalist'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {route: merge-request, input: {range: "HEAD~2..HEAD"}, ai: "fake:doc-fixed", no-apply: true}
+expect:
+  steps: [committer, documentalist]

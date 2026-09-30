@@ -4,6 +4,7 @@ package line
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
@@ -53,6 +54,12 @@ func Run(event string, base engine.Options) *Result {
 	steps, ok := cfg.Events[event]
 	if !ok {
 		return failed(res, "routing", fmt.Sprintf("routing names no step for event %q", event))
+	}
+	// What the engine committed does not wake the line again (routing spec):
+	// the fix a role pushed to a merge request would be judged, and pushed.
+	if role := ownCommit(base.Repo, base.Inputs["range"]); role != "" {
+		res.Summary = fmt.Sprintf("%s: the last commit is workline's own (%s): nothing to judge", event, role)
+		return res
 	}
 	for _, name := range steps {
 		if g, isGate := strings.CutPrefix(name, "gate:"); isGate {
@@ -125,4 +132,21 @@ func failed(res *Result, where, msg string) *Result {
 	res.Summary = "the line could not run"
 	res.Findings = append(res.Findings, verdict.Finding{Rule: "routing-error", Where: where, Message: msg})
 	return res
+}
+
+// ownCommit returns the role that made the last commit of rng, when the
+// engine made it; "" otherwise, or with no range.
+func ownCommit(repo, rng string) string {
+	if rng == "" {
+		return ""
+	}
+	head := rng
+	if _, h, ok := strings.Cut(rng, ".."); ok {
+		head = h
+	}
+	out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%(trailers:key="+engine.OwnTrailer+",valueonly)", head).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
