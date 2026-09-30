@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: d579043
+checked: ef8683f
 verified: agent:documentalist
 ---
 # Routing — v1 (draft)
@@ -67,7 +67,7 @@ routing:
     merge-request: [committer, documentalist, gate:merge]
     merge:         [release-manager]
     schedule:      [documentalist]
-    release:       [gate:release, documentalist, release-manager]   # docs due at the release first
+    release:       [documentalist, release-manager]   # docs due at the release first: they gate it
 
   handoffs:                             # the only handoffs a role may ask for
     - {from: release-manager, to: documentalist}
@@ -77,7 +77,7 @@ routing:
   `human`, `blocked-external` or an error stops the sequence. It fails closed.
 - A `handoff` intention is applied only if its edge is declared here. Anything
   else is refused, like any invalid intention.
-- A chain of handoffs is capped (`max-handoffs`, default 3). A loop stops with a
+- A chain of handoffs is capped (`max-handoffs`, default 5). A loop stops with a
   verdict, not with a timeout.
 - Events caused by the engine's own writes (its comments, labels, commits) do
   not trigger routing, so two roles cannot wake each other forever. Its
