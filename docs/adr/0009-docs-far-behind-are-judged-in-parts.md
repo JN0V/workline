@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** proposed
+- **Status:** accepted (2026-09-30, on the measures below)
 - **Date:** 2026-09-29
 
 ## Context
@@ -97,3 +97,28 @@ not settled for our case, nor whether a light model checks as well.
   written with its conformance cases before the code.
 - Docs naming whole libraries are pointed out, instead of costing a hundred
   calls each.
+
+## Measured
+
+2026-09-30, the evaluation cases `finds-planted-defects-whole` and
+`-in-parts` (fixture `service`): one commit makes four passages of a doc
+false — a default early, a count in the middle, a sentence the store and
+the configuration both speak to, a name renamed late — and changes code
+the doc does not describe; twelve checks, the four true sentences kept
+among them. Three runs each:
+
+| | score | tokens in / out | time |
+|---|---|---|---|
+| whole, Sonnet 5.5 | 12, 12, 12 | 8k / 1.5k | 12 s |
+| in parts, Sonnet 5.5 (4 parts and the fix) | 12, 12, 12 | 40k / 4k | 35 s |
+| parts on Haiku 4.5, fix on Sonnet | 12, 11, 12 | 37k / 36–48k | 5–6 min |
+| Haiku alone, whole or in parts | 5 | — | — |
+
+Parts missed nothing the whole caught, the sentence across two sources
+included, and called no true sentence false: adopted, for docs too large to
+be judged whole, at five times the tokens. Parts stay on `standard`: Haiku
+wrote ten times more, took ten times longer, and missed once; alone, its
+fix named a wrong path. Before these runs, two of three in parts had failed
+on the format: one brace too many in a part's one-line YAML spoiled its
+whole answer, and the parts found were all thrown away. A part's answer is
+now read claim by claim, and the task asks for block style.
