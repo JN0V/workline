@@ -38,9 +38,12 @@ this repository before any other role is added.
    proposed: the doc whole with a share of its sources per part, packed to
    fill a task (806 doc-file pairs, not one call each); a closed answer per
    part, merged without AI, one call fixing what is wrong; `checked` not
-   moved; `parts-max` pointing out docs whose sources are too wide. Next:
-   the evaluation case with planted defects, whole against parts, light
-   against standard; then the spec and the code.
+   moved; `parts-max` pointing out docs whose sources are too wide. The
+   spec ("In parts", the `claim` intention) and the code are built, with
+   their conformance cases, off until measured (`judge-in-parts: false`);
+   no real agent has answered a part yet. Next: the evaluation case with
+   planted defects, whole against parts, light against standard; then
+   tried on a copy of DomoticsCore, the tokens counted.
 5. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.

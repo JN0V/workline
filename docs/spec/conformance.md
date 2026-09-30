@@ -108,7 +108,9 @@ a `PATH` without a tool, or with a fake one first.
 
 - **Fake agent.** `fake:<fixture>` returns the proposals in
   `fixtures/agents/<fixture>.yaml`, without reading the prompt. It checks the
-  engine's handling of proposals, not their quality.
+  engine's handling of proposals, not their quality. A fixture holding
+  `calls: [[…], […]]` answers each call in turn — a part asked, then the fix
+  — and past the last, with the last.
 - **Command agent.** `cmd:sh "$FIXTURES/agents/<script>.sh"` runs a script
   of the fixtures as the agent: one that reads the prompt, for a case where
   each call asks something else (`FIXTURES` names the fixtures folder).
