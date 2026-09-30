@@ -1,0 +1,31 @@
+# Two docs judged in one answer: the first fixed as it should be, the second
+# padded far past what a fix may add.
+- patch: |
+    --- a/docs/tech/auth.md
+    +++ b/docs/tech/auth.md
+    @@ -3,3 +3,4 @@ type: reference
+     sources: [src/auth/token.go]
+    -checked: 9bf650b
+    +checked: b185787
+    +verified: agent:documentalist
+     ---
+    @@ -9,2 +10,2 @@ checked: 9bf650b
+     
+    -Access tokens last one hour.
+    +Access tokens last two hours.
+    --- a/docs/tech/tokens.md
+    +++ b/docs/tech/tokens.md
+    @@ -2,6 +2,11 @@
+     sources: [src/auth/token.go]
+    -checked: 5d033b4
+    +checked: b185787
+     ---
+     # Tokens
+     
+    -A token lasts one hour.
+    +A token lasts two hours.
+    +
+    +Longer sessions mean fewer sign-ins.
+    +Users will appreciate it.
+    +It is a great improvement.
+    +Everyone agrees.

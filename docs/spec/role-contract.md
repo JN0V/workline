@@ -159,7 +159,11 @@ token), **apply** (trusted, no AI key).
    another Claude model (Sonnet for work of Opus, Opus otherwise), else the
    same agent in a context of its own. A no refuses the proposal with its
    reason (`judged-no`), and the agent is asked again; a yes is reported
-   (`judged`), with the level and both models.
+   (`judged`), with the level and both models. Asked again as often as the
+   role allows and still refused, the files the refusals name are taken out
+   of the patches, and what is left — some of the agent's own — is judged
+   once more, without asking: passed, it is applied, and each file left out
+   is a `left-out` finding with the refusal's reason.
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid

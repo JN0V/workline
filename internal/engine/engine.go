@@ -291,6 +291,21 @@ func run(o Options, res *Result) error {
 		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
+	// Asked as often as the role allows and still refused: the docs the
+	// refusals name are left out, and the rest judged again, without them.
+	if v.Status == verdict.Block && failures > 0 {
+		fallback, _ := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
+		if kept, left := leaveOut(intents, fallback, v.Findings); len(left) > 0 {
+			nv, err := judgeAgain(r, o, runDir, env, cfg, kept, res)
+			if err != nil {
+				return err
+			}
+			if nv.Status == verdict.Pass {
+				intents, v = kept, nv
+				v.Findings = append(left, v.Findings...)
+			}
+		}
+	}
 	res.Status, res.Summary = v.Status, v.Summary
 	res.Findings = append(res.Findings, v.Findings...)
 	if res.Status != verdict.Pass || len(intents) == 0 {
@@ -829,6 +844,115 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	v.Findings = append(a.findings, v.Findings...)
 	a.verdict = v
 	return a, nil
+}
+
+// leaveOut takes out of the patches the files the refusals name, and says
+// why each was left: a finding a person reads. Nothing is left out when the
+// refusals name no file a patch touches, or when no fix of the agent's is
+// left to apply: then the refusal stands.
+func leaveOut(intents, fallback []intent.Intention, refusals []verdict.Finding) ([]intent.Intention, []verdict.Finding) {
+	why := map[string]string{}
+	for _, f := range refusals {
+		if f.Where != "" && !strings.ContainsAny(f.Where, " \t") && f.Where != "patch" && f.Where != "proposal" {
+			if why[f.Where] == "" {
+				why[f.Where] = f.Rule + ": " + f.Message
+			}
+		}
+	}
+	var kept []intent.Intention
+	var left []verdict.Finding
+	seen := map[string]bool{}
+	agentKept := 0
+	for _, in := range intents {
+		diff, ok := in.Value.(string)
+		if in.Kind != "patch" || !ok || isFallbackOf(in, fallback) {
+			kept = append(kept, in)
+			continue
+		}
+		var keep []string
+		for _, s := range splitDiff(diff) {
+			if reason := why[s.path]; reason != "" {
+				if !seen[s.path] {
+					seen[s.path] = true
+					left = append(left, verdict.Finding{Rule: "left-out", Where: s.path, Level: "warn",
+						Message: "its fix was refused, after asking again (" + reason + "): left out, the other docs' fixes applied; it stays as it was"})
+				}
+				continue
+			}
+			keep = append(keep, s.text)
+		}
+		if len(keep) > 0 {
+			in.Value = strings.Join(keep, "")
+			kept = append(kept, in)
+			agentKept += len(keep)
+		}
+	}
+	if len(left) == 0 || agentKept == 0 {
+		return intents, nil
+	}
+	return kept, left
+}
+
+// isFallbackOf says whether a proposal is one the role made itself, not the
+// agent: a derived block regenerated, never a fix to keep or leave out.
+func isFallbackOf(in intent.Intention, fallback []intent.Intention) bool {
+	for _, f := range fallback {
+		if f.Kind == in.Kind && fmt.Sprint(f.Value) == fmt.Sprint(in.Value) {
+			return true
+		}
+	}
+	return false
+}
+
+// fileDiff is the part of a unified diff about one file.
+type fileDiff struct{ path, text string }
+
+// splitDiff cuts a unified diff into its files: each starts at `diff --git`,
+// or at a `--- ` line followed by `+++ `.
+func splitDiff(diff string) []fileDiff {
+	lines := strings.SplitAfter(diff, "\n")
+	var out []fileDiff
+	for i, l := range lines {
+		start := strings.HasPrefix(l, "diff --git ") ||
+			strings.HasPrefix(l, "--- ") && i+1 < len(lines) && strings.HasPrefix(lines[i+1], "+++ ") && (i == 0 || !strings.HasPrefix(lines[i-1], "diff --git "))
+		if start || len(out) == 0 {
+			out = append(out, fileDiff{})
+		}
+		cur := &out[len(out)-1]
+		cur.text += l
+		if p, ok := strings.CutPrefix(l, "+++ "); ok && cur.path == "" {
+			cur.path = strings.TrimPrefix(strings.TrimSpace(p), "b/")
+		}
+	}
+	return out
+}
+
+// judgeAgain runs post on the proposals kept, without asking the agent.
+func judgeAgain(r *role.Role, o Options, runDir string, env []string, cfg *role.ProjectConfig, kept []intent.Intention, res *Result) (*verdict.Verdict, error) {
+	for _, f := range []string{"intentions.yaml", "verdict.yaml", "judge.yaml"} {
+		os.Remove(filepath.Join(runDir, "out", f))
+	}
+	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), kept); err != nil {
+		return nil, err
+	}
+	code, err := script(r, "post", o.Repo, env)
+	if err != nil {
+		return nil, err
+	}
+	v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("post wrote no readable verdict: %w", err)
+	}
+	if want := statusForExit(code); want != v.Status {
+		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
+	}
+	verdict.Enforce(v, r.Enforcement(cfg))
+	if v.Status == verdict.Pass {
+		if err := askJudge(o, res, runDir, v, &attemptResult{askedAgent: true}); err != nil {
+			return nil, err
+		}
+	}
+	return v, nil
 }
 
 func statusForExit(code int) string {
