@@ -1,0 +1,14 @@
+case: documentalist/parts-capped-per-run
+about: "No more than parts-max-per-run parts are asked in one run: a doc whose parts would go past it waits for a later round, saying so."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-max-per-run: 1}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "in a later round: past parts-max-per-run, 1"}]

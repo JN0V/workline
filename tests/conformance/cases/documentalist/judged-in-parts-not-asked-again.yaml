@@ -1,0 +1,15 @@
+case: documentalist/judged-in-parts-not-asked-again
+about: "A doc judged in parts is not put before an agent again, whole or in parts, until one of its sources changes after the commit it was judged at; it is still reported suspect, saying so."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged-in-parts: $C/\" docs/tech/auth.md && git commit -qam 'docs: fix the auth doc, judged in parts'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts at 2d741e7, its sources unchanged since"}]

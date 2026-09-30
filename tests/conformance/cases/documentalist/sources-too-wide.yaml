@@ -1,0 +1,16 @@
+case: documentalist/sources-too-wide
+about: "A doc whose sources would take more than parts-max parts is not judged in parts: a person narrows its sources or splits the doc, and the finding says how many parts it would take."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-max: 1}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: sources-too-wide, where: docs/tech/auth.md, message: "would take 2 parts, past parts-max (1)"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "a person judges it"}

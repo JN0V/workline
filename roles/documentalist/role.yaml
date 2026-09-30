@@ -32,6 +32,9 @@ model:
     # in 6, writing 13 to 19k tokens; Opus 10 in 10, writing 9 to 11k.
     condense: {tier: frontier}
     split: {tier: frontier}          # the same move, a card at a time; 3 in 3 on Opus
+    # A part of a doc judged in parts (judge-in-parts, below): light, once the
+    # evaluation says it checks as well as standard (ADR-0009); until then, standard.
+    part: {tier: standard}
 
 context:
   knowledge: [doc-model.md]
@@ -82,3 +85,11 @@ settings:
   documented: []
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
+  # A suspect doc whose sources, as they are now, do not fit a task goes to a
+  # person. Turned on, it is judged in parts instead (ADR-0009): the doc whole
+  # with a share of its source files in each part, then one call fixing what
+  # the parts found wrong; `checked` does not move, and the doc stays suspect.
+  # Off until the evaluation has measured it.
+  judge-in-parts: false
+  parts-max: 8                       # parts a doc may take; past it, its sources are too wide
+  parts-max-per-run: 16              # parts asked in one run; the other docs wait for the next round
