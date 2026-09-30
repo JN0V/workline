@@ -775,6 +775,8 @@ doc when its reader really gained something to know.
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), append(fallback, partsFallback...)); err != nil {
 			return fail(err)
 		}
+	}
+	if len(inParts) > 0 { // their fixes are judged as fixes in parts: `checked` stays
 		if err := writeYAML(filepath.Join(runDir, "in", "in-parts.yaml"), inParts); err != nil {
 			return fail(err)
 		}
