@@ -1,0 +1,13 @@
+case: documentalist/doc-fixed-in-a-rebased-merge-request
+about: "Rebased onto main, a merge request's commits get new names: the doc's `checked` names one main never holds; the commit that brought it to main stands for it."
+given:
+  repo: documented
+  setup:
+    - "echo '# Readme' > README.md && git add README.md && git commit -qm 'docs: add a readme'"
+    - "git switch -q -c feat HEAD~1 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "c=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $c/; s/one hour/two hours/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours'"
+    - "git rebase -q main && git switch -q main && git merge -q --ff-only feat && git branch -q -D feat"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}, {rule: unknown, where: docs/tech/auth.md}]

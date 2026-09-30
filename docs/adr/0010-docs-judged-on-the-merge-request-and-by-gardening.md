@@ -50,8 +50,12 @@ push of a merge request.
 
 ## To settle before building
 
-- What `checked` names once a merge request is squashed: try it on a
-  throwaway pull request; anchor on the sources' blobs if it breaks.
+- ~~What `checked` names once a merge request is squashed~~: tried
+  2026-09-30 on the `documented` fixture. A merge commit keeps it true. A
+  squash made the doc suspect again, then, the branch gone, blocked the
+  documentalist (`unknown`, bad revision); a rebase the same. The commit
+  that brought the `checked` to main now stands for it: settled, with three
+  conformance cases; the sources' blobs were not needed.
 - The templates: a token GitLab gives a merge request's branch; the fork
   comment on GitHub; merge trains and queues left out.
 - The AI in CI: the owner's Claude token first, its volume capped; Copilot

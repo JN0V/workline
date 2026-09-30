@@ -1,0 +1,13 @@
+case: documentalist/doc-fixed-in-a-squashed-merge-request
+about: "A doc fixed on a merge request names, in `checked`, a commit of its branch; squashed into main, that commit is gone. The commit that brought the doc's `checked` to main stands for it: the doc is not suspect, and nothing blocks."
+given:
+  repo: documented
+  setup:
+    - "git switch -q -c feat && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "c=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $c/; s/one hour/two hours/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours'"
+    - "git switch -q main && git merge -q --squash feat && git commit -qm 'feat(auth): keep users signed in for two hours (#1)'"
+    - "git branch -q -D feat && git reflog expire --expire=now --all && git gc -q --prune=now"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}, {rule: unknown, where: docs/tech/auth.md}]

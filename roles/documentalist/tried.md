@@ -157,3 +157,10 @@ On 2026-09-27, on workline's own repository:
   commits removed: six seconds, the same findings. The hook now says it runs;
   and the ten minutes to answer counted from the first question, so judging
   the docs with `d` could use them up: each question now has its own.
+- a doc fixed on a merge request, then merged (2026-09-30, the `documented`
+  fixture, by hand as CI would): merged with a merge commit, the doc stayed
+  judged; squashed, it came back suspect, and once the branch was deleted
+  and collected the documentalist blocked, its `checked` naming a commit
+  that no longer existed; rebased, suspect again. A `checked` main does not
+  hold now stands for the commit that brought it there: the squash, or the
+  rebased commit. DomoticsCore's push check went from 6.1 to 7.4 seconds.

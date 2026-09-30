@@ -207,6 +207,33 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 	return git(dir, "log", "--format=%h %s", checked+".."+rev, "--", path)
 }
 
+// onMain returns the commit to compare a doc's sources with: the one its
+// `checked` names, when rev holds it; else the commit of rev that brought
+// that name into the doc — the squash or the rebased commit of the merge
+// request where the doc was judged. ok is false when rev has neither.
+func onMain(repo, rev, doc, checked string) (string, bool) {
+	key := strings.Join([]string{repo, rev, doc, checked}, "\x00")
+	if a, ok := onMainSeen[key]; ok {
+		return a.commit, a.ok
+	}
+	a := anchored{checked, true}
+	if _, err := git(repo, "merge-base", "--is-ancestor", checked, rev); err != nil {
+		out, err := git(repo, "log", "--reverse", "--format=%H", "-S"+checked, rev, "--", doc)
+		first, _, _ := strings.Cut(out, "\n")
+		a = anchored{first, err == nil && first != ""}
+	}
+	onMainSeen[key] = a
+	return a.commit, a.ok
+}
+
+// anchored is what onMain found, kept for the doc's other sources.
+type anchored struct {
+	commit string
+	ok     bool
+}
+
+var onMainSeen = map[string]anchored{}
+
 // headersOnly says whether a commit changed, under path, only the headers of
 // docs: recording who checked a doc changes nothing it says, and would
 // otherwise make the docs naming a folder of docs suspect at every check.
@@ -434,6 +461,16 @@ func Pre(runDir, repo string) int {
 			}
 			where, err := pl.get(name)
 			var commits string
+			// A doc fixed on a merge request names a commit of its branch,
+			// which a squash or a rebase leaves out of main.
+			unanchored := false
+			if err == nil && name == "" {
+				if c, ok := onMain(repo, where.rev, d.Path, checked); ok {
+					checked = c
+				} else {
+					unanchored = true
+				}
+			}
 			gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/"))
 			// A doc the commits did not touch is only left for gardening:
 			// once it is found suspect, its other sources need no reading.
@@ -445,6 +482,8 @@ func Pre(runDir, repo string) int {
 				findings = append(findings, verdict.Finding{Rule: "source-gone", Where: d.Path,
 					Message: fmt.Sprintf("names %s as a source, which no longer exists: name what replaced it, or drop it", src)})
 				commits, err = git(where.dir, "log", "--format=%h %s", checked+".."+where.rev, "--", path)
+			} else if err == nil && unanchored {
+				commits = fmt.Sprintf("(`checked` names %s, which %s does not hold, and no commit brought it there)", checked, where.rev)
 			} else if err == nil {
 				commits, err = changed(where.dir, checked, where.rev, path, anchor)
 			}
@@ -489,7 +528,11 @@ func Pre(runDir, repo string) int {
 					into[d.Path] = sd
 				}
 				sd.why = append(sd.why, why)
-				sd.evidence = append(sd.evidence, fmt.Sprintf("What changed in %s:\n\n%s", src, sd.evidenceFor(where.dir, checked, where.rev, path, anchor)))
+				if unanchored { // nothing to compare with: judged against its sources as they are now
+					sd.capped = true
+				} else {
+					sd.evidence = append(sd.evidence, fmt.Sprintf("What changed in %s:\n\n%s", src, sd.evidenceFor(where.dir, checked, where.rev, path, anchor)))
+				}
 			}
 		}
 	}
