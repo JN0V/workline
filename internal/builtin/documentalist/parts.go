@@ -172,6 +172,12 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			judged[sd.doc.Path] = map[string]string{"": head}
 			sd.note = "(" + summary + "; what they found wrong is fixed in this run, and `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		}
+		// A claim dropped may have been the one saying what is wrong: the doc
+		// is not recorded as judged, and its parts are asked again next run.
+		if verdictOf.dropped > 0 {
+			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped, so it is judged in parts again on a later run)"
+			continue
+		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: patch})
 		inParts[sd.doc.Path] = at
 	}
