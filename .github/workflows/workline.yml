@@ -63,7 +63,11 @@ jobs:
             --sarif workline.sarif --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
-          report=$(jq -r '"\(.status) — \(.summary)", ((.findings // [])[] | "- \(.rule) \(.where // ""): \(.message // "" | split("\n")[0])")' line.json)
+          report=$(jq -r '"\(.status) — \(.summary)",
+            ((.steps // [])[] | select(.result.calls) | .name as $n | .result.calls[] |
+              "- agent, \($n): \(.model // .asked // "?") \(.["tokens-in"] // 0) tokens in, \(.["tokens-out"] // 0) out"),
+            ((.steps // [])[] | .name as $n | (.result.notes // [])[] | "- note from the agent, \($n): \(split("\n")[0])"),
+            ((.findings // [])[] | "- \(.rule) \(.where // ""): \(.message // "" | split("\n")[0])")' line.json)
           echo "$report"
           { echo "### workline ($ai)"; echo; echo "$report"; } >> "$GITHUB_STEP_SUMMARY"
 
