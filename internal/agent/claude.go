@@ -125,6 +125,9 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 // taken from between the first and the last fence lines.
 func proposalsFrom(answer string) ([]byte, error) {
 	s := strings.TrimSpace(answer)
+	if s == "[]" { // nothing to propose, said: a part whose share says nothing of the doc
+		return []byte("[]\n"), nil
+	}
 	var list []map[string]any
 	if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
 		lines := strings.Split(s, "\n")

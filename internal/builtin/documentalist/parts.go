@@ -61,7 +61,8 @@ sources says something about, return one ` + "`claim`" + `:
 Say nothing of a passage this share does not speak to: it is not covered by
 this share, and another part may hold what does. Quote exactly, as the lines
 read, citing the line numbers shown here: a quote not found at the lines it
-cites is dropped. Claims only: no patch, no note.
+cites is dropped. Claims only: no patch, no note. If this share says nothing
+of the doc, answer ` + "`[]`" + `.
 
 `
 

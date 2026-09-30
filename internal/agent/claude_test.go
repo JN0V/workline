@@ -19,6 +19,9 @@ func TestProposalsFrom(t *testing.T) {
 			t.Errorf("%s: %q, %v", c.name, got, err)
 		}
 	}
+	if got, err := proposalsFrom(" []\n"); err != nil || string(got) != "[]\n" {
+		t.Errorf("an empty list is an answer proposing nothing: %q, %v", got, err)
+	}
 	if _, err := proposalsFrom("I could not decide."); err == nil {
 		t.Error("prose alone is not a proposal")
 	}
