@@ -25,7 +25,14 @@ this repository before any other role is added.
    Claude Code in VSCodium. Left: Source Control's button; Claude Code run
    from a terminal (may its shell reach that terminal?); the editor and a
    dialog on macOS and Windows, kdialog on Linux.
-3. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
+3. **Docs judged on the merge request and by gardening** (ADR-0010,
+   proposed, 2026-09-30): the push only counts; `d` goes. First, what
+   `checked` names after a squash merge, on a throwaway pull request; then
+   the templates (App token, fork comment, GitLab token, loop guard, verdict
+   cache, caps), the release gate, `workline docs` from a ref. Main takes
+   pull requests on workline and DomoticsCore since 2026-09-30.
+   Measure Copilot CLI on a free plan through the evaluation, beside Claude.
+4. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
    documentalist could not judge; roles/documentalist/tried.md). ADR-0009,
    proposed: the doc whole with a share of its sources per part, packed to
    fill a task (806 doc-file pairs, not one call each); a closed answer per
@@ -33,7 +40,7 @@ this repository before any other role is added.
    moved; `parts-max` pointing out docs whose sources are too wide. Next:
    the evaluation case with planted defects, whole against parts, light
    against standard; then the spec and the code.
-4. **Try the install and the adoption on the other machine**, where their
+5. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.
 
@@ -87,16 +94,6 @@ last.
   committed as `feat(documentalist): …`. A change that only specifies a role is
   `docs`, not `feat`; and the release manager's notes should be checked against
   what the code can actually do (the "capability lie" Make My Dreams detected).
-
-- **Rethink docs at the push: too many questions, and some lead nowhere**
-  (2026-09-29, to discuss). The push names the docs its commits made
-  suspect; the person took it as a step to follow, answered `d` in the
-  editor's box, where only the terminal can judge them, and the push
-  stopped. Questions at each push that cannot be acted on where the person
-  is wear the process out. Options: leave every doc to gardening (ADR-0006)
-  and have the push only say so; or judge and review from the editor too;
-  or ask only when the commits made a doc wrong for sure. Also: the
-  "left for gardening" list is long in the push's output.
 
 ### Engine and CI
 
