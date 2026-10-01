@@ -1,0 +1,14 @@
+case: documentalist/gone-name-still-in-code-refused
+about: "A claim saying a name is gone from the code, while the code still has it, cites nothing: the line's removal is refused (`citation-unchecked`) (ADR-0014, step 2)."
+given:
+  repo: documented
+  setup:
+    - "printf '\\nfunc RefreshToken() {}\\n' >> src/auth/token.go && printf '\\nCall `RefreshToken` to renew a token.\\n' >> docs/tech/auth.md && git commit -qam 'feat(auth): renew tokens'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/drop-gone-line.sh"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: citation-unchecked, where: docs/tech/auth.md, message: "`RefreshToken` is still in the code"}]
+  files: {"docs/tech/auth.md": {contains: "RefreshToken"}}

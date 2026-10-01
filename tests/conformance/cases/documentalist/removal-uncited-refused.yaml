@@ -1,0 +1,11 @@
+case: documentalist/removal-uncited-refused
+about: "A fix taking words out of a doc's body with no claim saying why is refused (`removal-uncited`): the agent removed a true claim it could not see backed (workline d43b3f2). Here it replaces \"one hour\" with no claim (ADR-0014, step 2)."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked uncited"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: removal-uncited, where: docs/tech/auth.md, message: "\"one hour\""}]
+  files: {"docs/tech/auth.md": {contains: "one hour"}}

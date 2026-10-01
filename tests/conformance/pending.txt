@@ -1,2 +1,9 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+documentalist/removal-uncited-refused
+documentalist/removal-cited-from-code-applied
+documentalist/citation-not-a-source-refused
+documentalist/comment-not-evidence-refused
+documentalist/comment-disagrees-reported
+documentalist/removal-cited-gone-applied
+documentalist/gone-name-still-in-code-refused
