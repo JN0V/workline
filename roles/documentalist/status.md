@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-01, late night)
+# Documentalist — where it stands (2026-10-02)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -81,7 +81,10 @@ repository without merge requests is built but untried for real.
    evidence", measured with no agent (below). Step 3's gate is passed
    with a real agent (below): nothing false vouched for or written, so no
    new mechanism; the fixes it left unmade met by wording where they could
-   be (below, after step 3); next, step 4's acceptance on the held-out set.
+   be (below, after step 3). Step 4's acceptance, on the held-out set, does
+   **not hold** (below): nothing false vouched for or written, every
+   count reported, but the tokens a judged doc costs are 12.8% over the
+   baseline, past the tenth the bar allows.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -171,3 +174,34 @@ run keeps the agent's answers as they came and the accepted claims
 (`out/agent-answer.txt`, `out/refused-<n>-answer.txt`, `out/claims.yaml`).
 The line no part claimed, the fixed bug left for a person, and a part's
 `supported` resting on a comment are parked (docs/BACKLOG.md).
+
+ADR-0014 step 4, the acceptance (tried.md, 2026-10-02; Sonnet, 4.63M
+tokens): the held-out set — WaterMeter, DomoticsCore after #114,
+workline at ffdb06d — five runs of the gardening path each, graded
+against the code by another agent. Per bar:
+
+1. **Held.** `checked` moved five times (two WaterMeter wiring guides in
+   two runs, roles/documentalist/README.md once), each doc read whole:
+   nothing false. None moved on DomoticsCore, whose sources never fit.
+2. **Held.** No true claim removed, no comment winning; a version-history
+   row thinned (Wifi's "1.4.1 | Current release" became 1.7.0).
+3. **Held.** `count-off` 60 reports, all real, none missed within the
+   rule; `value-left` 57 real and 25 false a full run, none missed.
+4. **Held, read for the held-out set.** No doc there is both right and
+   shown by its sources: the docs `checked` could fairly move on are
+   vouched for in some runs and `judged` in others (WaterMeter 2 of 5, as
+   on the baseline engine; the README 1 of 5). The clean control is the
+   evaluation's (step 3: 5/5).
+5. **Held for versions and flags** (5/5 on every doc reached, GPIO34 5/5,
+   the line counts 5/5 where the baseline made none); one other right fix
+   less often: HeapTracker's pitfall 3/5, the baseline 5/5.
+6. **Failed.** The first night, the same task on both engines, five runs:
+   +12.8% a judged doc (+3% WaterMeter, +6% workline, +26% DomoticsCore,
+   one run asked twice and its doc left out; +5% without it).
+
+What sets it back (ADR-0014: each step's bar measured before the next):
+step 2's removal rule asks again for a word reworded beside a count
+("Watch the 800-line limit"), and a fix withdrawn rather than cited (the
+pitfall, OTA's total). Judging in parts costs 0.23M to 0.32M a night and,
+`claims-dropped` keeping the doc unrecorded, is asked again every night
+(8 of 11 nights; the baseline engine too).

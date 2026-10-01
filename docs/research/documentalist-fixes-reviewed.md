@@ -189,3 +189,35 @@ Limits: eight of the sixteen replayed, one run each, each run narrowed to
 the reviewed doc (siblings untried); the agent's claims are not kept in
 the run, so a claim's quote could be read only when a fix was refused.
 Since (0e00fbe), a run keeps them, and the agent's answers as they came.
+
+## The held-out set (ADR-0014, step 4)
+
+On 2026-10-02, five runs of the gardening path on WaterMeter, DomoticsCore
+after #114 and workline, Claude Sonnet, graded against the code by another
+agent (roles/documentalist/tried.md has the runs, status.md the bars). The
+kinds above stay away: nothing false vouched for or written, no true claim
+removed, no comment winning, no fixed bug rewritten. Step 4 does not hold
+on its tokens. New kinds, none a falsehood:
+
+1. *`checked` moved over what the sources do not show.* Two wiring guides
+   whose one source is a config header, and a README summarising pages its
+   one source (role.yaml) does not hold: true, vouched for in some runs,
+   `judged` in others, once with a note saying the resistor values "are
+   not in the given source". The rule refuses a `checked` whose sources
+   were not given whole, not one whose sources do not cover the doc: those
+   docs' `sources` are too narrow, or the doc belongs to no code.
+2. *A right fix withdrawn rather than cited.* OTA's "Total 1483" fixed,
+   then dropped after `removal-uncited` (a sum, not an engine count);
+   HeapTracker's pitfall left in two runs of five ("I only saw the diff"),
+   where the engine before the removal rule fixed it in five. Kind 2 above,
+   wider than counts.
+3. *A doc in parts asked again every night.* `claims-dropped` keeps the
+   doc unrecorded, as ADR-0009 means it to, so the same parts are paid for
+   the next night: 8 of 11 nights, 0.23M to 0.32M each, the baseline engine
+   (a96306c) alike.
+4. *`value-left` false alarms of a new shape*: a code's fallback string
+   (`String("1.4.1")` in WifiWebUI.h) the doc quotes rightly, beside the
+   known ones (a feature's "(v2.0.0)", history rows).
+5. *Condensing a changelog*: WaterMeter's CHANGELOG.md, over its budget,
+   chosen two nights running and refused both times (a patch outside the
+   task; nothing moved).

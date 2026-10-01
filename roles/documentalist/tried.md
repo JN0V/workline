@@ -479,3 +479,71 @@ On 2026-09-27, on workline's own repository:
   200k a README in five parts (192.8k, 206.0k). In all, 1.33M tokens:
   0.47M for the five rounds, 0.22M for the kept rounds (the second one
   stopped), 0.65M for the eight replays.
+- ADR-0014 step 4, the acceptance, on the held-out set (2026-10-02,
+  Claude Sonnet 5.5 at medium effort, the engine at ffdb06d; graded by
+  another agent reading each change against the code at its commit).
+  The gardening path, `workline route schedule --no-apply --forge none`
+  then `workline apply`, with each repository's own `.workline` config;
+  a fresh copy per run, and nights chained in it, each night's change
+  committed as if merged, until the queue held only docs for a person or
+  the run's share of tokens was spent. WaterMeter: the solo copy of the
+  tried.md entry above (adopted, f98150f's debounce change), nights 1–2
+  of 5 runs. DomoticsCore: origin/main 91100ed (after #114), 8 nights in
+  runs 1–3, 7 in runs 4–5. workline: this branch at ffdb06d, nights 1–2.
+  The baseline engine (a96306c) run on the same first night, five times
+  each, for the tokens; and once on workline's second night.
+
+  | | WaterMeter (5 runs) | DomoticsCore (5 runs) | workline (5 runs) |
+  |---|---|---|---|
+  | docs judged whole | 3 a run | 8 a run (7 in run 5) | 2 a run |
+  | `checked` moved | 2 docs in runs 3, 4 | none (no doc's sources fit) | 1 doc in run 5 |
+  | moved over a falsehood | 0 | — | 0 |
+  | right fixes | GPIO2 → GPIO34, 4 places, 5/5 | versions in 4 docs 5/5, index's table 4/4 reached; 2 line counts 5/5, OTA's table 5/5; HeapTracker's pitfall 3/5 | — (nothing wrong in the two docs) |
+  | a doc in parts | — (off) | README, 3 runs: 3 right fixes, recorded once | README, 5 runs: nothing changed, never recorded |
+  | `count-off` reported | 2, both real | 58, all real | 0 |
+  | `value-left` reported | 0 | 57 real, 25 false a run (21 and 4 in run 5) | 0 |
+
+  `checked` moved five times, each doc read whole against its sources:
+  BREADBOARD_LAYOUT.md and TROUBLESHOOTING_ASSEMBLY.md (WaterMeter, runs 3
+  and 4) say nothing the config header contradicts — GPIO34 is
+  `pulseInputPin = 34` — but are wiring guides the header cannot show; in
+  run 3 the agent moved `checked` while its note said the resistor values
+  "are not in the given source". The other three runs set `judged`, as the
+  baseline engine does in 3 of 5. roles/documentalist/README.md (workline,
+  run 5) is right, every page and check it names is there; its one source,
+  role.yaml, does not show them, so the four runs that set `judged` are as
+  right. Nothing false was vouched for.
+  The fixes, read against the code: versions from each `library.json` and
+  `metadata.version`; counts the engine's; the pitfall rewritten from
+  `ownBytes_` (HeapTracker.h 103–105), left with a note in two runs ("I only
+  saw the diff"), where the baseline fixed it 5/5; README's bump and check
+  bullets from tools/bump_version.py and check_versions.py. No true claim
+  removed, no comment winning, no `comment-not-evidence` refusal. Wifi's
+  history row "1.4.1 | Current release" became "1.7.0 | Current release" in
+  every run, so the history skips 1.4.1: not false, history thinned.
+  Misses: OTA's "**Total** 1483" (1841 now), fixed in run 1's first answer
+  and withdrawn after `removal-uncited` (not an engine count); WaterMeter's
+  PULSE_LOGIC.md still says the debounce is 500 ms, too large to be judged
+  whole, left for a person.
+  `count-off`: every report real; none missed within the rule; outside it,
+  WaterMeter's ARCHITECTURE.md "**Size**: 92 lines" and "265 lines", the
+  file named in the heading above. `value-left` false alarms: Home
+  Assistant's "(v2.0.0)" marking when a feature came (19), version-history
+  rows and "Removed Fields (v1.4.1)" (4), the CHANGELOG notes (3), an
+  example tag, and Wifi's WebUI fallback `"1.4.1"`, which the code still
+  returns. No `value-left` missed in a check of every doc declaring Wifi's
+  or SystemInfo's sources.
+
+  Tokens, the first night, the same task on both engines, five runs each:
+  WaterMeter 32.4k → 33.2k (+3%), workline 18.8k → 19.9k (+6%),
+  DomoticsCore 34.6k → 43.6k (+26%; 36.2k, +5%, without run 5, asked
+  twice: a patch that did not apply, then `removal-uncited` on "Watch"
+  beside a count, the doc left out that night); in all 85.7k → 96.7k
+  for six docs, **+12.8%**. A doc judged whole costs 21.8k on average
+  over the 65 judged. Judging in parts: workline's README 228.6k a night,
+  7 calls (the baseline 208.9k, 6 calls, +9%); DomoticsCore's 323k, 9
+  calls. In 8 of 11 such nights `claims-dropped` kept the doc from being
+  recorded, so it is asked again the next night — the baseline engine
+  too. 4.63M tokens in all: 4.00M for the runs (WaterMeter 0.48M, of
+  which 0.24M two nights condensing CHANGELOG.md, refused; DomoticsCore
+  2.04M; workline 1.47M), 0.64M for the baseline.
