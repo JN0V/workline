@@ -332,7 +332,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 	}
 	for _, bad := range e.NoFindings {
 		for _, f := range r.Findings {
-			if f.Rule == bad["rule"] && f.Where == bad["where"] {
+			if f.Rule == bad["rule"] && f.Where == bad["where"] && strings.Contains(f.Message, bad["message"]) {
 				p = append(p, fmt.Sprintf("finding %v should not be there: %s", bad, f.Message))
 			}
 		}

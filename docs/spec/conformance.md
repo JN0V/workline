@@ -89,7 +89,8 @@ a `PATH` without a tool, or with a fake one first.
 
 - `findings` — each listed finding must be present (matched by `rule`, and by
   `where` and a part of its `message` if given).
-- `no-findings` — findings that must not be there (by `rule` and `where`).
+- `no-findings` — findings that must not be there (by `rule` and `where`,
+  and a part of the message when given).
 - `agent-calls` — how many times the agent was called.
 - `calls` — each call, in order: the fields listed must match (`agent`,
   `task`, `tier`, `effort`, `asked`, `model`).
