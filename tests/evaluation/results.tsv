@@ -195,3 +195,13 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-01T19:16:11Z	224a0d7+changes	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	16/19	1	35696	7580	0.1676	60	finding: no finding map[message:Clock.h rule:count-off where:docs/clock/README.md]; finding: no finding map[message:Clock.h rule:count-off where:docs/clock/project-context.md]; finding: no finding map[message:ClockWebUI.h rule:count-off where:docs/clock/project-context.md]	
 2026-10-01T19:17:00Z	224a0d7+changes	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	20/23	1	38350	6379	0.1627	48	finding: no finding map[message:Clock.h rule:count-off where:docs/clock/README.md]; finding: no finding map[message:Clock.h rule:count-off where:docs/clock/project-context.md]; finding: no finding map[message:ClockWebUI.h rule:count-off where:docs/clock/project-context.md]	
 2026-10-01T19:17:03Z	224a0d7+changes	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	16/19	1	35698	6613	0.1580	51	finding: no finding map[message:Clock.h rule:count-off where:docs/clock/README.md]; finding: no finding map[message:Clock.h rule:count-off where:docs/clock/project-context.md]; finding: no finding map[message:ClockWebUI.h rule:count-off where:docs/clock/project-context.md]	
+2026-10-01T20:08:46Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	37276	3250	0.1286	24		
+2026-10-01T20:08:53Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	39934	4491	0.1481	31		
+2026-10-01T20:09:19Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	37277	3463	0.1307	25		
+2026-10-01T20:09:27Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	39930	4527	0.1485	33		
+2026-10-01T20:09:55Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	39930	3945	0.1426	27		
+2026-10-01T20:09:58Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	37276	3555	0.1316	29		
+2026-10-01T20:10:26Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	39930	4009	0.1433	28		
+2026-10-01T20:10:52Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	18/19	2	74866	7633	0.2693	54	judged-is-head: docs/clock/status.md does not record 9d42912 in `judged`	
+2026-10-01T20:11:20Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-version-bump	23/23	1	39928	4059	0.1438	27		
+2026-10-01T20:11:23Z	7427ae8	claude:sonnet	claude-sonnet-5-5	medium	documentalist/drifted-gardening	19/19	1	37277	4108	0.1371	30		
