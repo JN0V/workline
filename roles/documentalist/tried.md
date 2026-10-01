@@ -182,3 +182,8 @@ On 2026-09-27, on workline's own repository:
   three, as whole did, at five times the tokens; Haiku on the parts wrote ten
   times more and missed once. The first runs in parts failed on a part's
   one-line YAML with a brace too many: now read claim by claim.
+- a real pull request on DomoticsCore (2026-10-01, #108: an ESP8266
+  discovery reboot, MQTT TLS with a CA, a JSON stub): CI judged the docs it
+  made suspect against their sources whole (Sonnet 5.5, 11.7k tokens in,
+  1.9k out), the App committed the fix to the branch — the MQTT README and
+  the HAL architecture doc — and it was merged with the change.

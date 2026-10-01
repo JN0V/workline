@@ -20,7 +20,7 @@ caps on tokens are still coarse, GitLab is untried.
 | Judging a suspect doc whole, against its sources whole beside the diffs; a fix it cannot vouch for kept, `checked` left (ADR-0012) | evaluation; DomoticsCore |
 | A fix may grow a doc by a tenth; a refused doc left out, the others applied | DomoticsCore gardening (PR #106) |
 | `checked` after a squash or a rebase: the commit that brought it stands for it | fixture, by hand |
-| On each pull request in CI: Claude judges, the App commits the fix, checks rerun, the line skips its own commit | workline PR #10; DomoticsCore installed |
+| On each pull request in CI: Claude judges, the App commits the fix, checks rerun, the line skips its own commit | workline PR #10; DomoticsCore PR #108, a real bug-fix pull request |
 | Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, one run by hand |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |

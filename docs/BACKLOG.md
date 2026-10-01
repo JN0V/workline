@@ -2,12 +2,11 @@
 
 ## Next, in order
 
-**Handover (2026-10-01).** Open at the switch: workline PR #18 (ADR-0012),
-then DomoticsCore PR #107 (parts on, after #18), both for the owner to
-merge. DomoticsCore's owner has bug fixes in progress, not committed, on
-`fix/bug-93-test-13-bug-88`, based before the docs work: rebase on
-`origin/main` before its pull request (no conflict expected). The
-documentalist's state: roles/documentalist/status.md.
+**Handover (2026-10-01).** Nothing waits at the switch: workline PR #18
+(ADR-0012) and DomoticsCore PR #107 (parts on for its nightly gardening)
+are merged, and DomoticsCore's bug fixes went in through its PR #108,
+where CI fixed two docs. Next to watch: DomoticsCore's first nightly runs
+with parts. The documentalist's state: roles/documentalist/status.md.
 
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
