@@ -1,9 +1,8 @@
 # ADR-0014: `checked` is earned by what the engine can show was read
 
-- **Status:** proposed (2026-10-01), revised after a critical review by seven
+- **Status:** accepted (2026-10-01), after a critical review by seven
   independent reviewers (BMAD analyst, architect, product manager,
-  developer; adversarial, verification-gap and edge-case lenses); to be
-  accepted by a person before it is built
+  developer; adversarial, verification-gap and edge-case lenses)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)

@@ -2,17 +2,20 @@
 
 ## Next, in order
 
-**Handover (2026-10-01, evening).** The documentalist is being finished
-before any other role; roles/documentalist/status.md says where it stands
-and what is missing, in order. Since the afternoon: GitLab reached through
-its API alone and tried on gitlab.com, a fork's pull request commented,
-`workline docs` from a ref and the release held by suspect docs (ADR-0010),
-and releases — **v0.1.1** (v0.1.0 is retracted: a tag pushed is never
-moved, the Go proxy keeps its first commit), the templates on it, the setup
-guide docs/ci.md. To check first: DomoticsCore #114 (its workflows on
-v0.1.1) merged; the night's gardening, on DomoticsCore and on workline's
-own docs, in parts for the first time (#27) — record both in tried.md.
-Then status.md's "Missing" from the top. Sandboxes for trying CI for real:
+**Handover (2026-10-01, night).** The documentalist vouched for docs it
+never read: the work now is **ADR-0014, accepted**, in its order — step 0
+first (the engine refuses a `checked` whose sources were not all given
+whole; the `checked` already moved so put back to `judged`; a release),
+then 1 to 4, each measured against the bars the ADR sets before the next.
+The evidence: docs/research/documentalist-fixes-reviewed.md; its verdicts
+are to be confirmed by the person one by one, with their proof beside
+them, before any becomes a case. Not pushed yet: branch
+fix/partial-settled-by-another (on #35, still open), the fixes of the solo
+try, the README split, the ADR. DomoticsCore: branch
+docs/narrow-wide-sources (two docs narrowed) waits, not pushed; nothing
+more there until ADR-0014 step 4 holds; its main runs workline v0.1.1.
+The night's gardening, on DomoticsCore and on workline: record it in
+tried.md, against the review. Sandboxes for trying CI for real:
 github.com/JN0V/workline-sandbox and its fork jn0v-lab/workline-sandbox;
 gitlab.com/JN0V/workline-sandbox, its two tokens set as masked variables
 (the GitLab one expires about 2026-10-31).

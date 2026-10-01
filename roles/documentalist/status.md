@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-01, evening)
+# Documentalist — where it stands (2026-10-01, night)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -62,7 +62,7 @@ repository without merge requests is built but untried for real.
    and three more), the judge accepting it — and a bug long fixed was
    rewritten rather than removed (92feb08); the same
    version was left stale in sibling docs. The plan, reviewed by seven
-   independent reviewers: ADR-0014 (proposed), its step 0 first — the
+   independent reviewers: ADR-0014 (accepted), its step 0 first — the
    engine refuses a `checked` the agent could not have earned.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
