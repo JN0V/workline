@@ -152,8 +152,8 @@ flowchart LR
 
 So the committer checks your messages as you write them, and again on the merge
 request for those without the hook; the documentalist runs on the forge. On a
-forge, one job judges without a write token and another applies without an AI
-key (`--no-apply`, then `workline apply`).
+forge, one job judges with no write token but code scanning's (SARIF upload) and
+another applies without an AI key (`--no-apply`, then `workline apply`).
 
 The CI templates run `workline route merge-request`, so a project's `routing:`
 reaches its CI too.
