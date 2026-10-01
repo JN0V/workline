@@ -1,0 +1,11 @@
+case: documentalist/stays-on-the-task
+about: "The default number of handoffs went from 3 to 5; the routing spec says the default, and also shows a project's own routing as an example. The default is fixed; the example, which is not the default, stays as it is (workline PR #10, where the agent aligned it)."
+given:
+  workline-at: 757e323
+  setup: ["sed -i 's/^max-handoffs: 3$/max-handoffs: 5/' routing.default.yaml && git commit -qam 'chore(routing): allow five handoffs in a chain by default'"]
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 2}
+  - {file-contains: {docs/spec/routing.md: "default 5"}}
+  - {file-contains: {docs/spec/routing.md: "release:       [gate:release, documentalist, release-manager]   # docs due at the release first"}}
