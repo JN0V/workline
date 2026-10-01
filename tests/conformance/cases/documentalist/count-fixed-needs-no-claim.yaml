@@ -1,0 +1,17 @@
+case: documentalist/count-fixed-needs-no-claim
+about: "A line count the engine reports off is brought to the engine's number with no claim, in every shape a doc gives it: a table cell, a fenced listing, prose with \"~\" dropped. The engine's count is the evidence; the agent had left them, thinking a count \"cannot be quoted as a source\" (ADR-0014, step 3)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-counts.sh drop-approx"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  findings:
+    - {rule: count-off, where: docs/clock/README.md, message: "fixed in this run"}
+    - {rule: count-off, where: docs/clock/project-context.md, message: "fixed in this run"}
+  files:
+    "docs/clock/README.md": {contains: "| `Clock.h` | 569 |"}
+    "docs/clock/project-context.md": {contains: "Clock.h           (569 lines)", lacks: "~283"}

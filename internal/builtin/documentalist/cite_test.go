@@ -1,6 +1,8 @@
 package documentalist
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -72,5 +74,52 @@ func TestBodyBlocks(t *testing.T) {
 	blocks := bodyBlocks(old, files[0])
 	if len(blocks) != 1 || blocks[0].from != 7 || blocks[0].to != 7 || blocks[0].removed[0] != "One hour." {
 		t.Fatalf("bodyBlocks = %+v", blocks)
+	}
+}
+
+// A line count the engine reports off is brought to the engine's number with
+// no claim, in each shape a doc gives it; the engine's count is the evidence
+// (ADR-0014, step 3). Another number, or other words, still need a claim.
+func TestCountFixNeedsNoClaim(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "src", "Clock.h"), []byte(strings.Repeat("x\n", 569)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cc := &citeContext{repo: dir, files: map[string]bool{"src/Clock.h": true}, shown: map[string]string{}}
+	for _, c := range []struct {
+		name, old, new, rule string
+	}{
+		{"prose", "`Clock.h` is 524 lines long.", "`Clock.h` is 569 lines long.", ""},
+		{"approx sign", "`Clock.h` is currently ~283 lines.", "`Clock.h` is currently 569 lines.", ""},
+		{"approx word dropped", "`Clock.h` is approximately 283 lines.", "`Clock.h` is 569 lines.", ""},
+		{"approx word kept", "`Clock.h` is about 283 lines.", "`Clock.h` is about 569 lines.", ""},
+		{"listing", "    Clock.h           (524 lines)   # the clock", "    Clock.h           (569 lines)   # the clock", ""},
+		{"thousands", "`Clock.h` is 1,008 lines.", "`Clock.h` is 569 lines.", ""},
+		{"another number", "`Clock.h` is 524 lines long.", "`Clock.h` is 600 lines long.", "removal-uncited"},
+		{"other words too", "`Clock.h` is 524 lines long.", "`Clock.h` is 569 lines.", "removal-uncited"},
+	} {
+		old := "---\nsources: [src/Clock.h]\nchecked: abc1234\n---\n# Clock\n\n" + c.old + "\n"
+		diff := "--- a/d.md\n+++ b/d.md\n@@ -7 +7 @@\n-" + c.old + "\n+" + c.new + "\n"
+		files, err := parseDiff(diff)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f := placed(old, files[0])
+		rule, msg, _ := cc.judgeCitations("d.md", old, f, nil, 0, true)
+		if rule != c.rule {
+			t.Errorf("%s: rule %q (%s), want %q", c.name, rule, msg, c.rule)
+		}
+	}
+	// A table's cell, under its column of line counts.
+	old := "---\nsources: [src/Clock.h]\nchecked: abc1234\n---\n# Clock\n\n| File | Lines |\n|---|---|\n| `Clock.h` | 524 |\n"
+	files, err := parseDiff("--- a/d.md\n+++ b/d.md\n@@ -9 +9 @@\n-| `Clock.h` | 524 |\n+| `Clock.h` | 569 |\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rule, msg, _ := cc.judgeCitations("d.md", old, placed(old, files[0]), nil, 0, true); rule != "" {
+		t.Errorf("table cell: rule %q (%s), want none", rule, msg)
 	}
 }

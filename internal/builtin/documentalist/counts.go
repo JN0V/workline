@@ -22,6 +22,7 @@ type countOff struct {
 	named  string // the file as the doc names it
 	file   string // the source file it is
 	stated string // the count as written, "~283" or "524"
+	approx string // the word making it a rough count, as written: "about", "~"
 	real   int
 }
 
@@ -172,7 +173,7 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 		if approx != "" {
 			s = "~" + number
 		}
-		out = append(out, countOff{line: n, named: named, file: file, stated: s, real: got})
+		out = append(out, countOff{line: n, named: named, file: file, stated: s, approx: approx, real: got})
 	}
 	skip := derivedLines(content)
 	lines := scan(content)

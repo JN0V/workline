@@ -434,7 +434,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 					for _, c := range off {
 						said = append(said, c.message())
 					}
-					msg := "the patch moves `checked`, but the doc still states a line count off, which nobody can vouch for: " + strings.Join(said, "; ") + "; bring each count to what the file has"
+					msg := "the patch moves `checked`, but the doc still states a line count off, which nobody can vouch for: " + strings.Join(said, "; ") + "; bring each count to the engine's number, with no claim: the engine's count is the evidence"
 					if full := want[""]; full != "" {
 						msg += fmt.Sprintf(", or leave `checked` and set `judged: %s`", full[:7])
 					}

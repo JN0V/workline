@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -49,7 +50,9 @@ doc's sources, or a name the code no longer has:
 A comment in the code is not evidence: a quote found only in a comment is
 refused, and the disagreement reported for a person. With nothing else to
 cite, leave the words as they are and say in a ` + "`note`" + ` what you could not
-confirm. Words only added need no claim.
+confirm. Words only added need no claim. Nor does a line count the engine
+lists as off for a doc, brought to the engine's number: the engine's count
+is the evidence.
 
 `
 
@@ -215,6 +218,8 @@ func (cc *citeContext) check(c citeClaim, d *Doc, b citedBlock) citeCheck {
 		}
 		found, inCodeToo, line := quoteIn(p, content, c.Source.Quote)
 		switch {
+		case !found && countIn.MatchString(c.Source.Quote):
+			return citeCheck{why: fmt.Sprintf("%q is not in %s: a line count is not words a file holds; a count the engine reports off needs no claim, its count being the evidence", c.Source.Quote, p)}
 		case !found:
 			return citeCheck{why: fmt.Sprintf("%q is not in %s, as it is now", c.Source.Quote, p)}
 		case !inCodeToo:
@@ -279,10 +284,12 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 	}
 	var refusals []string
 	rule = ""
-	// A line count the engine counted off is cited by the engine itself.
-	counted := map[int][]string{}
-	for _, c := range countsOff(cc.repo, cc.files, d, old) {
-		counted[c.line] = append(counted[c.line], wordOf.FindAllString(c.stated, -1)...)
+	// A line count the engine counted off is cited by the engine itself,
+	// when the fix brings it to the engine's number.
+	counted := map[int][]countOff{}
+	off := countsOff(cc.repo, cc.files, d, old)
+	for _, c := range off {
+		counted[c.line] = append(counted[c.line], c)
 	}
 	for _, b := range bodyBlocks(old, f) {
 		var out []string
@@ -349,7 +356,15 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 	if len(refusals) == 0 {
 		return "", "", nil
 	}
-	return rule, strings.Join(refusals, "; ") + "; give a `claim` beside the patch for each place, with the doc's lines and a source's words quoted from a file under its sources (`status: contradicted`, `source: {path, quote}`), or a name the code no longer has (`status: gone`, `name`); with nothing to cite, leave the words, and say in a note what you could not confirm", comments
+	msg = strings.Join(refusals, "; ") + "; give a `claim` beside the patch for each place, with the doc's lines and a source's words quoted from a file under its sources (`status: contradicted`, `source: {path, quote}`), or a name the code no longer has (`status: gone`, `name`); with nothing to cite, leave the words, and say in a note what you could not confirm"
+	if len(off) > 0 {
+		var said []string
+		for _, c := range off {
+			said = append(said, fmt.Sprintf("line %d, %s to %d", c.line, c.stated, c.real))
+		}
+		msg += ". A line count the engine reported off needs no claim: the engine's count is the evidence, so bring each to its number (" + strings.Join(said, "; ") + ") and keep that change"
+	}
+	return rule, msg, comments
 }
 
 // quoteWords says the words taken out, a few of them.
@@ -569,13 +584,29 @@ func newCiteContext(repo string, files map[string]bool) (*citeContext, error) {
 		pl: &places{repo: repo, gitDir: gitDir, cfg: cfg, known: map[string]place{}}}, nil
 }
 
+// numberIn is a number as a doc writes a count: "569", "1,008".
+var numberIn = regexp.MustCompile(`\d{1,3}(?:,\d{3})+|\d+`)
+
 // countedOn says whether a word a block takes out is a line count the
-// engine found off on one of the lines it removes.
-func countedOn(counted map[int][]string, b citedBlock, w string) bool {
+// engine found off on one of the lines it removes, or the word making it a
+// rough one ("about", "approximately"), the block writing the engine's
+// number in its place: the engine's count is the evidence, no claim needed.
+func countedOn(counted map[int][]countOff, b citedBlock, w string) bool {
+	added := map[string]bool{}
+	for _, l := range b.added {
+		for _, a := range numberIn.FindAllString(l, -1) {
+			added[strings.ReplaceAll(a, ",", "")] = true
+		}
+	}
 	for n := b.from; n <= b.to; n++ {
 		for _, c := range counted[n] {
-			if c == w {
-				return true
+			if !added[strconv.Itoa(c.real)] {
+				continue
+			}
+			for _, x := range wordOf.FindAllString(c.stated+" "+c.approx, -1) {
+				if x == w {
+					return true
+				}
 			}
 		}
 	}

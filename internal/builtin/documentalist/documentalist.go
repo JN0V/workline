@@ -1086,7 +1086,7 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 		// Line counts the engine counted (ADR-0014, step 2): told, so the
 		// agent neither vouches for them nor counts them itself.
 		if off := countsOff(repo, files, sd.doc, string(content)); len(off) > 0 {
-			entry.WriteString("\nLine counts this doc states wrong, counted by the engine in the files as they are now. `checked` cannot move while one stands: bring each to the count given here, or leave `checked`.\n\n")
+			entry.WriteString("\nLine counts this doc states wrong, counted by the engine in the files as they are now. Bring each to the engine's number: that change needs no `claim`, the engine's count being the evidence (a count is not words a file holds, so it cannot be quoted from one). `checked` cannot move while one stands.\n\n")
 			for _, c := range off {
 				fmt.Fprintf(&entry, "- %s\n", c.message())
 			}
