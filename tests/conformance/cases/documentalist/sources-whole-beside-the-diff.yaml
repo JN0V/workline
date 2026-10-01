@@ -1,0 +1,14 @@
+case: documentalist/sources-whole-beside-the-diff
+about: "A suspect doc is put before the agent with its sources as they are now, beside what changed, when they fit: vouching for every sentence needs them, not only the diff (ADR-0012)."
+given:
+  repo: documented
+  setup:
+    - "for i in $(seq 1 30); do echo \"// Rule $i of the token package.\"; done >> src/auth/token.go && git commit -qam 'docs(auth): say the rules'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+# A command agent: it answers only when given token.go whole, a line far from the change included.
+run: {role: documentalist, event: merge-request, ai: "cmd:p=$(cat); echo \"$p\" | grep -q 'as they are now' && echo \"$p\" | grep -q 'Rule 30 of the token package' && echo '- note: judged against the sources whole'"}
+expect:
+  status: pass
+  agent-calls: 1
+  notes: ["judged against the sources whole"]

@@ -285,6 +285,17 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				fixed++
 				continue
 			}
+			// A fix the agent could not vouch for is kept: what it found wrong
+			// is fixed, and the doc stays suspect (ADR-0012). It is in
+			// patched as false: fixed, not judged.
+			if checkedOf(now) == checkedOf(old) {
+				after[f.path] = now
+				if !patched[f.path] {
+					patched[f.path] = false
+				}
+				fixed++
+				continue
+			}
 			if !checkedMatches(now, want) {
 				refuse("still-suspect", f.path, fmt.Sprintf("the patch does not set `checked` to %s, the commit given in the task, so the doc would stay suspect", wanted(want)))
 				continue

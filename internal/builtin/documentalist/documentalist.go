@@ -561,6 +561,12 @@ func Pre(runDir, repo string) int {
 	for _, into := range []map[string]*suspectDoc{suspects, propagate} {
 		for _, sd := range into {
 			if !sd.capped {
+				// Vouching for every sentence the doc keeps needs its sources,
+				// not only what changed in them (ADR-0012): beside the diffs,
+				// when they fit.
+				if now, ok := sourcesNow(sd.doc, pl); ok && len(now) > 0 {
+					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
+				}
 				continue
 			}
 			now, ok := sourcesNow(sd.doc, pl)
@@ -1090,7 +1096,12 @@ func Post(runDir, repo string) int {
 	}
 	blocking, due := 0, 0
 	var kept []verdict.Finding
+	said := map[string]bool{}
 	for _, f := range findings {
+		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") && !said[f.Where] {
+			said[f.Where] = true
+			f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
