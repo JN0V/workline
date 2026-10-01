@@ -58,10 +58,12 @@ repository without merge requests is built but untried for real.
 1. **A fix vouches for what it did not check.** Reviewed on 2026-10-01:
    every version the agent wrote was right, but moving `checked` vouched
    for frozen numbers still false beside them — line counts, test counts,
-   a bug fixed long ago (DomoticsCore 16c660b, 92feb08) — and the same
-   version was left stale in sibling docs. Numbers a doc can derive
-   (`workline:derive`) or drop should go; a fix should not vouch for a line
-   it did not read against a source.
+   on six DomoticsCore docs whose sources the agent never saw whole (16c660b
+   and three more), the judge accepting it — and a bug long fixed was
+   rewritten rather than removed (92feb08); the same
+   version was left stale in sibling docs. The plan, reviewed by seven
+   independent reviewers: ADR-0014 (proposed), its step 0 first — the
+   engine refuses a `checked` the agent could not have earned.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.

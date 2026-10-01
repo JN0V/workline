@@ -127,3 +127,14 @@ last.
   Go's config folder (`~/Library/Application Support/workline` on macOS), but
   your own facets are looked for in `~/.config/workline/roles/`: one folder
   for all, or both named in docs/usage.md.
+- **New code no doc describes** (raised 2026-10-01, left out of ADR-0014).
+  A file added outside every doc's sources is ignored unless `documented`
+  is set, and neither workline nor DomoticsCore sets it. Deriving
+  `documented` from the declared sources is circular (a file outside them
+  never matches); by their folders (`dir/**`) it works, but a source like
+  `library.json` must not widen to a whole component. Start without AI: the
+  count by folder, tests, examples, vendored and generated files left out;
+  a migration for repositories already adopted (`doctor`); only then an
+  agent proposing the doc a file belongs to, its "none" recorded so it is
+  not asked again, and a file attached only if the doc stays within
+  `parts-max`.

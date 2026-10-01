@@ -302,8 +302,10 @@ On 2026-09-27, on workline's own repository:
   flags and CI permissions right every time, small diffs; wrong when it
   trusts a stale code comment over the record (#29, d38a0e4), removes a
   true claim it cannot see backed (d43b3f2), or moves `checked` over
-  frozen numbers still false — line counts, test counts, a bug fixed in
-  2025 whose version it bumped (DomoticsCore 92feb08). It fixes one doc and
+  frozen numbers still false — line counts, a stale date — on six
+  DomoticsCore docs whose sources it saw as diffs only, the judge letting it;
+  rewrites a bug fixed in 2025 rather than removing it (92feb08, `checked`
+  left). workline's bot never moved `checked`. It fixes one doc and
   leaves the same version stale in its siblings.
 - DomoticsCore's docs too wide to be judged in parts (2026-10-01, counted
   with the engine's own planning, no agent): six past 8 parts, not five.
