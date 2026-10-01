@@ -47,15 +47,18 @@ the rules cover reported, fewer false alarms than real, the versions and
 flags made — but a judged doc costs 12.8% more than at the baseline
 (a96306c), past the tenth: one DomoticsCore run in five asked twice,
 `removal-uncited` on a word beside a count. The weekly one-in-ten sample
-waits for it. **Next**, per ADR-0014 (each bar before the next step):
-bring step 2's cost back — a word reworded on a line whose count the
-engine gives, a fix withdrawn rather than cited (HeapTracker's pitfall
-3/5, the baseline 5/5) — then step 4 again, the same way: a fresh copy per
-run of each repository, gardening nights chained, each night's change
-committed as if merged; the baseline engine's first night five times
-beside it, for the tokens. The parts asked again every night
-(`claims-dropped`, 0.23–0.32M a night, the baseline too) and the new kinds
-are in docs/research/documentalist-fixes-reviewed.md, "The held-out set".
+waits for it. Its three costs are met, conformance and replay only
+(status.md, "after step 4"): no claim for the rest of a line whose count
+the engine fixes, nor for glue taken out of a line reworded; a table's
+total a `count-off`; a line a diff adds may be quoted; a patch git cannot
+apply refused saying which line it misquotes; a doc in parts recorded
+though claims were dropped; a history doc never condensed. **Next**, per
+ADR-0014 (each bar before the next step): step 4 again, the same way: a
+fresh copy per run of each repository, gardening nights chained, each
+night's change committed as if merged; the baseline engine's first night
+five times beside it, for the tokens; watch HeapTracker's pitfall (3/5,
+the baseline 5/5). The new kinds are in
+docs/research/documentalist-fixes-reviewed.md, "The held-out set".
 DomoticsCore: branch docs/narrow-wide-sources (two docs narrowed) waits,
 not pushed; nothing more there until ADR-0014 step 4 holds; its main runs
 workline v0.1.1.
