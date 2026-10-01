@@ -13,6 +13,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
@@ -435,7 +436,7 @@ func checkRange(runDir, repo, rng string) int {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return fail(err)
 	}
-	out, err := exec.Command("git", "-C", repo, "log", "--format=%h%x1f%B%x1e", rng).Output()
+	out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%h%x1f%B%x1e"}, gitrange.Args(rng)...)...).Output()
 	if err != nil {
 		return fail(fmt.Errorf("cannot read the commits of %s: %v", rng, err))
 	}

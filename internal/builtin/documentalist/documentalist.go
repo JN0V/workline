@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/tools"
@@ -1325,7 +1326,7 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 	if err != nil {
 		return nil, false, err
 	}
-	out, err := git(repo, "log", "--name-only", "--format=", strings.TrimSpace(string(data)))
+	out, err := git(repo, append([]string{"log", "--name-only", "--format="}, gitrange.Args(string(data))...)...)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1350,7 +1351,7 @@ func addedFiles(runDir, repo string) (map[string]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	out, err := git(repo, "log", "--diff-filter=A", "--name-only", "--format=", strings.TrimSpace(string(data)))
+	out, err := git(repo, append([]string{"log", "--diff-filter=A", "--name-only", "--format="}, gitrange.Args(string(data))...)...)
 	if err != nil {
 		return nil, err
 	}
