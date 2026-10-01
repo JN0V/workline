@@ -1,13 +1,16 @@
 case: setup/doctor-repository-adopted
-about: In a repository that routes the documentalist before a push and whose docs all declare their sources, the doctor finds nothing to say about it.
+about: In a repository whose docs are judged on each merge request in CI and whose docs all declare their sources, the doctor says where docs are judged and finds nothing to warn of.
 given:
   repo: documented
   config:
     routing: {events: {pre-push: [committer, documentalist]}}
+  setup:
+    - "mkdir -p .github/workflows && printf 'jobs:\\n  judge:\\n    steps:\\n      - run: workline route merge-request --ai claude\\n' > .github/workflows/workline.yml && git add .github && git commit -qm 'ci: judge docs on pull requests'"
 run: {doctor: true}
 expect:
   status: pass
   no-findings:
-    - {rule: documentalist-not-before-push}
+    - {rule: docs-judged-nowhere}
+    - {rule: docs-judged, message: "at the release only"}
     - {rule: nothing-tracked}
     - {rule: docs-untracked}

@@ -204,18 +204,45 @@ func repository(r *Report, o Options) {
 		}
 	}
 
-	prePush := line.Events["pre-push"]
-	runs := map[string]bool{}
-	for _, s := range prePush {
-		runs[s] = true
+	// Where the docs are judged (ADR-0010): on each merge request in CI, by
+	// gardening, at the release. The push only counts them, when routed.
+	routes := func(event string) bool {
+		for _, s := range line.Events[event] {
+			if s == "documentalist" {
+				return true
+			}
+		}
+		return false
 	}
-	if runs["documentalist"] {
-		r.add(Check{Area: "repository", Rule: "documentalist-before-push", Where: where, Level: OK,
-			Message: "before a push: " + strings.Join(prePush, ", ")})
+	var judged []string
+	if routes("merge-request") && ciRuns(o.Repo, "workline route merge-request") {
+		judged = append(judged, "on each merge request, in CI")
+	}
+	if routes("schedule") && ciRuns(o.Repo, "workline route schedule") {
+		judged = append(judged, "by gardening, on a schedule")
+	}
+	if routes("release") {
+		if len(judged) == 0 {
+			judged = append(judged, "at the release only: `workline docs` judges them before")
+		} else {
+			judged = append(judged, "at the release")
+		}
+	}
+	if len(judged) > 0 {
+		level := OK
+		if len(judged) == 1 && routes("release") {
+			level = Note // no CI judges them: fine for a solo project, worth knowing
+		}
+		r.add(Check{Area: "repository", Rule: "docs-judged", Where: where, Level: level,
+			Message: "docs are judged " + strings.Join(judged, "; ")})
 	} else {
-		r.add(Check{Area: "repository", Rule: "documentalist-not-before-push", Where: where, Level: Warn,
-			Message: "the documentalist does not run before a push here (pre-push routes: " + orNone(prePush) + "): docs go stale unseen until a merge request, if CI runs workline",
-			Fix:     "workline init"})
+		r.add(Check{Area: "repository", Rule: "docs-judged-nowhere", Where: where, Level: Warn,
+			Message: "the documentalist runs on no merge request in CI, no gardening, and not at the release: docs go stale unseen, unless someone runs `workline docs`",
+			Fix:     "copy the CI templates (ci/github, ci/gitlab), or route `release` to the documentalist"})
+	}
+	if routes("pre-push") {
+		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
+			Message: "the push counts the docs its commits make suspect"})
 	}
 
 	d, err := role.Load(o.RolesDir, "documentalist")
@@ -294,11 +321,17 @@ func sample(paths []string) string {
 	return strings.Join(paths[:5], ", ") + fmt.Sprintf(", and %d more", len(paths)-5)
 }
 
-func orNone(l []string) string {
-	if len(l) == 0 {
-		return "none"
+// ciRuns says whether a CI configuration of the repository runs the command:
+// a GitHub workflow, or GitLab's pipeline.
+func ciRuns(repo, command string) bool {
+	files, _ := filepath.Glob(filepath.Join(repo, ".github", "workflows", "*.y*ml"))
+	files = append(files, filepath.Join(repo, ".gitlab-ci.yml"))
+	for _, f := range files {
+		if data, err := os.ReadFile(f); err == nil && strings.Contains(string(data), command) {
+			return true
+		}
 	}
-	return strings.Join(l, ", ")
+	return false
 }
 
 func orName(s string) string {

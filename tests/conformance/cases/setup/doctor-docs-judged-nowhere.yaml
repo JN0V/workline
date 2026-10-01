@@ -1,0 +1,11 @@
+case: setup/doctor-docs-judged-nowhere
+about: A repository whose line runs the documentalist neither on merge requests in CI, nor gardening, nor at the release is warned that its docs are judged nowhere but by hand.
+given:
+  repo: documented
+  config:
+    routing: {events: {release: [release-manager]}}
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: docs-judged-nowhere, message: "workline docs"}
