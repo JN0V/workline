@@ -205,3 +205,15 @@ On 2026-09-27, on workline's own repository:
   prepared — README.md and docs/architecture.md, 8 each; 20 more docs in
   parts wait past `parts-max-per-run`, and 11 go to a person (5 too long
   to be judged in parts, 5 with sources too wide, 1 with no code).
+- DomoticsCore, ADR-0013 and the caps on (2026-10-01, two gardening runs
+  by hand). The first judged docs whole: two version tables, Sonnet 5.5
+  citing a line wrongly again — the second time in two runs — and Opus
+  fixing them; both docs record `judged` (pull request #112). 36.6k tokens
+  in, 5.6k out. The second, #112 waiting, judged README.md in parts, the
+  first real run in parts: 8 parts on Sonnet, 17k to 21k tokens in each,
+  and one fix — 165k in, 15k out, nine calls, two minutes. Pull request
+  #113: twelve component versions and an LED effect brought to the code,
+  all right; one fault, the version badge bumped while its link still
+  names the release v2.0.0. `uncovered` named a feature on the roadmap,
+  rightly for a person, and `ini` — from `platformio.ini`, not a name of
+  the code. Five docs need more than 8 parts (`sources-too-wide`, 10 to 16).

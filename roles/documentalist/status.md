@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-01)
+# Documentalist — where it stands (2026-10-01, afternoon)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -7,8 +7,9 @@ is the summary to start from.
 **In one line:** usable every day on a GitHub repository that takes pull
 requests — docs judged on each pull request and gardened at night, by Claude
 in CI, fixes committed by a GitHub App and reviewed on the forge. Beta: the
-catch-up of a large backlog in parts runs for the first time on DomoticsCore,
-caps on tokens are still coarse, GitLab is untried.
+catch-up of a large backlog in parts has run once on DomoticsCore, right but
+for a badge's link; Sonnet often cites lines wrongly, and Opus pays again;
+GitLab is untried.
 
 ## Built and tried for real
 
@@ -32,35 +33,34 @@ caps on tokens are still coarse, GitLab is untried.
   DomoticsCore with #109 open: the docs judged whole wait, the parts go.
 - **A cap on a run's tokens** (`ai-max-tokens`): conformance only.
 
-## Built, measured, not yet tried for real
+## Tried once for real
 
-- **Judging in parts** (ADR-0009): measured — Sonnet in parts 12/12 ×3, as
-  judging whole, at five times the tokens; Opus 12, 11, 12; Haiku not for
-  parts. Turned on for DomoticsCore's nightly gardening by its PR #107: the
-  first real parts run there is the next thing to watch (tokens, the pull
-  requests' quality, `sources-too-wide`, `uncovered`).
+- **Judging in parts** (ADR-0009): measured on the evaluation (Sonnet in
+  parts 12/12 ×3, at five times the tokens), then on DomoticsCore's
+  README.md (2026-10-01, pull request #113): 8 parts and a fix, 180k
+  tokens, the fix right but for a badge's link.
 
 ## Missing, in the order it matters
 
-1. **The first real parts run**: tokens, the pull requests' quality,
-   `sources-too-wide`, `uncovered`. 16 parts are ready on DomoticsCore
-   (ADR-0013 took the docs judged whole out of their way): likely hundreds
-   of thousands of tokens a night. `ai-max-tokens` caps a run, but a cap
-   reached between a doc's parts loses those already asked: lower
-   `parts-max-per-run` is the knob for that.
-2. **A solo repository without pull requests** (ADR-0010): the release gate
+1. **Sonnet cites lines wrongly in long docs**: refused, then fixed by
+   Opus, twice in two runs on DomoticsCore — each judgement paid twice.
+2. **Small faults seen in the first real run in parts**: a badge's link
+   left behind its text; `uncovered` taking a file extension (`ini`) for a
+   name of the code. Five docs need more than 8 parts: their sources to
+   narrow, or the doc to split.
+3. **A solo repository without pull requests** (ADR-0010): the release gate
    on suspect docs, and `workline docs` judging from a ref it moves — not
    built. `workline doctor` still warns when the documentalist is not routed
    before a push, and `workline init` still routes it there: both predate
    ADR-0010.
-3. **Forks and GitLab**: a fork's pull request gets the job summary only,
+4. **Forks and GitLab**: a fork's pull request gets the job summary only,
    no comment; the GitLab template keeps its token protected, so it never
    reaches a merge request's branch — untried on a live GitLab.
-4. **Staying on the task**: the agent once aligned an example of a spec to
+5. **Staying on the task**: the agent once aligned an example of a spec to
    the default (workline PR #10). An evaluation case should catch it.
-5. **workline's own docs**: README, usage and most specs are suspect, far
+6. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardening on workline with Claude and parts would catch them up.
-6. Smaller: budgets merge one level deep; Opus's notes see more than the
+7. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).
 
