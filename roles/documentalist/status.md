@@ -76,7 +76,7 @@ repository without merge requests is built but untried for real.
    engine refuses a `checked` the agent could not have earned, and the
    `checked` already moved are put back (above); its release waits for the
    person to merge #35 and fix/partial-settled-by-another. Step 1 is
-   built but for its baseline, not run yet (below, "Measures").
+   built and its baseline measured (below, "Measures"); step 2 next.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -115,6 +115,11 @@ two cases on it — a version bump on a merge request, and gardening — each
 grading never `checked` over a planted falsehood and `checked` on a clean
 control; the grades `finding`, `no-finding`, `judged-is-head`,
 `checked-unchanged`; a held-out set kept out of the design. Proved without
-an agent (fake `cmd:` agents on every `go test`). **The baseline is not
-measured yet**: five runs on Sonnet, on this engine and on the one before
-step 0 (docs/BACKLOG.md, the handover, has the commands and the tokens).
+an agent (fake `cmd:` agents on every `go test`). **The baseline**
+(tried.md, 2026-10-01; five runs on Sonnet each, on this engine and on the
+one before step 0, within a run of each other): the clean control `checked`, the right fixes
+made and what is true kept, 5/5 everywhere; never `checked` over a planted
+falsehood 5/5 in gardening, 3/5 before and 2/5 after on the version bump — a
+frozen line count vouched for (2 runs each), a test count no source shows
+(1 run); about 42k tokens a run. The three `count-off` findings are lost
+in every run until step 2 is built.

@@ -13,25 +13,20 @@ creates is born without `checked` there too. The 16 reviewed verdicts are
 confirmed by a second, independent check
 (docs/research/documentalist-fixes-reviewed.md). Step 1 is built — the
 `drifted` fixture, two cases grading both sides, four grades, pass rates,
-the held-out set (docs/spec/conformance.md) — but for its **baseline, to
-run next** (about 70k tokens a round of both cases on Sonnet, from
-results.tsv: 0.35M for five rounds, 0.7M with the engine before step 0;
-twice that if fixes are refused and asked again):
+the held-out set (docs/spec/conformance.md) — and its **baseline is
+measured** (roles/documentalist/tried.md, 2026-10-01: five rounds on Sonnet
+on each engine, 0.85M tokens; never `checked` over a falsehood 3/5 and 2/5
+on the version bump, a frozen line count and a test count vouched for).
+To measure again, as it was run (`-v` for the notes):
 
 ```sh
 for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/; done
-# the engine before step 0, with today's cases and grades
-W=$(mktemp -d)/before && git worktree add --detach "$W" 224a0d7
-cp -r tests/evaluation/eval_test.go tests/evaluation/checks_test.go tests/evaluation/cases tests/evaluation/testdata "$W/tests/evaluation/"
-cp tests/conformance/fixtures/repos/drifted.sh "$W/tests/conformance/fixtures/repos/"
-for i in 1 2 3 4 5; do (cd "$W" && WORKLINE_EVAL=claude:sonnet WORKLINE_EVAL_RESULTS="$OLDPWD/tests/evaluation/results.tsv" go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/); done
-git worktree remove --force "$W"
-# each apart: the workline column says which (224a0d7+changes before)
-awk -F'\t' 'NR==1 || $2 ~ /^224a0d7/' tests/evaluation/results.tsv > /tmp/before.tsv && go run ./tests/evaluation/summary /tmp/before.tsv | grep drifted
-awk -F'\t' 'NR==1 || $2 !~ /^224a0d7/' tests/evaluation/results.tsv > /tmp/after.tsv && go run ./tests/evaluation/summary /tmp/after.tsv | grep drifted
+# the summary pools every run of a case: keep one engine's rows apart (the workline column)
+awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
 ```
 
-Then step 2. DomoticsCore: branch docs/narrow-wide-sources
+**Next: step 2** (count-off, value-left, the removal rule, a comment is
+not evidence). DomoticsCore: branch docs/narrow-wide-sources
 (two docs narrowed) waits, not pushed; nothing more there until ADR-0014
 step 4 holds; its main runs workline v0.1.1.
 The night's gardening, on DomoticsCore and on workline: record it in

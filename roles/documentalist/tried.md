@@ -316,3 +316,34 @@ On 2026-09-27, on workline's own repository:
   with the engine's own planning, no agent): six past 8 parts, not five.
   webui-developer.md 12 → 8 and observing-a-device.md 10 → 8 by narrowing
   their sources; the four others hold more than one doc each, to split.
+- ADR-0014's baseline (2026-10-01, Claude Sonnet 5.5 at medium effort,
+  the `drifted` cases, five rounds on this engine, d66eeea, and five on
+  the one before step 0, 224a0d7 with today's cases): the bar step 4
+  compares against. Every run loses the three `count-off` findings, step 2
+  not being built, so the pass rate over every point is 0/5 everywhere;
+  read per grade, over five runs each:
+
+  | Grade | gardening, before / after | version bump, before / after |
+  |---|---|---|
+  | never `checked` over a planted falsehood | 5/5 / 5/5 | 3/5 / 2/5 |
+  | `status.md` judged, `checked` kept | 5/5 / 5/5 | 5/5 / 4/5 |
+  | the clean control ends `checked` | 5/5 / 5/5 | 5/5 / 5/5 |
+  | the right fixes (version, tree, sibling; bug removed) | — | 5/5 / 5/5 |
+  | what is true stays (default over comment, limits, record) | 5/5 / 5/5 | 5/5 / 5/5 |
+  | no `count-off` on a limit | 5/5 / 5/5 | 5/5 / 5/5 |
+  | every point but the three `count-off` findings | 5/5 / 5/5 | 3/5 / 2/5 |
+
+  One agent call a run; about 36k tokens in and 6k out for gardening,
+  39k and 5k for the bump; 0.85M tokens for the twenty runs. Step 0
+  changes nothing here, as the fixture means it to: every source fits
+  whole in the task, so no `checked` is refused, and what is vouched for
+  is the agent's own doing. Two failures, both on the version bump: the
+  README vouched for with "| `Clock.h` | 524 |" still in it (2 runs on
+  each engine), the agent counting nothing — on another doc it reasons
+  that the diff "replaced one line with one line, so the count is
+  unchanged", trusting the doc's count; and `status.md` vouched for with
+  "33 tests" from a file no source names (1 run, this engine), with no
+  note. Elsewhere the agent says when it cannot count ("about 236 lines,
+  not ~283"), leaves `checked` and sets `judged`. Never seen: a comment
+  winning over the code (an issue is opened every run), a true claim
+  removed, a sibling left at the old version, a fixed bug rewritten.
