@@ -584,8 +584,8 @@ func uncovered(content string, kept []claim) string {
 		}
 		var ids []string
 		for _, span := range codeSpan.FindAllString(l.text, -1) {
-			if m := identifier.FindStringSubmatch(strings.Trim(span, "`")); m != nil {
-				ids = append(ids, "`"+m[1]+"`")
+			if name, ok := codeName(span); ok {
+				ids = append(ids, "`"+name+"`")
 			}
 		}
 		if len(ids) == 0 {

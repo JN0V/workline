@@ -14,6 +14,29 @@ import (
 // `auth.RefreshToken`, `refresh_token()`. The last part is what is searched.
 var identifier = regexp.MustCompile(`^(?:[A-Za-z_][A-Za-z0-9_]*(?:\.|::))*([A-Za-z_][A-Za-z0-9_]{2,})(?:\(\))?$`)
 
+// fileExtensions end a code span that names a file, not the code:
+// `platformio.ini`, `library.json`, `main.cpp`.
+var fileExtensions = map[string]bool{
+	"ini": true, "json": true, "yaml": true, "yml": true, "toml": true, "xml": true, "md": true,
+	"txt": true, "cfg": true, "conf": true, "properties": true, "lock": true, "csv": true,
+	"cpp": true, "hpp": true, "ino": true, "go": true, "py": true, "js": true, "ts": true,
+	"tsx": true, "jsx": true, "rs": true, "java": true, "kt": true, "rb": true, "php": true,
+	"swift": true, "sh": true, "html": true, "css": true, "cmake": true, "gradle": true,
+}
+
+// codeName is the name a code span gives from the code, the last part of
+// a qualified one; ok is false for anything else, a file name included.
+func codeName(span string) (string, bool) {
+	m := identifier.FindStringSubmatch(strings.Trim(span, "`"))
+	if m == nil {
+		return "", false
+	}
+	if s := strings.Trim(span, "`"); strings.HasSuffix(s, "."+m[1]) && !strings.Contains(s, "::") && fileExtensions[m[1]] {
+		return "", false
+	}
+	return m[1], true
+}
+
 // named lists the identifiers a doc names in code spans, outside code blocks.
 func named(content string) []string {
 	seen := map[string]bool{}
@@ -22,8 +45,8 @@ func named(content string) []string {
 			continue
 		}
 		for _, span := range codeSpan.FindAllString(l.text, -1) {
-			if m := identifier.FindStringSubmatch(strings.Trim(span, "`")); m != nil {
-				seen[m[1]] = true
+			if name, ok := codeName(span); ok {
+				seen[name] = true
 			}
 		}
 	}
