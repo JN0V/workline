@@ -75,9 +75,8 @@ repository without merge requests is built but untried for real.
    independent reviewers: ADR-0014 (accepted). Its step 0 is built — the
    engine refuses a `checked` the agent could not have earned, and the
    `checked` already moved are put back (above); its release waits for the
-   person to merge #35 and fix/partial-settled-by-another. Next, step 1:
-   the evaluation measures it
-   (below, "Measures").
+   person to merge #35 and fix/partial-settled-by-another. Step 1 is
+   built but for its baseline, not run yet (below, "Measures").
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -101,9 +100,21 @@ repository without merge requests is built but untried for real.
 
 ## Measures
 
-tests/evaluation/results.tsv; `go run ./tests/evaluation/summary`. The
-documentalist cases all at their best on Sonnet 5.5 (2026-09-30 and
-10-01): fixes a doc made false, confirms one still true, never confirms a
-stale doc made false, propagates at the release, opens an issue on a spec,
-merges a passage and a card, splits a card, condenses (Opus), finds
-planted defects whole and in parts.
+tests/evaluation/results.tsv; `go run ./tests/evaluation/summary`, which
+gives pass rates — the runs earning every point — and marks fewer than five
+runs (ADR-0014). On Sonnet 5.5 (2026-09-30 and 10-01), read that way: finds
+planted defects whole 6/6, in parts 3/6; stays on the task 3/3; fixes a doc
+made false, confirms one still true, never confirms a stale doc made false,
+propagates at the release, opens an issue on a spec, merges a passage, one
+run each, all passed; condenses on Opus 6/6. Too few runs to be a measure,
+and none of these cases planted what went wrong for real.
+
+ADR-0014 step 1 (2026-10-01): the `drifted` fixture, real shapes from the
+review (docs/spec/conformance.md, "Real shapes, both sides graded"), and
+two cases on it — a version bump on a merge request, and gardening — each
+grading never `checked` over a planted falsehood and `checked` on a clean
+control; the grades `finding`, `no-finding`, `judged-is-head`,
+`checked-unchanged`; a held-out set kept out of the design. Proved without
+an agent (fake `cmd:` agents on every `go test`). **The baseline is not
+measured yet**: five runs on Sonnet, on this engine and on the one before
+step 0 (docs/BACKLOG.md, the handover, has the commands and the tokens).

@@ -137,9 +137,12 @@ tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
   results.tsv                every run's score, appended: the history kept
   schedule/                  run.sh and systemd units: a run every week
+  testdata/                  fake agents proving the cases grade as they should
   summary/                   go run ./tests/evaluation/summary: per case and models,
-                             the runs, mean score, range, tokens and seconds; a
-                             model that no longer answers is marked `replaced`
+                             the runs, the pass rate (runs earning every point),
+                             mean score, range, tokens and seconds; fewer than
+                             five runs are marked `few runs`, a model that no
+                             longer answers `replaced`
 ```
 
 ```sh
@@ -154,14 +157,41 @@ itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 `run.message`); `given.workline-at: <sha>` checks it out as it was. Each check
 in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
 `keeps-words` (the share of the author's subject words kept), `no-vague-words`,
-`file-contains`, `file-lacks`, `checked-is-head`, `body-unchanged`,
-`never-confirms` (a claim fixed, or left unconfirmed, never checked again as
-it is), `lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
+`file-contains`, `file-lacks`, `checked-is-head`, `judged-is-head` (the
+doc's `judged` names the commit judged), `checked-unchanged` (the doc keeps
+the `checked` it had), `body-unchanged`, `never-confirms` (a claim fixed, or
+left unconfirmed, never checked again as it is), `finding` and `no-finding`
+(a finding of the run, or none, by `rule`, a part of `where` and of
+`message`, each when given), `lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
 passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
 the efforts asked, the tokens in and out, and the cost at list price (on a
 subscription, the tokens are what counts): a score compares only with the same
 models.
+
+**Real shapes, both sides graded** (ADR-0014, step 1). The `drifted`
+fixture (tests/conformance/fixtures/repos/drifted.sh) holds docs drifted as
+DomoticsCore's and workline's did, every one `checked`, its sources fitting
+whole in a task: frozen line counts (a fenced tree's "(524 lines)", a
+`| File | Lines |` row, "~283 lines"), limits that are no counts ("< 800
+lines"), a sibling sharing the version, a stale code comment against the
+default, a bug long fixed, a test count in a file no source names, a true
+claim only a record backs, and a clean control. Each documentalist case on
+it grades both sides: never `checked` over a planted falsehood, and
+`checked` on the control (`TestDriftedCasesGradeBoth`). Its cases are played
+without a real agent on every `go test`, by a fake `cmd:` agent changing
+headers only (`TestDriftedWithFakeAgents`): vouching for every doc must lose
+the falsehood checks, recording `judged` on every doc must lose the
+control, doing both right must lose neither. The `finding` checks on
+`count-off` measure ADR-0014's step 2, not built yet: lost until it is.
+
+**Pass rates, not the best.** A measure is read over at least five runs per
+model, as the share of runs earning every point, never from the best run.
+What a change is designed on is never what it is accepted on: the
+**held-out set** — WaterMeter (a solo repository, roles/documentalist/tried.md),
+DomoticsCore after its pull request #114, and workline's own nightly
+gardening — is not looked at while designing ADR-0014's steps, and is
+replayed only to accept them (its step 4).
 
 **The judge.** `judge: <question>` asks a yes-or-no question on what the role
 produced — "does the rewritten subject keep the author's meaning?" — of the
