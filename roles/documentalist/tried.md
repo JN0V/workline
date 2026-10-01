@@ -256,3 +256,10 @@ On 2026-09-27, on workline's own repository:
   unprotected, and the pipeline that commit started judged nothing: "the
   last commit is workline's own". Installing Node and Claude in the
   golang image took 44 seconds. A fork's merge request is untried.
+- workline's README judged in parts on pull request #29 (2026-10-01): the
+  fix turned "a push approval … if you ask for it" into "unless your own
+  config turns it off" — false (ADR-0011). One part, holding the setting,
+  said supported; another, holding a comment of cmd/workline/main.go left
+  from before ADR-0011, said partial, "the default is not in this share";
+  the fix followed the comment. The comment is fixed, the line restored. A
+  fix should not act on a partial claim another part supports.
