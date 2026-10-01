@@ -335,7 +335,11 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 			if rule == "" {
 				rule = "removal-uncited"
 			}
-			msg := fmt.Sprintf("%s takes out %s with no claim saying why", place, quoteWords(out))
+			verb := "takes"
+			if at.from != at.to {
+				verb = "take"
+			}
+			msg := fmt.Sprintf("%s %s out %s with no claim saying why", place, verb, quoteWords(out))
 			if unread > 0 {
 				msg += fmt.Sprintf(" (%d claims could not be read)", unread)
 			}
