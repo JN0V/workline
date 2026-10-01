@@ -409,3 +409,73 @@ On 2026-09-27, on workline's own repository:
   unrelated line of code would pass. Not yet run with a real agent: the
   tokens, and whether agents give claims, are step 4's to measure. The
   `drifted` cases with fake agents (headers only) grade as before.
+- ADR-0014 step 3, the gate, with a real agent (2026-10-01, Claude Sonnet
+  5.5 at medium effort, the engine at 7427ae8: step 0 and step 2 built).
+  **The `drifted` cases, five rounds** against the baseline (d66eeea,
+  the same cases, the engine after step 0), read per grade:
+
+  | Grade | gardening, baseline / now | version bump, baseline / now |
+  |---|---|---|
+  | never `checked` over a planted falsehood | 5/5 / 5/5 | 2/5 / 5/5 |
+  | `status.md` judged, `checked` kept | 5/5 / 4/5 | 4/5 / 5/5 |
+  | the clean control ends `checked` | 5/5 / 5/5 | 5/5 / 5/5 |
+  | the right fixes (version, tree, sibling; bug removed) | — | 5/5 / 5/5 |
+  | what is true stays (default over comment, limits, record) | 5/5 / 5/5 | 5/5 / 5/5 |
+  | the three `count-off` findings | 0/5 / 5/5 | 0/5 / 5/5 |
+  | every point | 0/5 / 4/5 | 0/5 / 5/5 |
+
+  Tokens a run, in and out: gardening 41.9k → 49.2k on average, one run
+  asked again (82.5k), the four others 40.6k to 41.4k; the version bump
+  43.7k → 44.1k. Nine runs in ten took one call: the claims the removal
+  rule needs were given, and held, at the first answer — the bump's fixes
+  take out versions, two line counts and the fixed bug every time. No
+  `removal-uncited`, `citation-unchecked`, `comment-not-evidence`,
+  `checked-over-count-off` nor `checked-unread` in any run. The one miss:
+  gardening, round 4, project-context.md and status.md refused twice as
+  `still-suspect` ("the patch does not set `checked` … so the doc would
+  stay suspect"), so status.md did not record `judged`; the answer is not
+  kept, so whether it set `judged` is not known. One more round, its runs kept for reading
+  (results in the scratchpad, not in results.tsv): the claims cannot be
+  read there either — the engine drops them from `out/intentions.yaml`
+  once judged, and the agent's raw answer is not kept.
+
+  **The reviewed bot fixes replayed**, one run each, on scratchpad copies
+  at each fix's parent: a workline merge request with its range (the
+  pull request's commits before the fix), a DomoticsCore merge request
+  likewise (16c660b with the release as last commit, the bot's own being
+  skipped), gardening for the night runs (`workline route … --no-apply
+  --forge none`, the repository's `.workline/config.yaml` of the time,
+  your own config left out). The `docs` setting narrowed to the reviewed
+  doc(s), so a run judges that doc only: siblings, and `value-left` across
+  them, were not exercised.
+
+  | Commit | Then | Now: right fix? | Known error repeated? | `checked` over a falsehood? | New error |
+  |---|---|---|---|---|---|
+  | d43b3f2 (README, in 5 parts) | removed a true claim | yes: line 28 kept, its parts finding it backed (one claim quoting a comment) | no | no | — |
+  | 3cd196d (README, in 5 parts) | stale comment over the setting; a right fix at line 60 | line 148 kept, cited from the setting's field; line 60 not fixed | no | no | a right fix missed: no part claimed line 60 |
+  | 92feb08 (OTA) | versions right, a fixed bug rewritten | versions right, four places, cited | no: the bug line left, with a note; `value-left` reports its old version | no, `judged` | ten line counts the engine gave, not fixed |
+  | bc0bd26 (docs/README.md, hal) | version right, `checked` over a stale date | version right | no | no: `judged`; hal-architecture.md too large, left for a person | — |
+  | 2e25ea0 (MQTT, hal) | TLS needs a CA; `checked` on hal | the CA said, as a new bullet | no | no: both `judged` | — |
+  | 25e22dd (docs/README.md, core) | version right, `checked` over a stale date | version right | no | no, `judged`, the date left for a person | — |
+  | 16c660b (core, MQTT) | versions right, `checked` over false counts | versions right | no | no, `judged` | the two counts dropped after a refusal |
+  | d784398 (OTA, storage) | storage version right | right, at the second answer | no | no, `judged` | line counts not fixed |
+
+  Not replayed, for tokens: 4ac4f44, 445bed2, 972afa9, d38a0e4 (README in
+  five parts, about 200k each), 0f4c01c (two parts), 5ae8335 (eight
+  parts); 172493e only undoes d38a0e4, which the rule refuses, and
+  fea16c7's commit was rebased away. Asked again twice, in eight runs:
+  d784398's first answer gave no claim for the versions it replaced
+  (`removal-uncited`); 16c660b's quoted "930 lines" from Platform_Stub.h,
+  a line count as if it were the file's words, and the rewording beside
+  it ("Watch the 800-line limit" → "It is over …") was refused
+  (`citation-unchecked`) — the second answer dropped both counts, the
+  EventBus one included, which needed no claim. In all three
+  DomoticsCore runs where the engine gave counts, the agent left them,
+  saying a count "cannot be quoted as a source": the task says to bring
+  each to the count given, not that the engine's count stands as the
+  citation. Never seen: a `checked` moved, a true claim removed, a
+  comment winning, a fixed bug rewritten. Tokens: about 25k a doc
+  judged whole (24.7k to 29.3k a run, 66k to 77k when asked again), about
+  200k a README in five parts (192.8k, 206.0k). In all, 1.33M tokens:
+  0.47M for the five rounds, 0.22M for the kept rounds (the second one
+  stopped), 0.65M for the eight replays.

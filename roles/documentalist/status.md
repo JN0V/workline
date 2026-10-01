@@ -78,7 +78,9 @@ repository without merge requests is built but untried for real.
    person to merge #35 and fix/partial-settled-by-another. Step 1 is
    built and its baseline measured (below, "Measures"). Step 2 is built:
    `count-off`, `value-left`, the removal rule and "a comment is not
-   evidence", measured with no agent (below); next, step 3's replay gate.
+   evidence", measured with no agent (below). Step 3's gate is passed
+   with a real agent (below): nothing false vouched for or written, so no
+   new mechanism; next, step 4's acceptance on the held-out set.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -144,3 +146,16 @@ uncited; d38a0e4 and #29 resting on a comment, each comment reported); 11
 of 12 right ones pass, 172493e refused, its only evidence a template's
 header comment (it undid d38a0e4, which the rule refuses). Conformance and
 replay only, no agent run on it yet.
+
+ADR-0014 step 3, with a real agent (tried.md, 2026-10-01; Sonnet, 1.33M
+tokens): the `drifted` cases, five rounds, every point 4/5 in gardening
+and 5/5 on the version bump (0/5 each at the baseline), never `checked`
+over a planted falsehood 5/5 on both (2/5 on the bump before), the claims
+the removal rule needs given at the first answer in nine runs of ten, at
+about the baseline's tokens (bump +1%; gardening +17% on average, one run
+asked again). Eight of the reviewed bot fixes replayed, one run each: no
+`checked` moved over anything false, no true claim removed, no comment
+winning, no fixed bug rewritten; the right versions made. What remains is
+fixes not made: line counts the engine gives left by the agent (3 of 3
+runs that had them), a right fix withdrawn after a refusal, a line no
+part claimed (docs/research/documentalist-fixes-reviewed.md).

@@ -143,3 +143,48 @@ docs/undo-unearned-checked:
 
 Sources in characters, at the commit of the move. A run of the
 documentalist without an agent lists all 26 docs suspect afterwards.
+
+## Replayed with a real agent (ADR-0014, step 3)
+
+On 2026-10-01, after step 2, eight of the reviewed fixes were replayed with
+Claude Sonnet on copies at their parent, one run each, and the `drifted`
+cases run five times (roles/documentalist/tried.md has both). Against the
+verdicts above:
+
+- **What went wrong then, does not now.** No `checked` moved over anything
+  false: every doc whose sources did not fit got `judged`, and the
+  `drifted` cases never vouched over a planted falsehood (5/5 on both,
+  2/5 on the version bump before). No true claim removed (d43b3f2's line
+  kept, its parts finding it backed); no comment winning (#29's line kept,
+  cited from the setting's field); no fixed bug rewritten (92feb08's left,
+  with a note, its old version reported by `value-left`). The right
+  versions, the TLS change, the version bump's fixes: made every time.
+- **What remains, by kind**, all of it a fix not made, none a falsehood
+  vouched for or written:
+  1. *Line counts the engine gives, left* (3 of 3 DomoticsCore runs that
+     had them): the agent believes a count "cannot be quoted as a source".
+     The task says to bring each to the engine's count; it does not say
+     that the count needs no claim. Wording, in the task and in the
+     refusal's feedback; no mechanism.
+  2. *A right fix withdrawn after a refusal* (16c660b, once): a count
+     "quoted" as the file's words, with a rewording beside it, refused;
+     the second answer dropped every count. The same wording would fix it.
+  3. *A right fix missed in parts* (3cd196d's line 60, once): no part
+     claimed the line, so the fix never saw it. Judging in parts' coverage
+     (ADR-0009), not step 2.
+  4. *A fixed bug left for a person* (92feb08, d784398): not rewritten, not
+     removed; reported, not vouched for.
+  5. *Support resting on a comment, in parts* (d43b3f2): two `supported`
+     claims quoted comments. Harmless while parts never move `checked`;
+     to watch.
+- **Whether a new mechanism is needed: no, not now.** Quote-checked claims
+  were for an agent vouching for, or writing, what is false; neither was
+  seen. What remains is missed fixes, met by wording (kinds 1 and 2) and
+  by the coverage of parts (3). A claim is still checked to exist, not to
+  support the change: no replay abused it. Step 4, on the held-out set,
+  decides; if it shows a falsehood vouched for or written, that ADR
+  starts from the questions ADR-0014 lists.
+
+Limits: eight of the sixteen replayed, one run each, each run narrowed to
+the reviewed doc (siblings untried); the agent's claims are not kept in
+the run, so a claim's quote could be read only when a fix was refused.
