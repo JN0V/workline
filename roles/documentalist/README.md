@@ -117,7 +117,8 @@ alone, or in parts when they do not fit either — and the commits its
 `ai-max-calls` docs per call, and no more than fits the role's context budget.
 Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay
-suspect for a person or a later run.
+suspect for a person or a later run. `ai-max-tokens` caps what a run spends, all
+calls together: past it, the agent is asked nothing more and the rest waits.
 
 **Judged in parts** (ADR-0009), when the project sets `judge-in-parts: true`
 (off by default, until the evaluation has measured it). A suspect or stale

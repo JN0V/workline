@@ -1,0 +1,16 @@
+case: engine/token-cap-ends-the-run
+about: Once a run has spent `ai-max-tokens`, the agent is asked nothing more; what is left waits for the next run, said, and the run passes.
+given:
+  repo: documented
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/auth/token.go]\\nchecked: %s\\n---\\n# Token lifetime\\n\\nTokens are short-lived.\\n' $C > docs/tech/ttl.md && git add docs && git commit -qm 'docs: say tokens are short-lived'"
+    - "echo '// Checked on every request.' >> src/auth/token.go && git commit -qam 'docs(auth): say when tokens are checked'"
+  config: {roles: {documentalist: {settings: {ai-max-calls: 1, ai-max-tokens: 4000}}}}
+run: {role: documentalist, event: merge-request, ai: 'cmd:printf "tokens-in: 4500\ntokens-out: 200\n" > "$WORKLINE_CALL"; sh "$FIXTURES/agents/confirm-each-doc.sh"'}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings:
+    - {rule: ai-max-tokens, level: warn}
+    - {rule: suspect, where: docs/tech/ttl.md}

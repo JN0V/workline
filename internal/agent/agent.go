@@ -108,7 +108,8 @@ type fake struct{ file string }
 var fakeCalls = map[string]int{}
 
 // Propose replays the fixture: a list of proposals, the same for every call,
-// or `calls: [[...], [...]]`, one list a call in order, the last past the end.
+// or `calls: [[...], [...]]`, one list a call in order, the last past the end,
+// each call saying it used `tokens-in` and `tokens-out` when the file says so.
 func (f fake) Propose(r Request) (Call, error) {
 	call := Call{Agent: "fake", Tier: r.tier(), Effort: r.Role.Model.Effort, Asked: r.tier(),
 		Model: strings.TrimSuffix(filepath.Base(f.file), ".yaml")}
@@ -119,9 +120,13 @@ func (f fake) Propose(r Request) (Call, error) {
 	n := fakeCalls[f.file]
 	fakeCalls[f.file]++
 	var byCall struct {
-		Calls []any `yaml:"calls"`
+		Calls     []any `yaml:"calls"`
+		TokensIn  int   `yaml:"tokens-in"`
+		TokensOut int   `yaml:"tokens-out"`
 	}
-	if yaml.Unmarshal(data, &byCall) == nil && len(byCall.Calls) > 0 {
+	yaml.Unmarshal(data, &byCall)
+	call.TokensIn, call.TokensOut = byCall.TokensIn, byCall.TokensOut
+	if len(byCall.Calls) > 0 {
 		if data, err = yaml.Marshal(byCall.Calls[min(n, len(byCall.Calls)-1)]); err != nil {
 			return call, fmt.Errorf("fake agent: %w", err)
 		}
