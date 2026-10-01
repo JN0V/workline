@@ -24,29 +24,38 @@
 # who may already write to the repository. A fork's merge request runs in the
 # fork, which has neither: it is judged without an agent, and nothing is
 # applied or commented.
+#
+# The jobs run in workline's image (Dockerfile): the engine at WORKLINE_VERSION
+# and the tools its roles use, nothing to build. A self-managed GitLab whose
+# runners cannot reach ghcr.io copies it into its own registry and sets
+# WORKLINE_IMAGE; its own certificate authority (CI_SERVER_TLS_CA_FILE) is
+# trusted; the engine talks to the instance the job runs on (CI_API_V4_URL).
+# The agent still needs npm's registry and Anthropic's API.
 variables:
-  WORKLINE_VERSION: main            # pin a tag or commit once releases exist
+  WORKLINE_VERSION: v0.1.1          # a release of workline: update it to take a newer one
+  WORKLINE_IMAGE: ghcr.io/jn0v/workline
   WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs
 
+.workline:trust: &trust             # a self-managed instance's own authority, when it has one
+  - '[ -z "${CI_SERVER_TLS_CA_FILE:-}" ] || cat "$CI_SERVER_TLS_CA_FILE" >> /etc/ssl/certs/ca-certificates.crt'
+.workline:claude: &claude           # the agent, only when the project gives its token
+  - ai=none
+  - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
+
 .workline:
-  image: golang:1.27
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   before_script:
-    - go install github.com/JN0V/workline/cmd/workline@$WORKLINE_VERSION
-    - go install github.com/zricethezav/gitleaks/v8@v8.30.1   # secrets, for the committer
-    - export PATH=$PATH:$(go env GOPATH)/bin
+    - *trust
+    - workline version
     - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
 
 workline:judge:
   extends: .workline
   stage: test
   script:
-    - ai=none
-    - >
-      if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
-      apt-get update -qq && apt-get install -y -qq nodejs npm > /dev/null &&
-      npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
+    - *claude
     - status=0
     - >
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
@@ -82,12 +91,12 @@ workline:apply:
 # needs the `write_repository` scope, to push the branch. Without AI, only
 # derived blocks are regenerated.
 .workline:garden:
-  image: golang:1.27
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN
   before_script:
-    - go install github.com/JN0V/workline/cmd/workline@$WORKLINE_VERSION
-    - export PATH=$PATH:$(go env GOPATH)/bin
+    - *trust
+    - workline version
     - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
 
@@ -95,8 +104,9 @@ workline:garden:judge:
   extends: .workline:garden
   stage: test
   script:
+    - *claude
     - status=0
-    - workline route schedule --ai none --no-apply --forge gitlab --open-merge-request --json > line.json || status=$?
+    - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json || status=$?
     - exit $status
   artifacts:
     when: always

@@ -267,3 +267,17 @@ On 2026-09-27, on workline's own repository:
   engine on a clone of gitlab.com JN0V/workline-sandbox, no agent): the
   merge request read, the checklist of docs to check posted on !1, then
   edited in place on a second run, not posted again.
+- the templates on workline v0.1.0 (2026-10-01, both sandboxes): on
+  GitHub, the fork's pull request judged with the engine and gitleaks
+  downloaded in 1 s, where installing Go and building took about 40; on
+  gitlab.com, the jobs in ghcr.io/jn0v/workline:v0.1.0, judge 28 s with
+  Claude fixing the doc, apply 15 s committing it — 112 and 182 s before,
+  building glab and workline.
+- the first tag, moved (2026-10-01): v0.1.0 was pushed before the release
+  workflow was on main, then main's history was rewritten to drop 70 MB
+  of binaries committed by mistake, and the tag put back. The Go module
+  proxy had kept the first v0.1.0 for good: every `go list …@main` with
+  GOPROXY=direct — workline's own CI, DomoticsCore's — failed its checksum
+  ("does NOT match the one reported by the checksum server"). v0.1.0 is
+  retracted in go.mod; v0.1.1 is the first release to use. A tag pushed is
+  never moved.
