@@ -213,8 +213,10 @@ name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
 which the shipped roles call for their built-in steps), `WORKLINE_FORGE` (the
 configured forge, when one is set), `WORKLINE_TARGET`
 (`merge-request:12`, `issue:3`) when a forge and a target are given, and
-`WORKLINE_OPEN_MERGE_REQUESTS`, the role's open merge requests, when the run
-opens one (ADR-0006).
+`WORKLINE_OPEN_MERGE_REQUESTS`, how many of the role's merge requests are
+open, and `WORKLINE_OPEN_MERGE_REQUEST_TASKS`, their tasks (each branch, the
+role's prefix cut, separated by spaces), when the run opens one (ADR-0006,
+0013).
 
 ### Exit codes
 

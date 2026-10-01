@@ -1,0 +1,15 @@
+case: documentalist/task-waits-for-its-merge-request
+about: "When gardening, a task whose merge request waits for review is not asked again: the docs it would judge wait, saying so, and no token goes to proposing what is already proposed."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  forge:
+    merge-requests:
+      - {id: 4, branch: "workline/documentalist/suspect", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:doc-fixed", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "waits for review"}

@@ -167,5 +167,6 @@ replace the role's, key by key, one level deep.
 A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
 `WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`, `WORKLINE_FORGE` when a
 forge is given, `WORKLINE_TARGET` (`merge-request:12`) with a target too, and
-`WORKLINE_OPEN_MERGE_REQUESTS` with `--open-merge-request`. A role run by a handoff
+`WORKLINE_OPEN_MERGE_REQUESTS` and `WORKLINE_OPEN_MERGE_REQUEST_TASKS` with
+`--open-merge-request`. A role run by a handoff
 receives the inputs `handoff-from` and `handoff-reason`.

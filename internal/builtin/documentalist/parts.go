@@ -619,21 +619,25 @@ func judgedInPartsPatch(p, content, at string) (string, error) {
 	return fmt.Sprintf("--- a/%s\n+++ b/%s\n@@ -%d,1 +%d,2 @@\n-%s\n+judged-in-parts: %s\n+%s\n", p, p, n, n, lines[n-1], at, lines[n-1]), nil
 }
 
-// holdJudgedInParts keeps from the agent the docs judged in parts whose
-// sources did not change since, saying so.
+// holdJudgedInParts keeps from the agent the docs judged in parts, or
+// judged whole without being vouched for, whose sources did not change
+// since, saying so.
 func holdJudgedInParts(docs map[string]*suspectDoc, repo string) {
 	for _, sd := range docs {
-		if sd.note == "" && heldInParts(sd.doc, repo) {
+		switch {
+		case sd.note != "":
+		case held(sd.doc, sd.doc.JudgedInParts, repo):
 			sd.note = fmt.Sprintf("(judged in parts at %s, its sources unchanged since: not put before an agent again until one changes; a person reads it whole against them, then moves `checked`)", sd.doc.JudgedInParts)
+		case held(sd.doc, sd.doc.Judged, repo):
+			sd.note = fmt.Sprintf("(judged at %s, but the agent could not vouch for every sentence — its note said what; its sources unchanged since: not put before an agent again until one changes; a person reads it against them, then moves `checked`)", sd.doc.Judged)
 		}
 	}
 }
 
-// heldInParts says whether a doc judged in parts waits: none of its sources
-// changed since the commit it was judged at, so it is not put before an
-// agent again.
-func heldInParts(d *Doc, repo string) bool {
-	if d.JudgedInParts == "" {
+// held says whether a doc judged at a commit waits: none of its sources
+// changed since, so it is not put before an agent again.
+func held(d *Doc, at, repo string) bool {
+	if at == "" {
 		return false
 	}
 	for _, src := range d.Sources {
@@ -641,7 +645,7 @@ func heldInParts(d *Doc, repo string) bool {
 		if name != "" {
 			return false
 		}
-		if commits, err := changed(repo, d.JudgedInParts, "HEAD", p, anchor); err != nil || commits != "" {
+		if commits, err := changed(repo, at, "HEAD", p, anchor); err != nil || commits != "" {
 			return false
 		}
 	}

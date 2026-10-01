@@ -286,9 +286,14 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			// A fix the agent could not vouch for is kept: what it found wrong
-			// is fixed, and the doc stays suspect (ADR-0012). It is in
-			// patched as false: fixed, not judged.
+			// is fixed, and the doc stays suspect (ADR-0012), recording in
+			// `judged` when, so that it is not asked again before a source
+			// changes. It is in patched as false: fixed, not vouched for.
 			if checkedOf(now) == checkedOf(old) {
+				if full := want[""]; full != "" && !strings.HasPrefix(full, judgedOf(now)) {
+					refuse("judged-not-set", f.path, fmt.Sprintf("the patch leaves `checked`, so it sets `judged: %s`: the commit the doc was judged at, without being vouched for; otherwise it is put before an agent again tomorrow, to the same end", full[:7]))
+					continue
+				}
 				after[f.path] = now
 				if !patched[f.path] {
 					patched[f.path] = false
@@ -329,6 +334,15 @@ func checkedOf(content string) string {
 		return ""
 	}
 	return fmt.Sprint(d.Checked)
+}
+
+// judgedOf is what a doc's header says in `judged`, as written; never empty
+// for a doc whose header says nothing of it, so it is no prefix of a commit.
+func judgedOf(content string) string {
+	if d, err := ParseDoc("", []byte(content)); err == nil && d != nil && len(d.Judged) >= 7 {
+		return d.Judged
+	}
+	return "-"
 }
 
 // budgetRule are the size rules a fix may make a little worse, within what

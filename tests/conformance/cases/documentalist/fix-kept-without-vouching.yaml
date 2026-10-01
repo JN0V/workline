@@ -1,11 +1,11 @@
 case: documentalist/fix-kept-without-vouching
-about: "A fix that leaves `checked` alone is kept: what the agent found wrong is fixed, and the doc stays suspect, saying it was fixed but not vouched for — the agent could not confirm every sentence (ADR-0012)."
+about: "A fix that leaves `checked` alone, recording in `judged` when it was judged, is kept: what the agent found wrong is fixed, and the doc stays suspect, saying it was fixed but not vouched for — the agent could not confirm every sentence (ADR-0012)."
 given:
   repo: documented
   setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
-run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-not-checked"}
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-not-vouched"}
 expect:
   status: pass
-  applied: [patch]
+  applied: [patch, note]
   findings: [{rule: suspect, where: docs/tech/auth.md, message: "fixed, not vouched for"}]
-  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.", lacks: "verified:"}}
+  files: {"docs/tech/auth.md": {contains: "checked: 9bf650b\njudged: 1a8e5a4\n", lacks: "verified:"}}

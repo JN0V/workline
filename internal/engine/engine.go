@@ -236,11 +236,17 @@ func run(o Options, res *Result) error {
 		if f == nil {
 			return errors.New("--open-merge-request needs a forge (--forge)")
 		}
-		n, err := f.OpenMergeRequests(branchPrefix(r.Name))
+		open, err := f.OpenMergeRequests(branchPrefix(r.Name))
 		if err != nil {
 			return err
 		}
-		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n))
+		// How many wait, and which tasks: the branches, the role's prefix cut.
+		tasks := make([]string, len(open))
+		for i, b := range open {
+			tasks[i] = strings.TrimPrefix(b, branchPrefix(r.Name))
+		}
+		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", len(open)),
+			"WORKLINE_OPEN_MERGE_REQUEST_TASKS="+strings.Join(tasks, " "))
 	}
 
 	// 2. Prepare.

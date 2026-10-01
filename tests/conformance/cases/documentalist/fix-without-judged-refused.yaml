@@ -1,0 +1,10 @@
+case: documentalist/fix-without-judged-refused
+about: "A fix that leaves `checked` alone and says nothing in `judged` is refused: the doc would be put before an agent again on the next run, to the same end."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-not-checked"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: judged-not-set, where: docs/tech/auth.md, message: "judged: 1a8e5a4"}]

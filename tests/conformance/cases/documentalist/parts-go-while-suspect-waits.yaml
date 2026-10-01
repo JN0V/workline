@@ -1,0 +1,20 @@
+case: documentalist/parts-go-while-suspect-waits
+about: "When gardening, while the `suspect` task's merge request waits for review, a doc to be judged in parts is still asked: it goes to a task of its own, `fix`, and no longer waits behind the docs judged whole."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && printf -- '---\\nsources: [src/auth/token.go]\\nchecked: %s\\n---\\n# Token lifetime\\n\\nTokens are short-lived.\\n' $C > docs/tech/ttl.md && git add -A && git commit -qm 'docs: confirm the auth doc, say tokens are short-lived'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+  forge:
+    merge-requests:
+      - {id: 4, branch: "workline/documentalist/suspect", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:parts-contradiction", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 3
+  findings:
+    - {rule: suspect, where: docs/tech/ttl.md, message: "workline/documentalist/suspect, waits for review"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "judged in parts at"}

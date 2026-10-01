@@ -1,0 +1,12 @@
+case: documentalist/judged-not-asked-again
+about: "A doc judged without being vouched for (`judged`) is not put before an agent again until one of its sources changes after that commit; it stays suspect, for a person, saying so."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $C/\" docs/tech/auth.md && sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: fix the token lifetime, not vouched for'"
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "could not vouch for every sentence"}]

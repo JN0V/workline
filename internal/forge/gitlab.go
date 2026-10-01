@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 )
 
@@ -181,18 +182,19 @@ func (g *gitlab) OpenMergeRequest(branch, base, title, body string) (int, error)
 	return created.IID, nil
 }
 
-func (g *gitlab) OpenMergeRequests(prefix string) (int, error) {
+func (g *gitlab) OpenMergeRequests(prefix string) ([]string, error) {
 	open, err := g.openMergeRequests()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	n := 0
+	var out []string
 	for branch := range open {
 		if strings.HasPrefix(branch, prefix) {
-			n++
+			out = append(out, branch)
 		}
 	}
-	return n, nil
+	sort.Strings(out)
+	return out, nil
 }
 
 func (g *gitlab) MergeRequestBranch(id int) (string, bool, error) {
