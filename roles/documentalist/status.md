@@ -9,7 +9,7 @@ requests — docs judged on each pull request and gardened at night, by Claude
 in CI, fixes committed by a GitHub App and reviewed on the forge. Beta: the
 catch-up of a large backlog in parts has run once on DomoticsCore, right but
 for a badge's link; Sonnet often cites lines wrongly, and Opus pays again;
-GitLab is untried.
+GitLab tried once, on gitlab.com.
 
 ## Built and tried for real
 
@@ -25,6 +25,7 @@ GitLab is untried.
 | Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109) |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |
 | A fork's pull request: judged without secrets, its report commented from the repository's side, one comment kept (ci/github/workline-fork.yml) | JN0V/workline-sandbox #1, from jn0v-lab's fork |
+| On a GitLab merge request: Claude judges, the token commits the fix to its branch, the next pipeline skips the line's own commit | gitlab.com JN0V/workline-sandbox !1; a fork's merge request untried |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |
 | Staying on the task: a spec's example left as it is when the default it does not show changes | evaluation (`stays-on-the-task`, workline PR #10 replayed), 3 in 3 on Sonnet |
 
@@ -55,12 +56,9 @@ GitLab is untried.
    — `workline docs` from a ref it moves, the release held by docs suspect
    since the last tag, `doctor` saying where docs are judged; tried in
    conformance only, not yet on a real solo repository.
-4. **GitLab**: the template now asks for its tokens unprotected, so
-   they reach a merge request's branch, and lets Claude judge — untried on
-   a live GitLab.
-5. **workline's own docs**: README, usage and most specs are suspect, far
+4. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardening on workline with Claude and parts would catch them up.
-6. Smaller: budgets merge one level deep; Opus's notes see more than the
+5. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).
 
