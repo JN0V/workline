@@ -2,7 +2,7 @@
 
 ## Next, in order
 
-**Handover (2026-10-01, night).** The documentalist vouched for docs it
+**Handover (2026-10-02).** The documentalist vouched for docs it
 never read: the work is **ADR-0014, accepted**, in its order. Step 0 is
 built: the engine refuses a `checked` whose sources were not all given
 whole; the `checked` already moved is put back to `judged` — workline's 10
@@ -39,16 +39,26 @@ task and every refusal say a count the engine gives needs no claim; a
 refusal names only the places refused and the rest of the patch to send
 again; and each run keeps the agent's answers and the accepted claims
 (`out/agent-answer.txt`, `out/claims.yaml`), so step 4 can read them. The
-others are parked below (Engine and CI, "Left by step 3"). **Next, step
-4's acceptance** on the held-out set, five runs:
-WaterMeter, DomoticsCore after #114, workline's nightly gardening, each as
-it is configured. Estimate from step 3: about 25k tokens a doc judged
-whole (66–77k when asked again), about 200k a doc in five parts, 180k in
-eight; a round is about 0.15M on WaterMeter (parts off), up to 0.4M on
-each of DomoticsCore and workline (their `ai-max-tokens`), so 0.7 to
-0.95M a round, 3.5 to 4.75M for five. DomoticsCore: branch docs/narrow-wide-sources
-(two docs narrowed) waits, not pushed; nothing more there until ADR-0014
-step 4 holds; its main runs workline v0.1.1.
+others are parked below (Engine and CI, "Left by step 3"). **Step 4's
+acceptance does not hold** (roles/documentalist/status.md, "Measures";
+tried.md, 2026-10-02; 4.63M tokens): on the held-out set, five runs each,
+nothing false vouched for or written, every `count-off` and `value-left`
+the rules cover reported, fewer false alarms than real, the versions and
+flags made — but a judged doc costs 12.8% more than at the baseline
+(a96306c), past the tenth: one DomoticsCore run in five asked twice,
+`removal-uncited` on a word beside a count. The weekly one-in-ten sample
+waits for it. **Next**, per ADR-0014 (each bar before the next step):
+bring step 2's cost back — a word reworded on a line whose count the
+engine gives, a fix withdrawn rather than cited (HeapTracker's pitfall
+3/5, the baseline 5/5) — then step 4 again, the same way: a fresh copy per
+run of each repository, gardening nights chained, each night's change
+committed as if merged; the baseline engine's first night five times
+beside it, for the tokens. The parts asked again every night
+(`claims-dropped`, 0.23–0.32M a night, the baseline too) and the new kinds
+are in docs/research/documentalist-fixes-reviewed.md, "The held-out set".
+DomoticsCore: branch docs/narrow-wide-sources (two docs narrowed) waits,
+not pushed; nothing more there until ADR-0014 step 4 holds; its main runs
+workline v0.1.1.
 The night's gardening, on DomoticsCore and on workline: record it in
 tried.md, against the review. Sandboxes for trying CI for real:
 github.com/JN0V/workline-sandbox and its fork jn0v-lab/workline-sandbox;
