@@ -235,3 +235,8 @@ On 2026-09-27, on workline's own repository:
   the range to be put before an agent or left to a person; a release there
   would wait for 21 docs, the version bumps of 2.12.0 having touched the
   `library.json` many docs name.
+- workline PR #10 replayed (2026-10-01, evaluation `stays-on-the-task`):
+  the default number of handoffs raised, the routing spec judged on
+  Sonnet 5.5; the default fixed and the example of a project's routing
+  left alone, three runs in three, 23k tokens each. The fault of PR #10
+  came before ADR-0012 gave the agent its sources whole.

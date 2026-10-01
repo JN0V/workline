@@ -37,7 +37,7 @@ type caseFile struct {
 	About string `yaml:"about"`
 	Given struct {
 		Repo           string         `yaml:"repo"`            // a conformance fixture
-		Setup          []string       `yaml:"setup"`           // shell lines run after it is built
+		Setup          []string       `yaml:"setup"`           // shell lines run after it is built, or checked out
 		Config         map[string]any `yaml:"config"`          // .workline/config.yaml
 		WorklineCommit string         `yaml:"workline-commit"` // this repository: that commit's diff, staged on its parent
 		WorklineAt     string         `yaml:"workline-at"`     // this repository, at that commit
@@ -197,6 +197,11 @@ func play(t *testing.T, c *caseFile) (*run, error) {
 	case c.Given.WorklineAt != "":
 		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+c.Given.WorklineAt); err != nil {
 			return nil, err
+		}
+		for _, l := range c.Given.Setup { // the change the case is about, on top
+			if err := sh(repo, env, l); err != nil {
+				return nil, err
+			}
 		}
 	default:
 		script, _ := filepath.Abs(filepath.Join("..", "conformance", "fixtures", "repos", c.Given.Repo+".sh"))

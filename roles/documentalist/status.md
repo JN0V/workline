@@ -25,6 +25,7 @@ GitLab is untried.
 | Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109) |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |
+| Staying on the task: a spec's example left as it is when the default it does not show changes | evaluation (`stays-on-the-task`, workline PR #10 replayed), 3 in 3 on Sonnet |
 
 ## Built, tried without an agent
 
@@ -56,11 +57,9 @@ GitLab is untried.
 4. **Forks and GitLab**: a fork's pull request gets the job summary only,
    no comment; the GitLab template keeps its token protected, so it never
    reaches a merge request's branch — untried on a live GitLab.
-5. **Staying on the task**: the agent once aligned an example of a spec to
-   the default (workline PR #10). An evaluation case should catch it.
-6. **workline's own docs**: README, usage and most specs are suspect, far
+5. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardening on workline with Claude and parts would catch them up.
-7. Smaller: budgets merge one level deep; Opus's notes see more than the
+6. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).
 
