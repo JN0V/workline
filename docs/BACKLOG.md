@@ -3,17 +3,17 @@
 ## Next, in order
 
 **Handover (2026-10-01, night).** The documentalist vouched for docs it
-never read: the work now is **ADR-0014, accepted**, in its order — step 0
-first (the engine refuses a `checked` whose sources were not all given
-whole; the `checked` already moved so put back to `judged`; a release),
-then 1 to 4, each measured against the bars the ADR sets before the next.
-The evidence: docs/research/documentalist-fixes-reviewed.md; its verdicts
-are to be confirmed by the person one by one, with their proof beside
-them, before any becomes a case. Not pushed yet: branch
-fix/partial-settled-by-another (on #35, still open), the fixes of the solo
-try, the README split, the ADR. DomoticsCore: branch
-docs/narrow-wide-sources (two docs narrowed) waits, not pushed; nothing
-more there until ADR-0014 step 4 holds; its main runs workline v0.1.1.
+never read: the work is **ADR-0014, accepted**, in its order. Step 0 is
+built: the engine refuses a `checked` whose sources were not all given
+whole; the `checked` already moved is put back to `judged` — workline's 10
+docs (0669684), DomoticsCore's 16 on its local branch
+docs/undo-unearned-checked, not pushed. Its release waits for the person to
+merge #35 and this branch (fix/partial-settled-by-another). The 16 reviewed
+verdicts are confirmed by a second, independent check
+(docs/research/documentalist-fixes-reviewed.md). Next: step 1, the ground
+truth and the evaluation. DomoticsCore: branch docs/narrow-wide-sources
+(two docs narrowed) waits, not pushed; nothing more there until ADR-0014
+step 4 holds; its main runs workline v0.1.1.
 The night's gardening, on DomoticsCore and on workline: record it in
 tried.md, against the review. Sandboxes for trying CI for real:
 github.com/JN0V/workline-sandbox and its fork jn0v-lab/workline-sandbox;
