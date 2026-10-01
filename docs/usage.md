@@ -33,7 +33,7 @@ Options of `run-role` and `route`:
 | `--ai <agent>` | `none`, `claude`, or `claude:<model>@<effort>` to force a model (an alias or an exact id), an effort, or both, whatever the role's tier asks: `claude:opus`, `claude:@high`; or `cmd:<command>`, any other agent (below); default: `WORKLINE_AI` for the hook, else the project's `ai`, else yours, else none |
 | `--input name=value` | an input for the role (`route`: for every step), e.g. `range=<base>..<head>` for the committer on a merge request |
 | `--input-file name=path` | `run-role` only: an input read from a file, written back by the intention that targets it (the hook's message file) |
-| `--forge <forge>` | `github` (needs `gh`), `gitlab` (needs `glab`), `none`; default: the project's `forge` |
+| `--forge <forge>` | `github` (needs `gh`), `gitlab` (its API, with `GITLAB_TOKEN`, else glab's token if glab is set up, else CI's job token; the instance and project from CI, else `GITLAB_HOST` and the remote), `none`; default: the project's `forge` |
 | `--target issue:<n>` / `merge-request:<n>` | where comments and labels go |
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |

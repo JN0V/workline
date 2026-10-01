@@ -247,3 +247,7 @@ On 2026-09-27, on workline's own repository:
   repository's side, checked the pull request's head and commented it —
   the doc the change made wrong, and the product doc following it. A
   second push edited that comment; none was added.
+- GitLab reached through its REST API, without glab (2026-10-01, the
+  engine on a clone of gitlab.com JN0V/workline-sandbox, no agent): the
+  merge request read, the checklist of docs to check posted on !1, then
+  edited in place on a second run, not posted again.

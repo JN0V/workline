@@ -161,7 +161,7 @@ gardening ones), so a project's `routing:` reaches its CI too.
 ## Take only a part
 
 workline is one binary with its roles inside, and needs nothing but git (and
-`gh` or `glab` to reach a forge). Any existing pipeline can call one role, and
+`gh` to reach GitHub; GitLab is reached through its API). Any existing pipeline can call one role, and
 leave the rest:
 
 ```sh
