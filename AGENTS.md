@@ -6,6 +6,7 @@ against it. Then only what the task needs:
 | Task | Read |
 |---|---|
 | a role's behaviour | `roles/<name>/` (README for humans, facets for the AI) and docs/spec/role-contract.md |
+| where a role stands | `roles/<name>/status.md` (built, tried, missing), then `tried.md` |
 | the engine | docs/spec/ (role contract, routing, gates, model grid, conformance, multi-repo) and docs/adr/ |
 | what exists elsewhere | docs/research/ — its README says how to search |
 | what comes next | docs/BACKLOG.md |
