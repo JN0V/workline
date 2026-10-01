@@ -1,0 +1,33 @@
+# A tag v* publishes a release of workline (docs/BACKLOG.md, "Install without
+# Go in CI"): the engine for each system on the GitHub release (.goreleaser.yaml),
+# and the image CI templates run in, ghcr.io/jn0v/workline:<tag> (Dockerfile),
+# so a job downloads a fixed version in seconds instead of building main.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions: {contents: write, packages: write}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - uses: goreleaser/goreleaser-action@v6
+        with: {version: "~> v2", args: release --clean}
+        env: {GITHUB_TOKEN: "${{ github.token }}"}
+      - name: The image CI runs in
+        env:
+          TAG: ${{ github.ref_name }}
+          TOKEN: ${{ github.token }}
+        run: |
+          image=ghcr.io/$(echo "$GITHUB_REPOSITORY_OWNER" | tr A-Z a-z)/workline
+          cp dist/workline_linux_amd64_v1/workline .
+          echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$image:$TAG" .
+          docker push "$image:$TAG"
+          case "$TAG" in *-*) ;; *) docker tag "$image:$TAG" "$image:latest" && docker push "$image:latest" ;; esac
