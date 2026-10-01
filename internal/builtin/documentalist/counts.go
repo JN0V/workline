@@ -27,7 +27,11 @@ type countOff struct {
 }
 
 func (c countOff) message() string {
-	return fmt.Sprintf("`%s` has %d lines, not %s (line %d, %s)", c.named, c.real, c.stated, c.line, c.file)
+	file := c.file
+	if file == "" {
+		file = "the sum of the table's files"
+	}
+	return fmt.Sprintf("`%s` has %d lines, not %s (line %d, %s)", c.named, c.real, c.stated, c.line, file)
 }
 
 var (
@@ -43,6 +47,8 @@ var (
 	limitAfter = regexp.MustCompile(`(?i)^\W*(?:max|maximum|limit|hard limit|at most|or (?:less|fewer)|per file)\b`)
 	// sentenceEnd between a file and a count: they belong to two sentences.
 	sentenceEnd = regexp.MustCompile(`[.!?;]\s+[A-Z(]`)
+	// totalCell names a table's row of totals: "Total", "**Total**".
+	totalCell = regexp.MustCompile(`(?i)^total$`)
 	// countCell is a table cell holding a count alone: "524", "~283", "1,008".
 	countCell = regexp.MustCompile(`^(~\s*)?(\d{1,3}(?:,\d{3})+|\d+)$`)
 	// linesHeader is the heading of a table's column of line counts.
@@ -153,11 +159,15 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 		return lineCounts[f], true
 	}
 	var out []countOff
+	var checkAgainst func(n int, named, file, approx, number string, got int)
 	check := func(n int, named, file, approx, number string) {
 		got, ok := real(file)
 		if !ok {
 			return
 		}
+		checkAgainst(n, named, file, approx, number, got)
+	}
+	checkAgainst = func(n int, named, file, approx, number string, got int) {
 		stated, err := strconv.Atoi(strings.ReplaceAll(number, ",", ""))
 		if err != nil {
 			return
@@ -178,6 +188,16 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 	skip := derivedLines(content)
 	lines := scan(content)
 	linesCol := -1 // the column of line counts in the table being read
+	// A table's row of totals is a count too, the sum of its rows', when
+	// every other row counts one source file (DomoticsCore's OTA table, its
+	// total withdrawn for want of a claim, ADR-0014 step 4).
+	var tbl table
+	endTable := func() {
+		if t := tbl.total; t != nil && !tbl.unsound && tbl.rows >= 2 {
+			checkAgainst(t.n, t.named, "", t.approx, t.number, tbl.sum)
+		}
+		tbl = table{}
+	}
 	for i, l := range lines {
 		if skip[l.n] {
 			continue
@@ -187,6 +207,7 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 		if !l.code && strings.HasPrefix(strings.TrimSpace(text), "|") {
 			cells := tableCells(text)
 			if i+1 < len(lines) && isTableRule(lines[i+1].text) {
+				endTable()
 				linesCol = -1
 				for c, h := range cells {
 					if linesHeader.MatchString(strings.Trim(h, "*` ")) {
@@ -197,10 +218,13 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 			}
 			if linesCol >= 0 && linesCol < len(cells) && !isTableRule(text) {
 				if m := countCell.FindStringSubmatch(strings.Trim(cells[linesCol], "*` ")); m != nil {
-					file, named := "", ""
+					file, named, total := "", "", ""
 					for c, cell := range cells {
 						if c == linesCol {
 							continue
+						}
+						if t := strings.Trim(cell, "*` "); totalCell.MatchString(t) {
+							total = t
 						}
 						for _, name := range fileNamed.FindAllString(cell, -1) {
 							if f := sourceNamed(name, sources); f != "" && f != file {
@@ -212,13 +236,26 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 							}
 						}
 					}
+					got, ok := 0, false
 					if file != "" && file != "-" {
+						got, ok = real(file)
+					}
+					switch {
+					case ok:
 						check(l.n, named, file, strings.TrimSpace(m[1]), m[2])
+						tbl.sum += got
+						tbl.rows++
+					case total != "" && file == "" && tbl.total == nil:
+						tbl.total = &totalRow{n: l.n, named: total, approx: strings.TrimSpace(m[1]), number: m[2]}
+					default:
+						tbl.unsound = true
 					}
 					continue
 				}
+				tbl.unsound = true
 			}
 		} else {
+			endTable()
 			linesCol = -1
 		}
 		// Prose or a listing: a count belongs to the file named last before
@@ -251,7 +288,23 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 			check(l.n, named, file, strings.TrimSpace(approx), text[m[4]:m[5]])
 		}
 	}
+	endTable()
 	return out
+}
+
+// table is what countsOff reads of a table of line counts, for its total:
+// the sum of its rows' files, as they are now, and whether a row with a
+// count counts no one source file, so the sum is unknown.
+type table struct {
+	sum, rows int
+	unsound   bool
+	total     *totalRow
+}
+
+// totalRow is a table's row of totals, as written.
+type totalRow struct {
+	n                     int
+	named, approx, number string
 }
 
 // tableCells splits a table row into its cells, the outer bars dropped.
