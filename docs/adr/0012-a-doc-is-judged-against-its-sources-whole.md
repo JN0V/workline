@@ -46,3 +46,14 @@ The more careful model was right, and the line punished it.
   is fixed either way.
 - A doc fixed but not vouched for is a person's to confirm, as one judged in
   parts is.
+
+## Measured
+
+2026-10-01, `finds-planted-defects-whole` (four planted defects, twelve
+checks), three runs each, after this decision:
+
+| | before: diffs only | after: sources whole beside them |
+|---|---|---|
+| Opus 5.5 | 5/12 six runs in seven: a note, no fix | 12, 12, 12 (twice in two calls) |
+| Sonnet 5.5 | 12, 12, 12 | 12, 12, 12 |
+| tokens in a judgement | 8k | 11k |
