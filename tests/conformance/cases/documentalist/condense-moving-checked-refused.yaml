@@ -1,0 +1,12 @@
+case: documentalist/condense-moving-checked-refused
+about: "Condensing a doc gives none of its sources: a patch that moves the doc's `checked` while moving a part is refused (`checked-unread`), as any move of `checked` the task did not earn (ADR-0014)."
+given:
+  repo: untidy
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && git commit -qm 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && git add docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-checked"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: checked-unread, where: docs/sessions.md}]

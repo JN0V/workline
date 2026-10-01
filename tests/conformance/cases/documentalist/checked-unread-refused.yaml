@@ -1,0 +1,13 @@
+case: documentalist/checked-unread-refused
+about: "A fix that moves `checked` on a doc whose sources could not all be given whole in the task is refused (`checked-unread`): the agent saw what changed, not the rest, and cannot vouch for it (ADR-0014). The source here is past what a task shows whole; what changed in it is three lines."
+given:
+  repo: documented
+  setup:
+    - "seq 1 1200 | sed 's|^|// One line of a long comment on tokens, number |' >> src/auth/token.go && git commit -qam 'docs(auth): explain tokens at length'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: checked-unread, where: docs/tech/auth.md, message: "set `judged: "}]
