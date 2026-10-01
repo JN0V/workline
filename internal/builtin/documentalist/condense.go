@@ -162,7 +162,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 			refuse("patch-not-diff", "patch", "send a unified diff, so what it moves can be checked against the doc")
 			continue
 		}
-		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--check", "-"); err != nil {
+		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-"); err != nil {
 			refuse("patch-does-not-apply", "patch", err.Error())
 			continue
 		}

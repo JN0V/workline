@@ -43,4 +43,6 @@ remains (`still-over-budget`).
 
 The judge reads a diff as its lines read, whatever counts its hunk headers
 announce, and compares its reading with git's: the engine applies with
-`git apply --recount`, so what was judged is what is applied.
+`git apply --recount --unidiff-zero`, and checks with it, so what was judged
+is what is applied — a last hunk with no context after it is not taken for
+the end of the doc.
