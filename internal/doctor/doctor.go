@@ -195,12 +195,10 @@ func repository(r *Report, o Options) {
 	if cfg.AI != "" {
 		agent(r, "repository", o.AI, "WORKLINE_AI", cfg.AI, ".workline/config.yaml")
 	}
-	switch cfg.Forge {
-	case "github", "gitlab":
-		name := map[string]string{"github": "gh", "gitlab": "glab"}[cfg.Forge]
-		if t := tools.Lookup(name); !t.Present() {
-			r.add(Check{Area: "repository", Rule: "tool-missing", Where: name, Level: Warn,
-				Message: name + " is not installed, so this does not run here: " + t.For, Fix: t.Install()})
+	if cfg.Forge == "github" { // GitLab is reached through its API, with nothing installed
+		if t := tools.Lookup("gh"); !t.Present() {
+			r.add(Check{Area: "repository", Rule: "tool-missing", Where: "gh", Level: Warn,
+				Message: "gh is not installed, so this does not run here: " + t.For, Fix: t.Install()})
 		}
 	}
 

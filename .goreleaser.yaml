@@ -1,0 +1,26 @@
+# Releases of workline (docs/BACKLOG.md, "Install without Go in CI"): a tag
+# v* builds the engine for each system, with the roles inside it, and puts
+# the archives on the GitHub release; release.yml then builds the image CI
+# runs in (Dockerfile). Try it with `goreleaser release --snapshot --clean`.
+version: 2
+project_name: workline
+builds:
+  - main: ./cmd/workline
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{.Tag}}"]
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - {goos: windows, formats: [zip]}
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files: [LICENSE, README.md]
+checksum:
+  name_template: checksums.txt
+changelog:
+  disable: true                     # the release manager writes the notes
+release:
+  draft: false
+  prerelease: auto

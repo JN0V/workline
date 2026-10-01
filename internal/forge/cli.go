@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// run calls a forge CLI (gh or glab) in the repository, which tells it which
+// run calls a forge CLI (gh) in the repository, which tells it which
 // project to talk to. A CLI that is missing or cannot authenticate makes the
 // forge unreachable, not the role wrong.
 func run(repo, bin string, args ...string) ([]byte, error) {

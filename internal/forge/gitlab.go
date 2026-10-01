@@ -5,17 +5,177 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
+	"os"
+	"os/exec"
 	"sort"
 	"strings"
+	"time"
 )
 
-// gitlab talks to GitLab through the glab CLI and its REST API. Not yet tried
-// against a live instance.
-type gitlab struct{ repo string }
+// gitlab talks to GitLab's REST API itself, with nothing to install: on
+// gitlab.com or an instance of one's own, in CI or on a machine. Tried on
+// gitlab.com (roles/documentalist/tried.md).
+type gitlab struct {
+	repo                  string
+	base, project, header string // the API's root, the project's id, how the token goes
+	token                 string
+}
 
+// connect finds the instance, the project and the token: what CI gives
+// (CI_API_V4_URL, CI_PROJECT_ID), else GITLAB_HOST and the repository's
+// remote; the token in GITLAB_TOKEN, else glab's if it is set up, else the
+// job's own, which may read but not write.
+func (g *gitlab) connect() error {
+	if g.base != "" {
+		return nil
+	}
+	remoteAPI, remoteProject, _ := fromRemote(gitRemote(g.repo))
+	g.base = strings.TrimSuffix(os.Getenv("CI_API_V4_URL"), "/")
+	if g.base == "" {
+		if h := strings.TrimSuffix(os.Getenv("GITLAB_HOST"), "/"); h != "" {
+			if !strings.Contains(h, "://") {
+				h = "https://" + h
+			}
+			g.base = h + "/api/v4"
+		} else {
+			g.base = remoteAPI
+		}
+	}
+	switch {
+	case os.Getenv("CI_PROJECT_ID") != "":
+		g.project = os.Getenv("CI_PROJECT_ID")
+	case os.Getenv("CI_PROJECT_PATH") != "":
+		g.project = url.PathEscape(os.Getenv("CI_PROJECT_PATH"))
+	default:
+		g.project = remoteProject
+	}
+	if g.base == "" || g.project == "" {
+		return fmt.Errorf("%w: no GitLab project here: no CI_API_V4_URL and CI_PROJECT_ID, and no remote naming one", ErrUnreachable)
+	}
+	g.header, g.token = "PRIVATE-TOKEN", os.Getenv("GITLAB_TOKEN")
+	if g.token == "" {
+		if u, err := url.Parse(g.base); err == nil {
+			if out, err := exec.Command("glab", "config", "get", "token", "--host", u.Host).Output(); err == nil {
+				g.token = strings.TrimSpace(string(out))
+			}
+		}
+	}
+	if g.token == "" && os.Getenv("CI_JOB_TOKEN") != "" {
+		g.header, g.token = "JOB-TOKEN", os.Getenv("CI_JOB_TOKEN")
+	}
+	if g.token == "" {
+		return fmt.Errorf("%w: no GitLab token: set GITLAB_TOKEN", ErrUnreachable)
+	}
+	return nil
+}
+
+// api calls the REST API as `glab api` would, the subset this forge uses:
+// [--paginate] [-X METHOD] path [-f field=value]…, `:id` in the path the
+// project. Paginated, the pages' arrays follow one another.
 func (g *gitlab) api(args ...string) ([]byte, error) {
-	return run(g.repo, "glab", append([]string{"api"}, args...)...)
+	if err := g.connect(); err != nil {
+		return nil, err
+	}
+	method, path, paginate := "GET", "", false
+	form := url.Values{}
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--paginate":
+			paginate = true
+		case "-X":
+			i++
+			method = args[i]
+		case "-f":
+			i++
+			k, v, _ := strings.Cut(args[i], "=")
+			form.Add(k, v)
+		default:
+			path = args[i]
+		}
+	}
+	next := g.base + "/" + strings.Replace(path, ":id", g.project, 1)
+	var all []byte
+	for next != "" {
+		var body io.Reader
+		if len(form) > 0 {
+			body = strings.NewReader(form.Encode())
+		}
+		req, err := http.NewRequest(method, next, body)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set(g.header, g.token)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrUnreachable, err)
+		}
+		data, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrUnreachable, err)
+		}
+		switch {
+		case resp.StatusCode == http.StatusNotFound:
+			return nil, fmt.Errorf("%w: %s %s", errNotFound, method, path)
+		case resp.StatusCode >= 300:
+			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", ErrUnreachable, method, path, resp.Status, strings.TrimSpace(string(data)))
+		}
+		all = append(all, data...)
+		next = ""
+		if page := resp.Header.Get("X-Next-Page"); paginate && page != "" {
+			u, _ := url.Parse(req.URL.String())
+			q := u.Query()
+			q.Set("page", page)
+			u.RawQuery = q.Encode()
+			next = u.String()
+		}
+	}
+	return all, nil
+}
+
+var httpClient = &http.Client{Timeout: 60 * time.Second}
+
+// gitRemote is the URL of the repository's origin, or "".
+func gitRemote(repo string) string {
+	out, err := exec.Command("git", "-C", repo, "remote", "get-url", "origin").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// fromRemote reads a remote's URL — https, ssh:// or scp-like — as the API
+// of its instance, over https, and the project's path, escaped. An ssh port
+// is not the API's.
+func fromRemote(remote string) (api, project string, ok bool) {
+	var host, p string
+	switch {
+	case strings.Contains(remote, "://"):
+		u, err := url.Parse(remote)
+		if err != nil {
+			return "", "", false
+		}
+		host, p = u.Host, u.Path
+		if u.Scheme == "ssh" {
+			host = u.Hostname()
+		}
+	case strings.Contains(remote, ":"):
+		at := strings.LastIndex(remote, "@")
+		host, p, _ = strings.Cut(remote[at+1:], ":")
+	default:
+		return "", "", false
+	}
+	p = strings.TrimSuffix(strings.Trim(p, "/"), ".git")
+	if host == "" || p == "" {
+		return "", "", false
+	}
+	return "https://" + host + "/api/v4", url.PathEscape(p), true
 }
 
 func path(t Target) string {
