@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -76,7 +77,7 @@ func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
 		}
 		return findings, nil
 	}
-	out, err := exec.Command("git", "-C", repo, "log", "--format=%h %ae %ce", rng).Output()
+	out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%h %ae %ce"}, gitrange.Args(rng)...)...).Output()
 	if err != nil {
 		return nil, fmt.Errorf("cannot read the commits of %s: %v", rng, err)
 	}

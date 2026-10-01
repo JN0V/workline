@@ -199,3 +199,42 @@ func TestDocsFromWhereLastJudged(t *testing.T) {
 		t.Fatalf("judged again what was judged:\n%s", out)
 	}
 }
+
+// A branch already pushed that merged main sends the merge alone: main's
+// commits, GitHub's merge commits among them, are the remote's already, and
+// the committer does not judge them again (their committer, noreply@github.com,
+// is on no one's list).
+func TestPushAfterMergingMain(t *testing.T) {
+	work := t.TempDir()
+	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"), "GIT_CONFIG_GLOBAL="+filepath.Join(work, "gitconfig"))
+	os.WriteFile(filepath.Join(work, "gitconfig"), nil, 0o644)
+	os.MkdirAll(filepath.Join(work, "config", "workline"), 0o755)
+	os.WriteFile(filepath.Join(work, "config", "workline", "allowed-identities"), []byte("^fixture@example\\.invalid$\n"), 0o644)
+	remote, repo := filepath.Join(work, "remote.git"), filepath.Join(work, "repo")
+	if out, err := exec.Command("git", "init", "-q", "--bare", remote).CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	if err := build(repo, "documented", []string{
+		"mkdir -p .workline && printf 'routing:\\n  events: {pre-push: [committer]}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: check commits before a push'",
+		"git remote add origin " + remote, "git push -q origin main",
+		"git checkout -qb topic && echo '// topic' >> src/auth/token.go && git commit -qam 'feat(auth): say so' && git push -q origin topic",
+		// main moves on by a merge GitHub made
+		"git checkout -q main && GIT_COMMITTER_NAME=GitHub GIT_COMMITTER_EMAIL=noreply@github.com git commit -q --allow-empty -m 'Merge pull request #1 from someone/branch' && git push -q origin main",
+		"git checkout -q topic && git merge -q --no-edit main",
+	}, env); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) (string, error) {
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir, cmd.Env = repo, env
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		out, err := cmd.CombinedOutput()
+		return string(out), err
+	}
+	if out, err := run(engineBin, "hooks", "install", "--global"); err != nil {
+		t.Fatal(out)
+	}
+	if out, err := run("git", "push", "origin", "topic"); err != nil {
+		t.Fatalf("the push was stopped:\n%s", out)
+	}
+}
