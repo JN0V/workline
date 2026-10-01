@@ -13,7 +13,8 @@ const zero = "0000000000000000000000000000000000000000"
 // PushRanges turns what git gives a pre-push hook on its standard input —
 // "<local ref> <local sha> <remote ref> <remote sha>" per ref — into the
 // ranges of commits the push sends, as `git log` reads them. A deleted ref
-// sends nothing; a new branch sends the commits no ref of that remote holds.
+// sends nothing; a branch, new or not, sends the commits no ref of that
+// remote holds.
 func PushRanges(repo, remote string, stdin io.Reader) ([]string, error) {
 	var out []string
 	s := bufio.NewScanner(stdin)
@@ -26,13 +27,14 @@ func PushRanges(repo, remote string, stdin io.Reader) ([]string, error) {
 		if strings.Trim(local, "0") == "" {
 			continue // deleting a ref sends no commit
 		}
+		// What is new is what no ref of the remote holds, nor the tip the push
+		// replaces: a branch rebased onto main sends its own commits, not
+		// main's, which the remote has already.
+		args := []string{"rev-list", "--reverse", local, "--not", "--remotes=" + remote}
 		if strings.Trim(remoteSha, "0") != "" && known(repo, remoteSha) {
-			out = append(out, remoteSha+".."+local)
-			continue
+			args = append(args, remoteSha)
 		}
-		// A new branch, or a remote tip this clone has not fetched: what is new
-		// is what no ref of the remote holds.
-		first, err := git(repo, "rev-list", "--reverse", local, "--not", "--remotes="+remote)
+		first, err := git(repo, args...)
 		if err != nil {
 			return nil, err
 		}
