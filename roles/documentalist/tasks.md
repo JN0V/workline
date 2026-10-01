@@ -36,6 +36,16 @@ a line count off is told each one, with the real count, counted by the
 engine: `checked` cannot move while one stands (`checked-over-count-off`),
 so the fix brings it to that count or leaves `checked`.
 
+Every task judging docs — suspect, stale, due at the release, the fix after
+the parts — says that every word a patch takes out of a body is cited
+(ADR-0014, step 2): beside the patch, a `claim` for each place, with the
+doc's lines and either a source's words quoted (`status: contradicted`,
+`source: {doc's source file, quote}`) or a name the code no longer has
+(`status: gone`, `name`); `doc` names the doc when the answer patches
+several. Sources are not numbered in the task, so a claim quotes, and the
+engine finds the quote. A comment is not evidence: with nothing else to
+cite, the words stay, and a `note` says what could not be confirmed.
+
 ## Judged in parts
 
 **Judged in parts** (ADR-0009), when the project sets `judge-in-parts: true`

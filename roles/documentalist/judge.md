@@ -35,6 +35,27 @@ A patch is refused, and the agent asked again with the reasons, when it:
 - moves `checked` while the doc, as patched, still states a line count off
   (`checked-over-count-off`, ADR-0014 step 2): the task gave the real
   count; the fix brings it there, or leaves `checked`;
+- takes words out of a doc's body with no claim saying why
+  (`removal-uncited`, ADR-0014 step 2): the agent removed a true claim it
+  could not see backed (workline d43b3f2). A run of changed lines whose
+  removed lines say a word its added lines do not, case aside, needs one
+  claim beside the patch whose lines reach it (three lines either way):
+  `contradicted`, quoting a file under the doc's sources, or `gone`, naming
+  a name the removed lines say, in the code when the doc was last edited and
+  gone now, as `identifier-gone` finds it. A claim that does not hold — the
+  quote not in the file, the file not a source, the name still in the code
+  — is `citation-unchecked`. Words only added, lines rewrapped, and a line
+  count the engine found off need none; condense, split, merge-card and
+  dedupe tasks are judged by their own rules, which check where the text
+  went;
+- rests a change on a comment alone (`comment-not-evidence`): its claims'
+  quotes are found in the file only inside comments, read by the file's
+  type — `//` and `/* */` in Go, C, C++, JavaScript and the like; `#` in
+  YAML, shell, Python, TOML, a Makefile; `<!-- -->` in Markdown, HTML,
+  XML; strings are read as strings. A stale comment won over the code's
+  setting (workline #29). The comment is reported (`comment-disagrees`, at
+  the comment's file and line), kept for the run's verdict whatever the
+  agent answers when asked again, so a person or the committer fixes it;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.

@@ -28,5 +28,8 @@ You get one decision about documentation. `task.md` says which kind:
   the files or folders whose change could make it wrong, with the `checked`
   given; `sources: []` for a doc describing no code. The body stays as it is.
 
+A patch taking words out of a doc gives, beside it, a `claim` for each place
+saying why, as the task shows: a source's words, or a name gone from the code.
+
 If the right answer needs a decision only the project can make, return a `note`
 instead of guessing.
