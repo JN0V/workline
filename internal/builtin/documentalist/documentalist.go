@@ -1326,13 +1326,24 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 	if err != nil {
 		return nil, false, err
 	}
-	out, err := git(repo, append([]string{"log", "--name-only", "--format="}, gitrange.Args(string(data))...)...)
+	out, err := git(repo, append([]string{"log", "--name-only", "--format=commit %H"}, gitrange.Args(string(data))...)...)
 	if err != nil {
 		return nil, false, err
 	}
+	// A doc whose commits changed only its header, who checked it, is not
+	// touched: what the docs following it say did not change.
 	touched = map[string]bool{}
+	commit := ""
 	for _, f := range strings.Split(out, "\n") {
-		if f != "" {
+		switch {
+		case strings.HasPrefix(f, "commit "):
+			commit = strings.TrimPrefix(f, "commit ")
+		case f == "" || touched[f]:
+		case strings.HasSuffix(f, ".md"):
+			before, err1 := git(repo, "show", commit+"^:"+f)
+			after, err2 := git(repo, "show", commit+":"+f)
+			touched[f] = err1 != nil || err2 != nil || body(before) != body(after)
+		default:
 			touched[f] = true
 		}
 	}
@@ -1367,8 +1378,8 @@ func addedFiles(runDir, repo string) (map[string]bool, error) {
 // touches says whether one of the files is path, or under it.
 func touches(files map[string]bool, path string) bool {
 	dir := strings.TrimSuffix(path, "/")
-	for f := range files {
-		if f == dir || strings.HasPrefix(f, dir+"/") {
+	for f, yes := range files {
+		if yes && (f == dir || strings.HasPrefix(f, dir+"/")) {
 			return true
 		}
 	}

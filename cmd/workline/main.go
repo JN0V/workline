@@ -1058,7 +1058,7 @@ func initCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "Review it (git diff): commit what is right, restore what is not (git restore <file>).")
 	}
 	if len(suspect) > 0 {
-		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push has them judged.\n", len(suspect))
+		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push lists them; `workline docs` has them judged, or a merge request.\n", len(suspect))
 	}
 	return exitFor(res.Status)
 }

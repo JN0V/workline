@@ -44,11 +44,12 @@ is put before the agent with the repository's files, and the agent proposes
 the code it describes — `sources: []` for a doc describing none, a decision
 or a changelog. Its `checked` is the commit that last changed the doc, never
 HEAD: the doc was written against the code as it was then, so a source
-changed since makes it suspect, to be judged on the next push, rather than
-vouched for unread. The judge refuses a patch touching more than the header,
-a source the repository does not hold, or another `checked`. The patches land
-in the working tree for the person to review and commit. Without an agent,
-each doc is listed (`no-sources`) with the commit its `checked` would name.
+changed since makes it suspect, to be judged (`workline docs`, a merge
+request) rather than vouched for unread. The judge refuses a patch touching
+more than the header, a source the repository does not hold, or another
+`checked`. The patches land in the working tree for the person to review and
+commit. Without an agent, each doc is listed (`no-sources`) with the commit
+its `checked` would name.
 
 ## Without AI
 
