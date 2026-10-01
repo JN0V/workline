@@ -1,6 +1,8 @@
 # workline on GitLab CI — include it from .gitlab-ci.yml:
 #   include: {local: ci/workline.gitlab-ci.yml}
-# Not yet tried on a live GitLab instance: neither the agent nor the token.
+# Tried on gitlab.com (2026-10-01): Claude judges, the fix is committed to the
+# merge request's branch. A free account must verify itself (phone or card)
+# before its pipelines run. A fork's merge request is untried.
 #
 # The project's routing decides what runs on a merge request (.workline/config.yaml,
 # `routing:`; by default the committer, then the documentalist).
