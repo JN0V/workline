@@ -121,6 +121,53 @@ func misquoted(old string, f fileDiff) string {
 	return ""
 }
 
+// version is a version number as docs write them: 2.12.0, v1.4.
+var version = regexp.MustCompile(`\d+(?:\.\d+)+`)
+
+// replacedInPart says where a patch replaces a version on a line while the
+// line still says the old one elsewhere: a badge's text bumped and its link
+// left (DomoticsCore #113). A line removed is paired with the line added in
+// its place, in order, when a hunk replaces as many as it removes.
+func replacedInPart(f fileDiff) string {
+	for _, h := range f.hunks {
+		var removed, added []string
+		check := func() string {
+			if len(removed) != len(added) {
+				return ""
+			}
+			for i, old := range removed {
+				now := added[i]
+				for _, v := range version.FindAllString(old, -1) {
+					if n := strings.Count(now, v); n > 0 && n < strings.Count(old, v) {
+						return fmt.Sprintf("a line changes %s, but still says %s elsewhere: %q; change every place on the line that says it — a link as well as its text — or say in a note why one stays", v, v, now)
+					}
+				}
+			}
+			return ""
+		}
+		for _, l := range append(h.lines, " ") {
+			switch l[0] {
+			case '-':
+				if len(added) > 0 {
+					if why := check(); why != "" {
+						return why
+					}
+					removed, added = nil, nil
+				}
+				removed = append(removed, l[1:])
+			case '+':
+				added = append(added, l[1:])
+			default:
+				if why := check(); why != "" {
+					return why
+				}
+				removed, added = nil, nil
+			}
+		}
+	}
+	return ""
+}
+
 // placeWithin is how many lines from where a hunk says it sits the judge
 // looks for the lines it quotes: agents miscount by a line or two in long
 // docs (DomoticsCore, 2026-10-01), never by their content.
@@ -310,6 +357,10 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			f = placed(old, f)
 			if why := misquoted(old, f); why != "" {
 				refuse("misquoted", f.path, why)
+				continue
+			}
+			if why := replacedInPart(f); why != "" {
+				refuse("replaced-in-part", f.path, why)
 				continue
 			}
 			if touchesDerived(old, f) {

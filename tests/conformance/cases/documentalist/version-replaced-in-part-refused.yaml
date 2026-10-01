@@ -1,0 +1,13 @@
+case: documentalist/version-replaced-in-part-refused
+about: "A patch replacing a version on a line while the line still says the old one elsewhere — a badge's text bumped, its link left (DomoticsCore #113) — is refused, saying where; asked again, the agent changes both."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's#^\\# Authentication$#\\# Authentication [v1.0.0](https://example.com/releases/v1.0.0)#' docs/tech/auth.md && git commit -qam 'docs: link the release'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:badge-replaced-in-part"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "[v1.1.0](https://example.com/releases/v1.1.0)"}}

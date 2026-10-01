@@ -1,0 +1,30 @@
+# DomoticsCore #113: the version a badge shows brought to the code, while its
+# link, on the same line, still names the old release. Then, asked again,
+# the whole line.
+calls:
+  - - patch: |
+        --- a/docs/tech/auth.md
+        +++ b/docs/tech/auth.md
+        @@ -3,3 +3,4 @@ type: reference
+         sources: [src/auth/token.go]
+        -checked: 9bf650b
+        +checked: 269e234
+        +verified: agent:documentalist
+         ---
+        @@ -6,2 +7,2 @@
+        -# Authentication [v1.0.0](https://example.com/releases/v1.0.0)
+        +# Authentication [v1.1.0](https://example.com/releases/v1.0.0)
+         
+  - - patch: |
+        --- a/docs/tech/auth.md
+        +++ b/docs/tech/auth.md
+        @@ -3,3 +3,4 @@ type: reference
+         sources: [src/auth/token.go]
+        -checked: 9bf650b
+        +checked: 269e234
+        +verified: agent:documentalist
+         ---
+        @@ -6,2 +7,2 @@
+        -# Authentication [v1.0.0](https://example.com/releases/v1.0.0)
+        +# Authentication [v1.1.0](https://example.com/releases/v1.1.0)
+         
