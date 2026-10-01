@@ -97,9 +97,9 @@ on one**: tell us what differs.
   its name, without the tag. The runners need the Docker executor.
 - **Your certificate authority**: the jobs add `CI_SERVER_TLS_CA_FILE`, which
   the runner gives when the instance uses its own, to the image's trusted
-  ones: git, workline and glab then accept the instance.
-- **The address**: glab talks to the instance the job runs on
-  (`GITLAB_HOST: $CI_SERVER_URL`); nothing to set.
+  ones: git and workline then accept the instance.
+- **The address**: workline talks to the API of the instance the job runs
+  on, which CI names (`CI_API_V4_URL`); nothing to set, nothing to install.
 - **The agent** reaches out: npm's registry, to install Claude Code, and
   Anthropic's API. Without that, set no `CLAUDE_CODE_OAUTH_TOKEN`: the docs
   are listed for a person.
