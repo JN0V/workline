@@ -654,7 +654,9 @@ func Pre(runDir, repo string) int {
 		})...)
 		stale = staleForAgent(findings, byPath, pl)
 	}
-	for _, p := range append(problems, gone...) {
+	// Line counts off: counted by the engine, never vouched for (ADR-0014).
+	counts := CountsOff(repo, tree, docs)
+	for _, p := range append(append(problems, gone...), counts...) {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
 		if p.Rule == "setting-missing" {
 			f.Level = "block" // a check that could not run is not a pass
@@ -1018,6 +1020,10 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 	var b strings.Builder
 	b.WriteString(header)
 	judged := map[string]map[string]string{}
+	files, err := trackedFiles(repo)
+	if err != nil {
+		return "", nil, err
+	}
 	for _, p := range paths {
 		if maxDocs > 0 && len(judged) >= maxDocs {
 			break
@@ -1075,6 +1081,14 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 		entry.WriteString("\n\nWhy it is here:\n\n")
 		for _, w := range sd.why {
 			fmt.Fprintf(&entry, "- %s\n", strings.ReplaceAll(w, "\n", "\n  "))
+		}
+		// Line counts the engine counted (ADR-0014, step 2): told, so the
+		// agent neither vouches for them nor counts them itself.
+		if off := countsOff(repo, files, sd.doc, string(content)); len(off) > 0 {
+			entry.WriteString("\nLine counts this doc states wrong, counted by the engine in the files as they are now. `checked` cannot move while one stands: bring each to the count given here, or leave `checked`.\n\n")
+			for _, c := range off {
+				fmt.Fprintf(&entry, "- %s\n", c.message())
+			}
 		}
 		if isAuthority(s, p) {
 			fmt.Fprintf(&entry, "\nThis doc is an authority (`truth: doc`): the code follows it, not the reverse. Do not change what it says. "+
@@ -1147,6 +1161,7 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	var refused []verdict.Finding
+	var judgedFix *judgedFixes
 	patched := map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
@@ -1202,7 +1217,7 @@ func Post(runDir, repo string) int {
 					return fail(err)
 				}
 			}
-			refused, patched, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			refused, patched, judgedFix, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 		}
 		if err != nil {
 			return fail(err)
@@ -1235,6 +1250,9 @@ func Post(runDir, repo string) int {
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
+		}
+		if judgedFix.countFixed(f) {
+			f.Message += " (fixed in this run)"
 		}
 		if f.Level == "block" {
 			blocking++
@@ -1339,6 +1357,21 @@ func loadTree(repo string, globs []string) (Tree, error) {
 		t.Docs[f] = string(data)
 	}
 	return t, nil
+}
+
+// trackedFiles lists the files the repository tracks.
+func trackedFiles(repo string) (map[string]bool, error) {
+	out := map[string]bool{}
+	files, err := git(repo, "ls-files")
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range strings.Split(files, "\n") {
+		if f != "" {
+			out[f] = true
+		}
+	}
+	return out, nil
 }
 
 // trackedDocs lists the docs that declare their sources.

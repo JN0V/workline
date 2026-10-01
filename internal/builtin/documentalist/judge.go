@@ -312,8 +312,10 @@ func checkedMatches(content string, want map[string]string) bool {
 // A doc judged in parts (inParts) is fixed with `checked` left where it is:
 // nobody read it whole, so it stays suspect. So is a doc whose sources did
 // not all go whole into the task (not in whole, ADR-0014): the agent cannot
-// vouch for what it was not given.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, error) {
+// vouch for what it was not given. Nor may `checked` move while the doc
+// states a line count off (ADR-0014, step 2). What the patches accepted do
+// is returned too, for the checks on the docs as they will be.
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, *judgedFixes, error) {
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
 		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
@@ -329,7 +331,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		if tree.Docs == nil {
 			var err error
 			if tree, err = loadTree(repo, s.Docs); err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			for p, c := range tree.Docs {
 				after[p] = c
@@ -402,6 +404,21 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				refuse("checked-unread", f.path, msg)
 				continue
 			}
+			if checkedOf(now) != checkedOf(old) {
+				d, _ := ParseDoc(f.path, []byte(now))
+				if off := countsOff(repo, tree.Files, d, now); len(off) > 0 {
+					var said []string
+					for _, c := range off {
+						said = append(said, c.message())
+					}
+					msg := "the patch moves `checked`, but the doc still states a line count off, which nobody can vouch for: " + strings.Join(said, "; ") + "; bring each count to what the file has"
+					if full := want[""]; full != "" {
+						msg += fmt.Sprintf(", or leave `checked` and set `judged: %s`", full[:7])
+					}
+					refuse("checked-over-count-off", f.path, msg)
+					continue
+				}
+			}
 			// A fix the agent could not vouch for is kept: what it found wrong
 			// is fixed, and the doc stays suspect (ADR-0012), recording in
 			// `judged` when, so that it is not asked again before a source
@@ -428,7 +445,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		}
 	}
 	if len(refused) > 0 || fixed == 0 {
-		return refused, patched, nil
+		return refused, patched, nil, nil
 	}
 	before := map[string]Problem{}
 	for _, p := range Hygiene(tree, s.Budgets, s.Duplicates) {
@@ -441,7 +458,45 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	return refused, patched, nil
+	return refused, patched, &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after}, nil
+}
+
+// judgedFixes is what the accepted patches do: every doc before and after
+// them.
+type judgedFixes struct {
+	repo          string
+	files         map[string]bool
+	before, after map[string]string
+}
+
+// countFixed says whether a count-off finding of a doc is one its fix
+// brought right: the doc said it before, and says it no more.
+func (j *judgedFixes) countFixed(f verdict.Finding) bool {
+	if j == nil || f.Rule != "count-off" {
+		return false
+	}
+	now, ok := j.after[f.Where]
+	if !ok || now == j.before[f.Where] {
+		return false
+	}
+	key := func(c countOff) string { return c.file + " " + c.stated }
+	was := ""
+	d, _ := ParseDoc(f.Where, []byte(j.before[f.Where]))
+	for _, c := range countsOff(j.repo, j.files, d, j.before[f.Where]) {
+		if c.message() == f.Message {
+			was = key(c)
+		}
+	}
+	if was == "" {
+		return false
+	}
+	d, _ = ParseDoc(f.Where, []byte(now))
+	for _, c := range countsOff(j.repo, j.files, d, now) {
+		if key(c) == was {
+			return false
+		}
+	}
+	return true
 }
 
 // checkedOf is what a doc's header says in `checked`, as written.

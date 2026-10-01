@@ -1,0 +1,16 @@
+case: documentalist/count-off-not-in-a-record
+about: "No line count is reported in a doc with `sources: []`, a changelog, a decision record or a derived block: what they say was true when written, or is the code's own (ADR-0014, step 2)."
+given:
+  repo: drifted
+  config: {roles: {documentalist: {settings: {derive: {clock-size: "echo '`Clock.h` (524 lines)'"}}}}}
+  setup:
+    - "mkdir -p docs/adr && printf -- '---\\nsources: [Clock/include/Clock.h]\\nchecked: X\\n---\\n# ADR-0001: one header\\n\\n`Clock.h` has 524 lines.\\n' > docs/adr/0001-one-header.md && printf -- '---\\nsources: [Clock/include/Clock.h]\\nchecked: X\\n---\\n# Changelog\\n\\n## 1.4.1\\n\\n- `Clock.h` (524 lines)\\n' > CHANGELOG.md && printf -- '---\\nsources: []\\n---\\n# Notes\\n\\n`Clock/include/Clock.h` has 524 lines.\\n' > docs/clock/notes.md && printf '\\n<!-- workline:derive clock-size -->\\n`Clock.h` (524 lines)\\n<!-- workline:end -->\\n' >> docs/clock/events.md && sed -i 's|^sources: \\[Clock/include/ClockEvents.h\\]|sources: [Clock/include/ClockEvents.h, Clock/include/Clock.h]|' docs/clock/events.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/adr/0001-one-header.md CHANGELOG.md && git add . && git commit -qm 'docs: records'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: count-off, where: docs/clock/README.md, message: "not 524"}]
+  no-findings:
+    - {rule: count-off, where: docs/adr/0001-one-header.md}
+    - {rule: count-off, where: CHANGELOG.md}
+    - {rule: count-off, where: docs/clock/notes.md}
+    - {rule: count-off, where: docs/clock/events.md}

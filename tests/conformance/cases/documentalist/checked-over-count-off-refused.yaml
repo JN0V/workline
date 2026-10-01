@@ -1,0 +1,12 @@
+case: documentalist/checked-over-count-off-refused
+about: "While a line count of the doc stands off, `checked` cannot move: a fix vouching for the doc over it is refused (`checked-over-count-off`), even with every source read whole, saying the count and the real one (ADR-0014, step 2)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh vouches"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: checked-over-count-off, where: docs/clock/README.md, message: "`Clock.h` has 569 lines, not 524"}]
+  files: {"docs/clock/README.md": {contains: "**1.4.1**"}}
