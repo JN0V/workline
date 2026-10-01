@@ -618,7 +618,12 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 		// A suspect doc of the range, and what stopped the run: a fix the
 		// judge refused, however often the agent was asked.
 		if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") || f.Level == "block" || f.Where == "patch" || f.Rule == "left-out" {
-			fmt.Fprintf(out, "  %s %s: %s\n", f.Rule, f.Where, strings.SplitN(f.Message, "\n", 2)[0])
+			lines := strings.Split(strings.TrimSpace(f.Message), "\n")
+			msg := lines[0]
+			if last := lines[len(lines)-1]; len(lines) > 1 && strings.HasPrefix(last, "(") {
+				msg += " " + last // what became of it: a person judges it, a later round
+			}
+			fmt.Fprintf(out, "  %s %s: %s\n", f.Rule, f.Where, msg)
 		}
 	}
 	for _, n := range res.Notes {
