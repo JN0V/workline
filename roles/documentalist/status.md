@@ -54,8 +54,9 @@ GitLab is untried.
    — `workline docs` from a ref it moves, the release held by docs suspect
    since the last tag, `doctor` saying where docs are judged; tried in
    conformance only, not yet on a real solo repository.
-4. **Forks and GitLab**: a fork's pull request gets the job summary only,
-   no comment; the GitLab template keeps its token protected, so it never
+4. **Forks and GitLab**: a fork's pull request is commented from the
+   repository's side (ci/github/workline-fork.yml, built, untried until a
+   fork exists); the GitLab template keeps its token protected, so it never
    reaches a merge request's branch — untried on a live GitLab.
 5. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardening on workline with Claude and parts would catch them up.
