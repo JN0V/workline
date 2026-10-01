@@ -1,18 +1,27 @@
 # workline on GitLab CI — include it from .gitlab-ci.yml:
 #   include: {local: ci/workline.gitlab-ci.yml}
-# Not yet tried on a live GitLab instance.
+# Not yet tried on a live GitLab instance: neither the agent nor the token.
 #
 # The project's routing decides what runs on a merge request (.workline/config.yaml,
 # `routing:`; by default the committer, then the documentalist).
 #
 # Two jobs, two trust zones (docs/research/server-side.md):
 #   judge  runs the line, no write token, stops before applying (--no-apply).
+#          With the variable CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`, a
+#          Claude subscription; masked), Claude judges; without it, the docs
+#          are listed for a person. GitLab gives a variable to the whole job,
+#          installs included, where GitHub gives it to one step.
 #   The findings show in the merge request's Code Quality report, on every tier.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token with the `api`
-#          and `write_repository` scopes, stored as a protected, masked
-#          variable) and no AI key. A doc fix is committed to the merge
-#          request's branch (--push-to-merge-request); from a fork, it is left
-#          in a comment as a diff to apply.
+#          and `write_repository` scopes) and no AI key. A doc fix is committed
+#          to the merge request's branch (--push-to-merge-request).
+#
+# Both variables are masked, and NOT protected: GitLab gives a protected
+# variable only to protected branches, never to a merge request's. Anyone who
+# may push a branch can then read them from a pipeline they change — people
+# who may already write to the repository. A fork's merge request runs in the
+# fork, which has neither: it is judged without an agent, and nothing is
+# applied or commented.
 variables:
   WORKLINE_VERSION: main            # pin a tag or commit once releases exist
   WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs
@@ -31,9 +40,14 @@ workline:judge:
   extends: .workline
   stage: test
   script:
+    - ai=none
+    - >
+      if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+      apt-get update -qq && apt-get install -y -qq nodejs npm > /dev/null &&
+      npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
     - status=0
     - >
-      workline route merge-request --ai none --no-apply --push-to-merge-request
+      workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
       --code-quality gl-code-quality.json --json > line.json || status=$?

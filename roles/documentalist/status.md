@@ -56,8 +56,9 @@ GitLab is untried.
    conformance only, not yet on a real solo repository.
 4. **Forks and GitLab**: a fork's pull request is commented from the
    repository's side (ci/github/workline-fork.yml, built, untried until a
-   fork exists); the GitLab template keeps its token protected, so it never
-   reaches a merge request's branch — untried on a live GitLab.
+   fork exists); the GitLab template now asks for its tokens unprotected, so
+   they reach a merge request's branch, and lets Claude judge — untried on
+   a live GitLab.
 5. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardening on workline with Claude and parts would catch them up.
 6. Smaller: budgets merge one level deep; Opus's notes see more than the
