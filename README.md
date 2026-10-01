@@ -25,7 +25,7 @@ Status (2026-09-24): used daily on its author's machine;
 | **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository and, when gardening, to other sites (lychee), identifiers gone from the code; docs citing a superseded decision; docs not confirmed for too long; derived blocks; Claude judges suspect and stale docs, opens an issue when the code disagrees with a spec, brings product docs up to date at the release, which waits for them, merges a repeated passage and a card too short, condenses a doc over budget, splits a card holding several concepts (checked by a second model), and its patches are checked | style |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
-| **Forges**: GitHub (comments, a comment edited in place, and labels tried live), simulated; GitLab written; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | GitLab never run; GitHub issues and releases never run live |
+| **Forges**: GitHub (comments and labels tried live), simulated; GitLab tried on gitlab.com; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; GitHub issues and releases not yet tried live |
 | Agents: Claude Code, and any command as `cmd:` | Codex, Antigravity, OpenCode built in; the generated model grid |
 
 ## Install
@@ -155,13 +155,13 @@ request for those without the hook; the documentalist runs on the forge. On a
 forge, one job judges with no write token but code scanning's (SARIF upload) and
 another applies without an AI key (`--no-apply`, then `workline apply`).
 
-The CI templates run `workline route merge-request`, so a project's `routing:`
-reaches its CI too.
+The CI templates run `workline route` (`merge-request`; `schedule` for the
+gardening ones), so a project's `routing:` reaches its CI too.
 
 ## Take only a part
 
 workline is one binary with its roles inside, and needs nothing but git (and
-`gh` or `glab` to reach a forge). Any existing pipeline can call one role, and
+`gh` to reach GitHub; GitLab is reached through its API). Any existing pipeline can call one role, and
 leave the rest:
 
 ```sh

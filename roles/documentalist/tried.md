@@ -263,3 +263,7 @@ On 2026-09-27, on workline's own repository:
   from before ADR-0011, said partial, "the default is not in this share";
   the fix followed the comment. The comment is fixed, the line restored. A
   fix should not act on a partial claim another part supports.
+- GitLab reached through its REST API, without glab (2026-10-01, the
+  engine on a clone of gitlab.com JN0V/workline-sandbox, no agent): the
+  merge request read, the checklist of docs to check posted on !1, then
+  edited in place on a second run, not posted again.

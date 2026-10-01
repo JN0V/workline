@@ -1,2 +1,3 @@
 .workline/runs/
 .gitleaks.toml
+dist/

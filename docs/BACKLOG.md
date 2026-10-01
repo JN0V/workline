@@ -50,7 +50,11 @@ Then, once both work well here:
 
 - **Release manager, merge-request flow** — a release MR kept up to date, the
   tag on merge; the natural flow in a team.
-- **Install without Go in CI.** Each CI job installs Go and builds workline
+- **Install without Go in CI.** Built, not yet released (2026-10-01):
+  `.goreleaser.yaml`, the image (`Dockerfile`, 578 MB, Claude Code
+  installed by the job in 4 s) and `release.yml` on a tag `v*`. Left: the
+  first tag, the image made public on ghcr.io, then the templates on it.
+  Each CI job installs Go and builds workline
   from `main` before it runs. Publish tagged releases with their binaries
   (GoReleaser: Linux, macOS, Windows, on the GitHub releases), so a
   workflow downloads one in seconds, and pin a tag in each repository
