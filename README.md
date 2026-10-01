@@ -122,6 +122,7 @@ On your machine, on a forge, or both: each place fires its own events, and one
 routing (`routing.default.yaml`, changed in `.workline/config.yaml`) says which
 roles each event runs. A role behaves the same wherever it runs; only the
 trigger, the agent at hand and the way proposals are applied differ.
+Setting it up in CI, on GitHub or GitLab: [docs/ci.md](docs/ci.md).
 
 ```mermaid
 flowchart LR
@@ -200,6 +201,7 @@ real cases, and costs tokens, so it runs only when asked:
 ## Read next
 
 - [Usage](docs/usage.md) — commands, options, exit codes, files, variables
+- [CI](docs/ci.md) — setting it up on GitHub, gitlab.com, a self-managed GitLab
 - [Principles](docs/PRINCIPLES.md) — the rules every choice is checked against
 - [Role contract](docs/spec/role-contract.md) — what a role is
 - [Decisions](docs/adr/) · [Research](docs/research/) · [Backlog](docs/BACKLOG.md)
