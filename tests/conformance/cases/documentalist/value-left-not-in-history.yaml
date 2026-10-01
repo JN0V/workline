@@ -1,0 +1,16 @@
+case: documentalist/value-left-not-in-history
+about: "A replaced version is not reported in a history doc — a changelog, a decision record, a tried or research record — even one declaring the same source: there the old version is the record (ADR-0014, step 2)."
+given:
+  repo: drifted
+  setup:
+    - "mkdir -p docs/adr docs/research && for f in CHANGELOG.md docs/adr/0001-clock.md docs/clock/tried.md docs/research/clocks.md; do printf -- '---\\nsources: [Clock/library.json]\\nchecked: X\\n---\\n# Record\\n\\nClock 1.4.1 kept the time.\\n' > $f; done && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" CHANGELOG.md docs/adr/0001-clock.md docs/clock/tried.md docs/research/clocks.md && git add . && git commit -qm 'docs: records'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh version"}
+expect:
+  status: pass
+  findings: [{rule: value-left, where: docs/getting-started.md, message: "1.4.1"}]
+  no-findings:
+    - {rule: value-left, where: CHANGELOG.md}
+    - {rule: value-left, where: docs/adr/0001-clock.md}
+    - {rule: value-left, where: docs/clock/tried.md}
+    - {rule: value-left, where: docs/research/clocks.md}

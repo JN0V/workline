@@ -1263,6 +1263,14 @@ func Post(runDir, repo string) int {
 		}
 		kept = append(kept, f)
 	}
+	// A version the fixes replace, still said beside them: reported, for a
+	// person (ADR-0014, step 2).
+	if judgedFix != nil {
+		kept = append(kept, valuesLeft(judgedFix.fixes, judgedFix.after, judgedFix.files, func(p string) string {
+			data, _ := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
+			return string(data)
+		})...)
+	}
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback))); err != nil {
 			return fail(err)

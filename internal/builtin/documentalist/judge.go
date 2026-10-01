@@ -324,6 +324,10 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	fixed := 0
 	var tree Tree
 	after := map[string]string{}
+	var fixes []fixedDoc
+	accept := func(f fileDiff) {
+		fixes = append(fixes, fixedDoc{path: f.path, blocks: changeBlocks(f)})
+	}
 	for _, in := range intents {
 		if in.Kind != "patch" || isFallback(in, fallback) {
 			continue // the role's own regenerated blocks are not the agent's to judge
@@ -393,6 +397,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 					continue
 				}
 				after[f.path] = now
+				accept(f)
 				fixed++
 				continue
 			}
@@ -429,6 +434,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 					continue
 				}
 				after[f.path] = now
+				accept(f)
 				if !patched[f.path] {
 					patched[f.path] = false
 				}
@@ -440,6 +446,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			after[f.path] = now
+			accept(f)
 			patched[f.path] = true
 			fixed++
 		}
@@ -458,15 +465,16 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	return refused, patched, &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after}, nil
+	return refused, patched, &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes}, nil
 }
 
 // judgedFixes is what the accepted patches do: every doc before and after
-// them.
+// them, and the lines each changed.
 type judgedFixes struct {
 	repo          string
 	files         map[string]bool
 	before, after map[string]string
+	fixes         []fixedDoc
 }
 
 // countFixed says whether a count-off finding of a doc is one its fix

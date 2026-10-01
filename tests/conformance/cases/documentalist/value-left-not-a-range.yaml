@@ -1,0 +1,12 @@
+case: documentalist/value-left-not-a-range
+about: "A version given as a range (`>=1.4.1`, `^1.4.1`, `~1.4.1`) states what a dependant accepts, not the version now: it is not reported as left by a fix replacing it (ADR-0014, step 2; measured on DomoticsCore, where `>=1.13.0` was a false alarm)."
+given:
+  repo: drifted
+  setup:
+    - "printf -- '---\\nsources: [Clock/library.json]\\nchecked: X\\n---\\n# Depending on the clock\\n\\nA component needing it declares `clock >=1.4.1`, or `clock@^1.4.1`.\\n' > docs/clock/deps.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/clock/deps.md && git add . && git commit -qm 'docs(clock): depending on it'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh version"}
+expect:
+  status: pass
+  findings: [{rule: value-left, where: docs/getting-started.md, message: "1.4.1"}]
+  no-findings: [{rule: value-left, where: docs/clock/deps.md}]
