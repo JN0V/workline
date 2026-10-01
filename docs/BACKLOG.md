@@ -7,7 +7,8 @@ before any other role. Done on `feat/token-cap`: `ai-max-tokens` caps a
 run; a doc fixed but not vouched for records `judged` and a gardening task
 waits while its pull request is open (ADR-0013), so DomoticsCore's parts
 are no longer stuck behind docs judged whole. Next: DomoticsCore's first
-real run in parts (roles/documentalist/status.md, "Missing").
+real run in parts, tried (DomoticsCore #113): what is left is in
+roles/documentalist/status.md, "Missing".
 
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
@@ -31,8 +32,8 @@ this repository before any other role is added.
    dialog on macOS and Windows, for those who ask for the approval.
 3. **Docs judged on the merge request and by gardening** (ADR-0010):
    built and tried (workline PR #10, DomoticsCore). Where it stands, and
-   what is missing in order: roles/documentalist/status.md — first, the
-   first real run in parts; then the release gate and `workline docs`
+   what is missing in order: roles/documentalist/status.md — first, Sonnet
+   citing lines wrongly; then the release gate and `workline docs`
    from a ref, for a repository without pull requests (and `doctor`/`init`
    brought in line with ADR-0010); forks and GitLab.
 4. **Judge docs far behind in parts** (ADR-0009, accepted on its measures;
@@ -49,9 +50,14 @@ Then, once both work well here:
 
 - **Release manager, merge-request flow** — a release MR kept up to date, the
   tag on merge; the natural flow in a team.
-- **Publishing** — tagged, signed binaries, so CI installs a pinned version;
-  the repository is public, so `go install` works, but the templates still
-  follow `main`.
+- **Install without Go in CI.** Each CI job installs Go and builds workline
+  from `main` before it runs. Publish tagged releases with their binaries
+  (GoReleaser: Linux, macOS, Windows, on the GitHub releases), so a
+  workflow downloads one in seconds, and pin a tag in each repository
+  instead of following `main`: a broken commit of workline then no longer
+  breaks the CI of every repository using it. Then a reusable action
+  (`uses: JN0V/workline@v1`) that installs the pinned binary and runs the
+  line, so a repository's workflow is a few lines and is updated by its tag.
 - **More agents** — Codex, Antigravity, OpenCode adapters (any command already
   runs as `cmd:`, prompt in, proposals out); `independent-of` in the engine;
   generate the model grid from models.dev and Epoch (docs/spec/model-grid.md).
