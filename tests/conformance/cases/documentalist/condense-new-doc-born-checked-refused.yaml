@@ -1,0 +1,12 @@
+case: documentalist/condense-new-doc-born-checked-refused
+about: "A doc created by condensing or splitting is born without `checked`: the task gives none of the sources, so a new doc carrying one — even the commit the doc it came from names — is refused (`checked-unread`), as any `checked` the task did not earn (ADR-0014). Born without it, the doc is listed `unchecked`, for a person."
+given:
+  repo: untidy
+  setup:
+    - "printf '      freshness: {stale-after-days: 3650}\\n' >> .workline/config.yaml && git add .workline && git rm -q docs/faq.md && git commit -qm 'docs: drop the faq; ten years fresh'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/token.go]\\nchecked: %s\\n---\\n' $C | cat - docs/sessions.md > x && mv x docs/sessions.md && git add docs/sessions.md && git commit -qm 'docs: track the sessions doc'"
+run: {role: documentalist, event: schedule, ai: "fake:condense-new-doc-checked"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: checked-unread, where: docs/cards/signing-out.md}]
