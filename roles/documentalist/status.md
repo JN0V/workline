@@ -84,7 +84,8 @@ repository without merge requests is built but untried for real.
    be (below, after step 3). Step 4's acceptance, on the held-out set, does
    **not hold** (below): nothing false vouched for or written, every
    count reported, but the tokens a judged doc costs are 12.8% over the
-   baseline, past the tenth the bar allows.
+   baseline, past the tenth the bar allows. The three costs behind it are
+   met, to measure again (below, after step 4).
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -205,3 +206,17 @@ step 2's removal rule asks again for a word reworded beside a count
 pitfall, OTA's total). Judging in parts costs 0.23M to 0.32M a night and,
 `claims-dropped` keeping the doc unrecorded, is asked again every night
 (8 of 11 nights; the baseline engine too).
+
+After step 4, the three costs (conformance and replay only, no agent run
+on them yet; step 4 to run again): the rest of a line whose count the
+engine fixes, and glue taken out of a line reworded ("the", "per"; never a
+negation, a quantifier, a conjunction or a tense), need no claim; a
+table's total is a `count-off` the engine sums; the task says a line a
+diff adds may be quoted; a patch git cannot apply is refused saying which
+line it misquotes (the run asked twice had skipped a blank line). The
+reviewed bot fixes replayed again: the three wrong ones refused, 11 of 12
+right ones pass, as before; the step 4 answers refused — OTA's total,
+"Watch" beside 930 lines — pass. A doc in parts whose claims were dropped
+is recorded, the drop said for a person, and not asked again until a
+source changes; a history doc (a changelog) is never picked for
+condensing.

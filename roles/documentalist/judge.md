@@ -11,7 +11,9 @@ Part of [the documentalist](README.md).
 
 A patch is refused, and the agent asked again with the reasons, when it:
 
-- is not a unified diff, or git cannot apply it;
+- is not a unified diff, or git cannot apply it — the refusal then says
+  which line a hunk quotes wrong, a blank line skipped or one that is not
+  there, where git says only the hunk's line (DomoticsCore, ADR-0014 step 4);
 - touches a doc that was not put before the agent;
 - quotes lines that are not at the numbers its hunks cite — git apply alone
   would find them elsewhere and apply anyway. A hunk a few lines off (3 at
@@ -48,7 +50,13 @@ A patch is refused, and the agent asked again with the reasons, when it:
   count the engine found off, brought to the engine's number, need none —
   the stated number and the word making it rough ("~", "about",
   "approximately"), in prose, a table's cell or a fenced listing; another
-  number in its place needs a claim like any word. The task and every
+  number in its place needs a claim like any word. Where the run replaces
+  line for line, the rest of a line whose count it brings to the engine's
+  number needs none either — the count changed what the line says ("Watch
+  the 800-line limit" became "Over the 800-line hard limit" beside 930
+  lines, DomoticsCore, step 4) — nor a line reworded taking out only glue
+  ("the", "per", "currently"; never a negation, a quantifier, a conjunction
+  or a tense). A table's total is a count the engine gives too. The task and every
   refusal say it, the engine's count being the evidence: the agent had left
   the counts it was given, believing a count "cannot be quoted as a source"
   (ADR-0014, step 3). A refusal names the places refused only, and the rest

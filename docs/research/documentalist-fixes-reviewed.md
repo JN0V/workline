@@ -221,3 +221,8 @@ on its tokens. New kinds, none a falsehood:
 5. *Condensing a changelog*: WaterMeter's CHANGELOG.md, over its budget,
    chosen two nights running and refused both times (a patch outside the
    task; nothing moved).
+
+Since, conformance and replay only: 2 (the total and the words beside a
+count need no claim, the engine's count standing for them), 3 (recorded
+though claims were dropped) and 5 (a history doc never picked) are met,
+to be measured again with step 4.

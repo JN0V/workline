@@ -76,7 +76,10 @@ are cut. Part of [the documentalist](README.md).
     ("`EventBus.h` is currently ~283 lines"), a fenced listing ("Clock.h
     (524 lines)") or a table whose column is headed `Lines`. Right within
     one line, or within a tenth when it says it is about (`~`, about,
-    approximately). Not a count: a number beside a limit word (`<`, under,
+    approximately). A table's row of totals (`Total`) is a count too, the
+    sum of its rows, when each row counts one source file: an OTA table's
+    total, unreported, was withdrawn by the agent for want of a claim
+    (ADR-0014, step 4). Not a count: a number beside a limit word (`<`, under,
     over, limit, max, target, …); nor anything in a doc with `sources: []`,
     a history doc (a changelog, a decision record, a tried or research
     record) or a derived block. Reported with the file, the count stated
