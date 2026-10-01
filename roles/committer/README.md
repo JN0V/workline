@@ -2,6 +2,7 @@
 sources: [internal/builtin/committer, roles/committer/role.yaml]
 checked: d77c33b
 verified: agent:documentalist
+judged-in-parts: 268cf0f
 ---
 # Committer
 
@@ -40,7 +41,7 @@ gitleaks' own rules find secrets. Terms that must never reach a repository
 are rules of the user's, in lists kept outside it, gitleaks taking the first
 config it finds:
 
-1. `GITLEAKS_CONFIG`, when set;
+1. `GITLEAKS_CONFIG` or `GITLEAKS_CONFIG_TOML`, when set;
 2. the repository's `.gitleaks.toml`, gitignored: this repository's terms,
    which may extend the common list (`[extend] path = "…"`);
 3. the common list, `workline/gitleaks.toml` in the user's config folder
@@ -48,7 +49,7 @@ config it finds:
    (`[extend] useDefault = true`);
 4. gitleaks' rules alone.
 
-A rule's id and description are printed: name no term in them. gitleaks lets
+A rule's id is printed: name no term in it. gitleaks lets
 its own config through, so the committer refuses a commit adding a private
 `.gitleaks.toml` — gitignored, or a link — (`term-list-staged`); one a
 project commits to share its allowlist is not private.
