@@ -25,8 +25,9 @@ for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m
 awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
 ```
 
-**Next: step 2** (count-off, value-left, the removal rule, a comment is
-not evidence). DomoticsCore: branch docs/narrow-wide-sources
+**Step 2 in part**: `count-off` and `value-left` built and measured with
+no agent (roles/documentalist/tried.md); **next**, the removal rule and a
+comment is not evidence. DomoticsCore: branch docs/narrow-wide-sources
 (two docs narrowed) waits, not pushed; nothing more there until ADR-0014
 step 4 holds; its main runs workline v0.1.1.
 The night's gardening, on DomoticsCore and on workline: record it in

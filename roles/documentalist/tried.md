@@ -347,3 +347,39 @@ On 2026-09-27, on workline's own repository:
   not ~283"), leaves `checked` and sets `judged`. Never seen: a comment
   winning over the code (an issue is opened every run), a true claim
   removed, a sibling left at the old version, a fixed bug rewritten.
+- ADR-0014 step 2, `count-off` and `value-left` measured with no agent
+  (2026-10-01, the engine at 782f65d, on copies of DomoticsCore at
+  origin/main 98e016d and of workline at a96306c). Every report read
+  against the doc and the file:
+
+  | Check | DomoticsCore | workline |
+  |---|---|---|
+  | `count-off`, every doc, `workline run-role … --ai none` | 60 reports, 60 real, 0 false | 0 (no doc states a file's line count) |
+  | `value-left`, the bot's fixes replayed (bc0bd26 … 5ae8335) | 54 → 51 after tuning: 47 real, 4 false | 0 (no bot fix, nor any of 266 doc commits, replaces a three-part version) |
+
+  `count-off`: the 60 are in 12 docs, each a count stated for a source
+  file the file no longer has — fenced listings (ota/README.md, ntp),
+  `| File | Lines |` tables (ntp, ota, storage, webui), prose
+  ("`EventBus.h` is currently ~283 lines"), a `LOC` count in the deep
+  dive (159 when written, 180 now). The three known cases are found:
+  EventBus.h ~283 for 462, Platform_Stub.h ~630 for 930, Storage.h 655
+  for 771 (three places). No miss within the rule; outside it,
+  remote-console/index.md's "RemoteConsole.h (714 lines)" (960; its
+  sources are other docs, not the header) and home-assistant's "1030
+  raw" (1137; no "lines"). Counts within a tenth of a `~` stay quiet
+  (ComponentRegistry.h ~378 for 406), so does every "< 800 lines".
+  `value-left`: first built on sets, it missed the badge's link (the
+  fix's line still said 2.0.0, so 2.0.0 was not "replaced"); counted
+  per line now, it reports the link and "Version 2.0.0 Released!" (5ae8335)
+  and MQTT's siblings at 1.9.0 (16c660b). A sibling shares a source
+  file that now says the new version, so Core's 1.4.0 is not looked for
+  in LED's docs. Seven false alarms first: three a version range
+  (`>=1.13.0`, `>=1.4.0`, `>=1.3.0`), tuned out with a case
+  (`value-left-not-a-range`); four left — HomeAssistant's "(v2.0.0)"
+  marking when a feature came, in three docs, and Wifi's version-history
+  row. A real report often lists other lines too: the OTA row's 1.4.1
+  beside System's and WiFi's.
+  The `drifted` cases with fake agents (no real one): the three
+  `count-off` grades pass in every mode; vouching for every doc is now
+  refused on the README and project-context (`checked-over-count-off`),
+  still losing the "33 tests" no source shows.

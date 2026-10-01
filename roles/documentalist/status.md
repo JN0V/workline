@@ -76,7 +76,9 @@ repository without merge requests is built but untried for real.
    engine refuses a `checked` the agent could not have earned, and the
    `checked` already moved are put back (above); its release waits for the
    person to merge #35 and fix/partial-settled-by-another. Step 1 is
-   built and its baseline measured (below, "Measures"); step 2 next.
+   built and its baseline measured (below, "Measures"). Step 2 in part:
+   `count-off` and `value-left` built, measured with no agent (below);
+   the removal rule and "a comment is not evidence" next.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -121,5 +123,14 @@ one before step 0, within a run of each other): the clean control `checked`, the
 made and what is true kept, 5/5 everywhere; never `checked` over a planted
 falsehood 5/5 in gardening, 3/5 before and 2/5 after on the version bump — a
 frozen line count vouched for (2 runs each), a test count no source shows
-(1 run); about 42k tokens a run. The three `count-off` findings are lost
-in every run until step 2 is built.
+(1 run); about 42k tokens a run. The three `count-off` findings were lost
+in every run, step 2 not being built; the engine reports them now.
+
+ADR-0014 step 2, no agent (tried.md, 2026-10-01): `count-off` on a copy
+of DomoticsCore, 60 reports, all real, the three known counts among them;
+none on workline, whose docs state no file's line count. `value-left`,
+the bot's fixes on DomoticsCore replayed: 51 reports, 47 real, 4 false
+(a version marking when a feature came, a version-history row), after a
+version range was tuned out; the badge's link and MQTT's siblings found.
+Not yet run with a real agent: the tokens and the fixes it makes once
+told the counts are step 4's to measure.
