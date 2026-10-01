@@ -44,7 +44,7 @@ What it writes is right about four times in five: versions read from
 `library.json`, flags, CI permissions, small diffs. What fails:
 
 1. **It vouches for what it did not read.** Moving `checked` says every
-   sentence is true. It moved on DomoticsCore only — four commits, six docs
+   sentence is true. It moved on DomoticsCore only — four commits, five docs
    (bc0bd26, 2e25ea0, 25e22dd, 16c660b) — each over false frozen numbers or
    a stale date. Every one of those docs had sources far past what a task
    shows whole (20,000 characters; 28 to 165 KB): the agent saw diffs alone,
@@ -113,8 +113,8 @@ roles/documentalist/README.md's sources were narrowed since (47917f1) to
 one file that fits: it can be judged whole now.
 
 DomoticsCore: 22 moves, none earned — 14 docs by a person in 9e20ce2, and
-the bot's eight moves on five docs (bc0bd26, 2e25ea0, 25e22dd, 16c660b; the
-"six docs" counted above are five). Put back on the branch
+the bot's eight moves on five docs (bc0bd26, 2e25ea0, 25e22dd, 16c660b;
+first counted as six). Put back on the branch
 docs/undo-unearned-checked:
 
 | Doc | Moves | First (sources) | Last (sources) | Header now |

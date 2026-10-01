@@ -13,7 +13,8 @@ The documentalist's fixes, reviewed against the code
 ([documentalist-fixes-reviewed.md](../research/documentalist-fixes-reviewed.md)),
 fail in two distinct ways:
 
-- **An unearned `checked`.** Six DomoticsCore docs had `checked` moved over
+- **An unearned `checked`.** Five DomoticsCore docs (six when accepted:
+  counted again in step 0, five distinct) had `checked` moved over
   false numbers or dates. Every one had sources far past what a task shows
   whole (20,000 characters; 28 to 165 KB): the agent saw diffs alone, and
   the judge accepted the move (documentalist.go, `sourcesNow` appended only

@@ -64,7 +64,7 @@ repository without merge requests is built but untried for real.
 1. **A fix vouches for what it did not check.** Reviewed on 2026-10-01:
    every version the agent wrote was right, but moving `checked` vouched
    for frozen numbers still false beside them — line counts, test counts,
-   on six DomoticsCore docs whose sources the agent never saw whole (16c660b
+   on five DomoticsCore docs whose sources the agent never saw whole (16c660b
    and three more), the judge accepting it — and a bug long fixed was
    rewritten rather than removed (92feb08); the same
    version was left stale in sibling docs. The plan, reviewed by seven
