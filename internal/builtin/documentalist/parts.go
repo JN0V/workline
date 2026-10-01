@@ -176,7 +176,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		switch {
 		case entry == "":
 			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
-		case fixes.Len()+len(entry)+len(fixTaskHeader) > taskMaxChars:
+		case fixes.Len()+len(entry)+len(fixTaskHeader)+len(citeTask) > taskMaxChars:
 			sd.deferred = true
 			sd.note = "(" + summary + "; what they found wrong does not fit this round's fix: judged in parts again in a later round)"
 			continue
@@ -198,7 +198,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		inParts[sd.doc.Path] = at
 	}
 	if fixes.Len() > 0 {
-		task = fixTaskHeader + fixes.String()
+		task = fixTaskHeader + citeTask + fixes.String()
 	}
 	return task, judged, fallback, inParts, nil
 }

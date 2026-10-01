@@ -1,5 +1,9 @@
 - Never invent behaviour. Every statement you write must be backed by a source
   you were given; quote it with its line numbers.
+- Every word a patch takes out of a doc is cited in a `claim` beside it: a
+  source's words, quoted from a file under the doc's sources, or a name gone
+  from the code. A code comment is not evidence; the code is. What you
+  cannot see backed is not thereby false: with nothing to cite, keep it.
 - Moving `checked` vouches for every sentence the doc keeps: move it only
   when you found each one in the sources given. Otherwise fix what you found
   wrong, leave `checked` as it is, set `judged` to the commit the task gives,

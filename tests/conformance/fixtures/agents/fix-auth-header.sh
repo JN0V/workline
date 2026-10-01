@@ -34,7 +34,7 @@ $header
     -Access tokens last one hour.
     +Access tokens last two hours.
 YAML
-case $2 in
+case ${2:-cites-code} in
 cites-code) cat <<'YAML'
 - claim:
     lines: "10"

@@ -1011,6 +1011,7 @@ fixes what is now wrong, and nothing else.
 // docTask writes a task putting docs before the agent, each with why it is
 // there and what it is judged against, under the header saying the kind.
 func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
+	header += citeTask
 	maxDocs := s.AIMaxCalls
 	paths := make([]string, 0, len(suspects))
 	for p := range suspects {
@@ -1160,7 +1161,7 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	var refused []verdict.Finding
+	var refused, reported []verdict.Finding
 	var judgedFix *judgedFixes
 	patched := map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
@@ -1217,9 +1218,25 @@ func Post(runDir, repo string) int {
 					return fail(err)
 				}
 			}
-			refused, patched, judgedFix, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			refused, patched, judgedFix, reported, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 		}
 		if err != nil {
+			return fail(err)
+		}
+	}
+	// A comment given as the only reason for a fix is reported for a person,
+	// whatever the agent answers when asked again (ADR-0014, step 2): kept
+	// beside the run's answers until the run ends.
+	commentsFile := filepath.Join(runDir, "out", "comments-disagree.yaml")
+	var comments []verdict.Finding
+	if data, err := os.ReadFile(commentsFile); err == nil {
+		if err := yaml.Unmarshal(data, &comments); err != nil {
+			return fail(err)
+		}
+	}
+	if len(reported) > 0 {
+		comments = sortedFindings(append(comments, reported...))
+		if err := writeYAML(commentsFile, comments); err != nil {
 			return fail(err)
 		}
 	}
@@ -1271,6 +1288,7 @@ func Post(runDir, repo string) int {
 			return string(data)
 		})...)
 	}
+	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback))); err != nil {
 			return fail(err)

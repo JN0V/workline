@@ -9,5 +9,5 @@ given:
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/drop-gone-line.sh"}
 expect:
   status: pass
-  applied: [patch, claim]
+  applied: [patch]
   files: {"docs/tech/auth.md": {contains: "judged: ", lacks: "RefreshToken"}}

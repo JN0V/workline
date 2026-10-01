@@ -314,15 +314,26 @@ func checkedMatches(content string, want map[string]string) bool {
 // not all go whole into the task (not in whole, ADR-0014): the agent cannot
 // vouch for what it was not given. Nor may `checked` move while the doc
 // states a line count off (ADR-0014, step 2). What the patches accepted do
-// is returned too, for the checks on the docs as they will be.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, *judgedFixes, error) {
-	var refused []verdict.Finding
+// is returned too, for the checks on the docs as they will be. Every word a
+// fix takes out of a body is cited, never by a comment alone (cite.go); a
+// comment given alone is returned in reported, for a person.
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (refused []verdict.Finding, patched map[string]bool, fix *judgedFixes, reported []verdict.Finding, err error) {
 	refuse := func(rule, where, msg string) {
 		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
-	patched := map[string]bool{}
+	patched = map[string]bool{}
 	fixed := 0
 	var tree Tree
+	claims, unread := readCitations(intents)
+	agentDocs := map[string]bool{}
+	for _, in := range intents {
+		if in.Kind == "patch" && !isFallback(in, fallback) {
+			for _, p := range intent.PatchFiles(in.Value) {
+				agentDocs[p] = true
+			}
+		}
+	}
+	var cc *citeContext
 	after := map[string]string{}
 	var fixes []fixedDoc
 	accept := func(f fileDiff) {
@@ -333,12 +344,14 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			continue // the role's own regenerated blocks are not the agent's to judge
 		}
 		if tree.Docs == nil {
-			var err error
 			if tree, err = loadTree(repo, s.Docs); err != nil {
-				return nil, nil, nil, err
+				return nil, nil, nil, nil, err
 			}
 			for p, c := range tree.Docs {
 				after[p] = c
+			}
+			if cc, err = newCiteContext(repo, tree.Files); err != nil {
+				return nil, nil, nil, nil, err
 			}
 		}
 		diff, ok := in.Value.(string)
@@ -378,6 +391,11 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			now := applyHunks(old, f)
 			if isAuthority(s, f.path) && body(now) != body(old) {
 				refuse("truth-doc-changed", f.path, "this doc is an authority (truth: doc): the code follows it, never the reverse; set only `checked` and `verified`, and open an issue where the code disagrees")
+				continue
+			}
+			if rule, why, comments := cc.judgeCitations(f.path, old, f, claims, unread, len(agentDocs) == 1); rule != "" {
+				reported = append(reported, comments...)
+				refuse(rule, f.path, why)
 				continue
 			}
 			if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
@@ -452,7 +470,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		}
 	}
 	if len(refused) > 0 || fixed == 0 {
-		return refused, patched, nil, nil
+		return refused, patched, nil, reported, nil
 	}
 	before := map[string]Problem{}
 	for _, p := range Hygiene(tree, s.Budgets, s.Duplicates) {
@@ -465,7 +483,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	return refused, patched, &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes}, nil
+	return refused, patched, &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes}, reported, nil
 }
 
 // judgedFixes is what the accepted patches do: every doc before and after

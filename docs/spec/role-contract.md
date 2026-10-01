@@ -177,7 +177,10 @@ token), **apply** (trusted, no AI key).
    role allows and still refused, the files the refusals name are taken out
    of the patches, and what is left — some of the agent's own — is judged
    once more, without asking: passed, it is applied, and each file left out
-   is a `left-out` finding with the refusal's reason.
+   is a `left-out` finding with the refusal's reason. A role listing `claim`
+   among its intentions may give claims beside a patch, saying why it takes
+   words out (the documentalist, ADR-0014): `post` reads them; alone, with no
+   patch, they are refused, and they are never applied.
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid

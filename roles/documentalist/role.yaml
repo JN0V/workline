@@ -44,7 +44,7 @@ duties:
   reads: ["**"]
   writes: [$settings.docs]    # only documentation, never code
 
-intentions: [patch, issue, comment, label, note]
+intentions: [patch, claim, issue, comment, label, note]
 
 # Without AI, every check still runs. What needed judgement (is this suspect doc
 # still right?) is reported for a person, who clears it by updating `checked`.

@@ -4,7 +4,7 @@ given:
   repo: documented
   setup:
     - "sed -i 's#^\\# Authentication$#\\# Authentication [v1.0.0](https://example.com/releases/v1.0.0)#' docs/tech/auth.md && git commit -qam 'docs: link the release'"
-    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && printf 'const Version = \"1.1.0\"\\n' >> src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours, 1.1.0'"
 run: {role: documentalist, event: merge-request, ai: "fake:badge-replaced-in-part"}
 expect:
   status: pass

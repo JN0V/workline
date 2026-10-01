@@ -13,3 +13,8 @@
     +Access tokens last two hours.
     +
     +Longer sessions mean fewer sign-ins, which users will appreciate.
+- claim:
+    doc: docs/tech/auth.md
+    lines: "10"
+    status: contradicted
+    source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}

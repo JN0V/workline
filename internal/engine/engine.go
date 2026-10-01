@@ -360,6 +360,8 @@ func run(o Options, res *Result) error {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "input-changed", Message: "the prepared input changed before apply; nothing was applied"})
 		return nil
 	}
+	// A claim says why a patch takes words out: judged, never applied.
+	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" })
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
@@ -1177,10 +1179,15 @@ func statusForExit(code int) string {
 // catalogue, not allowed for the role, or a handoff routing does not declare.
 func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]string, string) {
 	var bad, why []string
+	patches := false
+	for _, i := range in {
+		patches = patches || i.Kind == "patch"
+	}
 	for _, i := range in {
 		switch {
-		case i.Kind == "claim":
-			bad, why = append(bad, i.Kind), append(why, "a claim answers a part of a question (in/parts), never the question itself")
+		case i.Kind == "claim" && (!r.Allows("claim") || !patches):
+			// Beside a patch, a claim cites why it takes words out (ADR-0014).
+			bad, why = append(bad, i.Kind), append(why, "a claim answers a part of a question (in/parts), or cites why a patch takes words out, beside it; never the question itself")
 		case !intent.Catalogue[i.Kind] || !r.Allows(i.Kind):
 			bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("%s is not allowed for this role", i.Kind))
 		case i.Kind == "handoff":

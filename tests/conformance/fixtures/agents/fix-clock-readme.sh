@@ -3,8 +3,10 @@
 # its version bump to 1.5.0, as $1 says: `vouches` brings the version and
 # moves `checked`, leaving the frozen line count; `counts` also brings the
 # count of Clock.h to what the task says it is; `version` brings the version
-# alone, `checked` left and `judged` recorded. It reads the commits and the
-# numbered lines from the prompt, as a real agent would.
+# alone, `checked` left and `judged` recorded. Each version replaced is
+# cited from library.json; a count, the engine's own, needs no claim. It
+# reads the commits and the numbered lines from the prompt, as a real agent
+# would.
 awk -v mode="$1" '
 /^## / { doc = substr($0, 4) }
 doc != "docs/clock/README.md" { next }
@@ -25,9 +27,11 @@ END {
     if (line[i] ~ /\*\*1\.4\.1\*\*/) {
       l = line[i]; sub(/1\.4\.1/, "1.5.0", l)
       print "    @@ -" i " +" i " @@"; print "    -" line[i]; print "    +" l
+      cited = cited "- claim:\n    lines: \"" i "\"\n    status: contradicted\n    source: {path: Clock/library.json, quote: \047\"version\": \"1.5.0\"\047}\n"
     }
     if (mode == "counts" && line[i] ~ /^\| `Clock\.h` \| /) {
       print "    @@ -" i " +" i " @@"; print "    -" line[i]; print "    +| `Clock.h` | " real " |"
     }
   }
+  printf "%s", cited
 }'

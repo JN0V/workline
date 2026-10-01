@@ -6,5 +6,5 @@ given:
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked cites-code"}
 expect:
   status: pass
-  applied: [patch, claim]
+  applied: [patch]
   files: {"docs/tech/auth.md": {contains: "two hours", lacks: "one hour"}}

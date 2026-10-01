@@ -15,3 +15,8 @@
     +Access tokens last two hours.
     +Refreshing a token gives it two hours more.
      Sessions note 1.
+- claim:
+    doc: docs/tech/auth.md
+    lines: "10"
+    status: contradicted
+    source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}
