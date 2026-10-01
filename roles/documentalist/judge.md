@@ -26,6 +26,12 @@ A patch is refused, and the agent asked again with the reasons, when it:
   `checked` alone is kept, and the doc stays suspect, fixed but not vouched
   for (ADR-0012), if it sets `judged` to that commit (`judged-not-set`): the
   doc is not put before an agent again until a source changes (ADR-0013);
+- moves `checked` on a doc whose sources did not all go whole into the
+  task (`checked-unread`, ADR-0014): judged on diffs, or beside a doc of the
+  same task, nobody read the rest. `pre` records the docs whose sources it
+  gave whole (`in/read-whole.yaml`; none, when the file is missing); for
+  any other, the fix sets `judged` and is kept, and the doc stays suspect
+  for a person;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.
@@ -39,7 +45,9 @@ that leaves the doc is found in no new doc, unchanged but for a heading's level
 — moved, not rewritten; a reference updated in place, keeping most of its
 words, is fine (`rewritten`); when a MUST or SHOULD is lost; when a new doc is
 not linked from the doc (`not-linked`); or when the budget problem it was for
-remains (`still-over-budget`).
+remains (`still-over-budget`). A condense, split, merge-card or dedupe patch
+moving an existing doc's `checked` is refused (`checked-unread`): moving text
+gives none of its sources.
 
 The judge reads a diff as its lines read, whatever counts its hunk headers
 announce, and compares its reading with git's: the engine applies with

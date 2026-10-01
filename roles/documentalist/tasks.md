@@ -24,6 +24,15 @@ applied (docs/spec/role-contract.md, "Again"); past the last round, they stay
 suspect for a person or a later run. `ai-max-tokens` caps what a run spends, all
 calls together: past it, the agent is asked nothing more and the rest waits.
 
+`checked` is earned by what the task gave (ADR-0014). A doc is told it may
+move `checked` only when every one of its sources went whole into the task,
+as it is now — every text file under a source path, the section of a source
+doc, up to 20,000 characters together (`staleSourceChars`). A doc judged on
+diffs alone, or beside a doc of the same task it follows, is told instead
+that `checked` cannot move: its fix leaves it and sets `judged`, the judge
+refusing a move (`checked-unread`), and the doc stays suspect for a person.
+The same holds for docs due at the release and for stale docs.
+
 ## Judged in parts
 
 **Judged in parts** (ADR-0009), when the project sets `judge-in-parts: true`

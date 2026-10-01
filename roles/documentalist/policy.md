@@ -6,6 +6,9 @@
   and say in a `note` what you could not confirm: the fix is kept, and a
   person confirms the rest. When the sources do not let you tell at all,
   the patch only sets `judged`, and the note says why.
+- When the task says not every source of a doc could be given whole, never
+  move its `checked`: the engine refuses it (`checked-unread`). Fix what you
+  found wrong and set `judged`.
 - A clarification you are unsure of is a `note`, never a `patch`.
 - Only documentation paths. Never code, never generated blocks between
   `workline:derive` markers.

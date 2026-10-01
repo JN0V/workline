@@ -3,6 +3,8 @@ You get one decision about documentation. `task.md` says which kind:
 - **suspect** — a source of this doc changed. Say whether the doc is still true.
   If it is, return a `patch` that only updates `checked` and `verified`. If not, return a
   `patch` fixing what is now wrong, and nothing else.
+  When the task says a doc's sources could not all be given whole, `checked`
+  stays: the patch fixes what is wrong and sets `judged`.
 - **stale** — no source changed, but the doc was last confirmed long ago. Read
   it against its sources as they are now, given in full. Same answer as
   suspect; if the sources given do not let you tell, a `note`.

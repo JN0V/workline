@@ -36,6 +36,12 @@ repository without merge requests is built but untried for real.
   a gardening task waits while its pull request is open. On a copy of
   DomoticsCore with #109 open: the docs judged whole wait, the parts go.
 - **A cap on a run's tokens** (`ai-max-tokens`): conformance only.
+- **`checked` earned by what was read** (ADR-0014, step 0, first part): a
+  doc whose sources did not all go whole into its task is told `checked`
+  cannot move, and a fix moving it is refused (`checked-unread`), on every
+  task the documentalist judges — a merge request, gardening, `workline
+  docs`, the release, and condensing or merging, which give no source.
+  Conformance only; the `checked` already moved are not put back yet.
 - **A partial claim settled by another part** (workline #29, where a stale
   code comment won over the setting): a passage one part finds partial and
   another supports is not handed to the fix. Conformance only; to watch on
@@ -62,8 +68,9 @@ repository without merge requests is built but untried for real.
    and three more), the judge accepting it — and a bug long fixed was
    rewritten rather than removed (92feb08); the same
    version was left stale in sibling docs. The plan, reviewed by seven
-   independent reviewers: ADR-0014 (accepted), its step 0 first — the
-   engine refuses a `checked` the agent could not have earned.
+   independent reviewers: ADR-0014 (accepted). Its step 0 is half built —
+   the engine refuses a `checked` the agent could not have earned (above);
+   left: the `checked` already moved put back to `judged`, and a release.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
