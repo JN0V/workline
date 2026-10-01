@@ -63,7 +63,8 @@ repository without merge requests is built but untried for real.
    conformance only, not yet on a real solo repository.
 4. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardened nightly in parts since #27, first night to watch.
-   roles/documentalist/README.md needs 15 parts: to split (condense task).
+   roles/documentalist/README.md, which needed 15 parts, is split into
+   four pages of 3 to 6 parts each, their sources narrowed to their files.
 5. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).

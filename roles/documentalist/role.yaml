@@ -16,7 +16,7 @@ events: [merge-request, pre-push, schedule, handoff, release, init]
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine
 # itself (ADR-0003). Optional tools, run when installed; the verdict says when
-# one is missing. lychee: links to other sites, when gardening (README, "Links").
+# one is missing. lychee: links to other sites, when gardening (checks.md, "Links").
 # Coming: vale (style).
 uses: [lychee]
 
