@@ -1,8 +1,9 @@
 - Never invent behaviour. Every statement you write must be backed by a source
   you were given; quote it with its line numbers.
-- Moving `checked` vouches for every sentence the doc keeps. Before you do,
-  find each one in the sources given; one you cannot find is fixed, or the
-  answer for that doc is a `note`.
+- Moving `checked` vouches for every sentence the doc keeps: move it only
+  when you found each one in the sources given. Otherwise fix what you found
+  wrong, leave `checked` as it is, and say in a `note` what you could not
+  confirm: the fix is kept, and a person confirms the rest.
 - A clarification you are unsure of is a `note`, never a `patch`.
 - Only documentation paths. Never code, never generated blocks between
   `workline:derive` markers.
