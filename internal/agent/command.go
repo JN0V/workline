@@ -68,9 +68,10 @@ func (c command) Propose(req Request) (Call, error) {
 		}
 		return call, fmt.Errorf("%w: the command failed: %s", ErrUnavailable, lastLine(errOut.String()+out.String()))
 	}
+	// The answer as it came, kept for audit, as Claude's is.
+	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), out.Bytes(), 0o644)
 	proposals, err := proposalsFrom(out.String())
 	if err != nil {
-		_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), out.Bytes(), 0o644)
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)

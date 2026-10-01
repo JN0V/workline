@@ -323,8 +323,10 @@ func run(o Options, res *Result) error {
 		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb.String()), 0o644); err != nil {
 			return err
 		}
-		// The refused answer is kept beside its refusal, to be studied.
+		// The refused answer is kept beside its refusal, to be studied, as
+		// read and as it came.
 		os.Rename(filepath.Join(runDir, "out", "intentions.yaml"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d.yaml", failures)))
+		os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d-answer.txt", failures)))
 		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
@@ -364,7 +366,20 @@ func run(o Options, res *Result) error {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "input-changed", Message: "the prepared input changed before apply; nothing was applied"})
 		return nil
 	}
-	// A claim says why a patch takes words out: judged, never applied.
+	// A claim says why a patch takes words out: judged, never applied. It is
+	// kept apart in the run folder, so that the evidence an accepted fix gave
+	// can be checked afterwards.
+	var claims []intent.Intention
+	for _, i := range intents {
+		if i.Kind == "claim" {
+			claims = append(claims, i)
+		}
+	}
+	if len(claims) > 0 {
+		if err := intent.Write(filepath.Join(runDir, "out", "claims.yaml"), claims); err != nil {
+			return err
+		}
+	}
 	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" })
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {

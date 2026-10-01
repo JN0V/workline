@@ -76,9 +76,11 @@ func (c claude) Propose(req Request) (Call, error) {
 	if !parsed {
 		answer.Result = out.String() // not the JSON asked for: read it as the answer itself
 	}
+	// The answer as it came, kept for audit: what the engine reads of it
+	// may drop what it holds (claims are judged, never applied).
+	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
 	proposals, err := proposalsFrom(answer.Result)
 	if err != nil {
-		_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)

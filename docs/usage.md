@@ -127,8 +127,11 @@ and links the line reports on every run are only counted. `git push
 
 Runs are kept in `.git/workline/runs/` (the last
 <!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
-agent call with what it cost in `out/calls.jsonl`, each refused answer in
-`out/refused-<n>.yaml`.
+agent call with what it cost in `out/calls.jsonl`, the agent's last answer
+as it came in `out/agent-answer.txt`, each refused answer in
+`out/refused-<n>.yaml` (as it came: `out/refused-<n>-answer.txt`), and the
+claims an accepted answer gave, judged and never applied, in
+`out/claims.yaml`.
 
 ## `.workline/config.yaml`
 

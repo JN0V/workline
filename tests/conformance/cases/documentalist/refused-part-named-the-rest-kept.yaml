@@ -12,3 +12,4 @@ expect:
   agent-calls: 2
   refused-kept: 1
   files: {"docs/tech/auth.md": {contains: "two hours", lacks: "one hour"}}
+  run-files: {out/refused-1-answer.txt: {contains: "-Tokens are signed with HS256."}}
