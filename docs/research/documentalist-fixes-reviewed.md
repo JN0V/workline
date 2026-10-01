@@ -3,8 +3,12 @@
 Every doc change the documentalist made on workline and on DomoticsCore up
 to 2026-10-01, read by an agent against the code as it is now, then a solo
 repository tried (roles/documentalist/tried.md). Read by one agent
-(Claude), not yet confirmed by a person; corrected on one point by a second
-review (92feb08 left `checked`). The evidence behind
+(Claude); corrected on one point by a second review (92feb08 left
+`checked`). Every verdict below is **confirmed 2026-10-01, second check**
+(ADR-0014, amended): another agent of the same provider, sharing no context
+with the first review (ADR-0005 level 3, not another provider), reread each
+one at its own commit (`git show <commit>:<path>`); its corrections are in
+the verdicts. No disagreement was left for the person. The evidence behind
 [ADR-0014](../adr/0014-checked-is-earned-by-what-was-read.md).
 
 ## What it changed, and whether it was right
@@ -16,9 +20,9 @@ workline (the bot's commits, "docs: bring the docs in line with the code"):
 | 4ac4f44 | README: `cmd:` runs any other agent; the approval in a dialog | right |
 | 445bed2 | README: the judge job holds code scanning's write token | right; the diagram above it left saying "no write token" |
 | 972afa9 | README: the templates run `workline route` | right |
-| d38a0e4 | README: GitLab "tried … the template never run live" | wrong: followed the template's stale header comment; tried.md recorded the run |
+| d38a0e4 | README: GitLab "tried … the template never run live" | wrong in fact, yet nothing in its tree contradicted it: the template's header said not tried, tried.md recorded the REST access only ("no agent"); the real try (b738e35, #30's branch) was not an ancestor. A race between branches, not a misreading; not an evaluation case |
 | 172493e | README: the "not yet" column | right, undoes d38a0e4 |
-| d43b3f2 | README: removed "a comment edited in place", tried live | wrong: a true claim removed because the sources did not show it |
+| d43b3f2 | README: removed "a comment edited in place", tried live | wrong: a true claim removed; internal/forge, among the sources, showed the edit in place (PATCH): only "tried live" needed tried.md |
 | fea16c7 | docs/spec/routing.md: `judged:` only | bookkeeping; the commit named was rebased away |
 | 0f4c01c | roles/committer/README.md: both gitleaks variables, the rule id | right; the code comment beside them left stale |
 | 3cd196d (#29) | README: "a push approval … unless your config turns it off" | wrong: a stale code comment won over the setting; the same commit's right change to README:60 was lost when it was reverted |
@@ -28,10 +32,10 @@ DomoticsCore (squashed into main):
 | Commit | Change | Verdict |
 |---|---|---|
 | bc0bd26 (#106) | docs/README.md: 2.0.0 → 2.11.0 | right; `checked` moved over "Last Updated: 2026-03-10" on the same line |
-| 2e25ea0 (#108) | MQTT TLS needs a root CA | right; `checked` moved on hal-architecture.md, whose table misses a file and says "each file < 800 lines" (one has 930) |
-| 25e22dd (#110) | docs/README.md: 2.12.0 | right |
+| 2e25ea0 (#108) | MQTT TLS needs a root CA | right; `checked` moved on hal-architecture.md, whose table misses three `*_HAL.h` files (CoreLog_HAL.h, Testing/HeapTracker_HAL.h, WebUI/WebResponse_HAL.h) and says "each file < 800 lines" (one has 930) |
+| 25e22dd (#110) | docs/README.md: 2.12.0 | version right; `checked` moved again over "Documentation Last Updated: 2026-03-10", stale, as in bc0bd26 |
 | 16c660b (#110) | Core 1.13.1, MQTT 1.10.0 | versions right; `checked` moved over line counts false at that commit (283 for 462, 630 for 930); siblings left at 1.9.0 |
-| 92feb08 (#109) | OTA 1.4.1 → 1.11.0, six lines | versions right; `checked` left; rewrote the number inside a bug fixed in 2025 ("returns hardcoded 1.4.0 instead of 1.11.0"): a wrong edit, not a wrong vouch; test, line and field counts left false |
+| 92feb08 (#109) | OTA 1.4.1 → 1.11.0, six lines | versions right; `checked` left; rewrote the number inside a bug fixed in 2025 ("returns hardcoded 1.4.0 instead of 1.11.0"): a wrong edit, not a wrong vouch; field count left false ("13 fields", OTA.h has 10); test and line counts not recounted one by one |
 | d784398 (#112) | storage 1.6.1 | right, `judged` set as ADR-0013 asks; a line count left false |
 | 5ae8335 (#113) | README: twelve versions, the LED states | right; the badge's link to v2.0.0 and "Version 2.0.0 Released!" left |
 
@@ -50,8 +54,9 @@ What it writes is right about four times in five: versions read from
    shows whole (20,000 characters; 28 to 165 KB): the agent saw diffs alone,
    and the judge accepted the move. workline's bot never moved `checked`:
    its three wrong fixes are wrong content, a class of their own.
-2. **It takes anything it reads as evidence.** A stale code comment, a
-   template's header, over the code and the record (d38a0e4, #29).
+2. **It takes anything it reads as evidence.** A stale code comment over
+   the code's setting (#29). d38a0e4 followed a template's header too, but
+   nothing in its tree said otherwise.
 3. **It removes what it cannot see backed** (d43b3f2), where the sources
    given are not all there is.
 4. **It sees one doc at a time.** The same value fixed in one doc stays
