@@ -61,6 +61,7 @@ type result struct {
 		Message string `json:"message"`
 	} `json:"findings"`
 	Applied []string `json:"applied"`
+	Notes   []string `json:"notes"`
 }
 
 type call struct {
@@ -150,6 +151,9 @@ func TestEvaluation(t *testing.T) {
 			t.Logf("%s — %s, %d agent calls; failed: %s", c.Case, score, r.res.AgentCalls, strings.Join(failed, "; "))
 			if len(failed) > 0 { // what the run said, to see why
 				t.Logf("  applied: %v", r.res.Applied)
+				for _, n := range r.res.Notes {
+					t.Logf("  note: %.600s", n)
+				}
 				for _, f := range r.res.Findings {
 					if f.Rule != "links-not-checked" {
 						t.Logf("  %s %s: %.300s", f.Rule, f.Where, f.Message)

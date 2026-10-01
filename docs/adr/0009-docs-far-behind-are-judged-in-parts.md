@@ -113,8 +113,13 @@ among them. Three runs each:
 | in parts, Sonnet 5.5 (4 parts and the fix) | 12, 12, 12 | 40k / 4k | 35 s |
 | parts on Haiku 4.5, fix on Sonnet | 12, 11, 12 | 37k / 36–48k | 5–6 min |
 | Haiku alone, whole or in parts | 5 | — | — |
+| whole, Opus 5.5 (2026-10-01) | 5, 5, 5, 12, 5, 5, 5 | 8k / 1.5k | 15 s |
+| in parts, Opus 5.5 | 12, 11, 12 | 41k / 7k | 75 s |
 
-Parts missed nothing the whole caught, the sentence across two sources
+Opus judged whole wrote a note, not a fix, six times in seven: it saw what
+was wrong, but given only the diffs it would not move `checked` over
+sentences it could not see — where Sonnet did. In parts, given the sources
+whole, it fixed them. Parts missed nothing the whole caught, the sentence across two sources
 included, and called no true sentence false: adopted, for docs too large to
 be judged whole, at five times the tokens. Parts stay on `standard`: Haiku
 wrote ten times more, took ten times longer, and missed once; alone, its
