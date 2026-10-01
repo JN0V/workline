@@ -2,6 +2,12 @@
 
 ## Next, in order
 
+**Handover (2026-10-01).** Nothing waits at the switch: workline PR #18
+(ADR-0012) and DomoticsCore PR #107 (parts on for its nightly gardening)
+are merged, and DomoticsCore's bug fixes went in through its PR #108,
+where CI fixed two docs. Next to watch: DomoticsCore's first nightly runs
+with parts. The documentalist's state: roles/documentalist/status.md.
+
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
 
@@ -22,28 +28,18 @@ this repository before any other role is added.
    agent from a person on the forge — a bot account or a GitHub App with no
    right to merge — so the rule is a check, not a wish; the editor and a
    dialog on macOS and Windows, for those who ask for the approval.
-3. **Docs judged on the merge request and by gardening** (ADR-0010,
-   proposed, 2026-09-30): the push only counts; `d` goes. First, what
-   `checked` names after a squash merge, on a throwaway pull request; then
-   the templates (App token, fork comment, GitLab token, loop guard, verdict
-   cache, caps), the release gate, `workline docs` from a ref. Main takes
-   pull requests on workline and DomoticsCore since 2026-09-30.
-   Measure Copilot CLI on a free plan through the evaluation, beside Claude.
-   Tried on workline (PR #10): judged, fixed by the App, checks rerun, loop
-   guard held. Next: an evaluation case where the agent must leave an
-   example alone (it aligned one to the default, off its task); the
-   verdict cache and per-run caps; the GitLab template; DomoticsCore.
-4. **Judge docs far behind in parts** (DomoticsCore, 2026-09-29: 40 docs the
-   documentalist could not judge; roles/documentalist/tried.md). ADR-0009,
-   proposed: the doc whole with a share of its sources per part, packed to
-   fill a task (806 doc-file pairs, not one call each); a closed answer per
-   part, merged without AI, one call fixing what is wrong; `checked` not
-   moved; `parts-max` pointing out docs whose sources are too wide. The
-   spec ("In parts", the `claim` intention) and the code are built, with
-   their conformance cases, off until measured (`judge-in-parts: false`);
-   no real agent has answered a part yet. Next: the evaluation case with
-   planted defects, whole against parts, light against standard; then
-   tried on a copy of DomoticsCore, the tokens counted.
+3. **Docs judged on the merge request and by gardening** (ADR-0010):
+   built and tried (workline PR #10, DomoticsCore). Where it stands, and
+   what is missing in order: roles/documentalist/status.md — first, token
+   caps a run and a verdict cache; then the release gate and `workline docs`
+   from a ref, for a repository without pull requests (and `doctor`/`init`
+   brought in line with ADR-0010); forks and GitLab.
+4. **Judge docs far behind in parts** (ADR-0009, accepted on its measures;
+   ADR-0012, a doc judged against its sources whole): turned on for
+   DomoticsCore's nightly gardening (its PR #107). Next: watch the first
+   real runs — tokens, the pull requests, `sources-too-wide` — and record
+   them in roles/documentalist/tried.md; then catch workline's own docs up
+   the same way.
 5. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.
