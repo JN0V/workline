@@ -1,8 +1,10 @@
 // Summary reads results.tsv and prints, per case, models, effort and judge,
-// how many runs there were, the mean score and its range, and what a run used:
-// one run says little, since a model answers differently from one run to the
-// next. Scores earned by a model that no longer answers on this machine (the
-// models-seen file, ADR-0004) are marked `replaced`.
+// how many runs there were, the pass rate (the share of runs earning every
+// point), the mean score and its range, and what a run used: one run says
+// little, since a model answers differently from one run to the next, and a
+// best run hides the others (ADR-0014). Fewer than five runs are marked
+// `few runs`; scores earned by a model that no longer answers on this machine
+// (the models-seen file, ADR-0004) are marked `replaced`.
 //
 //	go run ./tests/evaluation/summary [results.tsv]
 package main
@@ -22,10 +24,14 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 )
 
+// minRuns is the fewest runs a measure is read from (ADR-0014).
+const minRuns = 5
+
 type key struct{ kase, models, effort, judge string }
 
 type group struct {
 	scores              []float64 // share of the points earned
+	passes              int       // runs that earned every point
 	tokensIn, tokensOut []float64
 	seconds             []float64
 	calls               []float64
@@ -82,6 +88,9 @@ func main() {
 			if n, err1 := strconv.ParseFloat(got, 64); err1 == nil {
 				if d, err2 := strconv.ParseFloat(total, 64); err2 == nil && d > 0 {
 					g.scores = append(g.scores, n/d)
+					if n == d {
+						g.passes++
+					}
 				}
 			}
 		}
@@ -109,20 +118,24 @@ func main() {
 	})
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	answering := currentModels(agent.Seen())
-	fmt.Fprintln(w, "case\tmodels\teffort\tjudge\truns\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
+	fmt.Fprintln(w, "case\tmodels\teffort\tjudge\truns\tpass\tscore\trange\tcalls\ttokens in\ttokens out\tseconds\t")
 	for _, k := range keys {
 		g := groups[k]
 		lo, hi := bounds(g.scores)
-		note := ""
+		var notes []string
+		if len(g.scores) < minRuns {
+			notes = append(notes, "few runs")
+		}
 		if answering != nil && k.models != "(not recorded)" {
 			for _, m := range strings.Split(k.models, ">") {
 				if !answering[m] {
-					note = "replaced"
+					notes = append(notes, "replaced")
+					break
 				}
 			}
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, k.judge, len(g.scores),
-			100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"), note)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%d/%d\t%.0f%%\t%.0f–%.0f%%\t%s\t%s\t%s\t%s\t%s\n", k.kase, k.models, k.effort, k.judge, len(g.scores),
+			g.passes, len(g.scores), 100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"), strings.Join(notes, ", "))
 	}
 	w.Flush()
 }
