@@ -2,6 +2,7 @@
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
 checked: 6013a50
 verified: agent:documentalist
+judged-in-parts: 13d3926
 -->
 <h1>
   <picture>
@@ -57,7 +58,7 @@ first. Run it again to change your answers; `--yes` takes the defaults. It
 ends with `workline doctor`, which says at any time what is set up and what
 is missing, each with the command that sets it up.
 
-In a repository, `workline init` has the documentalist run before each push,
+In a repository, `workline init` has the committer and the documentalist run before each push,
 and, with an agent, proposes for each doc the code it describes, for you to
 review and commit: until a doc names its `sources`, nothing tells when it
 goes wrong.
@@ -145,7 +146,7 @@ flowchart LR
 | Event | Fired by | Roles by default |
 |---|---|---|
 | `commit-msg` | your machine: the global git hook | committer |
-| `pre-push` | your machine, before the commits leave it, if the project routes it; no question: the review is on the merge request (a push approval, on the terminal, in the editor or in a dialog, if you ask for it) | none by default; workline itself: committer, documentalist |
+| `pre-push` | your machine, before the commits leave it, if the project routes it; no question: the review is on the merge request (a push approval, on the terminal, in the editor or in a dialog, unless your own config turns it off) | none by default; workline itself: committer, documentalist |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) (with [workline-fork.yml](ci/github/workline-fork.yml) to comment on a fork's) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
 | `schedule` | you, or a scheduled pipeline: the [GitHub Actions](ci/github/workline-gardening.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template, each task a merge request of its own (ADR-0006) | documentalist |
 | `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | documentalist (docs due at the release), then release-manager |
