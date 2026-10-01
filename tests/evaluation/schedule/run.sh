@@ -27,7 +27,7 @@ else
 fi
 # the last commit changing what is evaluated (evaluated, in eval_test.go): a
 # commit of docs alone does not call for another run
-commit=$(git -C "$tree" log -1 --format=%h -- cmd internal roles ':(exclude)roles/*/README.md' go.mod tests/evaluation/cases)
+commit=$(git -C "$tree" log -1 --format=%h -- cmd internal roles ':(exclude)roles/*/README.md' go.mod tests/evaluation/cases tests/conformance/fixtures/repos)
 
 # runs of this commit so far: the fewest any case has had
 cases=$(ls "$tree"/tests/evaluation/cases/*/*.yaml | wc -l)
