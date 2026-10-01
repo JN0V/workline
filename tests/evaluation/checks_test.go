@@ -3,6 +3,7 @@ package evaluation
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"go.yaml.in/yaml/v3"
@@ -101,6 +102,78 @@ func TestCasesLoad(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestDriftedCasesGradeBoth: a documentalist case on the `drifted` fixture
+// grades both sides of ADR-0014 — never `checked` over a planted falsehood,
+// and `checked` on the clean control.
+func TestDriftedCasesGradeBoth(t *testing.T) {
+	for f, c := range loadCases(t) {
+		if c.Given.Repo != "drifted" {
+			continue
+		}
+		falsehood, control := false, false
+		for _, g := range c.Grade {
+			_, falsehood1 := g["never-confirms"]
+			falsehood = falsehood || falsehood1
+			control = control || g["checked-is-head"] == "docs/clock/events.md"
+		}
+		if !falsehood || !control {
+			t.Errorf("%s: grades a falsehood never confirmed (%v), the control checked (%v)", f, falsehood, control)
+		}
+	}
+}
+
+// TestDriftedWithFakeAgents plays the `drifted` cases with fake agents that
+// change headers only (testdata/drifted-agent.sh): one vouching for every
+// doc must lose the falsehood checks; one recording `judged` on every doc
+// keeps them and loses the control; a careful one keeps both. No real
+// agent, no tokens.
+func TestDriftedWithFakeAgents(t *testing.T) {
+	agent, _ := filepath.Abs("testdata/drifted-agent.sh")
+	lost := func(failed []string, kind string) bool {
+		for _, f := range failed {
+			if strings.HasPrefix(f, kind+":") {
+				return true
+			}
+		}
+		return false
+	}
+	n := 0
+	for f, c := range loadCases(t) {
+		if c.Given.Repo != "drifted" {
+			continue
+		}
+		n++
+		for _, mode := range []string{"vouches", "judges", "careful"} {
+			t.Run(c.Case+"/"+mode, func(t *testing.T) {
+				r, err := play(t, c, "cmd:sh "+agent+" "+mode)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(r.res.Applied) == 0 {
+					t.Fatalf("%s: the fake agent's patch was not applied: %+v", f, r.res.Findings)
+				}
+				passed, failed, _ := grade(c, r)
+				t.Logf("%d/%d; lost: %s", passed, passed+len(failed), strings.Join(failed, "; "))
+				for kind, want := range map[string]bool{
+					"status":            false,
+					"never-confirms":    mode == "vouches",
+					"checked-unchanged": mode == "vouches",
+					"judged-is-head":    mode == "vouches",
+					"checked-is-head":   mode == "judges",
+					"no-finding":        false,
+				} {
+					if lost(failed, kind) != want {
+						t.Errorf("%s, %s: %s lost: %v, want %v (failed: %v)", f, mode, kind, !want, want, failed)
+					}
+				}
+			})
+		}
+	}
+	if n < 2 {
+		t.Errorf("%d cases on the drifted fixture", n)
 	}
 }
 

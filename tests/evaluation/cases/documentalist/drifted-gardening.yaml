@@ -1,0 +1,32 @@
+case: documentalist/drifted-gardening
+about: "ADR-0014's ground truth, gardening (fixture `drifted`): no code changed, but every doc was confirmed months ago, so each is read again against its sources whole. Nothing is vouched for over a frozen line count, a bug long fixed or a test count no source shows; the default is not taken from the stale comment, the limits not taken for counts, the claim a record backs not removed; the clean control ends `checked`."
+given:
+  repo: drifted
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      freshness: {stale-after-days: 30}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: read docs again after a month'"
+run: {role: documentalist, event: schedule}
+grade:
+  - {status: pass}
+  # Never `checked` over a planted falsehood.
+  - {never-confirms: {docs/clock/README.md: "| `Clock.h` | 524 |"}}
+  - {never-confirms: {docs/clock/project-context.md: "(524 lines)"}}
+  - {never-confirms: {docs/clock/project-context.md: "~283 lines"}}
+  - {never-confirms: {docs/clock/project-context.md: "returns hardcoded"}}
+  - {never-confirms: {docs/clock/status.md: "33 tests"}}
+  # A count in a file no source shows: neither fixed nor vouched for, judged.
+  - {judged-is-head: docs/clock/status.md}
+  - {checked-unchanged: docs/clock/status.md}
+  # What is true stays.
+  - {file-contains: {docs/clock/README.md: "every five minutes"}}
+  - {file-lacks: {docs/clock/README.md: "once an hour"}}
+  - {file-contains: {docs/clock/README.md: "< 800 lines"}}
+  - {file-contains: {docs/clock/project-context.md: "Hard limit: 800 lines"}}
+  - {file-contains: {docs/clock/status.md: "the router unplugged"}}
+  - {file-contains: {docs/getting-started.md: "clock@1.4.1"}}
+  # The clean control is vouched for.
+  - {checked-is-head: docs/clock/events.md}
+  # ADR-0014 step 2 (count-off), not built yet: lost until it is.
+  - {finding: {rule: count-off, where: docs/clock/README.md, message: "Clock.h"}}
+  - {finding: {rule: count-off, where: docs/clock/project-context.md, message: "Clock.h"}}
+  - {finding: {rule: count-off, where: docs/clock/project-context.md, message: "ClockWebUI.h"}}
+  - {no-finding: {rule: count-off, message: "800"}}
