@@ -1,0 +1,15 @@
+case: documentalist/parts-forced-for-measuring
+about: "To measure judging in parts against judging whole on the same doc, `parts-always` judges in parts a doc that fits whole, and `part-chars` makes parts small enough that small sources still split: one part a source here."
+given:
+  repo: documented
+  setup:
+    - "for i in $(seq 1 80); do echo \"// Refresh rule $i.\"; done > src/auth/refresh.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/refresh.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): refresh rules'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && echo '// Refresh rule 81.' >> src/auth/refresh.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 2400}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-nothing-found"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts"}]
+  files: {"docs/tech/auth.md": {contains: "judged-in-parts:"}}

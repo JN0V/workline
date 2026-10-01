@@ -177,3 +177,8 @@ On 2026-09-27, on workline's own repository:
   to the default — off its task; and `checked` named the merge commit
   GitHub builds for a pull request, which no branch holds: the commit that
   brought it stands for it, but the head of the branch should be named.
+- judging in parts, measured (2026-09-30; ADR-0009, "Measured"): on a doc
+  with four planted defects, Sonnet in parts found all four, three runs in
+  three, as whole did, at five times the tokens; Haiku on the parts wrote ten
+  times more and missed once. The first runs in parts failed on a part's
+  one-line YAML with a brace too many: now read claim by claim.

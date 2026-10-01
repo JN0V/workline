@@ -64,6 +64,19 @@ read, citing the line numbers shown here: a quote not found at the lines it
 cites is dropped. Claims only: no patch, no note. If this share says nothing
 of the doc, answer ` + "`[]`" + `.
 
+Write each claim in block style, one field a line, as below — not on one line
+between braces, where one brace too many spoils the answer:
+
+    - claim:
+        lines: "10-12"
+        status: contradicted
+        quote: "the doc's words, as they read"
+        source:
+          path: src/example.go
+          lines: "7"
+          quote: "the source's words, as they read"
+        why: "why they disagree"
+
 `
 
 // fixTaskHeader asks the one call that fixes what the parts found.
@@ -97,7 +110,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	var fixes strings.Builder
 	judged, inParts = map[string]map[string]string{}, map[string]string{}
 	for i, sd := range cands {
-		plans, why, err := planParts(sd.doc, repo)
+		plans, why, err := planParts(sd.doc, repo, s.PartChars)
 		if err != nil {
 			return "", nil, nil, nil, err
 		}
@@ -176,6 +189,9 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		// is not recorded as judged, and its parts are asked again next run.
 		if verdictOf.dropped > 0 {
 			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped, so it is judged in parts again on a later run)"
+			if entry != "" {
+				inParts[sd.doc.Path] = at // its fix is judged as one in parts: `checked` stays
+			}
 			continue
 		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: patch})
@@ -192,7 +208,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 // into consecutive pieces, each read, so no line goes unread. Sources that
 // are docs are left out: a doc following another is propagation, not
 // evidence. why says why the doc cannot be judged in parts.
-func planParts(d *Doc, repo string) (plans []partPlan, why string, err error) {
+func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, err error) {
 	content, err := os.ReadFile(filepath.Join(repo, d.Path))
 	if err != nil {
 		return nil, "", err
@@ -200,6 +216,9 @@ func planParts(d *Doc, repo string) (plans []partPlan, why string, err error) {
 	room := taskMaxChars - len(partsTaskHeader) - len(numberedDoc(d.Path, string(content)))
 	if room < taskMaxChars/4 {
 		return nil, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
+	}
+	if share > 0 && share < room { // measuring: smaller parts than a task holds
+		room = share
 	}
 	var files []string
 	for _, src := range d.Sources {

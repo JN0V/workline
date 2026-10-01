@@ -1,0 +1,25 @@
+case: documentalist/finds-planted-defects-whole
+about: "ADR-0009's measure, judged whole: one commit makes four passages of a doc false — a default early, a count in the middle, a sentence two sources speak to, a name renamed late — and changes code the doc does not describe. Each defect found is a check; so is each true sentence kept. Compare with finds-planted-defects-in-parts, on the same doc."
+given:
+  repo: service
+  setup:
+    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && printf '\n// Health answers 200 while the service runs.\nfunc Health(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }\n' >> src/service/server.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
+run: {role: documentalist, event: merge-request}
+grade:
+  - {status: pass}
+  # Found wrong, in one source, early in the doc.
+  - {file-lacks: {docs/tech/service.md: "port 8080"}}
+  - {file-contains: {docs/tech/service.md: "9090"}}
+  # A count, in the middle.
+  - {file-lacks: {docs/tech/service.md: "At most 100"}}
+  - {file-contains: {docs/tech/service.md: "250"}}
+  # A sentence the store and the configuration both speak to.
+  - {file-lacks: {docs/tech/service.md: "lasts the configured session TTL"}}
+  # A name renamed, late in the doc.
+  - {file-lacks: {docs/tech/service.md: "`VerifyToken`"}}
+  - {file-contains: {docs/tech/service.md: "CheckToken"}}
+  # What stayed true stays: no false alarm.
+  - {file-contains: {docs/tech/service.md: "503 Service Unavailable"}}
+  - {file-contains: {docs/tech/service.md: "HMAC-SHA256"}}
+  - {file-contains: {docs/tech/service.md: "lost when the service stops"}}
+  - {file-contains: {docs/tech/service.md: "30 seconds"}}
