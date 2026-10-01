@@ -47,25 +47,39 @@ repository without merge requests is built but untried for real.
   parts 12/12 ×3, at five times the tokens), then on DomoticsCore's
   README.md (2026-10-01, pull request #113): 8 parts and a fix, 180k
   tokens, the fix right but for a badge's link.
+- **A solo repository without pull requests** (ADR-0010): a copy of
+  WaterMeter, pushed to a local remote (2026-10-01, tried.md): adopted by
+  `workline init`, the push counting the docs with no agent, `workline
+  docs` judging them, the release held by those left. Three defects found
+  and guarded.
 
 ## Missing, in the order it matters
 
-1. **Sonnet cites lines a line off in long docs** (twice in two runs on
+1. **A fix vouches for what it did not check.** Reviewed on 2026-10-01:
+   every version the agent wrote was right, but moving `checked` vouched
+   for frozen numbers still false beside them — line counts, test counts,
+   a bug fixed long ago (DomoticsCore 16c660b, 92feb08) — and the same
+   version was left stale in sibling docs. Numbers a doc can derive
+   (`workline:derive`) or drop should go; a fix should not vouch for a line
+   it did not read against a source.
+2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
-2. **Docs needing more than 8 parts** on DomoticsCore (five, 10 to 16
-   parts): their sources to narrow, or the doc to split. The two small
-   faults of that run are caught now: a version replaced on part of a line
-   (`replaced-in-part`), a file name taken for a name of the code.
-3. **A solo repository without pull requests**: built (ADR-0010, accepted)
-   — `workline docs` from a ref it moves, the release held by docs suspect
-   since the last tag, `doctor` saying where docs are judged; tried in
-   conformance only, not yet on a real solo repository.
-4. **workline's own docs**: README, usage and most specs are suspect, far
+3. **Docs needing more than 8 parts** on DomoticsCore: six (10 to 16
+   parts). Two narrowed to 8 (branch docs/narrow-wide-sources, not pushed
+   yet); four to split, each holding more than one doc:
+   reference/eventbus-architecture.md, components/core/project-context.md,
+   architecture/component-configuration-pattern.md,
+   components/webui/project-context.md.
+4. **Judging in parts off by default**: on a solo repository far behind
+   (WaterMeter, tried.md), 7 of 10 suspect docs were too large to be judged
+   whole and went to a person. Measured since (status above): to decide
+   whether it is on by default.
+5. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardened nightly in parts since #27, first night to watch.
    roles/documentalist/README.md, which needed 15 parts, is split into
    four pages of 3 to 6 parts each, their sources narrowed to their files.
-5. Smaller: budgets merge one level deep; Opus's notes see more than the
+6. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).
 

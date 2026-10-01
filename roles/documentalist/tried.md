@@ -281,3 +281,31 @@ On 2026-09-27, on workline's own repository:
   ("does NOT match the one reported by the checksum server"). v0.1.0 is
   retracted in go.mod; v0.1.1 is the first release to use. A tag pushed is
   never moved.
+- a solo repository, without pull requests (2026-10-01, a copy of
+  WaterMeter — 12 docs, no pull request ever — pushed to a local bare
+  remote, Claude Sonnet): `workline init` proposed every doc's sources in
+  43 s, from the file names alone, as the task shows no code; the push
+  counted the docs in 1.3 s with no agent; `workline docs` judged them
+  from the last tag; the release was held by the docs left. Three defects,
+  each now a case: the adoption commit, changing only headers, counted the
+  docs following those docs as made suspect by the push; a right fix
+  (GPIO2 → GPIO34) refused twice, Sonnet then Opus, its last hunk having
+  no context after it — git apply takes that for the end of the file,
+  where the engine, applying with `--unidiff-zero`, would not — and the
+  run stopped there, saying only "2 doc(s) changed"; seven docs too large
+  to be judged whole went to a person, the output showing the first line
+  of their finding only. 8 agent calls, 217k tokens in all (two runs of
+  `workline docs`, the first stopped). Judging in parts is off
+  by default: those seven wait for a person.
+- the documentalist's fixes reviewed (2026-10-01, workline's and
+  DomoticsCore's, by an agent reading each against the code): versions,
+  flags and CI permissions right every time, small diffs; wrong when it
+  trusts a stale code comment over the record (#29, d38a0e4), removes a
+  true claim it cannot see backed (d43b3f2), or moves `checked` over
+  frozen numbers still false — line counts, test counts, a bug fixed in
+  2025 whose version it bumped (DomoticsCore 92feb08). It fixes one doc and
+  leaves the same version stale in its siblings.
+- DomoticsCore's docs too wide to be judged in parts (2026-10-01, counted
+  with the engine's own planning, no agent): six past 8 parts, not five.
+  webui-developer.md 12 → 8 and observing-a-device.md 10 → 8 by narrowing
+  their sources; the four others hold more than one doc each, to split.
