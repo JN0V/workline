@@ -40,6 +40,19 @@ func TestPushRanges(t *testing.T) {
 			t.Errorf("%s: %v, %v; want %q", c.name, got, err, c.want)
 		}
 	}
+	// A branch the remote has, rebased onto what main holds since: only its
+	// own commit is sent, not main's, which the remote already has.
+	run("checkout", "-q", "--detach", root)
+	run("commit", "-q", "--allow-empty", "-m", "topic")
+	old := run("rev-parse", "HEAD")
+	run("update-ref", "refs/remotes/origin/topic", old)
+	run("checkout", "-q", "--detach", pushed)
+	run("commit", "-q", "--allow-empty", "-m", "topic, rebased")
+	rebased := run("rev-parse", "HEAD")
+	if got, err := PushRanges(dir, "origin", strings.NewReader("refs/heads/topic "+rebased+" refs/heads/topic "+old+"\n")); err != nil || strings.Join(got, " ") != pushed+".."+rebased {
+		t.Errorf("a branch rebased: %v, %v; want %q", got, err, pushed+".."+rebased)
+	}
+	run("update-ref", "-d", "refs/remotes/origin/topic")
 	run("update-ref", "-d", "refs/remotes/origin/main")
 	got, _ := PushRanges(dir, "origin", strings.NewReader("refs/heads/main "+head+" refs/heads/main "+zero+"\n"))
 	if strings.Join(got, " ") != head {
