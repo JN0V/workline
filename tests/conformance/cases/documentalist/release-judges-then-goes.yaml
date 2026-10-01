@@ -1,0 +1,12 @@
+case: documentalist/release-judges-then-goes
+about: "At the release, with an agent, the docs made suspect since the last tag are judged first; fixed and vouched for, they no longer hold it."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: release, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  applied: [patch]
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}]

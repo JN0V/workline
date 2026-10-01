@@ -1,0 +1,12 @@
+case: documentalist/release-not-held-by-docs-suspect-before-the-tag
+about: "A doc already suspect at the last tag does not hold the release: it was let through then, and gardening or a person takes it; only what changed since is the release's."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git tag v1.0.0"
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+run: {role: documentalist, event: release, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md}]

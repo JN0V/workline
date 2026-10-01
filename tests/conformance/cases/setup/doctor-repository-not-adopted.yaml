@@ -1,10 +1,10 @@
 case: setup/doctor-repository-not-adopted
-about: In a repository that routes no pre-push and whose docs declare no sources, the doctor says the documentalist does not run before a push and tracks nothing.
+about: In a repository with no CI and docs that declare no sources, the doctor says docs are judged at the release only (ADR-0010), and that it tracks nothing.
 given:
   repo: basic
 run: {doctor: true}
 expect:
   status: pass
   findings:
-    - {rule: documentalist-not-before-push}
+    - {rule: docs-judged, message: "at the release only"}
     - {rule: nothing-tracked, message: "none of the 1 docs"}

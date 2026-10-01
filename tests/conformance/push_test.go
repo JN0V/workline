@@ -135,3 +135,67 @@ func TestPushCountsTheDocs(t *testing.T) {
 		t.Errorf("the push lists the docs and their commits:\n%s", out)
 	}
 }
+
+// On a repository pushed to main with no merge request (ADR-0010),
+// `workline docs` judges from where the docs were last judged — a ref it
+// moves, refs/workline/docs-judged — to HEAD, pushed or not. The ref moves
+// once a run passed with nothing left for a person to review.
+func TestDocsFromWhereLastJudged(t *testing.T) {
+	work := t.TempDir()
+	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
+	remote, repo := filepath.Join(work, "remote.git"), filepath.Join(work, "repo")
+	if out, err := exec.Command("git", "init", "-q", "--bare", remote).CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	if err := build(repo, "documented", []string{
+		"git remote add origin " + remote,
+		"sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'",
+		"git push -q origin main", // pushed: nothing waits, yet the doc is suspect
+	}, env); err != nil {
+		t.Fatal(err)
+	}
+	roles, _ := filepath.Abs("../../roles")
+	agent, _ := filepath.Abs("fixtures/agents/doc-fixed.yaml")
+	docs := func(args ...string) string {
+		cmd := exec.Command(engineBin, append([]string{"docs"}, args...)...)
+		cmd.Dir, cmd.Env = repo, append(env, "WORKLINE_ROLES="+roles)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		return string(out)
+	}
+	ref := func() string {
+		out, _ := exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", "refs/workline/docs-judged").Output()
+		return strings.TrimSpace(string(out))
+	}
+	// 0. No agent: nothing judged, the ref stays.
+	docs("--ai", "none")
+	if ref() != "" {
+		t.Fatalf("the ref moved with no agent to judge the docs")
+	}
+	// 1. Judged although pushed; the fix left for a person: the ref stays.
+	if out := docs("--ai", "fake:"+agent); !strings.Contains(out, "for a person to review") {
+		t.Fatalf("the pushed commits were not judged:\n%s", out)
+	}
+	if ref() != "" {
+		t.Fatalf("the ref moved before a person reviewed the fix")
+	}
+	// 2. The person commits it; judged again, nothing to change: the ref moves to HEAD.
+	commit := exec.Command("git", "-C", repo, "commit", "-qam", "docs: tokens last two hours")
+	commit.Env = append(env, "GIT_CONFIG_GLOBAL="+filepath.Join(work, "gitconfig"))
+	os.WriteFile(filepath.Join(work, "gitconfig"), nil, 0o644)
+	if out, err := commit.CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	out := docs("--ai", "none")
+	head, _ := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+	if ref() != strings.TrimSpace(string(head)) {
+		t.Fatalf("the ref did not move to HEAD once the docs were judged:\n%s", out)
+	}
+	// 3. Nothing since: nothing judged, and it says so.
+	if out := docs("--ai", "fake:"+agent); !strings.Contains(out, "no commit since the docs were last judged") {
+		t.Fatalf("judged again what was judged:\n%s", out)
+	}
+}
