@@ -24,6 +24,7 @@ GitLab is untried.
 | On each pull request in CI: Claude judges, the App commits the fix, checks rerun, the line skips its own commit | workline PR #10; DomoticsCore PR #108, a real bug-fix pull request |
 | Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109) |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |
+| A fork's pull request: judged without secrets, its report commented from the repository's side, one comment kept (ci/github/workline-fork.yml) | JN0V/workline-sandbox #1, from jn0v-lab's fork |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |
 | Staying on the task: a spec's example left as it is when the default it does not show changes | evaluation (`stays-on-the-task`, workline PR #10 replayed), 3 in 3 on Sonnet |
 
@@ -54,9 +55,7 @@ GitLab is untried.
    — `workline docs` from a ref it moves, the release held by docs suspect
    since the last tag, `doctor` saying where docs are judged; tried in
    conformance only, not yet on a real solo repository.
-4. **Forks and GitLab**: a fork's pull request is commented from the
-   repository's side (ci/github/workline-fork.yml, built, untried until a
-   fork exists); the GitLab template now asks for its tokens unprotected, so
+4. **GitLab**: the template now asks for its tokens unprotected, so
    they reach a merge request's branch, and lets Claude judge — untried on
    a live GitLab.
 5. **workline's own docs**: README, usage and most specs are suspect, far
