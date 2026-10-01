@@ -164,6 +164,7 @@ func TestDriftedWithFakeAgents(t *testing.T) {
 					"judged-is-head":    mode == "vouches",
 					"checked-is-head":   mode == "judges",
 					"no-finding":        false,
+					"finding":           false,
 				} {
 					if lost(failed, kind) != want {
 						t.Errorf("%s, %s: %s lost: %v, want %v (failed: %v)", f, mode, kind, !want, want, failed)
@@ -190,7 +191,7 @@ func TestNewChecks(t *testing.T) {
 		Rule    string `json:"rule"`
 		Where   string `json:"where"`
 		Message string `json:"message"`
-	}{"count-off", "docs/x.md", "Clock.h has 569 lines, not 524"})
+	}{"count-off", "docs/x.md", "`Clock.h` has 569 lines, not 524 (line 26, Clock/include/Clock.h)"})
 	for _, tc := range []struct {
 		kind string
 		v    any

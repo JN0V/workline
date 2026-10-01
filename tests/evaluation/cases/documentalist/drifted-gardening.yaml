@@ -25,7 +25,7 @@ grade:
   - {file-contains: {docs/getting-started.md: "clock@1.4.1"}}
   # The clean control is vouched for.
   - {checked-is-head: docs/clock/events.md}
-  # ADR-0014 step 2 (count-off), not built yet: lost until it is.
+  # ADR-0014 step 2: the engine counts the lines; a limit is no count.
   - {finding: {rule: count-off, where: docs/clock/README.md, message: "Clock.h"}}
   - {finding: {rule: count-off, where: docs/clock/project-context.md, message: "Clock.h"}}
   - {finding: {rule: count-off, where: docs/clock/project-context.md, message: "ClockWebUI.h"}}
