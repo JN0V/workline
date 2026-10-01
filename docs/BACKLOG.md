@@ -50,18 +50,12 @@ Then, once both work well here:
 
 - **Release manager, merge-request flow** — a release MR kept up to date, the
   tag on merge; the natural flow in a team.
-- **Install without Go in CI.** Built, not yet released (2026-10-01):
-  `.goreleaser.yaml`, the image (`Dockerfile`, 578 MB, Claude Code
-  installed by the job in 4 s) and `release.yml` on a tag `v*`. Left: the
-  first tag, the image made public on ghcr.io, then the templates on it.
-  Each CI job installs Go and builds workline
-  from `main` before it runs. Publish tagged releases with their binaries
-  (GoReleaser: Linux, macOS, Windows, on the GitHub releases), so a
-  workflow downloads one in seconds, and pin a tag in each repository
-  instead of following `main`: a broken commit of workline then no longer
-  breaks the CI of every repository using it. Then a reusable action
-  (`uses: JN0V/workline@v1`) that installs the pinned binary and runs the
-  line, so a repository's workflow is a few lines and is updated by its tag.
+- **Install without Go in CI.** Done (v0.1.0, 2026-10-01): releases with
+  their binaries (GoReleaser), the image ghcr.io/jn0v/workline the GitLab
+  template runs in, the GitHub templates downloading a pinned release;
+  GitLab judge 112 → 28 s, apply 182 → 15 s. Left: a reusable action
+  (`uses: JN0V/workline@v1`) so a repository's workflow is a few lines and
+  is updated by its tag; DomoticsCore's workflows moved onto a release.
 - **More agents** — Codex, Antigravity, OpenCode adapters (any command already
   runs as `cmd:`, prompt in, proposals out); `independent-of` in the engine;
   generate the model grid from models.dev and Epoch (docs/spec/model-grid.md).
