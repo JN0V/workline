@@ -34,18 +34,38 @@ func PushRanges(repo, remote string, stdin io.Reader) ([]string, error) {
 		if strings.Trim(remoteSha, "0") != "" && known(repo, remoteSha) {
 			args = append(args, remoteSha)
 		}
-		first, err := git(repo, args...)
+		listed, err := git(repo, args...)
 		if err != nil {
 			return nil, err
 		}
-		if first == "" {
+		if listed == "" {
 			continue // nothing the remote does not already have
 		}
-		first = strings.SplitN(first, "\n", 2)[0]
-		if parent, err := git(repo, "rev-parse", "-q", "--verify", first+"^"); err == nil && parent != "" {
-			out = append(out, parent+".."+local)
-		} else {
+		// The new commits stand on parents the remote has: one, and the range
+		// reads base..local; several — main merged into the branch — and it
+		// reads `local ^base…`, each one left out, as git log takes it.
+		isNew := map[string]bool{}
+		for _, c := range strings.Fields(listed) {
+			isNew[c] = true
+		}
+		var bases []string
+		seen := map[string]bool{}
+		for _, c := range strings.Fields(listed) {
+			parents, _ := git(repo, "rev-list", "--parents", "-n", "1", c)
+			for _, p := range strings.Fields(parents)[1:] {
+				if !isNew[p] && !seen[p] {
+					seen[p] = true
+					bases = append(bases, p)
+				}
+			}
+		}
+		switch len(bases) {
+		case 0:
 			out = append(out, local) // the first commit of the history
+		case 1:
+			out = append(out, bases[0]+".."+local)
+		default:
+			out = append(out, local+" ^"+strings.Join(bases, " ^"))
 		}
 	}
 	return out, s.Err()
