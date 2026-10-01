@@ -207,6 +207,8 @@ A patch is refused, and the agent asked again with the reasons, when it:
   would find them elsewhere and apply anyway. A hunk a few lines off (3 at
   most) whose quoted lines the doc holds only there is placed there:
   agents miscount lines in long docs, not their content;
+- replaces a version on a line that still says the old one elsewhere — a
+  badge's text bumped, its link left (`replaced-in-part`);
 - changes lines between `workline:derive` markers;
 - makes a doc's body longer by more than a tenth of it (the header does not
   count): a fix may say what the code now does, never pad;

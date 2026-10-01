@@ -45,10 +45,10 @@ GitLab is untried.
 1. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
-2. **Small faults seen in the first real run in parts**: a badge's link
-   left behind its text; `uncovered` taking a file extension (`ini`) for a
-   name of the code. Five docs need more than 8 parts: their sources to
-   narrow, or the doc to split.
+2. **Docs needing more than 8 parts** on DomoticsCore (five, 10 to 16
+   parts): their sources to narrow, or the doc to split. The two small
+   faults of that run are caught now: a version replaced on part of a line
+   (`replaced-in-part`), a file name taken for a name of the code.
 3. **A solo repository without pull requests** (ADR-0010): the release gate
    on suspect docs, and `workline docs` judging from a ref it moves — not
    built. `workline doctor` still warns when the documentalist is not routed

@@ -222,3 +222,6 @@ On 2026-09-27, on workline's own repository:
   the doc. The judge now places such a hunk (3 lines at most): the Storage
   answer passes as Sonnet wrote it, without Opus; the OTA one, written
   before `judged` existed, is refused for that alone.
+  The two small faults of #113 are now cases: a patch bumping a version on
+  part of a line is refused, saying where (`replaced-in-part`); a code
+  span naming a file (`platformio.ini`) is no longer a name of the code.
