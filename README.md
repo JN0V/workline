@@ -17,7 +17,7 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->201<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->202<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|

@@ -282,7 +282,7 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 	if d == nil {
 		d = &Doc{Path: docPath}
 	}
-	var refusals []string
+	var refusals, held []string
 	rule = ""
 	// A line count the engine counted off is cited by the engine itself,
 	// when the fix brings it to the engine's number.
@@ -321,10 +321,11 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 				commentAt = append(commentAt, r.comment)
 			}
 		}
+		place := at.String()
 		if cited || len(out) == 0 && (!any || len(commentAt) == 0) {
+			held = append(held, place)
 			continue
 		}
-		place := at.String()
 		switch {
 		case len(commentAt) > 0:
 			rule = "comment-not-evidence"
@@ -363,6 +364,11 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 			said = append(said, fmt.Sprintf("line %d, %s to %d", c.line, c.stated, c.real))
 		}
 		msg += ". A line count the engine reported off needs no claim: the engine's count is the evidence, so bring each to its number (" + strings.Join(said, "; ") + ") and keep that change"
+	}
+	// Only what is refused is named: the agent once withdrew a right fix
+	// with the refused one beside it (16c660b, ADR-0014 step 3).
+	if len(held) > 0 {
+		msg += fmt.Sprintf(". Only the places named are refused: the rest of this patch of %s holds (%s); send it again unchanged", docPath, strings.Join(held, ", "))
 	}
 	return rule, msg, comments
 }

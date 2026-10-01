@@ -314,7 +314,11 @@ func run(o Options, res *Result) error {
 		}
 		var fb strings.Builder
 		for _, f := range v.Findings {
-			fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
+			if f.Where != "" && !strings.Contains(f.Message, f.Where) {
+				fmt.Fprintf(&fb, "- %s, %s: %s\n", f.Rule, f.Where, f.Message)
+			} else {
+				fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
+			}
 		}
 		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb.String()), 0o644); err != nil {
 			return err
