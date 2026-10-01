@@ -2,7 +2,8 @@
 
 - **Status:** accepted (2026-10-01), after a critical review by seven
   independent reviewers (BMAD analyst, architect, product manager,
-  developer; adversarial, verification-gap and edge-case lenses)
+  developer; adversarial, verification-gap and edge-case lenses);
+  amended 2026-10-01 (who confirms a verdict)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -57,7 +58,8 @@ the next is built.
 
 - **A person confirms the reviewed verdicts**, each at its own commit, and
   the research file says which are confirmed. Unconfirmed verdicts are not
-  cases.
+  cases. *(Amended 2026-10-01: a second, independent check confirms, not the
+  person; see Amendment.)*
 - **A fixture of real shapes** (`drifted`): a fenced tree listing
   "(524 lines)", a `| File | Lines |` table, "~283 lines", "< 800 lines", a
   sibling doc sharing a version, a stale comment against a config default, a
@@ -127,6 +129,27 @@ Step 0 to 2 are done when, on the held-out set, over five runs:
 Then every week a sample of the docs vouched for since — one in ten — is
 read against the code by a model of another provider or a person, written to
 the measures; one false `checked` sets the documentalist back to step 0.
+*(Amended 2026-10-01: who reads, as for step 1; see Amendment.)*
+
+## Amendment (2026-10-01)
+
+- **A verdict is confirmed by a second check, not by the person
+  rereading commits.** A check independent of the first review reads the
+  verdict against the code at that commit (`git show <commit>:<path>`) and
+  agrees; the record says who checked and at what independence level
+  (ADR-0005), honestly. Only a real disagreement goes to the person, with
+  the change, the proof and both readings beside it.
+- **Step 4's weekly sample** is read the same way: a model of another
+  provider when one is available, else the best level ADR-0005 reaches,
+  said in the measures; a disagreement, or a false `checked` found, goes to
+  the person.
+- **Done for the sixteen reviewed verdicts** (2026-10-01) at ADR-0005
+  level 3, not another provider: an agent of the same provider, sharing no
+  context with the first review, confirmed all sixteen, five with a
+  correction; none needed the person. d38a0e4 was wrong in fact, but
+  nothing in its tree contradicted it: a race between branches, not a
+  misreading, and not an evaluation case
+  (docs/research/documentalist-fixes-reviewed.md).
 
 ## Not decided here
 
