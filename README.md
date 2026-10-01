@@ -2,6 +2,7 @@
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
 checked: 6013a50
 verified: agent:documentalist
+judged-in-parts: 3ef5cf9
 -->
 <h1>
   <picture>
