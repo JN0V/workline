@@ -1,15 +1,16 @@
-# Documentalist — where it stands (2026-10-01, afternoon)
+# Documentalist — where it stands (2026-10-01, evening)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
 is the summary to start from.
 
-**In one line:** usable every day on a GitHub repository that takes pull
-requests — docs judged on each pull request and gardened at night, by Claude
-in CI, fixes committed by a GitHub App and reviewed on the forge. Beta: the
-catch-up of a large backlog in parts has run once on DomoticsCore, right but
-for a badge's link; Sonnet often cites lines wrongly, and Opus pays again;
-GitLab tried once, on gitlab.com.
+**In one line:** usable every day on a GitHub or GitLab repository that
+takes merge requests — docs judged on each one and gardened at night, by
+Claude in CI, from a release of workline (v0.1.1, docs/ci.md), fixes
+committed to the branch and reviewed on the forge. Beta: the catch-up of a
+large backlog in parts has run once on DomoticsCore, right but for a
+badge's link; a fix in parts once followed a stale code comment; a
+repository without merge requests is built but untried for real.
 
 ## Built and tried for real
 
@@ -60,7 +61,8 @@ GitLab tried once, on gitlab.com.
    since the last tag, `doctor` saying where docs are judged; tried in
    conformance only, not yet on a real solo repository.
 5. **workline's own docs**: README, usage and most specs are suspect, far
-   behind; gardening on workline with Claude and parts would catch them up.
+   behind; gardened nightly in parts since #27, first night to watch.
+   roles/documentalist/README.md needs 15 parts: to split (condense task).
 6. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).

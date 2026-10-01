@@ -2,13 +2,20 @@
 
 ## Next, in order
 
-**Handover (2026-10-01, afternoon).** The documentalist is being finished
-before any other role. Done on `feat/token-cap`: `ai-max-tokens` caps a
-run; a doc fixed but not vouched for records `judged` and a gardening task
-waits while its pull request is open (ADR-0013), so DomoticsCore's parts
-are no longer stuck behind docs judged whole. Next: DomoticsCore's first
-real run in parts, tried (DomoticsCore #113): what is left is in
-roles/documentalist/status.md, "Missing".
+**Handover (2026-10-01, evening).** The documentalist is being finished
+before any other role; roles/documentalist/status.md says where it stands
+and what is missing, in order. Since the afternoon: GitLab reached through
+its API alone and tried on gitlab.com, a fork's pull request commented,
+`workline docs` from a ref and the release held by suspect docs (ADR-0010),
+and releases — **v0.1.1** (v0.1.0 is retracted: a tag pushed is never
+moved, the Go proxy keeps its first commit), the templates on it, the setup
+guide docs/ci.md. To check first: DomoticsCore #114 (its workflows on
+v0.1.1) merged; the night's gardening, on DomoticsCore and on workline's
+own docs, in parts for the first time (#27) — record both in tried.md.
+Then status.md's "Missing" from the top. Sandboxes for trying CI for real:
+github.com/JN0V/workline-sandbox and its fork jn0v-lab/workline-sandbox;
+gitlab.com/JN0V/workline-sandbox, its two tokens set as masked variables
+(the GitLab one expires about 2026-10-31).
 
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
@@ -30,18 +37,15 @@ this repository before any other role is added.
    agent from a person on the forge — a bot account or a GitHub App with no
    right to merge — so the rule is a check, not a wish; the editor and a
    dialog on macOS and Windows, for those who ask for the approval.
-3. **Docs judged on the merge request and by gardening** (ADR-0010):
-   built and tried (workline PR #10, DomoticsCore). Where it stands, and
-   what is missing in order: roles/documentalist/status.md — first, Sonnet
-   citing lines wrongly; then the release gate and `workline docs`
-   from a ref, for a repository without pull requests (and `doctor`/`init`
-   brought in line with ADR-0010); forks and GitLab.
+3. **Docs judged on the merge request and by gardening** (ADR-0010,
+   accepted and built): on GitHub, GitLab, a fork's pull request, and a
+   repository without pull requests. Where it stands, and what is missing
+   in order: roles/documentalist/status.md.
 4. **Judge docs far behind in parts** (ADR-0009, accepted on its measures;
    ADR-0012, a doc judged against its sources whole): turned on for
-   DomoticsCore's nightly gardening (its PR #107). Next: watch the first
-   real runs — tokens, the pull requests, `sources-too-wide` — and record
-   them in roles/documentalist/tried.md; then catch workline's own docs up
-   the same way.
+   DomoticsCore's nightly gardening (its PR #107), tried once (#113); on
+   workline's own docs nightly since #27. Next: watch those nights and
+   record them in roles/documentalist/tried.md.
 5. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.
