@@ -209,8 +209,9 @@ pitfall, OTA's total). Judging in parts costs 0.23M to 0.32M a night and,
 
 After step 4, the three costs (conformance and replay only, no agent run
 on them yet; step 4 to run again): the rest of a line whose count the
-engine fixes, and glue taken out of a line reworded ("the", "per"; never a
-negation, a quantifier, a conjunction or a tense), need no claim; a
+engine fixes, but for a fact of its own (another number, a version, a
+name, a negation, a quantifier, a conjunction, a tense), and glue taken
+out of a line reworded ("the", "per"; never such a fact), need no claim; a
 table's total is a `count-off` the engine sums; the task says a line a
 diff adds may be quoted; a patch git cannot apply is refused saying which
 line it misquotes (the run asked twice had skipped a blank line). The

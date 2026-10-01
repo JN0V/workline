@@ -79,9 +79,10 @@ func TestBodyBlocks(t *testing.T) {
 
 // A line count the engine reports off is brought to the engine's number with
 // no claim, in each shape a doc gives it; the engine's count is the evidence
-// (ADR-0014, step 3), and the rest of its line may be said anew (step 4).
-// Another number, or other words elsewhere, still need a claim, but for
-// glue taken out of a line reworded.
+// (ADR-0014, step 3), and the words said around it anew (step 4). Another
+// number, a fact beside the count (a version, a name, a negation), or other
+// words elsewhere, still need a claim, but for glue taken out of a line
+// reworded.
 func TestCountFixNeedsNoClaim(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "src"), 0o755); err != nil {
@@ -102,6 +103,13 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 		{"thousands", "`Clock.h` is 1,008 lines.", "`Clock.h` is 569 lines.", ""},
 		{"another number", "`Clock.h` is 524 lines long.", "`Clock.h` is 600 lines long.", "removal-uncited"},
 		{"the rest said anew", "`Clock.h` is 524 lines long. Watch it.", "`Clock.h` is 569 lines: under the limit.", ""},
+		{"watch, said anew", "`Clock.h` is currently ~630 lines (includes full `String` class stub). Watch the 800-line limit.", "`Clock.h` is currently ~569 lines (includes full `String` class stub). Over the 800-line hard limit.", ""},
+		{"a version beside the count", "`Clock.h` is 524 lines since 1.4.1.", "`Clock.h` is 569 lines since 1.5.0.", "removal-uncited"},
+		{"another number beside the count", "`Clock.h` is 524 lines, 12 tests.", "`Clock.h` is 569 lines, 9 tests.", "removal-uncited"},
+		{"a negation beside the count", "`Clock.h` is 524 lines, not split.", "`Clock.h` is 569 lines, split.", "removal-uncited"},
+		{"a tense beside the count", "`Clock.h` is 524 lines.", "`Clock.h` was 569 lines.", "removal-uncited"},
+		{"a code name beside the count", "`Clock.h` is 524 lines, with `tick`.", "`Clock.h` is 569 lines, with `beat`.", "removal-uncited"},
+		{"a proper name beside the count", "`Clock.h` is 524 lines, tried on Arduino.", "`Clock.h` is 569 lines, tried on boards.", "removal-uncited"},
 		{"other words, the count left", "`Clock.h` is 524 lines long.", "`Clock.h` is 524 lines.", "removal-uncited"},
 		{"glue only", "The clock keeps the time, per board.", "The clock keeps time, a board.", ""},
 		{"a negation", "The clock is not synced.", "The clock is synced.", "removal-uncited"},

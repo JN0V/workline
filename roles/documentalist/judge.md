@@ -51,12 +51,14 @@ A patch is refused, and the agent asked again with the reasons, when it:
   the stated number and the word making it rough ("~", "about",
   "approximately"), in prose, a table's cell or a fenced listing; another
   number in its place needs a claim like any word. Where the run replaces
-  line for line, the rest of a line whose count it brings to the engine's
-  number needs none either — the count changed what the line says ("Watch
+  line for line, the words said around a count it brings to the engine's
+  number need none either — the count changed what the line says ("Watch
   the 800-line limit" became "Over the 800-line hard limit" beside 930
-  lines, DomoticsCore, step 4) — nor a line reworded taking out only glue
-  ("the", "per", "currently"; never a negation, a quantifier, a conjunction
-  or a tense). A table's total is a count the engine gives too. The task and every
+  lines, DomoticsCore, step 4) — but a fact of the line's own still does:
+  another number, a version, a name (quoted as code, shaped as one, or
+  capitalised past a sentence's start), a negation, a quantifier, a
+  conjunction or a tense. Nor does a line reworded taking out only glue
+  ("the", "per", "currently"; never such a fact). A table's total is a count the engine gives too. The task and every
   refusal say it, the engine's count being the evidence: the agent had left
   the counts it was given, believing a count "cannot be quoted as a source"
   (ADR-0014, step 3). A refusal names the places refused only, and the rest

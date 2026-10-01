@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
@@ -53,8 +54,10 @@ cite, leave the words as they are and say in a ` + "`note`" + ` what you could n
 confirm. A line a diff shown here adds is in the file as it is now: quote it.
 Words only added need no claim. Nor does a line count the engine lists as off
 for a doc, a table's total among them, brought to the engine's number: the
-engine's count is the evidence; the rest of that line may then be said anew.
-Nor do words like "the" or "per", taken out of a line whose other words stay.
+engine's count is the evidence; the words around it may then be said anew,
+but not a fact of the line's own: another number, a version, a name, a "not",
+an "all", an "or", a tense taken out still need a claim. Nor do words like
+"the" or "per", taken out of a line whose other words stay.
 
 `
 
@@ -589,11 +592,13 @@ func newCiteContext(repo string, files map[string]bool) (*citeContext, error) {
 
 // uncited are the words a block takes out that need a claim. None do that
 // the engine's count stands for (countedOn). Where the block replaces line
-// for line, none on a line whose count the engine found off and the block
-// brings to its number — the count changed what the line says, and the
-// words beside it follow (DomoticsCore, ADR-0014 step 4: "Watch the
-// 800-line limit" became "Over the 800-line hard limit" beside 930 lines) —
-// nor on a line reworded taking out only words that carry no fact (glue).
+// for line, none on a line reworded taking out only words that carry no fact
+// (glue); and on a line whose count the engine found off and the block
+// brings to its number, none said around the count — the count changed what
+// the line says, and the words beside it follow (DomoticsCore, ADR-0014
+// step 4: "Watch the 800-line limit" became "Over the 800-line hard limit"
+// beside 930 lines) — but for a fact of the line's own (factOn): the count
+// stands for itself, not for a version or a "not" beside it.
 func uncited(b citedBlock, counted map[int][]countOff) []string {
 	var out []string
 	for _, w := range wordsTakenOut(b) {
@@ -608,8 +613,17 @@ func uncited(b citedBlock, counted map[int][]countOff) []string {
 	for i := range b.removed {
 		line := citedBlock{from: b.from + i, to: b.from + i, removed: b.removed[i : i+1], added: b.added[i : i+1]}
 		words := wordsTakenOut(line)
-		if countFixedOn(counted, line) || onlyGlue(words) {
+		if onlyGlue(words) {
 			for _, w := range words {
+				free[w]++
+			}
+			continue
+		}
+		if !countFixedOn(counted, line) {
+			continue
+		}
+		for _, w := range words {
+			if !factOn(b.removed[i], w) {
 				free[w]++
 			}
 		}
@@ -639,9 +653,7 @@ func countFixedOn(counted map[int][]countOff, line citedBlock) bool {
 }
 
 // glue are words that carry no fact of their own: taken out of a line, with
-// every other word kept, the line says the same. Never a negation, a
-// quantifier, a conjunction or a tense ("not", "all", "or", "was"): those
-// change what a line says.
+// every other word kept, the line says the same. Never a fact word.
 var glue = map[string]bool{"a": true, "an": true, "the": true, "of": true, "to": true, "in": true, "on": true,
 	"at": true, "for": true, "per": true, "with": true, "by": true, "from": true, "as": true, "it": true,
 	"its": true, "this": true, "that": true, "these": true, "those": true, "which": true, "currently": true}
@@ -654,6 +666,66 @@ func onlyGlue(words []string) bool {
 		}
 	}
 	return len(words) > 0
+}
+
+// factWords change what a line says when taken out, whatever words stand
+// around them: a negation, a quantifier, a conjunction, a tense or a mood.
+var factWords = wordSet(`not no never none nor nothing nobody neither cannot without
+	all every each some any many much few fewer more most less least only both either several
+	always often sometimes rarely usually once twice again also still yet already just
+	and or but if unless except than because
+	is are was were be been being has have had do does did will would shall should can could
+	may might must`)
+
+// wordSet is the set of the words given.
+func wordSet(words string) map[string]bool {
+	set := map[string]bool{}
+	for _, w := range strings.Fields(words) {
+		set[w] = true
+	}
+	return set
+}
+
+// factOn says whether a word taken out of a line is a fact of its own, not
+// words said around a count: a number or a version (the count is not taken
+// out, countedOn having let it go), a fact word or one negated ("isn't"), or
+// a name — quoted as code, shaped as one ("ClockWebUI", "Clock.h"), or
+// capitalised past a sentence's start ("Arduino").
+func factOn(line, w string) bool {
+	lw := strings.ToLower(w)
+	if factWords[lw] || strings.HasSuffix(lw, "n't") || strings.HasSuffix(lw, "n’t") ||
+		strings.ContainsAny(w, "0123456789.") {
+		return true
+	}
+	for _, r := range []rune(w)[1:] {
+		if unicode.IsUpper(r) {
+			return true
+		}
+	}
+	for _, at := range wordOf.FindAllStringIndex(line, -1) {
+		if line[at[0]:at[1]] != w {
+			continue
+		}
+		if strings.Count(line[:at[0]], "`")%2 == 1 {
+			return true
+		}
+		if first, _ := utf8.DecodeRuneInString(w); unicode.IsUpper(first) && !sentenceStart(line[:at[0]]) {
+			return true
+		}
+	}
+	return false
+}
+
+// sentenceStart says whether a word after these words of its line begins a
+// sentence: nothing before it but markup, or a full stop, a colon or a
+// cell's bar.
+func sentenceStart(before string) bool {
+	before = strings.TrimRight(before, " \t*_#>([\"'-~")
+	if before == "" {
+		return true
+	}
+	last, _ := utf8.DecodeLastRuneInString(before)
+	return strings.ContainsRune(".!?:;|", last)
 }
 
 // numberIn is a number as a doc writes a count: "569", "1,008".
