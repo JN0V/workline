@@ -5,8 +5,10 @@
 # `drop-approx` also drops the "~" before a count, the number now exact;
 # `reword` says anew the rest of a line whose count it fixes ("Watch for
 # growth." becomes "Well under the limit."), and rewords "lines per file" as
-# "lines in a file", taking out only "per". It reads the counts, the commits and the numbered lines from the prompt, as a
-# real agent would.
+# "lines in a file", taking out only "per"; `reword-fact` also changes a
+# fact beside the count it fixes ("Not split since 1.4.1." becomes "Split
+# since 1.5.0."). It reads the counts, the commits and the numbered lines
+# from the prompt, as a real agent would.
 awk -v mode="$1" '
 function flush(   i, l) {
   if (doc == "" || judged == "") return
@@ -18,6 +20,7 @@ function flush(   i, l) {
     if (!(i in fix) && !reword) continue
     l = line[i]
     if (i in fix && !(mode == "drop-approx" && sub("~" stated[i], real[i], l))) sub(stated[i], real[i], l)
+    if (mode == "reword-fact") sub(/ Not split since 1\.4\.1\./, " Split since 1.5.0.", l)
     if (mode == "reword") { sub(/ Watch for growth\./, " Well under the limit.", l); sub(/lines per file/, "lines in a file", l) }
     print "    @@ -" i " +" i " @@"; print "    -" line[i]; print "    +" l
   }

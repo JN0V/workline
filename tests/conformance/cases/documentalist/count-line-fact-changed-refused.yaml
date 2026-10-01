@@ -1,0 +1,14 @@
+case: documentalist/count-line-fact-changed-refused
+about: "On a line whose count the engine reports off, brought to the engine's number, only the count and the words said around it go without a claim: a fact beside the count — another number, a version, a name, a negation, a quantifier, a conjunction, a tense — taken out still needs one (`removal-uncited`): the doc's fix is left out, the others applied. Here the agent fixes the count and, uncited, turns \"Not split since 1.4.1\" into \"Split since 1.5.0\"; the line reworded freely would have let it (ADR-0014, step 4)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/is currently ~283 lines\\./is currently ~283 lines. Not split since 1.4.1./' docs/clock/project-context.md && git commit -qam 'docs(clock): not split yet'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-counts.sh reword-fact"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: left-out, where: docs/clock/project-context.md, message: "removal-uncited: line 23 takes out \"Not 1.4.1\""}]
+  files:
+    "docs/clock/project-context.md": {contains: "~283 lines. Not split since 1.4.1.", lacks: "Split since 1.5.0"}
