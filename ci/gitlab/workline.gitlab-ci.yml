@@ -66,7 +66,6 @@ workline:apply:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
       when: always
   script:
-    - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
@@ -86,7 +85,6 @@ workline:apply:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN
   before_script:
     - go install github.com/JN0V/workline/cmd/workline@$WORKLINE_VERSION
-    - go install gitlab.com/gitlab-org/cli/cmd/glab@latest
     - export PATH=$PATH:$(go env GOPATH)/bin
     - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN

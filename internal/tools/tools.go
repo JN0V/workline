@@ -58,9 +58,6 @@ var known = map[string]Tool{
 	"gh": {Name: "gh", For: "the forge `github`: comments, labels, issues, merge requests",
 		Page: "https://cli.github.com",
 		Ways: []Way{{Needs: "brew", Command: "brew install gh"}}},
-	"glab": {Name: "glab", For: "the forge `gitlab`: comments, labels, issues, merge requests",
-		Page: "https://gitlab.com/gitlab-org/cli#installation",
-		Ways: []Way{{Needs: "brew", Command: "brew install glab"}}},
 }
 
 // Lookup returns what workline knows of a tool; an unknown one has its name only.
