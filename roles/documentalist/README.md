@@ -204,7 +204,9 @@ A patch is refused, and the agent asked again with the reasons, when it:
 - is not a unified diff, or git cannot apply it;
 - touches a doc that was not put before the agent;
 - quotes lines that are not at the numbers its hunks cite — git apply alone
-  would find them elsewhere and apply anyway;
+  would find them elsewhere and apply anyway. A hunk a few lines off (3 at
+  most) whose quoted lines the doc holds only there is placed there:
+  agents miscount lines in long docs, not their content;
 - changes lines between `workline:derive` markers;
 - makes a doc's body longer by more than a tenth of it (the header does not
   count): a fix may say what the code now does, never pad;

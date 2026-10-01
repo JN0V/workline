@@ -198,6 +198,7 @@ func judgeSources(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			old := tree.Docs[f.path]
+			f = placed(old, f)
 			if why := misquoted(old, f); why != "" {
 				refuse("misquoted", f.path, why)
 				continue

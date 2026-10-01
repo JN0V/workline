@@ -121,6 +121,61 @@ func misquoted(old string, f fileDiff) string {
 	return ""
 }
 
+// placeWithin is how many lines from where a hunk says it sits the judge
+// looks for the lines it quotes: agents miscount by a line or two in long
+// docs (DomoticsCore, 2026-10-01), never by their content.
+const placeWithin = 3
+
+// placed moves each hunk whose quoted lines are not where it says to where
+// they are, when they are within placeWithin lines and found nowhere else
+// in the doc: there is then no doubt where it goes, and git apply finds the
+// same place. Any other hunk stays where it says, for misquoted to refuse.
+// The hunks keep their order and do not overlap, or none is moved.
+func placed(old string, f fileDiff) fileDiff {
+	lines := strings.Split(strings.TrimSuffix(old, "\n"), "\n")
+	at := func(start int, quoted []string) bool {
+		if start < 1 || start+len(quoted)-1 > len(lines) {
+			return false
+		}
+		for i, q := range quoted {
+			if lines[start-1+i] != q {
+				return false
+			}
+		}
+		return true
+	}
+	out := f
+	out.hunks = append([]hunk(nil), f.hunks...)
+	end := 0 // the last old line the hunks so far take
+	for i, h := range out.hunks {
+		var quoted []string
+		for _, l := range h.lines {
+			if l[0] != '+' {
+				quoted = append(quoted, l[1:])
+			}
+		}
+		if h.oldCount > 0 && len(quoted) > 0 && !at(h.oldStart, quoted) {
+			found := 0
+			for s := 1; s <= len(lines); s++ {
+				if at(s, quoted) {
+					found++
+					if d := s - h.oldStart; d >= -placeWithin && d <= placeWithin {
+						out.hunks[i].oldStart = s
+					}
+				}
+			}
+			if found != 1 {
+				out.hunks[i].oldStart = h.oldStart
+			}
+		}
+		if out.hunks[i].oldStart <= end && h.oldCount > 0 {
+			return f
+		}
+		end = out.hunks[i].oldStart + len(quoted) - 1
+	}
+	return out
+}
+
 // applyHunks returns old with the hunks applied. The hunks were checked by
 // misquoted first, so they sit where they say.
 func applyHunks(old string, f fileDiff) string {
@@ -252,6 +307,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			old := after[f.path]
+			f = placed(old, f)
 			if why := misquoted(old, f); why != "" {
 				refuse("misquoted", f.path, why)
 				continue
