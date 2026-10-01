@@ -46,8 +46,9 @@ that leaves the doc is found in no new doc, unchanged but for a heading's level
 words, is fine (`rewritten`); when a MUST or SHOULD is lost; when a new doc is
 not linked from the doc (`not-linked`); or when the budget problem it was for
 remains (`still-over-budget`). A condense, split, merge-card or dedupe patch
-moving an existing doc's `checked` is refused (`checked-unread`): moving text
-gives none of its sources.
+moving an existing doc's `checked`, or creating a doc that carries one, is
+refused (`checked-unread`): moving text gives none of its sources, so a new
+doc starts without `checked`, listed unchecked for a person.
 
 The judge reads a diff as its lines read, whatever counts its hunk headers
 announce, and compares its reading with git's: the engine applies with
