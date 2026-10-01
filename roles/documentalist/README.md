@@ -109,9 +109,11 @@ doc follows the code.
 
 Suspect docs become the agent's task, each with its lines numbered, what
 changed in its sources — 240 lines of diff a doc, whatever the number of
-sources; a doc far behind, whose changes do not fit, is judged against its
-sources as they are now, in full, or goes to a person when they do not fit
-either — and the commits its `checked` must name: at most
+sources — and beside it its sources as they are now, in full, when they fit,
+since vouching for every sentence needs them (ADR-0012); a doc far behind,
+whose changes do not fit, is judged against its sources as they are now
+alone, or in parts when they do not fit either — and the commits its
+`checked` must name: at most
 `ai-max-calls` docs per call, and no more than fits the role's context budget.
 Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay
@@ -202,7 +204,9 @@ A patch is refused, and the agent asked again with the reasons, when it:
 - changes lines between `workline:derive` markers;
 - makes a doc's body longer by more than a tenth of it (the header does not
   count): a fix may say what the code now does, never pad;
-- leaves `checked` short of the commits given, so the doc would stay suspect;
+- moves `checked` to another commit than the one given — a fix that leaves
+  `checked` alone is kept, and the doc stays suspect, fixed but not vouched
+  for (ADR-0012);
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.

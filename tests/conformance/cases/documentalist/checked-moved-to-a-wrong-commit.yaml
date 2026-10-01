@@ -1,0 +1,10 @@
+case: documentalist/checked-moved-to-a-wrong-commit
+about: "A fix that moves `checked` must name the commit the task gave: another would vouch for what was never judged."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-checked-at-a-wrong-commit"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: still-suspect, where: docs/tech/auth.md}]
