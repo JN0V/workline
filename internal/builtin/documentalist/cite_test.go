@@ -79,7 +79,9 @@ func TestBodyBlocks(t *testing.T) {
 
 // A line count the engine reports off is brought to the engine's number with
 // no claim, in each shape a doc gives it; the engine's count is the evidence
-// (ADR-0014, step 3). Another number, or other words, still need a claim.
+// (ADR-0014, step 3), and the rest of its line may be said anew (step 4).
+// Another number, or other words elsewhere, still need a claim, but for
+// glue taken out of a line reworded.
 func TestCountFixNeedsNoClaim(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "src"), 0o755); err != nil {
@@ -99,7 +101,10 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 		{"listing", "    Clock.h           (524 lines)   # the clock", "    Clock.h           (569 lines)   # the clock", ""},
 		{"thousands", "`Clock.h` is 1,008 lines.", "`Clock.h` is 569 lines.", ""},
 		{"another number", "`Clock.h` is 524 lines long.", "`Clock.h` is 600 lines long.", "removal-uncited"},
-		{"other words too", "`Clock.h` is 524 lines long.", "`Clock.h` is 569 lines.", "removal-uncited"},
+		{"the rest said anew", "`Clock.h` is 524 lines long. Watch it.", "`Clock.h` is 569 lines: under the limit.", ""},
+		{"other words, the count left", "`Clock.h` is 524 lines long.", "`Clock.h` is 524 lines.", "removal-uncited"},
+		{"glue only", "The clock keeps the time, per board.", "The clock keeps time, a board.", ""},
+		{"a negation", "The clock is not synced.", "The clock is synced.", "removal-uncited"},
 	} {
 		old := "---\nsources: [src/Clock.h]\nchecked: abc1234\n---\n# Clock\n\n" + c.old + "\n"
 		diff := "--- a/d.md\n+++ b/d.md\n@@ -7 +7 @@\n-" + c.old + "\n+" + c.new + "\n"

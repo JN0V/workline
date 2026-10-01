@@ -50,9 +50,11 @@ doc's sources, or a name the code no longer has:
 A comment in the code is not evidence: a quote found only in a comment is
 refused, and the disagreement reported for a person. With nothing else to
 cite, leave the words as they are and say in a ` + "`note`" + ` what you could not
-confirm. Words only added need no claim. Nor does a line count the engine
-lists as off for a doc, brought to the engine's number: the engine's count
-is the evidence.
+confirm. A line a diff shown here adds is in the file as it is now: quote it.
+Words only added need no claim. Nor does a line count the engine lists as off
+for a doc, a table's total among them, brought to the engine's number: the
+engine's count is the evidence; the rest of that line may then be said anew.
+Nor do words like "the" or "per", taken out of a line whose other words stay.
 
 `
 
@@ -292,12 +294,7 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 		counted[c.line] = append(counted[c.line], c)
 	}
 	for _, b := range bodyBlocks(old, f) {
-		var out []string
-		for _, w := range wordsTakenOut(b) {
-			if !countedOn(counted, b, w) {
-				out = append(out, w)
-			}
-		}
+		out := uncited(b, counted)
 		at := lineRange{from: b.from, to: max(b.from, b.to)}
 		var why []string
 		var commentAt []string
@@ -588,6 +585,75 @@ func newCiteContext(repo string, files map[string]bool) (*citeContext, error) {
 	}
 	return &citeContext{repo: repo, files: files, shown: map[string]string{},
 		pl: &places{repo: repo, gitDir: gitDir, cfg: cfg, known: map[string]place{}}}, nil
+}
+
+// uncited are the words a block takes out that need a claim. None do that
+// the engine's count stands for (countedOn). Where the block replaces line
+// for line, none on a line whose count the engine found off and the block
+// brings to its number — the count changed what the line says, and the
+// words beside it follow (DomoticsCore, ADR-0014 step 4: "Watch the
+// 800-line limit" became "Over the 800-line hard limit" beside 930 lines) —
+// nor on a line reworded taking out only words that carry no fact (glue).
+func uncited(b citedBlock, counted map[int][]countOff) []string {
+	var out []string
+	for _, w := range wordsTakenOut(b) {
+		if !countedOn(counted, b, w) {
+			out = append(out, w)
+		}
+	}
+	if len(out) == 0 || len(b.removed) != len(b.added) {
+		return out
+	}
+	free := map[string]int{}
+	for i := range b.removed {
+		line := citedBlock{from: b.from + i, to: b.from + i, removed: b.removed[i : i+1], added: b.added[i : i+1]}
+		words := wordsTakenOut(line)
+		if countFixedOn(counted, line) || onlyGlue(words) {
+			for _, w := range words {
+				free[w]++
+			}
+		}
+	}
+	var kept []string
+	for _, w := range out {
+		if free[w] > 0 {
+			free[w]--
+			continue
+		}
+		kept = append(kept, w)
+	}
+	return kept
+}
+
+// countFixedOn says whether a one-line block brings a count the engine found
+// off on its line to the engine's number.
+func countFixedOn(counted map[int][]countOff, line citedBlock) bool {
+	for _, c := range counted[line.from] {
+		for _, a := range numberIn.FindAllString(line.added[0], -1) {
+			if strings.ReplaceAll(a, ",", "") == strconv.Itoa(c.real) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// glue are words that carry no fact of their own: taken out of a line, with
+// every other word kept, the line says the same. Never a negation, a
+// quantifier, a conjunction or a tense ("not", "all", "or", "was"): those
+// change what a line says.
+var glue = map[string]bool{"a": true, "an": true, "the": true, "of": true, "to": true, "in": true, "on": true,
+	"at": true, "for": true, "per": true, "with": true, "by": true, "from": true, "as": true, "it": true,
+	"its": true, "this": true, "that": true, "these": true, "those": true, "which": true, "currently": true}
+
+// onlyGlue says whether words, some, are all glue.
+func onlyGlue(words []string) bool {
+	for _, w := range words {
+		if !glue[strings.ToLower(w)] {
+			return false
+		}
+	}
+	return len(words) > 0
 }
 
 // numberIn is a number as a doc writes a count: "569", "1,008".

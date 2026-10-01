@@ -1,0 +1,16 @@
+case: documentalist/count-line-reworded-needs-no-claim
+about: "A line whose count the engine reports off, brought to the engine's number, may say the rest anew with no claim: the count changed the line's fact, the engine's count is the evidence (DomoticsCore, ADR-0014 step 4: \"Watch the 800-line limit\" became \"Over the 800-line hard limit\" beside 930 lines, refused). A line reworded with only words like \"per\" or \"the\" taken out says the same and needs none either. A word of fact taken out elsewhere still does (removal-uncited-refused)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/is currently ~283 lines\\./is currently ~283 lines. Watch for growth./' docs/clock/project-context.md && git commit -qam 'docs(clock): watch the web page grow'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-counts.sh reword"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  findings: [{rule: count-off, where: docs/clock/project-context.md, message: "fixed in this run"}]
+  files:
+    "docs/clock/project-context.md": {contains: "is currently ~236 lines. Well under the limit.", lacks: "lines per file"}
+
