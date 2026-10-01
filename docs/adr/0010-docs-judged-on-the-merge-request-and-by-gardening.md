@@ -1,6 +1,6 @@
 # ADR-0010: Docs are judged on the merge request and by gardening; the push only counts
 
-- **Status:** proposed
+- **Status:** accepted; built 2026-10-01
 - **Date:** 2026-09-30
 - **Supersedes:** ADR-0007 on judging at the push (`d`, the docs listed in
   the question). Its range, the review per doc and the push approval stay.
@@ -75,6 +75,7 @@ push of a merge request.
 - Docs are fixed where the change is reviewed, in the same merge request.
 - A solo project with no CI is caught up at the release, or when its
   developer runs `workline docs`; the push line keeps the count in sight.
-- `workline init` stops routing the documentalist to `pre-push` by default;
-  doctor's `documentalist-not-before-push` becomes a check that docs are
-  judged somewhere: a merge request with an agent, gardening, or the release.
+- `workline init` keeps routing the documentalist to `pre-push`, for its one
+  line counting the docs; doctor's `documentalist-not-before-push` became
+  `docs-judged`: where docs are judged — a merge request in CI, gardening,
+  the release — and `docs-judged-nowhere` when none (2026-10-01).

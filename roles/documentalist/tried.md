@@ -225,3 +225,13 @@ On 2026-09-27, on workline's own repository:
   The two small faults of #113 are now cases: a patch bumping a version on
   part of a line is refused, saying where (`replaced-in-part`); a code
   span naming a file (`platformio.ini`) is no longer a name of the code.
+- a solo repository without pull requests (2026-10-01, conformance only):
+  `workline docs` judged commits already pushed, kept its ref until a
+  person committed the fix, then moved it, and said so when nothing was
+  new; a release was held by a doc made suspect after the last tag, not by
+  one suspect before it nor by one fixed without being vouched for. On a
+  copy of DomoticsCore, no agent: `workline docs` judged from v2.11.0, and
+  moved its ref though nothing was judged — it now waits for every doc of
+  the range to be put before an agent or left to a person; a release there
+  would wait for 21 docs, the version bumps of 2.12.0 having touched the
+  `library.json` many docs name.

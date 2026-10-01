@@ -49,11 +49,10 @@ GitLab is untried.
    parts): their sources to narrow, or the doc to split. The two small
    faults of that run are caught now: a version replaced on part of a line
    (`replaced-in-part`), a file name taken for a name of the code.
-3. **A solo repository without pull requests** (ADR-0010): the release gate
-   on suspect docs, and `workline docs` judging from a ref it moves — not
-   built. `workline doctor` still warns when the documentalist is not routed
-   before a push, and `workline init` still routes it there: both predate
-   ADR-0010.
+3. **A solo repository without pull requests**: built (ADR-0010, accepted)
+   — `workline docs` from a ref it moves, the release held by docs suspect
+   since the last tag, `doctor` saying where docs are judged; tried in
+   conformance only, not yet on a real solo repository.
 4. **Forks and GitLab**: a fork's pull request gets the job summary only,
    no comment; the GitLab template keeps its token protected, so it never
    reaches a merge request's branch — untried on a live GitLab.
