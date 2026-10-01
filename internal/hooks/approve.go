@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/review"
 )
 
@@ -248,19 +249,14 @@ func anyDelete(refs []Ref) bool {
 	return false
 }
 
-// rangeBase and rangeHead split "a..b"; a range of one commit (the first of
-// a history) is compared with the empty tree.
+// rangeBase and rangeHead are where a range starts and ends (gitrange); a
+// range of the whole history is compared with the empty tree.
 func rangeBase(repo, rng string) string {
-	if base, _, ok := strings.Cut(rng, ".."); ok {
+	if base := gitrange.Base(rng); base != "" {
 		return base
 	}
 	empty, _ := git(repo, "hash-object", "-t", "tree", "/dev/null")
 	return empty
 }
 
-func rangeHead(rng string) string {
-	if _, head, ok := strings.Cut(rng, ".."); ok {
-		return head
-	}
-	return rng
-}
+func rangeHead(rng string) string { return gitrange.Head(rng) }

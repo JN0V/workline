@@ -10,6 +10,7 @@ import (
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/gate"
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
@@ -140,10 +141,7 @@ func ownCommit(repo, rng string) string {
 	if rng == "" {
 		return ""
 	}
-	head := rng
-	if _, h, ok := strings.Cut(rng, ".."); ok {
-		head = h
-	}
+	head := gitrange.Head(rng)
 	out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%(trailers:key="+engine.OwnTrailer+",valueonly)", head).Output()
 	if err != nil {
 		return ""

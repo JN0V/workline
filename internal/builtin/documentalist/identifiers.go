@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/JN0V/workline/internal/gitrange"
 )
 
 // identifier is a code span that looks like a name from the code: `Revoke`,
@@ -142,7 +144,7 @@ var word = regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]{2,}`)
 // what went earlier is left for gardening.
 func IdentifiersRemoved(repo, rng string, docs map[string]string) ([]Problem, error) {
 	removed := map[string]bool{}
-	diff, err := git(repo, "log", "-p", "-U0", "--format=", rng, "--", ".", ":(exclude,glob)**/*.md")
+	diff, err := git(repo, append(append([]string{"log", "-p", "-U0", "--format="}, gitrange.Args(rng)...), "--", ".", ":(exclude,glob)**/*.md")...)
 	if err != nil {
 		return nil, err
 	}

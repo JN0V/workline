@@ -53,6 +53,18 @@ func TestPushRanges(t *testing.T) {
 		t.Errorf("a branch rebased: %v, %v; want %q", got, err, pushed+".."+rebased)
 	}
 	run("update-ref", "-d", "refs/remotes/origin/topic")
+	// A branch the remote has, main merged into it: only the merge is sent,
+	// not main's commits it brings, which the remote already has.
+	run("checkout", "-q", "--detach", old)
+	run("merge", "-q", "--no-edit", pushed)
+	merged := run("rev-parse", "HEAD")
+	run("update-ref", "refs/remotes/origin/topic", old)
+	if got, err := PushRanges(dir, "origin", strings.NewReader("refs/heads/topic "+merged+" refs/heads/topic "+old+"\n")); err != nil || len(got) != 1 {
+		t.Errorf("a branch with main merged in: %v, %v", got, err)
+	} else if commits := run(append([]string{"rev-list"}, strings.Fields(got[0])...)...); commits != merged {
+		t.Errorf("a branch with main merged in sends %q, want only the merge %s", commits, merged)
+	}
+	run("update-ref", "-d", "refs/remotes/origin/topic")
 	run("update-ref", "-d", "refs/remotes/origin/main")
 	got, _ := PushRanges(dir, "origin", strings.NewReader("refs/heads/main "+head+" refs/heads/main "+zero+"\n"))
 	if strings.Join(got, " ") != head {
