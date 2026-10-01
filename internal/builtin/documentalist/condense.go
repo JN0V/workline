@@ -309,6 +309,10 @@ func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 	if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
 		return "", "patch-ambiguous", "git would apply this diff differently from how it reads; send a plain unified diff"
 	}
+	// Moving text gives no source to read: `checked` stays (ADR-0014).
+	if checkedOf(now) != checkedOf(old) {
+		return "", "checked-unread", "the patch moves `checked`, but this task gives none of the doc's sources: moving text vouches for nothing, so leave the header as it is"
+	}
 	return now, "", ""
 }
 

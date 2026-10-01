@@ -310,8 +310,10 @@ func checkedMatches(content string, want map[string]string) bool {
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
 // A doc judged in parts (inParts) is fixed with `checked` left where it is:
-// nobody read it whole, so it stays suspect.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, error) {
+// nobody read it whole, so it stays suspect. So is a doc whose sources did
+// not all go whole into the task (not in whole, ADR-0014): the agent cannot
+// vouch for what it was not given.
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) ([]verdict.Finding, map[string]bool, error) {
 	var refused []verdict.Finding
 	refuse := func(rule, where, msg string) {
 		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
@@ -390,6 +392,14 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				}
 				after[f.path] = now
 				fixed++
+				continue
+			}
+			if checkedOf(now) != checkedOf(old) && !whole[f.path] {
+				msg := "the patch moves `checked`, but not every source of the doc was given whole in the task: nobody can vouch for what was not read, so `checked` stays where it is"
+				if full := want[""]; full != "" {
+					msg += fmt.Sprintf("; fix what you found wrong, and set `judged: %s` instead", full[:7])
+				}
+				refuse("checked-unread", f.path, msg)
 				continue
 			}
 			// A fix the agent could not vouch for is kept: what it found wrong

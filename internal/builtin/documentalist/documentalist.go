@@ -391,8 +391,12 @@ type suspectDoc struct {
 	// tooLarge: the doc, with what changed in its sources, does not fit in a
 	// task alone; judged by a person, never confirmed unread.
 	tooLarge bool
-	shown    int  // lines of evidence shown so far, within docEvidenceLines
-	capped   bool // more changed than docEvidenceLines shows
+	// whole: every source of the doc is given whole in its task, as it is
+	// now. Only then may `checked` move (ADR-0014): a doc judged on diffs,
+	// or beside a doc of the same task, is fixed and records `judged`.
+	whole  bool
+	shown  int  // lines of evidence shown so far, within docEvidenceLines
+	capped bool // more changed than docEvidenceLines shows
 	// note says what became of a doc judged in parts, or why it was not:
 	// such a doc is not put in a task of its own.
 	note     string
@@ -571,6 +575,7 @@ func Pre(runDir, repo string) int {
 				// when they fit.
 				if now, ok := sourcesNow(sd.doc, pl); ok && len(now) > 0 {
 					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
+					sd.whole = true
 				}
 				continue
 			}
@@ -580,6 +585,7 @@ func Pre(runDir, repo string) int {
 				continue
 			}
 			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
+			sd.whole = len(now) > 0
 		}
 	}
 	holdJudgedInParts(suspects, repo)
@@ -896,6 +902,21 @@ doc when its reader really gained something to know.
 		if err := writeYAML(filepath.Join(runDir, "in", "judged.yaml"), judged); err != nil {
 			return fail(err)
 		}
+		// The docs whose sources went whole into the task: only theirs may
+		// have `checked` moved (ADR-0014). The judge refuses any other move.
+		whole := []string{}
+		for p := range judged {
+			for _, m := range []map[string]*suspectDoc{suspects, propagate, stale} {
+				if sd := m[p]; sd != nil && sd.whole && !sd.tooLarge {
+					whole = append(whole, p)
+					break
+				}
+			}
+		}
+		sort.Strings(whole)
+		if err := writeYAML(filepath.Join(runDir, "in", "read-whole.yaml"), whole); err != nil {
+			return fail(err)
+		}
 		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 			return fail(err)
 		}
@@ -1037,9 +1058,19 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			return "", nil, err
 		}
 		var entry strings.Builder
-		fmt.Fprintf(&entry, "## %s\n\nIf you vouch for every sentence it keeps, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.", p, checked)
-		if full := want[""]; full != "" {
-			fmt.Fprintf(&entry, " If you cannot, it leaves `checked` as it is and sets `judged: %s` instead.", full[:7])
+		if sd.whole {
+			fmt.Fprintf(&entry, "## %s\n\nIf you vouch for every sentence it keeps, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.", p, checked)
+			if full := want[""]; full != "" {
+				fmt.Fprintf(&entry, " If you cannot, it leaves `checked` as it is and sets `judged: %s` instead.", full[:7])
+			}
+		} else {
+			// Not every source could be given whole: nobody can vouch for
+			// the doc from this task, so `checked` stays (ADR-0014).
+			fmt.Fprintf(&entry, "## %s\n\nNot every source of this doc could be given whole in this task, so `checked` cannot move: your patch fixes what you find wrong, leaves `checked` as it is", p)
+			if full := want[""]; full != "" {
+				fmt.Fprintf(&entry, " and sets `judged: %s`, the commit it is judged at", full[:7])
+			}
+			entry.WriteString(". A person reads it against its sources, then moves `checked`.")
 		}
 		entry.WriteString("\n\nWhy it is here:\n\n")
 		for _, w := range sd.why {
@@ -1048,7 +1079,7 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 		if isAuthority(s, p) {
 			fmt.Fprintf(&entry, "\nThis doc is an authority (`truth: doc`): the code follows it, not the reverse. Do not change what it says. "+
 				"If the code now disagrees with it, return an `issue` titled %q, saying where they disagree and quoting both; "+
-				"your patch then only sets `checked` and `verified`, the disagreement being tracked by the issue.\n", "The code disagrees with "+p)
+				"your patch then only sets %s, the disagreement being tracked by the issue.\n", "The code disagrees with "+p, map[bool]string{true: "`checked` and `verified`", false: "`judged`"}[sd.whole])
 		}
 		for _, e := range sd.evidence {
 			entry.WriteString("\n" + e + "\n")
@@ -1093,6 +1124,18 @@ func Post(runDir, repo string) int {
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "judged.yaml")); err == nil {
 		if err := yaml.Unmarshal(data, &judged); err != nil {
 			return fail(err)
+		}
+	}
+	// The docs whose sources all went whole into the task; a file missing
+	// means none did: `checked` moves for no doc (ADR-0014).
+	whole := map[string]bool{}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "read-whole.yaml")); err == nil {
+		var paths []string
+		if err := yaml.Unmarshal(data, &paths); err != nil {
+			return fail(err)
+		}
+		for _, p := range paths {
+			whole[p] = true
 		}
 	}
 	var s Settings
@@ -1159,7 +1202,7 @@ func Post(runDir, repo string) int {
 					return fail(err)
 				}
 			}
-			refused, patched, err = judgePatches(repo, s, judged, inParts, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			refused, patched, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 		}
 		if err != nil {
 			return fail(err)
@@ -1182,7 +1225,11 @@ func Post(runDir, repo string) int {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+				if whole[f.Where] {
+					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+				} else {
+					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but not every source of the doc could be given whole in the task, so `checked` stays — a person reads it against them, then moves `checked`)"
+				}
 			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
