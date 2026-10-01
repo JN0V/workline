@@ -1,0 +1,11 @@
+case: documentalist/release-waits-for-docs-suspect-since-the-tag
+about: "At the release, a doc made suspect since the last tag and not judged holds it (ADR-0010): where there is no merge request, the release is when docs are made true."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: release, ai: none}
+expect:
+  status: block
+  findings: [{rule: suspect, where: docs/tech/auth.md, level: block, message: "since v1.0.0"}]

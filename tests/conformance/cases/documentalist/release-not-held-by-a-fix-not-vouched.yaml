@@ -1,0 +1,11 @@
+case: documentalist/release-not-held-by-a-fix-not-vouched
+about: "At the release, a doc the agent fixed without vouching for it — `judged` recorded — no longer holds it: it is a person's to confirm, as one judged in parts."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: release, ai: "fake:doc-fixed-not-vouched"}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "fixed, not vouched for"}]

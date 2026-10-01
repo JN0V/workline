@@ -838,6 +838,9 @@ doc when its reader really gained something to know.
 			}
 		}
 	}
+	if os.Getenv("WORKLINE_EVENT") == "release" {
+		holdTheRelease(findings, suspects, repo)
+	}
 	var left strings.Builder
 	for i := range findings {
 		if adopting {
@@ -897,6 +900,47 @@ doc when its reader really gained something to know.
 		}
 	}
 	return 0
+}
+
+// holdTheRelease has the docs made suspect since the last tag hold the
+// release until they are judged (ADR-0010): where there is no merge
+// request, the release is when docs are made true. A doc already suspect at
+// the tag was let through then; one judged without being vouched for, or
+// in parts, waits for a person, and does not hold it. Without a tag, every
+// suspect doc holds the first release.
+func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc, repo string) {
+	tag, err := git(repo, "describe", "--tags", "--abbrev=0")
+	since := "the first release"
+	if err == nil && tag != "" {
+		since = tag
+	}
+	for i := range findings {
+		f := &findings[i]
+		sd := suspects[f.Where]
+		if f.Rule != "suspect" || sd == nil || held(sd.doc, sd.doc.Judged, repo) || held(sd.doc, sd.doc.JudgedInParts, repo) {
+			continue
+		}
+		if tag != "" && !changedSince(repo, sd.doc, tag) {
+			continue
+		}
+		f.Level = "block"
+		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — by the agent, `workline docs`, or a person moving `checked`)"
+	}
+}
+
+// changedSince says whether a source of the doc, in this repository,
+// changed after the commit given.
+func changedSince(repo string, d *Doc, commit string) bool {
+	for _, src := range d.Sources {
+		name, p, anchor := splitSource(src)
+		if name != "" {
+			continue
+		}
+		if commits, err := changed(repo, commit, "HEAD", p, anchor); err != nil || commits != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // holdWaitingTasks keeps from the agent, when gardening, the docs a task
@@ -1133,9 +1177,12 @@ func Post(runDir, repo string) int {
 	var kept []verdict.Finding
 	said := map[string]bool{}
 	for _, f := range findings {
-		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") && !said[f.Where] {
-			said[f.Where] = true
-			f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") {
+			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
+			if !said[f.Where] {
+				said[f.Where] = true
+				f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {

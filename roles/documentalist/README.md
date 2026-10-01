@@ -252,7 +252,15 @@ A project that routes `pre-push` (`routing: {events: {pre-push: [committer,
 documentalist]}}`) has those docs counted at the push, in one line, without
 an agent: a push never waits on one, nor asks (ADR-0010). The person has
 them judged when they choose — `workline docs` — reviews each change, and
-those kept go in one `docs:` commit (ADR-0007).
+those kept go in one `docs:` commit (ADR-0007). It judges from where the docs
+were last judged, a ref it moves (`refs/workline/docs-judged`), pushed or
+not: a repository pushed to main with no merge request is caught up there.
+
+**At the release**, a doc made suspect since the last tag holds it until it
+is judged (ADR-0010): by the agent, as the release runs the documentalist
+first, by `workline docs`, or by a person moving `checked`. One suspect
+already at the tag was let through then; one judged without being vouched
+for, or in parts, waits for a person and does not hold it.
 
 ## Adopting a repository
 
