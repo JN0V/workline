@@ -491,6 +491,7 @@ func docsCmd(args []string) int {
 	repo := fs.String("repo", ".", "repository")
 	ai := fs.String("ai", "", "agent judging the docs (default: the project's, else yours, else none)")
 	reviewOnly := fs.Bool("review", false, "no agent: review, doc by doc, the doc changes already in the working tree")
+	since := fs.String("since", "", "judge the commits after this one (default: where the docs were last judged, else the last tag, else all)")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -517,14 +518,14 @@ func docsCmd(args []string) int {
 		}
 		return 0
 	}
-	rng, err := unpushed(root)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "workline:", err)
-		return 1
-	}
-	if rng == "" {
-		fmt.Fprintln(os.Stderr, "workline: no commit waits to be pushed: no doc to judge")
-		return 0
+	start, from := docsJudgedFrom(root, *since)
+	rng := "HEAD"
+	if start != "" {
+		if head := revParse(root, "HEAD"); head == revParse(root, start) {
+			fmt.Fprintf(os.Stderr, "workline: no commit since the docs were last judged (%s)\n", from)
+			return 0
+		}
+		rng = start + "..HEAD"
 	}
 	var in *bufio.Reader
 	out := io.Writer(os.Stderr)
@@ -532,29 +533,55 @@ func docsCmd(args []string) int {
 		defer tty.Close()
 		in, out = bufio.NewReader(tty), tty
 	}
-	judgeDocs(root, rng, *ai, in, out)
+	fmt.Fprintf(out, "workline: judging the docs made suspect by the commits since %s\n", from)
+	if judgeDocs(root, rng, *ai, in, out) {
+		// Judged, and nothing left for a person: the next run starts here.
+		head := revParse(root, "HEAD")
+		if err := exec.Command("git", "-C", root, "update-ref", docsJudgedRef, head).Run(); err == nil {
+			fmt.Fprintf(out, "workline: docs judged up to %.7s (%s)\n", head, docsJudgedRef)
+		}
+	}
 	return 0
 }
 
-// unpushed is the range of the commits no remote has.
-func unpushed(root string) (string, error) {
-	out, err := exec.Command("git", "-C", root, "rev-list", "--reverse", "HEAD", "--not", "--remotes").Output()
+// docsJudgedRef is where `workline docs` records the commit the docs were
+// last judged up to (ADR-0010): a repository pushed to main with no merge
+// request judges from there, pushed or not.
+const docsJudgedRef = "refs/workline/docs-judged"
+
+// docsJudgedFrom is the commit `workline docs` judges after, and how to say
+// it: the one asked for; else where the docs were last judged — the point
+// HEAD shares with it, after a rebase or on another branch; else the last
+// tag; else none, every commit.
+func docsJudgedFrom(root, since string) (string, string) {
+	if since != "" {
+		return since, since
+	}
+	if ref := revParse(root, docsJudgedRef); ref != "" {
+		if base, err := exec.Command("git", "-C", root, "merge-base", ref, "HEAD").Output(); err == nil {
+			return strings.TrimSpace(string(base)), "they were last judged, " + docsJudgedRef
+		}
+	}
+	if tag, err := exec.Command("git", "-C", root, "describe", "--tags", "--abbrev=0").Output(); err == nil {
+		t := strings.TrimSpace(string(tag))
+		return t, "the last tag, " + t
+	}
+	return "", "the first commit"
+}
+
+// revParse is the commit rev names, or "" when it names none.
+func revParse(root, rev string) string {
+	out, err := exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", rev+"^{commit}").Output()
 	if err != nil {
-		return "", err
+		return ""
 	}
-	first, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\n")
-	if first == "" {
-		return "", nil
-	}
-	if parent, err := exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", first+"^").Output(); err == nil {
-		return strings.TrimSpace(string(parent)) + "..HEAD", nil
-	}
-	return "HEAD", nil
+	return strings.TrimSpace(string(out))
 }
 
 // judgeDocs runs the documentalist on the range, with the agent, then has
 // the person review each doc it changed; in is nil without a terminal. It
-// says whether a docs commit was made.
+// says whether the docs are judged: the run passed, and every change it
+// made was reviewed, or there was none.
 func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 	if dirty, _ := exec.Command("git", "-C", root, "status", "--porcelain", "--", "*.md").Output(); len(dirty) > 0 {
 		fmt.Fprintf(out, "workline: docs have changes not committed:\n%scommit or stash them first, so what the documentalist proposes is reviewed alone\n", dirty)
@@ -576,21 +603,31 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 	for _, n := range res.Notes {
 		fmt.Fprintf(out, "  note from the agent: %s\n", strings.ReplaceAll(n, "\n", "\n    "))
 	}
+	// A doc of the range no agent judged yet — none was asked, or it waits
+	// for a later round — keeps the ref where it is; one a person must read
+	// (too large, judged without being vouched for) does not: it is said.
+	waiting := 0
+	for _, f := range res.Findings {
+		if (f.Rule == "suspect" || f.Rule == "stale") && !strings.Contains(f.Message, "left for gardening") && !strings.Contains(f.Message, "a person") {
+			waiting++
+		}
+	}
 	changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
 	docs := strings.Fields(string(changed))
 	if len(docs) == 0 {
 		fmt.Fprintf(out, "workline: %s — no doc changed\n", res.Status)
-		return false
+		return res.Status == verdict.Pass && waiting == 0
 	}
 	if in == nil {
 		fmt.Fprintf(out, "workline: %d doc(s) changed in your working tree, for a person to review (git diff), commit what is right, restore the rest\n", len(docs))
 		return false
 	}
-	committed, err := review.Docs(root, docs, in, out, review.Open)
-	if err != nil {
+	if _, err := review.Docs(root, docs, in, out, review.Open); err != nil {
 		fmt.Fprintln(out, "workline:", err)
+		return false
 	}
-	return committed
+	left, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
+	return res.Status == verdict.Pass && waiting == 0 && len(strings.TrimSpace(string(left))) == 0
 }
 
 func gitRoot(dir string) (string, error) {
