@@ -77,3 +77,64 @@ A file anywhere else is reported (`undocumented`) only when the project sets
 `documented` globs, empty by default and set on neither workline nor
 DomoticsCore: today a new source file is, by default, silently ignored, and
 never proposed to any doc.
+
+## `checked` put back (ADR-0014, step 0)
+
+Every `checked` moved since adoption (workline from c1ae34e, DomoticsCore
+from 6a979a6), by the bot or by a person, measured at the commit of the move
+with the engine's own rule (`sourcesNow`: every text file under each source,
+or the section of a source doc, together at most 20,000 characters). A doc
+whose `checked` is still an unearned move, or a run of them, has `checked`
+put back to its last earned value — the one the first unearned move
+replaced, often the value set at adoption — and `judged` set to the commit
+the last move named (ADR-0013): that commit was looked at, nothing in it was
+vouched for. Each doc is suspect again, for a person to read whole; bodies
+untouched. A header written with the doc, at adoption or creation, is not a
+move.
+
+workline: 132 moves, all by a person (JN0V), 5 earned (routing.md
+three times, conformance.md at 07a5d55, roles/committer/README.md at
+dfe6338). Put back in 0669684:
+
+| Doc | Unearned moves | First (sources) | Last (sources) | Header now |
+|---|---|---|---|---|
+| README.md | 10 | 07a5d55 (41,177) | 047deb6 (61,419) | checked 5b8b173, judged 6013a50 |
+| docs/spec/conformance.md | 19 | 71f289a (46,028) | 047deb6 (76,506) | checked edfd466, judged 6013a50 |
+| docs/spec/model-grid.md | 11 | 78f400d (37,937) | 047deb6 (64,580) | checked d30d22a, judged 6013a50 |
+| docs/spec/multi-repo.md | 18 | dfe6338 (20,745) | 047deb6 (39,994) | checked d30d22a, judged 6013a50 |
+| docs/spec/role-adapting.md | 11 | bb8aa81 (58,093) | 047deb6 (84,608) | checked 347b403, judged 6013a50 |
+| docs/spec/role-contract.md | 13 | 2c0e022 (51,061) | 047deb6 (84,608) | checked d30d22a, judged 6013a50 |
+| docs/spec/role-outcome.md | 11 | bb8aa81 (58,093) | 047deb6 (84,608) | checked 347b403, judged 6013a50 |
+| docs/usage.md | 14 | dfe6338 (60,783) | 047deb6 (77,502) | checked d30d22a, judged 6013a50 |
+| roles/committer/README.md | 2 | 3b799e6 (27,763) | 8d58c25 (30,848) | checked 82b6394, judged d77c33b |
+| roles/documentalist/README.md | 18 | dfe6338 (54,357) | 047deb6 (123,660) | checked d30d22a, judged 6013a50 |
+
+roles/documentalist/README.md's sources were narrowed since (47917f1) to
+one file that fits: it can be judged whole now.
+
+DomoticsCore: 22 moves, none earned — 14 docs by a person in 9e20ce2, and
+the bot's eight moves on five docs (bc0bd26, 2e25ea0, 25e22dd, 16c660b; the
+"six docs" counted above are five). Put back on the branch
+docs/undo-unearned-checked:
+
+| Doc | Moves | First (sources) | Last (sources) | Header now |
+|---|---|---|---|---|
+| docs/README.md | 2 (bot) | bc0bd26 (52,534) | 25e22dd (52,536) | checked 436872f, judged f734747 |
+| docs/architecture/hal-architecture.md | 2 (bot) | bc0bd26 (28,060) | 2e25ea0 (28,274) | checked ae5715e, judged d7afb75 |
+| docs/architecture/component-lifecycle.md | 1 | 9e20ce2 (265,030) | — | checked ae5715e, judged 6a979a6 |
+| docs/components/core/README.md | 2 | 9e20ce2 (265,030) | 25e22dd, bot (112,186) | checked ae5715e, judged f734747 |
+| docs/components/core/project-context.md | 2 | 9e20ce2 (273,579) | 16c660b, bot (165,182) | checked 4cdb3e6, judged 0820cf2 |
+| docs/components/home-assistant/index.md | 1 | 9e20ce2 (361,648) | — | checked ae5715e, judged 6a979a6 |
+| docs/components/home-assistant/project-context.md | 1 | 9e20ce2 (193,564) | — | checked 967d328, judged 6a979a6 |
+| docs/components/home-assistant/README.md | 1 | 9e20ce2 (118,157) | — | checked c5aef9f, judged 6a979a6 |
+| docs/components/led/project-context.md | 1 | 9e20ce2 (75,064) | — | checked ae5715e, judged 6a979a6 |
+| docs/components/led/README.md | 1 | 9e20ce2 (50,405) | — | checked ae5715e, judged 6a979a6 |
+| docs/components/led/technical-reference.md | 1 | 9e20ce2 (49,472) | — | checked 3c4d96c, judged 6a979a6 |
+| docs/components/mqtt/project-context.md | 1 | 9e20ce2 (106,806) | — | checked fa51735, judged 6a979a6 |
+| docs/components/mqtt/README.md | 3 | 9e20ce2 (106,806) | 16c660b, bot (63,577) | checked ae5715e, judged 0820cf2 |
+| docs/components/mqtt/technical-reference.md | 1 | 9e20ce2 (74,535) | — | checked e927998, judged 6a979a6 |
+| docs/components/ntp/README.md | 1 | 9e20ce2 (70,287) | — | checked ae5715e, judged 6a979a6 |
+| docs/components/ntp/technical-reference.md | 1 | 9e20ce2 (39,168) | — | checked 281c95a, judged 7920678 |
+
+Sources in characters, at the commit of the move. A run of the
+documentalist without an agent lists all 26 docs suspect afterwards.
