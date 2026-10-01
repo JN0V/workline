@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
@@ -55,6 +56,9 @@ func main() {
 		usage()
 	}
 	switch os.Args[1] {
+	case "version", "--version":
+		fmt.Println(engineVersion())
+		os.Exit(0)
 	case "run-role":
 		os.Exit(runRole(os.Args[2:]))
 	case "builtin":
@@ -83,8 +87,23 @@ func main() {
 	usage()
 }
 
+// version is the release, set when one is built (-X main.version=v0.1.0).
+var version = ""
+
+// engineVersion is the release this engine is, else what Go recorded when it
+// was installed: a module version, or "(devel)" for a build from a checkout.
+func engineVersion() string {
+	if version != "" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
+		return info.Main.Version
+	}
+	return "(devel)"
+}
+
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline hooks install|uninstall --global|--repo\n       workline setup [--hooks yes|no] [--ai <agent>] [--install <tool,...>|none] [--yes]\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--json]")
+	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline version\n       workline hooks install|uninstall --global|--repo\n       workline setup [--hooks yes|no] [--ai <agent>] [--install <tool,...>|none] [--yes]\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--json]")
 	os.Exit(64)
 }
 
