@@ -1,0 +1,14 @@
+case: documentalist/judged-in-a-rebased-merge-request
+about: "Rebased onto main, a doc's `judged` names a commit main never holds; as for `checked`, the commit that brought it to main stands for it, and the doc is not asked again."
+given:
+  repo: documented
+  setup:
+    - "echo '# Readme' > README.md && git add README.md && git commit -qm 'docs: add a readme'"
+    - "git switch -q -c feat HEAD~1 && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "c=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $c/; s/one hour/two hours/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours, not vouched for'"
+    - "git rebase -q main && git switch -q main && git merge -q --ff-only feat && git branch -q -D feat"
+run: {role: documentalist, event: schedule, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "could not vouch for every sentence"}]

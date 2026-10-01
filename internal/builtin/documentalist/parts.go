@@ -635,9 +635,14 @@ func holdJudgedInParts(docs map[string]*suspectDoc, repo string) {
 }
 
 // held says whether a doc judged at a commit waits: none of its sources
-// changed since, so it is not put before an agent again.
+// changed since, so it is not put before an agent again. A commit a squash
+// or a rebase left out of HEAD stands for the one that brought it there.
 func held(d *Doc, at, repo string) bool {
 	if at == "" {
+		return false
+	}
+	at, ok := onMain(repo, "HEAD", d.Path, at)
+	if !ok {
 		return false
 	}
 	for _, src := range d.Sources {
