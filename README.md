@@ -155,8 +155,8 @@ request for those without the hook; the documentalist runs on the forge. On a
 forge, one job judges with no write token but code scanning's (SARIF upload) and
 another applies without an AI key (`--no-apply`, then `workline apply`).
 
-The CI templates run `workline route merge-request`, so a project's `routing:`
-reaches its CI too.
+The CI templates run `workline route` (`merge-request`; `schedule` for the
+gardening ones), so a project's `routing:` reaches its CI too.
 
 ## Take only a part
 
