@@ -172,3 +172,6 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-01T05:34:05Z	ea2ba60	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	11223	1438	0.0437	12		
 2026-10-01T05:34:20Z	ea2ba60	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	11223	1909	0.0484	15		
 2026-10-01T05:34:33Z	ea2ba60	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-whole	12/12	1	11222	1594	0.0453	12		
+2026-10-01T10:15:37Z	5071172+changes	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	22771	1121	0.0713	11		
+2026-10-01T10:16:07Z	5071172+changes	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	22769	1496	0.0750	14		
+2026-10-01T10:16:20Z	5071172+changes	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	4/4	1	22770	1372	0.0738	12		
