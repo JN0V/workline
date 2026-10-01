@@ -185,14 +185,12 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			judged[sd.doc.Path] = map[string]string{"": head}
 			sd.note = "(" + summary + "; what they found wrong is fixed in this run, and `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		}
-		// A claim dropped may have been the one saying what is wrong: the doc
-		// is not recorded as judged, and its parts are asked again next run.
+		// A claim dropped may have been the one saying what is wrong: it is
+		// said, for a person. The doc is recorded all the same: asked again
+		// each night, its parts cost as much to the same end (ADR-0014, step
+		// 4: 0.23M to 0.32M tokens a night); a source changing asks again.
 		if verdictOf.dropped > 0 {
-			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped, so it is judged in parts again on a later run)"
-			if entry != "" {
-				inParts[sd.doc.Path] = at // its fix is judged as one in parts: `checked` stays
-			}
-			continue
+			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped: a person reads it whole)"
 		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: patch})
 		inParts[sd.doc.Path] = at

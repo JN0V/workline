@@ -1,5 +1,5 @@
 case: documentalist/part-answer-partly-malformed
-about: "A part's answer that is not valid YAML as a whole — one item broken, as a real agent once wrote — is read item by item: the claims that read are kept and fixed, the broken ones count as dropped, so the doc is judged in parts again on a later run."
+about: "A part's answer that is not valid YAML as a whole — one item broken, as a real agent once wrote — is read item by item: the claims that read are kept and fixed, the broken ones count as dropped, said for a person; the doc is recorded as judged in parts all the same."
 given:
   repo: documented
   setup:
@@ -11,8 +11,9 @@ run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/pa
 expect:
   status: pass
   agent-calls: 3
-  applied: [patch]
+  applied: [patch, patch]   # the fix, and the header recording it judged in parts
   findings:
     - {rule: part-partly-read, where: 01-docs-tech-auth-md-1}
     - {rule: claims-dropped, where: docs/tech/auth.md}
-  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.", lacks: "judged-in-parts"}}
+    - {rule: suspect, where: docs/tech/auth.md, message: "some claims were dropped: a person reads it whole"}
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}
