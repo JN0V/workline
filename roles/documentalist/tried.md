@@ -217,3 +217,8 @@ On 2026-09-27, on workline's own repository:
   names the release v2.0.0. `uncovered` named a feature on the roadmap,
   rightly for a person, and `ini` — from `platformio.ini`, not a name of
   the code. Five docs need more than 8 parts (`sources-too-wide`, 10 to 16).
+  Sonnet's two refused answers, replayed against the judge at their
+  commits: each had one hunk a line off, its quoted lines found once in
+  the doc. The judge now places such a hunk (3 lines at most): the Storage
+  answer passes as Sonnet wrote it, without Opus; the OTA one, written
+  before `judged` existed, is refused for that alone.

@@ -298,6 +298,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 // lines it cites must be quoted as they are, and it must leave derived blocks
 // alone. rule and why say what is wrong, if anything.
 func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
+	f = placed(old, f)
 	if why := misquoted(old, f); why != "" {
 		return "", "misquoted", why
 	}

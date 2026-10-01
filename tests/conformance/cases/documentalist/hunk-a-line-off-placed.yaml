@@ -1,0 +1,11 @@
+case: documentalist/hunk-a-line-off-placed
+about: "A hunk citing its lines a few off, whose quoted lines are found once in the doc, near where it says, is placed there and judged: what is judged is still what git applies, and the agent is not asked again for a number."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fixed-off-by-one"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4\nverified: agent:documentalist\n---\n"}}

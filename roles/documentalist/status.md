@@ -42,8 +42,9 @@ GitLab is untried.
 
 ## Missing, in the order it matters
 
-1. **Sonnet cites lines wrongly in long docs**: refused, then fixed by
-   Opus, twice in two runs on DomoticsCore — each judgement paid twice.
+1. **Sonnet cites lines a line off in long docs** (twice in two runs on
+   DomoticsCore): such a hunk is now placed where its quoted lines are,
+   replayed on both answers; to watch on the next runs.
 2. **Small faults seen in the first real run in parts**: a badge's link
    left behind its text; `uncovered` taking a file extension (`ini`) for a
    name of the code. Five docs need more than 8 parts: their sources to
