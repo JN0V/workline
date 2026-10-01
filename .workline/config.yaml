@@ -9,6 +9,12 @@ roles:
     settings:
       # The role READMEs describe what the code does: they are docs too.
       docs: ["docs/**", "*.md", "roles/*/README.md"]
+      # Catching up its own docs, far behind: those whose sources do not fit
+      # one call are judged in parts (ADR-0009), one doc a night (8 parts),
+      # and a night spends at most 400k tokens.
+      judge-in-parts: true
+      parts-max-per-run: 8
+      ai-max-tokens: 400000
       # Facts the docs quote, regenerated from the code rather than typed.
       derive:
         conformance-cases: "n=$(ls tests/conformance/cases/*/*.yaml | wc -l); p=$(grep -cvE '^(#|$)' tests/conformance/pending.txt || true); echo $((n - p))"

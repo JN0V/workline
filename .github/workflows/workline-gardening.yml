@@ -4,7 +4,9 @@
 # requests opened with the GitHub App (ADR-0006, ADR-0010).
 name: workline gardening
 on:
-  schedule: [{cron: "0 2 * * 1"}]   # Mondays, 02:00 UTC; nightly ("0 2 * * *") to catch up a backlog
+  # Nightly while its docs are caught up, then Mondays ("17 2 * * 1"). Off
+  # the hour: GitHub may drop a run scheduled at its start, when busiest.
+  schedule: [{cron: "17 2 * * *"}]
   workflow_dispatch:
 permissions: {}
 
