@@ -96,6 +96,31 @@ func TestDocsWithoutTerminal(t *testing.T) {
 	}
 }
 
+// A run of `workline docs` stopped by a fix the judge refused says so, and
+// why, and that docs are left to judge: tried on a solo repository, it said
+// only how many docs had changed, and seven were never put before the agent.
+func TestDocsSaysWhatStoppedIt(t *testing.T) {
+	work := t.TempDir()
+	env := append(hermeticEnv(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
+	repo := filepath.Join(work, "repo")
+	if err := build(repo, "documented", []string{
+		"sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'",
+	}, env); err != nil {
+		t.Fatal(err)
+	}
+	roles, _ := filepath.Abs("../../roles")
+	agent, _ := filepath.Abs("fixtures/agents/doc-fix-not-applying.yaml")
+	cmd := exec.Command(engineBin, "docs", "--ai", "fake:"+agent)
+	cmd.Dir, cmd.Env = repo, append(env, "WORKLINE_ROLES="+roles)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	out, _ := cmd.CombinedOutput()
+	for _, want := range []string{"block", "patch-does-not-apply", "not judged yet"} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("the output does not say %q:\n%s", want, out)
+		}
+	}
+}
+
 // The push only counts the docs (ADR-0010): one line, how many its commits
 // made suspect and how many were before, and the command that judges them;
 // never the docs one by one with their commits, never a question.

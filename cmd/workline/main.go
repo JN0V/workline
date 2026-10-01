@@ -615,7 +615,9 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "pre-push",
 		AI: ai, DefaultAI: userDefaultAI(), Inputs: map[string]string{"range": rng}})
 	for _, f := range res.Findings {
-		if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") || f.Level == "block" {
+		// A suspect doc of the range, and what stopped the run: a fix the
+		// judge refused, however often the agent was asked.
+		if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") || f.Level == "block" || f.Where == "patch" || f.Rule == "left-out" {
 			fmt.Fprintf(out, "  %s %s: %s\n", f.Rule, f.Where, strings.SplitN(f.Message, "\n", 2)[0])
 		}
 	}
@@ -630,6 +632,11 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 		if (f.Rule == "suspect" || f.Rule == "stale") && !strings.Contains(f.Message, "left for gardening") && !strings.Contains(f.Message, "a person") {
 			waiting++
 		}
+	}
+	if res.Status != verdict.Pass {
+		// The run stopped at the round it was in: the docs of that round,
+		// and those left for later rounds, were not judged.
+		fmt.Fprintf(out, "workline: %s — %s; the docs it was judging, and those after them, are not judged yet: run `workline docs` again\n", res.Status, res.Summary)
 	}
 	changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
 	docs := strings.Fields(string(changed))
