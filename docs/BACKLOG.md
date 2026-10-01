@@ -2,11 +2,12 @@
 
 ## Next, in order
 
-**Handover (2026-10-01).** Nothing waits at the switch: workline PR #18
-(ADR-0012) and DomoticsCore PR #107 (parts on for its nightly gardening)
-are merged, and DomoticsCore's bug fixes went in through its PR #108,
-where CI fixed two docs. Next to watch: DomoticsCore's first nightly runs
-with parts. The documentalist's state: roles/documentalist/status.md.
+**Handover (2026-10-01, afternoon).** The documentalist is being finished
+before any other role. Done on `feat/token-cap`: `ai-max-tokens` caps a
+run; a doc fixed but not vouched for records `judged` and a gardening task
+waits while its pull request is open (ADR-0013), so DomoticsCore's parts
+are no longer stuck behind docs judged whole. Next: DomoticsCore's first
+real run in parts (roles/documentalist/status.md, "Missing").
 
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
@@ -30,8 +31,8 @@ this repository before any other role is added.
    dialog on macOS and Windows, for those who ask for the approval.
 3. **Docs judged on the merge request and by gardening** (ADR-0010):
    built and tried (workline PR #10, DomoticsCore). Where it stands, and
-   what is missing in order: roles/documentalist/status.md — first, token
-   caps a run and a verdict cache; then the release gate and `workline docs`
+   what is missing in order: roles/documentalist/status.md — first, the
+   first real run in parts; then the release gate and `workline docs`
    from a ref, for a repository without pull requests (and `doctor`/`init`
    brought in line with ADR-0010); forks and GitLab.
 4. **Judge docs far behind in parts** (ADR-0009, accepted on its measures;

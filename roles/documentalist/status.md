@@ -21,9 +21,16 @@ caps on tokens are still coarse, GitLab is untried.
 | A fix may grow a doc by a tenth; a refused doc left out, the others applied | DomoticsCore gardening (PR #106) |
 | `checked` after a squash or a rebase: the commit that brought it stands for it | fixture, by hand |
 | On each pull request in CI: Claude judges, the App commits the fix, checks rerun, the line skips its own commit | workline PR #10; DomoticsCore PR #108, a real bug-fix pull request |
-| Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, one run by hand |
+| Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109) |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |
+
+## Built, tried without an agent
+
+- **Not asked again** (ADR-0013): a fix not vouched for records `judged`;
+  a gardening task waits while its pull request is open. On a copy of
+  DomoticsCore with #109 open: the docs judged whole wait, the parts go.
+- **A cap on a run's tokens** (`ai-max-tokens`): conformance only.
 
 ## Built, measured, not yet tried for real
 
@@ -35,9 +42,12 @@ caps on tokens are still coarse, GitLab is untried.
 
 ## Missing, in the order it matters
 
-1. **Token caps a run**: `ai-max-calls` counts docs per call, not calls; no
-   cap on tokens a run, no verdict cache keyed by the doc's and sources'
-   blobs. A pull request pushed five times is judged five times.
+1. **The first real parts run**: tokens, the pull requests' quality,
+   `sources-too-wide`, `uncovered`. 16 parts are ready on DomoticsCore
+   (ADR-0013 took the docs judged whole out of their way): likely hundreds
+   of thousands of tokens a night. `ai-max-tokens` caps a run, but a cap
+   reached between a doc's parts loses those already asked: lower
+   `parts-max-per-run` is the knob for that.
 2. **A solo repository without pull requests** (ADR-0010): the release gate
    on suspect docs, and `workline docs` judging from a ref it moves — not
    built. `workline doctor` still warns when the documentalist is not routed
