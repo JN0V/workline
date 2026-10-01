@@ -121,6 +121,29 @@ func misquoted(old string, f fileDiff) string {
 	return ""
 }
 
+// notApplying says where a diff git cannot apply quotes a doc wrong: git
+// says only the hunk's line, and agents skipping a blank line, or quoting
+// one that is not there, were asked again with that alone (DomoticsCore,
+// ADR-0014 step 4).
+func notApplying(diff string, docs map[string]string) string {
+	files, err := parseDiff(diff)
+	if err != nil {
+		return "; " + err.Error()
+	}
+	var why []string
+	for _, f := range files {
+		if old, ok := docs[f.path]; ok {
+			if w := misquoted(old, placed(old, f)); w != "" {
+				why = append(why, f.path+": "+w)
+			}
+		}
+	}
+	if len(why) == 0 {
+		return ""
+	}
+	return "; " + strings.Join(why, "; ") + " (a blank line counts as a line: quote it as one, and none that is not there)"
+}
+
 // version is a version number as docs write them: 2.12.0, v1.4.
 var version = regexp.MustCompile(`\d+(?:\.\d+)+`)
 
@@ -360,7 +383,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			continue
 		}
 		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-"); err != nil {
-			refuse("patch-does-not-apply", "patch", err.Error())
+			refuse("patch-does-not-apply", "patch", err.Error()+notApplying(diff, after))
 			continue
 		}
 		files, err := parseDiff(diff)
