@@ -383,6 +383,8 @@ func (r lineRange) String() string {
 
 func (r lineRange) overlaps(o lineRange) bool { return r.from <= o.to && o.from <= r.to }
 
+func (r lineRange) covers(o lineRange) bool { return r.from <= o.from && o.to <= r.to }
+
 // claim is a part's answer about one passage of the doc.
 type claim struct {
 	Lines  lineRange `yaml:"lines"`
@@ -477,7 +479,9 @@ func quotedAt(content string, r lineRange, quote string) bool {
 // fixEntry puts the parts' claims together, without AI, by the doc's lines:
 // contradicted and supported by no other part is wrong; contradicted in one
 // part and supported in another is a conflict; partial is to be read
-// together. It returns the doc's part of the fix task, with only the source
+// together, unless another part supports the lines it speaks of: that part
+// held the source settling them, and the fix would act on a share that
+// cannot (workline #29). It returns the doc's part of the fix task, with only the source
 // lines the parts cited; nothing when there is nothing to fix.
 func (v *partsVerdict) fixEntry(p, content, repo string) string {
 	var wrong, conflict, together []claim
@@ -494,7 +498,13 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 				wrong = append(wrong, c)
 			}
 		case "partial":
-			together = append(together, c)
+			settled := false
+			for _, o := range v.kept {
+				settled = settled || o.Status == "supported" && o.part != c.part && o.Lines.covers(c.Lines)
+			}
+			if !settled {
+				together = append(together, c)
+			}
 		}
 	}
 	var b strings.Builder

@@ -36,6 +36,10 @@ repository without merge requests is built but untried for real.
   a gardening task waits while its pull request is open. On a copy of
   DomoticsCore with #109 open: the docs judged whole wait, the parts go.
 - **A cap on a run's tokens** (`ai-max-tokens`): conformance only.
+- **A partial claim settled by another part** (workline #29, where a stale
+  code comment won over the setting): a passage one part finds partial and
+  another supports is not handed to the fix. Conformance only; to watch on
+  the next runs in parts.
 
 ## Tried once for real
 
@@ -49,21 +53,18 @@ repository without merge requests is built but untried for real.
 1. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
-2. **A fix in parts acted on a partial claim another part supported**
-   (workline #29: a stale code comment won over the setting): the fix
-   should be told, or not act on it.
-3. **Docs needing more than 8 parts** on DomoticsCore (five, 10 to 16
+2. **Docs needing more than 8 parts** on DomoticsCore (five, 10 to 16
    parts): their sources to narrow, or the doc to split. The two small
    faults of that run are caught now: a version replaced on part of a line
    (`replaced-in-part`), a file name taken for a name of the code.
-4. **A solo repository without pull requests**: built (ADR-0010, accepted)
+3. **A solo repository without pull requests**: built (ADR-0010, accepted)
    — `workline docs` from a ref it moves, the release held by docs suspect
    since the last tag, `doctor` saying where docs are judged; tried in
    conformance only, not yet on a real solo repository.
-5. **workline's own docs**: README, usage and most specs are suspect, far
+4. **workline's own docs**: README, usage and most specs are suspect, far
    behind; gardened nightly in parts since #27, first night to watch.
    roles/documentalist/README.md needs 15 parts: to split (condense task).
-6. Smaller: budgets merge one level deep; Opus's notes see more than the
+5. Smaller: budgets merge one level deep; Opus's notes see more than the
    task asks (unused); Copilot CLI on a free plan unmeasured (needs the
    owner to turn Copilot Free on).
 

@@ -56,7 +56,9 @@ not settled for our case, nor whether a light model checks as well.
 - **The engine merges, without AI**, by line range:
   - contradicted, and supported by no other part: **wrong**;
   - contradicted in one part, supported in another: **conflict**;
-  - partial in one part or more: **to be read together**;
+  - partial in one part or more: **to be read together** — unless another
+    part supports those lines: it held the source that settles them, and
+    the fix is not asked to act on a share that cannot (workline #29);
   - a passage naming an identifier of the code that no part supports:
     **uncovered** — often code renamed or gone, or a source missing.
 - **One last call fixes it**: the doc, with only the excerpts the parts

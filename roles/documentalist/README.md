@@ -135,7 +135,8 @@ Then, with no AI, a claim whose quotes are not at the lines it cites is
 dropped (`claims-dropped`), and the doc is not recorded as judged — the claim
 dropped may have been the one saying what is wrong: its parts are asked
 again on a later run; contradicted and supported by no other part is
-wrong, supported by another a conflict, partial to be read together; a line
+wrong, supported by another a conflict, partial to be read together —
+unless another part supports the same lines, which settles them; a line
 naming a name from the code that no part speaks of is `uncovered`, for a
 person. One last call (`fix`) gets the doc and only the source lines the
 parts cited, and patches what is wrong; the judge refuses a fix that moves
