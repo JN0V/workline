@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-01, night)
+# Documentalist — where it stands (2026-10-01, late night)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -76,9 +76,9 @@ repository without merge requests is built but untried for real.
    engine refuses a `checked` the agent could not have earned, and the
    `checked` already moved are put back (above); its release waits for the
    person to merge #35 and fix/partial-settled-by-another. Step 1 is
-   built and its baseline measured (below, "Measures"). Step 2 in part:
-   `count-off` and `value-left` built, measured with no agent (below);
-   the removal rule and "a comment is not evidence" next.
+   built and its baseline measured (below, "Measures"). Step 2 is built:
+   `count-off`, `value-left`, the removal rule and "a comment is not
+   evidence", measured with no agent (below); next, step 3's replay gate.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -134,3 +134,13 @@ the bot's fixes on DomoticsCore replayed: 51 reports, 47 real, 4 false
 version range was tuned out; the badge's link and MQTT's siblings found.
 Not yet run with a real agent: the tokens and the fixes it makes once
 told the counts are step 4's to measure.
+
+The removal rule and "a comment is not evidence" (tried.md, 2026-10-01):
+every word a fix takes out is cited in a `claim` beside it — a quote the
+engine finds in a source file outside its comments, or a name gone from the
+code — or refused. The reviewed bot fixes replayed with the claims they
+could honestly give: the three wrong ones on workline refused (d43b3f2
+uncited; d38a0e4 and #29 resting on a comment, each comment reported); 11
+of 12 right ones pass, 172493e refused, its only evidence a template's
+header comment (it undid d38a0e4, which the rule refuses). Conformance and
+replay only, no agent run on it yet.

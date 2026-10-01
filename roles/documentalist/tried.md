@@ -383,3 +383,29 @@ On 2026-09-27, on workline's own repository:
   `count-off` grades pass in every mode; vouching for every doc is now
   refused on the README and project-context (`checked-over-count-off`),
   still losing the "33 tests" no source shows.
+- ADR-0014 step 2, the removal rule and "a comment is not evidence"
+  replayed with no agent (2026-10-01, the engine at 44c0ce4, on copies of
+  workline and DomoticsCore): each reviewed bot fix put through the new
+  checks, at its parent commit, as an agent would have proposed it, with
+  the claim it could honestly have given — the line it followed, or none
+  when nothing in the doc's sources backs it:
+
+  | | workline | DomoticsCore | |
+  |---|---|---|---|
+  | wrong, refused | 3 of 3 | — | d43b3f2 `removal-uncited` (nothing contradicts "a comment edited in place"); d38a0e4 and 3cd196d `comment-not-evidence` (the template's header, main.go's comment), each comment reported |
+  | right, passed | 4 of 5 | 7 of 7 | versions cited from `library.json`; CI permissions, `cmd:`, the gitleaks rule from the code; 972afa9, 2e25ea0 and the LED states take no word out |
+  | right, refused | 1 (172493e) | 0 | its only evidence the GitLab template's header comment, the record the wrong d38a0e4 followed |
+
+  172493e only undid d38a0e4: with the rule, d38a0e4 is refused, the README
+  never holds its wrong text, and 172493e is never needed; counted anyway,
+  as the bar asks. Read strictly, 11 of 12 right fixes pass where 12 of 12
+  did. Where a real agent would need to cite and could not: d43b3f2 (no
+  source backs the removal), d38a0e4 and 172493e (only a comment says
+  what was tried); 92feb08's wrong edit, the fixed bug's version rewritten,
+  passes, cited from `library.json`: not what these rules are for. Per
+  run of changed lines, one claim suffices: 5ae8335's twelve-row table is
+  cited by one row's `library.json`. A claim is checked to exist where it
+  says, not to support the change (ADR-0014 step 3): an agent quoting an
+  unrelated line of code would pass. Not yet run with a real agent: the
+  tokens, and whether agents give claims, are step 4's to measure. The
+  `drifted` cases with fake agents (headers only) grade as before.
