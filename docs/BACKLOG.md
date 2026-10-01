@@ -29,10 +29,20 @@ awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/r
 comment is not evidence (a `claim` beside a patch cites each word it takes
 out), measured with no agent (roles/documentalist/tried.md: the three wrong
 workline fixes refused, 11 of 12 right ones pass, 172493e refused on a
-comment). **Next, step 3's gate**: replay the reviewed commits and the
-held-out set (WaterMeter, DomoticsCore after #114, workline's nightly
-gardening) with a real agent, five runs, and count by kind what still goes
-wrong — including whether agents give claims, and the tokens they cost. DomoticsCore: branch docs/narrow-wide-sources
+comment). **Step 3's gate is passed** with Sonnet (tried.md; 1.33M tokens):
+`drifted` five rounds, every point 4/5 and 5/5 (0/5 at the baseline),
+claims given at the first answer; eight reviewed fixes replayed, nothing
+false vouched for or written, so no quote-checked claims ADR. What remains
+is fixes not made (docs/research/documentalist-fixes-reviewed.md): the
+agent leaves the engine's line counts, believing they need a claim — a
+wording fix in the task and the refusal's feedback, worth doing before
+step 4. **Next, step 4's acceptance** on the held-out set, five runs:
+WaterMeter, DomoticsCore after #114, workline's nightly gardening, each as
+it is configured. Estimate from step 3: about 25k tokens a doc judged
+whole (66–77k when asked again), about 200k a doc in five parts, 180k in
+eight; a round is about 0.15M on WaterMeter (parts off), up to 0.4M on
+each of DomoticsCore and workline (their `ai-max-tokens`), so 0.7 to
+0.95M a round, 3.5 to 4.75M for five. DomoticsCore: branch docs/narrow-wide-sources
 (two docs narrowed) waits, not pushed; nothing more there until ADR-0014
 step 4 holds; its main runs workline v0.1.1.
 The night's gardening, on DomoticsCore and on workline: record it in
