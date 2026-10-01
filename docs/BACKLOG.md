@@ -33,10 +33,14 @@ comment). **Step 3's gate is passed** with Sonnet (tried.md; 1.33M tokens):
 `drifted` five rounds, every point 4/5 and 5/5 (0/5 at the baseline),
 claims given at the first answer; eight reviewed fixes replayed, nothing
 false vouched for or written, so no quote-checked claims ADR. What remains
-is fixes not made (docs/research/documentalist-fixes-reviewed.md): the
-agent leaves the engine's line counts, believing they need a claim — a
-wording fix in the task and the refusal's feedback, worth doing before
-step 4. **Next, step 4's acceptance** on the held-out set, five runs:
+is fixes not made (docs/research/documentalist-fixes-reviewed.md). Two
+are met before step 4, conformance only, no agent run on them yet: the
+task and every refusal say a count the engine gives needs no claim; a
+refusal names only the places refused and the rest of the patch to send
+again; and each run keeps the agent's answers and the accepted claims
+(`out/agent-answer.txt`, `out/claims.yaml`), so step 4 can read them. The
+others are parked below (Engine and CI, "Left by step 3"). **Next, step
+4's acceptance** on the held-out set, five runs:
 WaterMeter, DomoticsCore after #114, workline's nightly gardening, each as
 it is configured. Estimate from step 3: about 25k tokens a doc judged
 whole (66–77k when asked again), about 200k a doc in five parts, 180k in
@@ -172,3 +176,29 @@ last.
   agent proposing the doc a file belongs to, its "none" recorded so it is
   not asked again, and a file attached only if the doc stays within
   `parts-max`.
+- **Left by step 3** (ADR-0014; docs/research/documentalist-fixes-reviewed.md),
+  none a falsehood vouched for or written; to watch in step 4:
+  - *A line no part claimed* (3cd196d's line 60): judged in parts, no part
+    spoke to it, so the fix never saw it. The parts' coverage (ADR-0009):
+    `uncovered` reports a line naming a name from the code no part speaks
+    of; a line naming none, that no part claims, goes unseen.
+  - *A fixed bug left for a person* (92feb08, d784398): neither rewritten
+    nor removed, `value-left` reporting its old version; not vouched for.
+  - *A `supported` part verdict resting on a comment* (d43b3f2, two
+    claims): the removal rule checks a fix's claims, not a part's. Harmless
+    while a doc judged in parts never moves `checked`.
+  - *A claim reaches three lines either way*: one claim that holds, given
+    for line 10, also cites a removal at line 12 its quote says nothing of
+    (found writing the case refused-part-named-the-rest-kept). A claim is
+    checked to exist, not to support the change.
+- **Your allow-list blocks the bot's commits** (reproduced 2026-10-01).
+  With `~/.config/workline/allowed-identities` holding your address alone,
+  `workline run-role committer --event merge-request --input
+  range=d43b3f2~1..d43b3f2 --ai none` blocks with `identity`, author and
+  committer: the App's commits are
+  `336169029+workline-jn0v[bot]@users.noreply.github.com`, and GitHub's
+  web merges `noreply@github.com`; any local range holding them is refused
+  (a branch carrying the App's fix pushed again after a rebase, a merge
+  request checked by hand). Not seen in CI, which has no user list. Fix:
+  the user adds the bot's pattern, or the committer allows the forge's own
+  identities a project names (its App, `noreply@github.com`) by setting.

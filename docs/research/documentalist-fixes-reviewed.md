@@ -188,3 +188,4 @@ verdicts above:
 Limits: eight of the sixteen replayed, one run each, each run narrowed to
 the reviewed doc (siblings untried); the agent's claims are not kept in
 the run, so a claim's quote could be read only when a fix was refused.
+Since (0e00fbe), a run keeps them, and the agent's answers as they came.

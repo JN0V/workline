@@ -34,7 +34,9 @@ refusing a move (`checked-unread`), and the doc stays suspect for a person.
 The same holds for docs due at the release and for stale docs. A doc stating
 a line count off is told each one, with the real count, counted by the
 engine: `checked` cannot move while one stands (`checked-over-count-off`),
-so the fix brings it to that count or leaves `checked`.
+so the fix brings it to that count or leaves `checked`. That change needs
+no claim, the task says: the engine's count is the evidence, and a count is
+not words a file holds, to be quoted.
 
 Every task judging docs — suspect, stale, due at the release, the fix after
 the parts — says that every word a patch takes out of a body is cited

@@ -80,7 +80,8 @@ repository without merge requests is built but untried for real.
    `count-off`, `value-left`, the removal rule and "a comment is not
    evidence", measured with no agent (below). Step 3's gate is passed
    with a real agent (below): nothing false vouched for or written, so no
-   new mechanism; next, step 4's acceptance on the held-out set.
+   new mechanism; the fixes it left unmade met by wording where they could
+   be (below, after step 3); next, step 4's acceptance on the held-out set.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -159,3 +160,14 @@ winning, no fixed bug rewritten; the right versions made. What remains is
 fixes not made: line counts the engine gives left by the agent (3 of 3
 runs that had them), a right fix withdrawn after a refusal, a line no
 part claimed (docs/research/documentalist-fixes-reviewed.md).
+
+After step 3 (conformance only, no agent run on it yet): the task, the
+facet and every refusal say a line count the engine reports off is
+brought to its number with no claim, the engine's count being the
+evidence — the stated number and its "~" or "about" exempt, in prose, a
+table or a listing, another number not; a refusal names only the places
+refused and the rest of the doc's patch, to be sent again unchanged; each
+run keeps the agent's answers as they came and the accepted claims
+(`out/agent-answer.txt`, `out/refused-<n>-answer.txt`, `out/claims.yaml`).
+The line no part claimed, the fixed bug left for a person, and a part's
+`supported` resting on a comment are parked (docs/BACKLOG.md).

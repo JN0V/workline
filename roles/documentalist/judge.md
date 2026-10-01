@@ -34,7 +34,7 @@ A patch is refused, and the agent asked again with the reasons, when it:
   for a person;
 - moves `checked` while the doc, as patched, still states a line count off
   (`checked-over-count-off`, ADR-0014 step 2): the task gave the real
-  count; the fix brings it there, or leaves `checked`;
+  count; the fix brings it there, with no claim, or leaves `checked`;
 - takes words out of a doc's body with no claim saying why
   (`removal-uncited`, ADR-0014 step 2): the agent removed a true claim it
   could not see backed (workline d43b3f2). A run of changed lines whose
@@ -45,7 +45,15 @@ A patch is refused, and the agent asked again with the reasons, when it:
   gone now, as `identifier-gone` finds it. A claim that does not hold — the
   quote not in the file, the file not a source, the name still in the code
   — is `citation-unchecked`. Words only added, lines rewrapped, and a line
-  count the engine found off need none; condense, split, merge-card and
+  count the engine found off, brought to the engine's number, need none —
+  the stated number and the word making it rough ("~", "about",
+  "approximately"), in prose, a table's cell or a fenced listing; another
+  number in its place needs a claim like any word. The task and every
+  refusal say it, the engine's count being the evidence: the agent had left
+  the counts it was given, believing a count "cannot be quoted as a source"
+  (ADR-0014, step 3). A refusal names the places refused only, and the rest
+  of the doc's patch that holds, to be sent again unchanged: the agent had
+  withdrawn a right fix with the refused one beside it (16c660b). Condense, split, merge-card and
   dedupe tasks are judged by their own rules, which check where the text
   went;
 - rests a change on a comment alone (`comment-not-evidence`): its claims'
@@ -59,6 +67,13 @@ A patch is refused, and the agent asked again with the reasons, when it:
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.
+
+The answer asked again replaces the refused one whole, so the engine tells
+the agent to give again, unchanged, every change not refused. Each answer is
+kept in the run folder as it came (`out/agent-answer.txt`; a refused one as
+`out/refused-<n>-answer.txt`), and the claims of the accepted one in
+`out/claims.yaml`: judged, never applied, kept so that a fix's evidence can
+be checked afterwards.
 
 Asked again as often as the role allows and still refused, a doc's fix is
 left out (`left-out`, saying why), and the other docs' fixes are judged again

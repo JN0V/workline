@@ -30,6 +30,8 @@ You get one decision about documentation. `task.md` says which kind:
 
 A patch taking words out of a doc gives, beside it, a `claim` for each place
 saying why, as the task shows: a source's words, or a name gone from the code.
+A line count the task says is off is brought to the engine's number with no
+claim: the engine's count is the evidence.
 
 If the right answer needs a decision only the project can make, return a `note`
 instead of guessing.
