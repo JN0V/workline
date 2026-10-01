@@ -376,10 +376,10 @@ var prePushQuiet = map[string]bool{
 }
 
 // prePush runs the project's pre-push line on the commits being pushed, with
-// the person's agent, then asks the person to approve the push (ADR-0007).
+// no agent (ADR-0010), then, if the person asked for it, has them approve
+// the push (ADR-0011: off unless their own config says `approve-push: true`).
 // The line runs only when the project routes pre-push, since the global hook
-// reaches every repository on the machine; the approval runs everywhere, and
-// only the person's own config turns it off. A doc the line patched stops the
+// reaches every repository on the machine. A doc the line patched stops the
 // push, so the person reviews it and pushes again.
 func prePush(remote string) int {
 	root, err := gitRoot(".")
