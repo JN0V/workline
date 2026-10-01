@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
+sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -32,6 +32,9 @@ A patch is refused, and the agent asked again with the reasons, when it:
   gave whole (`in/read-whole.yaml`; none, when the file is missing); for
   any other, the fix sets `judged` and is kept, and the doc stays suspect
   for a person;
+- moves `checked` while the doc, as patched, still states a line count off
+  (`checked-over-count-off`, ADR-0014 step 2): the task gave the real
+  count; the fix brings it there, or leaves `checked`;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.
@@ -39,6 +42,16 @@ A patch is refused, and the agent asked again with the reasons, when it:
 Asked again as often as the role allows and still refused, a doc's fix is
 left out (`left-out`, saying why), and the other docs' fixes are judged again
 without it and applied; the doc stays as it was, suspect.
+
+Once the fixes pass, two findings are added, never refusing: a `count-off`
+a fix brought right says "fixed in this run"; and a version a fix replaces
+— a three-part version said fewer times in the lines it adds than in those
+it removes, a new one written in its place — still said in the doc fixed,
+or in another doc declaring one of its source files that now says the new
+version, is `value-left`, with the lines (ADR-0014, step 2). It is not
+fixed by the engine: an old version may be said on purpose. History docs
+are left out, and so is a version given as a range (`>=1.4.1`, `^1.4.1`),
+what a dependant accepts.
 
 A condense patch is refused when it touches another existing doc; when a line
 that leaves the doc is found in no new doc, unchanged but for a heading's level

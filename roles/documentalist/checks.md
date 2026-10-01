@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -70,13 +70,27 @@ are cut. Part of [the documentalist](README.md).
    again drifts from a world that changed around it (Google's freshness
    dates). Docs already suspect or pending are left out.
 
+10. **Line counts off** (ADR-0014, step 2). A count of lines next to a file
+    the doc names among its sources (matched by path suffix, one file
+    only), off from the file as it is now (`count-off`): in prose
+    ("`EventBus.h` is currently ~283 lines"), a fenced listing ("Clock.h
+    (524 lines)") or a table whose column is headed `Lines`. Right within
+    one line, or within a tenth when it says it is about (`~`, about,
+    approximately). Not a count: a number beside a limit word (`<`, under,
+    over, limit, max, target, …); nor anything in a doc with `sources: []`,
+    a history doc (a changelog, a decision record, a tried or research
+    record) or a derived block. Reported with the file, the count stated
+    and the real one. No agent counts, and only lines are counted: tests,
+    fields and other counts go through a project's `derive`, never
+    guessed. While one stands, `checked` cannot move (the judge).
+
 Not built yet: style (vale).
 
 ### Levels
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `count-off`, `value-left` (after a fix, the judge), `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |

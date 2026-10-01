@@ -183,8 +183,9 @@ it grades both sides: never `checked` over a planted falsehood, and
 without a real agent on every `go test`, by a fake `cmd:` agent changing
 headers only (`TestDriftedWithFakeAgents`): vouching for every doc must lose
 the falsehood checks, recording `judged` on every doc must lose the
-control, doing both right must lose neither. The `finding` checks on
-`count-off` measure ADR-0014's step 2, not built yet: lost until it is.
+control, doing both right must lose neither; the `count-off` findings,
+reported by the engine with no agent (ADR-0014, step 2), are graded there
+too and must never be lost.
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.

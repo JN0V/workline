@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go]
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -31,7 +31,10 @@ doc, up to 20,000 characters together (`staleSourceChars`). A doc judged on
 diffs alone, or beside a doc of the same task it follows, is told instead
 that `checked` cannot move: its fix leaves it and sets `judged`, the judge
 refusing a move (`checked-unread`), and the doc stays suspect for a person.
-The same holds for docs due at the release and for stale docs.
+The same holds for docs due at the release and for stale docs. A doc stating
+a line count off is told each one, with the real count, counted by the
+engine: `checked` cannot move while one stands (`checked-over-count-off`),
+so the fix brings it to that count or leaves `checked`.
 
 ## Judged in parts
 
