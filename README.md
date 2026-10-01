@@ -146,14 +146,14 @@ flowchart LR
 |---|---|---|
 | `commit-msg` | your machine: the global git hook | committer |
 | `pre-push` | your machine, before the commits leave it, if the project routes it; no question: the review is on the merge request (a push approval, on the terminal, in the editor or in a dialog, if you ask for it) | none by default; workline itself: committer, documentalist |
-| `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
+| `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) (with [workline-fork.yml](ci/github/workline-fork.yml) to comment on a fork's) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist |
 | `schedule` | you, or a scheduled pipeline: the [GitHub Actions](ci/github/workline-gardening.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template, each task a merge request of its own (ADR-0006) | documentalist |
 | `release` | wherever you run `workline route release`: it tags and publishes at once (`flow: direct`) | documentalist (docs due at the release), then release-manager |
 
 So the committer checks your messages as you write them, and again on the merge
 request for those without the hook; the documentalist runs on the forge. On a
-forge, one job judges without a write token and another applies without an AI
-key (`--no-apply`, then `workline apply`).
+forge, one job judges with no write token but code scanning's (SARIF upload) and
+another applies without an AI key (`--no-apply`, then `workline apply`).
 
 The CI templates run `workline route merge-request`, so a project's `routing:`
 reaches its CI too.

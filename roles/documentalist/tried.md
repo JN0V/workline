@@ -240,3 +240,10 @@ On 2026-09-27, on workline's own repository:
   Sonnet 5.5; the default fixed and the example of a project's routing
   left alone, three runs in three, 23k tokens each. The fault of PR #10
   came before ADR-0012 gave the agent its sources whole.
+- a fork's pull request (2026-10-01, JN0V/workline-sandbox #1 from the
+  fork jn0v-lab/workline-sandbox, the `documented` fixture with the
+  templates of the branch): workline judged it with no agent, the fork
+  getting no secret, and left its report; workline-fork.yml, run from the
+  repository's side, checked the pull request's head and commented it —
+  the doc the change made wrong, and the product doc following it. A
+  second push edited that comment; none was added.

@@ -24,7 +24,7 @@
 #          the job's own token, GitHub waits for someone to approve them. The
 #          commit carries `Workline-Role:`, and the line does not judge it
 #          again. Nothing is applied for a fork: the job summary lists what
-#          was found.
+#          was found, and workline-fork.yml comments it on the pull request.
 name: workline
 on:
   pull_request:
@@ -85,6 +85,14 @@ jobs:
               "- \(.rule) \(.where // ""): \($l[0])\(if ($l | length) > 1 and ($l[-1] | startswith("(")) then " " + $l[-1] else "" end)")' line.json)
           echo "$report"
           { echo "### workline ($ai)"; echo; echo "$report"; } >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p report && { echo "### workline ($ai)"; echo; echo "$report"; } > report/report.md
+          echo "${{ github.event.pull_request.number }}" > report/number
+
+      # From a fork, this job has no right to comment: the report goes to
+      # workline-fork.yml, which comments it from the repository's side.
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event.pull_request.head.repo.full_name != github.repository
+        with: {name: workline-report, path: report/}
 
       - uses: actions/upload-artifact@v4
         if: steps.line.outputs.proposed == 'true'
