@@ -241,6 +241,6 @@ in [role-adapting.md](role-adapting.md).
 
 What this contract describes and the engine does not do yet, each marked where
 it is described: roles taken from elsewhere (`from`, `roles.lock`), `uses`,
-`without-ai`, SARIF, baselines, the defect ledger. The rest is built and
+`without-ai`, baselines, the defect ledger. The rest is built and
 covered by the conformance cases (conformance.md); routing and gates are in
 routing.md and gates.md.

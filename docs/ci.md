@@ -11,7 +11,8 @@ self-managed GitLab. Each template's header says the same, beside the code.
 What every forge needs first, in the repository:
 
 1. Docs that name their sources: `workline init` on your machine proposes
-   them, you review and commit (README, "Adopt a repository").
+   them, you review and commit
+   ([adopting a repository](../roles/documentalist/push.md#adopting-a-repository)).
 2. `.workline/config.yaml`, if the defaults do not suit — for a backlog of
    docs far behind, judging in parts and its caps:
 

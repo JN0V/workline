@@ -166,7 +166,7 @@ models.
 produced — "does the rewritten subject keep the author's meaning?" — of the
 agent `WORKLINE_JUDGE` names (an `--ai` value: `claude:sonnet`, a `cmd:`),
 with the case, the author's words, the role's and the change. Its facets are
-in `tests/evaluation/judge/`. A yes is a point, a no is lost with its reason.
+in `roles/judge/`. A yes is a point, a no is lost with its reason.
 The judge stands as far from the graded model as it can
 ([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)): the
 `judge` column names its model and the level reached — `provider`, `model`
