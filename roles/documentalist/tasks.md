@@ -104,8 +104,11 @@ SHOULD is lost, and that the passage is no longer repeated.
 and no repeated passage,
 the doc most over its budget (a doc too long first, then an agent's entry
 point, a section) becomes the task: bring it within budget by moving
-whole parts into a new doc, and linking to it. One doc a run. A merge request
-or a push never turns into a rewrite of the docs.
+whole parts into a new doc, and linking to it. One doc a run. A history doc —
+a changelog, a decision record, a tried or research record — is never the
+task: moving its parts away rewrites the record; its budget stays reported,
+for a person. A merge request or a push never turns into a rewrite of the
+docs.
 
 **Merging cards, when gardening.** Last, with nothing else to do, a card too
 short to stand alone goes into the card it belongs with, chosen by the agent

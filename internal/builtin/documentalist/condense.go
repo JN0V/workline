@@ -72,6 +72,9 @@ The card as it is now, with its line numbers:
 
 // pickCondense chooses the one doc a gardening run condenses: the first with
 // the strongest budget problem. One doc a run keeps each change reviewable.
+// A history doc is never chosen: moving its parts away rewrites the record
+// (WaterMeter's CHANGELOG.md, chosen and refused two nights running, ADR-0014
+// step 4); its budget is reported, for a person.
 func pickCondense(problems []Problem) *condenseTask {
 	for _, rule := range condensable {
 		for _, p := range problems {
@@ -79,6 +82,9 @@ func pickCondense(problems []Problem) *condenseTask {
 				continue
 			}
 			doc, _, _ := strings.Cut(p.Where, "#")
+			if isHistory(doc) {
+				continue
+			}
 			return &condenseTask{Doc: doc, Keys: []string{p.Key}}
 		}
 	}
