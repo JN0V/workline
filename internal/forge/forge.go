@@ -46,9 +46,9 @@ type Forge interface {
 	// OpenMergeRequest opens a merge request from branch into base, or
 	// updates the title and body of the one already open from branch.
 	OpenMergeRequest(branch, base, title, body string) (int, error)
-	// OpenMergeRequests counts the open merge requests whose branch starts
-	// with prefix.
-	OpenMergeRequests(prefix string) (int, error)
+	// OpenMergeRequests lists the branches of the open merge requests whose
+	// branch starts with prefix, sorted.
+	OpenMergeRequests(prefix string) ([]string, error)
 	// MergeRequestBranch is the branch a merge request comes from, and
 	// whether it lives in this repository (not in a fork).
 	MergeRequestBranch(id int) (branch string, here bool, err error)

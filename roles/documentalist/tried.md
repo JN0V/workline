@@ -187,3 +187,21 @@ On 2026-09-27, on workline's own repository:
   made suspect against their sources whole (Sonnet 5.5, 11.7k tokens in,
   1.9k out), the App committed the fix to the branch — the MQTT README and
   the HAL architecture doc — and it was merged with the change.
+- DomoticsCore's gardening with parts on (2026-10-01): the night before
+  ran nothing, the schedule never fired; run by hand instead. 44 docs
+  suspect: one judged, 9 left over ai-max-calls or the task's size, 34
+  waiting to be judged in parts "in a later round". The one judged was the
+  OTA doc refused on 2026-09-29, version 1.4.1 where the code says 1.11.0:
+  Sonnet 5.5 cited a line wrongly, the judge refused it, Opus fixed the
+  five places, `checked` left (ADR-0012) — pull request #109, 6 lines.
+  Two calls, 21.2k tokens in, 5.0k out. No part was asked: a CI run judges
+  without applying, so it has one round, and a round judging docs whole
+  asks no parts. At one doc a night, the parts wait for the other nine.
+  Worse, run again before #109 was merged, the same doc came first: judged
+  again, to the same end, and after the merge still suspect — `checked`
+  not moved. Now (ADR-0013) a fix not vouched for records `judged`, and a
+  task waits while its pull request is open. Checked on a copy, #109 open,
+  no agent: the 11 docs judged whole wait for it, and 16 parts are
+  prepared — README.md and docs/architecture.md, 8 each; 20 more docs in
+  parts wait past `parts-max-per-run`, and 11 go to a person (5 too long
+  to be judged in parts, 5 with sources too wide, 1 with no code).

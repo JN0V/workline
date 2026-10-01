@@ -85,6 +85,10 @@ settings:
   documented: []
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
+  # Tokens one run may spend, all calls together (in, cache included, and
+  # out); past it the agent is asked nothing more and the rest waits. 0: no
+  # cap. A doc judged whole cost 13k to 26k on DomoticsCore; 16 parts, more.
+  ai-max-tokens: 0
   # A suspect doc whose sources, as they are now, do not fit a task goes to a
   # person. Turned on, it is judged in parts instead (ADR-0009): the doc whole
   # with a share of its source files in each part, then one call fixing what

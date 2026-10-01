@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sort"
 	"strings"
 )
 
@@ -207,18 +208,19 @@ func (f *Fake) OpenMergeRequest(branch, base, title, body string) (int, error) {
 	return id, err
 }
 
-func (f *Fake) OpenMergeRequests(prefix string) (int, error) {
+func (f *Fake) OpenMergeRequests(prefix string) ([]string, error) {
 	s, err := f.load()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	n := 0
+	var out []string
 	for _, m := range s.MergeRequests {
 		if !m.Closed && m.Branch != "" && strings.HasPrefix(m.Branch, prefix) {
-			n++
+			out = append(out, m.Branch)
 		}
 	}
-	return n, nil
+	sort.Strings(out)
+	return out, nil
 }
 
 func (f *Fake) MergeRequestBranch(id int) (string, bool, error) {

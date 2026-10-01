@@ -55,5 +55,28 @@ made to stop (2022).
   merge trains and merge queues drop a branch pushed during them.
 - After a squash or rebase merge, a `checked` naming a commit of the branch
   names a commit main never holds.
-- Every push of the merge request judges again without a cache of verdicts:
+- Every push of the merge request judges again a doc not moved on: one the agent
+  left a note on, or a fork's, without a cache of verdicts;
   on DomoticsCore, about 100k tokens a judgement, through wide `sources`.
+
+## Caps and caches (2026-10-01)
+
+- **Caps count what was spent, never estimate ahead.** Claude Code's
+  `--max-turns` and `--max-budget-usd` stop one call once crossed, the
+  answer that crossed it paid; the result carries `modelUsage`, tokens per
+  model (code.claude.com, cli-reference). gh-aw caps turns and AI credits
+  a run, warns the agent at 80 to 99%, then cuts it; a run ending on its
+  budget passes since gh-aw PR #49614; `max-daily-ai-credits` sums a day's
+  runs from their artifacts and skips the agent job before it starts.
+  claude-code-action, Codex's action and aider have no cap of their own.
+- **Work left over waits for the next run, listed.** Renovate caps PRs an
+  hour and open at once, before acting; what is over is shown
+  "Rate-Limited" on its dashboard. CodeRabbit counts reviews an hour per
+  developer and posts a passing "Review rate limited" check.
+- **Caches of verdicts**: CodeRabbit reviews the commits since the last one
+  it reviewed (`full review` starts over). agentics' wiki writer keeps, on
+  a git branch, each page's sources with their hashes — computed by the
+  LLM itself, model and prompt left out of the key, cleared by hand.
+  promptfoo keys on provider, prompt, config and variables, and never
+  caches an error. The key belongs to the engine: content ids, the exact
+  model, the role's version.

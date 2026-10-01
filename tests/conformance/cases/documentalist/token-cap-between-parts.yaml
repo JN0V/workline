@@ -1,0 +1,19 @@
+case: documentalist/token-cap-between-parts
+about: "A run that spends its ai-max-tokens on a doc's first part asks no other: the doc's parts did not all answer, so nothing they found is kept, and it is judged again later."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, ai-max-tokens: 1000}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction-costly"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: []
+  findings:
+    - {rule: ai-max-tokens, level: warn}
+    - {rule: part-unanswered}
+  files:
+    "docs/tech/auth.md": {contains: "checked: 845334e\n---\n"}

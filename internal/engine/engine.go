@@ -74,6 +74,26 @@ type Result struct {
 	RunDir       string            `json:"run-dir"`
 	ToApply      bool              `json:"to-apply,omitempty"`      // judged with NoApply: `workline apply` still has work
 	MergeRequest int               `json:"merge-request,omitempty"` // the merge request the patches went to
+	maxTokens    int               // the role's ai-max-tokens: what the run may spend; 0, no cap
+	capped       bool              // a call was refused, the run having spent maxTokens
+}
+
+// errTokensSpent refuses a call once the run has spent its ai-max-tokens.
+var errTokensSpent = errors.New("the run spent its ai-max-tokens")
+
+// tokensSpent adds up what the run's calls used, as the agents reported it:
+// the whole input, cache included, and the output.
+func (res *Result) tokensSpent() int {
+	n := 0
+	for _, c := range res.Calls {
+		n += c.TokensIn + c.TokensOut
+	}
+	return n
+}
+
+// overBudget says whether the run has spent what its role allows.
+func (res *Result) overBudget() bool {
+	return res.maxTokens > 0 && res.tokensSpent() >= res.maxTokens
 }
 
 // Exit codes of pre and post (docs/spec/role-contract.md, "Exit codes").
@@ -126,7 +146,15 @@ func Run(o Options) *Result {
 		for _, l := range strings.Split(string(more), "\n") {
 			deferred[strings.TrimSpace(l)] = true
 		}
-		if err != nil || res.Status != verdict.Pass || o.NoApply || !changedSomething(res.Applied[applied:]) || round == maxRounds {
+		last := err != nil || res.Status != verdict.Pass || o.NoApply || !changedSomething(res.Applied[applied:]) || round == maxRounds
+		if res.capped || !last && res.overBudget() {
+			// A cap is checked against what was spent, never estimated: the
+			// call that crossed it is paid. What is left waits, said.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "ai-max-tokens", Level: "warn",
+				Message: fmt.Sprintf("%d tokens spent, the run allows %d: the agent was asked nothing more; what is left waits for the next run", res.tokensSpent(), res.maxTokens)})
+			return res
+		}
+		if last {
 			return res
 		}
 	}
@@ -194,6 +222,7 @@ func run(o Options, res *Result) error {
 	if err := writeInputs(runDir, o.Inputs, r.MergedSettings(cfg)); err != nil {
 		return err
 	}
+	res.maxTokens = intSetting(r.MergedSettings(cfg), "ai-max-tokens")
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
@@ -207,11 +236,17 @@ func run(o Options, res *Result) error {
 		if f == nil {
 			return errors.New("--open-merge-request needs a forge (--forge)")
 		}
-		n, err := f.OpenMergeRequests(branchPrefix(r.Name))
+		open, err := f.OpenMergeRequests(branchPrefix(r.Name))
 		if err != nil {
 			return err
 		}
-		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n))
+		// How many wait, and which tasks: the branches, the role's prefix cut.
+		tasks := make([]string, len(open))
+		for i, b := range open {
+			tasks[i] = strings.TrimPrefix(b, branchPrefix(r.Name))
+		}
+		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", len(open)),
+			"WORKLINE_OPEN_MERGE_REQUEST_TASKS="+strings.Join(tasks, " "))
 	}
 
 	// 2. Prepare.
@@ -414,7 +449,7 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		}
 		err = callAgent(ag, agent.Request{RunDir: dir, Repo: o.Repo, Role: &asked, Tier: asked.Model.Tier}, "part", runDir, res)
 		switch {
-		case errors.Is(err, agent.ErrUnavailable):
+		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent):
 			gone = err.Error()
 			unanswered(gone)
 			continue
@@ -512,6 +547,10 @@ func claimsOneByOne(answer string) (int, []intent.Intention) {
 // callAgent asks the agent once and records the call: in the result, and
 // with the run (out/calls.jsonl), what it cost, to be read afterwards.
 func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Result) error {
+	if res.overBudget() {
+		res.capped = true
+		return errTokensSpent
+	}
 	res.AgentCalls++
 	start := time.Now()
 	call, err := ag.Propose(req)
@@ -946,6 +985,8 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		err := callAgent(ag, agent.Request{RunDir: runDir, Repo: o.Repo, Role: r, Tier: tier}, taskKind(runDir), runDir, res)
 		switch {
 		case err == nil:
+		case errors.Is(err, errTokensSpent):
+			a.askedAgent = false // not asked: no answer to refuse, none to ask again
 		case errors.Is(err, agent.ErrUnavailable):
 			a.external = true
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})
@@ -1436,6 +1477,17 @@ func newRunDir(repo, roleName string) (string, error) {
 		}
 	}
 	return dir, nil
+}
+
+// intSetting reads a whole number from the role's settings; 0 when unset.
+func intSetting(settings map[string]any, key string) int {
+	switch v := settings[key].(type) {
+	case int:
+		return v
+	case float64:
+		return int(v)
+	}
+	return 0
 }
 
 func writeInputs(runDir string, inputs map[string]string, settings map[string]any) error {

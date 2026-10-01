@@ -191,6 +191,14 @@ token), **apply** (trusted, no AI key).
    intentions; a later round's finding replaces an earlier one of the same
    rule and place, and a deferred one is dropped once the next round runs. A run judged with `--no-apply` goes round once.
 
+   **A cap on tokens.** A role setting `ai-max-tokens` caps what one run may
+   spend, every round, part and retry together: the tokens in, cache
+   included, and out, as the agents report them. It is checked before each
+   call against what was spent, never estimated, so the call that crosses
+   it is paid; the agent is asked nothing more, and the run says so
+   (`ai-max-tokens`, a warning) and passes: what is left waits for the next
+   run. 0 or unset, no cap.
+
 ### When apply stops half-way
 
 Writes to git and to a forge are not transactional: a comment can be posted and
@@ -205,8 +213,10 @@ name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
 which the shipped roles call for their built-in steps), `WORKLINE_FORGE` (the
 configured forge, when one is set), `WORKLINE_TARGET`
 (`merge-request:12`, `issue:3`) when a forge and a target are given, and
-`WORKLINE_OPEN_MERGE_REQUESTS`, the role's open merge requests, when the run
-opens one (ADR-0006).
+`WORKLINE_OPEN_MERGE_REQUESTS`, how many of the role's merge requests are
+open, and `WORKLINE_OPEN_MERGE_REQUEST_TASKS`, their tasks (each branch, the
+role's prefix cut, separated by spaces), when the run opens one (ADR-0006,
+0013).
 
 ### Exit codes
 

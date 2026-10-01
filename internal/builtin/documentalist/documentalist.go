@@ -67,6 +67,9 @@ type Doc struct {
 	// JudgedInParts is the commit the doc was last judged in parts at: it is
 	// not put before an agent again until a source changes after it.
 	JudgedInParts string
+	// Judged is the commit an agent judged the doc whole at without vouching
+	// for every sentence: held the same way.
+	Judged string
 }
 
 // frontmatter is the YAML block at the top of a doc.
@@ -75,6 +78,7 @@ type frontmatter struct {
 	// A node, not a string: read as YAML, a commit like 11180e1 is a number.
 	Checked       yaml.Node `yaml:"checked"`
 	JudgedInParts yaml.Node `yaml:"judged-in-parts"`
+	Judged        yaml.Node `yaml:"judged"`
 }
 
 // header returns a doc's header — YAML between `---` lines, or, where a
@@ -112,7 +116,7 @@ func ParseDoc(path string, content []byte) (*Doc, error) {
 	if len(fm.Sources) == 0 {
 		return nil, nil
 	}
-	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}, JudgedInParts: fm.JudgedInParts.Value}
+	d := &Doc{Path: path, Sources: fm.Sources, Checked: map[string]string{}, JudgedInParts: fm.JudgedInParts.Value, Judged: fm.Judged.Value}
 	switch c := fm.Checked; c.Kind {
 	case yaml.ScalarNode:
 		d.Checked[""] = c.Value
@@ -678,6 +682,7 @@ func Pre(runDir, repo string) int {
 	// task; the suspect ones wait for the next run, once the person has
 	// reviewed what this one proposes.
 	adopting := os.Getenv("WORKLINE_EVENT") == "init"
+	holdWaitingTasks(suspects, stale)
 	var task string
 	var judged map[string]map[string]string
 	if adopting {
@@ -894,6 +899,32 @@ doc when its reader really gained something to know.
 	return 0
 }
 
+// holdWaitingTasks keeps from the agent, when gardening, the docs a task
+// would judge while that task's merge request waits for review: judged
+// again, they would only propose what is already proposed. A doc judged
+// whole goes to its kind's task; one judged in parts, to `fix`.
+func holdWaitingTasks(maps ...map[string]*suspectDoc) {
+	if os.Getenv("WORKLINE_EVENT") != "schedule" {
+		return
+	}
+	open := map[string]bool{}
+	for _, t := range strings.Fields(os.Getenv("WORKLINE_OPEN_MERGE_REQUEST_TASKS")) {
+		open[t] = true
+	}
+	for i, docs := range maps {
+		kind := []string{"suspect", "stale"}[i]
+		for _, sd := range docs {
+			task := kind
+			if sd.tooLarge {
+				task = "fix"
+			}
+			if sd.note == "" && open[task] {
+				sd.note = "(its task's merge request, workline/documentalist/" + task + ", waits for review: not put before an agent again until it is merged or closed)"
+			}
+		}
+	}
+}
+
 // suspectTask writes the question for the agent: each suspect doc, with line
 // numbers, what changed in its sources, and the commits its `checked` must
 // name once judged. It returns those commits per doc, for the judge.
@@ -961,7 +992,11 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			return "", nil, err
 		}
 		var entry strings.Builder
-		fmt.Fprintf(&entry, "## %s\n\nWhatever you decide, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.\n\nWhy it is here:\n\n", p, checked)
+		fmt.Fprintf(&entry, "## %s\n\nIf you vouch for every sentence it keeps, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.", p, checked)
+		if full := want[""]; full != "" {
+			fmt.Fprintf(&entry, " If you cannot, it leaves `checked` as it is and sets `judged: %s` instead.", full[:7])
+		}
+		entry.WriteString("\n\nWhy it is here:\n\n")
 		for _, w := range sd.why {
 			fmt.Fprintf(&entry, "- %s\n", strings.ReplaceAll(w, "\n", "\n  "))
 		}

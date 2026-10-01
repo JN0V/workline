@@ -1,4 +1,5 @@
-# The fix, without recording the commit the doc was checked against: the doc
+# The fix, recording neither the commit the doc was checked against nor the
+# one it was judged at without being vouched for: the doc
 # would stay suspect.
 - patch: |
     --- a/docs/tech/auth.md

@@ -1,0 +1,16 @@
+# The fix, by an agent that could not confirm every sentence: `checked` left,
+# `judged` recording the commit it was judged at, so it is not asked again
+# before a source changes.
+- patch: |
+    --- a/docs/tech/auth.md
+    +++ b/docs/tech/auth.md
+    @@ -3,3 +3,4 @@ type: reference
+     sources: [src/auth/token.go]
+     checked: 9bf650b
+    +judged: 1a8e5a4
+     ---
+    @@ -9,2 +10,2 @@ checked: 9bf650b
+     
+    -Access tokens last one hour.
+    +Access tokens last two hours.
+- note: "The refresh section names a grace period the sources given do not show."

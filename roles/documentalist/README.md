@@ -117,7 +117,8 @@ alone, or in parts when they do not fit either — and the commits its
 `ai-max-calls` docs per call, and no more than fits the role's context budget.
 Docs left out are taken in the run's next round, once the first ones are
 applied (docs/spec/role-contract.md, "Again"); past the last round, they stay
-suspect for a person or a later run.
+suspect for a person or a later run. `ai-max-tokens` caps what a run spends, all
+calls together: past it, the agent is asked nothing more and the rest waits.
 
 **Judged in parts** (ADR-0009), when the project sets `judge-in-parts: true`
 (off by default, until the evaluation has measured it). A suspect or stale
@@ -184,7 +185,10 @@ templates' scheduled jobs), a gardening task's patch goes on a branch of its
 own, `workline/documentalist/<task>`, with a merge request titled after the
 task; running the task again updates it (ADR-0006). While
 `max-open-merge-requests` of them wait for review, gardening proposes nothing
-(`gardening-paused`), and what it finds is still reported.
+(`gardening-paused`), and what it finds is still reported. While a task's
+own merge request waits, the docs it would judge wait too (ADR-0013): a doc
+judged in parts, whose task is `fix`, is then asked before the docs judged
+whole.
 
 **Splitting a card, when gardening.** Next, a card too long holds more than
 one concept: it keeps its first, and each other one moves, as written, into a
@@ -206,7 +210,8 @@ A patch is refused, and the agent asked again with the reasons, when it:
   count): a fix may say what the code now does, never pad;
 - moves `checked` to another commit than the one given — a fix that leaves
   `checked` alone is kept, and the doc stays suspect, fixed but not vouched
-  for (ADR-0012);
+  for (ADR-0012), if it sets `judged` to that commit (`judged-not-set`): the
+  doc is not put before an agent again until a source changes (ADR-0013);
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.

@@ -3,6 +3,7 @@ package forge
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -158,18 +159,19 @@ func (g *github) OpenMergeRequest(branch, base, title, body string) (int, error)
 	return id, nil
 }
 
-func (g *github) OpenMergeRequests(prefix string) (int, error) {
+func (g *github) OpenMergeRequests(prefix string) ([]string, error) {
 	pulls, err := g.openPulls()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	n := 0
+	var out []string
 	for branch := range pulls {
 		if strings.HasPrefix(branch, prefix) {
-			n++
+			out = append(out, branch)
 		}
 	}
-	return n, nil
+	sort.Strings(out)
+	return out, nil
 }
 
 func (g *github) MergeRequestBranch(id int) (string, bool, error) {
