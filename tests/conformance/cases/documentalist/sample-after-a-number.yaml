@@ -1,0 +1,15 @@
+case: documentalist/sample-after-a-number
+about: The sample reads `sample.after` written unquoted, all digits, as the commit it names, the way it reads a tag.
+given:
+  repo: vouched
+  setup:
+    - "git tag 7515148 HEAD~1"
+  config: {roles: {documentalist: {settings: {sample: {after: 7515148}}}}}
+run: {sample: [--week, 2026-W01, --judge, "fake:sample-ttl-false"]}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: sample-empty}
+  no-findings:
+    - {rule: vouched-false, where: docs/tech/auth.md}
