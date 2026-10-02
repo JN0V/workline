@@ -1,3 +1,12 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 
+forge/local-comment-on-a-merge-request
+forge/local-gardening-merge-request
+forge/local-issue-opened
+forge/local-item-ready
+forge/local-patch-pushed-to-the-merge-request
+forge/local-release-published
+forge/local-sample-written
+forge/local-tracking-issue-kept
+forge/none-sample-apply-refused

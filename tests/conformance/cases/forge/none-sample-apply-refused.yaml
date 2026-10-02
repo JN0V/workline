@@ -1,0 +1,15 @@
+case: forge/none-sample-apply-refused
+about: With no forge (`none`), `workline sample --apply` writes nothing, and says which forges would take it, `local` among them.
+given:
+  repo: vouched
+  config:
+    roles:
+      documentalist:
+        settings:
+          sample: {judge: 'cmd:cat "$FIXTURES/agents/sample-ttl-false.yaml"'}
+run: {sample: [--week, 2026-W01], then: apply, forge: none}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "forge: local"}]
+  files:
+    .git/workline/issues/1.md: {exists: false}

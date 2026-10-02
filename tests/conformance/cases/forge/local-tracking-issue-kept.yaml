@@ -1,0 +1,24 @@
+case: forge/local-tracking-issue-kept
+about: "With `forge: local`, gardening keeps its tracking issue in place in the clone, its body rewritten, and opens no other."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"
+    - |
+      mkdir -p .git/workline/issues && cat > .git/workline/issues/4.md <<'IS'
+      ---
+      title: "Docs due at the next release"
+      state: open
+      labels: []
+      ---
+
+      - `docs/old.md` — due at release
+      IS
+  config: {forge: local}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  applied: [issue]
+  files:
+    .git/workline/issues/4.md: {contains: "`docs/product/sign-in.md` — docs/tech/auth.md#token-refresh changed", lacks: "docs/old.md"}
+    .git/workline/issues/5.md: {exists: false}
