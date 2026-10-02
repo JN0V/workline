@@ -1,5 +1,5 @@
 case: documentalist/gone-name-still-in-code-refused
-about: "A claim saying a name is gone from the code, while the code still has it, cites nothing: the line's removal is refused (`citation-unchecked`) (ADR-0014, step 2)."
+about: "A claim saying a name is gone from the code, while the code still has it, cites nothing: the line's removal is refused (`citation-unchecked`) (ADR-0014, step 2), the line left and reported, the doc recorded `judged` (ADR-0014, step 4)."
 given:
   repo: documented
   setup:
@@ -8,7 +8,8 @@ given:
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/drop-gone-line.sh"}
 expect:
-  status: block
-  applied: []
+  status: pass
+  agent-calls: 1
+  applied: [patch]
   findings: [{rule: citation-unchecked, where: docs/tech/auth.md, message: "`RefreshToken` is still in the code"}]
   files: {"docs/tech/auth.md": {contains: "RefreshToken"}}

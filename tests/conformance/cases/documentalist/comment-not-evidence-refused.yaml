@@ -1,11 +1,14 @@
 case: documentalist/comment-not-evidence-refused
-about: "A fix whose only cited source is a code comment is refused (`comment-not-evidence`): a stale comment won over the code's setting (workline #29). Here the comment says thirty minutes, the setting still one hour, and the agent follows the comment each time it is asked (ADR-0014, step 2)."
+about: "A fix whose only cited source is a code comment is refused (`comment-not-evidence`): a stale comment won over the code's setting (workline #29). Here the comment says thirty minutes, the setting still one hour: the place is left as it was, reported for a person, and the agent not asked again (ADR-0014, steps 2 and 4)."
 given:
   repo: documented
   setup: ["sed -i 's|// Tokens last one hour.|// Tokens last thirty minutes.|' src/auth/token.go && git commit -qam 'docs(auth): say how long tokens last'"]
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/follow-the-comment.sh stubborn"}
 expect:
-  status: block
-  applied: []
-  findings: [{rule: comment-not-evidence, where: docs/tech/auth.md, message: "src/auth/token.go:3"}]
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings:
+    - {rule: comment-not-evidence, where: docs/tech/auth.md, message: "src/auth/token.go:3"}
+    - {rule: comment-disagrees, where: src/auth/token.go, message: "src/auth/token.go:3"}
   files: {"docs/tech/auth.md": {contains: "one hour", lacks: "thirty"}}

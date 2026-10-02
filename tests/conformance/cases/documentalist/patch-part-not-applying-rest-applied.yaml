@@ -1,0 +1,16 @@
+case: documentalist/patch-part-not-applying-rest-applied
+about: "A patch git cannot apply whole, one hunk quoting a line the doc does not hold, is applied without that hunk: the place is reported with the line it misquotes, the rest applied, the doc recorded `judged`, and the agent not asked again (ADR-0014, step 4)."
+given:
+  repo: documented
+  setup:
+    - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how tokens are signed'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-part-misquoted.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  findings:
+    - {rule: patch-does-not-apply, where: docs/tech/auth.md, message: "quotes \"Tokens are signed with RS256.\""}
+    - {rule: suspect, where: docs/tech/auth.md, message: "applied in part"}
+  files: {"docs/tech/auth.md": {contains: "Tokens are signed with HS256.", lacks: "one hour"}}

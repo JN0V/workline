@@ -1,10 +1,12 @@
 case: documentalist/citation-not-a-source-refused
-about: "A claim quoting a file that is not among the doc's sources cites nothing: the fix is refused (`citation-unchecked`), saying which sources it may quote (ADR-0014, step 2)."
+about: "A claim quoting a file that is not among the doc's sources cites nothing: the place is refused (`citation-unchecked`), saying which sources it may quote (ADR-0014, step 2), and left as it was for a person; with nothing else in the fix, the doc is recorded `judged`, no agent asked again (ADR-0014, step 4)."
 given:
   repo: documented
   setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked cites-elsewhere"}
 expect:
-  status: block
-  applied: []
+  status: pass
+  agent-calls: 1
+  applied: [patch]
   findings: [{rule: citation-unchecked, where: docs/tech/auth.md, message: "not a file under the doc's sources"}]
+  files: {"docs/tech/auth.md": {contains: "one hour"}}

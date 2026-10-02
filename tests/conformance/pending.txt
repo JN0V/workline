@@ -1,2 +1,12 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+documentalist/checked-over-count-off-refused
+documentalist/checked-unread-refused
+documentalist/citation-not-a-source-refused
+documentalist/comment-disagrees-reported
+documentalist/comment-not-evidence-refused
+documentalist/count-line-fact-changed-refused
+documentalist/gone-name-still-in-code-refused
+documentalist/patch-part-not-applying-rest-applied
+documentalist/refused-place-reported-the-rest-applied
+documentalist/removal-uncited-refused
