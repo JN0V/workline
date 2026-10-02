@@ -133,7 +133,7 @@ func draw(o Options, res *Result) error {
 	}
 	res.From, res.To = base, tip
 	after := ""
-	if a := settings.Sample.After; a != "" {
+	if a := string(settings.Sample.After); a != "" {
 		if after, err = git(o.Repo, "rev-parse", "--verify", a+"^{commit}"); err != nil {
 			return fmt.Errorf("sample.after %s: not a commit of this clone", a)
 		}

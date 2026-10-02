@@ -1,0 +1,11 @@
+case: engine/config-number-not-as-written-refused
+about: An unquoted value of .workline/config.yaml that YAML reads as a number other than written (a commit `0123456`, octal to YAML) is refused, saying to quote it, instead of being read mangled.
+given:
+  repo: untidy
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      sample: {after: 0123456}\\n' > .workline/config.yaml"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: config-invalid, message: "quote it"}

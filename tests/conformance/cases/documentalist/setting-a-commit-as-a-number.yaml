@@ -1,0 +1,13 @@
+case: documentalist/setting-a-commit-as-a-number
+about: A commit written unquoted in the settings, all digits like 7515148, is a number to YAML; the role reads it as the commit it names instead of failing to load its settings.
+given:
+  repo: untidy
+  config: {roles: {documentalist: {settings: {sample: {after: 7515148}}}}}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: dead-link, where: docs/auth.md}
+  no-findings:
+    - {rule: engine-error}

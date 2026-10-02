@@ -132,6 +132,11 @@ workline:garden:apply:
 # the gardening vouches with Sonnet). What it found goes to one tracking
 # issue, a comment a week; a `checked` found false labels it
 # documentalist-step-0, and a merge request puts it back, for a person.
+# The week sampled is the last whole one; for another, set the variable
+# WORKLINE_SAMPLE_WEEK (2026-W40) on the schedule, then play it. A schedule's
+# variables need Settings > CI/CD > Variables, "Minimum role to use pipeline
+# variables", at Maintainer: no one, by default, on a new gitlab.com
+# project, and setting one is refused (403).
 # Needs a workline release with `workline sample`: the first after v0.2.1.
 .workline:sample:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
@@ -148,7 +153,7 @@ workline:sample:read:               # the agent reads; nothing is written
   script:
     - *claude
     - status=0
-    - workline sample --out sample.json || status=$?
+    - workline sample ${WORKLINE_SAMPLE_WEEK:+--week "$WORKLINE_SAMPLE_WEEK"} --out sample.json || status=$?
     - '[ "$status" != 1 ]'           # 2 and 3: for a person, on the issue
   artifacts:
     when: always

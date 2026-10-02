@@ -66,7 +66,38 @@ func CheckConfig(data []byte) error {
 	if len(doc.Content) == 0 {
 		return nil
 	}
-	return check(doc.Content[0], config, nil, nil)
+	if err := check(doc.Content[0], config, nil, nil); err != nil {
+		return err
+	}
+	return asWritten(doc.Content[0])
+}
+
+// asWritten refuses an unquoted value written as a commit is (hex digits)
+// that YAML reads as a number other than written: 0123456 (octal), 1234e56
+// (a float), forty digits (past an integer). Read as text, it would be a
+// commit mangled; quoted, it is the commit. A number YAML reads as written
+// (7515148) is let through: a setting holding a commit reads it as text.
+func asWritten(n *yaml.Node) error {
+	if n.Kind == yaml.ScalarNode {
+		if n.Style != 0 || !hexDigits(n.Value) || (n.ShortTag() != "!!int" && n.ShortTag() != "!!float") {
+			return nil
+		}
+		var v any
+		if err := n.Decode(&v); err == nil && fmt.Sprint(v) == n.Value {
+			return nil
+		}
+		return &ConfigError{fmt.Sprintf("line %d: %s reads as a number, not as written: quote it ('%s') if it is a commit or a text", n.Line, n.Value, n.Value)}
+	}
+	for _, c := range n.Content {
+		if err := asWritten(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func hexDigits(s string) bool {
+	return s != "" && strings.Trim(s, "0123456789abcdefABCDEF") == ""
 }
 
 func check(n *yaml.Node, s *shape, path, pattern []string) error {

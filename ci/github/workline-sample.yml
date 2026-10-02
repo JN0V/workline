@@ -16,6 +16,9 @@
 # provider's agent when there is one. With none, the sample is still drawn,
 # and its docs are listed on the issue for a person to read.
 #
+# The week sampled is the last whole one; for another, run the workflow by
+# hand (Actions > workline sample > Run workflow) with `week` (2026-W40).
+#
 # Two jobs, two trust zones, as for pull requests (workline.yml):
 #   read   draws the sample and has it read, with CLAUDE_CODE_OAUTH_TOKEN in
 #          the one step that needs it. It writes nothing.

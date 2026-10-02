@@ -23,10 +23,11 @@ repository without merge requests is built but untried for real.
 | A fix may grow a doc by a tenth; a refused doc left out, the others applied | DomoticsCore gardening (PR #106) |
 | `checked` after a squash or a rebase: the commit that brought it stands for it | fixture, by hand |
 | On each pull request in CI: Claude judges, the App commits the fix, checks rerun, the line skips its own commit | workline PR #10; DomoticsCore PR #108, a real bug-fix pull request |
-| Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109) |
+| Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109); gitlab.com JN0V/workline-sandbox, its schedule played (!3, issue #1) |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |
 | A fork's pull request: judged without secrets, its report commented from the repository's side, one comment kept (ci/github/workline-fork.yml) | JN0V/workline-sandbox #1, from jn0v-lab's fork |
 | On a GitLab merge request: Claude judges, the token commits the fix to its branch, the next pipeline skips the line's own commit | gitlab.com JN0V/workline-sandbox !1; a fork's merge request untried |
+| The weekly sample on GitLab: Opus reads a doc Sonnet vouched for, true, one comment on the tracking issue, none more on a rerun | gitlab.com JN0V/workline-sandbox #2 (v0.2.2); GitHub untried, a `checked` found false untried |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |
 | Staying on the task: a spec's example left as it is when the default it does not show changes | evaluation (`stays-on-the-task`, workline PR #10 replayed), 3 in 3 on Sonnet |
 
@@ -67,8 +68,12 @@ repository without merge requests is built but untried for real.
   unearned `checked`. Written, with no agent, to one tracking issue a
   comment a week; a false `checked` labels it `documentalist-step-0` and
   a merge request puts it back. In CI weekly (workline-sample.yml, the
-  GitLab template's second schedule); workline's read by Opus.
-  Conformance only (nine cases, fake readers); no real agent, no forge.
+  GitLab template's second schedule); workline's read by Opus. Tried on
+  GitLab (above); its three faults met since: a commit written unquoted
+  in `sample.after` failed every run (read now, or refused when YAML
+  would mangle it), the role GitLab asks to set a schedule's variables
+  (docs/ci.md), and the week chosen in CI (`WORKLINE_SAMPLE_WEEK`). The
+  rest conformance only (fake readers).
 - **Where it writes** (ADR-0016): on the project's forge, wherever it
   lives. `forge: local` keeps the comments, issues, labels, gardening's
   merge requests (local branches, nothing pushed), the sample's writes and
@@ -134,8 +139,8 @@ repository without merge requests is built but untried for real.
    holds of a fix is applied, the place refused reported (below, "After
    step 4 again"). Run a third time, **step 4 holds** (below): +5.7% a
    judged doc the first night, no re-ask; steps 0 to 2 accepted. The
-   weekly one-in-ten sample is built (above), not run yet. Next: the
-   release, then the sample's first weeks, watched on its issue.
+   weekly one-in-ten sample is built (above), tried on a GitLab sandbox,
+   not run on workline yet. Next: its first weeks, watched on its issue.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.

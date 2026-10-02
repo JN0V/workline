@@ -24,7 +24,27 @@ type SampleSettings struct {
 	AtLeast string `json:"at-least"` // provider, model or context (ADR-0005)
 	// After: a commit (a tag) before which nothing is sampled — the
 	// release whose engine earns `checked` (ADR-0014, step 0).
-	After string `json:"after"`
+	After Ref `json:"after"`
+}
+
+// Ref is a setting naming a commit or a tag. Written unquoted, a commit of
+// digits only (7515148) is a number to YAML: it is read as the text it is.
+// One YAML would read otherwise than written (0123456, octal) never gets
+// here: the config is refused, saying to quote it (role.CheckConfig).
+type Ref string
+
+func (r *Ref) UnmarshalJSON(data []byte) error {
+	text := string(data)
+	if text != "" && strings.Trim(text, "0123456789") == "" {
+		*r = Ref(text)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return fmt.Errorf("a commit or a tag, as text: %s", text)
+	}
+	*r = Ref(s)
+	return nil
 }
 
 // SettingsFrom reads the role's settings as the engine merged them.

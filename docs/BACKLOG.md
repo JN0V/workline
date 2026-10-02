@@ -248,9 +248,9 @@ last.
   the user adds the bot's pattern, or the committer allows the forge's own
   identities a project names (its App, `noreply@github.com`) by setting.
 - **The weekly sample, left** (ADR-0015, built 2026-10-02, conformance
-  only). Its first run for real, with Opus, and its issue and merge
-  request on GitHub; the GitLab jobs untried. The templates need the
-  release after v0.2.1. A judge of another provider, when there is one
+  only; tried on GitLab with v0.2.2, roles/documentalist/tried.md). Its
+  first run on GitHub; a `checked` found false on a forge, its label and
+  merge request. A judge of another provider, when there is one
   (`cmd:`). The sample's verdicts kept as a measure (results.tsv), and a
   read by a person recorded as one. Commits before `Workline-Model` name
   no model: their independence reads `unknown`. A week the job does not
@@ -261,7 +261,7 @@ last.
   conformance only). Gitea and Forgejo natively, as GitHub and GitLab are,
   once the command (ci/forgejo/workline-forge.sh) has run on a live
   instance — Codeberg first; only its label operation runs against a mock.
-  The weekly sample's GitLab jobs, untried. The doctor checks `gh` for
+  The doctor checks `gh` for
   GitHub only: a `cmd:` forge or `local` is not looked at, nor `local` in
   a CI the engine does not recognise.
 
