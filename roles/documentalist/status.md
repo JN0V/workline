@@ -6,7 +6,7 @@ is the summary to start from.
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests — docs judged on each one and gardened at night, by
-Claude in CI, from a release of workline (v0.1.1, docs/ci.md), fixes
+Claude in CI, from a release of workline (v0.2.1, docs/ci.md), fixes
 committed to the branch and reviewed on the forge. Beta: the catch-up of a
 large backlog in parts has run once on DomoticsCore, right but for a
 badge's link; a fix in parts once followed a stale code comment; a

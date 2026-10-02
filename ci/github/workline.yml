@@ -31,7 +31,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.2.0          # a release of workline: update it to take a newer one
+  WORKLINE_VERSION: v0.2.1          # a release of workline: update it to take a newer one
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
