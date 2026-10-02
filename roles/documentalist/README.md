@@ -1,7 +1,7 @@
 ---
 sources: [roles/documentalist/role.yaml]
 checked: d30d22a
-judged: 7132d0f
+judged: 0c0d214
 verified: agent:documentalist
 ---
 # Documentalist
