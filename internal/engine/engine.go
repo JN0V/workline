@@ -293,6 +293,7 @@ func run(o Options, res *Result) error {
 	tier, failures := r.Model.Tier, 0
 	var intents []intent.Intention
 	var v *verdict.Verdict
+	unreadAsked := false
 	for {
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
@@ -303,6 +304,22 @@ func run(o Options, res *Result) error {
 			res.Status, res.Summary = verdict.BlockedExternal, v.Summary
 			res.Findings = append(res.Findings, v.Findings...)
 			return nil
+		}
+		// An answer that could not be read is asked for again once, on the
+		// same tier, with what the reader said: nothing of it was judged or
+		// applied, and a quote left unescaped is a slip, not a refusal. The
+		// documentalist's post passes with no proposal, and such a doc was
+		// judged again, whole, the next night (DomoticsCore, ADR-0014 step 4).
+		if a.askedAgent && a.unread != "" && v.Status != verdict.Block && !unreadAsked && r.Model.PromoteAfter > 0 {
+			unreadAsked = true
+			fb := "- agent-invalid-output: " + a.unread + "\n\nNothing of that answer could be read: send it again as valid YAML (a string holding a double quote is written between single quotes, or its quotes escaped).\n"
+			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb), 0o644); err != nil {
+				return err
+			}
+			os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "unread-answer.txt"))
+			os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
+			os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
+			continue
 		}
 		if !a.askedAgent || v.Status != verdict.Block {
 			break
@@ -997,6 +1014,7 @@ type attemptResult struct {
 	findings   []verdict.Finding // why proposals were refused before judging
 	askedAgent bool
 	external   bool
+	unread     string // why the agent's answer could not be read, if it could not
 }
 
 // attempt asks the agent (when there is a question and an agent), merges the
@@ -1015,6 +1033,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 			a.external = true
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})
 		case errors.Is(err, agent.ErrInvalidOutput):
+			a.unread = err.Error()
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
 		default:
 			return nil, err
@@ -1022,6 +1041,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	}
 	intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err != nil {
+		a.unread = err.Error()
 		a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
 		intents = nil
 	}

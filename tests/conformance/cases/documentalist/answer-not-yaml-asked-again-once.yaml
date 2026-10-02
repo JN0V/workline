@@ -6,7 +6,7 @@ given:
 run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-yaml-broken.sh"}
 expect:
   status: pass
-  applied: [patch]
+  applied: [patch, note]
   agent-calls: 2
   no-findings: [{rule: agent-invalid-output}]
   files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}

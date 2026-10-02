@@ -132,6 +132,11 @@ func proposalsFrom(answer string) ([]byte, error) {
 	}
 	var list []map[string]any
 	if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
+		// What the reader says is kept: the agent is asked again with it.
+		why := "an empty list"
+		if err != nil {
+			why = err.Error()
+		}
 		lines := strings.Split(s, "\n")
 		first, last := -1, -1
 		for i, l := range lines {
@@ -143,12 +148,15 @@ func proposalsFrom(answer string) ([]byte, error) {
 			}
 		}
 		if first < 0 || last == first {
-			return nil, fmt.Errorf("expected a YAML list of proposals")
+			return nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
 		s = strings.TrimSpace(strings.Join(lines[first+1:last], "\n"))
 		list = nil
 		if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
-			return nil, fmt.Errorf("expected a YAML list of proposals")
+			if err != nil {
+				why = err.Error()
+			}
+			return nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
 	}
 	for i, m := range list {
