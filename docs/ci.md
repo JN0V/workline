@@ -1,6 +1,7 @@
 ---
 sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml]
 checked: 64eee70
+judged: a0f1e8a
 ---
 # Setting up workline in CI
 
