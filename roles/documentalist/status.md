@@ -69,6 +69,14 @@ repository without merge requests is built but untried for real.
   a merge request puts it back. In CI weekly (workline-sample.yml, the
   GitLab template's second schedule); workline's read by Opus.
   Conformance only (nine cases, fake readers); no real agent, no forge.
+- **Where it writes** (ADR-0016): on the project's forge, wherever it
+  lives. `forge: local` keeps the comments, issues, labels, gardening's
+  merge requests (local branches, nothing pushed), the sample's writes and
+  a release's notes in the clone (`.git/workline/`), read with `workline
+  issues`; `forge: cmd:<command>` plugs another forge by a JSON contract
+  (docs/spec/forge-command.md), with a sample for Forgejo and Gitea
+  (ci/forgejo/). Conformance only (fifteen cases, a fake command); the
+  Forgejo script run against a mock of its API, no live instance.
 - **Beyond our repositories** (docs/research/documentalist-genericity.md,
   fixes 1 to 3): a path that is not ASCII is read; changelogs, release
   notes and decision records are known by the names other projects give
