@@ -1,0 +1,15 @@
+case: documentalist/docstring-not-evidence-refused
+about: "A Python docstring is a comment, not the code: a fix citing a stale docstring over the code's setting is refused (`comment-not-evidence`), as #29's comment was in Go (docs/research/documentalist-genericity.md)."
+given:
+  repo: documented
+  setup:
+    - "git mv src/auth/token.go src/auth/token.py && printf '\"\"\"Authentication tokens.\"\"\"\\n\\nTOKEN_TTL = 3600\\n\\n\\ndef ttl():\\n    \"\"\"Tokens last one hour.\"\"\"\\n    return TOKEN_TTL\\n' > src/auth/token.py && sed -i 's|src/auth/token.go|src/auth/token.py|' docs/tech/auth.md && git add -A && git commit -qm 'refactor(auth): tokens in Python' && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs(auth): confirm against the Python'"
+    - "sed -i 's|Tokens last one hour.|Tokens last thirty minutes.|' src/auth/token.py && git commit -qam 'docs(auth): say how long tokens last'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/follow-the-comment.sh stubborn src/auth/token.py"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: comment-not-evidence, where: docs/tech/auth.md, message: "src/auth/token.py:7"}
+    - {rule: comment-disagrees, where: src/auth/token.py, message: "src/auth/token.py:7"}
+  files: {"docs/tech/auth.md": {contains: "one hour", lacks: "thirty"}}

@@ -227,11 +227,11 @@ func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, er
 		if strings.HasSuffix(p, ".md") {
 			continue
 		}
-		out, err := git(repo, "ls-tree", "-r", "--name-only", "HEAD", "--", p)
+		out, err := git(repo, "ls-tree", "-z", "-r", "--name-only", "HEAD", "--", p)
 		if err != nil {
 			return nil, "", err
 		}
-		for _, f := range strings.Split(out, "\n") {
+		for _, f := range pathList(out) {
 			if f != "" && !strings.HasSuffix(f, ".md") {
 				files = append(files, f)
 			}

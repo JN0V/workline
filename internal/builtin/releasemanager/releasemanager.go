@@ -276,7 +276,7 @@ func Post(runDir string) int {
 }
 
 func git(repo string, args ...string) (string, error) {
-	out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).Output()
+	out, err := exec.Command("git", append([]string{"-C", repo, "-c", "core.quotePath=off"}, args...)...).Output()
 	return strings.TrimSpace(string(out)), err
 }
 

@@ -251,6 +251,9 @@ type citeContext struct {
 	files map[string]bool // tracked in the repository
 	pl    *places
 	shown map[string]string // file -> content, read once
+	// unknownSaid are the file types whose comments the engine does not
+	// know, already reported this run: once a type.
+	unknownSaid map[string]bool
 }
 
 // evidence is what one claim shows: "" when it is evidence, else why not;
@@ -259,6 +262,10 @@ type citeCheck struct {
 	ok      bool
 	why     string
 	comment string // path:line of the comment its quote is in
+	// unknown is the type of the file its quote was found in, when the
+	// engine does not know how that type writes its comments: the quote
+	// is taken as code, and that said.
+	unknown, unknownPath string
 }
 
 // check reads one claim against the doc's sources: a quote outside any
@@ -304,6 +311,9 @@ func (cc *citeContext) check(c citeClaim, d *Doc, b citedBlock) citeCheck {
 			return citeCheck{why: fmt.Sprintf("%q is not in %s, as it is now", c.Source.Quote, p)}
 		case !inCodeToo:
 			return citeCheck{why: fmt.Sprintf("%q is a comment (%s:%d), not the code", c.Source.Quote, p, line), comment: fmt.Sprintf("%s:%d", p, line)}
+		}
+		if st, kind := styleOf(p, content); !st.known {
+			return citeCheck{ok: true, unknown: kind, unknownPath: p}
 		}
 		return citeCheck{ok: true}
 	}
@@ -437,6 +447,14 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 			any = true
 			r := cc.check(c, d, b)
 			if r.ok {
+				if r.unknown != "" && !cc.unknownSaid[r.unknown] {
+					if cc.unknownSaid == nil {
+						cc.unknownSaid = map[string]bool{}
+					}
+					cc.unknownSaid[r.unknown] = true
+					comments = append(comments, verdict.Finding{Rule: "comment-style-unknown", Where: r.unknownPath,
+						Message: fmt.Sprintf("the engine does not know how %s files write comments: a quote from %s, cited for %s %s, was taken as code; a comment there would pass as evidence: a person checks it", r.unknown, r.unknownPath, docPath, at.String())})
+				}
 				cited = true
 				break
 			}
@@ -536,135 +554,6 @@ func quoteIn(p, content, quote string) (found, code bool, line int) {
 		}
 		from = i + 1
 	}
-}
-
-// commentStyle is how a file writes its comments, by its name.
-type commentStyle struct {
-	line           []string // a line comment starts with one of these
-	block          [][2]string
-	hashAfterSpace bool // `#` starts a comment only at the start or after white space
-	backtick       bool // backticks quote, over several lines (Go, JavaScript)
-}
-
-func styleOf(p string) commentStyle {
-	base := strings.ToLower(path.Base(p))
-	ext := strings.TrimPrefix(path.Ext(base), ".")
-	cBlock := [][2]string{{"/*", "*/"}}
-	switch ext {
-	case "go", "js", "mjs", "cjs", "ts", "tsx", "jsx":
-		return commentStyle{line: []string{"//"}, block: cBlock, backtick: true}
-	case "c", "h", "cpp", "hpp", "cc", "cxx", "hh", "ino", "java", "kt", "kts", "rs", "swift", "cs", "scala", "dart", "proto", "groovy", "gradle":
-		return commentStyle{line: []string{"//"}, block: cBlock}
-	case "php":
-		return commentStyle{line: []string{"//", "#"}, block: cBlock}
-	case "css", "scss", "less":
-		return commentStyle{block: cBlock}
-	case "md", "markdown", "html", "htm", "xml", "svg", "vue":
-		return commentStyle{block: [][2]string{{"<!--", "-->"}}}
-	case "yaml", "yml", "sh", "bash", "zsh", "py", "rb", "toml", "cfg", "conf", "pl", "r", "mk", "cmake", "env", "properties", "dockerfile":
-		return commentStyle{line: []string{"#"}, hashAfterSpace: true}
-	case "ini":
-		return commentStyle{line: []string{"#", ";"}, hashAfterSpace: true}
-	case "tf", "hcl":
-		return commentStyle{line: []string{"#", "//"}, block: cBlock, hashAfterSpace: true}
-	}
-	switch {
-	case base == "makefile" || base == "dockerfile" || base == "cmakelists.txt" || strings.HasPrefix(base, ".git") || strings.HasPrefix(base, ".env"):
-		return commentStyle{line: []string{"#"}, hashAfterSpace: true}
-	}
-	return commentStyle{} // JSON, text: no comment
-}
-
-// commentMask says, for each byte of a file, whether it is in a comment,
-// by the file's type: `//` and `/* */`, `#`, `<!-- -->`. Strings are read
-// as strings: a `//` in a URL between quotes is no comment.
-func commentMask(p, content string) []bool {
-	st := styleOf(p)
-	mask := make([]bool, len(content))
-	mark := func(from, to int) {
-		for k := from; k < to && k < len(mask); k++ {
-			mask[k] = true
-		}
-	}
-	lineStart := true
-	for i := 0; i < len(content); {
-		c := content[i]
-		if c == '\n' {
-			lineStart = true
-			i++
-			continue
-		}
-		// A block comment.
-		opened := false
-		for _, b := range st.block {
-			if strings.HasPrefix(content[i:], b[0]) {
-				end := strings.Index(content[i+len(b[0]):], b[1])
-				stop := len(content)
-				if end >= 0 {
-					stop = i + len(b[0]) + end + len(b[1])
-				}
-				mark(i, stop)
-				i, opened = stop, true
-				break
-			}
-		}
-		if opened {
-			continue
-		}
-		// A line comment.
-		for _, l := range st.line {
-			if !strings.HasPrefix(content[i:], l) {
-				continue
-			}
-			if l == "#" && st.hashAfterSpace && !lineStart && i > 0 && !unicode.IsSpace(rune(content[i-1])) {
-				continue
-			}
-			end := strings.IndexByte(content[i:], '\n')
-			stop := len(content)
-			if end >= 0 {
-				stop = i + end
-			}
-			mark(i, stop)
-			i, opened = stop, true
-			break
-		}
-		if opened {
-			continue
-		}
-		// A string: skipped whole when it closes, on its line (or, for a
-		// backtick, anywhere); an apostrophe that closes nothing is a letter.
-		if len(st.line)+len(st.block) > 0 && (c == '"' || c == '\'' || c == '`' && st.backtick) {
-			if end := closing(content, i, c); end > 0 {
-				i, lineStart = end+1, false
-				continue
-			}
-		}
-		if !unicode.IsSpace(rune(c)) {
-			lineStart = false
-		}
-		i++
-	}
-	return mask
-}
-
-// closing finds where a string opened at i ends, or 0: on its line, a
-// backslash escaping, but for a backtick, which may span lines.
-func closing(content string, i int, q byte) int {
-	for j := i + 1; j < len(content); j++ {
-		switch content[j] {
-		case '\\':
-			if q != '`' {
-				j++
-			}
-		case '\n':
-			if q != '`' {
-				return 0
-			}
-		case q:
-			return j
-		}
-	}
-	return 0
 }
 
 // sortedFindings keeps the comment reports in one order, without repeats.

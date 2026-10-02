@@ -58,6 +58,11 @@ type Settings struct {
 	// caps the sources' share of a part, so that small sources still split.
 	PartsAlways bool `json:"parts-always"`
 	PartChars   int  `json:"part-chars"`
+	// History and Decisions: the project's globs of history docs and of
+	// decision records, added to the names the usual tools give them
+	// (records.go).
+	History   []string `json:"history"`
+	Decisions []string `json:"decisions"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -300,8 +305,8 @@ func commitFiles(dir, commit string) []changedFile {
 		return files
 	}
 	var files []changedFile
-	if out, err := git(dir, "diff-tree", "--no-commit-id", "--name-only", "-r", commit); err == nil && out != "" {
-		for _, f := range strings.Split(out, "\n") {
+	if out, err := git(dir, "diff-tree", "-z", "--no-commit-id", "--name-only", "-r", commit); err == nil && out != "" {
+		for _, f := range pathList(out) {
 			files = append(files, changedFile{path: f})
 		}
 	}
@@ -437,6 +442,7 @@ func Pre(runDir, repo string) int {
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
 		return fail(err)
 	}
+	useRecords(s)
 	tree, err := loadTree(repo, s.Docs)
 	if err != nil {
 		return fail(err)
@@ -1157,6 +1163,7 @@ func Post(runDir, repo string) int {
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
 		return fail(err)
 	}
+	useRecords(s)
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 	if err != nil {
 		return fail(err)
@@ -1368,11 +1375,11 @@ func hasPending(f []verdict.Finding, where string) bool {
 // tracked file.
 func loadTree(repo string, globs []string) (Tree, error) {
 	t := Tree{Docs: map[string]string{}, Files: map[string]bool{}}
-	files, err := git(repo, "ls-files")
+	files, err := git(repo, "ls-files", "-z")
 	if err != nil {
 		return t, err
 	}
-	for _, f := range strings.Split(files, "\n") {
+	for _, f := range pathList(files) {
 		if f == "" {
 			continue
 		}
@@ -1399,11 +1406,11 @@ func loadTree(repo string, globs []string) (Tree, error) {
 // trackedFiles lists the files the repository tracks.
 func trackedFiles(repo string) (map[string]bool, error) {
 	out := map[string]bool{}
-	files, err := git(repo, "ls-files")
+	files, err := git(repo, "ls-files", "-z")
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range strings.Split(files, "\n") {
+	for _, f := range pathList(files) {
 		if f != "" {
 			out[f] = true
 		}
@@ -1452,6 +1459,9 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 	touched = map[string]bool{}
 	commit := ""
 	for _, f := range strings.Split(out, "\n") {
+		if !strings.HasPrefix(f, "commit ") {
+			f = unquotePath(f)
+		}
 		switch {
 		case strings.HasPrefix(f, "commit "):
 			commit = strings.TrimPrefix(f, "commit ")
@@ -1486,7 +1496,7 @@ func addedFiles(runDir, repo string) (map[string]bool, error) {
 	added := map[string]bool{}
 	for _, f := range strings.Split(out, "\n") {
 		if f != "" {
-			added[f] = true
+			added[unquotePath(f)] = true
 		}
 	}
 	return added, nil
@@ -1623,13 +1633,38 @@ func matchAny(globs []string, path string) bool {
 
 func match(glob, path string) bool { return pathglob.Match(glob, path) }
 
+// pathList splits the paths git lists with -z, which it never quotes: a
+// path that is not ASCII, quoted, was not found and its doc skipped in
+// silence (docs/research/documentalist-genericity.md).
+func pathList(out string) []string {
+	var paths []string
+	for _, p := range strings.Split(out, "\x00") {
+		if p != "" {
+			paths = append(paths, p)
+		}
+	}
+	return paths
+}
+
+// unquotePath reads a path git listed one a line: with core.quotePath off
+// (every git call here), only a path holding a quote, a backslash or a
+// control character is still quoted, in C's way.
+func unquotePath(p string) string {
+	if len(p) > 1 && p[0] == '"' && p[len(p)-1] == '"' {
+		if u, err := strconv.Unquote(p); err == nil {
+			return u
+		}
+	}
+	return p
+}
+
 func git(dir string, args ...string) (string, error) {
 	return gitIn(dir, "", args...)
 }
 
 // gitIn runs git with stdin.
 func gitIn(dir, stdin string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := exec.Command("git", append([]string{"-C", dir, "-c", "core.quotePath=off"}, args...)...)
 	cmd.Stdin = strings.NewReader(stdin)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
@@ -1662,7 +1697,7 @@ func unifiedDiff(path, old, now string, context int) (string, error) {
 			return "", err
 		}
 	}
-	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "--no-color", fmt.Sprintf("-U%d", context), "a/"+path, "b/"+path)
+	cmd := exec.Command("git", "-c", "core.quotePath=off", "diff", "--no-index", "--no-prefix", "--no-color", fmt.Sprintf("-U%d", context), "a/"+path, "b/"+path)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if exit, ok := err.(*exec.ExitError); ok && exit.ExitCode() == 1 {

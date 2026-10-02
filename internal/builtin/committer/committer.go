@@ -221,8 +221,8 @@ func Pre(runDir, repo string) int {
 	if err := writeYAML(filepath.Join(runDir, "in", "findings.yaml"), findings); err != nil {
 		return fail(err)
 	}
-	stat, _ := exec.Command("git", "-C", repo, "diff", "--cached", "--stat").Output()
-	diff, _ := exec.Command("git", "-C", repo, "diff", "--cached", "--unified=2").Output()
+	stat, _ := exec.Command("git", "-C", repo, "-c", "core.quotePath=off", "diff", "--cached", "--stat").Output()
+	diff, _ := exec.Command("git", "-C", repo, "-c", "core.quotePath=off", "diff", "--cached", "--unified=2").Output()
 	var task strings.Builder
 	fmt.Fprintf(&task, "This commit message was refused:\n\n```\n%s\n```\n\nWhy:\n", msg)
 	for _, f := range findings {

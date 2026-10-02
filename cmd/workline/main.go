@@ -481,7 +481,7 @@ func prePushLine(root string, refs []hooks.Ref) int {
 			fmt.Fprintf(os.Stderr, "workline: %s\npush stopped; `git push --no-verify` skips workline\n", res.Summary)
 			return 1
 		case patched:
-			stat, _ := exec.Command("git", "-C", root, "diff", "--stat").Output()
+			stat, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--stat").Output()
 			fmt.Fprintf(os.Stderr, "workline: the documentalist updated docs in your working tree:\n%s", stat)
 			fmt.Fprintln(os.Stderr, "push stopped: review them (git diff), commit them, and push again")
 			return 1
@@ -519,7 +519,7 @@ func docsCmd(args []string) int {
 	}
 	if *reviewOnly {
 		// What an agent left in the working tree, or gardening run by hand.
-		changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
+		changed, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
 		docs := strings.Fields(string(changed))
 		tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 		switch {
@@ -602,7 +602,7 @@ func revParse(root, rev string) string {
 // says whether the docs are judged: the run passed, and every change it
 // made was reviewed, or there was none.
 func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
-	if dirty, _ := exec.Command("git", "-C", root, "status", "--porcelain", "--", "*.md").Output(); len(dirty) > 0 {
+	if dirty, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "status", "--porcelain", "--", "*.md").Output(); len(dirty) > 0 {
 		fmt.Fprintf(out, "workline: docs have changes not committed:\n%scommit or stash them first, so what the documentalist proposes is reviewed alone\n", dirty)
 		return false
 	}
@@ -643,7 +643,7 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 		// and those left for later rounds, were not judged.
 		fmt.Fprintf(out, "workline: %s — %s; the docs it was judging, and those after them, are not judged yet: run `workline docs` again\n", res.Status, res.Summary)
 	}
-	changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
+	changed, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
 	docs := strings.Fields(string(changed))
 	if len(docs) == 0 {
 		fmt.Fprintf(out, "workline: %s — no doc changed\n", res.Status)
@@ -657,7 +657,7 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 		fmt.Fprintln(out, "workline:", err)
 		return false
 	}
-	left, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
+	left, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "diff", "--name-only", "--", "*.md").Output()
 	return res.Status == verdict.Pass && waiting == 0 && len(strings.TrimSpace(string(left))) == 0
 }
 
@@ -1065,7 +1065,7 @@ func initCmd(args []string) int {
 	for _, n := range res.Notes {
 		fmt.Fprintf(os.Stderr, "  note from the agent: %s\n", strings.ReplaceAll(n, "\n", "\n    "))
 	}
-	if stat, _ := exec.Command("git", "-C", root, "status", "--short").Output(); len(stat) > 0 {
+	if stat, _ := exec.Command("git", "-C", root, "-c", "core.quotePath=off", "status", "--short").Output(); len(stat) > 0 {
 		fmt.Fprintf(os.Stderr, "\nIn your working tree:\n%s", stat)
 		fmt.Fprintln(os.Stderr, "Review it (git diff): commit what is right, restore what is not (git restore <file>).")
 	}

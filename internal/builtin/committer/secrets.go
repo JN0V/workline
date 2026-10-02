@@ -168,13 +168,13 @@ func commonList(repo string) string {
 // stagedTermList says whether the commit adds the repository's gitleaks
 // config, and whether that config is a private one.
 func stagedTermList(repo string) (staged, private bool) {
-	out, _ := exec.Command("git", "-C", repo, "diff", "--cached", "--name-only", "--diff-filter=ACMR", "--", termList).Output()
+	out, _ := exec.Command("git", "-C", repo, "-c", "core.quotePath=off", "diff", "--cached", "--name-only", "--diff-filter=ACMR", "--", termList).Output()
 	if strings.TrimSpace(string(out)) == "" {
 		return false, false
 	}
 	if exec.Command("git", "-C", repo, "check-ignore", "-q", "--no-index", "--", termList).Run() == nil {
 		return true, true
 	}
-	mode, _ := exec.Command("git", "-C", repo, "ls-files", "-s", "--", termList).Output()
+	mode, _ := exec.Command("git", "-C", repo, "-c", "core.quotePath=off", "ls-files", "-s", "--", termList).Output()
 	return true, strings.HasPrefix(string(mode), "120000")
 }

@@ -95,3 +95,33 @@ that does not parse stops the whole role.
 
 `count-off` needs no fix: it is quiet where docs state no counts, which is
 everywhere but agent-written docs.
+
+## After fixes 1 to 3
+
+Measured on the same copies, no agent, each mechanism from a throwaway
+Go test as before.
+
+- **Paths not ASCII**: the copy with `docs/déploiement.md` and
+  `docs/plain.md` reports both suspect.
+- **History**: backstage's docs taken as history go from 0 to 314: all
+  296 of `docs/releases/` (240 `-changelog.md`, 56 `v1.x.0.md`), the 17
+  of `architecture-decisions/` (16 numbered records and their
+  `index.md`), and `docs/.release-notes-template.md`, a template, the one
+  doc caught that is no record. Elsewhere: les-emplois
+  `CHANGELOG_breaking_changes.md`, pip's 12 `research-results/`; httpx,
+  prettier and ripgrep unchanged (their root CHANGELOG.md). Migration
+  guides are left out on purpose: they say how to move now.
+- **Decision records**: backstage's 16 are found, but none read as
+  superseded: it says so in its title (`ADR013: [superseded] …`) and a
+  `:::note[Superseded]` box, which no status reader knows. So
+  docs/tutorials/corporate-proxy.md, citing ADR013, is still not
+  reported: a status read from the title is still to do.
+- **Comments**: Python files with a docstring now read as comment: pip
+  490 of the 495 holding a triple-quoted string, httpx 39 of 39,
+  les-emplois 322 of 363 (the rest are strings given to a value, which
+  stay code); Django `{# #}` in all 109 les-emplois templates holding
+  one; `{{! }}` in 16 of backstage's 155 Handlebars files and 13 of
+  prettier's 92; every extensionless `#!` script by its interpreter
+  but two of prettier's. Types still unknown, now reported when quoted:
+  0.1% to 5% of the text files, mostly test data (les-emplois' 128
+  `.ambr` snapshots, prettier's `.prettierrc` and fixtures).

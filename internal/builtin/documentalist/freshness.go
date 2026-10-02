@@ -111,11 +111,11 @@ func sourcesNow(d *Doc, pl *places) (evidence []string, ok bool) {
 			}
 			continue
 		}
-		files, err := git(where.dir, "ls-tree", "-r", "--name-only", where.rev, "--", path)
+		files, err := git(where.dir, "ls-tree", "-z", "-r", "--name-only", where.rev, "--", path)
 		if err != nil || files == "" {
 			return nil, false
 		}
-		for _, f := range strings.Split(files, "\n") {
+		for _, f := range pathList(files) {
 			content, err := git(where.dir, "show", where.rev+":"+f)
 			if err != nil {
 				return nil, false

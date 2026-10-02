@@ -3,7 +3,6 @@ package documentalist
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -67,24 +66,6 @@ var (
 // belongs to on the same line: "`MQTT_impl.h` is the largest file at
 // approximately 557 lines" is 45; a listing's comment column, about 60.
 const countReach = 80
-
-// isHistory says whether a doc records what was true when written — a
-// changelog, a decision record, a tried or research record — where an old
-// count or version is the record, not a mistake.
-func isHistory(p string) bool {
-	base := strings.ToLower(path.Base(p))
-	stem := strings.TrimSuffix(base, path.Ext(base))
-	switch stem {
-	case "changelog", "changes", "history", "news", "release-notes", "releasenotes", "tried":
-		return true
-	}
-	for _, dir := range strings.Split(path.Dir(p), "/") {
-		if adrFolders[dir] || dir == "research" {
-			return true
-		}
-	}
-	return false
-}
 
 // sourceFiles lists the tracked files a doc's sources cover, in this
 // repository: a file named, or every file under a folder named.
