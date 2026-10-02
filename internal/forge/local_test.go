@@ -11,6 +11,9 @@ import (
 // The local forge keeps what a forge would: an issue, its comments in place
 // by their marker, its labels, read back as written, in .git/workline.
 func TestLocalRoundTrip(t *testing.T) {
+	for _, v := range []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI"} {
+		t.Setenv(v, "") // in CI, the local forge refuses writes
+	}
 	repo := t.TempDir()
 	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
 		t.Fatal(string(out))
