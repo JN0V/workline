@@ -652,3 +652,16 @@ On 2026-09-27, on workline's own repository:
   (check_versions.py's `check_properties_vs_root`; library.properties'
   dependencies). 3.56M tokens (WaterMeter 0.37M, workline 1.51M,
   DomoticsCore 1.67M).
+- After step 4 the third time (2026-10-02, no agent; the engine after
+  1b4757c against d890be5, the same code but for three fixes): step 4's 64
+  answers on DomoticsCore, workline and WaterMeter (`out/agent-answer.txt`)
+  judged again by `post`'s judge, each on a worktree at the commit it was
+  judged at. Five places withheld then are applied now, every one right and
+  cited: HeapTracker's pitfall (run 1; its claim named no `doc`, now read
+  for core, the only doc whose patch it fits), core's two counts (run 3; a
+  hunk ending on "`IIComponent` placeholder", now placed by its removed
+  lines), index's footer version (run 4 and once more; a blank line
+  skipped), and a README line in parts (run 3; a context line indented
+  wrong; check_versions.py checks a tag whenever one is supplied). Nothing
+  else changed. The reviewed bot fixes replayed: verdicts identical to
+  before.

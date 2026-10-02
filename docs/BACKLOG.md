@@ -74,13 +74,12 @@ steps 0 to 2 are accepted**. **Next**: the release — the person merges
 #35 and this branch (fix/partial-settled-by-another), then a tag; then
 DomoticsCore's pin bumped to it and its branch docs/undo-unearned-checked
 (16 `checked` put back) pushed for review; then the weekly one-in-ten
-sample of the docs vouched for (ADR-0014, Amendment for who reads). To
-watch on the next runs: a misquoted hunk withheld with a right fix in it
-(core's counts, index's footer version: once each in five runs, where a
-re-ask had mended 3 in 4); a right claim naming no `doc` in a two-doc
-answer, unread, and refused as "no claim"; an answer whose YAML breaks,
-reported (`agent-invalid-output`) but not asked again, the doc judged
-again the next night. DomoticsCore: branch docs/narrow-wide-sources (two
+sample of the docs vouched for (ADR-0014, Amendment for who reads). Those three losses are met
+since, conformance and replay only (status.md, "after step 4 the third
+time"; measured at d890be5, the fixes after it only recover right fixes,
+refusing nothing new): a claim with no `doc` read for the one doc it
+fits, else reported; a misquoted hunk placed where it can only go; an
+answer whose YAML breaks asked again once. To watch on the next runs. DomoticsCore: branch docs/narrow-wide-sources (two
 docs narrowed) waits, not pushed; its main runs workline v0.1.1.
 The night's gardening, on DomoticsCore and on workline: record it in
 tried.md, against the review. Sandboxes for trying CI for real:

@@ -285,3 +285,23 @@ hunks that carried right fixes — core's two counts, index's footer
 version — now a person's, where a re-ask had mended 3 in 4. To watch:
 those losses, and an answer whose YAML breaks (one night in 65), which
 is reported but not asked again, the doc judged again the next night.
+
+After step 4 the third time (conformance and replay only, no agent run on
+them): those three losses are met. **Step 4 was measured at d890be5,
+before them**; these fixes only recover right fixes that were refused,
+they refuse nothing new. A claim with no `doc:` in an answer patching
+several docs is read for the only doc whose patch changes its lines with
+its quote under that doc's sources (or its name in the lines removed);
+one that could stand for none or several is reported
+(`claim-unattributed`), the place refused saying a claim was given
+without `doc:`, and the task says each claim names its doc. A hunk
+misquoting is mended where its place is beyond doubt: context differing
+by blank lines alone, fitting the doc at one place only; else each run
+of changed lines placed by the lines it removes, found once — never
+where in doubt. An answer that is not valid YAML is asked again once, on
+the same tier, with the reader's error. Replayed: the reviewed bot fixes
+give the same verdicts as before (the three wrong refused, 11 of 12
+right pass); step 4's 64 answers judged again, the only change five
+places now applied, each right and cited — HeapTracker's pitfall, core's
+two counts, index's footer version (twice), and a README line in parts
+(check_versions.py checks a tag whenever one is supplied).
