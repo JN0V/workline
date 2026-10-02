@@ -87,14 +87,14 @@ comment | sticky)
 	;;
 label)
 	n=$(arg .target.id)
-	ids=''
-	for l in $(arg '.add[]'); do ids="$ids $(label_id "$l")"; done
+	# One name a line, read whole: a label's name may hold spaces.
+	ids=$(arg '(.add // [])[]' | while IFS= read -r l; do label_id "$l" && echo; done)
 	if [ -n "$ids" ]; then
-		api POST "/issues/$n/labels" "$(printf '%s' "$ids" | jq -Rc 'split(" ") | map(select(. != "") | tonumber) | {labels: .}')" >/dev/null
+		api POST "/issues/$n/labels" "$(printf '%s' "$ids" | jq -Rsc 'split("\n") | map(select(. != "") | tonumber) | {labels: .}')" >/dev/null
 	fi
-	for l in $(arg '.remove[]'); do
+	arg '(.remove // [])[]' | while IFS= read -r l; do
 		id=$(api GET "/issues/$n/labels" | jq -r --arg n "$l" 'map(select(.name == $n)) | .[0].id // empty')
-		[ -n "$id" ] && api DELETE "/issues/$n/labels/$id" >/dev/null
+		if [ -n "$id" ]; then api DELETE "/issues/$n/labels/$id" >/dev/null; fi
 	done
 	echo '{}'
 	;;
