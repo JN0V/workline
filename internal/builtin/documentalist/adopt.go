@@ -36,6 +36,13 @@ func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[stri
 	sort.Strings(paths)
 	var findings []verdict.Finding
 	last := map[string]string{}
+	// With no agent to propose them, the sources a name gives (byname.go).
+	var code map[string][]string
+	proposing := os.Getenv("WORKLINE_AI") == "none"
+	if proposing {
+		code = codeByName(t.Files, globs)
+	}
+	matched := 0
 	for _, p := range paths {
 		c, err := git(repo, "log", "-1", "--format=%H", "--", p)
 		if err != nil {
@@ -45,8 +52,16 @@ func noSources(repo string, t Tree, globs []string) ([]verdict.Finding, map[stri
 			continue // not committed yet: nothing to date it by
 		}
 		last[p] = c
-		findings = append(findings, verdict.Finding{Rule: "no-sources", Where: p,
-			Message: fmt.Sprintf("declares no sources, so it is never found suspect: name the code it describes in its header, `sources: [...]` with `checked: %s`, the commit that last changed it; or `sources: []` if it describes no code", c[:7])})
+		msg := fmt.Sprintf("declares no sources, so it is never found suspect: name the code it describes in its header, `sources: [...]` with `checked: %s`, the commit that last changed it; or `sources: []` if it describes no code", c[:7])
+		if srcs := byName(p, code); proposing && len(srcs) > 0 {
+			matched++
+			msg += fmt.Sprintf("; proposed by name, for you to review: `sources: [%s]`", strings.Join(srcs, ", "))
+		}
+		findings = append(findings, verdict.Finding{Rule: "no-sources", Where: p, Message: msg})
+	}
+	if proposing && len(findings) > 0 {
+		findings = append(findings, verdict.Finding{Rule: "sources-by-name",
+			Message: fmt.Sprintf("%d of %d docs declaring no sources match a code folder or file by name: each proposal is in the doc's no-sources finding, for a person to review, and none is written; the others need a person, or an agent (`workline init --ai <agent>`)", matched, len(findings))})
 	}
 	return findings, last, nil
 }

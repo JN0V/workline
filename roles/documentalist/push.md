@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go]
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -49,7 +49,14 @@ request) rather than vouched for unread. The judge refuses a patch touching
 more than the header, a source the repository does not hold, or another
 `checked`. The patches land in the working tree for the person to review and
 commit. Without an agent, each doc is listed (`no-sources`) with the commit
-its `checked` would name.
+its `checked` would name, and, when its name or a folder holding it up to
+`docs/` is a code folder's or file's, those sources proposed — the
+shallowest, tests aside, `docs/cli.md` → `src/cli/` — for the person to
+review: never written. One finding (`sources-by-name`) says how many docs
+matched: on six public repositories, 0 to 5 of 5 to 30 docs, and 261 of
+backstage's 452, about half of them right (docs named after its plugins
+and packages; `faq.md` under `features/` matched a `features/` folder far
+away).
 
 ## Without AI
 

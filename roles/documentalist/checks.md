@@ -111,7 +111,7 @@ Not built yet: style (vale).
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `count-off`, `value-left` (after a fix, the judge), `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone`, `docs-not-read`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `count-off`, `value-left` (after a fix, the judge), `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` and `sources-by-name` (on `init`), `undocumented`, `source-gone`, `docs-not-read`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |
