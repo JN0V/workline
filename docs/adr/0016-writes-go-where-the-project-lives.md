@@ -41,14 +41,22 @@ in a repository's refs — more than workline needs, and a tool to install.
   `--open-merge-request`, the tracking issues, the sample's `--apply`, the
   release, `workline item ready --forge local`, and `workline docs`
   through the engine.
+- **`local` in CI refuses its writes** — when `CI`, `GITHUB_ACTIONS` or
+  `GITLAB_CI` is set: the job's clone is thrown away, and what it would
+  hold with it. Refused, not warned: a warning in a green job's log is read
+  by no one, and the write is lost all the same (principle 12). Only the
+  writes: a project whose config says `local` for its laptops still runs in
+  CI what writes nothing, and passes `--forge` to the jobs that write.
 - **`forge: cmd:<command>`** plugs any other forge: one JSON request per
   operation on the command's input, one JSON answer on its output, an exit
   other than 0 the forge unreachable (docs/spec/forge-command.md). Git stays
   the engine's: it pushes the branches, the command does what is the
   forge's. A sample for Forgejo and Gitea is in ci/forgejo/.
 - **`none` stays "no forge"**, and the default. A write that needs a forge
-  is refused, loud, naming `forge: local`; the issue a role opens still
-  goes to `.workline/issues/`, as before. `none` is not made an alias of
+  is refused, loud, naming `forge: local` — the issue a role opens too,
+  which went to `.workline/issues/` in the working tree before: work state
+  is never committed, so it goes to a forge, or `local`, or nowhere.
+  `none` is not made an alias of
   `local`: the default would then start keeping state in every clone
   unasked, and in CI — where a clone is thrown away after the job — a
   write refused today would pass silently into a folder no one reads
@@ -60,10 +68,9 @@ in a repository's refs — more than workline needs, and a tool to install.
   for a forge not spoken natively, or its own clone.
 - What the local forge holds is the clone's alone: not shared, not backed
   up, gone with the clone. A team shares a forge.
-- `local` in CI is a mistake the engine does not catch yet: its writes go
-  to a clone the job throws away. ci.md says so.
-- The `.workline/issues/` fallback of `none` remains, committed if the
-  person adds it; folding it into `local` would change what `none` writes,
-  and is left for a later decision (docs/BACKLOG.md).
+- A project that relied on `.workline/issues/` sets `forge: local`, or its
+  forge; the files already there are left to the person to move or delete.
+- `local` in CI is caught by the variables CI sets; a CI that sets none of
+  them is not.
 - Native Gitea and Forgejo support, and the GitLab side of the sample, are
   not built or not tried (docs/BACKLOG.md).

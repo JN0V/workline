@@ -121,8 +121,7 @@ and links the line reports on every run are only counted. `git push
 | `.workline/config.yaml` | the project's settings, below |
 | `.workline/roles/<role>/<facet>` | a facet replacing the shipped one (`policy.md`, `instruction.md`…) |
 | `.workline/work/<id>.md` | a work item, without a forge |
-| `.workline/issues/` | the issues roles open, with no forge (`none`) |
-| `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels in its front matter, then its body and comments — never committed; `workline issues` reads them |
+| `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels in its front matter, then its body and comments — never committed; `workline issues` reads them. With no forge (`none`), an issue a role opens is refused, as every write that needs a forge; in CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes |
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
 | `.git/workline/releases/<tag>.md` | `forge: local`: a release's notes |
 | `.workline/off` | empty: the global hook skips this repository |
