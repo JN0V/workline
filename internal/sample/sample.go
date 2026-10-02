@@ -132,7 +132,14 @@ func draw(o Options, res *Result) error {
 		res.Window = fmt.Sprintf("reaching %s from %s to %s", branchName(o.Repo), from.Format("2006-01-02"), to.Add(-time.Second).Format("2006-01-02"))
 	}
 	res.From, res.To = base, tip
-	cands, err := vouched(o.Repo, settings, base, tip)
+	after := ""
+	if a := settings.Sample.After; a != "" {
+		if after, err = git(o.Repo, "rev-parse", "--verify", a+"^{commit}"); err != nil {
+			return fmt.Errorf("sample.after %s: not a commit of this clone", a)
+		}
+		res.Window += fmt.Sprintf(", after %s", a)
+	}
+	cands, err := vouched(o.Repo, settings, base, tip, after)
 	if err != nil {
 		return err
 	}
@@ -246,16 +253,18 @@ func window(repo string, from, to time.Time) (base, tip string, err error) {
 // vouched lists the `checked` the documentalist moved in base..tip, newest
 // first, one per doc and value: a commit carrying its Workline-Role (its own,
 // or squashed into another's message), or setting `verified:
-// agent:documentalist` on the doc.
-func vouched(repo string, s documentalist.Settings, base, tip string) ([]candidate, error) {
+// agent:documentalist` on the doc. Nothing after reaches is drawn.
+func vouched(repo string, s documentalist.Settings, base, tip, after string) ([]candidate, error) {
 	if tip == "" || tip == base {
 		return nil, nil
 	}
-	rng := tip
-	if base != "" {
-		rng = base + ".." + tip
+	args := []string{"rev-list", "--no-merges", tip}
+	for _, not := range []string{base, after} {
+		if not != "" {
+			args = append(args, "^"+not)
+		}
 	}
-	list, err := git(repo, "rev-list", "--no-merges", rng)
+	list, err := git(repo, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -22,6 +22,9 @@ import (
 type SampleSettings struct {
 	Judge   string `json:"judge"`    // an --ai value: claude:opus, cmd:…
 	AtLeast string `json:"at-least"` // provider, model or context (ADR-0005)
+	// After: a commit (a tag) before which nothing is sampled — the
+	// release whose engine earns `checked` (ADR-0014, step 0).
+	After string `json:"after"`
 }
 
 // SettingsFrom reads the role's settings as the engine merged them.

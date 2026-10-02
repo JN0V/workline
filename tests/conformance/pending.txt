@@ -1,5 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 
-# Read only what was vouched for after a commit: sample.after.
-documentalist/sample-after-a-commit
