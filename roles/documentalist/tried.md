@@ -665,3 +665,21 @@ On 2026-09-27, on workline's own repository:
   wrong; check_versions.py checks a tag whenever one is supplied). Nothing
   else changed. The reviewed bot fixes replayed: verdicts identical to
   before.
+- workline's own gardening, first fired by its schedule (2026-10-02, run
+  36984244904; the engine built from main at a0f1e8a, ADR-0014 in, the
+  genericity fixes not yet). Due at 02:17 UTC, it started at 08:28: 6 h 11
+  late, as DomoticsCore's on 2026-10-01 (02:00 → 08:17); a probe scheduled
+  every five minutes went hours without firing. One doc judged, whole:
+  docs/ci.md, its five sources 26.5k characters, over the 20k cap, so only
+  the templates' diffs were shown (WORKLINE_VERSION v0.1.0 → v0.2.0).
+  Sonnet 5.5 at medium effort, one call, 6.8k tokens in, 0.8k out, 7.9 s;
+  the whole run 70 s. No refusal. Its answer, right: the doc still true,
+  `checked` left, `judged: a0f1e8a` set, a note naming the sources it did
+  not see — pull request #42, one line. Read against the code at a0f1e8a:
+  every claim of the doc holds; its `checked: 64eee70` is in no history
+  (the v0.1.0 rewrite) and was anchored, as designed, to d5b8059, which
+  wrote it. 52 findings on 13 other docs waited "to be judged in parts in
+  a later round", as on DomoticsCore: a CI run has one round, and a round
+  judging docs whole asks no parts. Two docs held as judged, not vouched
+  for (routing.md, the role README). The finding said "what the agent found
+  wrong is fixed" where it found nothing wrong: the wording misleads.
