@@ -55,7 +55,7 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	res.Status, res.Applied, res.Refused, res.Calls, res.AgentCalls = verdict.Pass, []string{}, []string{}, nil, 0
 	res.Findings = nil
 	if f == nil {
-		return failed(res, errors.New("a forge is needed (--forge github, gitlab)"))
+		return failed(res, errors.New("no forge to write to; "+forge.Missing))
 	}
 	falseOnes, standing, moved := []Read{}, []Read{}, []Read{}
 	for _, r := range res.Reads {
