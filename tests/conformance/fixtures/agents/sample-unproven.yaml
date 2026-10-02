@@ -1,10 +1,10 @@
 # The weekly sample's reader cites a comment, and a quote no source holds:
 # neither proves a passage false.
 - claim:
-    passage: "Tokens are signed with HS256."
+    quote: "Tokens are signed with HS256."
     status: contradicted
     source: {path: src/auth/token.go, quote: "Signed with RS256."}
 - claim:
-    passage: "Access tokens last one hour."
+    quote: "Access tokens last one hour."
     status: contradicted
     source: {path: src/auth/token.go, quote: "const TokenTTL = 9999"}

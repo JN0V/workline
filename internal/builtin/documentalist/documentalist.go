@@ -76,6 +76,9 @@ type Settings struct {
 	// WholeChars caps the characters a doc's sources may take to be judged
 	// whole; past it, a person judges the doc, or it is judged in parts.
 	WholeChars int `json:"whole-chars"`
+	// Sample: who reads the weekly sample of the docs vouched for
+	// (ADR-0014, step 4; workline sample).
+	Sample SampleSettings `json:"sample"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -378,6 +381,9 @@ type places struct {
 
 func (p *places) get(name string) (place, error) {
 	if name == "" {
+		if pl, ok := p.known[""]; ok { // this repository read at another revision
+			return pl, nil
+		}
 		return place{p.repo, "HEAD"}, nil
 	}
 	if pl, ok := p.known[name]; ok {

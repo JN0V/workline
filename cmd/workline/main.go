@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
@@ -43,8 +44,10 @@ import (
 	"github.com/JN0V/workline/internal/line"
 	wlreport "github.com/JN0V/workline/internal/report"
 	"github.com/JN0V/workline/internal/review"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/sample"
 	"github.com/JN0V/workline/internal/setup"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
@@ -83,6 +86,8 @@ func main() {
 		os.Exit(setupCmd(os.Args[2:]))
 	case "docs":
 		os.Exit(docsCmd(os.Args[2:]))
+	case "sample":
+		os.Exit(sampleCmd(os.Args[2:]))
 	}
 	usage()
 }
@@ -561,6 +566,64 @@ func docsCmd(args []string) int {
 		}
 	}
 	return 0
+}
+
+// sampleCmd draws the week's sample of the docs the documentalist vouched
+// for and has it read (ADR-0014, step 4), writing nothing; with --apply, it
+// writes what a sample found to the forge, with no agent.
+func sampleCmd(args []string) int {
+	fs := flag.NewFlagSet("sample", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
+	week := fs.String("week", "", "the ISO week sampled, 2026-W40 (default: the last whole week)")
+	since := fs.String("since", "", "sample what was vouched for after this commit, up to HEAD, instead of a week")
+	judgeSpec := fs.String("judge", "", "the agent reading the sample: claude:opus, cmd:… (default: WORKLINE_JUDGE, then the documentalist's `sample.judge` setting)")
+	out := fs.String("out", "", "also write the result to this file, for --apply")
+	apply := fs.String("apply", "", "write the result in this file to the forge: the tracking issue, and a merge request putting back a false `checked`")
+	forgeSpec := fs.String("forge", "", "with --apply: github, gitlab, fake:<file> (default: the project's `forge` setting)")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	_ = fs.Parse(args)
+	root, err := gitRoot(*repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+		return 64
+	}
+	var res *sample.Result
+	if *apply != "" {
+		spec := *forgeSpec
+		if spec == "" {
+			if cfg, err := role.LoadProjectConfig(root); err == nil {
+				spec = cfg.Forge
+			}
+		}
+		f, err := forge.Open(spec, root)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 64
+		}
+		res = sample.Apply(*apply, root, f)
+	} else {
+		rolesDir, err := resolveRoles(*roles)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		res = sample.Draw(sample.Options{Repo: root, RolesDir: rolesDir, Week: *week, Since: *since, Judge: *judgeSpec, Now: time.Now()})
+		if *out != "" {
+			data, _ := json.MarshalIndent(res, "", "  ")
+			if err := os.WriteFile(*out, append(data, '\n'), 0o644); err != nil {
+				fmt.Fprintln(os.Stderr, "workline:", err)
+				return 1
+			}
+		}
+	}
+	if *asJSON {
+		data, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(data))
+	} else {
+		report(&engine.Result{Status: res.Status, Summary: res.Summary, Findings: res.Findings, AgentCalls: res.AgentCalls, Calls: res.Calls, Applied: res.Applied})
+	}
+	return exitFor(res.Status)
 }
 
 // docsJudgedRef is where `workline docs` records the commit the docs were

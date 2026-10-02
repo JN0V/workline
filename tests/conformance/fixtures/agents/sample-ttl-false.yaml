@@ -1,6 +1,6 @@
 # The weekly sample's reader finds the token lifetime false, quoting the code.
 - claim:
-    passage: "Access tokens last one hour."
+    quote: "Access tokens last one hour."
     status: contradicted
     source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}
 - note: "false: the code gives tokens two hours"
