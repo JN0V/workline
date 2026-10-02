@@ -1471,8 +1471,8 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		body += fmt.Sprintf("\n\nOpened by the %s role.", a.role)
-		if a.forge == nil {
-			return a.localIssue(title, body)
+		if err := a.needForge("issue"); err != nil {
+			return err
 		}
 		_, err := a.forge.OpenIssue(title, body, a.marker())
 		return err
@@ -1582,28 +1582,6 @@ func (a *applier) publish(version, notes string) error {
 		return nil
 	}
 	return a.forge.Release(version, notes)
-}
-
-// localIssue records an issue in .workline/issues/ for a project without a forge.
-func (a *applier) localIssue(title, body string) error {
-	dir := filepath.Join(a.repo, ".workline", "issues")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	var slug strings.Builder
-	for _, r := range strings.ToLower(title) {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			slug.WriteRune(r)
-		case slug.Len() > 0 && !strings.HasSuffix(slug.String(), "-"):
-			slug.WriteRune('-')
-		}
-	}
-	path := filepath.Join(dir, strings.Trim(slug.String(), "-")+".md")
-	if _, err := os.Stat(path); err == nil {
-		return nil // already reported
-	}
-	return os.WriteFile(path, []byte("# "+title+"\n\n"+body+"\n"), 0o644)
 }
 
 func strs(v any) []string {
