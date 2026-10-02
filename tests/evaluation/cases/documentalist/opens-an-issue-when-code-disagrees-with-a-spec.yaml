@@ -1,9 +1,9 @@
 case: documentalist/opens-an-issue-when-code-disagrees-with-a-spec
-about: The code changed what a doc the code follows (truth.doc) says; the doc is not rewritten, only checked again, and the disagreement goes to an issue.
+about: The code changed what a doc the code follows (truth.doc) says; the doc is not rewritten, only checked again, and the disagreement goes to an issue — on the local forge, kept in the clone.
 given:
   repo: documented
   setup:
-    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: the tech docs lead'"
+    - "mkdir -p .workline && printf 'forge: local\\nroles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: the tech docs lead'"
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
 run: {role: documentalist, event: merge-request}
 grade:
@@ -11,4 +11,4 @@ grade:
   - {agent-calls-max: 1}
   - {body-unchanged: docs/tech/auth.md}
   - {checked-is-head: docs/tech/auth.md}
-  - {file-contains: {.workline/issues/the-code-disagrees-with-docs-tech-auth-md.md: "7200"}}
+  - {file-contains: {.git/workline/issues/1.md: "7200"}}
