@@ -80,6 +80,7 @@ type caseFile struct {
 		Setup   []string          `yaml:"setup"`   // workline setup, with these options
 		Sample  []string          `yaml:"sample"`  // workline sample, with these options; then: apply writes what it found
 		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
+		Forge   string            `yaml:"forge"`   // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 	} `yaml:"run"`
 	Expect struct {
 		Status      string                       `yaml:"status"`
@@ -94,13 +95,15 @@ type caseFile struct {
 		Forge       map[string]any               `yaml:"forge"`
 		Steps       []string                     `yaml:"steps"`
 		Calls       []map[string]string          `yaml:"calls"`
-		SARIF       []map[string]any             `yaml:"sarif"`        // results, by rule, uri, line, level
-		CodeQuality []map[string]any             `yaml:"code-quality"` // issues, by check_name, path, line, severity
-		LeftOut     []string                     `yaml:"left-out"`     // wheres found in neither report
-		Notes       []string                     `yaml:"notes"`        // texts the agent's notes hold
-		RefusedKept int                          `yaml:"refused-kept"` // refused answers kept in the run folders
-		CallsKept   int                          `yaml:"calls-kept"`   // agent calls recorded in the run folders
-		RunFiles    map[string]map[string]string `yaml:"run-files"`    // a file of the run folder -> a text it holds
+		SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
+		CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
+		LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
+		Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
+		RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
+		CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
+		RunFiles    map[string]map[string]string `yaml:"run-files"`     // a file of the run folder -> a text it holds
+		Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
+		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
 	} `yaml:"expect"`
 }
 
@@ -194,6 +197,13 @@ func runCase(t *testing.T, c *caseFile) []string {
 		data, _ := json.Marshal(c.Given.Forge)
 		os.WriteFile(forgeFile, data, 0o644)
 	}
+	forgeSpec := ""
+	if forgeFile != "" {
+		forgeSpec = "fake:" + forgeFile
+	}
+	if c.Run.Forge != "" {
+		forgeSpec = c.Run.Forge
+	}
 	roles, _ := filepath.Abs("../../roles")
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
 	switch {
@@ -216,8 +226,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 	case c.Run.Route == "ready" && c.Run.Item != 0:
 		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}
-		if forgeFile != "" {
-			args = append(args, "--forge", "fake:"+forgeFile)
+		if forgeSpec != "" {
+			args = append(args, "--forge", forgeSpec)
 		}
 	case c.Run.Route != "":
 		args = []string{"route", c.Run.Route, "--repo", repo, "--roles", roles, "--json"}
@@ -233,8 +243,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for k, v := range c.Run.Input {
 		args = append(args, "--input", k+"="+v)
 	}
-	if forgeFile != "" && c.Run.Item == 0 && c.Run.Sample == nil {
-		args = append(args, "--forge", "fake:"+forgeFile)
+	if forgeSpec != "" && c.Run.Item == 0 && c.Run.Sample == nil {
+		args = append(args, "--forge", forgeSpec)
 	}
 	for kind, id := range c.Run.Target {
 		args = append(args, "--target", fmt.Sprintf("%s:%d", kind, id))
@@ -317,7 +327,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Run.Sample != nil && c.Run.Then == "apply" {
 		// The write, as CI's job holding the forge's token and no AI key.
-		apply := exec.Command(engineBin, "sample", "--apply", filepath.Join(work, "sample.json"), "--repo", repo, "--forge", "fake:"+forgeFile, "--json")
+		apply := exec.Command(engineBin, "sample", "--apply", filepath.Join(work, "sample.json"), "--repo", repo, "--forge", forgeSpec, "--json")
 		apply.Dir, apply.Env = repo, cmd.Env
 		stdout.Reset()
 		apply.Stdout, apply.Stderr = &stdout, &stderr
@@ -332,6 +342,16 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	problems := compare(c, &r, repo)
+	if len(c.Expect.Listed) > 0 {
+		list := exec.Command(engineBin, "issues", "list", "--repo", repo)
+		list.Env = env
+		out, err := list.CombinedOutput()
+		for _, text := range c.Expect.Listed {
+			if err != nil || !strings.Contains(string(out), text) {
+				problems = append(problems, fmt.Sprintf("workline issues list does not print %q (%v):\n%s", text, err, out))
+			}
+		}
+	}
 	if c.Run.Reports {
 		problems = append(problems, compareReports(c, sarifFile, cqFile)...)
 	}
@@ -405,6 +425,14 @@ func compare(c *caseFile, r *result, repo string) []string {
 			}
 		}
 	}
+	for branch, files := range e.Branches {
+		for path, text := range files {
+			out, err := exec.Command("git", "-C", repo, "show", "refs/heads/"+branch+":"+path).Output()
+			if err != nil || !strings.Contains(string(out), text) {
+				p = append(p, fmt.Sprintf("the local branch %s does not hold %q in %s", branch, text, path))
+			}
+		}
+	}
 	for branch, text := range e.PushedMsg {
 		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
 		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%B", "origin/"+branch).Output()
@@ -456,8 +484,14 @@ func compare(c *caseFile, r *result, repo string) []string {
 		if exists, ok := want["exists"].(bool); ok && exists != (err == nil) {
 			p = append(p, fmt.Sprintf("%s exists = %v, want %v", path, err == nil, exists))
 		}
-		if text, ok := want["contains"].(string); ok && !strings.Contains(string(data), text) {
-			p = append(p, fmt.Sprintf("%s does not contain %q", path, text))
+		texts, _ := want["contains"].([]any) // one text, or a list
+		if text, ok := want["contains"].(string); ok {
+			texts = []any{text}
+		}
+		for _, text := range texts {
+			if !strings.Contains(string(data), fmt.Sprint(text)) {
+				p = append(p, fmt.Sprintf("%s does not contain %q", path, text))
+			}
 		}
 		if text, ok := want["lacks"].(string); ok && strings.Contains(string(data), text) {
 			p = append(p, fmt.Sprintf("%s contains %q", path, text))
@@ -494,10 +528,17 @@ func lookup(env []string, name string) string {
 	return v
 }
 
-// hermeticEnv keeps the machine's git config and hooks out of the tests.
+// hermeticEnv keeps the machine's git config and hooks out of the tests,
+// and the CI the suite may run in: a case sets CI's variables itself.
 func hermeticEnv() []string {
 	fixtures, _ := filepath.Abs("fixtures")
-	return append(os.Environ(), "FIXTURES="+fixtures, // for a cmd: agent's script
+	var env []string
+	for _, kv := range os.Environ() {
+		if name, _, _ := strings.Cut(kv, "="); name != "CI" && name != "GITHUB_ACTIONS" && name != "GITLAB_CI" {
+			env = append(env, kv)
+		}
+	}
+	return append(env, "FIXTURES="+fixtures, // for a cmd: agent's script
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 		"GIT_AUTHOR_NAME=Fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
 		"GIT_COMMITTER_NAME=Fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",

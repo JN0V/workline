@@ -273,7 +273,7 @@ func run(o Options, res *Result) error {
 			return err
 		}
 		if f == nil {
-			return errors.New("--open-merge-request needs a forge (--forge)")
+			return errors.New("--open-merge-request needs a forge: " + forge.Missing)
 		}
 		open, err := f.OpenMergeRequests(branchPrefix(r.Name))
 		if err != nil {
@@ -817,7 +817,7 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 	}
 	why := "it comes from a fork, where this job cannot push"
 	if here {
-		why, err = commitOnto(st, branch, mr.Title)
+		why, err = commitOnto(st, branch, mr.Title, forge.KeepsBranches(f))
 		if err != nil {
 			return verdict.Finding{}, err
 		}
@@ -834,9 +834,10 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 }
 
 // commitOnto commits the written files on top of branch, fetched from
-// origin, and pushes it, without force. It says why when it could not: the
-// patches do not apply there, or the branch moved on meanwhile.
-func commitOnto(st runState, branch, title string) (why string, err error) {
+// origin, and pushes it, without force; on a forge kept in the clone, on top
+// of the local branch, moved only if it did not move meanwhile. It says why
+// when it could not: the patches do not apply there, or the branch moved on.
+func commitOnto(st runState, branch, title string, local bool) (why string, err error) {
 	orig, err := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD") // back on the branch it was on
 	if err != nil {
 		if orig, err = git(st.Repo, nil, "rev-parse", "HEAD"); err != nil { // or where CI left it
@@ -847,11 +848,16 @@ func commitOnto(st runState, branch, title string) (why string, err error) {
 		git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
 		git(st.Repo, nil, "checkout", "-q", orig)
 	}
-	if _, err := git(st.Repo, nil, "fetch", "-q", "origin", branch); err != nil {
+	tip := "FETCH_HEAD"
+	if local {
+		if tip, err = git(st.Repo, nil, "rev-parse", "--verify", "refs/heads/"+branch); err != nil {
+			return "", fmt.Errorf("the merge request's branch %s is not in this clone", branch)
+		}
+	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", branch); err != nil {
 		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
 	}
 	// The patches ride along to the branch's tip; git refuses if they collide there.
-	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", "FETCH_HEAD"); err != nil {
+	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
 		back()
 		return "the docs changed on the branch since this run read them", nil
 	}
@@ -861,7 +867,11 @@ func commitOnto(st runState, branch, title string) (why string, err error) {
 			return "", err
 		}
 	}
-	if _, err := git(st.Repo, nil, "push", "-q", "origin", "HEAD:refs/heads/"+branch); err != nil {
+	move := []string{"push", "-q", "origin", "HEAD:refs/heads/" + branch}
+	if local {
+		move = []string{"update-ref", "refs/heads/" + branch, "HEAD", tip}
+	}
+	if _, err := git(st.Repo, nil, move...); err != nil {
 		back()
 		return "the branch moved on while this run worked", nil
 	}
@@ -917,9 +927,10 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 }
 
 // ProposeBranch commits the files written in the working tree on the role's
-// branch for a task (workline/<role>/<key>), force-pushes it, opens its merge
-// request or updates the one open, and puts the working tree back on the
-// branch it was on. trailers end the commit's message.
+// branch for a task (workline/<role>/<key>), force-pushes it — unless the
+// forge keeps its branches in the clone — opens its merge request or
+// updates the one open, and puts the working tree back on the branch it was
+// on. trailers end the commit's message.
 func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers string, written []string) (int, error) {
 	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
@@ -930,7 +941,9 @@ func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers str
 		{"checkout", "-q", "-B", branch},
 		append([]string{"add", "--"}, written...),
 		{"commit", "-q", "-m", title, "-m", trailers},
-		{"push", "-q", "--force", "origin", branch},
+	}
+	if !forge.KeepsBranches(f) {
+		steps = append(steps, []string{"push", "-q", "--force", "origin", branch})
 	}
 	for _, s := range steps {
 		if _, err := git(repo, nil, s...); err != nil {
@@ -1376,7 +1389,7 @@ func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d",
 
 func (a *applier) needForge(kind string) error {
 	if a.forge == nil {
-		return fmt.Errorf("a %s needs a forge; set `forge:` in .workline/config.yaml or pass --forge", kind)
+		return fmt.Errorf("a %s needs a forge; %s", kind, forge.Missing)
 	}
 	return nil
 }
@@ -1458,8 +1471,8 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		body += fmt.Sprintf("\n\nOpened by the %s role.", a.role)
-		if a.forge == nil {
-			return a.localIssue(title, body)
+		if err := a.needForge("issue"); err != nil {
+			return err
 		}
 		_, err := a.forge.OpenIssue(title, body, a.marker())
 		return err
@@ -1569,28 +1582,6 @@ func (a *applier) publish(version, notes string) error {
 		return nil
 	}
 	return a.forge.Release(version, notes)
-}
-
-// localIssue records an issue in .workline/issues/ for a project without a forge.
-func (a *applier) localIssue(title, body string) error {
-	dir := filepath.Join(a.repo, ".workline", "issues")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	var slug strings.Builder
-	for _, r := range strings.ToLower(title) {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			slug.WriteRune(r)
-		case slug.Len() > 0 && !strings.HasSuffix(slug.String(), "-"):
-			slug.WriteRune('-')
-		}
-	}
-	path := filepath.Join(dir, strings.Trim(slug.String(), "-")+".md")
-	if _, err := os.Stat(path); err == nil {
-		return nil // already reported
-	}
-	return os.WriteFile(path, []byte("# "+title+"\n\n"+body+"\n"), 0o644)
 }
 
 func strs(v any) []string {

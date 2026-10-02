@@ -1,0 +1,15 @@
+case: forge/local-issue-opened
+about: "With `forge: local`, an issue a role opens is a file in the clone (.git/workline/issues/<n>.md), never in the working tree, and `workline issues` lists it."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'forge: local\\nroles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:truth-disagrees"}
+expect:
+  status: pass
+  applied: [patch, issue]
+  files:
+    .git/workline/issues/1.md: {contains: "TokenTTL = 7200"}
+    .workline/issues/the-code-disagrees-with-docs-tech-auth-md.md: {exists: false}
+  issues-listed: ["#1", "The code disagrees with docs/tech/auth.md"]

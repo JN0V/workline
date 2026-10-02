@@ -1,0 +1,22 @@
+case: forge/local-patch-pushed-to-the-merge-request
+about: "With `forge: local`, --push-to-merge-request commits the fix on the merge request's local branch, with no remote to push to."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git checkout -q --detach"
+    - |
+      mkdir -p .git/workline/merge-requests && cat > .git/workline/merge-requests/1.md <<'MR'
+      ---
+      title: "feat(auth): two-hour tokens"
+      state: open
+      branch: feature
+      base: main
+      ---
+      MR
+  config: {forge: local}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: pushed, where: feature}]
+  branches: {feature: {docs/tech/auth.md: "Access tokens last two hours."}}

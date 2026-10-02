@@ -8,6 +8,7 @@
 //	                  [--sarif <file>] [--code-quality <file>]
 //	workline route <event> [same options as run-role, but --input-file]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
+//	workline issues [list] [--repo <dir>] | show <n>|!<n> [--repo <dir>]   (the local forge)
 //	workline apply <run-dir>... | --line <route result> [--json]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
@@ -88,6 +89,8 @@ func main() {
 		os.Exit(docsCmd(os.Args[2:]))
 	case "sample":
 		os.Exit(sampleCmd(os.Args[2:]))
+	case "issues":
+		os.Exit(issuesCmd(os.Args[2:]))
 	}
 	usage()
 }
@@ -876,6 +879,83 @@ func itemCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(v.Status)
+}
+
+// issuesCmd reads the local forge (`forge: local`): the issues and merge
+// requests kept in the clone, listed, or one shown whole. It writes nothing.
+func issuesCmd(args []string) int {
+	what, id := "list", ""
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		what, args = args[0], args[1:]
+	}
+	if what == "show" && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		id, args = args[0], args[1:]
+	}
+	fs := flag.NewFlagSet("issues", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository")
+	_ = fs.Parse(args)
+	root, err := gitRoot(*repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+		return 64
+	}
+	l := &forge.Local{Repo: root}
+	switch {
+	case what == "list":
+		n := 0
+		for _, kind := range []string{"issue", "merge-request"} {
+			items, err := l.Items(kind)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "workline:", err)
+				return 1
+			}
+			for _, it := range items {
+				n++
+				sign, more := "#", ""
+				if kind == "merge-request" {
+					sign, more = "!", fmt.Sprintf("  (%s into %s)", it.Branch, it.Base)
+				}
+				labels := ""
+				if len(it.Labels) > 0 {
+					labels = "  [" + strings.Join(it.Labels, ", ") + "]"
+				}
+				fmt.Printf("%s%-4d %-7s %s%s%s\n", sign, it.ID, l.StateOf(it), it.Title, labels, more)
+			}
+		}
+		if n == 0 {
+			fmt.Fprintln(os.Stderr, "workline: no issue nor merge request in this clone's local forge (forge: local)")
+		}
+		return 0
+	case what == "show" && id != "":
+		kind := "issue"
+		if rest, ok := strings.CutPrefix(id, "!"); ok {
+			kind, id = "merge-request", rest
+		}
+		var n int
+		if _, err := fmt.Sscan(strings.TrimPrefix(id, "#"), &n); err != nil {
+			fmt.Fprintln(os.Stderr, "workline: show <n> for an issue, show !<n> for a merge request")
+			return 64
+		}
+		it, err := l.Item(kind, n)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		fmt.Printf("%s — %s", it.Title, l.StateOf(it))
+		if len(it.Labels) > 0 {
+			fmt.Printf("  [%s]", strings.Join(it.Labels, ", "))
+		}
+		if it.Branch != "" {
+			fmt.Printf("  (%s into %s)", it.Branch, it.Base)
+		}
+		fmt.Printf("\n\n%s\n", it.Body)
+		for _, c := range it.Comments {
+			fmt.Printf("\n---\n\n%s\n", c)
+		}
+		return 0
+	}
+	fmt.Fprintln(os.Stderr, "usage: workline issues [list] [--repo <dir>] | workline issues show <n>|!<n> [--repo <dir>]")
+	return 64
 }
 
 func exitFor(status string) int {

@@ -1,0 +1,17 @@
+case: forge/cmd-comment-on-a-merge-request
+about: "With `forge: cmd:<command>`, a merge request's comment is one JSON request on the command's input — the operation, its target, body and marker — the command run in the repository."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  applied: [comment]
+  files:
+    .git/forge-requests.jsonl:
+      contains:
+        - '"marker":"<!-- workline:sticky=documentalist/checklist -->","operation":"sticky"'
+        - '"target":{"kind":"merge-request","id":1}'
+        - "docs/tech/auth.md"

@@ -1,0 +1,27 @@
+case: forge/local-comment-on-a-merge-request
+about: "With `forge: local`, the comment a merge request run leaves goes on the merge request's record in the clone, kept in place by its marker, never committed."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - |
+      mkdir -p .git/workline/merge-requests && cat > .git/workline/merge-requests/1.md <<'MR'
+      ---
+      title: "feat(auth): two-hour tokens"
+      state: open
+      branch: main
+      base: main
+      ---
+
+      <!-- workline-comment -->
+      **Docs to check** — an older list, with `docs/old.md`.
+
+      <!-- workline:sticky=documentalist/checklist -->
+      MR
+  config: {forge: local}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: pass
+  applied: [comment]
+  files:
+    .git/workline/merge-requests/1.md: {contains: "- [ ] `docs/tech/auth.md`", lacks: "docs/old.md"}

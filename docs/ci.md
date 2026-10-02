@@ -7,7 +7,9 @@ judged: a0f1e8a
 
 Docs are judged on each merge request and by gardening at night (ADR-0010):
 both run in CI. This page sets it up on GitHub, on gitlab.com and on a
-self-managed GitLab. Each template's header says the same, beside the code.
+self-managed GitLab, then on another forge, and with none. What workline
+writes goes where the project lives (ADR-0016). Each template's header says
+the same, beside the code.
 
 What every forge needs first, in the repository:
 
@@ -139,3 +141,51 @@ on one**: tell us what differs.
   are listed for a person.
 - **Tokens**: project access tokens exist on every tier of a self-managed
   instance.
+
+## Another forge: Gitea, Forgejo, Codeberg…
+
+workline speaks GitHub and GitLab natively; another forge is plugged by a
+command that answers its small contract, one JSON request per operation
+(docs/spec/forge-command.md). For Forgejo and Gitea, whose API has
+GitHub's shape, copy [ci/forgejo/workline-forge.sh](../ci/forgejo/workline-forge.sh)
+into the repository and name it in `.workline/config.yaml`:
+
+```yaml
+forge: 'cmd:sh ci/forgejo/workline-forge.sh'
+```
+
+It needs `curl` and `jq`, and `FORGEJO_URL`, `FORGEJO_TOKEN` (issues and
+pull requests, write) and, unless `origin` names it, `FORGEJO_REPO`
+(`owner/name`). The engine pushes the branches itself, with the job's git
+credentials; the script does the rest. Forgejo Actions reads, largely, GitHub's
+workflow syntax: the GitHub templates are a start, `--forge github`
+replaced by the command, the GitHub App's steps by `FORGEJO_TOKEN`.
+**Not tried yet** on a live instance — the script was run against a mock of
+the API only: tell us what differs. For a forge of another shape, write the
+command the contract asks.
+
+## No forge
+
+A project with no forge — pushed to `main`, no merge request — keeps what
+workline writes in its own clone:
+
+```yaml
+forge: local
+```
+
+Issues, merge requests and releases are then files under `.git/workline/`,
+never committed; gardening's merge requests are local branches, nothing
+pushed; `workline issues` lists them, `workline issues show <n>` (or `!<n>`
+for a merge request) shows one, and you merge a branch with git. There is no
+CI to set up: gardening and the weekly sample run on your machine
+(`workline route schedule --open-merge-request`, `workline sample --out
+sample.json` then `workline sample --apply sample.json`), and `workline
+docs` judges before a release. In CI — `CI`, `GITHUB_ACTIONS` or
+`GITLAB_CI` set — the local forge refuses its writes, loud: the job's clone
+is thrown away, and what it would hold with it. What writes nothing still
+runs, so a project whose config says `local` for its laptops passes
+`--forge` to its CI jobs that write.
+
+With `forge: none` (the default), nothing is written to a forge: a write
+that needs one — the issue a role opens included — is refused and says so,
+naming `forge: local`.

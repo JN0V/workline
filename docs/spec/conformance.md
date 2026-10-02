@@ -84,6 +84,8 @@ a `PATH` without a tool, or with a fake one first.
   (`{merge-request: 1}`);
 - `scope` — the run's scope, as a ready work item would give it;
 - `no-apply: true` — judge, and stop before applying;
+- `forge` — a forge spec given as `--forge` instead of the simulated forge
+  (`local`, `none`, `cmd:<command>`), the sample's `then: apply` included;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
   every run a line judged and did not apply;
 - `tamper: in/` — change the prepared input between prepare and apply.
@@ -105,13 +107,15 @@ a `PATH` without a tool, or with a fake one first.
   `body-contains` (a text its body holds).
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
   case's `origin`, or the message of that branch's tip.
+- `branches` — a text a file holds on a local branch of the repository.
+- `issues-listed` — texts `workline issues list` prints afterwards.
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
   text (`contains`).
-- `files` — paths that must exist, or contain a text, or lack one (`lacks`),
-  afterwards.
+- `files` — paths that must exist, or contain a text or each of a list of
+  texts, or lack one (`lacks`), afterwards.
 
 ## The fakes
 
@@ -128,6 +132,10 @@ a `PATH` without a tool, or with a fake one first.
   them first: `env: {PATH: "$FIXTURES/bin:$PATH"}`.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
+- **Command forge.** `cmd:sh "$FIXTURES/forges/logged.sh"` plugs a script
+  as the forge (docs/spec/forge-command.md): it writes each request it gets
+  to `.git/forge-requests.jsonl`, for `files` to check, and answers as a
+  small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
 - **Simulated forge.** An in-memory forge holding issues, labels, comments,
   merge requests and releases. It can be told to fail on the N-th write, to
   test recovery after a partial apply.

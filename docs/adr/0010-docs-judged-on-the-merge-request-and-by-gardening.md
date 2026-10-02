@@ -1,6 +1,7 @@
 # ADR-0010: Docs are judged on the merge request and by gardening; the push only counts
 
-- **Status:** accepted; built 2026-10-01
+- **Status:** accepted; built 2026-10-01; amended 2026-10-02 (where the
+  merge requests go)
 - **Date:** 2026-09-30
 - **Supersedes:** ADR-0007 on judging at the push (`d`, the docs listed in
   the question). Its range, the review per doc and the push approval stay.
@@ -79,3 +80,13 @@ push of a merge request.
   line counting the docs; doctor's `documentalist-not-before-push` became
   `docs-judged`: where docs are judged — a merge request in CI, gardening,
   the release — and `docs-judged-nowhere` when none (2026-10-01).
+
+## Amendment (2026-10-02)
+
+The merge requests and comments above go where the project lives
+(ADR-0016): GitHub and GitLab natively, another forge through a command
+(`forge: cmd:<command>`), and a repository with no forge — pushed to main,
+with no merge request — keeps them in its clone with `forge: local`:
+gardening's merge requests are local branches there, recorded in
+`.git/workline/merge-requests/`, read with `workline issues`. The decision
+is unchanged.

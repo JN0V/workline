@@ -1,0 +1,27 @@
+case: forge/local-item-ready
+about: With `--forge local`, a work item is read from the clone's issues, and a ready one gets the workline:ready label there.
+given:
+  repo: basic
+  setup:
+    - |
+      mkdir -p .git/workline/issues && cat > .git/workline/issues/8.md <<'IS'
+      ---
+      title: "Export as CSV"
+      state: open
+      labels: ["workline:to-refine"]
+      ---
+
+      ## Need
+      Export as CSV
+      ## Verification
+      A test exports three rows
+      ## Validation
+      The product owner opens it in a spreadsheet
+      ## Scope
+      src/export
+      IS
+run: {route: ready, item: 8, forge: local}
+expect:
+  status: pass
+  files:
+    .git/workline/issues/8.md: {contains: "workline:ready", lacks: "to-refine"}
