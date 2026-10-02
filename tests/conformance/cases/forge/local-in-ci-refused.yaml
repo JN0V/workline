@@ -1,0 +1,15 @@
+case: forge/local-in-ci-refused
+about: "In CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), a write to the local forge is refused, loud: the job's clone is thrown away, and what it holds with it."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'forge: local\\nroles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {GITLAB_CI: "true"}
+run: {role: documentalist, event: merge-request, ai: "fake:truth-disagrees"}
+expect:
+  status: block
+  applied: [patch]
+  findings: [{rule: engine-error, message: "thrown away"}]
+  files:
+    .git/workline/issues/1.md: {exists: false}

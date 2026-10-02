@@ -528,10 +528,17 @@ func lookup(env []string, name string) string {
 	return v
 }
 
-// hermeticEnv keeps the machine's git config and hooks out of the tests.
+// hermeticEnv keeps the machine's git config and hooks out of the tests,
+// and the CI the suite may run in: a case sets CI's variables itself.
 func hermeticEnv() []string {
 	fixtures, _ := filepath.Abs("fixtures")
-	return append(os.Environ(), "FIXTURES="+fixtures, // for a cmd: agent's script
+	var env []string
+	for _, kv := range os.Environ() {
+		if name, _, _ := strings.Cut(kv, "="); name != "CI" && name != "GITHUB_ACTIONS" && name != "GITLAB_CI" {
+			env = append(env, kv)
+		}
+	}
+	return append(env, "FIXTURES="+fixtures, // for a cmd: agent's script
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 		"GIT_AUTHOR_NAME=Fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
 		"GIT_COMMITTER_NAME=Fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",
