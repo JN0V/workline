@@ -547,3 +547,50 @@ On 2026-09-27, on workline's own repository:
   too. 4.63M tokens in all: 4.00M for the runs (WaterMeter 0.48M, of
   which 0.24M two nights condensing CHANGELOG.md, refused; DomoticsCore
   2.04M; workline 1.47M), 0.64M for the baseline.
+- ADR-0014 step 4 again (2026-10-02, the engine at a15fc0d, after the
+  three costs were cut; the same method, repositories, commits, scripts
+  and caps as the entry above; Claude Sonnet 5.5 at medium effort; graded
+  by reading each change against the code at its commit). The baseline
+  engine's first nights of the entry above are reused: same task, same
+  copies. Per bar, first run → now:
+
+  | Bar | First run (ffdb06d) | Now (a15fc0d) |
+  |---|---|---|
+  | 1. no `checked` over a falsehood | held: 5 moves | held: 8 moves, WaterMeter's two wiring guides in runs 1, 2, 4, 5; read whole, only GPIO34 is the header's, and it holds |
+  | 2. no true claim removed, no comment winning | held; Wifi's history row thinned | held; the same row thinned 5/5; every removal checked below |
+  | 3. counts and versions reported | `count-off` 58 + 2, X no miss within the rules |
+  | 4. what is right ends `checked` | WaterMeter 2/5, the role README 1/5 | WaterMeter 4/5, the role README 0/5 (`judged`, as right) |
+  | 5. right fixes | versions 5/5, index 4/4 reached, OTA's `Total` 0/5, HeapTracker 3/5 | versions 5/5, identical across runs; index 5/5; OTA's `Total` 5/5; HeapTracker 4/5 (baseline 5/5); README's tools bullets 3/3 |
+  | 6. tokens a judged doc, first night | +12.8% | **+13.9%**: WaterMeter 32.4k → 33.4k (+3%), workline 18.8k → 20.1k (+7%), DomoticsCore 34.6k → 44.1k (+28%; 36.9k, +7%, without run 1) |
+
+  Bar 6 fails on the same shape as before: DomoticsCore's run 1 asked
+  twice on its first night (72.9k), the HeapTracker pitfall rewritten
+  without a claim (`removal-uncited`, rightly: "so creation itself
+  affects heap measurements" is a fact), then withdrawn. Without it,
+  +5.5% in all. Over every night, a doc judged whole costs 22.0k (21.8k
+  before, the same 65 docs). Asked again three times over every night
+  judged whole, as before (no condense refused, two before): that one;
+  OTA's "`OTA.cpp` line count (607)", which `count-off` does not cover
+  (no "lines"), the right fix to 759
+  refused uncited (run 1, night 2) and left in the four others; a patch
+  misquoting a line (run 2, night 2), right at the second answer.
+  The narrowed removal rule let nothing false through: every line taken
+  out without a claim, in every run, is a count the engine reported
+  (core's two, OTA's table, its `Total` and its size row), the line
+  otherwise unchanged; or a README line only added to. No glue, no word
+  beside a count, taken out in any run.
+  A doc in parts whose claims were dropped is now recorded
+  (`judged-in-parts`): workline's README 5/5 (0/5 before),
+  DomoticsCore's 3/3 (1/3), and not asked again — workline's third night
+  judged docs/spec/conformance.md in parts instead, rightly adding
+  `go.mod`, the fixtures and "not their READMEs" from eval_test.go's
+  `evaluated`. A night in parts costs as before: 229.7k (workline), 325k
+  (DomoticsCore). CHANGELOG.md was never picked: WaterMeter's run 1 went
+  on to condense six other docs on nights 3–8, each a faithful move
+  (every line taken out is in its companion, born without `checked`),
+  15k to 25k a night. In parts, DomoticsCore's README fixes are right
+  (tools/bump_version.py and check_versions.py: the `library.properties`
+  sync, the skipped `.pio`/`test`/`examples` paths, a component with no
+  `metadata.version` skipped). No engine bug found. 3.96M tokens
+  (WaterMeter 0.37M, workline 1.54M, DomoticsCore 2.05M); the baseline
+  not run again.

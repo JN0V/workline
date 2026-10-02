@@ -85,7 +85,10 @@ repository without merge requests is built but untried for real.
    **not hold** (below): nothing false vouched for or written, every
    count reported, but the tokens a judged doc costs are 12.8% over the
    baseline, past the tenth the bar allows. The three costs behind it are
-   met, to measure again (below, after step 4).
+   met, and measured again (below): the same five bars hold, and bar 6
+   fails again, +13.9%, one run in five asked twice for a rewrite given
+   no claim; the re-ask, which sends the whole task again, is the next
+   cost.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -221,3 +224,20 @@ right ones pass, as before; the step 4 answers refused — OTA's total,
 is recorded, the drop said for a person, and not asked again until a
 source changes; a history doc (a changelog) is never picked for
 condensing.
+
+ADR-0014 step 4 again, on a15fc0d (tried.md, 2026-10-02; Sonnet, 3.96M
+tokens; the same method, copies and caps, the baseline's first nights
+reused): **does not hold**, on bar 6 again. Bars 1 to 5 hold: `checked`
+moved only on WaterMeter's two wiring guides (4 runs of 5), nothing
+false; no true claim removed, and every line taken out without a claim
+is an engine count, the line otherwise unchanged; `count-off` 61, all
+real, OTA's `Total` among them; the version fixes identical in every
+run, OTA's `Total` 5/5 (0/5), HeapTracker's pitfall 4/5 (3/5; the
+baseline 5/5). The three costs are met as measured: a doc in parts is
+recorded, claims dropped or not (9 of 9 nights in parts), and not asked
+again; CHANGELOG.md is never picked; no word beside a count refused. Bar 6:
++13.9% a judged doc the first night (+3% WaterMeter, +7% workline, +28%
+DomoticsCore), +5.5% without the one run in five asked twice — a
+rewrite given no claim, refused rightly, then withdrawn. A re-ask
+sends the whole task again (two docs, 36k) for one place; over every
+night, a doc judged whole costs 22.0k, as before (21.8k).
