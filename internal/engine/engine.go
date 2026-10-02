@@ -913,32 +913,40 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	if mr.Title == "" {
 		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
 	}
-	base, err := git(st.Repo, nil, "symbolic-ref", "--short", "HEAD")
+	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, st.trailers(), st.Written)
+}
+
+// ProposeBranch commits the files written in the working tree on the role's
+// branch for a task (workline/<role>/<key>), force-pushes it, opens its merge
+// request or updates the one open, and puts the working tree back on the
+// branch it was on. trailers end the commit's message.
+func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers string, written []string) (int, error) {
+	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return 0, errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
 	}
-	branch := branchPrefix(st.Role) + slugify(mr.Key)
+	branch := branchPrefix(roleName) + slugify(key)
 	steps := [][]string{
 		{"checkout", "-q", "-B", branch},
-		append([]string{"add", "--"}, st.Written...),
-		{"commit", "-q", "-m", mr.Title, "-m", st.trailers()},
+		append([]string{"add", "--"}, written...),
+		{"commit", "-q", "-m", title, "-m", trailers},
 		{"push", "-q", "--force", "origin", branch},
 	}
 	for _, s := range steps {
-		if _, err := git(st.Repo, nil, s...); err != nil {
+		if _, err := git(repo, nil, s...); err != nil {
 			// Back where it was: the patches in the working tree, unstaged.
-			git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
-			git(st.Repo, nil, "checkout", "-q", base)
+			git(repo, nil, append([]string{"reset", "-q", "--"}, written...)...)
+			git(repo, nil, "checkout", "-q", base)
 			if s[0] == "push" {
 				return 0, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
 			}
 			return 0, err
 		}
 	}
-	if _, err := git(st.Repo, nil, "checkout", "-q", base); err != nil {
+	if _, err := git(repo, nil, "checkout", "-q", base); err != nil {
 		return 0, err
 	}
-	return f.OpenMergeRequest(branch, base, mr.Title, mr.Body)
+	return f.OpenMergeRequest(branch, base, title, body)
 }
 
 // slugify keeps a branch name to lowercase letters, digits and dashes.
