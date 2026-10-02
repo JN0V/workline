@@ -107,6 +107,10 @@ roles:
       sample: {judge: "claude:opus"}   # Sonnet vouches by default: Opus reads
 ```
 
+`after: <tag>` beside it leaves out what was vouched for before that
+commit: before the release whose engine earns `checked` (v0.2.1 on
+workline), a `checked` could be moved unread, and was put back since.
+
 or as the CI variable `WORKLINE_JUDGE`; a `cmd:` running another provider's
 agent stands further apart when you have one. Without a judge, the docs
 drawn are listed for a person. The result goes to one issue, "workline: the

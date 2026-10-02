@@ -35,7 +35,10 @@ or set `verified: agent:documentalist` — in the commits that reached the
 branch during the last whole ISO week, by the dates of its first-parent
 history. One in ten, rounded up, ranked by a digest of the week, the doc and
 the commit: a rerun of the week draws the same docs. `--since <rev>` takes
-the commits after one instead.
+the commits after one instead. `sample.after` leaves out what a commit
+reaches: on workline v0.2.1, the release whose engine earns `checked` —
+the docs vouched for before it were undone already (0669684), and drawn
+they would set the documentalist back for what step 0 fixed.
 
 ### Read whole, by a judge that is not the voucher
 

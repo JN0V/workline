@@ -150,7 +150,7 @@ roles:
       whole-chars: 40000                           # sources judged whole up to this; more docs vouched, more tokens
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
-      sample: {judge: "claude:opus", at-least: model}   # who reads the weekly sample, and the least independence (ADR-0005)
+      sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: release-manager, to: documentalist}]
