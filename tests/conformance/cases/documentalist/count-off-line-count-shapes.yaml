@@ -1,0 +1,13 @@
+case: documentalist/count-off-line-count-shapes
+about: "A line count written without \"lines\" — \"line count (N)\", \"line count: N\", or \"an N-line\" right before the file — next to a file the doc names among its sources, off from the file, is reported as any other: DomoticsCore's \"`OTA.cpp` line count (607)\" was missed, and its right fix refused for want of a claim (ADR-0014, step 4)."
+given:
+  repo: drifted
+  setup:
+    - "printf '\\n`ClockConfig.h` line count (30) is watched.\\n\\nThe `ClockConfig.h` line count: 31.\\n\\nA 40-line `ClockConfig.h` holds the defaults.\\n' >> docs/clock/README.md && git commit -qam 'docs(clock): the config header'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: count-off, where: docs/clock/README.md, message: "`ClockConfig.h` has 12 lines, not 30"}
+    - {rule: count-off, where: docs/clock/README.md, message: "`ClockConfig.h` has 12 lines, not 31"}
+    - {rule: count-off, where: docs/clock/README.md, message: "`ClockConfig.h` has 12 lines, not 40"}

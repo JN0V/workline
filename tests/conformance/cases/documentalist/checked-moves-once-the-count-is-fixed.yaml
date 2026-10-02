@@ -1,0 +1,13 @@
+case: documentalist/checked-moves-once-the-count-is-fixed
+about: "The task tells the agent each line count off and the real one; a fix bringing the count to it may move `checked`, and the finding says it was fixed in this run (ADR-0014, step 2)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh counts"}
+expect:
+  status: pass
+  applied: [patch]
+  no-findings: [{rule: suspect, where: docs/clock/README.md}]
+  findings: [{rule: count-off, where: docs/clock/README.md, message: "fixed in this run"}]
+  files: {"docs/clock/README.md": {contains: "| `Clock.h` | 569 |", lacks: "judged:"}}

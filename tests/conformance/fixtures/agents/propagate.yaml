@@ -15,3 +15,7 @@
     -You stay signed in for one hour without doing anything.
     +You stay signed in for two hours without doing anything.
     +That is twice as long as before this release.
+- claim:
+    lines: "8"
+    status: contradicted
+    source: {path: docs/tech/auth.md, quote: "Access tokens last two hours."}

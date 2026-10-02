@@ -29,3 +29,13 @@
     +Users will appreciate it.
     +It is a great improvement.
     +Everyone agrees.
+- claim:
+    doc: docs/tech/auth.md
+    lines: "10"
+    status: contradicted
+    source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}
+- claim:
+    doc: docs/tech/tokens.md
+    lines: "7"
+    status: contradicted
+    source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}

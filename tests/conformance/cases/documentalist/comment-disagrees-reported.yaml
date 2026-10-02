@@ -1,0 +1,12 @@
+case: documentalist/comment-disagrees-reported
+about: "A comment given as the only reason for a fix is reported for a person (`comment-disagrees`, at the comment's file), and the place it changed left as it was, the agent not asked again (ADR-0014, steps 2 and 4)."
+given:
+  repo: documented
+  setup: ["sed -i 's|// Tokens last one hour.|// Tokens last thirty minutes.|' src/auth/token.go && git commit -qam 'docs(auth): say how long tokens last'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/follow-the-comment.sh confirms"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings: [{rule: comment-disagrees, where: src/auth/token.go, message: "src/auth/token.go:3"}]
+  files: {"docs/tech/auth.md": {contains: "one hour", lacks: "thirty"}}

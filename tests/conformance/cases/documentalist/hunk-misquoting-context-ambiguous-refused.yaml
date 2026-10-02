@@ -1,0 +1,15 @@
+case: documentalist/hunk-misquoting-context-ambiguous-refused
+about: "A hunk quoting as context a line the doc does not have, whose removed lines the doc holds twice, is not placed: where it goes is in doubt, so it is left out and reported, with the line it misquotes; the rest of the fix applied, the doc recorded `judged`."
+given:
+  repo: documented
+  setup:
+    - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n\\n## Again\\n\\nAccess tokens last one hour.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how tokens are signed'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {MISQUOTE: context}
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-hunk-misquoted.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  findings: [{rule: patch-does-not-apply, where: docs/tech/auth.md, message: "quotes \"## Signing placeholder\" as line 11"}]
+  files: {"docs/tech/auth.md": {contains: "judged:", lacks: "two hours"}}

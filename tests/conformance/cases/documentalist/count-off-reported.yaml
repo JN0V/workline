@@ -1,0 +1,11 @@
+case: documentalist/count-off-reported
+about: "A line count next to a file the doc names among its sources, off from the file as it is — in a `| File | Lines |` table, a fenced listing, or prose with `~` past a tenth — is reported with the file, the count stated and the real one, with no agent (ADR-0014, step 2). A count right is not."
+given: {repo: drifted}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: count-off, where: docs/clock/README.md, message: "`Clock.h` has 569 lines, not 524"}
+    - {rule: count-off, where: docs/clock/project-context.md, message: "`Clock.h` has 569 lines, not 524"}
+    - {rule: count-off, where: docs/clock/project-context.md, message: "`ClockWebUI.h` has 236 lines, not ~283"}
+  no-findings: [{rule: count-off, where: docs/clock/README.md, message: "ClockConfig.h"}]

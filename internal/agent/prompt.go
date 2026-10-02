@@ -63,7 +63,8 @@ func Prompt(req Request) (system, user string, err error) {
 	}
 	b.WriteString("# Task\n\n" + string(task) + "\n\n")
 	if fb, err := os.ReadFile(filepath.Join(req.RunDir, "out", "feedback.md")); err == nil {
-		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n")
+		b.WriteString("# Your previous answer was refused\n\n" + string(fb) + "\n" +
+			"Your new answer replaces it whole: give again, unchanged, every proposal and every change of it not refused above, and change only what is refused.\n\n")
 	}
 	b.WriteString("# Answer\n\nAnswer with YAML only, no prose and no code fence: a list of proposals, each item holding exactly one of:\n\n")
 	for _, k := range req.Role.Intentions {

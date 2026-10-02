@@ -1,0 +1,11 @@
+case: documentalist/count-off-line-count-not-a-limit
+about: "The shapes without \"lines\" are counts only next to the file: \"the 800-line limit\" after a file, \"the 500-line target\" before one, \"line count: under 600\", a line count limit, and a right count are never reported (ADR-0014, step 4)."
+given:
+  repo: drifted
+  setup:
+    - "printf '\\n`ClockConfig.h` stays under the 800-line limit. The 500-line target holds for `ClockConfig.h`. `ClockConfig.h` line count: under 600. `ClockConfig.h` line count limit (700).\\n\\nA 12-line `ClockConfig.h` holds the defaults; its line count (12) is right.\\n' >> docs/clock/README.md && git commit -qam 'docs(clock): the config header'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: count-off, where: docs/clock/README.md, message: "not 524"}]
+  no-findings: [{rule: count-off, where: docs/clock/README.md, message: "ClockConfig.h"}]

@@ -176,7 +176,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		switch {
 		case entry == "":
 			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
-		case fixes.Len()+len(entry)+len(fixTaskHeader) > taskMaxChars:
+		case fixes.Len()+len(entry)+len(fixTaskHeader)+len(citeTask) > taskMaxChars:
 			sd.deferred = true
 			sd.note = "(" + summary + "; what they found wrong does not fit this round's fix: judged in parts again in a later round)"
 			continue
@@ -185,20 +185,18 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			judged[sd.doc.Path] = map[string]string{"": head}
 			sd.note = "(" + summary + "; what they found wrong is fixed in this run, and `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		}
-		// A claim dropped may have been the one saying what is wrong: the doc
-		// is not recorded as judged, and its parts are asked again next run.
+		// A claim dropped may have been the one saying what is wrong: it is
+		// said, for a person. The doc is recorded all the same: asked again
+		// each night, its parts cost as much to the same end (ADR-0014, step
+		// 4: 0.23M to 0.32M tokens a night); a source changing asks again.
 		if verdictOf.dropped > 0 {
-			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped, so it is judged in parts again on a later run)"
-			if entry != "" {
-				inParts[sd.doc.Path] = at // its fix is judged as one in parts: `checked` stays
-			}
-			continue
+			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped: a person reads it whole)"
 		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: patch})
 		inParts[sd.doc.Path] = at
 	}
 	if fixes.Len() > 0 {
-		task = fixTaskHeader + fixes.String()
+		task = fixTaskHeader + citeTask + fixes.String()
 	}
 	return task, judged, fallback, inParts, nil
 }
@@ -383,6 +381,8 @@ func (r lineRange) String() string {
 
 func (r lineRange) overlaps(o lineRange) bool { return r.from <= o.to && o.from <= r.to }
 
+func (r lineRange) covers(o lineRange) bool { return r.from <= o.from && o.to <= r.to }
+
 // claim is a part's answer about one passage of the doc.
 type claim struct {
 	Lines  lineRange `yaml:"lines"`
@@ -477,7 +477,9 @@ func quotedAt(content string, r lineRange, quote string) bool {
 // fixEntry puts the parts' claims together, without AI, by the doc's lines:
 // contradicted and supported by no other part is wrong; contradicted in one
 // part and supported in another is a conflict; partial is to be read
-// together. It returns the doc's part of the fix task, with only the source
+// together, unless another part supports the lines it speaks of: that part
+// held the source settling them, and the fix would act on a share that
+// cannot (workline #29). It returns the doc's part of the fix task, with only the source
 // lines the parts cited; nothing when there is nothing to fix.
 func (v *partsVerdict) fixEntry(p, content, repo string) string {
 	var wrong, conflict, together []claim
@@ -494,7 +496,13 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 				wrong = append(wrong, c)
 			}
 		case "partial":
-			together = append(together, c)
+			settled := false
+			for _, o := range v.kept {
+				settled = settled || o.Status == "supported" && o.part != c.part && o.Lines.covers(c.Lines)
+			}
+			if !settled {
+				together = append(together, c)
+			}
 		}
 	}
 	var b strings.Builder

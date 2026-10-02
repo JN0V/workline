@@ -23,7 +23,7 @@ var Catalogue = map[string]bool{
 	"release":        true,
 	"handoff":        true,
 	"note":           true,
-	"claim":          true, // a part's answer (in/parts): read by pre, never applied
+	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 }
 
 // Intention is one proposal: its kind and its value.

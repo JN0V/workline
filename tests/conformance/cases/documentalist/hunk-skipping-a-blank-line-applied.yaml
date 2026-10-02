@@ -1,0 +1,13 @@
+case: documentalist/hunk-skipping-a-blank-line-applied
+about: "A hunk whose context differs from the doc by a blank line alone — skipped, as Sonnet skipped one on DomoticsCore and lost the footer's right version (ADR-0014, step 4) — is applied where its other lines are: blank lines are let go in the context, never in the lines it changes."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  env: {MISQUOTE: blank}
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-hunk-misquoted.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  no-findings: [{rule: patch-does-not-apply, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "## Token refresh\n\nAccess tokens last two hours.", lacks: "judged:"}}

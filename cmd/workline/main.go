@@ -615,8 +615,15 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "pre-push",
 		AI: ai, DefaultAI: userDefaultAI(), Inputs: map[string]string{"range": rng}})
 	for _, f := range res.Findings {
-		if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") || f.Level == "block" {
-			fmt.Fprintf(out, "  %s %s: %s\n", f.Rule, f.Where, strings.SplitN(f.Message, "\n", 2)[0])
+		// A suspect doc of the range, and what stopped the run: a fix the
+		// judge refused, however often the agent was asked.
+		if f.Rule == "suspect" && !strings.Contains(f.Message, "left for gardening") || f.Level == "block" || f.Where == "patch" || f.Rule == "left-out" {
+			lines := strings.Split(strings.TrimSpace(f.Message), "\n")
+			msg := lines[0]
+			if last := lines[len(lines)-1]; len(lines) > 1 && strings.HasPrefix(last, "(") {
+				msg += " " + last // what became of it: a person judges it, a later round
+			}
+			fmt.Fprintf(out, "  %s %s: %s\n", f.Rule, f.Where, msg)
 		}
 	}
 	for _, n := range res.Notes {
@@ -630,6 +637,11 @@ func judgeDocs(root, rng, ai string, in *bufio.Reader, out io.Writer) bool {
 		if (f.Rule == "suspect" || f.Rule == "stale") && !strings.Contains(f.Message, "left for gardening") && !strings.Contains(f.Message, "a person") {
 			waiting++
 		}
+	}
+	if res.Status != verdict.Pass {
+		// The run stopped at the round it was in: the docs of that round,
+		// and those left for later rounds, were not judged.
+		fmt.Fprintf(out, "workline: %s — %s; the docs it was judging, and those after them, are not judged yet: run `workline docs` again\n", res.Status, res.Summary)
 	}
 	changed, _ := exec.Command("git", "-C", root, "diff", "--name-only", "--", "*.md").Output()
 	docs := strings.Fields(string(changed))
@@ -1058,7 +1070,7 @@ func initCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "Review it (git diff): commit what is right, restore what is not (git restore <file>).")
 	}
 	if len(suspect) > 0 {
-		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push has them judged.\n", len(suspect))
+		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push lists them; `workline docs` has them judged, or a merge request.\n", len(suspect))
 	}
 	return exitFor(res.Status)
 }

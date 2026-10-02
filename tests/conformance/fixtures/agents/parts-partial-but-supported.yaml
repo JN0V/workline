@@ -1,0 +1,16 @@
+# docs/tech/auth.md judged in parts, in the `documented` fixture once it
+# names src/auth/big.go too, and big.go changed: the first part holds
+# token.go, which supports line 10; the second, the rest of big.go, finds
+# line 10 partial, the TTL not in its share. Nothing is left to fix.
+calls:
+  - - claim:
+        lines: "10"
+        status: supported
+        quote: "Access tokens last one hour."
+        source: {path: src/auth/token.go, lines: "4", quote: "const TokenTTL = 3600"}
+  - - claim:
+        lines: "10"
+        status: partial
+        quote: "Access tokens last one hour."
+        source: {path: src/auth/big.go, lines: "3000", quote: "const b3000"}
+        why: "the token lifetime is not in this share"

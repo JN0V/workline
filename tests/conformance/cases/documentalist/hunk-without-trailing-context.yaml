@@ -1,0 +1,14 @@
+case: documentalist/hunk-without-trailing-context
+about: "A fix whose last hunk ends on the line it changes, with no context after it, though the doc goes on, is judged as the engine applies it: git apply alone takes such a hunk for the end of the file and refuses it. Tried on a solo repository: a right fix refused twice, the docs after it never judged."
+given:
+  repo: documented
+  setup:
+    - "printf '\\nSessions end at sign-out.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say when sessions end'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-no-trailing-context.sh"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.\n\nSessions end at sign-out.\n"}}

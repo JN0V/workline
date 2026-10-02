@@ -1,5 +1,5 @@
 case: documentalist/judged-in-parts-misquoted-claim-dropped
-about: "A part's claim whose quote is not at the lines it cites is dropped, and said. It may have been the one saying what is wrong: the doc is not recorded as judged in parts, and is judged in parts again on a later run."
+about: "A part's claim whose quote is not at the lines it cites is dropped, and said for a person, who reads the doc whole. The doc is recorded as judged in parts all the same: asked again each night, a doc on DomoticsCore and workline cost 0.23M to 0.32M tokens a night to the same end (ADR-0014, step 4); it is judged again when a source changes."
 given:
   repo: documented
   setup:
@@ -11,8 +11,8 @@ run: {role: documentalist, event: merge-request, ai: "fake:parts-misquoted"}
 expect:
   status: pass
   agent-calls: 2
-  applied: []
+  applied: [patch]
   findings:
     - {rule: claims-dropped, where: docs/tech/auth.md, message: "1 claims of its parts"}
-    - {rule: suspect, where: docs/tech/auth.md, message: "judged in parts again on a later run"}
-  files: {"docs/tech/auth.md": {lacks: "judged-in-parts"}}
+    - {rule: suspect, where: docs/tech/auth.md, message: "some claims were dropped: a person reads it whole"}
+  files: {"docs/tech/auth.md": {contains: "judged-in-parts:"}}

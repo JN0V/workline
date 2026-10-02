@@ -1,0 +1,13 @@
+case: documentalist/removal-cited-gone-applied
+about: "A line naming a function the code no longer has may go, cited `status: gone` with the name: the engine finds it in the code when the doc was last edited, and gone now, as `identifier-gone` does (ADR-0014, step 2)."
+given:
+  repo: documented
+  setup:
+    - "printf '\\nfunc RefreshToken() {}\\n' >> src/auth/token.go && printf '\\nCall `RefreshToken` to renew a token.\\n' >> docs/tech/auth.md && git commit -qam 'feat(auth): renew tokens'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i '/RefreshToken/d' src/auth/token.go && git commit -qam 'refactor(auth): tokens renew themselves'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/drop-gone-line.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "judged: ", lacks: "RefreshToken"}}

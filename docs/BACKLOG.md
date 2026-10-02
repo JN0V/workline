@@ -2,17 +2,87 @@
 
 ## Next, in order
 
-**Handover (2026-10-01, evening).** The documentalist is being finished
-before any other role; roles/documentalist/status.md says where it stands
-and what is missing, in order. Since the afternoon: GitLab reached through
-its API alone and tried on gitlab.com, a fork's pull request commented,
-`workline docs` from a ref and the release held by suspect docs (ADR-0010),
-and releases — **v0.1.1** (v0.1.0 is retracted: a tag pushed is never
-moved, the Go proxy keeps its first commit), the templates on it, the setup
-guide docs/ci.md. To check first: DomoticsCore #114 (its workflows on
-v0.1.1) merged; the night's gardening, on DomoticsCore and on workline's
-own docs, in parts for the first time (#27) — record both in tried.md.
-Then status.md's "Missing" from the top. Sandboxes for trying CI for real:
+**Handover (2026-10-02).** The documentalist vouched for docs it
+never read: the work is **ADR-0014, accepted**, in its order. Step 0 is
+built: the engine refuses a `checked` whose sources were not all given
+whole; the `checked` already moved is put back to `judged` — workline's 10
+docs (0669684), DomoticsCore's 16 on its local branch
+docs/undo-unearned-checked, not pushed. Its release waits for the person to
+merge #35 and this branch (fix/partial-settled-by-another); a doc a split
+creates is born without `checked` there too. The 16 reviewed verdicts are
+confirmed by a second, independent check
+(docs/research/documentalist-fixes-reviewed.md). Step 1 is built — the
+`drifted` fixture, two cases grading both sides, four grades, pass rates,
+the held-out set (docs/spec/conformance.md) — and its **baseline is
+measured** (roles/documentalist/tried.md, 2026-10-01: five rounds on Sonnet
+on each engine, 0.85M tokens; never `checked` over a falsehood 3/5 and 2/5
+on the version bump, a frozen line count and a test count vouched for).
+To measure again, as it was run (`-v` for the notes):
+
+```sh
+for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/; done
+# the summary pools every run of a case: keep one engine's rows apart (the workline column)
+awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
+```
+
+**Step 2 is built**: `count-off`, `value-left`, the removal rule and a
+comment is not evidence (a `claim` beside a patch cites each word it takes
+out), measured with no agent (roles/documentalist/tried.md: the three wrong
+workline fixes refused, 11 of 12 right ones pass, 172493e refused on a
+comment). **Step 3's gate is passed** with Sonnet (tried.md; 1.33M tokens):
+`drifted` five rounds, every point 4/5 and 5/5 (0/5 at the baseline),
+claims given at the first answer; eight reviewed fixes replayed, nothing
+false vouched for or written, so no quote-checked claims ADR. What remains
+is fixes not made (docs/research/documentalist-fixes-reviewed.md). Two
+are met before step 4, conformance only, no agent run on them yet: the
+task and every refusal say a count the engine gives needs no claim; a
+refusal names only the places refused and the rest of the patch to send
+again; and each run keeps the agent's answers and the accepted claims
+(`out/agent-answer.txt`, `out/claims.yaml`), so step 4 can read them. The
+others are parked below (Engine and CI, "Left by step 3"). **Step 4's
+acceptance does not hold** (roles/documentalist/status.md, "Measures";
+tried.md, 2026-10-02; 4.63M tokens): on the held-out set, five runs each,
+nothing false vouched for or written, every `count-off` and `value-left`
+the rules cover reported, fewer false alarms than real, the versions and
+flags made — but a judged doc costs 12.8% more than at the baseline
+(a96306c), past the tenth: one DomoticsCore run in five asked twice,
+`removal-uncited` on a word beside a count. The weekly one-in-ten sample
+waits for it. Its three costs are met, conformance and replay only
+(status.md, "after step 4"): no claim for the rest of a line whose count
+the engine fixes, nor for glue taken out of a line reworded; a table's
+total a `count-off`; a line a diff adds may be quoted; a patch git cannot
+apply refused saying which line it misquotes; a doc in parts recorded
+though claims were dropped; a history doc never condensed. **Step 4
+run again** on a15fc0d (tried.md, 2026-10-02; 3.96M tokens, the same
+method, the baseline's first nights reused): **does not hold**, bar 6
+only — +13.9% a judged doc the first night, +5.5% without DomoticsCore's
+one run in five asked twice (the HeapTracker pitfall rewritten with no
+claim, refused rightly, withdrawn). The three costs are met as measured:
+docs in parts recorded and not asked again, CHANGELOG never picked, no
+word beside a count refused; nothing false let through by the narrowed
+rule. **What a re-ask costs is cut**, conformance and replay only
+(status.md, "after step 4 again"): a place refused by the removal rule,
+a hunk misquoting, or a move of `checked` nobody can vouch for is no
+longer asked for again — the rest of the fix is applied, the doc
+recorded `judged`, the place reported for a person (the run's findings,
+the gardening request's body); only a patch of which no hunk quotes
+right is asked again. `count-off` reads "line count (607)", "line
+count: 607" and "a 216-line `X.h`". **Step 4 holds**, run a third
+time on d890be5 (tried.md, 2026-10-02; 3.56M tokens): all six bars,
++5.7% a judged doc the first night, no re-ask in 65 nights; **ADR-0014
+steps 0 to 2 are accepted**. **Next**: the release — the person merges
+#35 and this branch (fix/partial-settled-by-another), then a tag; then
+DomoticsCore's pin bumped to it and its branch docs/undo-unearned-checked
+(16 `checked` put back) pushed for review; then the weekly one-in-ten
+sample of the docs vouched for (ADR-0014, Amendment for who reads). Those three losses are met
+since, conformance and replay only (status.md, "after step 4 the third
+time"; measured at d890be5, the fixes after it only recover right fixes,
+refusing nothing new): a claim with no `doc` read for the one doc it
+fits, else reported; a misquoted hunk placed where it can only go; an
+answer whose YAML breaks asked again once. To watch on the next runs. DomoticsCore: branch docs/narrow-wide-sources (two
+docs narrowed) waits, not pushed; its main runs workline v0.1.1.
+The night's gardening, on DomoticsCore and on workline: record it in
+tried.md, against the review. Sandboxes for trying CI for real:
 github.com/JN0V/workline-sandbox and its fork jn0v-lab/workline-sandbox;
 gitlab.com/JN0V/workline-sandbox, its two tokens set as masked variables
 (the GitLab one expires about 2026-10-31).
@@ -69,6 +139,13 @@ Then, once both work well here:
   readable in five years without the bug; the bug's story belongs in the
   commit message. The mechanical part (long comment blocks added, ticket
   codes, "used to", "the bug was") before any AI.
+- **Work state lives in the forge's issues, not in commits.** A bug is an
+  issue; as its state moves, the issue moves (comments, labels, closed by
+  the pull request that fixes it). No handover committed: no dated
+  "Handover" paragraph here, no pull request carrying only one. The next
+  roles take it into account: which role opens, updates and closes an
+  issue, and what a session's "where to restart" becomes (an issue, a
+  pinned one, the forge's project board).
 - **Which model reviews which.** Evaluation cases with defects planted on
   purpose — a wrong edge case, a comment telling a bug's story — reviewed by
   Opus, Sonnet and Haiku, at each independence level of ADR-0005: what each
@@ -127,3 +204,40 @@ last.
   Go's config folder (`~/Library/Application Support/workline` on macOS), but
   your own facets are looked for in `~/.config/workline/roles/`: one folder
   for all, or both named in docs/usage.md.
+- **New code no doc describes** (raised 2026-10-01, left out of ADR-0014).
+  A file added outside every doc's sources is ignored unless `documented`
+  is set, and neither workline nor DomoticsCore sets it. Deriving
+  `documented` from the declared sources is circular (a file outside them
+  never matches); by their folders (`dir/**`) it works, but a source like
+  `library.json` must not widen to a whole component. Start without AI: the
+  count by folder, tests, examples, vendored and generated files left out;
+  a migration for repositories already adopted (`doctor`); only then an
+  agent proposing the doc a file belongs to, its "none" recorded so it is
+  not asked again, and a file attached only if the doc stays within
+  `parts-max`.
+- **Left by step 3** (ADR-0014; docs/research/documentalist-fixes-reviewed.md),
+  none a falsehood vouched for or written; to watch in step 4:
+  - *A line no part claimed* (3cd196d's line 60): judged in parts, no part
+    spoke to it, so the fix never saw it. The parts' coverage (ADR-0009):
+    `uncovered` reports a line naming a name from the code no part speaks
+    of; a line naming none, that no part claims, goes unseen.
+  - *A fixed bug left for a person* (92feb08, d784398): neither rewritten
+    nor removed, `value-left` reporting its old version; not vouched for.
+  - *A `supported` part verdict resting on a comment* (d43b3f2, two
+    claims): the removal rule checks a fix's claims, not a part's. Harmless
+    while a doc judged in parts never moves `checked`.
+  - *A claim reaches three lines either way*: one claim that holds, given
+    for line 10, also cites a removal at line 12 its quote says nothing of
+    (found writing the case refused-part-named-the-rest-kept). A claim is
+    checked to exist, not to support the change.
+- **Your allow-list blocks the bot's commits** (reproduced 2026-10-01).
+  With `~/.config/workline/allowed-identities` holding your address alone,
+  `workline run-role committer --event merge-request --input
+  range=d43b3f2~1..d43b3f2 --ai none` blocks with `identity`, author and
+  committer: the App's commits are
+  `336169029+workline-jn0v[bot]@users.noreply.github.com`, and GitHub's
+  web merges `noreply@github.com`; any local range holding them is refused
+  (a branch carrying the App's fix pushed again after a rebase, a merge
+  request checked by hand). Not seen in CI, which has no user list. Fix:
+  the user adds the bot's pattern, or the committer allows the forge's own
+  identities a project names (its App, `noreply@github.com`) by setting.

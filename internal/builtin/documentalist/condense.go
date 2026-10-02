@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 
+	"go.yaml.in/yaml/v3"
+
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -49,7 +51,8 @@ func writeSplitTask(c *condenseTask, problems []Problem, t Tree) string {
 	b.WriteString(`
 Split it into cards, one concept each: the card keeps its first concept, and
 each other concept moves, its lines as they are, into a new card beside it —
-a frontmatter with ` + "`type: card`" + ` (and the card's ` + "`sources`" + `, if it has any),
+a frontmatter with ` + "`type: card`" + ` (and the card's ` + "`sources`" + `, if it has any,
+never ` + "`checked`" + `: this task reads no source, so it vouches for none),
 a title naming that one concept — with a sentence and a link to it left in
 the card. Do not squeeze sentences, drop a rule written as MUST or SHOULD, or
 touch any other doc. One patch, a unified diff; a new card is created with
@@ -69,6 +72,9 @@ The card as it is now, with its line numbers:
 
 // pickCondense chooses the one doc a gardening run condenses: the first with
 // the strongest budget problem. One doc a run keeps each change reviewable.
+// A history doc is never chosen: moving its parts away rewrites the record
+// (WaterMeter's CHANGELOG.md, chosen and refused two nights running, ADR-0014
+// step 4); its budget is reported, for a person.
 func pickCondense(problems []Problem) *condenseTask {
 	for _, rule := range condensable {
 		for _, p := range problems {
@@ -76,6 +82,9 @@ func pickCondense(problems []Problem) *condenseTask {
 				continue
 			}
 			doc, _, _ := strings.Cut(p.Where, "#")
+			if isHistory(doc) {
+				continue
+			}
 			return &condenseTask{Doc: doc, Keys: []string{p.Key}}
 		}
 	}
@@ -104,7 +113,8 @@ Bring it within budget by moving whole parts — a section, a list, a table —
 into a new doc, and leaving a sentence and a link in their place. Move the
 lines as they are: they are checked to be found, unchanged, in the new doc.
 Do not squeeze sentences, drop a rule written as MUST or SHOULD, or touch any
-other existing doc. One patch, a unified diff; a new doc is created with
+other existing doc. A new doc has no ` + "`checked`" + `: nobody read it against its
+sources. One patch, a unified diff; a new doc is created with
 --- /dev/null and +++ b/<path>.
 
 The docs next to it, with their line counts:
@@ -162,7 +172,7 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 			refuse("patch-not-diff", "patch", "send a unified diff, so what it moves can be checked against the doc")
 			continue
 		}
-		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--check", "-"); err != nil {
+		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-"); err != nil {
 			refuse("patch-does-not-apply", "patch", err.Error())
 			continue
 		}
@@ -194,6 +204,12 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 					}
 				}
 				after[f.path] = strings.Join(lines, "\n") + "\n"
+				// A doc born of moved text is vouched for by nobody: no source
+				// was read, so it starts without `checked` (ADR-0014).
+				if bornChecked(after[f.path]) {
+					refuse("checked-unread", f.path, "the new doc carries `checked`, but this task gives none of its sources: moving text vouches for nothing, so create it without `checked`; it is listed unchecked, for a person")
+					continue
+				}
 				files[f.path] = true
 				created = append(created, f.path)
 			default:
@@ -309,7 +325,22 @@ func applyDoc(old string, f fileDiff, diff string) (now, rule, why string) {
 	if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
 		return "", "patch-ambiguous", "git would apply this diff differently from how it reads; send a plain unified diff"
 	}
+	// Moving text gives no source to read: `checked` stays (ADR-0014).
+	if checkedOf(now) != checkedOf(old) {
+		return "", "checked-unread", "the patch moves `checked`, but this task gives none of the doc's sources: moving text vouches for nothing, so leave the header as it is"
+	}
 	return now, "", ""
+}
+
+// bornChecked says whether a new doc's header holds `checked`, whatever
+// else it holds: tracked or not, it would read as vouched for.
+func bornChecked(content string) bool {
+	meta, n := header(content)
+	if n == 0 {
+		return false
+	}
+	var fm frontmatter
+	return yaml.Unmarshal([]byte(meta), &fm) != nil || !fm.Checked.IsZero()
 }
 
 // editedInPlace says whether a line left the doc only to come back changed a

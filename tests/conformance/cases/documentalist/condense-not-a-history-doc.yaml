@@ -1,0 +1,12 @@
+case: documentalist/condense-not-a-history-doc
+about: "A history doc over its budget — a changelog, a decision record, a tried or research record — is not condensed when gardening: it records what was true when written, and moving its parts away rewrites the record. WaterMeter's CHANGELOG.md was chosen two nights running and refused both times, 0.24M tokens (ADR-0014, step 4). It is still reported, for a person."
+given:
+  repo: documented
+  setup:
+    - "for v in 1.0 1.1 1.2 1.3 1.4 1.5; do printf '## %s\\n\\n- A change.\\n' $v; done > docs/CHANGELOG.md && git add docs/CHANGELOG.md && git commit -qm 'docs: keep a changelog'"
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}, budgets: {doc-lines: 12, section-words: 1000, card-words: {min: 1, max: 1000}, folder-lines: 1000, root-agent-file-lines: 1000}}}}}
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-part"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: doc-too-long, where: docs/CHANGELOG.md}]

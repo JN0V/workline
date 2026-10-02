@@ -1,0 +1,13 @@
+case: documentalist/claims-kept-for-audit
+about: "The claims an accepted fix gave are kept in the run folder, never applied, and so is the agent's answer as it came: a fix's evidence can be checked afterwards, a refusal diagnosed. The engine dropped both, so step 3's replays could read a claim only when it was refused (ADR-0014)."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked cites-code"}
+expect:
+  status: pass
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "two hours"}}
+  run-files:
+    out/claims.yaml: {contains: "const TokenTTL = 7200"}
+    out/agent-answer.txt: {contains: "7200 seconds are two hours"}

@@ -391,8 +391,12 @@ type suspectDoc struct {
 	// tooLarge: the doc, with what changed in its sources, does not fit in a
 	// task alone; judged by a person, never confirmed unread.
 	tooLarge bool
-	shown    int  // lines of evidence shown so far, within docEvidenceLines
-	capped   bool // more changed than docEvidenceLines shows
+	// whole: every source of the doc is given whole in its task, as it is
+	// now. Only then may `checked` move (ADR-0014): a doc judged on diffs,
+	// or beside a doc of the same task, is fixed and records `judged`.
+	whole  bool
+	shown  int  // lines of evidence shown so far, within docEvidenceLines
+	capped bool // more changed than docEvidenceLines shows
 	// note says what became of a doc judged in parts, or why it was not:
 	// such a doc is not put in a task of its own.
 	note     string
@@ -571,6 +575,7 @@ func Pre(runDir, repo string) int {
 				// when they fit.
 				if now, ok := sourcesNow(sd.doc, pl); ok && len(now) > 0 {
 					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
+					sd.whole = true
 				}
 				continue
 			}
@@ -580,6 +585,7 @@ func Pre(runDir, repo string) int {
 				continue
 			}
 			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
+			sd.whole = len(now) > 0
 		}
 	}
 	holdJudgedInParts(suspects, repo)
@@ -648,7 +654,9 @@ func Pre(runDir, repo string) int {
 		})...)
 		stale = staleForAgent(findings, byPath, pl)
 	}
-	for _, p := range append(problems, gone...) {
+	// Line counts off: counted by the engine, never vouched for (ADR-0014).
+	counts := CountsOff(repo, tree, docs)
+	for _, p := range append(append(problems, gone...), counts...) {
 		f := verdict.Finding{Rule: p.Rule, Where: p.Where, Message: p.Message}
 		if p.Rule == "setting-missing" {
 			f.Level = "block" // a check that could not run is not a pass
@@ -896,6 +904,21 @@ doc when its reader really gained something to know.
 		if err := writeYAML(filepath.Join(runDir, "in", "judged.yaml"), judged); err != nil {
 			return fail(err)
 		}
+		// The docs whose sources went whole into the task: only theirs may
+		// have `checked` moved (ADR-0014). The judge refuses any other move.
+		whole := []string{}
+		for p := range judged {
+			for _, m := range []map[string]*suspectDoc{suspects, propagate, stale} {
+				if sd := m[p]; sd != nil && sd.whole && !sd.tooLarge {
+					whole = append(whole, p)
+					break
+				}
+			}
+		}
+		sort.Strings(whole)
+		if err := writeYAML(filepath.Join(runDir, "in", "read-whole.yaml"), whole); err != nil {
+			return fail(err)
+		}
 		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
 			return fail(err)
 		}
@@ -988,6 +1011,7 @@ fixes what is now wrong, and nothing else.
 // docTask writes a task putting docs before the agent, each with why it is
 // there and what it is judged against, under the header saying the kind.
 func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *places, repo string) (string, map[string]map[string]string, error) {
+	header += citeTask
 	maxDocs := s.AIMaxCalls
 	paths := make([]string, 0, len(suspects))
 	for p := range suspects {
@@ -997,6 +1021,10 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 	var b strings.Builder
 	b.WriteString(header)
 	judged := map[string]map[string]string{}
+	files, err := trackedFiles(repo)
+	if err != nil {
+		return "", nil, err
+	}
 	for _, p := range paths {
 		if maxDocs > 0 && len(judged) >= maxDocs {
 			break
@@ -1037,18 +1065,36 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			return "", nil, err
 		}
 		var entry strings.Builder
-		fmt.Fprintf(&entry, "## %s\n\nIf you vouch for every sentence it keeps, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.", p, checked)
-		if full := want[""]; full != "" {
-			fmt.Fprintf(&entry, " If you cannot, it leaves `checked` as it is and sets `judged: %s` instead.", full[:7])
+		if sd.whole {
+			fmt.Fprintf(&entry, "## %s\n\nIf you vouch for every sentence it keeps, your patch sets `%s`: the commit this doc is judged against now, not the commit that changed a source.", p, checked)
+			if full := want[""]; full != "" {
+				fmt.Fprintf(&entry, " If you cannot, it leaves `checked` as it is and sets `judged: %s` instead.", full[:7])
+			}
+		} else {
+			// Not every source could be given whole: nobody can vouch for
+			// the doc from this task, so `checked` stays (ADR-0014).
+			fmt.Fprintf(&entry, "## %s\n\nNot every source of this doc could be given whole in this task, so `checked` cannot move: your patch fixes what you find wrong, leaves `checked` as it is", p)
+			if full := want[""]; full != "" {
+				fmt.Fprintf(&entry, " and sets `judged: %s`, the commit it is judged at", full[:7])
+			}
+			entry.WriteString(". A person reads it against its sources, then moves `checked`.")
 		}
 		entry.WriteString("\n\nWhy it is here:\n\n")
 		for _, w := range sd.why {
 			fmt.Fprintf(&entry, "- %s\n", strings.ReplaceAll(w, "\n", "\n  "))
 		}
+		// Line counts the engine counted (ADR-0014, step 2): told, so the
+		// agent neither vouches for them nor counts them itself.
+		if off := countsOff(repo, files, sd.doc, string(content)); len(off) > 0 {
+			entry.WriteString("\nLine counts this doc states wrong, counted by the engine in the files as they are now. Bring each to the engine's number: that change needs no `claim`, the engine's count being the evidence (a count is not words a file holds, so it cannot be quoted from one). `checked` cannot move while one stands.\n\n")
+			for _, c := range off {
+				fmt.Fprintf(&entry, "- %s\n", c.message())
+			}
+		}
 		if isAuthority(s, p) {
 			fmt.Fprintf(&entry, "\nThis doc is an authority (`truth: doc`): the code follows it, not the reverse. Do not change what it says. "+
 				"If the code now disagrees with it, return an `issue` titled %q, saying where they disagree and quoting both; "+
-				"your patch then only sets `checked` and `verified`, the disagreement being tracked by the issue.\n", "The code disagrees with "+p)
+				"your patch then only sets %s, the disagreement being tracked by the issue.\n", "The code disagrees with "+p, map[bool]string{true: "`checked` and `verified`", false: "`judged`"}[sd.whole])
 		}
 		for _, e := range sd.evidence {
 			entry.WriteString("\n" + e + "\n")
@@ -1095,6 +1141,18 @@ func Post(runDir, repo string) int {
 			return fail(err)
 		}
 	}
+	// The docs whose sources all went whole into the task; a file missing
+	// means none did: `checked` moves for no doc (ADR-0014).
+	whole := map[string]bool{}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "read-whole.yaml")); err == nil {
+		var paths []string
+		if err := yaml.Unmarshal(data, &paths); err != nil {
+			return fail(err)
+		}
+		for _, p := range paths {
+			whole[p] = true
+		}
+	}
 	var s Settings
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
 		return fail(err)
@@ -1103,8 +1161,9 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	var refused []verdict.Finding
-	patched := map[string]bool{}
+	var refused, reported, withheld []verdict.Finding
+	var judgedFix *judgedFixes
+	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil {
@@ -1159,9 +1218,33 @@ func Post(runDir, repo string) int {
 					return fail(err)
 				}
 			}
-			refused, patched, err = judgePatches(repo, s, judged, inParts, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			var j patchJudgement
+			j, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			refused, patched, partly, judgedFix, reported, withheld = j.refused, j.patched, j.partly, j.fix, j.reported, j.withheld
+			// The patches narrowed to what holds are what the engine applies
+			// (ADR-0014, step 4).
+			if err == nil && len(refused) == 0 && j.intents != nil {
+				intents = j.intents
+				err = writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents)
+			}
 		}
 		if err != nil {
+			return fail(err)
+		}
+	}
+	// A comment given as the only reason for a fix is reported for a person,
+	// whatever the agent answers when asked again (ADR-0014, step 2): kept
+	// beside the run's answers until the run ends.
+	commentsFile := filepath.Join(runDir, "out", "comments-disagree.yaml")
+	var comments []verdict.Finding
+	if data, err := os.ReadFile(commentsFile); err == nil {
+		if err := yaml.Unmarshal(data, &comments); err != nil {
+			return fail(err)
+		}
+	}
+	if len(reported) > 0 {
+		comments = sortedFindings(append(comments, reported...))
+		if err := writeYAML(commentsFile, comments); err != nil {
 			return fail(err)
 		}
 	}
@@ -1182,12 +1265,21 @@ func Post(runDir, repo string) int {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+				if partly[f.Where] {
+					f.Message += "\n(fixed, applied in part: the places refused are left as they were, each said below, and `checked` stays — a person fixes them against the sources, then moves `checked`)"
+				} else if whole[f.Where] {
+					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
+				} else {
+					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but not every source of the doc could be given whole in the task, so `checked` stays — a person reads it against them, then moves `checked`)"
+				}
 			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
+		}
+		if judgedFix.countFixed(f) {
+			f.Message += " (fixed in this run)"
 		}
 		if f.Level == "block" {
 			blocking++
@@ -1198,8 +1290,18 @@ func Post(runDir, repo string) int {
 		}
 		kept = append(kept, f)
 	}
+	// A version the fixes replace, still said beside them: reported, for a
+	// person (ADR-0014, step 2).
+	if judgedFix != nil {
+		kept = append(kept, valuesLeft(judgedFix.fixes, judgedFix.after, judgedFix.files, func(p string) string {
+			data, _ := os.ReadFile(filepath.Join(repo, filepath.FromSlash(p)))
+			return string(data)
+		})...)
+	}
+	kept = append(kept, withheld...)
+	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
-		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback))); err != nil {
+		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld)); err != nil {
 			return fail(err)
 		}
 	}
@@ -1294,6 +1396,21 @@ func loadTree(repo string, globs []string) (Tree, error) {
 	return t, nil
 }
 
+// trackedFiles lists the files the repository tracks.
+func trackedFiles(repo string) (map[string]bool, error) {
+	out := map[string]bool{}
+	files, err := git(repo, "ls-files")
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range strings.Split(files, "\n") {
+		if f != "" {
+			out[f] = true
+		}
+	}
+	return out, nil
+}
+
 // trackedDocs lists the docs that declare their sources.
 func trackedDocs(t Tree, globs []string) ([]*Doc, error) {
 	paths := make([]string, 0, len(t.Docs))
@@ -1326,13 +1443,24 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 	if err != nil {
 		return nil, false, err
 	}
-	out, err := git(repo, append([]string{"log", "--name-only", "--format="}, gitrange.Args(string(data))...)...)
+	out, err := git(repo, append([]string{"log", "--name-only", "--format=commit %H"}, gitrange.Args(string(data))...)...)
 	if err != nil {
 		return nil, false, err
 	}
+	// A doc whose commits changed only its header, who checked it, is not
+	// touched: what the docs following it say did not change.
 	touched = map[string]bool{}
+	commit := ""
 	for _, f := range strings.Split(out, "\n") {
-		if f != "" {
+		switch {
+		case strings.HasPrefix(f, "commit "):
+			commit = strings.TrimPrefix(f, "commit ")
+		case f == "" || touched[f]:
+		case strings.HasSuffix(f, ".md"):
+			before, err1 := git(repo, "show", commit+"^:"+f)
+			after, err2 := git(repo, "show", commit+":"+f)
+			touched[f] = err1 != nil || err2 != nil || body(before) != body(after)
+		default:
 			touched[f] = true
 		}
 	}
@@ -1367,8 +1495,8 @@ func addedFiles(runDir, repo string) (map[string]bool, error) {
 // touches says whether one of the files is path, or under it.
 func touches(files map[string]bool, path string) bool {
 	dir := strings.TrimSuffix(path, "/")
-	for f := range files {
-		if f == dir || strings.HasPrefix(f, dir+"/") {
+	for f, yes := range files {
+		if yes && (f == dir || strings.HasPrefix(f, dir+"/")) {
 			return true
 		}
 	}
@@ -1514,7 +1642,13 @@ func gitIn(dir, stdin string, args ...string) (string, error) {
 // zeroContextDiff is the diff from old to now of the file at path, with no
 // line of context: it applies wherever those lines still read as they did.
 func zeroContextDiff(path, old, now string) (string, error) {
-	dir, err := os.MkdirTemp("", "workline-derive-")
+	return unifiedDiff(path, old, now, 0)
+}
+
+// unifiedDiff is the diff from old to now of the file at path, with that
+// many lines of context; empty when they are the same.
+func unifiedDiff(path, old, now string, context int) (string, error) {
+	dir, err := os.MkdirTemp("", "workline-diff-")
 	if err != nil {
 		return "", err
 	}
@@ -1528,13 +1662,21 @@ func zeroContextDiff(path, old, now string) (string, error) {
 			return "", err
 		}
 	}
-	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "-U0", "a/"+path, "b/"+path)
+	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "--no-color", fmt.Sprintf("-U%d", context), "a/"+path, "b/"+path)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if exit, ok := err.(*exec.ExitError); ok && exit.ExitCode() == 1 {
 		err = nil // the files differ, as they should
 	}
 	return string(out), err
+}
+
+// writeIntents writes a set of intentions, an empty one as such.
+func writeIntents(path string, in []intent.Intention) error {
+	if len(in) == 0 {
+		return os.WriteFile(path, []byte("[]\n"), 0o644)
+	}
+	return intent.Write(path, in)
 }
 
 func orDefault(s, d string) string {
@@ -1651,7 +1793,7 @@ func otherOf(pair []string, p string) string {
 // mergeRequest describes, for a run that opens one (ADR-0006), the merge
 // request its patches go to: a key per task, so running the task again
 // updates it, and a title a commit can carry.
-func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool) map[string]string {
+func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool, withheld []verdict.Finding) map[string]string {
 	kind := "suspect"
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "task-kind")); err == nil {
 		kind = strings.TrimSpace(string(data))
@@ -1699,6 +1841,14 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 		body.WriteString("\nDocs:\n\n")
 		for _, d := range docs {
 			fmt.Fprintf(&body, "- `%s`\n", d)
+		}
+	}
+	// The places a fix was refused in, left as they were: the person
+	// reviewing reads them here (ADR-0014, step 4).
+	if len(withheld) > 0 {
+		body.WriteString("\nLeft as they were, for a person — the fix refused there, the rest applied, `checked` not moved:\n\n")
+		for _, f := range withheld {
+			fmt.Fprintf(&body, "- `%s` (%s): %s\n", f.Where, f.Rule, f.Message)
 		}
 	}
 	body.WriteString("\nRunning the same task again updates this merge request; commits added to its branch by hand are overwritten.\n")

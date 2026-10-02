@@ -82,7 +82,7 @@ func judgeDedupe(repo string, s Settings, d *dedupeTask, intents, fallback []int
 			refuse("patch-not-diff", "patch", "send a unified diff, so what it replaces can be checked against the docs")
 			continue
 		}
-		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--check", "-"); err != nil {
+		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-"); err != nil {
 			refuse("patch-does-not-apply", "patch", err.Error())
 			continue
 		}

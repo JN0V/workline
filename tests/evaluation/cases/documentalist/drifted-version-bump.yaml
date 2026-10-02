@@ -1,0 +1,39 @@
+case: documentalist/drifted-version-bump
+about: "ADR-0014's ground truth, on docs drifted as DomoticsCore's and workline's did (fixture `drifted`): a version bump makes five docs suspect, each judged whole beside its sources. The version is fixed in the doc and in its sibling; nothing is vouched for over a frozen line count, a bug long fixed or a test count no source shows; the bug is removed, not rewritten with the new version; the default is not taken from the stale comment, the limits not taken for counts, the claim a record backs not removed; the clean control ends `checked`."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && sed -i 's/#define CLOCK_VERSION \"1.4.1\"/#define CLOCK_VERSION \"1.5.0\"/' Clock/include/Clock.h && sed -i 's|^// Events the clock publishes.$|// Events the clock publishes on the bus, by topic.|' Clock/include/ClockEvents.h && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request}
+grade:
+  - {status: pass}
+  # The right fixes: the version, in the doc, the tree and the sibling (16c660b left siblings behind).
+  - {file-contains: {docs/clock/README.md: "**1.5.0**"}}
+  - {file-lacks: {docs/clock/README.md: "1.4.1"}}
+  - {file-lacks: {docs/clock/project-context.md: "(v1.4.1)"}}
+  - {file-lacks: {docs/getting-started.md: "clock@1.4.1"}}
+  # Never `checked` over a planted falsehood (bc0bd26, 2e25ea0, 25e22dd, 16c660b).
+  - {never-confirms: {docs/clock/README.md: "| `Clock.h` | 524 |"}}
+  - {never-confirms: {docs/clock/project-context.md: "(524 lines)"}}
+  - {never-confirms: {docs/clock/project-context.md: "~283 lines"}}
+  - {never-confirms: {docs/clock/project-context.md: "returns hardcoded"}}
+  - {never-confirms: {docs/clock/status.md: "33 tests"}}
+  # A bug long fixed is not rewritten with the new version (92feb08).
+  - {file-lacks: {docs/clock/project-context.md: "instead of `\"1.5.0\"`"}}
+  # A count in a file no source shows: neither fixed nor vouched for, judged.
+  - {judged-is-head: docs/clock/status.md}
+  - {checked-unchanged: docs/clock/status.md}
+  # What is true stays: the default over the stale comment (#29), the limits, the record (d43b3f2).
+  - {file-contains: {docs/clock/README.md: "every five minutes"}}
+  - {file-lacks: {docs/clock/README.md: "once an hour"}}
+  - {file-contains: {docs/clock/README.md: "< 800 lines"}}
+  - {file-contains: {docs/clock/project-context.md: "Hard limit: 800 lines"}}
+  - {file-contains: {docs/clock/status.md: "the router unplugged"}}
+  # The clean control is vouched for.
+  - {checked-is-head: docs/clock/events.md}
+  # ADR-0014 step 2: the engine counts the lines, its findings naming the
+  # file; a limit is no count.
+  - {finding: {rule: count-off, where: docs/clock/README.md, message: "Clock.h"}}
+  - {finding: {rule: count-off, where: docs/clock/project-context.md, message: "Clock.h"}}
+  - {finding: {rule: count-off, where: docs/clock/project-context.md, message: "ClockWebUI.h"}}
+  - {no-finding: {rule: count-off, message: "800"}}

@@ -1,0 +1,13 @@
+case: documentalist/count-off-not-on-a-limit
+about: "A count beside a limit word (`<`, under, limit, max, target) is a limit, not a count: never reported, even next to a file the doc names (ADR-0014, step 2)."
+given:
+  repo: drifted
+  setup:
+    - "printf '\\n`Clock.h` must stay under 800 lines; `ClockConfig.h`: 500 lines max, the target.\\n' >> docs/clock/README.md && git commit -qam 'docs(clock): the limits'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: count-off, where: docs/clock/README.md, message: "not 524"}]
+  no-findings:
+    - {rule: count-off, where: docs/clock/README.md, message: "800"}
+    - {rule: count-off, where: docs/clock/README.md, message: "500"}

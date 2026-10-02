@@ -104,10 +104,9 @@ var (
 	record    sync.Mutex
 )
 
+// TestMain builds the engine: the evaluation runs it with a real agent, and
+// the checks' own tests with a fake one.
 func TestMain(m *testing.M) {
-	if os.Getenv("WORKLINE_EVAL") == "" {
-		os.Exit(m.Run()) // the checks' own tests only
-	}
 	dir, err := os.MkdirTemp("", "workline-eval-")
 	if err != nil {
 		panic(err)
@@ -142,7 +141,7 @@ func TestEvaluation(t *testing.T) {
 		t.Run(c.Case, func(t *testing.T) {
 			t.Parallel()
 			start := time.Now()
-			r, err := play(t, &c)
+			r, err := play(t, &c, os.Getenv("WORKLINE_EVAL"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -180,8 +179,9 @@ func TestEvaluation(t *testing.T) {
 	}
 }
 
-// play builds the case's repository and runs the role once, with the agent.
-func play(t *testing.T, c *caseFile) (*run, error) {
+// play builds the case's repository and runs the role once, with the agent
+// ai names (an --ai value).
+func play(t *testing.T, c *caseFile, ai string) (*run, error) {
 	work := t.TempDir()
 	repo := filepath.Join(work, "repo")
 	// The user's config folder stays out: their allowed identities and term
@@ -223,13 +223,15 @@ func play(t *testing.T, c *caseFile) (*run, error) {
 	head, _ := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
 	r.headBefore = strings.TrimSpace(string(head))
 	for _, g := range c.Grade {
-		if p, ok := g["body-unchanged"].(string); ok {
-			data, _ := os.ReadFile(filepath.Join(repo, p))
-			r.before[p] = string(data)
+		for _, kind := range []string{"body-unchanged", "checked-unchanged"} {
+			if p, ok := g[kind].(string); ok {
+				data, _ := os.ReadFile(filepath.Join(repo, p))
+				r.before[p] = string(data)
+			}
 		}
 	}
 	roles, _ := filepath.Abs("../../roles")
-	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--ai", os.Getenv("WORKLINE_EVAL"), "--json"}
+	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--ai", ai, "--json"}
 	msgFile := filepath.Join(work, "message")
 	if c.Run.Message != "" {
 		if err := os.WriteFile(msgFile, []byte(c.Run.Message+"\n"), 0o644); err != nil {
@@ -317,11 +319,37 @@ func check(kind string, v any, c *caseFile, r *run) string {
 				return fmt.Sprintf("%s and %q", path, text)
 			}
 		}
-	case "checked-is-head":
+	case "checked-is-head", "judged-is-head":
+		field, _ := strings.CutSuffix(kind, "-is-head")
 		data, _ := os.ReadFile(filepath.Join(r.repo, fmt.Sprint(v)))
-		m := regexp.MustCompile(`(?m)^checked: ([0-9a-f]{7,40})$`).FindStringSubmatch(string(data))
-		if m == nil || !strings.HasPrefix(r.headBefore, m[1]) {
-			return fmt.Sprintf("%s does not record %.7s", v, r.headBefore)
+		if got := headerField(string(data), field); len(got) < 7 || !strings.HasPrefix(r.headBefore, got) {
+			return fmt.Sprintf("%s does not record %.7s in `%s`", v, r.headBefore, field)
+		}
+	case "checked-unchanged":
+		// A doc the agent cannot vouch for keeps the `checked` it had.
+		p := fmt.Sprint(v)
+		data, _ := os.ReadFile(filepath.Join(r.repo, p))
+		if was, now := headerField(r.before[p], "checked"), headerField(string(data), "checked"); now != was {
+			return fmt.Sprintf("%s: `checked` moved from %s to %s", p, was, now)
+		}
+	case "finding", "no-finding":
+		// The run's findings, matched as conformance matches them: the rule,
+		// a part of where and of the message, each when given.
+		want := map[string]string{}
+		for k, x := range v.(map[string]any) {
+			want[k] = fmt.Sprint(x)
+		}
+		var found []string
+		for _, f := range r.res.Findings {
+			if (want["rule"] == "" || f.Rule == want["rule"]) && strings.Contains(f.Where, want["where"]) && strings.Contains(f.Message, want["message"]) {
+				found = append(found, fmt.Sprintf("%s %s: %.120s", f.Rule, f.Where, f.Message))
+			}
+		}
+		if kind == "finding" && len(found) == 0 {
+			return fmt.Sprintf("no finding %v", want)
+		}
+		if kind == "no-finding" && len(found) > 0 {
+			return "found " + strings.Join(found, "; ")
 		}
 	case "never-confirms":
 		// A false claim may be fixed, or left unconfirmed with a note; never
@@ -387,6 +415,22 @@ func hasWord(s, w string) bool {
 
 func firstLine(s string) string { return strings.SplitN(s, "\n", 2)[0] }
 
+// headerField is what a doc's header says in one field, as written; "" when
+// it says nothing of it.
+func headerField(doc, field string) string {
+	var head string
+	if rest, ok := strings.CutPrefix(doc, "---\n"); ok {
+		head, _, _ = strings.Cut(rest, "\n---\n")
+	} else if rest, ok := strings.CutPrefix(doc, "<!-- workline\n"); ok {
+		head, _, _ = strings.Cut(rest, "\n-->")
+	}
+	m := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(field) + `: *(\S+) *$`).FindStringSubmatch(head)
+	if m == nil {
+		return ""
+	}
+	return m[1]
+}
+
 // body drops a doc's frontmatter.
 func body(s string) string {
 	if rest, ok := strings.CutPrefix(s, "---\n"); ok {
@@ -418,9 +462,10 @@ func hermetic() []string {
 }
 
 // evaluated are the paths a score depends on: the engine, the roles (not
-// their READMEs, which no agent reads) and the cases. A commit touching
-// nothing else does not change what is evaluated.
-var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases"}
+// their READMEs, which no agent reads), the cases and the repositories they
+// are built from. A commit touching nothing else does not change what is
+// evaluated.
+var evaluated = []string{"cmd", "internal", "roles", ":(exclude)roles/*/README.md", "go.mod", "tests/evaluation/cases", "tests/conformance/fixtures/repos"}
 
 // worklineVersion is the last commit changing what is evaluated, marked when
 // the tree has changes there. tests/evaluation/schedule/run.sh counts runs by it.

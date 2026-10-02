@@ -1,0 +1,16 @@
+case: documentalist/claim-without-doc-attributed
+about: "A claim that names no `doc`, in an answer patching two docs, is read for the one doc it can stand for: the only doc whose patch changes the lines it gives and under whose sources its quote is found. On DomoticsCore a right claim for HeapTracker's pitfall named no `doc` beside a second doc's patch, was not read, and the right fix was withheld as uncited (ADR-0014, step 4)."
+given:
+  repo: documented
+  setup:
+    - "printf 'package auth\\n\\nconst SessionTTL = 3600\\n' > src/auth/session.go && printf -- '---\\ntype: reference\\nsources: [src/auth/session.go]\\nchecked: HEAD\\n---\\n# Sessions\\n\\n## Length\\n\\nSessions end after one hour.\\n' > docs/tech/session.md && git add . && git commit -qm 'feat(auth): end sessions after an hour' && C=$(git rev-parse --short HEAD) && sed -i \"s/checked: HEAD/checked: $C/\" docs/tech/session.md && git commit -qam 'docs: confirm the sessions doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go src/auth/session.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/claim-without-doc.sh"}
+expect:
+  status: pass
+  applied: [patch, patch]
+  agent-calls: 1
+  no-findings:
+    - {rule: removal-uncited}
+    - {rule: claim-unattributed}
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.", lacks: "judged:"}, "docs/tech/session.md": {contains: "judged:"}}

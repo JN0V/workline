@@ -1,0 +1,28 @@
+# condense-moves-a-part, on the `untidy` fixture whose docs/sessions.md
+# declares its sources: the part moves as it should, but the patch also moves
+# `checked`, vouching for a doc whose sources the task never gave.
+- patch: |
+    --- /dev/null
+    +++ b/docs/cards/signing-out.md
+    @@ -0,0 +1,3 @@
+    +# Signing out
+    +
+    +Signing out ends the session.
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -2,3 +2,3 @@
+     sources: [src/token.go]
+    -checked: 7b5ebbe
+    +checked: 6e21f90
+     ---
+    @@ -6,2 +6,4 @@
+     
+    +See also [signing out](cards/signing-out.md).
+    +
+     ## How long a session lasts
+    @@ -11,5 +13 @@ refreshed. When it expires, the user is asked to sign in again, and anything
+     they had not saved is kept in the browser until they come back to the page.
+    -
+    -## Signing out
+    -
+    -Signing out ends the session.

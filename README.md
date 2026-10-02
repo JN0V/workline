@@ -1,6 +1,7 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
-checked: 6013a50
+checked: 5b8b173
+judged: 6013a50
 verified: agent:documentalist
 -->
 <h1>
@@ -16,7 +17,7 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->176<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->218<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|
@@ -30,21 +31,26 @@ Status (2026-09-24): used daily on its author's machine;
 
 ## Install
 
-You need git and [Go](https://go.dev/dl/) 1.21 or later (Go fetches the
-version workline needs by itself). There are no released binaries yet.
+You need git. Each [release](https://github.com/JN0V/workline/releases)
+holds the binary for Linux, macOS and Windows; on Linux or macOS, into
+`~/.local/bin`:
+
+```sh
+os=$(uname -s | tr A-Z a-z); arch=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')
+curl -fsSL "https://github.com/JN0V/workline/releases/latest/download/workline_${os}_${arch}.tar.gz" | tar -xz -C ~/.local/bin workline
+workline version
+```
+
+Or, with [Go](https://go.dev/dl/) 1.21 or later, which puts it in
+`$(go env GOPATH)/bin`, usually `~/go/bin` (add it to your `PATH`):
 
 ```sh
 go install github.com/JN0V/workline/cmd/workline@latest
 ```
 
-The binary goes to `$(go env GOPATH)/bin`, usually `~/go/bin`, which Go does
-not put on your `PATH`. If `workline` is not found, add it (`~/.zshrc` for zsh):
-
-```sh
-echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.bashrc && source ~/.bashrc
-```
-
-Run the same `go install` again to update. Then set up this machine:
+To update, run the same command again, into the same place: the global
+hooks call the binary where it was when they were installed (`command -v
+workline` says where). Then set up this machine:
 
 ```sh
 workline setup    # asks, then does: the global hooks, your agent, the tools the roles use
@@ -57,10 +63,10 @@ first. Run it again to change your answers; `--yes` takes the defaults. It
 ends with `workline doctor`, which says at any time what is set up and what
 is missing, each with the command that sets it up.
 
-In a repository, `workline init` has the documentalist run before each push,
-and, with an agent, proposes for each doc the code it describes, for you to
-review and commit: until a doc names its `sources`, nothing tells when it
-goes wrong.
+In a repository, `workline init` has the committer and the documentalist run
+before each push, and, with an agent, proposes for each doc the code it
+describes, for you to review and commit: until a doc names its `sources`,
+nothing tells when it goes wrong.
 
 ### Check every commit on this machine
 
@@ -132,7 +138,7 @@ flowchart LR
     push["git push"] -- pre-push --> local["the project's pre-push line"]
   end
   subgraph forge["Forge: GitHub or GitLab"]
-    mr["merge request"] -- merge-request --> judge["judge job<br/>committer, documentalist<br/>no write token"]
+    mr["merge request"] -- merge-request --> judge["judge job<br/>committer, documentalist<br/>no write token but code scanning's"]
     judge -- proposals --> apply["apply job<br/>no AI key"]
     schedule["schedule<br/>a pipeline you add"] -- schedule --> documentalist["documentalist"]
   end

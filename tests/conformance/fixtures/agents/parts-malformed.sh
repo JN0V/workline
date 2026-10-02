@@ -22,6 +22,10 @@ YAML
      
     -Access tokens last one hour.
     +Access tokens last two hours.
+- claim:
+    lines: "10"
+    status: contradicted
+    source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}
 YAML
 	;;
 esac

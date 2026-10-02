@@ -182,7 +182,7 @@ func judgeSources(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-not-diff", "patch", "send a unified diff, not a whole file")
 			continue
 		}
-		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--check", "-"); err != nil {
+		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-"); err != nil {
 			refuse("patch-does-not-apply", "patch", err.Error())
 			continue
 		}

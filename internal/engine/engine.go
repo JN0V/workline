@@ -293,6 +293,7 @@ func run(o Options, res *Result) error {
 	tier, failures := r.Model.Tier, 0
 	var intents []intent.Intention
 	var v *verdict.Verdict
+	unreadAsked := false
 	for {
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
@@ -304,6 +305,22 @@ func run(o Options, res *Result) error {
 			res.Findings = append(res.Findings, v.Findings...)
 			return nil
 		}
+		// An answer that could not be read is asked for again once, on the
+		// same tier, with what the reader said: nothing of it was judged or
+		// applied, and a quote left unescaped is a slip, not a refusal. The
+		// documentalist's post passes with no proposal, and such a doc was
+		// judged again, whole, the next night (DomoticsCore, ADR-0014 step 4).
+		if a.askedAgent && a.unread != "" && v.Status != verdict.Block && !unreadAsked && r.Model.PromoteAfter > 0 {
+			unreadAsked = true
+			fb := "- agent-invalid-output: " + a.unread + "\n\nNothing of that answer could be read: send it again as valid YAML (a string holding a double quote is written between single quotes, or its quotes escaped).\n"
+			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb), 0o644); err != nil {
+				return err
+			}
+			os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "unread-answer.txt"))
+			os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
+			os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
+			continue
+		}
 		if !a.askedAgent || v.Status != verdict.Block {
 			break
 		}
@@ -314,13 +331,19 @@ func run(o Options, res *Result) error {
 		}
 		var fb strings.Builder
 		for _, f := range v.Findings {
-			fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
+			if f.Where != "" && !strings.Contains(f.Message, f.Where) {
+				fmt.Fprintf(&fb, "- %s, %s: %s\n", f.Rule, f.Where, f.Message)
+			} else {
+				fmt.Fprintf(&fb, "- %s: %s\n", f.Rule, f.Message)
+			}
 		}
 		if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb.String()), 0o644); err != nil {
 			return err
 		}
-		// The refused answer is kept beside its refusal, to be studied.
+		// The refused answer is kept beside its refusal, to be studied, as
+		// read and as it came.
 		os.Rename(filepath.Join(runDir, "out", "intentions.yaml"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d.yaml", failures)))
+		os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", fmt.Sprintf("refused-%d-answer.txt", failures)))
 		os.Remove(filepath.Join(runDir, "out", "verdict.yaml"))
 		os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 	}
@@ -334,6 +357,9 @@ func run(o Options, res *Result) error {
 				return err
 			}
 			if nv.Status == verdict.Pass {
+				if kept, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
+					return err
+				}
 				intents, v = kept, nv
 				v.Findings = append(left, v.Findings...)
 			}
@@ -360,6 +386,21 @@ func run(o Options, res *Result) error {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "input-changed", Message: "the prepared input changed before apply; nothing was applied"})
 		return nil
 	}
+	// A claim says why a patch takes words out: judged, never applied. It is
+	// kept apart in the run folder, so that the evidence an accepted fix gave
+	// can be checked afterwards.
+	var claims []intent.Intention
+	for _, i := range intents {
+		if i.Kind == "claim" {
+			claims = append(claims, i)
+		}
+	}
+	if len(claims) > 0 {
+		if err := intent.Write(filepath.Join(runDir, "out", "claims.yaml"), claims); err != nil {
+			return err
+		}
+	}
+	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" })
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
@@ -973,6 +1014,7 @@ type attemptResult struct {
 	findings   []verdict.Finding // why proposals were refused before judging
 	askedAgent bool
 	external   bool
+	unread     string // why the agent's answer could not be read, if it could not
 }
 
 // attempt asks the agent (when there is a question and an agent), merges the
@@ -991,6 +1033,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 			a.external = true
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})
 		case errors.Is(err, agent.ErrInvalidOutput):
+			a.unread = err.Error()
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
 		default:
 			return nil, err
@@ -998,6 +1041,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	}
 	intents, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err != nil {
+		a.unread = err.Error()
 		a.findings = append(a.findings, verdict.Finding{Rule: "agent-invalid-output", Message: err.Error()})
 		intents = nil
 	}
@@ -1040,6 +1084,15 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
 	}
 	verdict.Enforce(v, r.Enforcement(cfg))
+	// post may narrow the proposals it passes: a place it refuses taken out,
+	// the rest kept, rather than the whole task asked again for it (the
+	// documentalist, ADR-0014 step 4). What it leaves in out/intentions.yaml
+	// is what is applied, held to the same catalogue and bounds.
+	if v.Status == verdict.Pass && len(intents) > 0 {
+		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
+			return nil, err
+		}
+	}
 	if v.Status == verdict.Pass && a.askedAgent {
 		if err := askJudge(o, res, runDir, v, a); err != nil {
 			return nil, err
@@ -1159,6 +1212,24 @@ func judgeAgain(r *role.Role, o Options, runDir string, env []string, cfg *role.
 	return v, nil
 }
 
+// narrowedByPost reads the proposals post passed, as it left them in
+// out/intentions.yaml: post may take out a place it refuses and keep the
+// rest (the documentalist, ADR-0014 step 4). They are held to the same
+// catalogue and bounds as the agent's.
+func narrowedByPost(r *role.Role, o Options, runDir string, line *routing.Config, settings map[string]any) ([]intent.Intention, error) {
+	narrowed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("post left out/intentions.yaml unreadable: %w", err)
+	}
+	if refused, why := invalid(r, narrowed, line); len(refused) > 0 {
+		return nil, fmt.Errorf("post narrowed the proposals to an invalid set: %s", why)
+	}
+	if bad := outOfBounds(o.Repo, narrowed, r.Writes(settings), o.Scope); len(bad) > 0 {
+		return nil, fmt.Errorf("post narrowed the proposals outside the task: %s", strings.Join(bad, ", "))
+	}
+	return narrowed, nil
+}
+
 func statusForExit(code int) string {
 	switch code {
 	case exitOK:
@@ -1177,10 +1248,15 @@ func statusForExit(code int) string {
 // catalogue, not allowed for the role, or a handoff routing does not declare.
 func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]string, string) {
 	var bad, why []string
+	patches := false
+	for _, i := range in {
+		patches = patches || i.Kind == "patch"
+	}
 	for _, i := range in {
 		switch {
-		case i.Kind == "claim":
-			bad, why = append(bad, i.Kind), append(why, "a claim answers a part of a question (in/parts), never the question itself")
+		case i.Kind == "claim" && (!r.Allows("claim") || !patches):
+			// Beside a patch, a claim cites why it takes words out (ADR-0014).
+			bad, why = append(bad, i.Kind), append(why, "a claim answers a part of a question (in/parts), or cites why a patch takes words out, beside it; never the question itself")
 		case !intent.Catalogue[i.Kind] || !r.Allows(i.Kind):
 			bad, why = append(bad, i.Kind), append(why, fmt.Sprintf("%s is not allowed for this role", i.Kind))
 		case i.Kind == "handoff":

@@ -1,0 +1,17 @@
+case: documentalist/refused-place-reported-the-rest-applied
+about: "A patch refused for one of its places is applied without it: the place is left as it was and reported for a person, with its reason; the rest applied; the doc recorded `judged`, `checked` left, though the agent moved it. The agent is not asked again: a re-ask sent the whole task again for one place, and the agent had withdrawn the right fix beside it (16c660b; DomoticsCore's HeapTracker pitfall, ADR-0014 step 4)."
+given:
+  repo: documented
+  setup:
+    - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how tokens are signed'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/keep-the-held-hunk.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  refused-kept: 0
+  findings:
+    - {rule: removal-uncited, where: docs/tech/auth.md, message: "line 14 takes out \"Tokens are signed with HS256\""}
+    - {rule: suspect, where: docs/tech/auth.md, message: "applied in part"}
+  files: {"docs/tech/auth.md": {contains: "Tokens are signed with HS256.", lacks: "one hour"}}

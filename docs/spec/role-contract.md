@@ -1,6 +1,7 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 6013a50
+checked: d30d22a
+judged: 6013a50
 verified: agent:documentalist
 ---
 # Role contract — v1 (draft)
@@ -160,6 +161,13 @@ token), **apply** (trusted, no AI key).
    fallback patch given as a diff (the documentalist's derived blocks, with no
    line of context) is never replaced: it is applied after the agent's.
    With no agent, or none that answered, the fallback proposals are used alone.
+   An answer that cannot be read as proposals (`agent-invalid-output`, with
+   what the YAML reader said) is asked for again once, on the same tier, with
+   that error, when the role asks again at all (`promote-after`) and `post`
+   did not block: nothing of it was judged, and a quote left unescaped is a
+   slip, not a refusal. The documentalist's `post` passed with no proposal,
+   and such a doc was judged again, whole, the next night (DomoticsCore,
+   ADR-0014 step 4). The answer not read is kept as `out/unread-answer.txt`.
    *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
    read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
@@ -176,7 +184,14 @@ token), **apply** (trusted, no AI key).
    role allows and still refused, the files the refusals name are taken out
    of the patches, and what is left — some of the agent's own — is judged
    once more, without asking: passed, it is applied, and each file left out
-   is a `left-out` finding with the refusal's reason.
+   is a `left-out` finding with the refusal's reason. A role listing `claim`
+   among its intentions may give claims beside a patch, saying why it takes
+   words out (the documentalist, ADR-0014): `post` reads them; alone, with no
+   patch, they are refused, and they are never applied. A `post` that passes
+   may narrow the proposals in `out/intentions.yaml` — a place it refuses
+   taken out, the rest kept — rather than block for the whole task to be
+   asked again (the documentalist, ADR-0014 step 4); what it leaves there is
+   what is applied, held to the same catalogue and bounds.
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid
@@ -241,6 +256,6 @@ in [role-adapting.md](role-adapting.md).
 
 What this contract describes and the engine does not do yet, each marked where
 it is described: roles taken from elsewhere (`from`, `roles.lock`), `uses`,
-`without-ai`, SARIF, baselines, the defect ledger. The rest is built and
+`without-ai`, baselines, the defect ledger. The rest is built and
 covered by the conformance cases (conformance.md); routing and gates are in
 routing.md and gates.md.

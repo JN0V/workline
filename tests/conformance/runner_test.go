@@ -98,6 +98,7 @@ type caseFile struct {
 		Notes       []string                     `yaml:"notes"`        // texts the agent's notes hold
 		RefusedKept int                          `yaml:"refused-kept"` // refused answers kept in the run folders
 		CallsKept   int                          `yaml:"calls-kept"`   // agent calls recorded in the run folders
+		RunFiles    map[string]map[string]string `yaml:"run-files"`    // a file of the run folder -> a text it holds
 	} `yaml:"expect"`
 }
 
@@ -332,7 +333,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 	}
 	for _, bad := range e.NoFindings {
 		for _, f := range r.Findings {
-			if f.Rule == bad["rule"] && f.Where == bad["where"] {
+			if f.Rule == bad["rule"] && f.Where == bad["where"] && strings.Contains(f.Message, bad["message"]) {
 				p = append(p, fmt.Sprintf("finding %v should not be there: %s", bad, f.Message))
 			}
 		}
@@ -392,6 +393,23 @@ func compare(c *caseFile, r *result, repo string) []string {
 		}
 		if n != e.CallsKept {
 			p = append(p, fmt.Sprintf("%d agent calls kept, want %d", n, e.CallsKept))
+		}
+	}
+	for name, want := range e.RunFiles {
+		found, _ := filepath.Glob(filepath.Join(repo, ".git", "workline", "runs", "*", filepath.FromSlash(name)))
+		if len(found) == 0 {
+			p = append(p, fmt.Sprintf("no run folder keeps %s", name))
+			continue
+		}
+		if text, ok := want["contains"]; ok {
+			held := false
+			for _, f := range found {
+				data, _ := os.ReadFile(f)
+				held = held || strings.Contains(string(data), text)
+			}
+			if !held {
+				p = append(p, fmt.Sprintf("%s does not hold %q", name, text))
+			}
 		}
 	}
 	for _, text := range e.Notes {

@@ -1,0 +1,16 @@
+case: documentalist/gardening-lists-places-withheld
+about: "A gardening merge request whose fix was applied in part lists, in its body, each place left as it was and why, for the person reviewing it: the run's findings stay in the job, the merge request is what a person reads (ADR-0014, step 4)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how tokens are signed'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/keep-the-held-hunk.sh", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  forge:
+    merge-requests:
+      - {id: 1, body-contains: "`docs/tech/auth.md` (removal-uncited): line 14 takes out"}

@@ -1,0 +1,10 @@
+case: documentalist/removal-cited-from-code-applied
+about: "A fix citing why it takes words out — the setting's line, quoted from a file of the doc's sources, outside any comment — is applied, its claim never (ADR-0014, step 2)."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked cites-code"}
+expect:
+  status: pass
+  applied: [patch]
+  files: {"docs/tech/auth.md": {contains: "two hours", lacks: "one hour"}}

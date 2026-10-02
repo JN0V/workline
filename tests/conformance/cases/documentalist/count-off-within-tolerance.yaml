@@ -1,0 +1,14 @@
+case: documentalist/count-off-within-tolerance
+about: "A count is right within one line, or within a tenth when it says it is about (`~`, about): neither is reported (ADR-0014, step 2)."
+given:
+  repo: drifted
+  setup:
+    - "printf '\\n`ClockConfig.h` is 13 lines, `Clock.h` about 560 lines.\\n' >> docs/clock/README.md && printf '\\n`ClockWebUI.h` would be ~250 lines.\\n' >> docs/clock/project-context.md && git commit -qam 'docs(clock): sizes'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: count-off, where: docs/clock/project-context.md, message: "not ~283"}]
+  no-findings:
+    - {rule: count-off, where: docs/clock/README.md, message: "not 13"}
+    - {rule: count-off, where: docs/clock/README.md, message: "560"}
+    - {rule: count-off, where: docs/clock/project-context.md, message: "250"}

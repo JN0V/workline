@@ -1,0 +1,15 @@
+case: documentalist/fix-of-a-doc-unread-whole-kept
+about: "A doc whose sources could not all be given whole is still put before the agent, told that `checked` cannot move: its fix, leaving `checked` and recording `judged`, is kept, and the doc stays suspect for a person, saying why (ADR-0014)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 1200 | sed 's|^|// One line of a long comment on tokens, number |' >> src/auth/token.go && git commit -qam 'docs(auth): explain tokens at length'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh sets-judged"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "not every source of the doc could be given whole"}]
+  files: {"docs/tech/auth.md": {contains: "judged: ", lacks: "one hour"}}

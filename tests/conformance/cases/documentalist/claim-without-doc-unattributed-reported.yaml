@@ -1,0 +1,17 @@
+case: documentalist/claim-without-doc-unattributed-reported
+about: "A claim that names no `doc`, in an answer patching two docs, that could stand for either — both patches change the lines it gives, its quote under both docs' sources — is read for neither: the place it was for is withheld, its refusal saying a claim was given without `doc:` rather than none, and the claim reported as unattributed. The other doc-less claim, which only one doc can hold, is read for it."
+given:
+  repo: documented
+  setup:
+    - "printf 'package auth\\n\\nconst SessionTTL = 3600\\n' > src/auth/session.go && printf -- '---\\ntype: reference\\nsources: [src/auth/session.go, src/auth/token.go]\\nchecked: HEAD\\n---\\n# Sessions\\n\\n## Length\\n\\nSessions end after one hour.\\n' > docs/tech/session.md && git add . && git commit -qm 'feat(auth): end sessions after an hour' && C=$(git rev-parse --short HEAD) && sed -i \"s/checked: HEAD/checked: $C/\" docs/tech/session.md && git commit -qam 'docs: confirm the sessions doc'"
+    - "sed -i 's/3600/7200/' src/auth/token.go src/auth/session.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {AMBIGUOUS: "1"}
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/claim-without-doc.sh"}
+expect:
+  status: pass
+  applied: [patch, patch]
+  agent-calls: 1
+  findings:
+    - {rule: removal-uncited, where: docs/tech/auth.md, message: "a claim was given without `doc:`"}
+    - {rule: claim-unattributed, message: "a claim for line 10 was given without `doc:`"}
+  files: {"docs/tech/auth.md": {contains: "Access tokens last one hour."}, "docs/tech/session.md": {contains: "Sessions end after two hours."}}

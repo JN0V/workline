@@ -1,0 +1,16 @@
+case: documentalist/count-off-total
+about: "A table's total of line counts is a count too: the engine sums the files' lines and reports the total off, so the agent brings it to the engine's number with no claim. DomoticsCore's OTA table had its rows fixed and \"**Total** 1483\" withdrawn after `removal-uncited`, a sum being no words a file holds (ADR-0014, step 4)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/^| `ClockConfig.h` | 12 |$/&\\n| **Total** | **536** |/' docs/clock/README.md && git commit -qam 'docs(clock): add the total'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-counts.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  findings:
+    - {rule: count-off, where: docs/clock/README.md, message: "`Total` has 581 lines, not 536"}
+  files:
+    "docs/clock/README.md": {contains: "| **Total** | **581** |"}

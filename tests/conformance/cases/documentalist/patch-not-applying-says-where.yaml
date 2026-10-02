@@ -1,0 +1,11 @@
+case: documentalist/patch-not-applying-says-where
+about: "A patch git cannot apply is refused saying which line it quotes wrong, not only git's \"patch does not apply\": on DomoticsCore an agent skipped a blank line, or quoted one that is not there, and was asked again with git's words alone (ADR-0014, step 4). With no hunk quoting right, and none placed by the lines it removes, nothing holds: the agent is asked again, a misquote being a slip it mends at the second answer (3 of 4 re-asks on DomoticsCore)."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "fake:doc-fix-not-applying"}
+expect:
+  status: block
+  agent-calls: 2
+  applied: []
+  findings: [{rule: patch-does-not-apply, message: "quotes \"Access tokens last ninety minutes.\" as line 10, but line 10 reads \"Access tokens last one hour.\""}]

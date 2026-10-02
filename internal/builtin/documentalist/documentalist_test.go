@@ -2,6 +2,8 @@ package documentalist
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -183,6 +185,77 @@ func TestDeclaresSources(t *testing.T) {
 		declared, sources := declaresSources(content)
 		if got := fmt.Sprint(declared, " ", sources); got != want {
 			t.Errorf("%q: got %s, want %s", content, got, want)
+		}
+	}
+}
+
+// The shapes of line counts measured on DomoticsCore's docs (ADR-0014,
+// step 2): each line holds one count off, or none.
+func TestCountsOffShapes(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]bool{}
+	for f, n := range map[string]int{"c/include/OTA.h": 181, "c/src/OTA.cpp": 759, "c/include/Storage.h": 771, "c/include/Info.h": 359, "c/include/InfoWebUI.h": 184} {
+		p := dir + "/" + f
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		os.WriteFile(p, []byte(strings.Repeat("x\n", n)), 0o644)
+		files[f] = true
+	}
+	for _, c := range []struct {
+		line string
+		want []string // the files reported, in order
+	}{
+		{"    OTA.h              -- OTAConfig struct, OTAComponent class (154 lines)", []string{"OTA.h"}},
+		{"| `Storage.h` | Main component: `StorageComponent` | 655 |", []string{"Storage.h"}},
+		{"| VII. File Size | < 800 lines per file | `Storage.h` is 655 lines; all other files are well under 210 lines |", []string{"Storage.h"}},
+		{"4. **File size of Storage.h**: At 655 lines it approaches the 800-line hard limit.", []string{"Storage.h"}},
+		{"| VII | Compliant | `Info.h` is 264 lines. `InfoWebUI.h` is 165 lines. Both well under the 800-line limit. |", []string{"Info.h", "InfoWebUI.h"}},
+		{"| File Size | Warning | `OTA.cpp` is 607 lines, within the 800-line hard limit. |", []string{"OTA.cpp"}},
+		{"- `Storage.h` is currently ~760 lines.", nil},                       // within a tenth
+		{"- `Storage.h` must stay under 800 lines.", nil},                     // a limit
+		{"- `Storage.h`: 800 lines max.", nil},                                // a limit, after
+		{"- `Wifi.h` -- 881 lines.", nil},                                     // not a source
+		{"- `Storage.h` is described below. The buffer keeps 64 lines.", nil}, // another sentence
+	} {
+		content := "---\nsources: [c/include/OTA.h, c/src, c/include/Storage.h, c/include/Info.h, c/include/InfoWebUI.h]\n---\n# T\n\n" + c.line + "\n"
+		if strings.HasPrefix(c.line, "| `Storage.h` | Main") {
+			content = "---\nsources: [c/include/Storage.h]\n---\n# T\n\n| File | Purpose | Lines |\n|---|---|---|\n" + c.line + "\n"
+		}
+		d, _ := ParseDoc("docs/t.md", []byte(content))
+		var got []string
+		for _, o := range countsOff(dir, files, d, content) {
+			got = append(got, o.named)
+		}
+		if fmt.Sprint(got) != fmt.Sprint(c.want) {
+			t.Errorf("%q: reported %v, want %v", c.line, got, c.want)
+		}
+	}
+}
+
+// A hunk quoting the doc wrong is mended only where its place is beyond
+// doubt, and never by letting a line go between two lines it removes.
+func TestMended(t *testing.T) {
+	cases := []struct {
+		name, doc string
+		hunk      []string
+		want      []hunk // nil: not mended
+	}{
+		{"a blank line skipped", "a\n\nb\nc", []string{" a", "-b", "+B"},
+			[]hunk{{oldStart: 1, oldCount: 3, lines: []string{" a", " ", "-b", "+B"}}}},
+		{"a blank line the doc has not", "a\nb\nc", []string{" a", " ", "-b", "+B"},
+			[]hunk{{oldStart: 1, oldCount: 2, lines: []string{" a", "-b", "+B"}}}},
+		{"a context line the doc has not", "a\nb\nc", []string{" a", "-b", "+B", " zzz"},
+			[]hunk{{oldStart: 2, oldCount: 1, lines: []string{"-b", "+B"}}}},
+		{"a blank line between two removed", "a\nb\n\nc", []string{"-b", "-c", "+B"}, nil},
+		{"removed lines found twice", "a\nb\na\nb", []string{" a", "-b", "+B", " zzz"}, nil},
+		{"a run that only adds", "a\nb\nc", []string{" zzz", "+B", " a"}, nil},
+		{"a blank-skipping fit found twice", "a\n\nb\na\n\nb", []string{" a", "-b", "+B"}, nil},
+	}
+	for _, c := range cases {
+		got := mended(strings.Split(c.doc, "\n"), hunk{oldStart: 1, lines: c.hunk})
+		if fmt.Sprint(got) != fmt.Sprint(c.want) {
+			t.Errorf("%s: mended = %v, want %v", c.name, got, c.want)
 		}
 	}
 }

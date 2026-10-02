@@ -79,7 +79,7 @@ func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *place
 		}
 		now, ok := sourcesNow(d, pl)
 		// Too large: a person reads it again, or it is judged in parts.
-		out[d.Path] = &suspectDoc{doc: d, why: []string{f.Message}, evidence: now, tooLarge: !ok}
+		out[d.Path] = &suspectDoc{doc: d, why: []string{f.Message}, evidence: now, tooLarge: !ok, whole: ok && len(now) > 0}
 	}
 	return out
 }

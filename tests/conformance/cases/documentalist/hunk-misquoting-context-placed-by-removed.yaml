@@ -1,0 +1,15 @@
+case: documentalist/hunk-misquoting-context-placed-by-removed
+about: "A hunk quoting as context a line the doc does not have is applied when the lines it removes are found once in the doc, and only there: they place it beyond doubt. On DomoticsCore a hunk ending on \"`IIComponent` placeholder\" carried core's two right line counts, and was withheld (ADR-0014, step 4)."
+given:
+  repo: documented
+  setup:
+    - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): say how tokens are signed'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  env: {MISQUOTE: context}
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-hunk-misquoted.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 1
+  no-findings: [{rule: patch-does-not-apply, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours.\n\n## Signing", lacks: "judged:"}}

@@ -76,9 +76,11 @@ func (c claude) Propose(req Request) (Call, error) {
 	if !parsed {
 		answer.Result = out.String() // not the JSON asked for: read it as the answer itself
 	}
+	// The answer as it came, kept for audit: what the engine reads of it
+	// may drop what it holds (claims are judged, never applied).
+	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
 	proposals, err := proposalsFrom(answer.Result)
 	if err != nil {
-		_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)
@@ -130,6 +132,11 @@ func proposalsFrom(answer string) ([]byte, error) {
 	}
 	var list []map[string]any
 	if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
+		// What the reader says is kept: the agent is asked again with it.
+		why := "an empty list"
+		if err != nil {
+			why = err.Error()
+		}
 		lines := strings.Split(s, "\n")
 		first, last := -1, -1
 		for i, l := range lines {
@@ -141,12 +148,15 @@ func proposalsFrom(answer string) ([]byte, error) {
 			}
 		}
 		if first < 0 || last == first {
-			return nil, fmt.Errorf("expected a YAML list of proposals")
+			return nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
 		s = strings.TrimSpace(strings.Join(lines[first+1:last], "\n"))
 		list = nil
 		if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
-			return nil, fmt.Errorf("expected a YAML list of proposals")
+			if err != nil {
+				why = err.Error()
+			}
+			return nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
 	}
 	for i, m := range list {

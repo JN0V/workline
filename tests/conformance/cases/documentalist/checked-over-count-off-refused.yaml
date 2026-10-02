@@ -1,0 +1,15 @@
+case: documentalist/checked-over-count-off-refused
+about: "While a line count of the doc stands off, `checked` cannot move: a fix vouching for the doc over it has its move of `checked` refused (`checked-over-count-off`), even with every source read whole, saying the count and the real one (ADR-0014, step 2). The rest of the fix is applied, the doc recorded `judged`, with no agent asked again: a re-ask sent the whole task again for one place (ADR-0014, step 4)."
+given:
+  repo: drifted
+  setup:
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh vouches"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings:
+    - {rule: checked-over-count-off, where: docs/clock/README.md, message: "`Clock.h` has 569 lines, not 524"}
+    - {rule: suspect, where: docs/clock/README.md, message: "applied in part"}
+  files: {"docs/clock/README.md": {contains: "**1.5.0**"}}

@@ -1,0 +1,8 @@
+# A fix of docs/tech/auth.md, in the `documented` fixture, quoting a line the
+# doc does not hold: git cannot apply it, however often it is asked.
+- patch: |
+    --- a/docs/tech/auth.md
+    +++ b/docs/tech/auth.md
+    @@ -10,1 +10,1 @@
+    -Access tokens last ninety minutes.
+    +Access tokens last two hours.

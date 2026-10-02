@@ -1,0 +1,12 @@
+case: documentalist/checked-moves-when-read-whole
+about: "A doc whose sources all fit in the task is given them whole, and a fix vouching for it moves `checked`: the engine refuses only what nobody could have read (ADR-0014)."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-header.sh moves-checked"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  no-findings: [{rule: checked-unread}]
+  files: {"docs/tech/auth.md": {contains: "checked: 1a8e5a4\n", lacks: "judged:"}}
