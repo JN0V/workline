@@ -77,7 +77,7 @@ func known(repo, sha string) bool {
 }
 
 func git(repo string, args ...string) (string, error) {
-	out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).Output()
+	out, err := exec.Command("git", append([]string{"-C", repo, "-c", "core.quotePath=off"}, args...)...).Output()
 	if err != nil {
 		return "", fmt.Errorf("git %s: %w", args[0], err)
 	}
