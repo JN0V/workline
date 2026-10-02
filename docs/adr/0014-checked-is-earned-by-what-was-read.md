@@ -131,6 +131,13 @@ read against the code by a model of another provider or a person, written to
 the measures; one false `checked` sets the documentalist back to step 0.
 *(Amended 2026-10-01: who reads, as for step 1; see Amendment.)*
 
+**Measured (2026-10-02): held**, at the third run, on the engine at
+d890be5, five runs on Sonnet over the held-out set: nothing false
+vouched for, nothing true removed, every count off reported, the right
+fixes made, +5.7% tokens a judged doc on the first night. Steps 0 to 2
+are accepted; the weekly sample starts with the release
+(roles/documentalist/tried.md, 2026-10-02).
+
 ## Amendment (2026-10-01)
 
 - **A verdict is confirmed by a second check, not by the person
