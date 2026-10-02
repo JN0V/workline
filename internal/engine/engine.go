@@ -340,6 +340,9 @@ func run(o Options, res *Result) error {
 				return err
 			}
 			if nv.Status == verdict.Pass {
+				if kept, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
+					return err
+				}
 				intents, v = kept, nv
 				v.Findings = append(left, v.Findings...)
 			}
@@ -1061,6 +1064,15 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		return nil, fmt.Errorf("post exited %d but its verdict says %q", code, v.Status)
 	}
 	verdict.Enforce(v, r.Enforcement(cfg))
+	// post may narrow the proposals it passes: a place it refuses taken out,
+	// the rest kept, rather than the whole task asked again for it (the
+	// documentalist, ADR-0014 step 4). What it leaves in out/intentions.yaml
+	// is what is applied, held to the same catalogue and bounds.
+	if v.Status == verdict.Pass && len(intents) > 0 {
+		if a.intents, err = narrowedByPost(r, o, runDir, line, settings); err != nil {
+			return nil, err
+		}
+	}
 	if v.Status == verdict.Pass && a.askedAgent {
 		if err := askJudge(o, res, runDir, v, a); err != nil {
 			return nil, err
@@ -1178,6 +1190,24 @@ func judgeAgain(r *role.Role, o Options, runDir string, env []string, cfg *role.
 		}
 	}
 	return v, nil
+}
+
+// narrowedByPost reads the proposals post passed, as it left them in
+// out/intentions.yaml: post may take out a place it refuses and keep the
+// rest (the documentalist, ADR-0014 step 4). They are held to the same
+// catalogue and bounds as the agent's.
+func narrowedByPost(r *role.Role, o Options, runDir string, line *routing.Config, settings map[string]any) ([]intent.Intention, error) {
+	narrowed, err := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("post left out/intentions.yaml unreadable: %w", err)
+	}
+	if refused, why := invalid(r, narrowed, line); len(refused) > 0 {
+		return nil, fmt.Errorf("post narrowed the proposals to an invalid set: %s", why)
+	}
+	if bad := outOfBounds(o.Repo, narrowed, r.Writes(settings), o.Scope); len(bad) > 0 {
+		return nil, fmt.Errorf("post narrowed the proposals outside the task: %s", strings.Join(bad, ", "))
+	}
+	return narrowed, nil
 }
 
 func statusForExit(code int) string {

@@ -180,7 +180,11 @@ token), **apply** (trusted, no AI key).
    is a `left-out` finding with the refusal's reason. A role listing `claim`
    among its intentions may give claims beside a patch, saying why it takes
    words out (the documentalist, ADR-0014): `post` reads them; alone, with no
-   patch, they are refused, and they are never applied.
+   patch, they are refused, and they are never applied. A `post` that passes
+   may narrow the proposals in `out/intentions.yaml` — a place it refuses
+   taken out, the rest kept — rather than block for the whole task to be
+   asked again (the documentalist, ADR-0014 step 4); what it leaves there is
+   what is applied, held to the same catalogue and bounds.
 5. **Apply.** The engine checks that `in/` still matches its digest, then
    validates the intentions against the catalogue, the role's `intentions` list
    and its `duties.writes`. An invalid intention set is refused whole. Valid
