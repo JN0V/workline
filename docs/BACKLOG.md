@@ -145,7 +145,13 @@ Then, once both work well here:
   "Handover" paragraph here, no pull request carrying only one. The next
   roles take it into account: which role opens, updates and closes an
   issue, and what a session's "where to restart" becomes (an issue, a
-  pinned one, the forge's project board).
+  pinned one, the forge's project board). The foundation exists
+  (ADR-0016): any role's `issue` outcome, and the generic forge operations
+  — open or keep an issue, label it, comment on it by a marker — on
+  GitHub, GitLab, any forge by `cmd:`, or the clone (`local`). Left: which
+  role opens, updates and closes an issue for a bug it finds; a fix's pull
+  request linked to its issue and closing it; a project's own roadmap
+  files replaced by its issues.
 - **Which model reviews which.** Evaluation cases with defects planted on
   purpose — a wrong edge case, a comment telling a bug's story — reviewed by
   Opus, Sonnet and Haiku, at each independence level of ADR-0005: what each
