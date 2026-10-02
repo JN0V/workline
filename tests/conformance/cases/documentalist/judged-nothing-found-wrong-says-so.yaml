@@ -1,0 +1,19 @@
+case: documentalist/judged-nothing-found-wrong-says-so
+about: "A doc the agent found nothing wrong in, yet could not vouch for — its patch only records `judged` — is said to be just that: nothing found wrong, `checked` left; never \"what the agent found wrong is fixed\". The gardening merge request says it beside the doc (workline's first nightly, 2026-10-02)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin main"
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "nothing found wrong, not vouched for"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "is fixed"}
+  forge:
+    merge-requests:
+      - {id: 1, branch: "workline/documentalist/suspect", base: main, body: "`docs/tech/auth.md` — nothing found wrong"}

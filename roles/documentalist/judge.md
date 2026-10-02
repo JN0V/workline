@@ -130,6 +130,16 @@ part. With every place of a doc withheld, the fix is only its record:
 `judged` set, the places reported. `post` leaves the narrowed patches in
 `out/intentions.yaml`, and the engine applies those (docs/spec/role-contract.md).
 
+**What the finding says** of a doc judged and not vouched for is what the
+run did, counted in its body: "fixed in 2 places", or "nothing found
+wrong" when the patch only records `judged` — never "fixed" for a header
+alone (workline's first nightly, 2026-10-02, said "what the agent found
+wrong is fixed" of a doc it found true). A doc judged in parts says, once
+the fix is judged, the places it fixed, or that it changed nothing of what
+the parts found. The gardening pull request lists each doc it judged with
+the same outcome: fixed and in how many places, still true, or nothing
+found wrong; `checked` moved or `judged` recorded.
+
 The answer asked again, for any other refusal, replaces the refused one
 whole, so the engine tells the agent to give again, unchanged, every change
 not refused. Each answer is

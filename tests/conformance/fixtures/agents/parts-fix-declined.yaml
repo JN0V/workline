@@ -1,0 +1,12 @@
+# docs/tech/auth.md judged in parts, as parts-contradiction.yaml: the part
+# holding token.go contradicts line 10; then the fix call changes nothing,
+# leaving a note: what the parts found is not fixed.
+calls:
+  - - claim:
+        lines: "10"
+        status: contradicted
+        quote: "Access tokens last one hour."
+        source: {path: src/auth/token.go, lines: "4", quote: "const TokenTTL = 7200"}
+        why: "7200 seconds is two hours"
+  - []
+  - - note: "The excerpts do not let me settle line 10."
