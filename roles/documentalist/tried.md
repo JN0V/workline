@@ -617,3 +617,38 @@ On 2026-09-27, on workline's own repository:
   and 558, which the re-ask had mended: now a person's. `count-off` on
   DomoticsCore at 91100ed: 59 reports before, 60 after, the one added
   real; none on workline; WaterMeter's 2 unchanged.
+- ADR-0014 step 4 a third time (2026-10-02, the engine at d890be5: what
+  holds of a fix applied, the place refused reported; the same method,
+  repositories, commits, scripts and caps as the two entries above; Claude
+  Sonnet 5.5 at medium effort; graded by reading each change against the
+  code at its commit). The baseline's first nights reused. **Holds.**
+
+  | Bar | ffdb06d | a15fc0d | d890be5 (now) |
+  |---|---|---|---|
+  | 1. no `checked` over a falsehood | held, 5 moves | held, 8 moves | held: 6 moves, WaterMeter's two wiring guides in runs 1, 3, 5, read whole; no doc with a place withheld moved |
+  | 2. no true claim removed, no comment winning | held | held | held: every line out without a claim an engine count, a version value, or a line only added to |
+  | 3. counts and versions reported | held | held, 61 | held: `count-off` 62 places, all real (OTA's "line count (607)" now read); `value-left` 56–57 real, 26 false a run |
+  | 4. what is right ends `checked` | WaterMeter 2/5 | 4/5 | 3/5; the role README `judged` 5/5, as right |
+  | 5. right fixes | HeapTracker 3/5 | 4/5; core counts 5/5 | versions 5/5 on the first nights, GPIO34 5/5, OTA's table, `Total` and 607 → 759 5/5; core counts 4/5, HeapTracker 4/5 (baseline 5/5), index's footer version 3/5 (5/5) |
+  | 6. tokens a judged doc, first night | +12.8% | +13.9% | **+5.7%**: WaterMeter +3.1%, workline +7.2%, DomoticsCore 34.6k → 37.1k (+7.4%) |
+
+  No re-ask in 65 nights (three before). Over every night judged whole, a
+  doc costs 20.8k (22.0k, 21.8k); a night in parts 258k (268k). Three
+  places withheld, each reported in the run's findings and the gardening
+  request's body, none moving `checked`: HeapTracker's pitfall (run 1,
+  `removal-uncited`; the rewrite was right and claimed, but the claim
+  named no `doc` in a two-doc answer, so it was not read — the message
+  says "no claim"); a hunk quoting a line the doc has not, "`IIComponent`
+  placeholder" (run 3), which carried core's two right counts — left,
+  still reported by `count-off`; a hunk skipping a blank line (run 4,
+  index), which carried the footer's right 2.12.0 — left, reported by
+  `value-left` too. Right refusals by the rule; the two misquotes are
+  what a re-ask mended 3 times in 4. In run 2 the agent left the footer
+  itself, `value-left` reporting it. Run 2's night 6 answered YAML broken
+  by an unescaped quote in a note: `agent-invalid-output`, nothing
+  applied or recorded, the doc judged again the next night (+33k).
+  WaterMeter's run 1 condensed six docs on nights 3–8, each a faithful
+  move; DomoticsCore's README in parts, run 1: two right additions
+  (check_versions.py's `check_properties_vs_root`; library.properties'
+  dependencies). 3.56M tokens (WaterMeter 0.37M, workline 1.51M,
+  DomoticsCore 1.67M).

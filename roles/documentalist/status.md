@@ -89,7 +89,9 @@ repository without merge requests is built but untried for real.
    fails again, +13.9%, one run in five asked twice for a rewrite given
    no claim. The re-ask, which sent the whole task again, is cut: what
    holds of a fix is applied, the place refused reported (below, "After
-   step 4 again"); step 4 to run again.
+   step 4 again"). Run a third time, **step 4 holds** (below): +5.7% a
+   judged doc the first night, no re-ask; steps 0 to 2 accepted. Next:
+   the release, then the weekly one-in-ten sample of the docs vouched for.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -268,3 +270,18 @@ through `post`: HeapTracker's applies its two counts, the pitfall
 withheld and reported; OTA's 607 passes whole; the misquoted OTA answer
 applies all but its misquoted hunk — which held a right count, mended by
 the re-ask then, a person's now.
+
+ADR-0014 step 4 a third time, on d890be5 (tried.md, 2026-10-02; Sonnet,
+3.56M tokens; the same method, the baseline's first nights reused):
+**holds**, all six bars. `checked` moved only on WaterMeter's two wiring
+guides (3 runs of 5), nothing false; no doc with a place withheld moved
+it. `count-off` 62 places, all real; `value-left` more real than false.
+The first night costs +5.7% a judged doc (+3.1% WaterMeter, +7.2%
+workline, +7.4% DomoticsCore); over every night 20.8k a doc judged whole
+(22.0k before); no re-ask in 65 nights. Three places withheld and
+reported in the gardening request: HeapTracker's pitfall once (a right
+claim naming no `doc`, unread in a two-doc answer), and two misquoted
+hunks that carried right fixes — core's two counts, index's footer
+version — now a person's, where a re-ask had mended 3 in 4. To watch:
+those losses, and an answer whose YAML breaks (one night in 65), which
+is reported but not asked again, the doc judged again the next night.
