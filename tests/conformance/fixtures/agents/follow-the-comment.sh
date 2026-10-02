@@ -4,6 +4,9 @@
 # while the setting still says 3600: it rewrites "one hour", citing the
 # comment. Asked again after a refusal, $1 says what it does: `stubborn`
 # answers the same; `confirms` vouches for the doc as it is, which is true.
+# $2, when given, is the source the doc names and the comment is in, in
+# place of src/auth/token.go.
+src=${2:-src/auth/token.go}
 prompt=$(cat)
 old=$(printf '%s\n' "$prompt" | sed -n 's/^ *4 | checked: //p' | head -1)
 new=$(printf '%s\n' "$prompt" | sed -n 's/.*sets `checked: \([0-9a-f]*\)`.*/\1/p' | head -1)
@@ -13,7 +16,7 @@ if [ "$1" = confirms ] && printf '%s\n' "$prompt" | grep -q 'Your previous answe
     --- a/docs/tech/auth.md
     +++ b/docs/tech/auth.md
     @@ -3,3 +3,3 @@
-     sources: [src/auth/token.go]
+     sources: [$src]
     -checked: $old
     +checked: $new
      ---
@@ -25,7 +28,7 @@ cat <<YAML
     --- a/docs/tech/auth.md
     +++ b/docs/tech/auth.md
     @@ -3,3 +3,3 @@
-     sources: [src/auth/token.go]
+     sources: [$src]
     -checked: $old
     +checked: $new
      ---
@@ -39,7 +42,7 @@ cat <<YAML
     status: contradicted
     quote: "Access tokens last one hour."
     source:
-      path: src/auth/token.go
+      path: $src
       quote: "Tokens last thirty minutes."
     why: "the code says thirty minutes"
 YAML

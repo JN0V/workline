@@ -1,0 +1,15 @@
+case: documentalist/comment-style-unknown-reported
+about: "A quote from a file whose type the comment test does not know is taken as code, and said: once per type, in the findings, so a comment there passing as evidence is not silent (docs/research/documentalist-genericity.md)."
+given:
+  repo: documented
+  setup:
+    - "git mv src/auth/token.go src/auth/token.qqq && printf 'ttl ~ 3600 ~~ Tokens last one hour.\\n' > src/auth/token.qqq && sed -i 's|src/auth/token.go|src/auth/token.qqq|' docs/tech/auth.md && git add -A && git commit -qm 'refactor(auth): tokens in a new format' && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs(auth): confirm'"
+    - "sed -i 's|Tokens last one hour.|Tokens last thirty minutes.|' src/auth/token.qqq && git commit -qam 'docs(auth): say how long tokens last'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/follow-the-comment.sh stubborn src/auth/token.qqq"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings:
+    - {rule: comment-style-unknown, where: src/auth/token.qqq, message: ".qqq"}
+  no-findings: [{rule: comment-not-evidence}]

@@ -96,11 +96,17 @@ holds is applied"):
 - rests a change on a comment alone (`comment-not-evidence`): its claims'
   quotes are found in the file only inside comments, read by the file's
   type — `//` and `/* */` in Go, C, C++, JavaScript and the like; `#` in
-  YAML, shell, Python, TOML, a Makefile; `<!-- -->` in Markdown, HTML,
-  XML; strings are read as strings. A stale comment won over the code's
-  setting (workline #29). The comment is reported (`comment-disagrees`, at
-  the comment's file and line), kept for the run's verdict, so a person or
-  the committer fixes it. *Withheld*;
+  YAML, shell, Python, TOML, a Makefile; a Python docstring (a string
+  standing as a statement); `--` in SQL, Lua, Haskell; `<!-- -->` in
+  Markdown, HTML, XML; `{# #}` and `{% comment %}` in Django and Jinja
+  templates, `{{! }}` in Handlebars; a script without an extension by the
+  interpreter its `#!` names; strings are read as strings. A stale comment
+  won over the code's setting (workline #29). The comment is reported
+  (`comment-disagrees`, at the comment's file and line), kept for the
+  run's verdict, so a person or the committer fixes it. *Withheld*. A
+  quote from a type whose comments the engine does not know is taken as
+  code, and said (`comment-style-unknown`, once a type a run), so a
+  comment there passing as evidence is not silent;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.
