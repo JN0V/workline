@@ -6,8 +6,8 @@
 # alone, `checked` left and `judged` recorded. Each version replaced is
 # cited from library.json; a count, the engine's own, needs no claim. It
 # reads the commits and the numbered lines from the prompt, as a real agent
-# would.
-awk -v mode="$1" '
+# would. $2 and $3 are the versions replaced, 1.4.1 and 1.5.0 by default.
+awk -v mode="$1" -v from="${2:-1.4.1}" -v to="${3:-1.5.0}" '
 /^## / { doc = substr($0, 4) }
 doc != "docs/clock/README.md" { next }
 !want && match($0, /sets `checked: [0-9a-f]+`/) { want = substr($0, RSTART + 15, RLENGTH - 16) }
@@ -24,10 +24,10 @@ END {
     print "    @@ -3 +3 @@"; print "    -" line[3]; print "    +checked: " want
   }
   for (i = 1; i in line; i++) {
-    if (line[i] ~ /\*\*1\.4\.1\*\*/) {
-      l = line[i]; sub(/1\.4\.1/, "1.5.0", l)
+    if (index(line[i], "**" from "**")) {
+      l = line[i]; sub(from, to, l)
       print "    @@ -" i " +" i " @@"; print "    -" line[i]; print "    +" l
-      cited = cited "- claim:\n    lines: \"" i "\"\n    status: contradicted\n    source: {path: Clock/library.json, quote: \047\"version\": \"1.5.0\"\047}\n"
+      cited = cited "- claim:\n    lines: \"" i "\"\n    status: contradicted\n    source: {path: Clock/library.json, quote: \047\"version\": \"" to "\"\047}\n"
     }
     if (mode == "counts" && line[i] ~ /^\| `Clock\.h` \| /) {
       print "    @@ -" i " +" i " @@"; print "    -" line[i]; print "    +| `Clock.h` | " real " |"

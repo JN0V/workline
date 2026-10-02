@@ -139,13 +139,17 @@ without it and applied; the doc stays as it was, suspect.
 
 Once the fixes pass, two findings are added, never refusing: a `count-off`
 a fix brought right says "fixed in this run"; and a version a fix replaces
-— a three-part version said fewer times in the lines it adds than in those
+— a version (three parts, or as the project's `versions.pattern` writes
+one: a calendar `26.2`) said fewer times in the lines it adds than in those
 it removes, a new one written in its place — still said in the doc fixed,
 or in another doc declaring one of its source files that now says the new
-version, is `value-left`, with the lines (ADR-0014, step 2). It is not
-fixed by the engine: an old version may be said on purpose. History docs
-are left out, and so is a version given as a range (`>=1.4.1`, `^1.4.1`),
-what a dependant accepts.
+version, is `value-left`, with the lines (ADR-0014, step 2). The files of
+`versions.files` (a `pyproject.toml`, a `package.json`) are every doc's
+sources there. It is not fixed by the engine: an old version may be said on
+purpose. History docs are left out, and so is a version given as a range
+(`>=1.4.1`, `^1.4.1`), what a dependant accepts, or after a history marker
+("First available in v1.9.0", "Added in", "since", "New in version",
+"Deprecated in", `versionadded::`), which says when something came.
 
 A condense patch is refused when it touches another existing doc; when a line
 that leaves the doc is found in no new doc, unchanged but for a heading's level

@@ -147,6 +147,7 @@ roles:
       derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
       history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
       whole-chars: 40000                           # sources judged whole up to this; more docs vouched, more tokens
+      versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: release-manager, to: documentalist}]

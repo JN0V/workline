@@ -1,0 +1,14 @@
+case: documentalist/value-left-version-pattern
+about: "A project writing its versions otherwise than in three parts says how, `versions.pattern`: a calendar version (pip's `26.2`) a fix replaces is then reported where it is left, as a three-part one is; unsaid, it went unseen (docs/research/documentalist-genericity.md)."
+given:
+  repo: drifted
+  config: {roles: {documentalist: {settings: {versions: {pattern: '\d{2}\.\d+'}}}}}
+  setup:
+    - "sed -i 's/1\\.4\\.1/26.1/g' Clock/library.json docs/clock/README.md docs/getting-started.md && git commit -qam 'chore: calendar versions'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/clock/*.md docs/getting-started.md && git commit -qam 'docs: confirm them'"
+    - "sed -i 's/\"version\": \"26.1\"/\"version\": \"26.2\"/' Clock/library.json && git commit -qam 'feat(clock): 26.2'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh version 26.1 26.2"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: value-left, where: docs/getting-started.md, message: "26.1, which the fix of docs/clock/README.md replaces with 26.2"}]

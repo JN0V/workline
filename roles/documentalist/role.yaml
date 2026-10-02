@@ -95,6 +95,12 @@ settings:
   # decision-records or decision-log: these globs add to them, each record
   # numbered by the first number in its name, e.g. ["docs/design/*.md"].
   decisions: []
+  # Versions, for `value-left` (checks.md): how the project writes one, when
+  # not in three parts (1.4.1, v1.4.1), as a regexp, e.g. '\d{2}\.\d+' for a
+  # calendar version (26.2); and the files saying its version, e.g.
+  # [pyproject.toml]: a doc still saying a version a fix replaces is reported
+  # when one of them says the new one, whatever the doc's own sources.
+  versions: {pattern: "", files: []}
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
   # Tokens one run may spend, all calls together (in, cache included, and

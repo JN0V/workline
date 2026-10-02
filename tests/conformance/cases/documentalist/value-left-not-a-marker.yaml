@@ -1,0 +1,13 @@
+case: documentalist/value-left-not-a-marker
+about: "A version in a history marker — \"First available in v1.4.1\", \"Added in\", \"since\", \"New in version\", \"Deprecated in\", `versionadded::` — names when something came, not the version now: it is not reported as left by a fix replacing it, a version said plainly beside them is (prettier: 67 of 86 lines reported were such markers, docs/research/documentalist-genericity.md)."
+given:
+  repo: drifted
+  setup:
+    - "printf -- '---\\nsources: [Clock/library.json]\\nchecked: X\\n---\\n# Options\\n\\n_First available in v1.4.1_\\nAdded in 1.4.1: the drift table.\\nThe retry, since 1.4.1.\\nNew in version 1.4.1.\\nDeprecated in 1.4.1: the old page.\\n.. versionadded:: 1.4.1\\n\\nInstall `clock@1.4.1`.\\n' > docs/clock/options.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/clock/options.md && git add . && git commit -qm 'docs(clock): options'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh version"}
+expect:
+  status: pass
+  findings:
+    - {rule: value-left, where: docs/getting-started.md, message: "1.4.1"}
+    - {rule: value-left, where: docs/clock/options.md, message: "is still said on line 14;"}

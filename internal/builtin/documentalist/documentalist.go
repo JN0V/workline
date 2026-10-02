@@ -63,6 +63,12 @@ type Settings struct {
 	// (records.go).
 	History   []string `json:"history"`
 	Decisions []string `json:"decisions"`
+	// Versions: how the project writes a version, when not in three parts
+	// (a regexp), and the files saying its version (values.go).
+	Versions struct {
+		Pattern string   `json:"pattern"`
+		Files   []string `json:"files"`
+	} `json:"versions"`
 	// WholeChars caps the characters a doc's sources may take to be judged
 	// whole; past it, a person judges the doc, or it is judged in parts.
 	WholeChars int `json:"whole-chars"`
@@ -446,6 +452,9 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	useRecords(s)
+	if err := useVersions(s); err != nil {
+		return fail(err)
+	}
 	tree, err := loadTree(repo, s.Docs)
 	if err != nil {
 		return fail(err)
@@ -1174,6 +1183,9 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	useRecords(s)
+	if err := useVersions(s); err != nil {
+		return fail(err)
+	}
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 	if err != nil {
 		return fail(err)
