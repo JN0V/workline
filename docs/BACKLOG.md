@@ -52,12 +52,21 @@ waits for it. Its three costs are met, conformance and replay only
 the engine fixes, nor for glue taken out of a line reworded; a table's
 total a `count-off`; a line a diff adds may be quoted; a patch git cannot
 apply refused saying which line it misquotes; a doc in parts recorded
-though claims were dropped; a history doc never condensed. **Next**, per
-ADR-0014 (each bar before the next step): step 4 again, the same way: a
-fresh copy per run of each repository, gardening nights chained, each
-night's change committed as if merged; the baseline engine's first night
-five times beside it, for the tokens; watch HeapTracker's pitfall (3/5,
-the baseline 5/5). The new kinds are in
+though claims were dropped; a history doc never condensed. **Step 4
+run again** on a15fc0d (tried.md, 2026-10-02; 3.96M tokens, the same
+method, the baseline's first nights reused): **does not hold**, bar 6
+only — +13.9% a judged doc the first night, +5.5% without DomoticsCore's
+one run in five asked twice (the HeapTracker pitfall rewritten with no
+claim, refused rightly, withdrawn). The three costs are met as measured:
+docs in parts recorded and not asked again, CHANGELOG never picked, no
+word beside a count refused; nothing false let through by the narrowed
+rule. **Next**, per ADR-0014: cut what a re-ask costs — a refusal sends
+the whole task again (both docs, 35k) for one place the engine has
+already named; ask again only for the doc refused, or apply what holds
+and leave the refused place with a note. Also `count-off` misses OTA's
+"`OTA.cpp` line count (607)" (no "lines"): the agent's right fix was
+refused uncited, a re-ask too. Then step 4 again, the same way, and
+every line taken out without a claim read. The new kinds are in
 docs/research/documentalist-fixes-reviewed.md, "The held-out set".
 DomoticsCore: branch docs/narrow-wide-sources (two docs narrowed) waits,
 not pushed; nothing more there until ADR-0014 step 4 holds; its main runs
