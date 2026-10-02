@@ -1,0 +1,11 @@
+case: documentalist/sample-judge-from-the-environment
+about: The weekly sample's judge can be named by WORKLINE_JUDGE, as the evaluation's is.
+given:
+  repo: vouched
+  env: {WORKLINE_JUDGE: 'cmd:cat "$FIXTURES/agents/sample-nothing-false.yaml"'}
+run: {sample: [--week, 2026-W01]}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: vouched-true, where: docs/tech/auth.md}

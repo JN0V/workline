@@ -3,7 +3,8 @@
 - **Status:** accepted (2026-10-01), after a critical review by seven
   independent reviewers (BMAD analyst, architect, product manager,
   developer; adversarial, verification-gap and edge-case lenses);
-  amended 2026-10-01 (who confirms a verdict)
+  amended 2026-10-01 (who confirms a verdict), 2026-10-02 (where the
+  weekly sample is written: ADR-0015)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -157,6 +158,18 @@ are accepted; the weekly sample starts with the release
   nothing in its tree contradicted it: a race between branches, not a
   misreading, and not an evaluation case
   (docs/research/documentalist-fixes-reviewed.md).
+
+## Amendment (2026-10-02)
+
+- **Step 4's weekly sample is built** (`workline sample`), and its
+  "written to the measures" is decided in ADR-0015: the result goes to one
+  tracking issue on the forge, a comment a week, not to a commit. A false
+  `checked` — or one whose sources could not be read whole — labels that
+  issue `documentalist-step-0` and opens a merge request putting the doc's
+  `checked` back, for the person, who confirms by merging.
+- **The reader** is the judge the project sets, never the model the
+  vouching commit names (`Workline-Model`); on workline, Opus reading what
+  Sonnet vouched for, ADR-0005's level 2, no other provider being set up.
 
 ## Not decided here
 

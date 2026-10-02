@@ -1,0 +1,15 @@
+contract: 1
+name: auditor
+mission: Read a doc the documentalist vouched for against its sources at the commit its `checked` names, and list each false passage with the source's words proving it.
+
+# Not a role of the line: no event runs it. `workline sample` asks it, every
+# week, of one doc in ten the documentalist vouched for (ADR-0014, step 4),
+# at the best independence available from the model that vouched (ADR-0005).
+# The engine checks every quote it gives; it applies nothing.
+model:
+  capability: reasoning
+  tier: frontier
+  effort: medium
+  timeout: 5m
+
+intentions: [claim, note]

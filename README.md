@@ -3,6 +3,7 @@ sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent
 checked: 5b8b173
 judged: 6013a50
 verified: agent:documentalist
+judged-in-parts: 6e28d75
 -->
 <h1>
   <picture>
@@ -17,7 +18,7 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->234<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->245<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|

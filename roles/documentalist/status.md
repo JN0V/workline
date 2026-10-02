@@ -57,6 +57,18 @@ repository without merge requests is built but untried for real.
   judged whole goes round again, the parts judged the same night on the
   `fix` pull request (ADR-0013, amended). Conformance only: the next
   nights to watch, with a second task's tokens.
+- **The weekly sample of the docs vouched for** (ADR-0014, step 4;
+  ADR-0015; `workline sample`): one in ten of the docs whose `checked`
+  the documentalist moved in the last week, drawn the same on a rerun,
+  each read whole against its sources at the commit `checked` names by the
+  project's judge (`sample.judge`, `WORKLINE_JUDGE`), never the model the
+  commit's new `Workline-Model` trailer names; every quote checked, a
+  comment no evidence; sources too large for a read whole reported as an
+  unearned `checked`. Written, with no agent, to one tracking issue a
+  comment a week; a false `checked` labels it `documentalist-step-0` and
+  a merge request puts it back. In CI weekly (workline-sample.yml, the
+  GitLab template's second schedule); workline's read by Opus.
+  Conformance only (nine cases, fake readers); no real agent, no forge.
 - **Beyond our repositories** (docs/research/documentalist-genericity.md,
   fixes 1 to 3): a path that is not ASCII is read; changelogs, release
   notes and decision records are known by the names other projects give
@@ -111,8 +123,9 @@ repository without merge requests is built but untried for real.
    no claim. The re-ask, which sent the whole task again, is cut: what
    holds of a fix is applied, the place refused reported (below, "After
    step 4 again"). Run a third time, **step 4 holds** (below): +5.7% a
-   judged doc the first night, no re-ask; steps 0 to 2 accepted. Next:
-   the release, then the weekly one-in-ten sample of the docs vouched for.
+   judged doc the first night, no re-ask; steps 0 to 2 accepted. The
+   weekly one-in-ten sample is built (above), not run yet. Next: the
+   release, then the sample's first weeks, watched on its issue.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.

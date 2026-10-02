@@ -78,6 +78,7 @@ type caseFile struct {
 		Doctor  bool              `yaml:"doctor"`
 		Init    bool              `yaml:"init"`
 		Setup   []string          `yaml:"setup"`   // workline setup, with these options
+		Sample  []string          `yaml:"sample"`  // workline sample, with these options; then: apply writes what it found
 		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
 	} `yaml:"run"`
 	Expect struct {
@@ -88,7 +89,8 @@ type caseFile struct {
 		Applied     []string                     `yaml:"applied"`
 		Refused     []string                     `yaml:"refused"`
 		Files       map[string]map[string]any    `yaml:"files"`
-		Pushed      map[string]map[string]string `yaml:"pushed"` // branch -> path -> a text the remote's branch holds there
+		Pushed      map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
+		PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
 		Forge       map[string]any               `yaml:"forge"`
 		Steps       []string                     `yaml:"steps"`
 		Calls       []map[string]string          `yaml:"calls"`
@@ -203,6 +205,15 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = []string{"init", "--repo", repo, "--roles", roles, "--json"}
 	case c.Run.Setup != nil:
 		args = append(append([]string{"setup"}, c.Run.Setup...), "--json")
+	case c.Run.Sample != nil:
+		// The read writes nothing to the forge: it is not given one.
+		args = append(append([]string{"sample"}, c.Run.Sample...), "--repo", repo, "--out", filepath.Join(work, "sample.json"), "--json")
+		for i, a := range args {
+			if strings.HasPrefix(a, "fake:") {
+				p, _ := filepath.Abs(filepath.Join("fixtures", "agents", strings.TrimPrefix(a, "fake:")+".yaml"))
+				args[i] = "fake:" + p
+			}
+		}
 	case c.Run.Route == "ready" && c.Run.Item != 0:
 		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}
 		if forgeFile != "" {
@@ -222,7 +233,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for k, v := range c.Run.Input {
 		args = append(args, "--input", k+"="+v)
 	}
-	if forgeFile != "" && c.Run.Item == 0 {
+	if forgeFile != "" && c.Run.Item == 0 && c.Run.Sample == nil {
 		args = append(args, "--forge", "fake:"+forgeFile)
 	}
 	for kind, id := range c.Run.Target {
@@ -304,6 +315,22 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r2.Calls = append(r.Calls, r2.Calls...)
 		r = r2
 	}
+	if c.Run.Sample != nil && c.Run.Then == "apply" {
+		// The write, as CI's job holding the forge's token and no AI key.
+		apply := exec.Command(engineBin, "sample", "--apply", filepath.Join(work, "sample.json"), "--repo", repo, "--forge", "fake:"+forgeFile, "--json")
+		apply.Dir, apply.Env = repo, cmd.Env
+		stdout.Reset()
+		apply.Stdout, apply.Stderr = &stdout, &stderr
+		_ = apply.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("sample --apply printed no result: %v\n%s", err, stderr.String())}
+		}
+		r2.AgentCalls += r.AgentCalls
+		r2.Calls = append(r.Calls, r2.Calls...)
+		r2.Findings = append(r.Findings, r2.Findings...)
+		r = r2
+	}
 	problems := compare(c, &r, repo)
 	if c.Run.Reports {
 		problems = append(problems, compareReports(c, sarifFile, cqFile)...)
@@ -376,6 +403,13 @@ func compare(c *caseFile, r *result, repo string) []string {
 			if err != nil || !strings.Contains(string(out), text) {
 				p = append(p, fmt.Sprintf("origin's %s does not hold %q in %s", branch, text, path))
 			}
+		}
+	}
+	for branch, text := range e.PushedMsg {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%B", "origin/"+branch).Output()
+		if err != nil || !strings.Contains(string(out), text) {
+			p = append(p, fmt.Sprintf("the tip of origin's %s does not say %q in its message: %s", branch, text, out))
 		}
 	}
 	if e.RefusedKept > 0 {

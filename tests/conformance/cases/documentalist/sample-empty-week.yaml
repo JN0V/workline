@@ -1,0 +1,14 @@
+case: documentalist/sample-empty-week
+about: A week the documentalist vouched for nothing calls no agent, and still says so on the tracking issue, the week's comment and nothing else.
+given:
+  repo: vouched
+  forge: {issues: [], merge-requests: []}
+run: {sample: [--week, 2026-W03, --judge, "fake:sample-nothing-false"], then: apply}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: sample-empty}
+  forge:
+    issues:
+      - {id: 1, labels: [], comments: 1, comment-contains: "2026-W03"}

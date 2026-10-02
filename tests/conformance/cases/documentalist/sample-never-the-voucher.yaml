@@ -1,0 +1,13 @@
+case: documentalist/sample-never-the-voucher
+about: A judge answering with the provider and model that vouched for the doc (its commit's Workline-Model) is no independent read; the doc is left for a person. --since reads what was vouched after a commit instead of a week.
+given:
+  repo: vouched
+  setup:
+    - "sed -i 's/^checked: .*/checked: e162889/' docs/tech/people.md && git commit -qam 'docs: bring the docs in line with the code' -m \"$(printf 'Workline-Role: documentalist\\nWorkline-Model: fake:same-model')\""
+run: {sample: [--since, HEAD~1, --week, 2026-W01, --judge, "fake:same-model"]}
+expect:
+  status: human
+  agent-calls: 1
+  findings:
+    - {rule: sample-window, message: "1 doc vouched for"}
+    - {rule: sample-not-read, where: docs/tech/people.md, message: "the model that vouched"}

@@ -1,0 +1,11 @@
+case: documentalist/sample-unearned
+about: A sampled doc whose sources at the commit `checked` names do not fit whole could not have earned it (ADR-0014, step 0); it is reported as such, with no agent call.
+given:
+  repo: vouched
+  config: {roles: {documentalist: {settings: {whole-chars: 10}}}}
+run: {sample: [--week, 2026-W01, --judge, "fake:sample-nothing-false"]}
+expect:
+  status: human
+  agent-calls: 0
+  findings:
+    - {rule: vouched-unearned, where: docs/tech/auth.md}

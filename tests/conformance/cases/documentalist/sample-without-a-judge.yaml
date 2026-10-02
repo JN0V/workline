@@ -1,0 +1,10 @@
+case: documentalist/sample-without-a-judge
+about: Without a judge — no --judge, no WORKLINE_JUDGE, no `sample.judge` setting — the sample is still drawn, and each doc in it is left for a person to read.
+given:
+  repo: vouched
+run: {sample: [--week, 2026-W01]}
+expect:
+  status: human
+  agent-calls: 0
+  findings:
+    - {rule: sample-not-read, where: docs/tech/auth.md, message: "for a person"}

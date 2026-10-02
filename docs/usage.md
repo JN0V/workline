@@ -24,6 +24,7 @@ What a role does is in its own README (`roles/<name>/README.md`).
 | `workline init` | adopts this repository: routes `pre-push` to the committer and the documentalist in `.workline/config.yaml`, unless the project routes it already, and has the agent propose the `sources` of each doc that says nothing of them, in the working tree for you to review and commit (roles/documentalist/push.md); without an agent, lists them, proposing the sources a doc's name matches (a code folder or file of that name), for you to review, never written. Run it again to do what is left |
 | `workline version` | the engine running: the release it was built as, else the module version Go recorded, else `(devel)` |
 | `workline docs` | has the docs made suspect since they were last judged — `refs/workline/docs-judged`, else the last tag, else every commit; `--since <rev>` to choose — judged by your agent, pushed or not (ADR-0010), then asks you, doc by doc, to keep or drop each change (`v` shows it); those kept go in one `docs:` commit, alone (ADR-0007). Without a terminal, the changes stay in the working tree for a person, who reviews them the same way with `workline docs --review`. Docs with changes not committed are refused, so the agent's are reviewed alone. Once the run passed with nothing left to review, the ref moves to HEAD |
+| `workline sample` | the weekly sample of the docs the documentalist vouched for (ADR-0014, step 4; ADR-0015): of the docs whose `checked` its commits moved (`Workline-Role: documentalist`, or `verified: agent:documentalist` newly set) in the commits reaching the branch in the last whole ISO week (`--week 2026-W40`; `--since <rev>` for the commits after one), one in ten, rounded up, drawn the same on a rerun of the week; each read whole against its sources at the commit its `checked` names, by the judge (`--judge`, else `WORKLINE_JUDGE`, else the documentalist's `sample.judge`), never the model the commit's `Workline-Model` names. Every quote the judge gives is checked; a comment is no evidence. Writes nothing; `--out <file>` keeps the result, and `workline sample --apply <file> --forge <forge>`, with no agent, comments the week on one tracking issue, labels it `documentalist-step-0` and opens a merge request putting back a `checked` found false. Exits 2 when a doc is left for a person |
 | `workline doctor` | says what is set up on this machine (git, the global hooks, the agent, the tools the roles use) and in this repository (whether the documentalist runs before a push, how many docs declare their sources, which files read as docs it does not read), with the command that sets up each thing missing; changes nothing. It exits 1 only on an error — the agent named cannot be called, the config does not load — never for a tool left out; `--json` prints every check |
 
 Options of `run-role` and `route`:
@@ -149,6 +150,7 @@ roles:
       whole-chars: 40000                           # sources judged whole up to this; more docs vouched, more tokens
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
+      sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: release-manager, to: documentalist}]
@@ -171,6 +173,7 @@ replace the role's, key by key, one level deep.
 | `WORKLINE_AI` | the agent the git hook uses |
 | `WORKLINE_ROLES` | a folder of roles, as `--roles` |
 | `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
+| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; and the evaluation's judge |
 | `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
 
 A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,

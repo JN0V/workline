@@ -104,10 +104,16 @@ func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *place
 // every text file under a path. ok is false past limit characters, or when
 // a source cannot be read.
 func sourcesNow(d *Doc, pl *places, limit int) (evidence []string, ok bool) {
+	return sourcesAs(d, pl, limit, "as it is now")
+}
+
+// sourcesAs is sourcesNow at the revisions pl reads, each source titled as
+// it is said there ("as it is now", "at the commit `checked` names").
+func sourcesAs(d *Doc, pl *places, limit int, as string) (evidence []string, ok bool) {
 	size := 0
 	add := func(title, lang, text string) bool {
 		size += len(text)
-		evidence = append(evidence, fmt.Sprintf("%s, as it is now:\n\n```%s\n%s\n```", title, lang, strings.TrimRight(text, "\n")))
+		evidence = append(evidence, fmt.Sprintf("%s, %s:\n\n```%s\n%s\n```", title, as, lang, strings.TrimRight(text, "\n")))
 		return size <= limit
 	}
 	for _, src := range d.Sources {

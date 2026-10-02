@@ -1,0 +1,20 @@
+case: documentalist/sample-unproven-for-a-person
+about: A false passage the judge cannot prove — its quote only in a comment, or in no source — is no false `checked`; it goes to a person on the tracking issue, nothing set back, nothing put back.
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge: {issues: [], merge-requests: []}
+run: {sample: [--week, 2026-W01, --judge, "fake:sample-unproven"], then: apply}
+expect:
+  agent-calls: 1
+  findings:
+    - {rule: vouched-unproven, where: docs/tech/auth.md, message: "a comment"}
+    - {rule: vouched-unproven, where: docs/tech/auth.md, message: "is not in src/auth/token.go"}
+  no-findings:
+    - {rule: vouched-false, where: docs/tech/auth.md}
+  forge:
+    issues:
+      - {id: 1, labels: [], comments: 1, comment-contains: "for a person"}
+    merge-requests:
+      - {id: 1, absent: true}

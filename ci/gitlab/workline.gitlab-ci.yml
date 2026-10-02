@@ -93,7 +93,7 @@ workline:apply:
 .workline:garden:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample"
   before_script:
     - *trust
     - workline version
@@ -122,3 +122,46 @@ workline:garden:apply:
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline apply --line line.json
+
+# The weekly sample of the docs vouched for (ADR-0014, step 4): a second
+# pipeline schedule, weekly (Mondays, after the gardening), with the variable
+# WORKLINE_TASK=sample. One in ten of the docs whose `checked` the
+# documentalist moved in the week before is read whole against its sources
+# by a judge standing apart from the model that vouched: the documentalist's
+# `sample.judge` setting, or the variable WORKLINE_JUDGE (claude:opus when
+# the gardening vouches with Sonnet). What it found goes to one tracking
+# issue, a comment a week; a `checked` found false labels it
+# documentalist-step-0, and a merge request puts it back, for a person.
+# Needs a workline release with `workline sample`: the first after v0.2.1.
+.workline:sample:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK == "sample"
+  before_script:
+    - *trust
+    - workline version
+    - git checkout -q -B "$CI_COMMIT_REF_NAME"   # GitLab runs on a detached HEAD
+
+workline:sample:read:               # the agent reads; nothing is written
+  extends: .workline:sample
+  stage: test
+  script:
+    - *claude
+    - status=0
+    - workline sample --out sample.json || status=$?
+    - '[ "$status" != 1 ]'           # 2 and 3: for a person, on the issue
+  artifacts:
+    when: always
+    paths: [sample.json]
+    expire_in: 1 day
+
+workline:sample:write:              # writes to the forge; no agent installed
+  extends: .workline:sample
+  stage: deploy
+  needs: [workline:sample:read]
+  script:
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - git config user.name "workline"
+    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - workline sample --apply sample.json --forge gitlab
