@@ -466,6 +466,9 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			if cc, err = newCiteContext(repo, tree.Files); err != nil {
 				return j, err
 			}
+			if len(agentDocs) > 1 {
+				j.reported = append(j.reported, cc.attribute(claims, tree.Docs, agentFiles(intents, fallback, tree.Docs, judged))...)
+			}
 		}
 		diff, ok := in.Value.(string)
 		if !ok {
@@ -603,14 +606,37 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	return j, nil
 }
 
+// agentFiles are the docs' parts of the agent's patches, each placed on
+// the doc as it is; a patch that cannot be read gives none.
+func agentFiles(intents, fallback []intent.Intention, docs map[string]string, judged map[string]map[string]string) []fileDiff {
+	var out []fileDiff
+	for _, in := range intents {
+		diff, ok := in.Value.(string)
+		if in.Kind != "patch" || !ok || isFallback(in, fallback) {
+			continue
+		}
+		files, err := parseDiff(diff)
+		if err != nil {
+			continue
+		}
+		for _, f := range files {
+			old, isDoc := docs[f.path]
+			if _, asked := judged[f.path]; isDoc && asked && !f.deleted {
+				out = append(out, placed(old, f))
+			}
+		}
+	}
+	return out
+}
+
 // patchJudgement is what judgePatches finds of the agent's patches.
 type patchJudgement struct {
 	refused  []verdict.Finding // asked for again
 	patched  map[string]bool   // the docs fixed: true when vouched for
 	partly   map[string]bool   // the docs fixed with places withheld
 	fix      *judgedFixes
-	reported []verdict.Finding // comments given as the only reason, for a person
-	withheld []verdict.Finding // places refused and left as they were, for a person
+	reported []verdict.Finding  // comments given as the only reason, claims read for no doc: for a person
+	withheld []verdict.Finding  // places refused and left as they were, for a person
 	intents  []intent.Intention // the proposals narrowed to what holds; nil when unchanged
 }
 

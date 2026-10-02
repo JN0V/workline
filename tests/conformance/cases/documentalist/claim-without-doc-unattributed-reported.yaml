@@ -13,5 +13,5 @@ expect:
   agent-calls: 1
   findings:
     - {rule: removal-uncited, where: docs/tech/auth.md, message: "a claim was given without `doc:`"}
-    - {rule: claim-unattributed, message: "lines 10"}
+    - {rule: claim-unattributed, message: "a claim for line 10 was given without `doc:`"}
   files: {"docs/tech/auth.md": {contains: "Access tokens last one hour."}, "docs/tech/session.md": {contains: "Sessions end after two hours."}}

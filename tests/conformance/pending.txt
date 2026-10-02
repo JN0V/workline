@@ -1,7 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-documentalist/claim-without-doc-attributed
-documentalist/claim-without-doc-unattributed-reported
 documentalist/hunk-skipping-a-blank-line-applied
 documentalist/hunk-misquoting-context-placed-by-removed
 documentalist/answer-not-yaml-asked-again-once

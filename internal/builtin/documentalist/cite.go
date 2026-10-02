@@ -57,7 +57,9 @@ for a doc, a table's total among them, brought to the engine's number: the
 engine's count is the evidence; the words around it may then be said anew,
 but not a fact of the line's own: another number, a version, a name, a "not",
 an "all", an "or", a tense taken out still need a claim. Nor do words like
-"the" or "per", taken out of a line whose other words stay.
+"the" or "per", taken out of a line whose other words stay. When the task
+judges several docs, each claim names its doc in ` + "`doc`" + `: a claim without it
+is read only for the one doc whose patch it can stand for.
 
 `
 
@@ -171,6 +173,76 @@ func readCitations(intents []intent.Intention) (out []citeClaim, unread int) {
 		out = append(out, c)
 	}
 	return out, unread
+}
+
+// attribute reads each claim that names no `doc`, in an answer patching
+// several docs, for the one doc it can stand for: the only doc whose patch
+// changes the lines it gives, with its quote found in a file under that
+// doc's sources, or the name it says gone in the lines removed there. On
+// DomoticsCore a right claim for HeapTracker's pitfall named no `doc` beside
+// a second doc's patch, was not read, and the right fix was withheld as
+// uncited (ADR-0014, step 4). A claim that could stand for no doc, or for
+// more than one, is left unread and reported. files are the docs' parts of
+// the patches, placed; docs the docs as they are.
+func (cc *citeContext) attribute(claims []citeClaim, docs map[string]string, files []fileDiff) (unattributed []verdict.Finding) {
+	for i, c := range claims {
+		if c.Doc != "." {
+			continue
+		}
+		var can []string
+		for _, f := range files {
+			if old, ok := docs[f.path]; ok && !contains(can, f.path) && cc.standsFor(c, f.path, old, f) {
+				can = append(can, f.path)
+			}
+		}
+		if len(can) == 1 {
+			claims[i].Doc = can[0]
+			continue
+		}
+		why := "no doc's patch changes those lines with words it stands for"
+		if len(can) > 1 {
+			why = "it could stand for " + strings.Join(can, " and ")
+		}
+		unattributed = append(unattributed, verdict.Finding{Rule: "claim-unattributed",
+			Message: fmt.Sprintf("a claim for %s was given without `doc:` in an answer patching several docs, and %s: it was not read; each claim names its doc", c.Lines, why)})
+	}
+	return unattributed
+}
+
+// standsFor says whether a claim can be about a doc's part of a patch: a
+// run of its body the patch changes within placeWithin lines of the lines
+// the claim gives, and the claim's quote found in a file under the doc's
+// sources (a comment too: the removal rule judges that), or the name it says
+// gone among the lines the run removes.
+func (cc *citeContext) standsFor(c citeClaim, docPath, old string, f fileDiff) bool {
+	d, _ := ParseDoc(docPath, []byte(old))
+	if d == nil {
+		d = &Doc{Path: docPath}
+	}
+	wide := lineRange{from: max(1, c.Lines.from-placeWithin), to: c.Lines.to + placeWithin}
+	for _, b := range bodyBlocks(old, f) {
+		if !wide.overlaps(lineRange{from: b.from, to: max(b.from, b.to)}) {
+			continue
+		}
+		switch c.Status {
+		case "contradicted":
+			if c.Source == nil || strings.TrimSpace(c.Source.Quote) == "" {
+				continue
+			}
+			p := strings.TrimPrefix(path.Clean(strings.TrimPrefix(c.Source.Path, "./")), "b/")
+			if content, ok := cc.source(d, p); ok {
+				if found, _, _ := quoteIn(p, content, c.Source.Quote); found {
+					return true
+				}
+			}
+		case "gone":
+			name := strings.Trim(c.Name, "`() ")
+			if name != "" && regexp.MustCompile(`\b`+regexp.QuoteMeta(name)+`\b`).MatchString(strings.Join(b.removed, "\n")) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // citeContext is what the engine checks a claim against.
@@ -350,8 +422,11 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 		at := lineRange{from: b.from, to: max(b.from, b.to)}
 		var why []string
 		var commentAt []string
-		cited, any := false, false
+		cited, any, docless := false, false, false
 		for _, c := range claims {
+			if c.Doc == "." && !alone && (lineRange{from: max(1, c.Lines.from-placeWithin), to: c.Lines.to + placeWithin}).overlaps(at) {
+				docless = true // a claim no doc of the answer could be sure to hold
+			}
 			if c.Doc != docPath && (c.Doc != "." || !alone) {
 				continue
 			}
@@ -394,6 +469,9 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 				verb = "take"
 			}
 			r.why = fmt.Sprintf("%s %s out %s with no claim saying why", place, verb, quoteWords(out))
+			if docless {
+				r.why = fmt.Sprintf("%s %s out %s, and a claim was given without `doc:` for these lines, in an answer patching several docs, that could not be read for this one: each claim names its doc", place, verb, quoteWords(out))
+			}
 			if unread > 0 {
 				r.why += fmt.Sprintf(" (%d claims could not be read)", unread)
 			}
