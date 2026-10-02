@@ -114,8 +114,8 @@ a `PATH` without a tool, or with a fake one first.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
   text (`contains`).
-- `files` — paths that must exist, or contain a text, or lack one (`lacks`),
-  afterwards.
+- `files` — paths that must exist, or contain a text or each of a list of
+  texts, or lack one (`lacks`), afterwards.
 
 ## The fakes
 
@@ -132,6 +132,10 @@ a `PATH` without a tool, or with a fake one first.
   them first: `env: {PATH: "$FIXTURES/bin:$PATH"}`.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
+- **Command forge.** `cmd:sh "$FIXTURES/forges/logged.sh"` plugs a script
+  as the forge (docs/spec/forge-command.md): it writes each request it gets
+  to `.git/forge-requests.jsonl`, for `files` to check, and answers as a
+  small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
 - **Simulated forge.** An in-memory forge holding issues, labels, comments,
   merge requests and releases. It can be told to fail on the N-th write, to
   test recovery after a partial apply.
