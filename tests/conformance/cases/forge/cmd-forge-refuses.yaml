@@ -1,0 +1,12 @@
+case: forge/cmd-forge-refuses
+about: "A forge command answering an error — exit 0, {\"error\": …} — refuses the write: the run blocks with its words, not as a forge unreachable."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'}
+  env: {FORGE_REFUSE: "no merge request 1"}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "no merge request 1"}]

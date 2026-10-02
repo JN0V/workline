@@ -1,0 +1,12 @@
+case: forge/cmd-forge-unreachable
+about: "A forge command that fails — exits other than 0 — is a forge unreachable: the run is blocked by something outside the role, and says what the command said."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'}
+  env: {FORGE_FAIL: "503 Service Unavailable"}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  status: blocked-external
+  findings: [{rule: forge-unreachable, message: "503 Service Unavailable"}]

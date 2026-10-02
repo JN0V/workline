@@ -1,3 +1,9 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 
+forge/cmd-comment-on-a-merge-request
+forge/cmd-forge-refuses
+forge/cmd-forge-unreachable
+forge/cmd-item-ready
+forge/cmd-release-published
+forge/cmd-sample-written

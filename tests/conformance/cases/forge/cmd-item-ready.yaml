@@ -1,0 +1,11 @@
+case: forge/cmd-item-ready
+about: "With `--forge cmd:<command>`, a work item is read through the command's answer, and a ready one labelled through it."
+given: {repo: basic}
+run: {route: ready, item: 8, forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'}
+expect:
+  status: pass
+  files:
+    .git/forge-requests.jsonl:
+      contains:
+        - '{"id":8,"operation":"issue"}'
+        - '{"add":["workline:ready"],"operation":"label","remove":["workline:to-refine"],"target":{"kind":"issue","id":8}}'

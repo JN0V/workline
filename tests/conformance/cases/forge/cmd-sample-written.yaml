@@ -1,0 +1,26 @@
+case: forge/cmd-sample-written
+about: "With `forge: cmd:<command>`, `workline sample --apply` writes through the command: the branch pushed and its merge request, the tracking issue kept, the week's comment, the step-0 label."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'
+    roles:
+      documentalist:
+        settings:
+          sample: {judge: 'cmd:cat "$FIXTURES/agents/sample-ttl-false.yaml"'}
+run: {sample: [--week, 2026-W01], then: apply}
+expect:
+  status: pass
+  applied: [merge-request, comment, label]
+  pushed:
+    workline/documentalist/sample-2026-w01: {docs/tech/auth.md: "judged: bbb5703"}
+  files:
+    .git/forge-requests.jsonl:
+      contains:
+        - '"branch":"workline/documentalist/sample-2026-w01"'
+        - '"operation":"open-merge-request"'
+        - '"create":true,"operation":"keep-issue","title":"workline: the weekly sample of the docs vouched for"'
+        - '"marker":"<!-- workline:sample:2026-W01 -->","operation":"sticky","target":{"kind":"issue","id":7}'
+        - '{"add":["documentalist-step-0"],"operation":"label"'

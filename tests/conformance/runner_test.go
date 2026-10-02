@@ -484,8 +484,14 @@ func compare(c *caseFile, r *result, repo string) []string {
 		if exists, ok := want["exists"].(bool); ok && exists != (err == nil) {
 			p = append(p, fmt.Sprintf("%s exists = %v, want %v", path, err == nil, exists))
 		}
-		if text, ok := want["contains"].(string); ok && !strings.Contains(string(data), text) {
-			p = append(p, fmt.Sprintf("%s does not contain %q", path, text))
+		texts, _ := want["contains"].([]any) // one text, or a list
+		if text, ok := want["contains"].(string); ok {
+			texts = []any{text}
+		}
+		for _, text := range texts {
+			if !strings.Contains(string(data), fmt.Sprint(text)) {
+				p = append(p, fmt.Sprintf("%s does not contain %q", path, text))
+			}
 		}
 		if text, ok := want["lacks"].(string); ok && strings.Contains(string(data), text) {
 			p = append(p, fmt.Sprintf("%s contains %q", path, text))
