@@ -58,6 +58,11 @@ type Settings struct {
 	// caps the sources' share of a part, so that small sources still split.
 	PartsAlways bool `json:"parts-always"`
 	PartChars   int  `json:"part-chars"`
+	// History and Decisions: the project's globs of history docs and of
+	// decision records, added to the names the usual tools give them
+	// (records.go).
+	History   []string `json:"history"`
+	Decisions []string `json:"decisions"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -437,6 +442,7 @@ func Pre(runDir, repo string) int {
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
 		return fail(err)
 	}
+	useRecords(s)
 	tree, err := loadTree(repo, s.Docs)
 	if err != nil {
 		return fail(err)
@@ -1157,6 +1163,7 @@ func Post(runDir, repo string) int {
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
 		return fail(err)
 	}
+	useRecords(s)
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 	if err != nil {
 		return fail(err)

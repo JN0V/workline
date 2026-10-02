@@ -2,7 +2,6 @@ package documentalist
 
 import (
 	"fmt"
-	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -11,12 +10,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// adrFolders are the folders the usual tools keep decisions in: adr-tools and
-// log4brains (doc/adr, docs/adr), MADR (docs/decisions).
-var adrFolders = map[string]bool{"adr": true, "adrs": true, "decisions": true}
-
 var (
-	adrFile    = regexp.MustCompile(`^(\d+)-[^/]*\.md$`)
 	adrMention = regexp.MustCompile(`\bADR[- ]?0*(\d+)\b`)
 	adrToolsID = regexp.MustCompile(`\[(\d+)\. `) // adr-tools: "Superseded by [7. Title](0007-title.md)"
 	number     = regexp.MustCompile(`\d+`)
@@ -37,11 +31,10 @@ type adr struct {
 func decisions(t Tree) map[int]*adr {
 	out := map[int]*adr{}
 	for p := range t.Docs {
-		m := adrFile.FindStringSubmatch(path.Base(p))
-		if m == nil || !adrFolders[path.Base(path.Dir(p))] {
+		n, ok := decisionNumber(p)
+		if !ok {
 			continue
 		}
-		n, _ := strconv.Atoi(m[1])
 		out[n] = &adr{path: p, n: n}
 	}
 	byPath := map[string]int{}

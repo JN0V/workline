@@ -51,7 +51,9 @@ are cut. Part of [the documentalist](README.md).
 7. **Superseded decisions.** A doc citing a superseded decision record, by a
    link to its file or by its number (`ADR-0003`), without naming what
    replaced it (`cites-superseded`), as coherence does. Records are the
-   numbered files of a folder named `adr`, `adrs` or `decisions`; a record is
+   numbered files (`0007-…`, `adr001-…`) of a folder named `adr`, `adrs`,
+   `adr-…`, `decisions`, `architecture-decisions`, `decision-records` or
+   `decision-log`, and the files of the project's `decisions` globs; a record is
    superseded when its status says so — the frontmatter's `status`, a
    `Status:` line, or the paragraph under a `Status` heading (adr-tools) — or
    when another record's frontmatter `supersedes` it (MADR). What replaced it
@@ -86,8 +88,9 @@ are cut. Part of [the documentalist](README.md).
     total, unreported, was withdrawn by the agent for want of a claim
     (ADR-0014, step 4). Not a count: a number beside a limit word (`<`, under,
     over, limit, max, target, …); nor anything in a doc with `sources: []`,
-    a history doc (a changelog, a decision record, a tried or research
-    record) or a derived block. Reported with the file, the count stated
+    a history doc (a changelog or release notes, however named or
+    foldered, a decision record, a tried or research record, or a doc of
+    the project's `history` globs: role.yaml) or a derived block. Reported with the file, the count stated
     and the real one. No agent counts, and only lines are counted: tests,
     fields and other counts go through a project's `derive`, never
     guessed. While one stands, `checked` cannot move (the judge).

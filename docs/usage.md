@@ -145,6 +145,7 @@ roles:
   documentalist:
     settings:
       derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
+      history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: release-manager, to: documentalist}]

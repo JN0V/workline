@@ -1,0 +1,17 @@
+case: documentalist/count-off-not-in-history-by-convention
+about: "History docs are recognised by the names other projects give them — a changelog named anyhow (`v1.2.0-changelog.md`, `CHANGELOG_breaking_changes.md`), a `releases` folder, `RELEASE_NOTES` — and by the project's `history` globs, added to those: no line count is reported in them (docs/research/documentalist-genericity.md)."
+given:
+  repo: drifted
+  config: {roles: {documentalist: {settings: {history: ["docs/journal/**"]}}}}
+  setup:
+    - "mkdir -p docs/releases docs/journal && for f in docs/releases/v1.2.0-changelog.md docs/releases/v1.2.0.md CHANGELOG_breaking_changes.md RELEASE_NOTES.md docs/journal/2026-01.md; do printf -- '---\\nsources: [Clock/include/Clock.h]\\nchecked: X\\n---\\n# Then\\n\\n`Clock.h` has 524 lines.\\n' > $f; done && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/releases/*.md docs/journal/*.md CHANGELOG_breaking_changes.md RELEASE_NOTES.md && git add . && git commit -qm 'docs: records'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: count-off, where: docs/clock/README.md, message: "not 524"}]
+  no-findings:
+    - {rule: count-off, where: docs/releases/v1.2.0-changelog.md}
+    - {rule: count-off, where: docs/releases/v1.2.0.md}
+    - {rule: count-off, where: CHANGELOG_breaking_changes.md}
+    - {rule: count-off, where: RELEASE_NOTES.md}
+    - {rule: count-off, where: docs/journal/2026-01.md}
