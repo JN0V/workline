@@ -1,0 +1,15 @@
+case: forge/none-issue-refused
+about: "With no forge (`none`), an issue a role opens is refused like any other write, naming `forge: local`: nothing goes to the working tree, where it could be committed."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      truth: {doc: [\"docs/tech/**\"]}\\n' > .workline/config.yaml"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "fake:truth-disagrees", forge: none}
+expect:
+  status: block
+  applied: [patch]
+  findings: [{rule: engine-error, message: "forge: local"}]
+  files:
+    .workline/issues: {exists: false}
+    .git/workline/issues: {exists: false}
