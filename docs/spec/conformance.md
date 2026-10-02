@@ -76,6 +76,9 @@ a `PATH` without a tool, or with a fake one first.
 - `init: true` instead of `role` — run `workline init` on the repository;
 - `setup: [<option>...]` instead of `role` — run `workline setup` with these
   options, on a git config of the case's own;
+- `sample: [<option>...]` instead of `role` — draw and read the weekly
+  sample (`workline sample`), with no forge; `then: apply` then writes what
+  it found with `workline sample --apply`, on the simulated forge;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`);
@@ -100,6 +103,8 @@ a `PATH` without a tool, or with a fake one first.
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   and `comment-lacks` (a text some comment holds, or none does),
   `body-contains` (a text its body holds).
+- `pushed` / `pushed-message` — a text a file holds on a branch of the
+  case's `origin`, or the message of that branch's tip.
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.

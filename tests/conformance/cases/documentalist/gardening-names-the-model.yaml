@@ -1,0 +1,12 @@
+case: documentalist/gardening-names-the-model
+about: The commit a role's patches make names the agent and model that wrote them (Workline-Model, beside Workline-Role), so a later reader of the doc can stand apart from them (ADR-0005).
+given:
+  repo: untidy
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+expect:
+  status: pass
+  pushed-message:
+    workline/documentalist/duplicates-docs-faq-md-docs-sessions-md: "Workline-Model: fake:dedupe-links"

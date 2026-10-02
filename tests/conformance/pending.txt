@@ -1,2 +1,14 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# The weekly sample of the docs vouched for (ADR-0014, step 4): workline sample.
+documentalist/sample-one-in-ten
+documentalist/sample-not-a-person-s-checked
+documentalist/sample-false-checked-put-back
+documentalist/sample-unproven-for-a-person
+documentalist/sample-unearned
+documentalist/sample-never-the-voucher
+documentalist/sample-without-a-judge
+documentalist/sample-judge-from-the-environment
+documentalist/sample-empty-week
+documentalist/gardening-names-the-model

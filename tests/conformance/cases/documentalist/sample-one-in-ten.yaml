@@ -1,0 +1,11 @@
+case: documentalist/sample-one-in-ten
+about: The weekly sample takes one doc in ten of those the documentalist vouched for in the week, rounded up, and has each read against its sources by the judge it is given.
+given:
+  repo: vouched
+run: {sample: [--week, 2026-W02, --judge, "fake:sample-nothing-false"]}
+expect:
+  status: pass
+  agent-calls: 2
+  findings:
+    - {rule: sample-window, message: "11 docs vouched for"}
+    - {rule: vouched-true, where: docs/notes/}

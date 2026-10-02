@@ -1,0 +1,27 @@
+case: documentalist/sample-false-checked-put-back
+about: A passage the judge set by the project proves false, quoting the code at the commit `checked` names, sets the documentalist back to step 0 on the tracking issue, one comment for the week, and a merge request puts the doc's `checked` back, `judged` at the commit vouched for, for a person to review.
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles:
+      documentalist:
+        settings:
+          sample: {judge: 'cmd:cat "$FIXTURES/agents/sample-ttl-false.yaml"'}
+  forge: {issues: [], merge-requests: []}
+run: {sample: [--week, 2026-W01], then: apply}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: vouched-false, where: docs/tech/auth.md, message: "const TokenTTL = 7200"}
+  forge:
+    issues:
+      - {id: 1, title: "workline: the weekly sample of the docs vouched for", labels: [documentalist-step-0], comments: 1, comment-contains: "set back to step 0"}
+    merge-requests:
+      - {id: 1, branch: workline/documentalist/sample-2026-w01, base: main}
+  pushed:
+    workline/documentalist/sample-2026-w01: {docs/tech/auth.md: "judged: bbb5703"}
+  files:
+    docs/tech/auth.md: {contains: "checked: bbb5703"}

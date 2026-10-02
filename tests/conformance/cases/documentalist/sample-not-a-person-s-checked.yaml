@@ -1,0 +1,13 @@
+case: documentalist/sample-not-a-person-s-checked
+about: The weekly sample reads only the `checked` the documentalist moved (its commits' Workline-Role), never one a person moved; at least one doc is read when any was vouched for.
+given:
+  repo: vouched
+run: {sample: [--week, 2026-W01, --judge, "fake:sample-nothing-false"]}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: sample-window, message: "1 doc vouched for"}
+    - {rule: vouched-true, where: docs/tech/auth.md, message: "independence: provider"}
+  no-findings:
+    - {rule: vouched-true, where: docs/tech/people.md}
