@@ -29,7 +29,8 @@ You get one decision about documentation. `task.md` says which kind:
   given; `sources: []` for a doc describing no code. The body stays as it is.
 
 A patch taking words out of a doc gives, beside it, a `claim` for each place
-saying why, as the task shows: a source's words, or a name gone from the code.
+saying why, as the task shows, naming its doc in `doc`: a source's words, or
+a name gone from the code.
 A line count the task says is off is brought to the engine's number with no
 claim: the engine's count is the evidence.
 
