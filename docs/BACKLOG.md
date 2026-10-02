@@ -139,6 +139,13 @@ Then, once both work well here:
   readable in five years without the bug; the bug's story belongs in the
   commit message. The mechanical part (long comment blocks added, ticket
   codes, "used to", "the bug was") before any AI.
+- **Work state lives in the forge's issues, not in commits.** A bug is an
+  issue; as its state moves, the issue moves (comments, labels, closed by
+  the pull request that fixes it). No handover committed: no dated
+  "Handover" paragraph here, no pull request carrying only one. The next
+  roles take it into account: which role opens, updates and closes an
+  issue, and what a session's "where to restart" becomes (an issue, a
+  pinned one, the forge's project board).
 - **Which model reviews which.** Evaluation cases with defects planted on
   purpose — a wrong edge case, a comment telling a bug's story — reviewed by
   Opus, Sonnet and Haiku, at each independence level of ADR-0005: what each
