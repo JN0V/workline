@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
+sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -83,7 +83,12 @@ holds is applied"):
   another number, a version, a name (quoted as code, shaped as one, or
   capitalised past a sentence's start), a negation, a quantifier, a
   conjunction or a tense. Nor does a line reworded taking out only glue
-  ("the", "per", "currently"; never such a fact). A table's total is a count the engine gives too. The task and every
+  ("the", "per", "currently"; never such a fact). Words are compared with
+  their typography plain — `'` and `’`, quotes, a no-break space, "1 000"
+  and "1000" alike — and glue and fact words are the doc's language's,
+  English or French (an elided "l’" a word of its own; "a", has, a fact
+  in French): the project's `language`, else read from the doc's most
+  frequent words. A table's total is a count the engine gives too. The task and every
   refusal say it, the engine's count being the evidence: the agent had left
   the counts it was given, believing a count "cannot be quoted as a source"
   (ADR-0014, step 3). *Withheld*, each run of changed lines refused (as

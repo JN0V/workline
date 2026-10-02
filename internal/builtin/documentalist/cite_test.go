@@ -103,10 +103,43 @@ func TestWordsTakenOut(t *testing.T) {
 		{[]string{"In a repository, `workline init` has the documentalist run"}, []string{"In a repository, `workline init` has the committer and the documentalist run"}, ""},
 		{[]string{"one two", "three"}, []string{"one", "two three"}, ""},
 		{nil, []string{"A new line."}, ""},
+		{[]string{"It's 1 000 \u201clines\u201d."}, []string{"It\u2019s 1\u202f000 \"lines\"."}, ""},
+		{[]string{"It holds 1 000 lines."}, []string{"It holds 1000 lines."}, ""},
 	} {
-		got := strings.Join(wordsTakenOut(citedBlock{removed: c.removed, added: c.added}), " ")
+		got := strings.Join(wordsTakenOut(citedBlock{removed: c.removed, added: c.added}, "en"), " ")
 		if got != c.want {
 			t.Errorf("wordsTakenOut(%q → %q) = %q, want %q", c.removed, c.added, got, c.want)
+		}
+	}
+}
+
+// A line reworded taking out only its language's glue needs no claim: an
+// article mended in French, "du" become "de l'"; a French "a" (has) or a
+// negation does.
+func TestGlueByLanguage(t *testing.T) {
+	for _, c := range []struct {
+		removed, added, lang string
+		want             string
+	}{
+		{"Le connexion reste ouverte.", "La connexion reste ouverte.", "fr", ""},
+		{"La fiche du employeur.", "La fiche de l\u2019employeur.", "fr", ""},
+		{"Le jeton ne se renouvelle pas.", "Le jeton se renouvelle.", "fr", "ne pas"},
+		{"Il a un jeton.", "Il un jeton.", "fr", "a"},
+		{"Le connexion reste ouverte.", "La connexion reste ouverte.", "en", "Le"},
+		{"It runs on a board.", "It runs a board.", "en", ""},
+	} {
+		b := citedBlock{from: 1, to: 1, removed: []string{c.removed}, added: []string{c.added}}
+		if got := strings.Join(uncited(b, nil, c.lang), " "); got != c.want {
+			t.Errorf("uncited(%q → %q, %s) = %q, want %q", c.removed, c.added, c.lang, got, c.want)
+		}
+	}
+	for text, want := range map[string]string{
+		"Le jeton d'accès dure une heure, et la session reste ouverte.": "fr",
+		"Access tokens last one hour, and the session stays open.":     "en",
+		"1.4.1": "en",
+	} {
+		if got := docLanguage(text); got != want {
+			t.Errorf("docLanguage(%q) = %s, want %s", text, got, want)
 		}
 	}
 }

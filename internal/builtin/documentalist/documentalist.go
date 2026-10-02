@@ -63,6 +63,9 @@ type Settings struct {
 	// (records.go).
 	History   []string `json:"history"`
 	Decisions []string `json:"decisions"`
+	// Language: the docs' language, whose glue and fact words the removal
+	// rule reads ("en", "fr"); "" reads each doc's own (words.go).
+	Language string `json:"language"`
 	// Versions: how the project writes a version, when not in three parts
 	// (a regexp), and the files saying its version (values.go).
 	Versions struct {
@@ -452,6 +455,7 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	useRecords(s)
+	useLanguage(s)
 	if err := useVersions(s); err != nil {
 		return fail(err)
 	}
@@ -1183,6 +1187,7 @@ func Post(runDir, repo string) int {
 		return fail(err)
 	}
 	useRecords(s)
+	useLanguage(s)
 	if err := useVersions(s); err != nil {
 		return fail(err)
 	}

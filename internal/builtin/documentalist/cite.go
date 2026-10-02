@@ -126,18 +126,19 @@ func bodyBlocks(old string, f fileDiff) []citedBlock {
 var wordOf = regexp.MustCompile(`[\p{L}\p{N}]+(?:[._'’-][\p{L}\p{N}]+)*`)
 
 // wordsTakenOut are the words a block's removed lines say more often than
-// its added lines, case aside: what the fix takes out. Lines rewrapped, or a
-// sentence moved within the block, take nothing out.
-func wordsTakenOut(b citedBlock) []string {
+// its added lines, case and typography aside (plain): what the fix takes
+// out. Lines rewrapped, or a sentence moved within the block, take nothing
+// out.
+func wordsTakenOut(b citedBlock, lang string) []string {
 	count := map[string]int{}
 	for _, l := range b.added {
-		for _, w := range wordOf.FindAllString(l, -1) {
+		for _, w := range wordsOf(l, lang) {
 			count[strings.ToLower(w)]++
 		}
 	}
 	var out []string
 	for _, l := range b.removed {
-		for _, w := range wordOf.FindAllString(l, -1) {
+		for _, w := range wordsOf(l, lang) {
 			if lw := strings.ToLower(w); count[lw] > 0 {
 				count[lw]--
 			} else {
@@ -427,8 +428,9 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 	for _, c := range off {
 		counted[c.line] = append(counted[c.line], c)
 	}
+	lang := docLanguage(old)
 	for _, b := range bodyBlocks(old, f) {
-		out := uncited(b, counted)
+		out := uncited(b, counted, lang)
 		at := lineRange{from: b.from, to: max(b.from, b.to)}
 		var why []string
 		var commentAt []string
@@ -596,9 +598,9 @@ func newCiteContext(repo string, files map[string]bool) (*citeContext, error) {
 // step 4: "Watch the 800-line limit" became "Over the 800-line hard limit"
 // beside 930 lines) — but for a fact of the line's own (factOn): the count
 // stands for itself, not for a version or a "not" beside it.
-func uncited(b citedBlock, counted map[int][]countOff) []string {
+func uncited(b citedBlock, counted map[int][]countOff, lang string) []string {
 	var out []string
-	for _, w := range wordsTakenOut(b) {
+	for _, w := range wordsTakenOut(b, lang) {
 		if !countedOn(counted, b, w) {
 			out = append(out, w)
 		}
@@ -609,8 +611,8 @@ func uncited(b citedBlock, counted map[int][]countOff) []string {
 	free := map[string]int{}
 	for i := range b.removed {
 		line := citedBlock{from: b.from + i, to: b.from + i, removed: b.removed[i : i+1], added: b.added[i : i+1]}
-		words := wordsTakenOut(line)
-		if onlyGlue(words) {
+		words := wordsTakenOut(line, lang)
+		if onlyGlue(words, lang) {
 			for _, w := range words {
 				free[w]++
 			}
@@ -620,7 +622,7 @@ func uncited(b citedBlock, counted map[int][]countOff) []string {
 			continue
 		}
 		for _, w := range words {
-			if !factOn(b.removed[i], w) {
+			if !factOn(b.removed[i], w, lang) {
 				free[w]++
 			}
 		}
@@ -649,16 +651,20 @@ func countFixedOn(counted map[int][]countOff, line citedBlock) bool {
 	return false
 }
 
-// glue are words that carry no fact of their own: taken out of a line, with
-// every other word kept, the line says the same. Never a fact word.
-var glue = map[string]bool{"a": true, "an": true, "the": true, "of": true, "to": true, "in": true, "on": true,
-	"at": true, "for": true, "per": true, "with": true, "by": true, "from": true, "as": true, "it": true,
-	"its": true, "this": true, "that": true, "these": true, "those": true, "which": true, "currently": true}
+// glue are words that carry no fact of their own, by language: taken out of
+// a line, with every other word kept, the line says the same. Never a fact
+// word: French "a" (has) and "on" (one) are not glue.
+var glue = map[string]map[string]bool{
+	"en": wordSet(`a an the of to in on at for per with by from as it its this that these those
+		which currently`),
+	"fr": wordSet(`le la les l' un une des du de d' au aux à en dans par pour sur avec ce cet cette
+		ces qui dont actuellement`),
+}
 
-// onlyGlue says whether words, some, are all glue.
-func onlyGlue(words []string) bool {
+// onlyGlue says whether words, some, are all glue in the language.
+func onlyGlue(words []string, lang string) bool {
 	for _, w := range words {
-		if !glue[strings.ToLower(w)] {
+		if !glue[lang][strings.ToLower(w)] {
 			return false
 		}
 	}
@@ -666,13 +672,22 @@ func onlyGlue(words []string) bool {
 }
 
 // factWords change what a line says when taken out, whatever words stand
-// around them: a negation, a quantifier, a conjunction, a tense or a mood.
-var factWords = wordSet(`not no never none nor nothing nobody neither cannot without
-	all every each some any many much few fewer more most less least only both either several
-	always often sometimes rarely usually once twice again also still yet already just
-	and or but if unless except than because
-	is are was were be been being has have had do does did will would shall should can could
-	may might must`)
+// around them, by language: a negation, a quantifier, a conjunction, a tense
+// or a mood.
+var factWords = map[string]map[string]bool{
+	"en": wordSet(`not no never none nor nothing nobody neither cannot without
+		all every each some any many much few fewer more most less least only both either several
+		always often sometimes rarely usually once twice again also still yet already just
+		and or but if unless except than because
+		is are was were be been being has have had do does did will would shall should can could
+		may might must`),
+	"fr": wordSet(`ne n' pas plus jamais aucun aucune rien personne ni sans non
+		tous toutes tout toute chaque quelques plusieurs seul seule seuls seulement uniquement que qu'
+		toujours souvent parfois rarement déjà encore aussi
+		et ou mais si sauf car
+		est sont était étaient être été a ont avait avaient sera seront fait font
+		doit doivent peut peuvent pourrait devrait faut`),
+}
 
 // wordSet is the set of the words given.
 func wordSet(words string) map[string]bool {
@@ -688,9 +703,10 @@ func wordSet(words string) map[string]bool {
 // out, countedOn having let it go), a fact word or one negated ("isn't"), or
 // a name — quoted as code, shaped as one ("ClockWebUI", "Clock.h"), or
 // capitalised past a sentence's start ("Arduino").
-func factOn(line, w string) bool {
+func factOn(line, w, lang string) bool {
+	line = plain(line)
 	lw := strings.ToLower(w)
-	if factWords[lw] || strings.HasSuffix(lw, "n't") || strings.HasSuffix(lw, "n’t") ||
+	if factWords[lang][lw] || strings.HasSuffix(lw, "n't") ||
 		strings.ContainsAny(w, "0123456789.") {
 		return true
 	}
@@ -700,7 +716,7 @@ func factOn(line, w string) bool {
 		}
 	}
 	for _, at := range wordOf.FindAllStringIndex(line, -1) {
-		if line[at[0]:at[1]] != w {
+		if word := line[at[0]:at[1]]; word != w && !strings.HasSuffix(word, "'"+w) {
 			continue
 		}
 		if strings.Count(line[:at[0]], "`")%2 == 1 {

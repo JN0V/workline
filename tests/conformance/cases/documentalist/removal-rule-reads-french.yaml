@@ -1,0 +1,17 @@
+case: documentalist/removal-rule-reads-french
+about: "Before the removal rule compares a line's words, apostrophes, quotes and spaces are made plain (`'` and `’`, a no-break space, `1 000` and `1000`), and the words carrying no fact are the doc's language's (English, French; `language`, or read from the doc): a French rewording — an apostrophe, an article mended — needs no claim, a negation dropped still does (les-emplois: 26 refused for an apostrophe alone, docs/research/documentalist-genericity.md)."
+given:
+  repo: documented
+  setup:
+    - "printf -- '---\\nsources: [src/auth/token.go]\\nchecked: X\\n---\\n# Jetons\\n\\nLe jeton d'\\''accès dure une heure.\\n\\nLe connexion reste ouverte.\\n\\nIl en reste 1 000.\\n\\nLe jeton ne se renouvelle pas.\\n' > docs/tech/jetons.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/tech/jetons.md && git add . && git commit -qm 'docs: les jetons'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/reword-french.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: removal-uncited, where: docs/tech/jetons.md, message: "\"ne pas\""}]
+  no-findings:
+    - {rule: removal-uncited, where: docs/tech/jetons.md, message: "accès"}
+    - {rule: removal-uncited, where: docs/tech/jetons.md, message: "\"Le\""}
+    - {rule: removal-uncited, where: docs/tech/jetons.md, message: "000"}
+  files: {"docs/tech/jetons.md": {contains: "Le jeton d’accès dure une heure.\n\nLa connexion reste ouverte.\n\nIl en reste 1000.\n\nLe jeton ne se renouvelle pas."}}
