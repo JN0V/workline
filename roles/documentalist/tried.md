@@ -683,3 +683,36 @@ On 2026-09-27, on workline's own repository:
   judging docs whole asks no parts. Two docs held as judged, not vouched
   for (routing.md, the role README). The finding said "what the agent found
   wrong is fixed" where it found nothing wrong: the wording misleads.
+- The GitLab template on workline v0.2.2 (2026-10-02, gitlab.com
+  JN0V/workline-sandbox, its tokens masked, not protected). The template
+  as shipped, but for `$WORKLINE_SAMPLE_ARGS` in the sample's read, to
+  read the week under way (`--week 2026-W40`); `sample: {judge:
+  "claude:opus", after: "7515148"}`. **Merge request** !2 (TTL one hour →
+  thirty minutes): the first pipeline failed, every role with it —
+  `after: 7515148` unquoted is a YAML number, and the settings refuse it
+  ("cannot unmarshal number into Go struct field Settings.sample.after of
+  type string"); quoted, pipeline 2907455640 passed: Sonnet 5.5, 3.7k
+  tokens in, 0.5k out, fixed docs/tech/auth.md and set `verified:
+  agent:documentalist`; apply committed it to the branch, and the pipeline
+  of that commit judged nothing, "workline's own". No comment on the
+  merge request: sign-in.md, which follows auth.md, was "due at release",
+  in the Code Quality report only. **Gardening**, its schedule played
+  (pipelines 2907460792, 2907463815): the first, with only sign-in.md
+  due, opened issue #1 "Docs due at the next release" and no merge
+  request; after a source changed on main, the second (3.7k in) opened !3
+  on workline/documentalist/suspect, `checked` moved. **The sample**, its
+  schedule played with WORKLINE_TASK=sample: W39 (the default, last whole
+  week) drew nothing and said so on tracking issue #2 (pipeline
+  2907467817); W40 (2907470494) drew auth.md, vouched for in 47b5314
+  (!2, merged), read by Opus 5.5 (1.1k in, 0.1k out): true,
+  independence `model`, Sonnet → Opus; a rerun of W40 posted no second
+  comment. Schedule variables were refused (403; "not authorized to set
+  pipeline schedule variables") until the project's "minimum role to use
+  pipeline variables", `no_one_allowed` by default on a new gitlab.com
+  project, was set to Maintainer: docs/ci.md does not say so. **The
+  schedule itself**: gitlab.com put an off-the-hour cron on the hour —
+  `37 2 * * *` due 03:00, `13 17 * * *` due 18:00 — and fired the
+  latter at 18:08 (pipeline 2907635476): no agent call, auth.md's task
+  "waits for review" in !3, not judged again (ADR-0013); !3 left as it
+  was. Not tried: a fork's merge request; a `checked` found false (its
+  label and merge request on GitLab); a self-managed instance.
