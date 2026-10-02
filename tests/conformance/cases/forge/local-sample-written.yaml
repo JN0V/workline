@@ -1,0 +1,20 @@
+case: forge/local-sample-written
+about: "With `forge: local`, `workline sample --apply` keeps the tracking issue, its week's comment and its label in the clone, and the merge request putting the `checked` back is a local branch."
+given:
+  repo: vouched
+  config:
+    forge: local
+    roles:
+      documentalist:
+        settings:
+          sample: {judge: 'cmd:cat "$FIXTURES/agents/sample-ttl-false.yaml"'}
+run: {sample: [--week, 2026-W01], then: apply, forge: local}
+expect:
+  status: pass
+  applied: [merge-request, comment, label]
+  files:
+    .git/workline/issues/1.md: {contains: "set back to step 0"}
+    .git/workline/merge-requests/1.md: {contains: "branch: workline/documentalist/sample-2026-w01"}
+  branches:
+    workline/documentalist/sample-2026-w01: {docs/tech/auth.md: "judged: bbb5703"}
+  issues-listed: ["#1", "workline: the weekly sample of the docs vouched for", "documentalist-step-0", "!1"]

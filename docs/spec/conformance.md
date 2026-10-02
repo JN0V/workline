@@ -84,6 +84,8 @@ a `PATH` without a tool, or with a fake one first.
   (`{merge-request: 1}`);
 - `scope` — the run's scope, as a ready work item would give it;
 - `no-apply: true` — judge, and stop before applying;
+- `forge` — a forge spec given as `--forge` instead of the simulated forge
+  (`local`, `none`, `cmd:<command>`), the sample's `then: apply` included;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
   every run a line judged and did not apply;
 - `tamper: in/` — change the prepared input between prepare and apply.
@@ -105,6 +107,8 @@ a `PATH` without a tool, or with a fake one first.
   `body-contains` (a text its body holds).
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
   case's `origin`, or the message of that branch's tip.
+- `branches` — a text a file holds on a local branch of the repository.
+- `issues-listed` — texts `workline issues list` prints afterwards.
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.

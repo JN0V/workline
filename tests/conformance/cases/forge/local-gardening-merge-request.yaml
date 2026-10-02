@@ -1,0 +1,15 @@
+case: forge/local-gardening-merge-request
+about: "With `forge: local` and no remote, gardening's merge request is a local branch of its task, recorded in the clone, nothing pushed; the working tree goes back to the branch it was on."
+given:
+  repo: untidy
+  config: {forge: local}
+run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+expect:
+  status: pass
+  applied: [patch, issue]
+  branches:
+    workline/documentalist/duplicates-docs-faq-md-docs-sessions-md: {docs/faq.md: "See [how long a session lasts](sessions.md#how-long-a-session-lasts)."}
+  files:
+    .git/workline/merge-requests/1.md: {contains: "branch: workline/documentalist/duplicates-docs-faq-md-docs-sessions-md"}
+    docs/faq.md: {lacks: "See [how long a session lasts]"}
+  issues-listed: ["!1", "docs: keep a repeated passage in one place"]
