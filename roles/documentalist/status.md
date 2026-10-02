@@ -50,6 +50,13 @@ repository without merge requests is built but untried for real.
   code comment won over the setting): a passage one part finds partial and
   another supports is not handed to the fix. Conformance only; to watch on
   the next runs in parts.
+- **The first scheduled nightly's two faults** (workline, 2026-10-02,
+  tried.md): a doc found true but not vouched for is said "nothing found
+  wrong", a fix "fixed in N places", in the findings and beside each doc
+  in the gardening pull request; and a CI night that proposes the docs
+  judged whole goes round again, the parts judged the same night on the
+  `fix` pull request (ADR-0013, amended). Conformance only: the next
+  nights to watch, with a second task's tokens.
 - **Beyond our repositories** (docs/research/documentalist-genericity.md,
   fixes 1 to 3): a path that is not ASCII is read; changelogs, release
   notes and decision records are known by the names other projects give
