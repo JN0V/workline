@@ -63,6 +63,9 @@ type Settings struct {
 	// (records.go).
 	History   []string `json:"history"`
 	Decisions []string `json:"decisions"`
+	// WholeChars caps the characters a doc's sources may take to be judged
+	// whole; past it, a person judges the doc, or it is judged in parts.
+	WholeChars int `json:"whole-chars"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -579,13 +582,13 @@ func Pre(runDir, repo string) int {
 				// Vouching for every sentence the doc keeps needs its sources,
 				// not only what changed in them (ADR-0012): beside the diffs,
 				// when they fit.
-				if now, ok := sourcesNow(sd.doc, pl); ok && len(now) > 0 {
+				if now, ok := sourcesNow(sd.doc, pl, wholeChars(s)); ok && len(now) > 0 {
 					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
 					sd.whole = true
 				}
 				continue
 			}
-			now, ok := sourcesNow(sd.doc, pl)
+			now, ok := sourcesNow(sd.doc, pl, wholeChars(s))
 			if !ok {
 				sd.tooLarge = true
 				continue
@@ -658,7 +661,7 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, staleDocs(docs, pl, s.Freshness, time.Now(), func(p string) bool {
 			return suspects[p] != nil || hasPending(findings, p)
 		})...)
-		stale = staleForAgent(findings, byPath, pl)
+		stale = staleForAgent(findings, byPath, pl, s)
 	}
 	// Line counts off: counted by the engine, never vouched for (ADR-0014).
 	counts := CountsOff(repo, tree, docs)
@@ -1110,11 +1113,11 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)
 		}
 		entry.WriteString("```\n\n")
-		if len(header)+entry.Len() > taskMaxChars {
+		if len(header)+entry.Len() > taskChars(s) {
 			sd.tooLarge = true
 			continue
 		}
-		if b.Len()+entry.Len() > taskMaxChars {
+		if b.Len()+entry.Len() > taskChars(s) {
 			break
 		}
 		b.WriteString(entry.String())

@@ -27,7 +27,8 @@ calls together: past it, the agent is asked nothing more and the rest waits.
 `checked` is earned by what the task gave (ADR-0014). A doc is told it may
 move `checked` only when every one of its sources went whole into the task,
 as it is now — every text file under a source path, the section of a source
-doc, up to 20,000 characters together (`staleSourceChars`). A doc judged on
+doc, up to the project's `whole-chars` together (20,000 characters by
+default; the task grows by as much as it is raised). A doc judged on
 diffs alone, or beside a doc of the same task it follows, is told instead
 that `checked` cannot move: its fix leaves it and sets `judged`, the judge
 refusing a move (`checked-unread`), and the doc stays suspect for a person.

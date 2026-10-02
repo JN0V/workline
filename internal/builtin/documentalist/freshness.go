@@ -62,14 +62,30 @@ func staleDocs(docs []*Doc, pl *places, f Freshness, now time.Time, skip func(st
 	return out
 }
 
-// staleSourceChars caps what the sources of one stale doc may take in a task.
-// A doc whose sources do not fit is left for a person: confirming it without
-// reading them would only fake its freshness.
-const staleSourceChars = 20000
+// wholeCharsDefault caps what the sources of one doc may take in a task,
+// unless the project sets `whole-chars`. A doc whose sources do not fit is
+// left for a person, or judged in parts: confirming it without reading them
+// would only fake its freshness. Characters, not tokens: the engine measures
+// a task before the call, with no tokenizer (about four characters a token).
+const wholeCharsDefault = 20000
+
+// wholeChars is the project's cap on the sources of one doc judged whole.
+func wholeChars(s Settings) int {
+	if s.WholeChars > 0 {
+		return s.WholeChars
+	}
+	return wholeCharsDefault
+}
+
+// taskChars caps a task: the room the doc and the words around its sources
+// take is kept, whatever the sources may take.
+func taskChars(s Settings) int {
+	return taskMaxChars + max(0, wholeChars(s)-wholeCharsDefault)
+}
 
 // staleForAgent picks the stale docs to put before the agent, each with its
 // sources as they are now; a doc whose sources do not fit says so.
-func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *places) map[string]*suspectDoc {
+func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *places, s Settings) map[string]*suspectDoc {
 	out := map[string]*suspectDoc{}
 	for i := range findings {
 		f := &findings[i]
@@ -77,7 +93,7 @@ func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *place
 		if f.Rule != "stale" || d == nil {
 			continue
 		}
-		now, ok := sourcesNow(d, pl)
+		now, ok := sourcesNow(d, pl, wholeChars(s))
 		// Too large: a person reads it again, or it is judged in parts.
 		out[d.Path] = &suspectDoc{doc: d, why: []string{f.Message}, evidence: now, tooLarge: !ok, whole: ok && len(now) > 0}
 	}
@@ -85,14 +101,14 @@ func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *place
 }
 
 // sourcesNow is each source of a doc as it is now: a section of a doc, or
-// every text file under a path. ok is false past staleSourceChars, or when a
-// source cannot be read.
-func sourcesNow(d *Doc, pl *places) (evidence []string, ok bool) {
+// every text file under a path. ok is false past limit characters, or when
+// a source cannot be read.
+func sourcesNow(d *Doc, pl *places, limit int) (evidence []string, ok bool) {
 	size := 0
 	add := func(title, lang, text string) bool {
 		size += len(text)
 		evidence = append(evidence, fmt.Sprintf("%s, as it is now:\n\n```%s\n%s\n```", title, lang, strings.TrimRight(text, "\n")))
-		return size <= staleSourceChars
+		return size <= limit
 	}
 	for _, src := range d.Sources {
 		name, path, anchor := splitSource(src)

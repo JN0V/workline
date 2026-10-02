@@ -101,6 +101,13 @@ settings:
   # out); past it the agent is asked nothing more and the rest waits. 0: no
   # cap. A doc judged whole cost 13k to 26k on DomoticsCore; 16 parts, more.
   ai-max-tokens: 0
+  # The characters a doc's sources may take, together, to be judged whole
+  # (about four a token; characters, as the engine measures a task before the
+  # call). Higher, more docs can be vouched for, and each costs more tokens,
+  # every night when gardening: on the six public repositories probed, 0 to
+  # 33% of docs fit 20,000 (docs/research/documentalist-genericity.md). The
+  # task grows by as much as the cap does.
+  whole-chars: 20000
   # A suspect doc whose sources, as they are now, do not fit a task goes to a
   # person. Turned on, it is judged in parts instead (ADR-0009): the doc whole
   # with a share of its source files in each part, then one call fixing what
