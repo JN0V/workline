@@ -74,7 +74,7 @@ steps 0 to 2 are accepted**. **Next**: the release — the person merges
 #35 and this branch (fix/partial-settled-by-another), then a tag; then
 DomoticsCore's pin bumped to it and its branch docs/undo-unearned-checked
 (16 `checked` put back) pushed for review; then the weekly one-in-ten
-sample of the docs vouched for (ADR-0014, Amendment for who reads). Those three losses are met
+sample of the docs vouched for (ADR-0014, Amendment for who reads) — built since, `workline sample` (ADR-0015), not run yet. Those three losses are met
 since, conformance and replay only (status.md, "after step 4 the third
 time"; measured at d890be5, the fixes after it only recover right fixes,
 refusing nothing new): a claim with no `doc` read for the one doc it
@@ -241,6 +241,15 @@ last.
   request checked by hand). Not seen in CI, which has no user list. Fix:
   the user adds the bot's pattern, or the committer allows the forge's own
   identities a project names (its App, `noreply@github.com`) by setting.
+- **The weekly sample, left** (ADR-0015, built 2026-10-02, conformance
+  only). Its first run for real, with Opus, and its issue and merge
+  request on GitHub; the GitLab jobs untried. The templates need the
+  release after v0.2.1. A judge of another provider, when there is one
+  (`cmd:`). The sample's verdicts kept as a measure (results.tsv), and a
+  read by a person recorded as one. Commits before `Workline-Model` name
+  no model: their independence reads `unknown`. A week the job does not
+  run is not caught up (`--since` by hand). A `checked` naming another
+  repository is put back by a person, not by the merge request.
 
 ### Documentalist beyond our repositories
 
