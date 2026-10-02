@@ -166,7 +166,11 @@ repos:                      # other repositories docs may depend on (docs/spec/m
 ```
 
 A key the engine does not know blocks, with its line: an ignored setting is one
-someone believes in and nothing applies. A project's `settings` for a role
+someone believes in and nothing applies. A commit written unquoted is a number
+to YAML when all digits (`after: 7515148`): a setting naming a commit reads it
+as written. One YAML reads otherwise than written — a leading zero
+(`0123456`, octal), an `e` between digits (`1234e56`, a float) — blocks,
+saying to quote it. A project's `settings` for a role
 replace the role's, key by key, one level deep.
 
 ## Environment
