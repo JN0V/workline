@@ -119,7 +119,32 @@ func (l *Local) StateOf(it *LocalItem) string {
 	return "open"
 }
 
+// InCI names the variable that says the run is in CI, or "" outside it.
+func InCI() string {
+	for _, v := range []string{"GITHUB_ACTIONS", "GITLAB_CI", "CI"} {
+		if val := os.Getenv(v); val != "" && val != "false" && val != "0" {
+			return v
+		}
+	}
+	return ""
+}
+
+// writable refuses a write in CI: the job's clone is thrown away after it,
+// and what the local forge holds with it. Reads stay allowed, so a project
+// whose config says `local` for its laptops still runs in CI what writes
+// nothing.
+func (l *Local) writable() error {
+	if v := InCI(); v != "" {
+		return fmt.Errorf("the local forge in CI (%s is set): this clone is thrown away after the job, and what it holds with it; "+
+			"pass --forge github, gitlab or cmd:<command> on this job, or --forge none to refuse the writes", v)
+	}
+	return nil
+}
+
 func (l *Local) save(kind string, it *LocalItem) error {
+	if err := l.writable(); err != nil {
+		return err
+	}
 	p, err := l.path(kind, it.ID)
 	if err != nil {
 		return err
@@ -302,6 +327,9 @@ func (l *Local) KeepIssue(title, body string, create bool) (int, error) {
 }
 
 func (l *Local) Release(tag, notes string) error {
+	if err := l.writable(); err != nil {
+		return err
+	}
 	d, err := l.dir()
 	if err != nil {
 		return err
