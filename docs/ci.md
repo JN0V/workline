@@ -41,7 +41,10 @@ ran.
    - [ci/github/workline-fork.yml](../ci/github/workline-fork.yml): comments
      a fork's pull request, which gets no secret and no right to write;
    - [ci/github/workline-gardening.yml](../ci/github/workline-gardening.yml):
-     gardening, nightly while a backlog is caught up, then weekly.
+     gardening, nightly while a backlog is caught up, then weekly;
+   - [ci/github/workline-sample.yml](../ci/github/workline-sample.yml): the
+     weekly sample of the docs vouched for (below), from the first release
+     after v0.2.1.
 2. **The Claude token**: Settings → Secrets and variables → Actions → New
    repository secret, `CLAUDE_CODE_OAUTH_TOKEN`.
 3. **A GitHub App** commits the fixes, so the checks run again by
@@ -82,11 +85,36 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
    Anyone who may push a branch can read them from a pipeline they change:
    people who may already write to the repository.
 3. **Gardening**: Build → Pipeline schedules → New schedule, nightly or
-   weekly, on main.
+   weekly, on main. **The weekly sample** (below): a second schedule,
+   weekly, with the variable `WORKLINE_TASK` set to `sample`.
 4. **Protect main**: merge requests only, pipelines must succeed.
 
 A fork's merge request runs in the fork, which has neither token: it is
 judged without an agent, and nothing is applied or commented.
+
+## The weekly sample
+
+Every week, one in ten of the docs the documentalist vouched for — whose
+`checked` it moved — is read whole against its sources, at the commit
+`checked` names, by a judge apart from the model that vouched (ADR-0014,
+step 4; [ADR-0015](adr/0015-the-weekly-sample-is-written-on-the-forge.md)).
+Set the judge, an `--ai` value, in `.workline/config.yaml`:
+
+```yaml
+roles:
+  documentalist:
+    settings:
+      sample: {judge: "claude:opus"}   # Sonnet vouches by default: Opus reads
+```
+
+or as the CI variable `WORKLINE_JUDGE`; a `cmd:` running another provider's
+agent stands further apart when you have one. Without a judge, the docs
+drawn are listed for a person. The result goes to one issue, "workline: the
+weekly sample of the docs vouched for", a comment a week; a `checked` found
+false labels it `documentalist-step-0` and opens a merge request putting it
+back, for you to review. On workline itself, Opus reads what Sonnet vouched
+for: another model of the same provider, the best independence there.
+A read costs one call of about 8k to 12k tokens a doc; one doc on most weeks.
 
 ## A self-managed GitLab
 
