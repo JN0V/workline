@@ -1161,9 +1161,9 @@ func Post(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	var refused, reported []verdict.Finding
+	var refused, reported, withheld []verdict.Finding
 	var judgedFix *judgedFixes
-	patched := map[string]bool{}
+	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil {
@@ -1218,7 +1218,15 @@ func Post(runDir, repo string) int {
 					return fail(err)
 				}
 			}
-			refused, patched, judgedFix, reported, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			var j patchJudgement
+			j, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			refused, patched, partly, judgedFix, reported, withheld = j.refused, j.patched, j.partly, j.fix, j.reported, j.withheld
+			// The patches narrowed to what holds are what the engine applies
+			// (ADR-0014, step 4).
+			if err == nil && len(refused) == 0 && j.intents != nil {
+				intents = j.intents
+				err = writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents)
+			}
 		}
 		if err != nil {
 			return fail(err)
@@ -1257,7 +1265,9 @@ func Post(runDir, repo string) int {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				if whole[f.Where] {
+				if partly[f.Where] {
+					f.Message += "\n(fixed, applied in part: the places refused are left as they were, each said below, and `checked` stays — a person fixes them against the sources, then moves `checked`)"
+				} else if whole[f.Where] {
 					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
 				} else {
 					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but not every source of the doc could be given whole in the task, so `checked` stays — a person reads it against them, then moves `checked`)"
@@ -1288,6 +1298,7 @@ func Post(runDir, repo string) int {
 			return string(data)
 		})...)
 	}
+	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback))); err != nil {
@@ -1631,7 +1642,13 @@ func gitIn(dir, stdin string, args ...string) (string, error) {
 // zeroContextDiff is the diff from old to now of the file at path, with no
 // line of context: it applies wherever those lines still read as they did.
 func zeroContextDiff(path, old, now string) (string, error) {
-	dir, err := os.MkdirTemp("", "workline-derive-")
+	return unifiedDiff(path, old, now, 0)
+}
+
+// unifiedDiff is the diff from old to now of the file at path, with that
+// many lines of context; empty when they are the same.
+func unifiedDiff(path, old, now string, context int) (string, error) {
+	dir, err := os.MkdirTemp("", "workline-diff-")
 	if err != nil {
 		return "", err
 	}
@@ -1645,13 +1662,21 @@ func zeroContextDiff(path, old, now string) (string, error) {
 			return "", err
 		}
 	}
-	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "-U0", "a/"+path, "b/"+path)
+	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "--no-color", fmt.Sprintf("-U%d", context), "a/"+path, "b/"+path)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if exit, ok := err.(*exec.ExitError); ok && exit.ExitCode() == 1 {
 		err = nil // the files differ, as they should
 	}
 	return string(out), err
+}
+
+// writeIntents writes a set of intentions, an empty one as such.
+func writeIntents(path string, in []intent.Intention) error {
+	if len(in) == 0 {
+		return os.WriteFile(path, []byte("[]\n"), 0o644)
+	}
+	return intent.Write(path, in)
 }
 
 func orDefault(s, d string) string {

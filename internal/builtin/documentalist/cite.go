@@ -67,6 +67,8 @@ an "all", an "or", a tense taken out still need a claim. Nor do words like
 type citedBlock struct {
 	from, to       int
 	removed, added []string
+	hunk           int   // the hunk it is in, by index
+	at             []int // its lines in that hunk, by index
 }
 
 // bodyBlocks splits a placed diff of one doc into runs of changed lines of
@@ -75,7 +77,7 @@ type citedBlock struct {
 func bodyBlocks(old string, f fileDiff) []citedBlock {
 	_, head := header(old)
 	var out []citedBlock
-	for _, h := range f.hunks {
+	for hi, h := range f.hunks {
 		n := h.oldStart
 		if h.oldCount == 0 {
 			n++ // inserted after that line
@@ -87,7 +89,7 @@ func bodyBlocks(old string, f fileDiff) []citedBlock {
 			}
 			cur = nil
 		}
-		for _, l := range h.lines {
+		for li, l := range h.lines {
 			if l[0] == ' ' {
 				flush()
 				n++
@@ -100,8 +102,9 @@ func bodyBlocks(old string, f fileDiff) []citedBlock {
 				continue
 			}
 			if cur == nil {
-				cur = &citedBlock{from: n, to: n - 1}
+				cur = &citedBlock{from: n, to: n - 1, hunk: hi}
 			}
+			cur.at = append(cur.at, li)
 			switch l[0] {
 			case '-':
 				cur.removed = append(cur.removed, l[1:])
@@ -283,16 +286,62 @@ func (cc *citeContext) source(d *Doc, p string) (string, bool) {
 // cited where it takes words out, and that no change rests on a comment
 // alone. It returns the refusal, if any, and the comment it rests on.
 func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []citeClaim, unread int, alone bool) (rule, msg string, comments []verdict.Finding) {
+	refused, held, off, comments := cc.citationRefusals(docPath, old, f, claims, unread, alone)
+	if len(refused) == 0 {
+		return "", "", nil
+	}
+	rule, msg = citationMessage(docPath, refused, held, off)
+	return rule, msg, comments
+}
+
+// citationMessage says why a doc's fix is refused by the removal rule, as
+// the agent is told: each place refused, the counts the engine fixes with
+// no claim, and the places that hold.
+func citationMessage(docPath string, refused []placeRefusal, held []string, off []countOff) (rule, msg string) {
+	var refusals []string
+	for _, r := range refused {
+		if rule == "" || r.rule == "comment-not-evidence" {
+			rule = r.rule
+		}
+		refusals = append(refusals, r.why)
+	}
+	msg = strings.Join(refusals, "; ") + "; give a `claim` beside the patch for each place, with the doc's lines and a source's words quoted from a file under its sources (`status: contradicted`, `source: {path, quote}`), or a name the code no longer has (`status: gone`, `name`); with nothing to cite, leave the words, and say in a note what you could not confirm"
+	if len(off) > 0 {
+		var said []string
+		for _, c := range off {
+			said = append(said, fmt.Sprintf("line %d, %s to %d", c.line, c.stated, c.real))
+		}
+		msg += ". A line count the engine reported off needs no claim: the engine's count is the evidence, so bring each to its number (" + strings.Join(said, "; ") + ") and keep that change"
+	}
+	// Only what is refused is named: the agent once withdrew a right fix
+	// with the refused one beside it (16c660b, ADR-0014 step 3).
+	if len(held) > 0 {
+		msg += fmt.Sprintf(". Only the places named are refused: the rest of this patch of %s holds (%s); send it again unchanged", docPath, strings.Join(held, ", "))
+	}
+	return rule, msg
+}
+
+// placeRefusal is one run of a doc's changed lines refused by the removal
+// rule, and why: the rest of the doc's fix may hold without it.
+type placeRefusal struct {
+	block     citedBlock
+	place     string // its lines, as "line 12" or "lines 12-14"
+	rule, why string
+}
+
+// citationRefusals reads each run of a doc's body a fix changes against
+// the claims given: the runs refused, with their rule and why; the places
+// that hold; the line counts the engine reports off in the doc; and the
+// comments given as the only reason for a fix, for a person.
+func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims []citeClaim, unread int, alone bool) (refused []placeRefusal, held []string, off []countOff, comments []verdict.Finding) {
 	d, _ := ParseDoc(docPath, []byte(old))
 	if d == nil {
 		d = &Doc{Path: docPath}
 	}
-	var refusals, held []string
-	rule = ""
 	// A line count the engine counted off is cited by the engine itself,
 	// when the fix brings it to the engine's number.
 	counted := map[int][]countOff{}
-	off := countsOff(cc.repo, cc.files, d, old)
+	off = countsOff(cc.repo, cc.files, d, old)
 	for _, c := range off {
 		counted[c.line] = append(counted[c.line], c)
 	}
@@ -326,51 +375,32 @@ func (cc *citeContext) judgeCitations(docPath, old string, f fileDiff, claims []
 			held = append(held, place)
 			continue
 		}
+		r := placeRefusal{block: b, place: place}
 		switch {
 		case len(commentAt) > 0:
-			rule = "comment-not-evidence"
-			refusals = append(refusals, fmt.Sprintf("the fix of %s rests on a comment only (%s): a comment is not evidence, the code is; keep the doc's words unless the code itself says otherwise — the disagreement between the comment and the code is reported for a person", place, strings.Join(commentAt, ", ")))
+			r.rule = "comment-not-evidence"
+			r.why = fmt.Sprintf("the fix of %s rests on a comment only (%s): a comment is not evidence, the code is; keep the doc's words unless the code itself says otherwise — the disagreement between the comment and the code is reported for a person", place, strings.Join(commentAt, ", "))
 			for _, ca := range commentAt {
 				comments = append(comments, verdict.Finding{Rule: "comment-disagrees", Where: strings.SplitN(ca, ":", 2)[0],
 					Message: fmt.Sprintf("the comment at %s was given as the only reason to change %s %s; a comment is not evidence: if the code says otherwise, the comment is stale — fix it", ca, docPath, place)})
 			}
 		case any:
-			if rule == "" {
-				rule = "citation-unchecked"
-			}
-			refusals = append(refusals, fmt.Sprintf("the claim for %s does not hold: %s", place, strings.Join(why, "; ")))
+			r.rule = "citation-unchecked"
+			r.why = fmt.Sprintf("the claim for %s does not hold: %s", place, strings.Join(why, "; "))
 		default:
-			if rule == "" {
-				rule = "removal-uncited"
-			}
+			r.rule = "removal-uncited"
 			verb := "takes"
 			if at.from != at.to {
 				verb = "take"
 			}
-			msg := fmt.Sprintf("%s %s out %s with no claim saying why", place, verb, quoteWords(out))
+			r.why = fmt.Sprintf("%s %s out %s with no claim saying why", place, verb, quoteWords(out))
 			if unread > 0 {
-				msg += fmt.Sprintf(" (%d claims could not be read)", unread)
+				r.why += fmt.Sprintf(" (%d claims could not be read)", unread)
 			}
-			refusals = append(refusals, msg)
 		}
+		refused = append(refused, r)
 	}
-	if len(refusals) == 0 {
-		return "", "", nil
-	}
-	msg = strings.Join(refusals, "; ") + "; give a `claim` beside the patch for each place, with the doc's lines and a source's words quoted from a file under its sources (`status: contradicted`, `source: {path, quote}`), or a name the code no longer has (`status: gone`, `name`); with nothing to cite, leave the words, and say in a note what you could not confirm"
-	if len(off) > 0 {
-		var said []string
-		for _, c := range off {
-			said = append(said, fmt.Sprintf("line %d, %s to %d", c.line, c.stated, c.real))
-		}
-		msg += ". A line count the engine reported off needs no claim: the engine's count is the evidence, so bring each to its number (" + strings.Join(said, "; ") + ") and keep that change"
-	}
-	// Only what is refused is named: the agent once withdrew a right fix
-	// with the refused one beside it (16c660b, ADR-0014 step 3).
-	if len(held) > 0 {
-		msg += fmt.Sprintf(". Only the places named are refused: the rest of this patch of %s holds (%s); send it again unchanged", docPath, strings.Join(held, ", "))
-	}
-	return rule, msg, comments
+	return refused, held, off, comments
 }
 
 // quoteWords says the words taken out, a few of them.

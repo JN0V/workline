@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -340,11 +341,21 @@ func checkedMatches(content string, want map[string]string) bool {
 // is returned too, for the checks on the docs as they will be. Every word a
 // fix takes out of a body is cited, never by a comment alone (cite.go); a
 // comment given alone is returned in reported, for a person.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (refused []verdict.Finding, patched map[string]bool, fix *judgedFixes, reported []verdict.Finding, err error) {
+//
+// A place refused by the removal rule, a hunk quoting the doc wrong, or a
+// move of `checked` nobody can vouch for is not asked for again: the rest
+// of the doc's fix holds and is applied without it, the doc keeps
+// `checked` and records `judged`, and the place is withheld — a finding
+// for a person, with its reason. A re-ask sent the whole task again for
+// one place, and rarely brought the right fix back (ADR-0014, step 4).
+// Only a patch of which no hunk quotes the doc right is asked for again: a
+// misquote is a slip the agent mends at the second answer.
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
 	refuse := func(rule, where, msg string) {
-		refused = append(refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
+		j.refused = append(j.refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
-	patched = map[string]bool{}
+	j.patched = map[string]bool{}
+	j.partly = map[string]bool{}
 	fixed := 0
 	var tree Tree
 	claims, unread := readCitations(intents)
@@ -362,19 +373,98 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	accept := func(f fileDiff) {
 		fixes = append(fixes, fixedDoc{path: f.path, blocks: changeBlocks(f)})
 	}
-	for _, in := range intents {
+	// judgeFile reads one doc's part of a patch: refused whole (rule), or
+	// refused in places a narrower fix may leave out, or in its move of
+	// `checked` alone (header); otherwise what the doc becomes.
+	judgeFile := func(f fileDiff, old string, want map[string]string, diff string) fileVerdict {
+		if why := misquoted(old, f); why != "" {
+			return fileVerdict{rule: "misquoted", why: why}
+		}
+		if why := replacedInPart(f); why != "" {
+			return fileVerdict{rule: "replaced-in-part", why: why}
+		}
+		if touchesDerived(old, f) {
+			return fileVerdict{rule: "derived-block", why: "the patch changes lines between workline:derive markers; they are regenerated from the code, never written"}
+		}
+		now := applyHunks(old, f)
+		if isAuthority(s, f.path) && body(now) != body(old) {
+			return fileVerdict{rule: "truth-doc-changed", why: "this doc is an authority (truth: doc): the code follows it, never the reverse; set only `checked` and `verified`, and open an issue where the code disagrees"}
+		}
+		places, held, off, comments := cc.citationRefusals(f.path, old, f, claims, unread, len(agentDocs) == 1)
+		j.reported = append(j.reported, comments...)
+		if len(places) > 0 {
+			rule, why := citationMessage(f.path, places, held, off)
+			return fileVerdict{rule: rule, why: why, places: places}
+		}
+		if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
+			return fileVerdict{rule: "patch-ambiguous", why: "git would apply this diff differently from how it reads; send a plain unified diff"}
+		}
+		// The frontmatter records who checked the doc; only the body counts.
+		// Truth before size: a fix may say what the code now does, by a
+		// tenth of the doc at most; padding beyond that is refused.
+		if n, o := len(scan(now)), len(scan(old)); n > o+o/10 && !mayGrow {
+			return fileVerdict{rule: "patch-grows", why: fmt.Sprintf("the patch makes the doc %d lines longer, past a tenth of it (%d); fix what is wrong, and say only what the code now does", n-o, o/10)}
+		}
+		moved := checkedOf(now) != checkedOf(old)
+		if _, ok := inParts[f.path]; ok {
+			if moved {
+				return fileVerdict{rule: "checked-moved-in-parts", why: "the patch moves `checked`, but the doc was judged in parts: nobody read it whole against its sources, so `checked` stays where it is; fix what the parts found wrong, and leave the header as it is"}
+			}
+			return fileVerdict{now: now, inParts: true}
+		}
+		full := want[""]
+		if moved && !whole[f.path] {
+			msg := "the patch moves `checked`, but not every source of the doc was given whole in the task: nobody can vouch for what was not read, so `checked` stays where it is"
+			if full != "" {
+				msg += fmt.Sprintf("; fix what you found wrong, and set `judged: %s` instead", full[:7])
+			}
+			return fileVerdict{rule: "checked-unread", why: msg, header: true,
+				person: "`checked` not moved: not every source of the doc was given whole in the task, so nobody could vouch for it; `judged` set instead"}
+		}
+		if moved {
+			d, _ := ParseDoc(f.path, []byte(now))
+			if off := countsOff(repo, tree.Files, d, now); len(off) > 0 {
+				var said []string
+				for _, c := range off {
+					said = append(said, c.message())
+				}
+				msg := "the patch moves `checked`, but the doc still states a line count off, which nobody can vouch for: " + strings.Join(said, "; ") + "; bring each count to the engine's number, with no claim: the engine's count is the evidence"
+				if full != "" {
+					msg += fmt.Sprintf(", or leave `checked` and set `judged: %s`", full[:7])
+				}
+				return fileVerdict{rule: "checked-over-count-off", why: msg, header: true,
+					person: "`checked` not moved: the doc still states a line count off (" + strings.Join(said, "; ") + "); `judged` set instead"}
+			}
+		}
+		// A fix the agent could not vouch for is kept: what it found wrong
+		// is fixed, and the doc stays suspect (ADR-0012), recording in
+		// `judged` when, so that it is not asked again before a source
+		// changes.
+		if !moved {
+			if full != "" && !strings.HasPrefix(full, judgedOf(now)) {
+				return fileVerdict{rule: "judged-not-set", why: fmt.Sprintf("the patch leaves `checked`, so it sets `judged: %s`: the commit the doc was judged at, without being vouched for; otherwise it is put before an agent again tomorrow, to the same end", full[:7])}
+			}
+			return fileVerdict{now: now}
+		}
+		if !checkedMatches(now, want) {
+			return fileVerdict{rule: "still-suspect", why: fmt.Sprintf("the patch does not set `checked` to %s, the commit given in the task, so the doc would stay suspect", wanted(want))}
+		}
+		return fileVerdict{now: now, vouched: true}
+	}
+	narrowedAny := false
+	for ii, in := range intents {
 		if in.Kind != "patch" || isFallback(in, fallback) {
 			continue // the role's own regenerated blocks are not the agent's to judge
 		}
 		if tree.Docs == nil {
 			if tree, err = loadTree(repo, s.Docs); err != nil {
-				return nil, nil, nil, nil, err
+				return j, err
 			}
 			for p, c := range tree.Docs {
 				after[p] = c
 			}
 			if cc, err = newCiteContext(repo, tree.Files); err != nil {
-				return nil, nil, nil, nil, err
+				return j, err
 			}
 		}
 		diff, ok := in.Value.(string)
@@ -382,15 +472,32 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-not-diff", "patch", "send a unified diff, not a whole file, so what it replaces can be checked against the doc")
 			continue
 		}
+		narrowed := false
+		var misquotes map[string][]verdict.Finding
 		if _, err := gitIn(repo, intent.NormalizeDiff(diff), "apply", "--recount", "--unidiff-zero", "--check", "-"); err != nil {
-			refuse("patch-does-not-apply", "patch", err.Error()+notApplying(diff, after))
-			continue
+			kept, dropped, ok := quotedRight(diff, after, judged)
+			if ok {
+				_, again := gitIn(repo, kept, "apply", "--recount", "--unidiff-zero", "--check", "-")
+				ok = again == nil
+			}
+			if !ok {
+				refuse("patch-does-not-apply", "patch", err.Error()+notApplying(diff, after))
+				continue
+			}
+			diff, misquotes, narrowed = kept, dropped, true
+			for _, p := range sortedKeys2(dropped) {
+				j.withheld = append(j.withheld, dropped[p]...)
+				j.partly[p] = true
+			}
 		}
 		files, err := parseDiff(diff)
 		if err != nil {
 			refuse("patch-unreadable", "patch", err.Error())
 			continue
 		}
+		start := map[string]string{}
+		var order []string
+		refusedBefore := len(j.refused)
 		for _, f := range files {
 			want, ok := judged[f.path]
 			if !ok {
@@ -398,102 +505,88 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				continue
 			}
 			old := after[f.path]
+			if _, seen := start[f.path]; !seen {
+				start[f.path] = old
+				order = append(order, f.path)
+			}
 			f = placed(old, f)
-			if why := misquoted(old, f); why != "" {
-				refuse("misquoted", f.path, why)
-				continue
-			}
-			if why := replacedInPart(f); why != "" {
-				refuse("replaced-in-part", f.path, why)
-				continue
-			}
-			if touchesDerived(old, f) {
-				refuse("derived-block", f.path, "the patch changes lines between workline:derive markers; they are regenerated from the code, never written")
-				continue
-			}
-			now := applyHunks(old, f)
-			if isAuthority(s, f.path) && body(now) != body(old) {
-				refuse("truth-doc-changed", f.path, "this doc is an authority (truth: doc): the code follows it, never the reverse; set only `checked` and `verified`, and open an issue where the code disagrees")
-				continue
-			}
-			if rule, why, comments := cc.judgeCitations(f.path, old, f, claims, unread, len(agentDocs) == 1); rule != "" {
-				reported = append(reported, comments...)
-				refuse(rule, f.path, why)
-				continue
-			}
-			if byGit, err := gitApplied(f.path, old, diff, false); err != nil || byGit != now {
-				refuse("patch-ambiguous", f.path, "git would apply this diff differently from how it reads; send a plain unified diff")
-				continue
-			}
-			// The frontmatter records who checked the doc; only the body counts.
-			// Truth before size: a fix may say what the code now does, by a
-			// tenth of the doc at most; padding beyond that is refused.
-			if n, o := len(scan(now)), len(scan(old)); n > o+o/10 && !mayGrow {
-				refuse("patch-grows", f.path, fmt.Sprintf("the patch makes the doc %d lines longer, past a tenth of it (%d); fix what is wrong, and say only what the code now does", n-o, o/10))
-				continue
-			}
-			if _, ok := inParts[f.path]; ok {
-				if checkedOf(now) != checkedOf(old) {
-					refuse("checked-moved-in-parts", f.path, "the patch moves `checked`, but the doc was judged in parts: nobody read it whole against its sources, so `checked` stays where it is; fix what the parts found wrong, and leave the header as it is")
-					continue
-				}
-				after[f.path] = now
-				accept(f)
-				fixed++
-				continue
-			}
-			if checkedOf(now) != checkedOf(old) && !whole[f.path] {
-				msg := "the patch moves `checked`, but not every source of the doc was given whole in the task: nobody can vouch for what was not read, so `checked` stays where it is"
-				if full := want[""]; full != "" {
-					msg += fmt.Sprintf("; fix what you found wrong, and set `judged: %s` instead", full[:7])
-				}
-				refuse("checked-unread", f.path, msg)
-				continue
-			}
-			if checkedOf(now) != checkedOf(old) {
-				d, _ := ParseDoc(f.path, []byte(now))
-				if off := countsOff(repo, tree.Files, d, now); len(off) > 0 {
-					var said []string
-					for _, c := range off {
-						said = append(said, c.message())
+			fdiff := diff
+			partly := len(misquotes[f.path]) > 0
+			for tries := 0; ; tries++ {
+				v := judgeFile(f, old, want, fdiff)
+				if v.rule == "" && !(partly && v.vouched) {
+					after[f.path] = v.now
+					accept(f)
+					fixed++
+					switch {
+					case v.inParts:
+					case v.vouched:
+						j.patched[f.path] = true
+					case !j.patched[f.path]:
+						j.patched[f.path] = false
 					}
-					msg := "the patch moves `checked`, but the doc still states a line count off, which nobody can vouch for: " + strings.Join(said, "; ") + "; bring each count to the engine's number, with no claim: the engine's count is the evidence"
-					if full := want[""]; full != "" {
-						msg += fmt.Sprintf(", or leave `checked` and set `judged: %s`", full[:7])
-					}
-					refuse("checked-over-count-off", f.path, msg)
+					break
+				}
+				// Narrowed: the places refused taken back, `checked` put
+				// back and `judged` recorded; then judged again.
+				if v.rule != "" && len(v.places) == 0 && !v.header || tries > len(f.hunks)+8 {
+					refuse(v.rule, f.path, v.why)
+					break
+				}
+				var drop []citedBlock
+				for _, p := range v.places {
+					drop = append(drop, p.block)
+				}
+				nf := withoutBlocks(f, drop)
+				now, ok := asJudged(old, applyHunks(old, nf), want[""])
+				if !ok {
+					refuse(v.rule, f.path, v.why)
+					break
+				}
+				for _, p := range v.places {
+					j.withheld = append(j.withheld, verdict.Finding{Rule: p.rule, Where: f.path,
+						Message: p.why + "; left as it was, the rest of the fix applied: a person checks this place against the sources"})
+				}
+				if v.header {
+					j.withheld = append(j.withheld, verdict.Finding{Rule: v.rule, Where: f.path, Message: v.person})
+				}
+				partly, narrowed = true, true
+				j.partly[f.path] = true
+				if now == old {
+					break // nothing of the fix left, not even its record
+				}
+				d, err := unifiedDiff(f.path, old, now, 3)
+				if err != nil {
+					return j, err
+				}
+				nfs, err := parseDiff(d)
+				if err != nil {
+					return j, err
+				}
+				f, fdiff = placed(old, nfs[0]), d
+			}
+		}
+		if narrowed && len(j.refused) == refusedBefore {
+			var b strings.Builder
+			for _, p := range order {
+				if after[p] == start[p] {
 					continue
 				}
-			}
-			// A fix the agent could not vouch for is kept: what it found wrong
-			// is fixed, and the doc stays suspect (ADR-0012), recording in
-			// `judged` when, so that it is not asked again before a source
-			// changes. It is in patched as false: fixed, not vouched for.
-			if checkedOf(now) == checkedOf(old) {
-				if full := want[""]; full != "" && !strings.HasPrefix(full, judgedOf(now)) {
-					refuse("judged-not-set", f.path, fmt.Sprintf("the patch leaves `checked`, so it sets `judged: %s`: the commit the doc was judged at, without being vouched for; otherwise it is put before an agent again tomorrow, to the same end", full[:7]))
-					continue
+				d, err := unifiedDiff(p, start[p], after[p], 3)
+				if err != nil {
+					return j, err
 				}
-				after[f.path] = now
-				accept(f)
-				if !patched[f.path] {
-					patched[f.path] = false
-				}
-				fixed++
-				continue
+				b.WriteString(d)
 			}
-			if !checkedMatches(now, want) {
-				refuse("still-suspect", f.path, fmt.Sprintf("the patch does not set `checked` to %s, the commit given in the task, so the doc would stay suspect", wanted(want)))
-				continue
-			}
-			after[f.path] = now
-			accept(f)
-			patched[f.path] = true
-			fixed++
+			intents[ii].Value = b.String()
+			narrowedAny = true
 		}
 	}
-	if len(refused) > 0 || fixed == 0 {
-		return refused, patched, nil, reported, nil
+	if narrowedAny {
+		j.intents = slices.DeleteFunc(slices.Clone(intents), func(in intent.Intention) bool { return in.Kind == "patch" && in.Value == "" })
+	}
+	if len(j.refused) > 0 || fixed == 0 {
+		return j, nil
 	}
 	before := map[string]Problem{}
 	for _, p := range Hygiene(tree, s.Budgets, s.Duplicates) {
@@ -506,7 +599,131 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	return refused, patched, &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes}, reported, nil
+	j.fix = &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes}
+	return j, nil
+}
+
+// patchJudgement is what judgePatches finds of the agent's patches.
+type patchJudgement struct {
+	refused  []verdict.Finding // asked for again
+	patched  map[string]bool   // the docs fixed: true when vouched for
+	partly   map[string]bool   // the docs fixed with places withheld
+	fix      *judgedFixes
+	reported []verdict.Finding // comments given as the only reason, for a person
+	withheld []verdict.Finding // places refused and left as they were, for a person
+	intents  []intent.Intention // the proposals narrowed to what holds; nil when unchanged
+}
+
+// fileVerdict is what judgePatches makes of one doc's part of a patch.
+type fileVerdict struct {
+	rule, why string         // refused, and why, as the agent is told
+	places    []placeRefusal // refused in these places alone
+	header    bool           // refused in its move of `checked` alone
+	person    string         // why, for a person, when header
+	now       string         // the doc as fixed, when not refused
+	vouched   bool           // `checked` moves
+	inParts   bool           // judged in parts: neither vouched nor recorded here
+}
+
+// withoutBlocks is a doc's diff with the runs refused taken back: the lines
+// they remove kept as context, the lines they add dropped.
+func withoutBlocks(f fileDiff, drop []citedBlock) fileDiff {
+	skip := map[[2]int]bool{}
+	for _, b := range drop {
+		for _, i := range b.at {
+			skip[[2]int{b.hunk, i}] = true
+		}
+	}
+	out := f
+	out.hunks = nil
+	for hi, h := range f.hunks {
+		nh := hunk{oldStart: h.oldStart, oldCount: h.oldCount}
+		for li, l := range h.lines {
+			if skip[[2]int{hi, li}] {
+				if l[0] == '-' {
+					nh.lines = append(nh.lines, " "+l[1:])
+				}
+				continue
+			}
+			nh.lines = append(nh.lines, l)
+		}
+		out.hunks = append(out.hunks, nh)
+	}
+	return out
+}
+
+// asJudged is a doc as a fix leaves its body, under its header as it was
+// with `judged` recorded: a fix applied in part vouches for nothing, so
+// `checked` stays. ok is false when the doc has no header to record it in,
+// or the commit is not known.
+func asJudged(old, now, full string) (string, bool) {
+	_, n := header(old)
+	_, m := header(now)
+	if n == 0 || m == 0 || len(full) < 7 {
+		return "", false
+	}
+	head := slices.Clone(strings.Split(old, "\n")[:n])
+	set := false
+	for i := 1; i < n-1; i++ {
+		if strings.HasPrefix(head[i], "judged:") {
+			head[i], set = "judged: "+full[:7], true
+		}
+	}
+	if !set {
+		head = slices.Insert(head, n-1, "judged: "+full[:7])
+	}
+	return strings.Join(append(head, strings.Split(now, "\n")[m:]...), "\n"), true
+}
+
+// quotedRight keeps, of a diff git cannot apply, the hunks that quote the
+// docs right, each doc's diff written anew from them; the hunks left out
+// are returned by doc, each with what it misquotes, for a person. ok is
+// false when no hunk quotes right, or the diff touches a file that is no
+// doc put before the agent: then nothing holds.
+func quotedRight(diff string, docs map[string]string, judged map[string]map[string]string) (kept string, dropped map[string][]verdict.Finding, ok bool) {
+	files, err := parseDiff(diff)
+	if err != nil {
+		return "", nil, false
+	}
+	dropped = map[string][]verdict.Finding{}
+	var b strings.Builder
+	for _, f := range files {
+		old, isDoc := docs[f.path]
+		if _, asked := judged[f.path]; !isDoc || !asked || f.deleted {
+			return "", nil, false
+		}
+		f = placed(old, f)
+		var keep []hunk
+		for _, h := range f.hunks {
+			if why := misquoted(old, fileDiff{path: f.path, hunks: []hunk{h}}); why != "" {
+				dropped[f.path] = append(dropped[f.path], verdict.Finding{Rule: "patch-does-not-apply", Where: f.path,
+					Message: strings.TrimSuffix(why, "; cite the lines as numbered in the task") + "; that hunk left out, the rest of the fix applied: a person checks this place against the sources"})
+				continue
+			}
+			keep = append(keep, h)
+		}
+		if len(keep) == 0 {
+			continue
+		}
+		d, err := unifiedDiff(f.path, old, applyHunks(old, fileDiff{path: f.path, hunks: keep}), 3)
+		if err != nil {
+			return "", nil, false
+		}
+		b.WriteString(d)
+	}
+	if b.Len() == 0 || len(dropped) == 0 {
+		return "", nil, false
+	}
+	return b.String(), dropped, true
+}
+
+func sortedKeys2(m map[string][]verdict.Finding) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // judgedFixes is what the accepted patches do: every doc before and after
