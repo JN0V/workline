@@ -1,6 +1,7 @@
 # ADR-0015: The weekly sample is written on the forge, not in commits
 
-- **Status:** accepted; built (`workline sample`), not yet run for real
+- **Status:** accepted; built (`workline sample`), not yet run for real;
+  amended 2026-10-02 (which forge)
 - **Date:** 2026-10-02
 - **Amends:** ADR-0014 (step 4's weekly sample, "written to the measures")
 
@@ -96,3 +97,12 @@ verdict (ADR-0014's amendment: a false `checked` goes to the person).
 - Not built: a measure of the sample in tests/evaluation (results.tsv); a
   sample read by a person instead of a judge is said on the issue, not
   recorded as a read.
+
+## Amendment (2026-10-02)
+
+"The forge" is where the project lives (ADR-0016): `workline sample
+--apply` writes the tracking issue, its comment, its label and the merge
+request on GitHub, GitLab, another forge plugged by a command, or, with
+`forge: local`, in the clone — the merge request a local branch, nothing
+pushed. With no forge, it writes nothing and says so. The decision is
+unchanged.
