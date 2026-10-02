@@ -241,3 +241,32 @@ last.
   request checked by hand). Not seen in CI, which has no user list. Fix:
   the user adds the bot's pattern, or the committer allows the forge's own
   identities a project names (its App, `noreply@github.com`) by setting.
+
+### Documentalist beyond our repositories
+
+ADR-0014's checks run on six public repositories with no agent
+(docs/research/documentalist-genericity.md): fitted to C-like code, English,
+`.md`, three-part versions. In order:
+
+1. **Paths not ASCII.** `git ls-files` quotes them; the doc is skipped in
+   silence (`docs/déploiement.md`). List with `-z` wherever the engine
+   lists files; one case.
+2. **History and decision records by setting.** `isHistory` and the ADR
+   folders miss `docs/releases/v1.x.0-changelog.md` (296 on backstage),
+   `architecture-decisions/adr001-…`, `CHANGELOG_breaking_changes.md`:
+   globs and a file pattern in settings, today's lists as defaults.
+3. **The comment test, wider and loud.** Python docstrings, shebang
+   scripts, `--`, `{{! }}`, `{# #}` are read as code; a type it does not
+   know is said in the finding, not taken as code.
+4. **The 20,000-character cap a setting**, in tokens, scaled to the
+   model: 0 to 33% of docs fit on the six, 15% on backstage. Measure the
+   tokens on the evaluation before raising the default.
+5. **Doc-like files the globs skip, reported** (`.rst`, `.mdx`, package
+   READMEs): pip's 68 `.rst` docs are unseen.
+6. **`value-left`: history markers and version formats.** Skip "since",
+   "first available in", `versionadded` as ranges are; a version pattern
+   or a `version-source` file by setting (calver `26.2`, siblings).
+7. **Words by language.** Plain apostrophes and spaces before words are
+   compared; glue, fact, limit and count words per `language`.
+8. **Sources proposed without an agent** by name, on `init --ai none`:
+   335 of 524 docs on a monorepo, 0 to 6 elsewhere.
