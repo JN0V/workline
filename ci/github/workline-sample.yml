@@ -1,0 +1,122 @@
+# The weekly sample of the docs the documentalist vouched for, on GitHub
+# Actions — copy to .github/workflows/workline-sample.yml. Needs a workline
+# release with `workline sample`: the first after v0.2.1.
+#
+# Every Monday, one in ten of the docs whose `checked` the documentalist
+# moved in the week before is read whole against its sources, at the commit
+# `checked` names, by a judge standing apart from the model that vouched;
+# the engine checks every quote it gives (ADR-0014, step 4; ADR-0005).
+# What it found goes to one tracking issue, a comment a week. A `checked`
+# found false labels it `documentalist-step-0`, and a pull request puts that
+# doc's `checked` back, for a person to review; nothing is merged here.
+#
+# The judge: the documentalist's `sample.judge` setting (.workline/config.yaml),
+# or the repository variable WORKLINE_JUDGE — an --ai value, `claude:opus`
+# when the gardening vouches with Sonnet, a `cmd:` running another
+# provider's agent when there is one. With none, the sample is still drawn,
+# and its docs are listed on the issue for a person to read.
+#
+# Two jobs, two trust zones, as for pull requests (workline.yml):
+#   read   draws the sample and has it read, with CLAUDE_CODE_OAUTH_TOKEN in
+#          the one step that needs it. It writes nothing.
+#   write  holds the write token and no AI key: it comments on the tracking
+#          issue, labels it, and opens the pull request, with the GitHub App
+#          when there is one (variable WORKLINE_APP_ID, secret
+#          WORKLINE_APP_PRIVATE_KEY; Issues, Contents, Pull requests).
+name: workline sample
+on:
+  # Mondays, 05:43 UTC, after the night's gardening. Off the hour: GitHub may
+  # drop a run scheduled at its start, when busiest.
+  schedule: [{cron: "43 5 * * 1"}]
+  workflow_dispatch:
+    inputs:
+      week: {description: "the ISO week sampled, 2026-W40 (default: the last whole week)", required: false}
+permissions: {}
+
+env:
+  WORKLINE_VERSION: v0.2.1          # a release of workline: update it to take a newer one
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
+    outputs:
+      drawn: ${{ steps.sample.outputs.drawn }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      # The engine at the version pinned above, from its release, checksum verified.
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      - name: Claude, when the repository gives its token
+        if: env.HAS_CLAUDE == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: The sample, read (writes nothing)
+        id: sample
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          WORKLINE_JUDGE: ${{ vars.WORKLINE_JUDGE }}
+          WEEK: ${{ inputs.week }}
+        run: |
+          status=0
+          workline sample ${WEEK:+--week "$WEEK"} --out sample.json || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          [ "$status" != 1 ] && [ -s sample.json ] && echo "drawn=true" >> "$GITHUB_OUTPUT"
+          { echo "### workline sample"; echo; jq -r '"\(.status) — \(.summary)", ((.findings // [])[] | "- \(.rule) \(.where // ""): \(.message)")' sample.json; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.sample.outputs.drawn == 'true'
+        with: {name: workline-sample, path: sample.json}
+
+      - name: Verdict
+        run: |
+          case "${{ steps.sample.outputs.status }}" in
+            0) ;;
+            2) echo "::warning title=workline::the sample holds docs for a person: see the tracking issue" ;;
+            3) echo "::warning title=workline::the judge could not be reached; the docs are listed for a person" ;;
+            *) exit 1 ;;
+          esac
+
+  write:
+    needs: read
+    if: always() && needs.read.outputs.drawn == 'true'
+    runs-on: ubuntu-latest
+    permissions: {contents: write, pull-requests: write, issues: write}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
+      - name: workline
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
+          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
+          echo "$bin" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@v4
+        with: {name: workline-sample}
+      - env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          APP: ${{ steps.app.outputs.app-slug }}
+        run: |
+          if [ -n "$APP" ]; then
+            git config user.name "$APP[bot]"
+            git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          workline sample --apply sample.json --forge github
