@@ -15,6 +15,7 @@ stars and dates were checked against the GitHub API that day.
 | [install-and-adoption.md](install-and-adoption.md) | How other CLIs diagnose a machine, set it up and adopt a repository |
 | [push-approval.md](push-approval.md) | How a git hook asks a person with no terminal: an editor's button, an agent's shell |
 | [ci-and-forge.md](ci-and-forge.md) | Running the documentalist in CI on GitHub: models, protected main, a bot's commits, forks |
+| [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
 
 ## Method
 
