@@ -48,6 +48,10 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	if err != nil {
 		return failed(res, err)
 	}
+	if res.Status == verdict.Block || res.Week == "" {
+		// A sample that did not run is not written as a week with nothing in it.
+		return failed(res, fmt.Errorf("%s: this sample did not run (%s); nothing written", file, res.Summary))
+	}
 	res.Status, res.Applied, res.Refused, res.Calls, res.AgentCalls = verdict.Pass, []string{}, []string{}, nil, 0
 	res.Findings = nil
 	if f == nil {
