@@ -58,6 +58,23 @@ type Settings struct {
 	// caps the sources' share of a part, so that small sources still split.
 	PartsAlways bool `json:"parts-always"`
 	PartChars   int  `json:"part-chars"`
+	// History and Decisions: the project's globs of history docs and of
+	// decision records, added to the names the usual tools give them
+	// (records.go).
+	History   []string `json:"history"`
+	Decisions []string `json:"decisions"`
+	// Language: the docs' language, whose glue and fact words the removal
+	// rule reads ("en", "fr"); "" reads each doc's own (words.go).
+	Language string `json:"language"`
+	// Versions: how the project writes a version, when not in three parts
+	// (a regexp), and the files saying its version (values.go).
+	Versions struct {
+		Pattern string   `json:"pattern"`
+		Files   []string `json:"files"`
+	} `json:"versions"`
+	// WholeChars caps the characters a doc's sources may take to be judged
+	// whole; past it, a person judges the doc, or it is judged in parts.
+	WholeChars int `json:"whole-chars"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -300,8 +317,8 @@ func commitFiles(dir, commit string) []changedFile {
 		return files
 	}
 	var files []changedFile
-	if out, err := git(dir, "diff-tree", "--no-commit-id", "--name-only", "-r", commit); err == nil && out != "" {
-		for _, f := range strings.Split(out, "\n") {
+	if out, err := git(dir, "diff-tree", "-z", "--no-commit-id", "--name-only", "-r", commit); err == nil && out != "" {
+		for _, f := range pathList(out) {
 			files = append(files, changedFile{path: f})
 		}
 	}
@@ -435,6 +452,11 @@ const taskMaxChars = 40000
 func Pre(runDir, repo string) int {
 	var s Settings
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
+		return fail(err)
+	}
+	useRecords(s)
+	useLanguage(s)
+	if err := useVersions(s); err != nil {
 		return fail(err)
 	}
 	tree, err := loadTree(repo, s.Docs)
@@ -573,13 +595,13 @@ func Pre(runDir, repo string) int {
 				// Vouching for every sentence the doc keeps needs its sources,
 				// not only what changed in them (ADR-0012): beside the diffs,
 				// when they fit.
-				if now, ok := sourcesNow(sd.doc, pl); ok && len(now) > 0 {
+				if now, ok := sourcesNow(sd.doc, pl, wholeChars(s)); ok && len(now) > 0 {
 					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
 					sd.whole = true
 				}
 				continue
 			}
-			now, ok := sourcesNow(sd.doc, pl)
+			now, ok := sourcesNow(sd.doc, pl, wholeChars(s))
 			if !ok {
 				sd.tooLarge = true
 				continue
@@ -631,6 +653,13 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	findings = append(findings, undocumented(tree, docs, s.Documented, added, ranged)...)
+	// Docs the role does not read: said when gardening and when adopting,
+	// not on each change, which adds nothing to them.
+	if ev := os.Getenv("WORKLINE_EVENT"); ev == "schedule" || ev == "init" {
+		if msg := unreadMessage(unreadDocs(tree.Files, s.Docs)); msg != "" {
+			findings = append(findings, verdict.Finding{Rule: "docs-not-read", Message: msg})
+		}
+	}
 
 	// Hygiene: what needs no judgement is reported by the checks themselves.
 	problems := Hygiene(tree, s.Budgets, s.Duplicates)
@@ -652,7 +681,7 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, staleDocs(docs, pl, s.Freshness, time.Now(), func(p string) bool {
 			return suspects[p] != nil || hasPending(findings, p)
 		})...)
-		stale = staleForAgent(findings, byPath, pl)
+		stale = staleForAgent(findings, byPath, pl, s)
 	}
 	// Line counts off: counted by the engine, never vouched for (ADR-0014).
 	counts := CountsOff(repo, tree, docs)
@@ -1104,11 +1133,11 @@ func docTask(header string, suspects map[string]*suspectDoc, s Settings, pl *pla
 			fmt.Fprintf(&entry, "%4d | %s\n", i+1, l)
 		}
 		entry.WriteString("```\n\n")
-		if len(header)+entry.Len() > taskMaxChars {
+		if len(header)+entry.Len() > taskChars(s) {
 			sd.tooLarge = true
 			continue
 		}
-		if b.Len()+entry.Len() > taskMaxChars {
+		if b.Len()+entry.Len() > taskChars(s) {
 			break
 		}
 		b.WriteString(entry.String())
@@ -1155,6 +1184,11 @@ func Post(runDir, repo string) int {
 	}
 	var s Settings
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
+		return fail(err)
+	}
+	useRecords(s)
+	useLanguage(s)
+	if err := useVersions(s); err != nil {
 		return fail(err)
 	}
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
@@ -1368,11 +1402,11 @@ func hasPending(f []verdict.Finding, where string) bool {
 // tracked file.
 func loadTree(repo string, globs []string) (Tree, error) {
 	t := Tree{Docs: map[string]string{}, Files: map[string]bool{}}
-	files, err := git(repo, "ls-files")
+	files, err := git(repo, "ls-files", "-z")
 	if err != nil {
 		return t, err
 	}
-	for _, f := range strings.Split(files, "\n") {
+	for _, f := range pathList(files) {
 		if f == "" {
 			continue
 		}
@@ -1399,11 +1433,11 @@ func loadTree(repo string, globs []string) (Tree, error) {
 // trackedFiles lists the files the repository tracks.
 func trackedFiles(repo string) (map[string]bool, error) {
 	out := map[string]bool{}
-	files, err := git(repo, "ls-files")
+	files, err := git(repo, "ls-files", "-z")
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range strings.Split(files, "\n") {
+	for _, f := range pathList(files) {
 		if f != "" {
 			out[f] = true
 		}
@@ -1452,6 +1486,9 @@ func rangeFiles(runDir, repo string) (touched map[string]bool, ranged bool, err 
 	touched = map[string]bool{}
 	commit := ""
 	for _, f := range strings.Split(out, "\n") {
+		if !strings.HasPrefix(f, "commit ") {
+			f = unquotePath(f)
+		}
 		switch {
 		case strings.HasPrefix(f, "commit "):
 			commit = strings.TrimPrefix(f, "commit ")
@@ -1486,7 +1523,7 @@ func addedFiles(runDir, repo string) (map[string]bool, error) {
 	added := map[string]bool{}
 	for _, f := range strings.Split(out, "\n") {
 		if f != "" {
-			added[f] = true
+			added[unquotePath(f)] = true
 		}
 	}
 	return added, nil
@@ -1623,13 +1660,38 @@ func matchAny(globs []string, path string) bool {
 
 func match(glob, path string) bool { return pathglob.Match(glob, path) }
 
+// pathList splits the paths git lists with -z, which it never quotes: a
+// path that is not ASCII, quoted, was not found and its doc skipped in
+// silence (docs/research/documentalist-genericity.md).
+func pathList(out string) []string {
+	var paths []string
+	for _, p := range strings.Split(out, "\x00") {
+		if p != "" {
+			paths = append(paths, p)
+		}
+	}
+	return paths
+}
+
+// unquotePath reads a path git listed one a line: with core.quotePath off
+// (every git call here), only a path holding a quote, a backslash or a
+// control character is still quoted, in C's way.
+func unquotePath(p string) string {
+	if len(p) > 1 && p[0] == '"' && p[len(p)-1] == '"' {
+		if u, err := strconv.Unquote(p); err == nil {
+			return u
+		}
+	}
+	return p
+}
+
 func git(dir string, args ...string) (string, error) {
 	return gitIn(dir, "", args...)
 }
 
 // gitIn runs git with stdin.
 func gitIn(dir, stdin string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := exec.Command("git", append([]string{"-C", dir, "-c", "core.quotePath=off"}, args...)...)
 	cmd.Stdin = strings.NewReader(stdin)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
@@ -1662,7 +1724,7 @@ func unifiedDiff(path, old, now string, context int) (string, error) {
 			return "", err
 		}
 	}
-	cmd := exec.Command("git", "diff", "--no-index", "--no-prefix", "--no-color", fmt.Sprintf("-U%d", context), "a/"+path, "b/"+path)
+	cmd := exec.Command("git", "-c", "core.quotePath=off", "diff", "--no-index", "--no-prefix", "--no-color", fmt.Sprintf("-U%d", context), "a/"+path, "b/"+path)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if exit, ok := err.(*exec.ExitError); ok && exit.ExitCode() == 1 {

@@ -126,18 +126,19 @@ func bodyBlocks(old string, f fileDiff) []citedBlock {
 var wordOf = regexp.MustCompile(`[\p{L}\p{N}]+(?:[._'’-][\p{L}\p{N}]+)*`)
 
 // wordsTakenOut are the words a block's removed lines say more often than
-// its added lines, case aside: what the fix takes out. Lines rewrapped, or a
-// sentence moved within the block, take nothing out.
-func wordsTakenOut(b citedBlock) []string {
+// its added lines, case and typography aside (plain): what the fix takes
+// out. Lines rewrapped, or a sentence moved within the block, take nothing
+// out.
+func wordsTakenOut(b citedBlock, lang string) []string {
 	count := map[string]int{}
 	for _, l := range b.added {
-		for _, w := range wordOf.FindAllString(l, -1) {
+		for _, w := range wordsOf(l, lang) {
 			count[strings.ToLower(w)]++
 		}
 	}
 	var out []string
 	for _, l := range b.removed {
-		for _, w := range wordOf.FindAllString(l, -1) {
+		for _, w := range wordsOf(l, lang) {
 			if lw := strings.ToLower(w); count[lw] > 0 {
 				count[lw]--
 			} else {
@@ -251,6 +252,9 @@ type citeContext struct {
 	files map[string]bool // tracked in the repository
 	pl    *places
 	shown map[string]string // file -> content, read once
+	// unknownSaid are the file types whose comments the engine does not
+	// know, already reported this run: once a type.
+	unknownSaid map[string]bool
 }
 
 // evidence is what one claim shows: "" when it is evidence, else why not;
@@ -259,6 +263,10 @@ type citeCheck struct {
 	ok      bool
 	why     string
 	comment string // path:line of the comment its quote is in
+	// unknown is the type of the file its quote was found in, when the
+	// engine does not know how that type writes its comments: the quote
+	// is taken as code, and that said.
+	unknown, unknownPath string
 }
 
 // check reads one claim against the doc's sources: a quote outside any
@@ -304,6 +312,9 @@ func (cc *citeContext) check(c citeClaim, d *Doc, b citedBlock) citeCheck {
 			return citeCheck{why: fmt.Sprintf("%q is not in %s, as it is now", c.Source.Quote, p)}
 		case !inCodeToo:
 			return citeCheck{why: fmt.Sprintf("%q is a comment (%s:%d), not the code", c.Source.Quote, p, line), comment: fmt.Sprintf("%s:%d", p, line)}
+		}
+		if st, kind := styleOf(p, content); !st.known {
+			return citeCheck{ok: true, unknown: kind, unknownPath: p}
 		}
 		return citeCheck{ok: true}
 	}
@@ -417,8 +428,9 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 	for _, c := range off {
 		counted[c.line] = append(counted[c.line], c)
 	}
+	lang := docLanguage(old)
 	for _, b := range bodyBlocks(old, f) {
-		out := uncited(b, counted)
+		out := uncited(b, counted, lang)
 		at := lineRange{from: b.from, to: max(b.from, b.to)}
 		var why []string
 		var commentAt []string
@@ -437,6 +449,14 @@ func (cc *citeContext) citationRefusals(docPath, old string, f fileDiff, claims 
 			any = true
 			r := cc.check(c, d, b)
 			if r.ok {
+				if r.unknown != "" && !cc.unknownSaid[r.unknown] {
+					if cc.unknownSaid == nil {
+						cc.unknownSaid = map[string]bool{}
+					}
+					cc.unknownSaid[r.unknown] = true
+					comments = append(comments, verdict.Finding{Rule: "comment-style-unknown", Where: r.unknownPath,
+						Message: fmt.Sprintf("the engine does not know how %s files write comments: a quote from %s, cited for %s %s, was taken as code; a comment there would pass as evidence: a person checks it", r.unknown, r.unknownPath, docPath, at.String())})
+				}
 				cited = true
 				break
 			}
@@ -538,135 +558,6 @@ func quoteIn(p, content, quote string) (found, code bool, line int) {
 	}
 }
 
-// commentStyle is how a file writes its comments, by its name.
-type commentStyle struct {
-	line           []string // a line comment starts with one of these
-	block          [][2]string
-	hashAfterSpace bool // `#` starts a comment only at the start or after white space
-	backtick       bool // backticks quote, over several lines (Go, JavaScript)
-}
-
-func styleOf(p string) commentStyle {
-	base := strings.ToLower(path.Base(p))
-	ext := strings.TrimPrefix(path.Ext(base), ".")
-	cBlock := [][2]string{{"/*", "*/"}}
-	switch ext {
-	case "go", "js", "mjs", "cjs", "ts", "tsx", "jsx":
-		return commentStyle{line: []string{"//"}, block: cBlock, backtick: true}
-	case "c", "h", "cpp", "hpp", "cc", "cxx", "hh", "ino", "java", "kt", "kts", "rs", "swift", "cs", "scala", "dart", "proto", "groovy", "gradle":
-		return commentStyle{line: []string{"//"}, block: cBlock}
-	case "php":
-		return commentStyle{line: []string{"//", "#"}, block: cBlock}
-	case "css", "scss", "less":
-		return commentStyle{block: cBlock}
-	case "md", "markdown", "html", "htm", "xml", "svg", "vue":
-		return commentStyle{block: [][2]string{{"<!--", "-->"}}}
-	case "yaml", "yml", "sh", "bash", "zsh", "py", "rb", "toml", "cfg", "conf", "pl", "r", "mk", "cmake", "env", "properties", "dockerfile":
-		return commentStyle{line: []string{"#"}, hashAfterSpace: true}
-	case "ini":
-		return commentStyle{line: []string{"#", ";"}, hashAfterSpace: true}
-	case "tf", "hcl":
-		return commentStyle{line: []string{"#", "//"}, block: cBlock, hashAfterSpace: true}
-	}
-	switch {
-	case base == "makefile" || base == "dockerfile" || base == "cmakelists.txt" || strings.HasPrefix(base, ".git") || strings.HasPrefix(base, ".env"):
-		return commentStyle{line: []string{"#"}, hashAfterSpace: true}
-	}
-	return commentStyle{} // JSON, text: no comment
-}
-
-// commentMask says, for each byte of a file, whether it is in a comment,
-// by the file's type: `//` and `/* */`, `#`, `<!-- -->`. Strings are read
-// as strings: a `//` in a URL between quotes is no comment.
-func commentMask(p, content string) []bool {
-	st := styleOf(p)
-	mask := make([]bool, len(content))
-	mark := func(from, to int) {
-		for k := from; k < to && k < len(mask); k++ {
-			mask[k] = true
-		}
-	}
-	lineStart := true
-	for i := 0; i < len(content); {
-		c := content[i]
-		if c == '\n' {
-			lineStart = true
-			i++
-			continue
-		}
-		// A block comment.
-		opened := false
-		for _, b := range st.block {
-			if strings.HasPrefix(content[i:], b[0]) {
-				end := strings.Index(content[i+len(b[0]):], b[1])
-				stop := len(content)
-				if end >= 0 {
-					stop = i + len(b[0]) + end + len(b[1])
-				}
-				mark(i, stop)
-				i, opened = stop, true
-				break
-			}
-		}
-		if opened {
-			continue
-		}
-		// A line comment.
-		for _, l := range st.line {
-			if !strings.HasPrefix(content[i:], l) {
-				continue
-			}
-			if l == "#" && st.hashAfterSpace && !lineStart && i > 0 && !unicode.IsSpace(rune(content[i-1])) {
-				continue
-			}
-			end := strings.IndexByte(content[i:], '\n')
-			stop := len(content)
-			if end >= 0 {
-				stop = i + end
-			}
-			mark(i, stop)
-			i, opened = stop, true
-			break
-		}
-		if opened {
-			continue
-		}
-		// A string: skipped whole when it closes, on its line (or, for a
-		// backtick, anywhere); an apostrophe that closes nothing is a letter.
-		if len(st.line)+len(st.block) > 0 && (c == '"' || c == '\'' || c == '`' && st.backtick) {
-			if end := closing(content, i, c); end > 0 {
-				i, lineStart = end+1, false
-				continue
-			}
-		}
-		if !unicode.IsSpace(rune(c)) {
-			lineStart = false
-		}
-		i++
-	}
-	return mask
-}
-
-// closing finds where a string opened at i ends, or 0: on its line, a
-// backslash escaping, but for a backtick, which may span lines.
-func closing(content string, i int, q byte) int {
-	for j := i + 1; j < len(content); j++ {
-		switch content[j] {
-		case '\\':
-			if q != '`' {
-				j++
-			}
-		case '\n':
-			if q != '`' {
-				return 0
-			}
-		case q:
-			return j
-		}
-	}
-	return 0
-}
-
 // sortedFindings keeps the comment reports in one order, without repeats.
 func sortedFindings(f []verdict.Finding) []verdict.Finding {
 	seen := map[string]bool{}
@@ -707,9 +598,9 @@ func newCiteContext(repo string, files map[string]bool) (*citeContext, error) {
 // step 4: "Watch the 800-line limit" became "Over the 800-line hard limit"
 // beside 930 lines) — but for a fact of the line's own (factOn): the count
 // stands for itself, not for a version or a "not" beside it.
-func uncited(b citedBlock, counted map[int][]countOff) []string {
+func uncited(b citedBlock, counted map[int][]countOff, lang string) []string {
 	var out []string
-	for _, w := range wordsTakenOut(b) {
+	for _, w := range wordsTakenOut(b, lang) {
 		if !countedOn(counted, b, w) {
 			out = append(out, w)
 		}
@@ -720,8 +611,8 @@ func uncited(b citedBlock, counted map[int][]countOff) []string {
 	free := map[string]int{}
 	for i := range b.removed {
 		line := citedBlock{from: b.from + i, to: b.from + i, removed: b.removed[i : i+1], added: b.added[i : i+1]}
-		words := wordsTakenOut(line)
-		if onlyGlue(words) {
+		words := wordsTakenOut(line, lang)
+		if onlyGlue(words, lang) {
 			for _, w := range words {
 				free[w]++
 			}
@@ -731,7 +622,7 @@ func uncited(b citedBlock, counted map[int][]countOff) []string {
 			continue
 		}
 		for _, w := range words {
-			if !factOn(b.removed[i], w) {
+			if !factOn(b.removed[i], w, lang) {
 				free[w]++
 			}
 		}
@@ -760,16 +651,20 @@ func countFixedOn(counted map[int][]countOff, line citedBlock) bool {
 	return false
 }
 
-// glue are words that carry no fact of their own: taken out of a line, with
-// every other word kept, the line says the same. Never a fact word.
-var glue = map[string]bool{"a": true, "an": true, "the": true, "of": true, "to": true, "in": true, "on": true,
-	"at": true, "for": true, "per": true, "with": true, "by": true, "from": true, "as": true, "it": true,
-	"its": true, "this": true, "that": true, "these": true, "those": true, "which": true, "currently": true}
+// glue are words that carry no fact of their own, by language: taken out of
+// a line, with every other word kept, the line says the same. Never a fact
+// word: French "a" (has) and "on" (one) are not glue.
+var glue = map[string]map[string]bool{
+	"en": wordSet(`a an the of to in on at for per with by from as it its this that these those
+		which currently`),
+	"fr": wordSet(`le la les l' un une des du de d' au aux à en dans par pour sur avec ce cet cette
+		ces qui dont actuellement`),
+}
 
-// onlyGlue says whether words, some, are all glue.
-func onlyGlue(words []string) bool {
+// onlyGlue says whether words, some, are all glue in the language.
+func onlyGlue(words []string, lang string) bool {
 	for _, w := range words {
-		if !glue[strings.ToLower(w)] {
+		if !glue[lang][strings.ToLower(w)] {
 			return false
 		}
 	}
@@ -777,13 +672,22 @@ func onlyGlue(words []string) bool {
 }
 
 // factWords change what a line says when taken out, whatever words stand
-// around them: a negation, a quantifier, a conjunction, a tense or a mood.
-var factWords = wordSet(`not no never none nor nothing nobody neither cannot without
-	all every each some any many much few fewer more most less least only both either several
-	always often sometimes rarely usually once twice again also still yet already just
-	and or but if unless except than because
-	is are was were be been being has have had do does did will would shall should can could
-	may might must`)
+// around them, by language: a negation, a quantifier, a conjunction, a tense
+// or a mood.
+var factWords = map[string]map[string]bool{
+	"en": wordSet(`not no never none nor nothing nobody neither cannot without
+		all every each some any many much few fewer more most less least only both either several
+		always often sometimes rarely usually once twice again also still yet already just
+		and or but if unless except than because
+		is are was were be been being has have had do does did will would shall should can could
+		may might must`),
+	"fr": wordSet(`ne n' pas plus jamais aucun aucune rien personne ni sans non
+		tous toutes tout toute chaque quelques plusieurs seul seule seuls seulement uniquement que qu'
+		toujours souvent parfois rarement déjà encore aussi
+		et ou mais si sauf car
+		est sont était étaient être été a ont avait avaient sera seront fait font
+		doit doivent peut peuvent pourrait devrait faut`),
+}
 
 // wordSet is the set of the words given.
 func wordSet(words string) map[string]bool {
@@ -799,9 +703,10 @@ func wordSet(words string) map[string]bool {
 // out, countedOn having let it go), a fact word or one negated ("isn't"), or
 // a name — quoted as code, shaped as one ("ClockWebUI", "Clock.h"), or
 // capitalised past a sentence's start ("Arduino").
-func factOn(line, w string) bool {
+func factOn(line, w, lang string) bool {
+	line = plain(line)
 	lw := strings.ToLower(w)
-	if factWords[lw] || strings.HasSuffix(lw, "n't") || strings.HasSuffix(lw, "n’t") ||
+	if factWords[lang][lw] || strings.HasSuffix(lw, "n't") ||
 		strings.ContainsAny(w, "0123456789.") {
 		return true
 	}
@@ -811,7 +716,7 @@ func factOn(line, w string) bool {
 		}
 	}
 	for _, at := range wordOf.FindAllStringIndex(line, -1) {
-		if line[at[0]:at[1]] != w {
+		if word := line[at[0]:at[1]]; word != w && !strings.HasSuffix(word, "'"+w) {
 			continue
 		}
 		if strings.Count(line[:at[0]], "`")%2 == 1 {

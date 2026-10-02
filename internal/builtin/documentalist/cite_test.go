@@ -34,10 +34,59 @@ func TestQuoteIn(t *testing.T) {
 		{"README.md", "<!-- old -->\nThe new way.\n", "The new way.", true, true, 2},
 		{"library.json", "{\"version\": \"2.12.0\" // no comments in JSON\n}", "no comments in JSON", true, true, 1},
 		{"a.go", "x := 'a' // it's a rune\n", "it's a rune", true, false, 1},
+		// Python: a string standing as a statement is a docstring, a comment;
+		// a string a value takes is code (docs/research/documentalist-genericity.md).
+		{"a.py", "\"\"\"Tokens last one hour.\"\"\"\nTTL = 3600\n", "Tokens last one hour.", true, false, 1},
+		{"a.py", "def ttl():\n    \"\"\"Tokens last\n    one hour.\n    \"\"\"\n    return 3600\n", "Tokens last one hour.", true, false, 2},
+		{"a.py", "class T:\n    r'''Raw docstring.'''\n", "Raw docstring.", true, false, 2},
+		{"a.py", "HELP = \"\"\"Tokens last one hour.\"\"\"\n", "Tokens last one hour.", true, true, 1},
+		{"a.py", "HELP = (\n    \"\"\"Tokens last one hour.\"\"\"\n)\n", "Tokens last one hour.", true, true, 2},
+		{"a.py", "x = f(a,\n      '''one hour''')\n", "one hour", true, true, 2},
+		{"a.py", "s = \"# not a comment\"\n", "# not a comment", true, true, 1},
+		{"a.pyi", "def f() -> int: ...  # one hour\n", "one hour", true, false, 1},
+		// A script without an extension, by its first line.
+		{"bin/run", "#!/usr/bin/env python3\n\"\"\"Runs it hourly.\"\"\"\nEVERY = 3600\n", "Runs it hourly.", true, false, 2},
+		{"bin/run", "#!/bin/sh\n# runs hourly\nsleep 3600\n", "runs hourly", true, false, 2},
+		{"bin/run", "#!/bin/sh\n# runs hourly\nsleep 3600\n", "sleep 3600", true, true, 3},
+		// SQL, Lua, templates.
+		{"a.sql", "-- one hour\nSELECT 3600; /* two */\n", "one hour", true, false, 1},
+		{"a.sql", "-- one hour\nSELECT 3600; /* two */\n", "SELECT 3600;", true, true, 2},
+		{"a.lua", "--[[ one\nhour ]]\nlocal ttl = 3600 -- two\n", "one hour", true, false, 1},
+		{"a.hbs", "{{!-- one hour --}}{{! two }}<p>{{ttl}}</p>\n", "one hour", true, false, 1},
+		{"a.hbs", "{{!-- one hour --}}{{! two }}<p>{{ttl}}</p>\n", "two", true, false, 1},
+		{"a.hbs", "{{!-- one hour --}}{{! two }}<p>{{ttl}}</p>\n", "<p>{{ttl}}</p>", true, true, 1},
+		{"page.html", "{# one hour #}\n{% comment %}two{% endcomment %}\n<p>3600</p>\n", "one hour", true, false, 1},
+		{"page.html", "{# one hour #}\n{% comment %}two{% endcomment %}\n<p>3600</p>\n", "two", true, false, 2},
+		{"a.vue", "<a href=\"x\">http://a.b</a>\n<script>\n// one hour\nconst ttl = 3600\n</script>\n", "one hour", true, false, 3},
+		{"a.vue", "<a href=\"x\">http://a.b</a>\n", "http://a.b", true, true, 1},
 	} {
 		found, code, line := quoteIn(c.path, c.content, c.quote)
 		if found != c.found || code != c.code || line != c.line {
 			t.Errorf("quoteIn(%s, %q) = %v, %v, %d; want %v, %v, %d", c.path, c.quote, found, code, line, c.found, c.code, c.line)
+		}
+	}
+}
+
+// A type whose comments the engine does not know is said, never taken
+// silently as code; a script names its type on its first line.
+func TestStyleOf(t *testing.T) {
+	for _, c := range []struct {
+		path, content, kind string
+		known               bool
+	}{
+		{"a.go", "", ".go", true},
+		{"data.json", "", ".json", true},
+		{"Makefile", "", "makefile", true},
+		{"bin/run", "#!/usr/bin/env -S python3 -u\n", "#!python3", true},
+		{"bin/run", "#!/usr/bin/node\n", "#!node", true},
+		{"bin/run", "#!/usr/bin/wish\n", "#!wish", false},
+		{"a.qqq", "x\n", ".qqq", false},
+		{"VERSION", "1.2.3\n", "version", true},
+		{"tools/release", "set -e\n", "release", false},
+	} {
+		st, kind := styleOf(c.path, c.content)
+		if kind != c.kind || st.known != c.known {
+			t.Errorf("styleOf(%s) = %q, known %v; want %q, %v", c.path, kind, st.known, c.kind, c.known)
 		}
 	}
 }
@@ -54,10 +103,43 @@ func TestWordsTakenOut(t *testing.T) {
 		{[]string{"In a repository, `workline init` has the documentalist run"}, []string{"In a repository, `workline init` has the committer and the documentalist run"}, ""},
 		{[]string{"one two", "three"}, []string{"one", "two three"}, ""},
 		{nil, []string{"A new line."}, ""},
+		{[]string{"It's 1 000 \u201clines\u201d."}, []string{"It\u2019s 1\u202f000 \"lines\"."}, ""},
+		{[]string{"It holds 1 000 lines."}, []string{"It holds 1000 lines."}, ""},
 	} {
-		got := strings.Join(wordsTakenOut(citedBlock{removed: c.removed, added: c.added}), " ")
+		got := strings.Join(wordsTakenOut(citedBlock{removed: c.removed, added: c.added}, "en"), " ")
 		if got != c.want {
 			t.Errorf("wordsTakenOut(%q → %q) = %q, want %q", c.removed, c.added, got, c.want)
+		}
+	}
+}
+
+// A line reworded taking out only its language's glue needs no claim: an
+// article mended in French, "du" become "de l'"; a French "a" (has) or a
+// negation does.
+func TestGlueByLanguage(t *testing.T) {
+	for _, c := range []struct {
+		removed, added, lang string
+		want             string
+	}{
+		{"Le connexion reste ouverte.", "La connexion reste ouverte.", "fr", ""},
+		{"La fiche du employeur.", "La fiche de l\u2019employeur.", "fr", ""},
+		{"Le jeton ne se renouvelle pas.", "Le jeton se renouvelle.", "fr", "ne pas"},
+		{"Il a un jeton.", "Il un jeton.", "fr", "a"},
+		{"Le connexion reste ouverte.", "La connexion reste ouverte.", "en", "Le"},
+		{"It runs on a board.", "It runs a board.", "en", ""},
+	} {
+		b := citedBlock{from: 1, to: 1, removed: []string{c.removed}, added: []string{c.added}}
+		if got := strings.Join(uncited(b, nil, c.lang), " "); got != c.want {
+			t.Errorf("uncited(%q → %q, %s) = %q, want %q", c.removed, c.added, c.lang, got, c.want)
+		}
+	}
+	for text, want := range map[string]string{
+		"Le jeton d'accès dure une heure, et la session reste ouverte.": "fr",
+		"Access tokens last one hour, and the session stays open.":     "en",
+		"1.4.1": "en",
+	} {
+		if got := docLanguage(text); got != want {
+			t.Errorf("docLanguage(%q) = %s, want %s", text, got, want)
 		}
 	}
 }

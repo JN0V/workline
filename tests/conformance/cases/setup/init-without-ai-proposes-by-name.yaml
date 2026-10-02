@@ -1,0 +1,19 @@
+case: setup/init-without-ai-proposes-by-name
+about: "Without an agent, adopting a repository proposes the sources of a doc whose name, or a folder's up to `docs/`, is a code folder's or file's — the shallowest — for a person to review, never written; it says how many docs matched (docs/research/documentalist-genericity.md: 335 of 524 docs on backstage, 0 to 6 elsewhere)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p docs/billing src/auth src/billing src/web/billing && printf 'package auth\\n' > src/auth/token.go && printf 'package billing\\n' > src/billing/invoice.go && printf 'package billing\\n' > src/web/billing/page.go && printf '# Auth\\n\\nTokens.\\n' > docs/auth.md && printf '# Billing\\n\\nInvoices.\\n' > docs/billing/overview.md && printf '# Misc\\n\\nThings.\\n' > docs/misc.md && git add . && git commit -qm 'docs: auth and billing'"
+run: {init: true, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: no-sources, where: docs/auth.md, message: "proposed by name, for you to review: `sources: [src/auth/]`"}
+    - {rule: no-sources, where: docs/billing/overview.md, message: "`sources: [src/billing/]`"}
+    - {rule: sources-by-name, message: "2 of 4 docs"}
+  no-findings:
+    - {rule: no-sources, where: docs/misc.md, message: "proposed"}
+    - {rule: no-sources, where: README.md, message: "proposed"}
+  files:
+    docs/auth.md: {lacks: "sources"}

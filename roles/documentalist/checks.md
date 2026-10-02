@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -51,7 +51,9 @@ are cut. Part of [the documentalist](README.md).
 7. **Superseded decisions.** A doc citing a superseded decision record, by a
    link to its file or by its number (`ADR-0003`), without naming what
    replaced it (`cites-superseded`), as coherence does. Records are the
-   numbered files of a folder named `adr`, `adrs` or `decisions`; a record is
+   numbered files (`0007-…`, `adr001-…`) of a folder named `adr`, `adrs`,
+   `adr-…`, `decisions`, `architecture-decisions`, `decision-records` or
+   `decision-log`, and the files of the project's `decisions` globs; a record is
    superseded when its status says so — the frontmatter's `status`, a
    `Status:` line, or the paragraph under a `Status` heading (adr-tools) — or
    when another record's frontmatter `supersedes` it (MADR). What replaced it
@@ -86,11 +88,22 @@ are cut. Part of [the documentalist](README.md).
     total, unreported, was withdrawn by the agent for want of a claim
     (ADR-0014, step 4). Not a count: a number beside a limit word (`<`, under,
     over, limit, max, target, …); nor anything in a doc with `sources: []`,
-    a history doc (a changelog, a decision record, a tried or research
-    record) or a derived block. Reported with the file, the count stated
+    a history doc (a changelog or release notes, however named or
+    foldered, a decision record, a tried or research record, or a doc of
+    the project's `history` globs: role.yaml) or a derived block. Reported with the file, the count stated
     and the real one. No agent counts, and only lines are counted: tests,
     fields and other counts go through a project's `derive`, never
     guessed. While one stands, `checked` cannot move (the judge).
+
+11. **Docs not read.** On `schedule` and `init`, one finding
+    (`docs-not-read`) counts the files that read as docs and that the role
+    does not read, a few of each kind: `.rst`, `.mdx`, `.adoc`, a `.txt`
+    under a `docs` or `doc` folder, a README outside the `docs` globs
+    (package READMEs). It says how to include them: a README is Markdown,
+    read once a glob in `docs` takes it (`"**/README.md"`); the other
+    formats are not read yet, no header form being settled for them. Test
+    folders, fixtures, dependencies and hidden folders are left out, as is
+    a `requirements.txt`. `workline doctor` says the same.
 
 Not built yet: style (vale).
 
@@ -98,7 +111,7 @@ Not built yet: style (vale).
 
 | Finding | Level |
 |---|---|
-| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `count-off`, `value-left` (after a fix, the judge), `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` (on `init`), `undocumented`, `source-gone`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
+| `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `count-off`, `value-left` (after a fix, the judge), `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` and `sources-by-name` (on `init`), `undocumented`, `source-gone`, `docs-not-read`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
 | `derived-stale` | reported, and the block regenerated |
 | `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated) | blocks |
 | a source repository that cannot be reached | `blocked-external` |

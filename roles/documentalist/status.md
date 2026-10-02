@@ -50,6 +50,20 @@ repository without merge requests is built but untried for real.
   code comment won over the setting): a passage one part finds partial and
   another supports is not handed to the fix. Conformance only; to watch on
   the next runs in parts.
+- **Beyond our repositories** (docs/research/documentalist-genericity.md,
+  fixes 1 to 3): a path that is not ASCII is read; changelogs, release
+  notes and decision records are known by the names other projects give
+  them, and by the `history` and `decisions` settings; the comment test
+  reads Python docstrings, `#!` scripts, SQL, Handlebars and Django
+  templates, and says a type it does not know. Fixes 4 to 8: the cap on
+  sources judged whole is `whole-chars`; the doc-like files the role does
+  not read (`.rst`, `.mdx`, package READMEs) are said, when gardening, on
+  `init` and by the doctor; `value-left` skips history markers ("First
+  available in", `versionadded`) and reads the project's version pattern
+  and version files; the removal rule compares plain typography, with
+  French glue and fact words; `init` without an agent proposes sources by
+  name. Conformance and the probe's public copies, no agent; `whole-chars`
+  raised costs tokens no agent run has measured yet.
 
 ## Tried once for real
 

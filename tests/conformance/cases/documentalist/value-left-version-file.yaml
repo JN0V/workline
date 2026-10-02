@@ -1,0 +1,14 @@
+case: documentalist/value-left-version-file
+about: "The files the project names in `versions.files` say its version: a doc still saying the version a fix replaces is reported when one of them says the new one, whatever its own sources — docs naming folders, as most do, never shared a file (docs/research/documentalist-genericity.md)."
+given:
+  repo: drifted
+  config: {roles: {documentalist: {settings: {versions: {files: [Clock/library.json]}}}}}
+  setup:
+    - "printf -- '---\\nsources: [Clock/examples/]\\nchecked: X\\n---\\n# Install\\n\\nAdd `clock@1.4.1` to your dependencies.\\n' > docs/install.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: X$/checked: $C/\" docs/install.md && git add . && git commit -qm 'docs: install'"
+    - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && git commit -qam 'feat(clock): 1.5.0'"
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-clock-readme.sh version"}
+expect:
+  status: pass
+  findings:
+    - {rule: value-left, where: docs/getting-started.md, message: "1.4.1"}
+    - {rule: value-left, where: docs/install.md, message: "Clock/library.json"}

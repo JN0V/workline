@@ -248,25 +248,34 @@ ADR-0014's checks run on six public repositories with no agent
 (docs/research/documentalist-genericity.md): fitted to C-like code, English,
 `.md`, three-part versions. In order:
 
-1. **Paths not ASCII.** `git ls-files` quotes them; the doc is skipped in
-   silence (`docs/déploiement.md`). List with `-z` wherever the engine
-   lists files; one case.
-2. **History and decision records by setting.** `isHistory` and the ADR
-   folders miss `docs/releases/v1.x.0-changelog.md` (296 on backstage),
-   `architecture-decisions/adr001-…`, `CHANGELOG_breaking_changes.md`:
-   globs and a file pattern in settings, today's lists as defaults.
-3. **The comment test, wider and loud.** Python docstrings, shebang
-   scripts, `--`, `{{! }}`, `{# #}` are read as code; a type it does not
-   know is said in the finding, not taken as code.
-4. **The 20,000-character cap a setting**, in tokens, scaled to the
-   model: 0 to 33% of docs fit on the six, 15% on backstage. Measure the
-   tokens on the evaluation before raising the default.
-5. **Doc-like files the globs skip, reported** (`.rst`, `.mdx`, package
-   READMEs): pip's 68 `.rst` docs are unseen.
-6. **`value-left`: history markers and version formats.** Skip "since",
-   "first available in", `versionadded` as ranges are; a version pattern
-   or a `version-source` file by setting (calver `26.2`, siblings).
-7. **Words by language.** Plain apostrophes and spaces before words are
-   compared; glue, fact, limit and count words per `language`.
-8. **Sources proposed without an agent** by name, on `init --ai none`:
-   335 of 524 docs on a monorepo, 0 to 6 elsewhere.
+1. **Paths not ASCII.** Done: every git call reading paths sets
+   `core.quotePath=off`, the documentalist's lists use `-z`
+   (`path-not-ascii-judged`).
+2. **History and decision records by setting.** Done: changelogs and
+   release notes however named or foldered, `architecture-decisions/`,
+   `adr001-…`; the `history` and `decisions` settings add globs
+   (`count-off-not-in-history-by-convention`,
+   `superseded-decision-other-conventions`).
+3. **The comment test, wider and loud.** Done: docstrings, `#!` scripts,
+   `--`, `{{! }}`, `{# #}` and others; a type it does not know is said
+   (`comment-style-unknown`; `docstring-not-evidence-refused`).
+4. **The 20,000-character cap a setting.** Done: `whole-chars`, in
+   characters as the engine measures a task before the call, 20,000 by
+   default; the task grows with it (`whole-chars-setting`). Raising it
+   costs tokens each night: measure on the evaluation before raising the
+   default.
+5. **Doc-like files the globs skip, reported.** Done: `docs-not-read`,
+   when gardening, on `init` and by the doctor, with how to include a
+   README (`docs-not-read-reported`, `doctor-docs-not-read`). Reading
+   `.rst`, `.mdx`, `.adoc` waits for a header form for each.
+6. **`value-left`: history markers and version formats.** Done: markers
+   skipped as ranges are; `versions.pattern` and `versions.files`
+   (`value-left-not-a-marker`, `value-left-version-pattern`,
+   `value-left-version-file`).
+7. **Words by language.** Done for the removal rule: typography made
+   plain, glue and fact words in English and French, by `language` or
+   read from the doc (`removal-rule-reads-french`). Count and limit
+   words (`count-off`) are still English: "1 200 lignes" unread.
+8. **Sources proposed without an agent.** Done: by name, on `init --ai
+   none`, never written (`init-without-ai-proposes-by-name`); 261 of
+   backstage's 452 docs, about half right, 0 to 5 elsewhere.

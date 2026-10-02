@@ -1,0 +1,12 @@
+case: documentalist/path-not-ascii-judged
+about: "A doc and a source whose paths are not ASCII are read as any other: git quotes such a path in its lists, unless told not to, and the doc was skipped in silence (docs/research/documentalist-genericity.md)."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p src/paiement && printf 'package paiement\\n\\nconst Délai = 30\\n' > src/paiement/règle.go && git add src && git commit -qm 'feat(paiement): a payment delay'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [src/paiement/règle.go]\\nchecked: %s\\n---\\n# Déploiement\\n\\nPayments wait thirty days.\\n' $C > docs/tech/déploiement.md && git add docs && git commit -qm 'docs: say how long payments wait'"
+    - "sed -i 's/30/60/' src/paiement/règle.go && git commit -qam 'feat(paiement): wait sixty days'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/déploiement.md, message: "src/paiement/règle.go changed"}]

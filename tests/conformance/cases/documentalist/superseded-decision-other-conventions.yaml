@@ -1,0 +1,21 @@
+case: documentalist/superseded-decision-other-conventions
+about: "Decision records are found where other projects keep them — `architecture-decisions/adr001-…` (backstage), `decision-records/` — and in the project's `decisions` globs: a doc citing a superseded one is reported, and the records are history (docs/research/documentalist-genericity.md)."
+given:
+  repo: untidy
+  config: {roles: {documentalist: {settings: {decisions: ["docs/design/*.md"]}}}}
+  setup:
+    - "mkdir -p docs/architecture-decisions docs/design && printf '# ADR001: Use SQLite\\n\\n- **Status:** superseded by [ADR002](adr002-use-postgres.md)\\n' > docs/architecture-decisions/adr001-use-sqlite.md"
+    - "printf '# ADR002: Use Postgres\\n\\n- **Status:** accepted\\n' > docs/architecture-decisions/adr002-use-postgres.md"
+    - "printf '# 7. Log to files\\n\\n## Status\\n\\nSuperseded by [8. Log to stdout](8-log-to-stdout.md)\\n' > docs/design/7-log-to-files.md"
+    - "printf '# 8. Log to stdout\\n\\n## Status\\n\\nAccepted\\n' > docs/design/8-log-to-stdout.md"
+    - "printf '# Storage\\n\\nData lives in SQLite ([the decision](architecture-decisions/adr001-use-sqlite.md)).\\n' > docs/storage.md"
+    - "printf '# Logs\\n\\nLogs go to files ([the decision](design/7-log-to-files.md)).\\n' > docs/logs.md"
+    - "git add docs && git commit -qm 'docs: record the decisions'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: cites-superseded, where: docs/storage.md}
+    - {rule: cites-superseded, where: docs/logs.md}
+  no-findings:
+    - {rule: cites-superseded, where: docs/architecture-decisions/adr002-use-postgres.md}

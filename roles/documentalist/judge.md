@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
+sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
 checked: 6013a50
 verified: agent:documentalist
 ---
@@ -83,7 +83,12 @@ holds is applied"):
   another number, a version, a name (quoted as code, shaped as one, or
   capitalised past a sentence's start), a negation, a quantifier, a
   conjunction or a tense. Nor does a line reworded taking out only glue
-  ("the", "per", "currently"; never such a fact). A table's total is a count the engine gives too. The task and every
+  ("the", "per", "currently"; never such a fact). Words are compared with
+  their typography plain — `'` and `’`, quotes, a no-break space, "1 000"
+  and "1000" alike — and glue and fact words are the doc's language's,
+  English or French (an elided "l’" a word of its own; "a", has, a fact
+  in French): the project's `language`, else read from the doc's most
+  frequent words. A table's total is a count the engine gives too. The task and every
   refusal say it, the engine's count being the evidence: the agent had left
   the counts it was given, believing a count "cannot be quoted as a source"
   (ADR-0014, step 3). *Withheld*, each run of changed lines refused (as
@@ -96,11 +101,17 @@ holds is applied"):
 - rests a change on a comment alone (`comment-not-evidence`): its claims'
   quotes are found in the file only inside comments, read by the file's
   type — `//` and `/* */` in Go, C, C++, JavaScript and the like; `#` in
-  YAML, shell, Python, TOML, a Makefile; `<!-- -->` in Markdown, HTML,
-  XML; strings are read as strings. A stale comment won over the code's
-  setting (workline #29). The comment is reported (`comment-disagrees`, at
-  the comment's file and line), kept for the run's verdict, so a person or
-  the committer fixes it. *Withheld*;
+  YAML, shell, Python, TOML, a Makefile; a Python docstring (a string
+  standing as a statement); `--` in SQL, Lua, Haskell; `<!-- -->` in
+  Markdown, HTML, XML; `{# #}` and `{% comment %}` in Django and Jinja
+  templates, `{{! }}` in Handlebars; a script without an extension by the
+  interpreter its `#!` names; strings are read as strings. A stale comment
+  won over the code's setting (workline #29). The comment is reported
+  (`comment-disagrees`, at the comment's file and line), kept for the
+  run's verdict, so a person or the committer fixes it. *Withheld*. A
+  quote from a type whose comments the engine does not know is taken as
+  code, and said (`comment-style-unknown`, once a type a run), so a
+  comment there passing as evidence is not silent;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.
@@ -133,13 +144,17 @@ without it and applied; the doc stays as it was, suspect.
 
 Once the fixes pass, two findings are added, never refusing: a `count-off`
 a fix brought right says "fixed in this run"; and a version a fix replaces
-— a three-part version said fewer times in the lines it adds than in those
+— a version (three parts, or as the project's `versions.pattern` writes
+one: a calendar `26.2`) said fewer times in the lines it adds than in those
 it removes, a new one written in its place — still said in the doc fixed,
 or in another doc declaring one of its source files that now says the new
-version, is `value-left`, with the lines (ADR-0014, step 2). It is not
-fixed by the engine: an old version may be said on purpose. History docs
-are left out, and so is a version given as a range (`>=1.4.1`, `^1.4.1`),
-what a dependant accepts.
+version, is `value-left`, with the lines (ADR-0014, step 2). The files of
+`versions.files` (a `pyproject.toml`, a `package.json`) are every doc's
+sources there. It is not fixed by the engine: an old version may be said on
+purpose. History docs are left out, and so is a version given as a range
+(`>=1.4.1`, `^1.4.1`), what a dependant accepts, or after a history marker
+("First available in v1.9.0", "Added in", "since", "New in version",
+"Deprecated in", `versionadded::`), which says when something came.
 
 A condense patch is refused when it touches another existing doc; when a line
 that leaves the doc is found in no new doc, unchanged but for a heading's level

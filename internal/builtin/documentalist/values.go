@@ -55,14 +55,59 @@ func changeBlocks(f fileDiff) []changeBlock {
 	return out
 }
 
-// releaseVersions counts the three-part versions lines say.
+// Versions: three parts by default (1.4.1, v1.4.1); a project writing them
+// otherwise says how (`versions.pattern`: pip's calendar `26.2`), and names
+// the files saying its version (`versions.files`). Set once a run, from the
+// settings (useVersions).
+var versions struct {
+	pattern *regexp.Regexp
+	files   []string
+}
+
+// useVersions takes the project's `versions`; a pattern that does not
+// compile is an error, never a check quietly left out.
+func useVersions(s Settings) error {
+	versions.pattern, versions.files = nil, s.Versions.Files
+	if s.Versions.Pattern == "" {
+		return nil
+	}
+	re, err := regexp.Compile(s.Versions.Pattern)
+	if err != nil {
+		return fmt.Errorf("versions.pattern %q: %v", s.Versions.Pattern, err)
+	}
+	versions.pattern = re
+	return nil
+}
+
+// versionsIn finds where a line says a version: three parts, or the
+// project's pattern, never part of a longer number (26.2 in 26.2.1).
+func versionsIn(l string) [][]int {
+	var out [][]int
+	if versions.pattern == nil {
+		for _, at := range version.FindAllStringIndex(l, -1) {
+			if strings.Count(l[at[0]:at[1]], ".") == 2 {
+				out = append(out, at)
+			}
+		}
+		return out
+	}
+	digit := func(i int) bool { return i >= 0 && i < len(l) && l[i] >= '0' && l[i] <= '9' }
+	for _, at := range versions.pattern.FindAllStringIndex(l, -1) {
+		if at[0] == at[1] || digit(at[0]-1) || at[0] > 1 && l[at[0]-1] == '.' && digit(at[0]-2) ||
+			digit(at[1]) || at[1] < len(l) && l[at[1]] == '.' && digit(at[1]+1) {
+			continue
+		}
+		out = append(out, at)
+	}
+	return out
+}
+
+// releaseVersions counts the versions lines say.
 func releaseVersions(lines ...string) map[string]int {
 	out := map[string]int{}
 	for _, l := range lines {
-		for _, v := range version.FindAllString(l, -1) {
-			if strings.Count(v, ".") == 2 {
-				out[v]++
-			}
+		for _, at := range versionsIn(l) {
+			out[l[at[0]:at[1]]]++
 		}
 	}
 	return out
@@ -127,6 +172,15 @@ func sortedSet(m map[string]bool) []string {
 // now (measured on DomoticsCore: `>=1.13.0` beside Core 1.13.1).
 var versionRange = regexp.MustCompile(`(?:>=?|<=?|\^|~>?)\s*v?$`)
 
+// versionMarker ends the text before a version that names when something
+// came, changed or went — "_First available in v1.9.0_", "Added in",
+// "since", "until", "prior to", "New in version", "Deprecated in",
+// "default changed from `avoid` to `always` in", Sphinx's `versionadded::`
+// and MyST's `{versionadded}`, a name between or not ("prior to pip 18.0")
+// — history, not the version now: 39 of the 43 lines reported on prettier
+// (docs/research/documentalist-genericity.md).
+var versionMarker = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:since|until|prior\s+to|available\s+(?:in|since|from)|(?:added|new|introduced|removed)\s+in|changed\b[^.;]*?\s+in|deprecated(?:\s+(?:in|since))?|version(?:added|changed|removed))(?:\s+version|\s+[a-z][a-z0-9_-]*)?[\s:*_({}]*v?$`)
+
 // linesSaying lists the doc's body lines saying a version, outside derived
 // blocks and ranges.
 func linesSaying(content, v string) []int {
@@ -136,8 +190,8 @@ func linesSaying(content, v string) []int {
 		if skip[l.n] {
 			continue
 		}
-		for _, at := range version.FindAllStringIndex(l.text, -1) {
-			if l.text[at[0]:at[1]] == v && !versionRange.MatchString(l.text[:at[0]]) {
+		for _, at := range versionsIn(l.text) {
+			if before := l.text[:at[0]]; l.text[at[0]:at[1]] == v && !versionRange.MatchString(before) && !versionMarker.MatchString(before) {
 				out = append(out, l.n)
 				break
 			}
@@ -147,9 +201,15 @@ func linesSaying(content, v string) []int {
 }
 
 // sourceFilesOf lists the files of this repository a doc names in its
-// sources, folders left out: siblings share a file, not a folder.
+// sources, folders left out: siblings share a file, not a folder. The files
+// saying the project's version (`versions.files`) are every doc's.
 func sourceFilesOf(d *Doc, files map[string]bool) map[string]bool {
 	out := map[string]bool{}
+	for _, p := range versions.files {
+		if files[p] {
+			out[p] = true
+		}
+	}
 	for _, src := range d.Sources {
 		if name, p, _ := splitSource(src); name == "" && files[p] {
 			out[p] = true
@@ -253,7 +313,7 @@ func valuesLeft(fixes []fixedDoc, docs map[string]string, files map[string]bool,
 	return out
 }
 
-// releaseSet is the set of three-part versions a text says.
+// releaseSet is the set of versions a text says.
 func releaseSet(text string) map[string]bool {
 	out := map[string]bool{}
 	for v := range releaseVersions(text) {

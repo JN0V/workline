@@ -1517,7 +1517,7 @@ func strs(v any) []string {
 }
 
 func git(repo string, stdin io.Reader, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+	cmd := exec.Command("git", append([]string{"-C", repo, "-c", "core.quotePath=off"}, args...)...)
 	cmd.Stdin = stdin
 	var out, errOut strings.Builder
 	cmd.Stdout, cmd.Stderr = &out, &errOut

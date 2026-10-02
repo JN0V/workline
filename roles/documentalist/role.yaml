@@ -83,12 +83,40 @@ settings:
   # of it the commits add, under no doc's sources, is reported (undocumented);
   # when gardening, every such file. Empty: nothing is reported.
   documented: []
+  # Records, saying what was true when written: no count or version in them
+  # is reported, none is condensed, and a decision record may cite what it
+  # superseded. Known without a setting: a name holding `changelog` or
+  # `release-notes`, or history, news, changes, tried; a folder named
+  # releases, release-notes, changelog(s), news, research(-…), or one of
+  # decisions' below. These globs add to them, e.g. ["docs/journal/**"].
+  history: []
+  # Decision records, beside the numbered files (`0007-…`, `adr001-…`) of a
+  # folder named adr, adrs, adr-…, decisions, architecture-decisions,
+  # decision-records or decision-log: these globs add to them, each record
+  # numbered by the first number in its name, e.g. ["docs/design/*.md"].
+  decisions: []
+  # Versions, for `value-left` (checks.md): how the project writes one, when
+  # not in three parts (1.4.1, v1.4.1), as a regexp, e.g. '\d{2}\.\d+' for a
+  # calendar version (26.2); and the files saying its version, e.g.
+  # [pyproject.toml]: a doc still saying a version a fix replaces is reported
+  # when one of them says the new one, whatever the doc's own sources.
+  versions: {pattern: "", files: []}
+  # The docs' language, whose glue and fact words the removal rule reads
+  # (judge.md): en or fr. Unset, each doc's own, told by its frequent words.
+  language: ""
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round
   # Tokens one run may spend, all calls together (in, cache included, and
   # out); past it the agent is asked nothing more and the rest waits. 0: no
   # cap. A doc judged whole cost 13k to 26k on DomoticsCore; 16 parts, more.
   ai-max-tokens: 0
+  # The characters a doc's sources may take, together, to be judged whole
+  # (about four a token; characters, as the engine measures a task before the
+  # call). Higher, more docs can be vouched for, and each costs more tokens,
+  # every night when gardening: on the six public repositories probed, 0 to
+  # 33% of docs fit 20,000 (docs/research/documentalist-genericity.md). The
+  # task grows by as much as the cap does.
+  whole-chars: 20000
   # A suspect doc whose sources, as they are now, do not fit a task goes to a
   # person. Turned on, it is judged in parts instead (ADR-0009): the doc whole
   # with a share of its source files in each part, then one call fixing what

@@ -1,0 +1,12 @@
+case: setup/doctor-docs-not-read
+about: "The doctor says how many files read as docs that the documentalist does not read (`.rst`, `.mdx`, a package's README outside the docs globs), and how to include those it can read (docs/research/documentalist-genericity.md)."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p packages/core && printf 'Guide\\n=====\\n' > docs/guide.rst && printf '# Core\\n' > packages/core/README.md && git add . && git commit -qm 'docs: more formats'"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: docs-not-read, message: "2 files"}
+    - {rule: docs-not-read, message: "packages/core/README.md"}

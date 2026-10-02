@@ -21,10 +21,10 @@ What a role does is in its own README (`roles/<name>/README.md`).
 | `workline hooks install --global` / `uninstall --global` | takes `core.hooksPath` for every repository, and gives it back as it was; the hooks run the `commit-msg` and `pre-push` lines, then hand over to the hooks that were there |
 | `workline hooks install --repo` | writes `.githooks/commit-msg` in this repository; remove that file to uninstall |
 | `workline setup` | sets up this machine, asking: the global hooks, your agent (`ai:` in your config), the tools the roles use, each installed with the command it shows; then prints `workline doctor`. Run again, it offers what is set up as the default. `--hooks yes\|no`, `--ai <agent>` and `--install <tool,...>\|all\|none` answer a question; `--yes` takes the defaults; without a terminal, every question must be answered so |
-| `workline init` | adopts this repository: routes `pre-push` to the committer and the documentalist in `.workline/config.yaml`, unless the project routes it already, and has the agent propose the `sources` of each doc that says nothing of them, in the working tree for you to review and commit (roles/documentalist/push.md); without an agent, lists them. Run it again to do what is left |
+| `workline init` | adopts this repository: routes `pre-push` to the committer and the documentalist in `.workline/config.yaml`, unless the project routes it already, and has the agent propose the `sources` of each doc that says nothing of them, in the working tree for you to review and commit (roles/documentalist/push.md); without an agent, lists them, proposing the sources a doc's name matches (a code folder or file of that name), for you to review, never written. Run it again to do what is left |
 | `workline version` | the engine running: the release it was built as, else the module version Go recorded, else `(devel)` |
 | `workline docs` | has the docs made suspect since they were last judged — `refs/workline/docs-judged`, else the last tag, else every commit; `--since <rev>` to choose — judged by your agent, pushed or not (ADR-0010), then asks you, doc by doc, to keep or drop each change (`v` shows it); those kept go in one `docs:` commit, alone (ADR-0007). Without a terminal, the changes stay in the working tree for a person, who reviews them the same way with `workline docs --review`. Docs with changes not committed are refused, so the agent's are reviewed alone. Once the run passed with nothing left to review, the ref moves to HEAD |
-| `workline doctor` | says what is set up on this machine (git, the global hooks, the agent, the tools the roles use) and in this repository (whether the documentalist runs before a push, how many docs declare their sources), with the command that sets up each thing missing; changes nothing. It exits 1 only on an error — the agent named cannot be called, the config does not load — never for a tool left out; `--json` prints every check |
+| `workline doctor` | says what is set up on this machine (git, the global hooks, the agent, the tools the roles use) and in this repository (whether the documentalist runs before a push, how many docs declare their sources, which files read as docs it does not read), with the command that sets up each thing missing; changes nothing. It exits 1 only on an error — the agent named cannot be called, the config does not load — never for a tool left out; `--json` prints every check |
 
 Options of `run-role` and `route`:
 
@@ -145,6 +145,10 @@ roles:
   documentalist:
     settings:
       derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
+      history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
+      whole-chars: 40000                           # sources judged whole up to this; more docs vouched, more tokens
+      versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
+      language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: release-manager, to: documentalist}]
