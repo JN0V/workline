@@ -456,7 +456,7 @@ func run(o Options, res *Result) error {
 		o.Forge = cfg.Forge
 	}
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
-		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest}
+		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Models: authors(res.Calls)}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
@@ -677,6 +677,35 @@ type runState struct {
 	// branch; Pushed once they did, as a commit or as a comment.
 	PushToMergeRequest bool `yaml:"push-to-merge-request,omitempty"`
 	Pushed             bool `yaml:"pushed,omitempty"`
+	// Models: the agents and models that wrote the proposals, as
+	// <agent>:<model>, named in the commit (ModelTrailer).
+	Models []string `yaml:"models,omitempty"`
+}
+
+// authors are the agents and models whose answers a run applies, as
+// <agent>:<model>, in the order they first answered; a judge is not one.
+func authors(calls []agent.Call) []string {
+	var out []string
+	for _, c := range calls {
+		if c.Task == "judge" || c.Model == "" {
+			continue
+		}
+		if a := c.Agent + ":" + c.Model; !slices.Contains(out, a) {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+// trailers name, in an engine's commit, the role, and the agents and models
+// that wrote what it commits: a later reader of the doc stands apart from
+// them (ADR-0005; the weekly sample, ADR-0014 step 4).
+func (s *runState) trailers() string {
+	t := OwnTrailer + ": " + s.Role
+	for _, m := range s.Models {
+		t += "\n" + ModelTrailer + ": " + m
+	}
+	return t
 }
 
 func (s *runState) save(runDir string) error {
@@ -826,7 +855,7 @@ func commitOnto(st runState, branch, title string) (why string, err error) {
 		back()
 		return "the docs changed on the branch since this run read them", nil
 	}
-	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", OwnTrailer + ": " + st.Role}} {
+	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", st.trailers()}} {
 		if _, err := git(st.Repo, nil, s...); err != nil {
 			back()
 			return "", err
@@ -860,6 +889,10 @@ func rolesHere(dir string) string {
 // that they do not wake the line again (docs/spec/routing.md).
 const OwnTrailer = "Workline-Role"
 
+// ModelTrailer names, in the engine's own commits, each agent and model whose
+// answer they hold, as <agent>:<model> (claude:claude-sonnet-5).
+const ModelTrailer = "Workline-Model"
+
 // branchPrefix is where a role's merge requests come from (ADR-0006).
 func branchPrefix(roleName string) string { return "workline/" + roleName + "/" }
 
@@ -888,7 +921,7 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 	steps := [][]string{
 		{"checkout", "-q", "-B", branch},
 		append([]string{"add", "--"}, st.Written...),
-		{"commit", "-q", "-m", mr.Title, "-m", OwnTrailer + ": " + st.Role},
+		{"commit", "-q", "-m", mr.Title, "-m", st.trailers()},
 		{"push", "-q", "--force", "origin", branch},
 	}
 	for _, s := range steps {

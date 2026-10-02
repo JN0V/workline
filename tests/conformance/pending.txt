@@ -11,4 +11,3 @@ documentalist/sample-never-the-voucher
 documentalist/sample-without-a-judge
 documentalist/sample-judge-from-the-environment
 documentalist/sample-empty-week
-documentalist/gardening-names-the-model

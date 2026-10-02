@@ -82,8 +82,10 @@ routing:
   verdict, not with a timeout.
 - Events caused by the engine's own writes (its comments, labels, commits) do
   not trigger routing, so two roles cannot wake each other forever. Its
-  commits carry a `Workline-Role: <role>` trailer; a line given a range whose
-  last commit carries one judges nothing.
+  commits carry a `Workline-Role: <role>` trailer, and a `Workline-Model:
+  <agent>:<model>` for each agent and model whose answer they hold, so a
+  later reader can stand apart from them (ADR-0005); a line given a range
+  whose last commit carries one judges nothing.
 
 ### On a forge: judge, then apply
 
