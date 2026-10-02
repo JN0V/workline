@@ -1,0 +1,12 @@
+case: documentalist/answer-not-yaml-asked-again-once
+about: "An answer that is not valid YAML is asked for again once, with the error the reader gave: nothing was applied, and a quote left unescaped is a slip mended at the second answer. On DomoticsCore such an answer was reported and nothing asked, the doc judged again, whole, the next night (ADR-0014, step 4)."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/fix-auth-yaml-broken.sh"}
+expect:
+  status: pass
+  applied: [patch]
+  agent-calls: 2
+  no-findings: [{rule: agent-invalid-output}]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}
