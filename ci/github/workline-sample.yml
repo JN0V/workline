@@ -34,7 +34,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.2.1          # a release of workline: update it to take a newer one
+  WORKLINE_VERSION: v0.2.2          # a release of workline: update it to take a newer one
 
 jobs:
   read:
