@@ -39,6 +39,14 @@ var (
 	// "(~283 lines)", "about 1,008 LOC". The singular ("an 800-line limit")
 	// is an adjective, never a count.
 	countIn = regexp.MustCompile(`(?i)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(\d{1,3}(?:,\d{3})+|\d+)\s+(?:lines|LOC)\b`)
+	// countSaid is a count of lines written without "lines", after the
+	// file it counts: "`OTA.cpp` line count (607)", "line count: 607"
+	// (DomoticsCore, ADR-0014 step 4).
+	countSaid = regexp.MustCompile(`(?i)\bline count\s*(?:\(\s*|:\s*|\s(?:is|of)\s+)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(\d{1,3}(?:,\d{3})+|\d+)\b`)
+	// countBefore is a count of lines as an adjective, right before the
+	// file it counts: "a 216-line `JsonStreamWriter.h`". Before anything
+	// else ("the 800-line limit") it is no count.
+	countBefore = regexp.MustCompile(`(?i)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(\d{1,3}(?:,\d{3})+|\d+)-line\s+[` + "`" + `*_]*`)
 	// fileNamed is a file name as a doc writes it: `Clock.h`, include/Clock.h.
 	fileNamed = regexp.MustCompile(`[A-Za-z0-9_][A-Za-z0-9_./-]*\.[A-Za-z][A-Za-z0-9]{0,7}\b`)
 	// limitWord makes a number a limit or a bound, not a count.
@@ -262,7 +270,7 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 		// it on the line, close by, in the same sentence, with no limit word
 		// between them or right after.
 		names := fileNamed.FindAllStringIndex(text, -1)
-		for _, m := range countIn.FindAllStringSubmatchIndex(text, -1) {
+		for _, m := range append(countIn.FindAllStringSubmatchIndex(text, -1), countSaid.FindAllStringSubmatchIndex(text, -1)...) {
 			at := -1
 			for k, nm := range names {
 				if nm[1] <= m[0] {
@@ -277,6 +285,24 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 			if len(between) > countReach || sentenceEnd.MatchString(between) || limitWord.MatchString(between) || limitAfter.MatchString(text[m[1]:]) {
 				continue
 			}
+			file := sourceNamed(named, sources)
+			if file == "" {
+				continue
+			}
+			approx := ""
+			if m[2] >= 0 {
+				approx = text[m[2]:m[3]]
+			}
+			check(l.n, named, file, strings.TrimSpace(approx), text[m[4]:m[5]])
+		}
+		// "a 216-line `JsonStreamWriter.h`": the file right after the count.
+		for _, m := range countBefore.FindAllStringSubmatchIndex(text, -1) {
+			rest := text[m[1]:]
+			nm := fileNamed.FindStringIndex(rest)
+			if nm == nil || nm[0] != 0 || limitAfter.MatchString(rest[nm[1]:]) {
+				continue
+			}
+			named := rest[:nm[1]]
 			file := sourceNamed(named, sources)
 			if file == "" {
 				continue
