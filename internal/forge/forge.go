@@ -59,8 +59,9 @@ type Forge interface {
 var ErrUnreachable = errors.New("forge unreachable")
 
 // Open returns the forge named by spec: "github", "gitlab", "local" (kept in
-// the clone), "fake:<file>", or "" / "none" for no forge: what needs one is
-// refused, and says so.
+// the clone), "cmd:<command>" (another forge, plugged by a command),
+// "fake:<file>", or "" / "none" for no forge: what needs one is refused, and
+// says so.
 func Open(spec, repo string) (Forge, error) {
 	switch {
 	case spec == "" || spec == "none":
@@ -71,14 +72,19 @@ func Open(spec, repo string) (Forge, error) {
 		return &gitlab{repo: repo}, nil
 	case spec == "local":
 		return &Local{Repo: repo}, nil
+	case strings.HasPrefix(spec, "cmd:"):
+		if strings.TrimSpace(strings.TrimPrefix(spec, "cmd:")) == "" {
+			return nil, fmt.Errorf("forge %q: name the command to run (cmd:<command>)", spec)
+		}
+		return &command{repo: repo, script: strings.TrimPrefix(spec, "cmd:")}, nil
 	case strings.HasPrefix(spec, "fake:"):
 		return &Fake{Path: strings.TrimPrefix(spec, "fake:")}, nil
 	}
-	return nil, fmt.Errorf("unknown forge %q (github, gitlab, local, fake:<file>, none)", spec)
+	return nil, fmt.Errorf("unknown forge %q (github, gitlab, local, cmd:<command>, fake:<file>, none)", spec)
 }
 
 // Missing says what to do when a write needs a forge and the project has none.
-const Missing = "set `forge:` in .workline/config.yaml or pass --forge: github, gitlab, or `forge: local` to keep it in this clone"
+const Missing = "set `forge:` in .workline/config.yaml or pass --forge: github, gitlab, cmd:<command>, or `forge: local` to keep it in this clone"
 
 // KeepsBranches says whether f's merge requests come from local branches:
 // nothing is pushed to a remote, nor fetched from one.
