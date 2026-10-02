@@ -901,6 +901,38 @@ type judgedFixes struct {
 	fixes         []fixedDoc
 }
 
+// placesFixed counts the places the accepted patches changed in a doc's
+// body — each run of lines changed together — the header left out: a patch
+// recording only `judged` or `checked` fixed nothing.
+func (j *judgedFixes) placesFixed(path string) int {
+	if j == nil {
+		return 0
+	}
+	now, ok := j.after[path]
+	if !ok || body(now) == body(j.before[path]) {
+		return 0
+	}
+	d, err := zeroContextDiff(path, body(j.before[path]), body(now))
+	if err != nil {
+		return 1 // they differ; how much, the diff could not say
+	}
+	n := 0
+	for _, l := range strings.Split(d, "\n") {
+		if strings.HasPrefix(l, "@@ ") {
+			n++
+		}
+	}
+	return max(n, 1)
+}
+
+// nPlaces says n places, in words.
+func nPlaces(n int) string {
+	if n == 1 {
+		return "1 place"
+	}
+	return fmt.Sprintf("%d places", n)
+}
+
 // countFixed says whether a count-off finding of a doc is one its fix
 // brought right: the doc said it before, and says it no more.
 func (j *judgedFixes) countFixed(f verdict.Finding) bool {

@@ -204,7 +204,15 @@ token), **apply** (trusted, no AI key).
    again, from step 2, in a new run folder that sees what was applied — five
    rounds at most. The result adds up the rounds' calls and applied
    intentions; a later round's finding replaces an earlier one of the same
-   rule and place, and a deferred one is dropped once the next round runs. A run judged with `--no-apply` goes round once.
+   rule and place, and a deferred one is dropped once the next round runs.
+   A run judged with `--no-apply` applies nothing a next round could see:
+   it goes round again only when, with `--open-merge-request`, the round
+   proposed a merge request for a task no earlier round of the run proposed
+   (the key of `out/merge-request.yaml`). The next round is told that task
+   waits, as one open on the forge, and takes up what was deferred — on a
+   gardening night, the docs judged in parts after those judged whole
+   (ADR-0013, amended). Each round is a run folder to apply, listed in the
+   result's `pending`, a merge request each.
 
    **A cap on tokens.** A role setting `ai-max-tokens` caps what one run may
    spend, every round, part and retry together: the tokens in, cache
@@ -231,7 +239,9 @@ configured forge, when one is set), `WORKLINE_TARGET`
 `WORKLINE_OPEN_MERGE_REQUESTS`, how many of the role's merge requests are
 open, and `WORKLINE_OPEN_MERGE_REQUEST_TASKS`, their tasks (each branch, the
 role's prefix cut, separated by spaces), when the run opens one (ADR-0006,
-0013).
+0013). The tasks an earlier round of the same run proposed and did not open
+yet (`--no-apply`) are counted among them, and also given alone in
+`WORKLINE_PROPOSED_TASKS`.
 
 ### Exit codes
 

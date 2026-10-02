@@ -8,4 +8,4 @@ given:
 run: {role: documentalist, event: release, ai: "fake:doc-fixed-not-vouched"}
 expect:
   status: pass
-  findings: [{rule: suspect, where: docs/tech/auth.md, message: "fixed, not vouched for"}]
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "fixed in 1 place, not vouched for"}]

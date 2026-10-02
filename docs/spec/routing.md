@@ -91,7 +91,9 @@ routing:
 write token, with the forge and target of the merge request (`--forge`,
 `--target`; `--input` and `--scope` go to every step). Each step judges the tree
 as it is — no step sees what an earlier one proposed — and nothing is applied.
-The result lists the runs to apply, in the line's order (`pending`);
+The result lists the runs to apply, in the line's order (`pending`) — a
+step that went round, proposing a merge request a round, gives one run a
+round (docs/spec/role-contract.md, "Again");
 `workline apply --line <result>` applies them in the job that holds the token
 and no AI key, and stops at the first that does not pass.
 

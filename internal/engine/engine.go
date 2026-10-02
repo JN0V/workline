@@ -62,20 +62,25 @@ type Options struct {
 
 // Result is what a run reports.
 type Result struct {
-	Status       string            `json:"status"`
-	Summary      string            `json:"summary,omitempty"`
-	Findings     []verdict.Finding `json:"findings,omitempty"`
-	AgentCalls   int               `json:"agent-calls"`
-	Calls        []agent.Call      `json:"calls,omitempty"` // each call: what was asked, what answered
-	Applied      []string          `json:"applied"`
-	Refused      []string          `json:"refused"`
-	Handoffs     []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
-	Notes        []string          `json:"notes,omitempty"`    // what the agent left for a person: a round's notes each
-	RunDir       string            `json:"run-dir"`
-	ToApply      bool              `json:"to-apply,omitempty"`      // judged with NoApply: `workline apply` still has work
-	MergeRequest int               `json:"merge-request,omitempty"` // the merge request the patches went to
-	maxTokens    int               // the role's ai-max-tokens: what the run may spend; 0, no cap
-	capped       bool              // a call was refused, the run having spent maxTokens
+	Status     string            `json:"status"`
+	Summary    string            `json:"summary,omitempty"`
+	Findings   []verdict.Finding `json:"findings,omitempty"`
+	AgentCalls int               `json:"agent-calls"`
+	Calls      []agent.Call      `json:"calls,omitempty"` // each call: what was asked, what answered
+	Applied    []string          `json:"applied"`
+	Refused    []string          `json:"refused"`
+	Handoffs   []any             `json:"handoffs,omitempty"` // next roles asked for; routing runs them
+	Notes      []string          `json:"notes,omitempty"`    // what the agent left for a person: a round's notes each
+	RunDir     string            `json:"run-dir"`
+	ToApply    bool              `json:"to-apply,omitempty"` // judged with NoApply: `workline apply` still has work
+	// Pending: the run folders `workline apply` is given, one a round, when
+	// a run judged with NoApply went round, each round a merge request of
+	// its own (ADR-0013's amendment).
+	Pending      []string `json:"pending,omitempty"`
+	MergeRequest int      `json:"merge-request,omitempty"` // the merge request the patches went to
+	maxTokens    int      // the role's ai-max-tokens: what the run may spend; 0, no cap
+	proposed     []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
+	capped       bool     // a call was refused, the run having spent maxTokens
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
@@ -117,6 +122,13 @@ const maxRounds = 5
 // sees what this one applied. Calls and applied intentions add up; a later
 // round's finding replaces an earlier one of the same rule and place, and
 // what a round deferred is dropped: the next round reports what is left.
+//
+// Judged with NoApply for merge requests of its own (gardening in CI), a
+// round applies nothing the next could see; it goes round again when it
+// proposed a merge request for a task no earlier round proposed: the next
+// round is told that task waits, as one open on the forge, and takes up
+// what it deferred — the docs judged in parts after those judged whole
+// (ADR-0013). Each round is a run folder to apply, in Pending.
 func Run(o Options) *Result {
 	res := &Result{Applied: []string{}, Refused: []string{}}
 	deferred := map[string]bool{}
@@ -128,7 +140,7 @@ func Run(o Options) *Result {
 			}
 		}
 		applied := len(res.Applied)
-		res.Findings = nil
+		res.Findings, res.ToApply = nil, false
 		if err := run(o, res); err != nil {
 			res.Status = verdict.Block
 			rule := "engine-error"
@@ -146,7 +158,19 @@ func Run(o Options) *Result {
 		for _, l := range strings.Split(string(more), "\n") {
 			deferred[strings.TrimSpace(l)] = true
 		}
-		last := err != nil || res.Status != verdict.Pass || o.NoApply || !changedSomething(res.Applied[applied:]) || round == maxRounds
+		goOn := changedSomething(res.Applied[applied:])
+		if o.NoApply {
+			goOn = false
+			if res.ToApply && !slices.Contains(res.Pending, res.RunDir) {
+				res.Pending = append(res.Pending, res.RunDir)
+				if task := proposedTask(res.RunDir); o.OpenMergeRequest && task != "" && !slices.Contains(res.proposed, task) {
+					res.proposed = append(res.proposed, task)
+					goOn = true
+				}
+			}
+			res.ToApply = len(res.Pending) > 0 // what earlier rounds proposed is still to apply
+		}
+		last := err != nil || res.Status != verdict.Pass || !goOn || round == maxRounds
 		if res.capped || !last && res.overBudget() {
 			// A cap is checked against what was spent, never estimated: the
 			// call that crossed it is paid. What is left waits, said.
@@ -155,9 +179,24 @@ func Run(o Options) *Result {
 			return res
 		}
 		if last {
+			if len(res.Pending) > 1 {
+				res.Summary = fmt.Sprintf("judged, not applied: %d rounds, a merge request each; apply with: workline apply %s", len(res.Pending), strings.Join(res.Pending, " "))
+			}
 			return res
 		}
 	}
+}
+
+// proposedTask is the task a run judged with NoApply proposes a merge
+// request for — the key the role named in out/merge-request.yaml, as its
+// branch says it — or "" when it names none.
+func proposedTask(runDir string) string {
+	var mr struct{ Key string }
+	data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml"))
+	if err != nil || yaml.Unmarshal(data, &mr) != nil {
+		return ""
+	}
+	return slugify(mr.Key)
 }
 
 // changedSomething says whether a round applied what the next one would
@@ -240,13 +279,21 @@ func run(o Options, res *Result) error {
 		if err != nil {
 			return err
 		}
-		// How many wait, and which tasks: the branches, the role's prefix cut.
+		// How many wait, and which tasks: the branches, the role's prefix cut;
+		// those an earlier round of this run proposed wait as well.
 		tasks := make([]string, len(open))
 		for i, b := range open {
 			tasks[i] = strings.TrimPrefix(b, branchPrefix(r.Name))
 		}
-		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", len(open)),
-			"WORKLINE_OPEN_MERGE_REQUEST_TASKS="+strings.Join(tasks, " "))
+		n := len(open)
+		for _, t := range res.proposed {
+			if !slices.Contains(tasks, t) {
+				tasks, n = append(tasks, t), n+1
+			}
+		}
+		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n),
+			"WORKLINE_OPEN_MERGE_REQUEST_TASKS="+strings.Join(tasks, " "),
+			"WORKLINE_PROPOSED_TASKS="+strings.Join(res.proposed, " "))
 	}
 
 	// 2. Prepare.

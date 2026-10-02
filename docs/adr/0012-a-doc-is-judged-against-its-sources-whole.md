@@ -1,6 +1,6 @@
 # ADR-0012: A doc is judged against its sources whole, and a fix that cannot vouch is kept
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-10-02 (the bound's name)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0007 on what a suspect doc is judged against; the
   documentalist's policy on `checked`
@@ -27,7 +27,8 @@ The more careful model was right, and the line punished it.
 
 - **A suspect doc is judged against its sources as they are now**, with
   what changed beside them, whenever the sources fit the task
-  (`staleSourceChars`, the same bound as a stale doc's). Only when they do
+  (`staleSourceChars`, the same bound as a stale doc's; *now the setting
+  `whole-chars`, see Amendment*). Only when they do
   not, the diffs alone, as before; and past that, in parts (ADR-0009).
 - **A fix that does not move `checked` is kept.** It is applied, and the
   doc stays suspect, its finding saying it was fixed but not vouched for;
@@ -57,3 +58,11 @@ checks), three runs each, after this decision:
 | Opus 5.5 | 5/12 six runs in seven: a note, no fix | 12, 12, 12 (twice in two calls) |
 | Sonnet 5.5 | 12, 12, 12 | 12, 12, 12 |
 | tokens in a judgement | 8k | 11k |
+
+## Amendment (2026-10-02)
+
+The bound named `staleSourceChars` above is now the documentalist's setting
+`whole-chars` (`wholeChars` in internal/builtin/documentalist/freshness.go),
+20,000 characters by default, still shared by suspect and stale docs: a
+project whose sources are larger raises it (docs/research/documentalist-genericity.md,
+fixes 4 to 8). The decision is unchanged.

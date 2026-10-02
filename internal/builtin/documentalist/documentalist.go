@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -418,6 +419,9 @@ type suspectDoc struct {
 	// such a doc is not put in a task of its own.
 	note     string
 	deferred bool // left for the run's next round
+	// earlier: judged by an earlier round of this run, whose merge request
+	// is proposed, not opened yet: that round's finding stands.
+	earlier bool
 }
 
 // docEvidenceLines is what one doc shows of what changed in all its sources:
@@ -899,6 +903,10 @@ doc when its reader really gained something to know.
 		if sd == nil || judged[f.Where] != nil && sd.note == "" {
 			continue
 		}
+		if sd.earlier {
+			f.Rule = "" // what the earlier round said of it stands: left out below
+			continue
+		}
 		if sd.note != "" {
 			f.Message += "\n" + sd.note
 			if sd.deferred {
@@ -920,6 +928,7 @@ doc when its reader really gained something to know.
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
 	}
+	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool { return f.Rule == "" })
 	if left.Len() > 0 { // the engine runs another round, once this one is applied
 		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte(left.String()), 0o644); err != nil {
 			return fail(err)
@@ -1004,9 +1013,12 @@ func holdWaitingTasks(maps ...map[string]*suspectDoc) {
 	if os.Getenv("WORKLINE_EVENT") != "schedule" {
 		return
 	}
-	open := map[string]bool{}
+	open, proposed := map[string]bool{}, map[string]bool{}
 	for _, t := range strings.Fields(os.Getenv("WORKLINE_OPEN_MERGE_REQUEST_TASKS")) {
 		open[t] = true
+	}
+	for _, t := range strings.Fields(os.Getenv("WORKLINE_PROPOSED_TASKS")) {
+		proposed[t] = true
 	}
 	for i, docs := range maps {
 		kind := []string{"suspect", "stale"}[i]
@@ -1015,7 +1027,11 @@ func holdWaitingTasks(maps ...map[string]*suspectDoc) {
 			if sd.tooLarge {
 				task = "fix"
 			}
-			if sd.note == "" && open[task] {
+			switch {
+			case sd.note != "":
+			case proposed[task]: // an earlier round of this run judged it
+				sd.note, sd.earlier = "(judged in an earlier round of this run)", true
+			case open[task]:
 				sd.note = "(its task's merge request, workline/documentalist/" + task + ", waits for review: not put before an agent again until it is merged or closed)"
 			}
 		}
@@ -1197,6 +1213,7 @@ func Post(runDir, repo string) int {
 	}
 	var refused, reported, withheld []verdict.Finding
 	var judgedFix *judgedFixes
+	inParts := map[string]string{} // the docs judged in parts, by the commit they were judged at
 	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
@@ -1246,7 +1263,6 @@ func Post(runDir, repo string) int {
 		if strings.TrimSpace(string(kind)) == "sources" {
 			refused, patched, err = judgeSources(repo, s, judged, intents, fallback)
 		} else {
-			inParts := map[string]string{}
 			if data, err := os.ReadFile(filepath.Join(runDir, "in", "in-parts.yaml")); err == nil {
 				if err := yaml.Unmarshal(data, &inParts); err != nil {
 					return fail(err)
@@ -1295,17 +1311,19 @@ func Post(runDir, repo string) int {
 	var kept []verdict.Finding
 	said := map[string]bool{}
 	for _, f := range findings {
+		if _, ok := inParts[f.Where]; ok && strings.Contains(f.Message, partsFixAsked) {
+			// What the fix call made of what the parts found, now known.
+			if n := judgedFix.placesFixed(f.Where); n > 0 {
+				f.Message = strings.Replace(f.Message, partsFixAsked, "what they found wrong is fixed in this run, in "+nPlaces(n), 1)
+			} else {
+				f.Message = strings.Replace(f.Message, partsFixAsked, "but the fix changed nothing of what they found wrong: a person reads those places", 1)
+			}
+		}
 		if v, ok := patched[f.Where]; ok && !v && (f.Rule == "suspect" || f.Rule == "stale") {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				if partly[f.Where] {
-					f.Message += "\n(fixed, applied in part: the places refused are left as they were, each said below, and `checked` stays — a person fixes them against the sources, then moves `checked`)"
-				} else if whole[f.Where] {
-					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays; its note says what — a person reads it, then moves `checked`)"
-				} else {
-					f.Message += "\n(fixed, not vouched for: what the agent found wrong is fixed in this run, but not every source of the doc could be given whole in the task, so `checked` stays — a person reads it against them, then moves `checked`)"
-				}
+				f.Message += "\n" + notVouched(judgedFix.placesFixed(f.Where), partly[f.Where], whole[f.Where])
 			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
@@ -1335,7 +1353,8 @@ func Post(runDir, repo string) int {
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
-		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld)); err != nil {
+		outcome := outcomes(judged, inParts, patched, partly, judgedFix)
+		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld, outcome)); err != nil {
 			return fail(err)
 		}
 	}
@@ -1844,6 +1863,73 @@ func checklist(findings []verdict.Finding) (intent.Intention, bool) {
 	return intent.Intention{Kind: "comment", Value: value}, true
 }
 
+// notVouched says, for a doc the agent judged without vouching for it, what
+// this run did: fixed in so many places, or nothing found wrong; applied in
+// part; and why `checked` stays. Never "fixed" for a patch recording only
+// `judged` (workline's first nightly, 2026-10-02).
+func notVouched(n int, partly, whole bool) string {
+	switch {
+	case partly && n > 0:
+		return "(fixed in " + nPlaces(n) + ", applied in part: the places refused are left as they were, each said below, and `checked` stays — a person fixes them against the sources, then moves `checked`)"
+	case partly:
+		return "(nothing applied: every place the fix changed was refused, each said below, and left as it was; `checked` stays and `judged` records when — a person fixes them against the sources, then moves `checked`)"
+	}
+	what := "nothing found wrong, not vouched for: the agent changed nothing in the doc"
+	if n > 0 {
+		what = "fixed in " + nPlaces(n) + ", not vouched for: what the agent found wrong is fixed in this run"
+	}
+	if whole {
+		return "(" + what + ", but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
+	}
+	return "(" + what + ", but not every source of the doc could be given whole in the task, so `checked` stays and `judged` records when — a person reads it against them, then moves `checked`)"
+}
+
+// outcomes says, for the merge request a gardening task opens, what became
+// of each doc it judged: fixed and in how many places, or nothing found
+// wrong; `checked` moved, or `judged` recorded.
+func outcomes(judged map[string]map[string]string, inParts map[string]string, patched, partly map[string]bool, fix *judgedFixes) map[string]string {
+	out := map[string]string{}
+	fixed := func(p string) string {
+		if n := fix.placesFixed(p); n > 0 {
+			return "fixed in " + nPlaces(n)
+		}
+		return ""
+	}
+	for p := range inParts {
+		switch f := fixed(p); {
+		case f != "":
+			out[p] = "judged in parts, " + f + "; `checked` not moved"
+		case judged[p] != nil:
+			out[p] = "judged in parts; the fix changed nothing of what they found wrong, for a person; `checked` not moved"
+		default:
+			out[p] = "judged in parts, nothing found wrong; `checked` not moved"
+		}
+	}
+	for p := range judged {
+		if _, ok := inParts[p]; ok {
+			continue
+		}
+		v, ok := patched[p]
+		f := fixed(p)
+		switch {
+		case !ok:
+			out[p] = "left as it was"
+		case v && f != "":
+			out[p] = f + ", `checked` moved"
+		case v:
+			out[p] = "still true, `checked` moved"
+		case f != "":
+			out[p] = f + ", `judged` recorded, `checked` not moved"
+		default:
+			out[p] = "nothing found wrong, `judged` recorded, `checked` not moved"
+		}
+		if partly[p] {
+			out[p] += "; places left for a person, below"
+		}
+	}
+	return out
+}
+
 // otherOf is the doc of a pair that is not p.
 func otherOf(pair []string, p string) string {
 	if pair[0] == p {
@@ -1855,7 +1941,7 @@ func otherOf(pair []string, p string) string {
 // mergeRequest describes, for a run that opens one (ADR-0006), the merge
 // request its patches go to: a key per task, so running the task again
 // updates it, and a title a commit can carry.
-func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool, withheld []verdict.Finding) map[string]string {
+func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool, withheld []verdict.Finding, outcome map[string]string) map[string]string {
 	kind := "suspect"
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "task-kind")); err == nil {
 		kind = strings.TrimSpace(string(data))
@@ -1867,6 +1953,11 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	var docs []string
 	for p := range judged {
 		docs = append(docs, p)
+	}
+	for p := range outcome { // a doc judged in parts with nothing to fix: its header only
+		if _, ok := judged[p]; !ok {
+			docs = append(docs, p)
+		}
 	}
 	sort.Strings(docs)
 	key, title := kind, "docs: bring the docs in line with the code"
@@ -1902,7 +1993,11 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	if len(docs) > 0 {
 		body.WriteString("\nDocs:\n\n")
 		for _, d := range docs {
-			fmt.Fprintf(&body, "- `%s`\n", d)
+			if o := outcome[d]; o != "" {
+				fmt.Fprintf(&body, "- `%s` — %s\n", d, o)
+			} else {
+				fmt.Fprintf(&body, "- `%s`\n", d)
+			}
 		}
 	}
 	// The places a fix was refused in, left as they were: the person

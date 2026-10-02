@@ -94,6 +94,11 @@ the excerpts do not let you settle stays as it is; say so in a note.
 
 `
 
+// partsFixAsked is what a doc's finding says of its fix while it is asked:
+// post replaces it with what the fix made of it (fixed in so many places, or
+// nothing changed).
+const partsFixAsked = "what they found wrong goes to the fix in this run"
+
 // partsFor judges in parts the docs too large to be judged whole, when the
 // project turned it on. Asked first (no WORKLINE_PARTS), it writes each
 // part's question under in/parts; run again with the parts answered, it puts
@@ -183,7 +188,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		default:
 			fixes.WriteString(entry)
 			judged[sd.doc.Path] = map[string]string{"": head}
-			sd.note = "(" + summary + "; what they found wrong is fixed in this run, and `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
+			sd.note = "(" + summary + "; " + partsFixAsked + ", and `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		}
 		// A claim dropped may have been the one saying what is wrong: it is
 		// said, for a person. The doc is recorded all the same: asked again

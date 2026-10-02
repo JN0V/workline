@@ -96,7 +96,9 @@ func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) bool
 	res.Findings = append(res.Findings, r.Findings...)
 	res.AgentCalls += r.AgentCalls
 	res.Calls = append(res.Calls, r.Calls...)
-	if r.ToApply {
+	if len(r.Pending) > 0 { // a run gone round: a run folder a round
+		res.Pending = append(res.Pending, r.Pending...)
+	} else if r.ToApply {
 		res.Pending = append(res.Pending, r.RunDir)
 	}
 	if r.Status != verdict.Pass {
