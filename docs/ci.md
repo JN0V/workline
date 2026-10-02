@@ -180,9 +180,12 @@ for a merge request) shows one, and you merge a branch with git. There is no
 CI to set up: gardening and the weekly sample run on your machine
 (`workline route schedule --open-merge-request`, `workline sample --out
 sample.json` then `workline sample --apply sample.json`), and `workline
-docs` judges before a release. Never set `local` in CI: the job's clone is
-thrown away, and what it wrote with it.
+docs` judges before a release. In CI — `CI`, `GITHUB_ACTIONS` or
+`GITLAB_CI` set — the local forge refuses its writes, loud: the job's clone
+is thrown away, and what it would hold with it. What writes nothing still
+runs, so a project whose config says `local` for its laptops passes
+`--forge` to its CI jobs that write.
 
 With `forge: none` (the default), nothing is written to a forge: a write
-that needs one is refused and says so; the issue a role opens goes to
-`.workline/issues/` in the working tree.
+that needs one — the issue a role opens included — is refused and says so,
+naming `forge: local`.

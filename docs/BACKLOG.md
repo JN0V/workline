@@ -254,12 +254,10 @@ last.
 - **Where workline writes, left** (ADR-0016, built 2026-10-02,
   conformance only). Gitea and Forgejo natively, as GitHub and GitLab are,
   once the command (ci/forgejo/workline-forge.sh) has run on a live
-  instance — Codeberg first; it splits labels on spaces. The weekly
-  sample's GitLab jobs, untried. `forge: local` in CI writes to a clone the
-  job throws away: the doctor, or the engine when `CI` is set, should say
-  so. The `.workline/issues/` that `none` still writes, in the working
-  tree: fold it into `local`, or drop it, by a decision. The doctor checks
-  `gh` for GitHub only: a `cmd:` forge or `local` is not looked at.
+  instance — Codeberg first; only its label operation runs against a mock.
+  The weekly sample's GitLab jobs, untried. The doctor checks `gh` for
+  GitHub only: a `cmd:` forge or `local` is not looked at, nor `local` in
+  a CI the engine does not recognise.
 
 ### Documentalist beyond our repositories
 

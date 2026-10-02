@@ -75,8 +75,10 @@ repository without merge requests is built but untried for real.
   a release's notes in the clone (`.git/workline/`), read with `workline
   issues`; `forge: cmd:<command>` plugs another forge by a JSON contract
   (docs/spec/forge-command.md), with a sample for Forgejo and Gitea
-  (ci/forgejo/). Conformance only (fifteen cases, a fake command); the
-  Forgejo script run against a mock of its API, no live instance.
+  (ci/forgejo/). With no forge, an issue is refused as every other write;
+  in CI, the local forge refuses its writes. Conformance only (seventeen
+  cases, a fake command); the Forgejo script's labels run against a mock
+  of its API (ci/forgejo/workline_forge_test.go), no live instance.
 - **Beyond our repositories** (docs/research/documentalist-genericity.md,
   fixes 1 to 3): a path that is not ASCII is read; changelogs, release
   notes and decision records are known by the names other projects give
