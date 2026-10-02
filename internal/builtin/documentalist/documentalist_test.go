@@ -232,3 +232,30 @@ func TestCountsOffShapes(t *testing.T) {
 		}
 	}
 }
+
+// A hunk quoting the doc wrong is mended only where its place is beyond
+// doubt, and never by letting a line go between two lines it removes.
+func TestMended(t *testing.T) {
+	cases := []struct {
+		name, doc string
+		hunk      []string
+		want      []hunk // nil: not mended
+	}{
+		{"a blank line skipped", "a\n\nb\nc", []string{" a", "-b", "+B"},
+			[]hunk{{oldStart: 1, oldCount: 3, lines: []string{" a", " ", "-b", "+B"}}}},
+		{"a blank line the doc has not", "a\nb\nc", []string{" a", " ", "-b", "+B"},
+			[]hunk{{oldStart: 1, oldCount: 2, lines: []string{" a", "-b", "+B"}}}},
+		{"a context line the doc has not", "a\nb\nc", []string{" a", "-b", "+B", " zzz"},
+			[]hunk{{oldStart: 2, oldCount: 1, lines: []string{"-b", "+B"}}}},
+		{"a blank line between two removed", "a\nb\n\nc", []string{"-b", "-c", "+B"}, nil},
+		{"removed lines found twice", "a\nb\na\nb", []string{" a", "-b", "+B", " zzz"}, nil},
+		{"a run that only adds", "a\nb\nc", []string{" zzz", "+B", " a"}, nil},
+		{"a blank-skipping fit found twice", "a\n\nb\na\n\nb", []string{" a", "-b", "+B"}, nil},
+	}
+	for _, c := range cases {
+		got := mended(strings.Split(c.doc, "\n"), hunk{oldStart: 1, lines: c.hunk})
+		if fmt.Sprint(got) != fmt.Sprint(c.want) {
+			t.Errorf("%s: mended = %v, want %v", c.name, got, c.want)
+		}
+	}
+}

@@ -200,51 +200,190 @@ const placeWithin = 3
 // placed moves each hunk whose quoted lines are not where it says to where
 // they are, when they are within placeWithin lines and found nowhere else
 // in the doc: there is then no doubt where it goes, and git apply finds the
-// same place. Any other hunk stays where it says, for misquoted to refuse.
-// The hunks keep their order and do not overlap, or none is moved.
+// same place. A hunk found nowhere so is mended where its place is still
+// beyond doubt (mended). Any other hunk stays where it says, for misquoted
+// to refuse. The hunks keep their order and do not overlap, or none is
+// moved.
 func placed(old string, f fileDiff) fileDiff {
 	lines := strings.Split(strings.TrimSuffix(old, "\n"), "\n")
-	at := func(start int, quoted []string) bool {
-		if start < 1 || start+len(quoted)-1 > len(lines) {
-			return false
-		}
-		for i, q := range quoted {
-			if lines[start-1+i] != q {
-				return false
-			}
-		}
-		return true
-	}
 	out := f
-	out.hunks = append([]hunk(nil), f.hunks...)
+	out.hunks = nil
 	end := 0 // the last old line the hunks so far take
-	for i, h := range out.hunks {
-		var quoted []string
-		for _, l := range h.lines {
-			if l[0] != '+' {
-				quoted = append(quoted, l[1:])
-			}
-		}
-		if h.oldCount > 0 && len(quoted) > 0 && !at(h.oldStart, quoted) {
-			found := 0
+	for _, h := range f.hunks {
+		quoted := oldSide(h)
+		hs := []hunk{h}
+		if h.oldCount > 0 && len(quoted) > 0 && !quotesAt(lines, h.oldStart, quoted) {
+			found, near := 0, 0
 			for s := 1; s <= len(lines); s++ {
-				if at(s, quoted) {
+				if quotesAt(lines, s, quoted) {
 					found++
 					if d := s - h.oldStart; d >= -placeWithin && d <= placeWithin {
-						out.hunks[i].oldStart = s
+						near = s
 					}
 				}
 			}
-			if found != 1 {
-				out.hunks[i].oldStart = h.oldStart
+			switch {
+			case found == 1 && near > 0:
+				hs[0].oldStart = near
+			case found == 0:
+				if m := mended(lines, h); m != nil {
+					hs = m
+				}
 			}
 		}
-		if out.hunks[i].oldStart <= end && h.oldCount > 0 {
-			return f
+		for _, nh := range hs {
+			if nh.oldStart <= end && nh.oldCount > 0 {
+				return f
+			}
+			end = nh.oldStart + len(oldSide(nh)) - 1
+			out.hunks = append(out.hunks, nh)
 		}
-		end = out.hunks[i].oldStart + len(quoted) - 1
 	}
 	return out
+}
+
+// oldSide are the lines a hunk quotes of the doc: its context and the
+// lines it removes.
+func oldSide(h hunk) []string {
+	var quoted []string
+	for _, l := range h.lines {
+		if l[0] != '+' {
+			quoted = append(quoted, l[1:])
+		}
+	}
+	return quoted
+}
+
+// quotesAt says whether the doc's lines from start (from 1) are quoted.
+func quotesAt(lines []string, start int, quoted []string) bool {
+	if start < 1 || start+len(quoted)-1 > len(lines) {
+		return false
+	}
+	for i, q := range quoted {
+		if lines[start-1+i] != q {
+			return false
+		}
+	}
+	return true
+}
+
+// mended is a hunk quoting the doc wrong written anew, quoting the doc as
+// it is, where its place is beyond doubt; nil otherwise. Sonnet skipped a
+// blank line, and quoted a context line the doc has not, and the right
+// fixes those hunks carried were lost (DomoticsCore, ADR-0014 step 4).
+// First, a hunk whose context differs from the doc by blank lines alone
+// is placed where its other lines are, found once in the doc: a blank line
+// is let go in the context, never in the lines it changes. Else, each run
+// of the lines it changes is placed by the lines it removes alone, when
+// they are found once in the doc, and the context dropped: a run that only
+// adds, or removes only blank lines, has nothing to place it by.
+func mended(lines []string, h hunk) []hunk {
+	if m, ok := blanksLetGo(lines, h); ok {
+		return []hunk{m}
+	}
+	var runs [][]string
+	var cur []string
+	for _, l := range append(slices.Clone(h.lines), " ") {
+		if l[0] != ' ' {
+			cur = append(cur, l)
+			continue
+		}
+		if len(cur) > 0 {
+			runs = append(runs, cur)
+		}
+		cur = nil
+	}
+	var out []hunk
+	for _, run := range runs {
+		removed := oldSide(hunk{lines: run})
+		if strings.TrimSpace(strings.Join(removed, "")) == "" {
+			return nil
+		}
+		at := 0
+		for s := 1; s <= len(lines); s++ {
+			if quotesAt(lines, s, removed) {
+				if at > 0 {
+					return nil
+				}
+				at = s
+			}
+		}
+		if at == 0 {
+			return nil
+		}
+		out = append(out, hunk{oldStart: at, oldCount: len(removed), lines: run})
+	}
+	return out
+}
+
+// blanksLetGo places a hunk whose context differs from the doc by blank
+// lines alone: written anew with the doc's lines as context, when it fits
+// the doc at one place only. Between two lines it removes, nothing is let go.
+func blanksLetGo(lines []string, h hunk) (hunk, bool) {
+	blank := func(s string) bool { return strings.TrimSpace(s) == "" }
+	solid := false // a line it quotes that is not blank, to place it by
+	for _, l := range h.lines {
+		if l[0] != '+' && !blank(l[1:]) {
+			solid = true
+		}
+	}
+	if !solid {
+		return hunk{}, false
+	}
+	fit := func(s int) (hunk, int, bool) {
+		p, first := s, -1
+		var out []string
+		lastRemoved := false
+		for _, l := range h.lines {
+			kind, text := l[0], l[1:]
+			if kind == '+' {
+				out = append(out, l)
+				continue
+			}
+			if kind == ' ' && blank(text) {
+				if p < len(lines) && blank(lines[p]) && first >= 0 {
+					out = append(out, " "+lines[p])
+					p++
+				}
+				continue // a blank line the doc has not here, let go
+			}
+			if first >= 0 && !(kind == '-' && lastRemoved) && !blank(text) {
+				for p < len(lines) && blank(lines[p]) {
+					out = append(out, " "+lines[p]) // a blank line the hunk skipped
+					p++
+				}
+			}
+			if p >= len(lines) || lines[p] != text {
+				return hunk{}, 0, false
+			}
+			if first < 0 {
+				first = p
+			}
+			if kind == ' ' {
+				out = append(out, " "+lines[p])
+			} else {
+				out = append(out, l)
+			}
+			lastRemoved = kind == '-'
+			p++
+		}
+		n := 0
+		for _, l := range out {
+			if l[0] != '+' {
+				n++
+			}
+		}
+		return hunk{oldStart: first + 1, oldCount: n, lines: out}, first, true
+	}
+	var got hunk
+	found := 0
+	for s := 0; s < len(lines); s++ {
+		if m, first, ok := fit(s); ok && first == s {
+			got = m
+			found++
+		}
+	}
+	return got, found == 1
 }
 
 // applyHunks returns old with the hunks applied. The hunks were checked by
@@ -702,7 +841,8 @@ func asJudged(old, now, full string) (string, bool) {
 }
 
 // quotedRight keeps, of a diff git cannot apply, the hunks that quote the
-// docs right, each doc's diff written anew from them; the hunks left out
+// docs right once placed — a hunk mended where its place is beyond doubt
+// among them — each doc's diff written anew from them; the hunks left out
 // are returned by doc, each with what it misquotes, for a person. ok is
 // false when no hunk quotes right, or the diff touches a file that is no
 // doc put before the agent: then nothing holds.
@@ -737,7 +877,7 @@ func quotedRight(diff string, docs map[string]string, judged map[string]map[stri
 		}
 		b.WriteString(d)
 	}
-	if b.Len() == 0 || len(dropped) == 0 {
+	if b.Len() == 0 {
 		return "", nil, false
 	}
 	return b.String(), dropped, true
