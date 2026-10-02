@@ -17,9 +17,19 @@ holds is applied"):
 - is not a unified diff, or git cannot apply it — the refusal then says
   which line a hunk quotes wrong, a blank line skipped or one that is not
   there, where git says only the hunk's line (DomoticsCore, ADR-0014 step 4).
-  *Withheld* when some hunks quote the doc right: the hunks misquoting are
-  left out; with none quoting right, the agent is asked again — a misquote
-  is a slip it mended at the second answer, 3 of 4 times on DomoticsCore;
+  A hunk misquoting is first mended where its place is beyond doubt, the
+  doc's own lines put back as its context: a hunk whose context differs from
+  the doc by blank lines alone is placed where its other lines are, when they
+  fit the doc at one place only — a blank line let go in the context, never
+  between two lines it removes; else each run of the lines it changes is
+  placed by the lines it removes alone, found once in the doc, the context
+  dropped — a run that only adds, or removes only blank lines, cannot be.
+  Sonnet skipped a blank line, and quoted a context line the doc has not,
+  and the right fixes those hunks carried were lost (DomoticsCore, ADR-0014
+  step 4). *Withheld* when some hunks quote the doc right and the others
+  cannot be mended: those are left out; with none quoting right, the agent
+  is asked again — a misquote is a slip it mended at the second answer, 3
+  of 4 times on DomoticsCore;
 - touches a doc that was not put before the agent;
 - quotes lines that are not at the numbers its hunks cite — git apply alone
   would find them elsewhere and apply anyway. A hunk a few lines off (3 at
@@ -53,7 +63,15 @@ holds is applied"):
   a name the removed lines say, in the code when the doc was last edited and
   gone now, as `identifier-gone` finds it. A claim that does not hold — the
   quote not in the file, the file not a source, the name still in the code
-  — is `citation-unchecked`. Words only added, lines rewrapped, and a line
+  — is `citation-unchecked`. In an answer patching several docs, each claim
+  names its doc (`doc:`, the task says so); one that does not is read for the
+  only doc whose patch changes the lines it gives, with its quote found under
+  that doc's sources or its name in the lines removed there — a right claim
+  for HeapTracker's pitfall named no doc beside a second doc's patch, and the
+  right fix was withheld (DomoticsCore, step 4). A claim that could stand for
+  no doc, or for several, is read for none and reported
+  (`claim-unattributed`); the place it was for is refused saying a claim was
+  given without `doc:`. Words only added, lines rewrapped, and a line
   count the engine found off, brought to the engine's number, need none —
   the stated number and the word making it rough ("~", "about",
   "approximately"), in prose, a table's cell or a fenced listing; another

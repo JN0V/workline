@@ -161,6 +161,13 @@ token), **apply** (trusted, no AI key).
    fallback patch given as a diff (the documentalist's derived blocks, with no
    line of context) is never replaced: it is applied after the agent's.
    With no agent, or none that answered, the fallback proposals are used alone.
+   An answer that cannot be read as proposals (`agent-invalid-output`, with
+   what the YAML reader said) is asked for again once, on the same tier, with
+   that error, when the role asks again at all (`promote-after`) and `post`
+   did not block: nothing of it was judged, and a quote left unescaped is a
+   slip, not a refusal. The documentalist's `post` passed with no proposal,
+   and such a doc was judged again, whole, the next night (DomoticsCore,
+   ADR-0014 step 4). The answer not read is kept as `out/unread-answer.txt`.
    *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
    read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
