@@ -640,6 +640,13 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	findings = append(findings, undocumented(tree, docs, s.Documented, added, ranged)...)
+	// Docs the role does not read: said when gardening and when adopting,
+	// not on each change, which adds nothing to them.
+	if ev := os.Getenv("WORKLINE_EVENT"); ev == "schedule" || ev == "init" {
+		if msg := unreadMessage(unreadDocs(tree.Files, s.Docs)); msg != "" {
+			findings = append(findings, verdict.Finding{Rule: "docs-not-read", Message: msg})
+		}
+	}
 
 	// Hygiene: what needs no judgement is reported by the checks themselves.
 	problems := Hygiene(tree, s.Budgets, s.Duplicates)

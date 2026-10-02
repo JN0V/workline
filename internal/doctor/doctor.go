@@ -274,6 +274,11 @@ func repository(r *Report, o Options) {
 			Message: fmt.Sprintf("%s; %d say nothing, so they are never found suspect: %s", described, len(untracked), sample(untracked)),
 			Fix:     "workline init   # proposes their sources, with an agent; without one, lists them"})
 	}
+	if msg, err := documentalist.UnreadDocs(o.Repo, globs); err != nil {
+		r.add(Check{Area: "repository", Rule: "docs-unreadable", Where: where, Level: Error, Message: err.Error()})
+	} else if msg != "" {
+		r.add(Check{Area: "repository", Rule: "docs-not-read", Where: where, Level: Warn, Message: msg})
+	}
 }
 
 // UsedTools lists the tools the roles use, each once, sorted.

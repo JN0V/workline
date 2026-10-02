@@ -1,0 +1,18 @@
+case: documentalist/docs-not-read-reported
+about: "When gardening, the files that read as docs and that the documentalist does not read — `.rst`, `.mdx`, `.adoc`, `.txt` under a docs folder, a package's README outside the docs globs — are said in one finding, with how to include them, not left out in silence (pip's 68 `.rst`, backstage's 241 package READMEs: docs/research/documentalist-genericity.md). What is not a doc stays out: a `requirements.txt`, a fixture."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p packages/core/src tests/fixtures && printf 'Guide\\n=====\\n' > docs/guide.rst && printf -- '---\\ntitle: API\\n---\\n# API\\n' > docs/api.mdx && printf '= Ops\\n' > docs/ops.adoc && printf 'Notes.\\n' > docs/notes.txt && printf 'sphinx\\n' > docs/requirements.txt && printf '# Core\\n' > packages/core/README.md && printf 'package core\\n' > packages/core/src/core.go && printf '# A fixture\\n' > tests/fixtures/README.md && git add . && git commit -qm 'docs: more formats'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  findings:
+    - {rule: docs-not-read, message: "docs/guide.rst"}
+    - {rule: docs-not-read, message: "docs/api.mdx"}
+    - {rule: docs-not-read, message: "docs/ops.adoc"}
+    - {rule: docs-not-read, message: "docs/notes.txt"}
+    - {rule: docs-not-read, message: "packages/core/README.md"}
+    - {rule: docs-not-read, message: "\"**/README.md\""}
+  no-findings:
+    - {rule: docs-not-read, message: "requirements.txt"}
+    - {rule: docs-not-read, message: "tests/fixtures"}
