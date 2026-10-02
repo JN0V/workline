@@ -1,6 +1,7 @@
 ---
 sources: [internal/builtin/releasemanager, roles/release-manager/role.yaml]
-checked: d30d22a
+checked: 7132d0f
+verified: agent:documentalist
 ---
 # Release manager
 
