@@ -9,11 +9,17 @@ Part of [the documentalist](README.md).
 
 ## Judge (`post`, no AI)
 
-A patch is refused, and the agent asked again with the reasons, when it:
+A patch is refused, and the agent asked again with the reasons, when it
+does one of the following — but for the places marked *withheld*: there,
+the rest of the fix is applied without the place refused (below, "What
+holds is applied"):
 
 - is not a unified diff, or git cannot apply it — the refusal then says
   which line a hunk quotes wrong, a blank line skipped or one that is not
-  there, where git says only the hunk's line (DomoticsCore, ADR-0014 step 4);
+  there, where git says only the hunk's line (DomoticsCore, ADR-0014 step 4).
+  *Withheld* when some hunks quote the doc right: the hunks misquoting are
+  left out; with none quoting right, the agent is asked again — a misquote
+  is a slip it mended at the second answer, 3 of 4 times on DomoticsCore;
 - touches a doc that was not put before the agent;
 - quotes lines that are not at the numbers its hunks cite — git apply alone
   would find them elsewhere and apply anyway. A hunk a few lines off (3 at
@@ -33,10 +39,11 @@ A patch is refused, and the agent asked again with the reasons, when it:
   same task, nobody read the rest. `pre` records the docs whose sources it
   gave whole (`in/read-whole.yaml`; none, when the file is missing); for
   any other, the fix sets `judged` and is kept, and the doc stays suspect
-  for a person;
+  for a person. *Withheld*: the move of `checked`;
 - moves `checked` while the doc, as patched, still states a line count off
   (`checked-over-count-off`, ADR-0014 step 2): the task gave the real
-  count; the fix brings it there, with no claim, or leaves `checked`;
+  count; the fix brings it there, with no claim, or leaves `checked`.
+  *Withheld*: the move of `checked`;
 - takes words out of a doc's body with no claim saying why
   (`removal-uncited`, ADR-0014 step 2): the agent removed a true claim it
   could not see backed (workline d43b3f2). A run of changed lines whose
@@ -61,9 +68,11 @@ A patch is refused, and the agent asked again with the reasons, when it:
   ("the", "per", "currently"; never such a fact). A table's total is a count the engine gives too. The task and every
   refusal say it, the engine's count being the evidence: the agent had left
   the counts it was given, believing a count "cannot be quoted as a source"
-  (ADR-0014, step 3). A refusal names the places refused only, and the rest
-  of the doc's patch that holds, to be sent again unchanged: the agent had
-  withdrawn a right fix with the refused one beside it (16c660b). Condense, split, merge-card and
+  (ADR-0014, step 3). *Withheld*, each run of changed lines refused (as
+  `citation-unchecked` and `comment-not-evidence`): asked again, the agent
+  had withdrawn a right fix with the refused one beside it (16c660b), and
+  rarely brought the refused place back right — 1 of 5 re-asks, on
+  DomoticsCore and the evaluation (ADR-0014, steps 3 and 4). Condense, split, merge-card and
   dedupe tasks are judged by their own rules, which check where the text
   went;
 - rests a change on a comment alone (`comment-not-evidence`): its claims'
@@ -72,14 +81,29 @@ A patch is refused, and the agent asked again with the reasons, when it:
   YAML, shell, Python, TOML, a Makefile; `<!-- -->` in Markdown, HTML,
   XML; strings are read as strings. A stale comment won over the code's
   setting (workline #29). The comment is reported (`comment-disagrees`, at
-  the comment's file and line), kept for the run's verdict whatever the
-  agent answers when asked again, so a person or the committer fixes it;
+  the comment's file and line), kept for the run's verdict, so a person or
+  the committer fixes it. *Withheld*;
 - brings a budget, link or duplicate problem the tree did not have, or makes
   one worse — but a size already over budget may grow by what a fix allows,
   and stays reported, for condensing: truth before size.
 
-The answer asked again replaces the refused one whole, so the engine tells
-the agent to give again, unchanged, every change not refused. Each answer is
+**What holds is applied** (ADR-0014, step 4). A refusal sent the whole task
+again — two docs, 35k tokens — for one place the engine had already named.
+A place withheld is not asked for again: the doc's fix is applied without
+it, the place left as it was; the doc keeps `checked` where it was and
+records `judged` (its header put back, `judged` set), so a person reads it
+before moving `checked`, and it is not put before an agent again until a
+source changes (ADR-0013). Each place withheld is a finding for a person,
+with the refusal's rule, the doc and its lines, and why — in the run's
+verdict, the merge request's comment or the gardening pull request, as
+other findings — and the doc's `suspect` finding says it was fixed in
+part. With every place of a doc withheld, the fix is only its record:
+`judged` set, the places reported. `post` leaves the narrowed patches in
+`out/intentions.yaml`, and the engine applies those (docs/spec/role-contract.md).
+
+The answer asked again, for any other refusal, replaces the refused one
+whole, so the engine tells the agent to give again, unchanged, every change
+not refused. Each answer is
 kept in the run folder as it came (`out/agent-answer.txt`; a refused one as
 `out/refused-<n>-answer.txt`), and the claims of the accepted one in
 `out/claims.yaml`: judged, never applied, kept so that a fix's evidence can

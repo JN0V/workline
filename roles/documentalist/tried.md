@@ -594,3 +594,26 @@ On 2026-09-27, on workline's own repository:
   `metadata.version` skipped). No engine bug found. 3.96M tokens
   (WaterMeter 0.37M, workline 1.54M, DomoticsCore 2.05M); the baseline
   not run again.
+- What holds of a fix applied, with no agent (2026-10-02, the engine after
+  c3487a4; replays only). Every re-ask on record was read first, the
+  refused answer beside the one that followed: after a citation refusal,
+  the place came back right once in five (d784398's versions, claimed at
+  the second answer); 16c660b's count, HeapTracker's pitfall, OTA's
+  `Total` and OTA's "`OTA.cpp` line count (607)" were withdrawn. After a
+  misquote, three in four came back right (DomoticsCore's runs 2 of step
+  4 and step 4 again, step 3's evaluation run); one withdrew every body
+  fix. So a citation refusal is withheld and reported, never asked again;
+  a misquote is asked again only when no hunk quotes right. Replayed:
+  the reviewed bot fixes through the removal rule — the three wrong
+  places withheld, 11 of 12 right ones pass (172493e, a template's header
+  comment, withheld as before), and 3cd196d's right line 60, reverted with
+  the wrong line 148, now applied. Step 4's refused answers through
+  `post`, each on a copy of DomoticsCore at the commit its night began:
+  HeapTracker's (run 1, night 1) passes, its two counts applied, the
+  pitfall withheld (`removal-uncited`) and the doc recorded `judged`; OTA's
+  607 (run 1, night 2) passes whole, `count-off` now reading its shape;
+  the misquoted OTA answer (run 2, night 2) applies all but the hunk
+  misquoting a table row — a hunk that also brought the size row to 759
+  and 558, which the re-ask had mended: now a person's. `count-off` on
+  DomoticsCore at 91100ed: 59 reports before, 60 after, the one added
+  real; none on workline; WaterMeter's 2 unchanged.

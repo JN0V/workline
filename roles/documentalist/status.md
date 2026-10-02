@@ -87,8 +87,9 @@ repository without merge requests is built but untried for real.
    baseline, past the tenth the bar allows. The three costs behind it are
    met, and measured again (below): the same five bars hold, and bar 6
    fails again, +13.9%, one run in five asked twice for a rewrite given
-   no claim; the re-ask, which sends the whole task again, is the next
-   cost.
+   no claim. The re-ask, which sent the whole task again, is cut: what
+   holds of a fix is applied, the place refused reported (below, "After
+   step 4 again"); step 4 to run again.
 2. **Sonnet cites lines a line off in long docs** (twice in two runs on
    DomoticsCore): such a hunk is now placed where its quoted lines are,
    replayed on both answers; to watch on the next runs.
@@ -241,3 +242,29 @@ DomoticsCore), +5.5% without the one run in five asked twice — a
 rewrite given no claim, refused rightly, then withdrawn. A re-ask
 sends the whole task again (two docs, 36k) for one place; over every
 night, a doc judged whole costs 22.0k, as before (21.8k).
+
+After step 4 again (conformance and replay only, no agent run on it yet;
+step 4 to run again): **what holds of a fix is applied**. A place the
+removal rule refuses (`removal-uncited`, `citation-unchecked`,
+`comment-not-evidence`), a hunk git cannot apply for misquoting the doc,
+or a move of `checked` nobody can vouch for (`checked-unread`,
+`checked-over-count-off`) is no longer asked for again: the rest of the
+doc's fix is applied, the place left as it was, `checked` kept and
+`judged` recorded, and the place reported for a person — the run's
+findings, and the body of a gardening request. Only a patch of which no
+hunk quotes the doc right is asked again: re-asks after a citation
+refusal brought the place back right 1 time in 5 (d784398's versions;
+16c660b, HeapTracker's pitfall and OTA's `Total` and `OTA.cpp` count
+withdrawn), after a misquote 3 in 4. `post` narrows the patches; the
+engine applies them as narrowed, held to the same catalogue and bounds
+(docs/spec/role-contract.md). `count-off` reads "`OTA.cpp` line count
+(607)", "line count: 607" and "a 216-line `X.h`": on DomoticsCore at
+91100ed, 59 reports before, 60 after, the one added real (`OTA.cpp`, 759
+lines); none on workline, WaterMeter's 2 unchanged. The reviewed bot
+fixes replayed: the three wrong places still withheld, 11 of 12 right
+ones pass, as before, and 3cd196d's right line 60, lost with the wrong
+change when it was reverted, now kept. Step 4's refused answers replayed
+through `post`: HeapTracker's applies its two counts, the pitfall
+withheld and reported; OTA's 607 passes whole; the misquoted OTA answer
+applies all but its misquoted hunk — which held a right count, mended by
+the re-ask then, a person's now.

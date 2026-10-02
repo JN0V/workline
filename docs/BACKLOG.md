@@ -60,13 +60,18 @@ one run in five asked twice (the HeapTracker pitfall rewritten with no
 claim, refused rightly, withdrawn). The three costs are met as measured:
 docs in parts recorded and not asked again, CHANGELOG never picked, no
 word beside a count refused; nothing false let through by the narrowed
-rule. **Next**, per ADR-0014: cut what a re-ask costs — a refusal sends
-the whole task again (both docs, 35k) for one place the engine has
-already named; ask again only for the doc refused, or apply what holds
-and leave the refused place with a note. Also `count-off` misses OTA's
-"`OTA.cpp` line count (607)" (no "lines"): the agent's right fix was
-refused uncited, a re-ask too. Then step 4 again, the same way, and
-every line taken out without a claim read. The new kinds are in
+rule. **What a re-ask costs is cut**, conformance and replay only
+(status.md, "after step 4 again"): a place refused by the removal rule,
+a hunk misquoting, or a move of `checked` nobody can vouch for is no
+longer asked for again — the rest of the fix is applied, the doc
+recorded `judged`, the place reported for a person (the run's findings,
+the gardening request's body); only a patch of which no hunk quotes
+right is asked again. `count-off` reads "line count (607)", "line
+count: 607" and "a 216-line `X.h`". **Next**, per ADR-0014: step 4
+again, the same way, and every line taken out without a claim read;
+watch the places withheld (HeapTracker's pitfall now goes to a person,
+not withdrawn), and a misquoted hunk carrying a right fix (OTA's size
+row, run 2: a re-ask had mended it). The new kinds are in
 docs/research/documentalist-fixes-reviewed.md, "The held-out set".
 DomoticsCore: branch docs/narrow-wide-sources (two docs narrowed) waits,
 not pushed; nothing more there until ADR-0014 step 4 holds; its main runs

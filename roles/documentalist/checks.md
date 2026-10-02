@@ -73,8 +73,13 @@ are cut. Part of [the documentalist](README.md).
 10. **Line counts off** (ADR-0014, step 2). A count of lines next to a file
     the doc names among its sources (matched by path suffix, one file
     only), off from the file as it is now (`count-off`): in prose
-    ("`EventBus.h` is currently ~283 lines"), a fenced listing ("Clock.h
-    (524 lines)") or a table whose column is headed `Lines`. Right within
+    ("`EventBus.h` is currently ~283 lines"; "`OTA.cpp` line count (607)",
+    "line count: 607"; "a 216-line `JsonStreamWriter.h`", the file right
+    after the count), a fenced listing ("Clock.h (524 lines)") or a table
+    whose column is headed `Lines`. "`OTA.cpp` line count (607)" went
+    unreported on DomoticsCore, and its right fix was refused for want of
+    a claim (ADR-0014, step 4); "an 800-line limit", with no file right
+    after it, is no count. Right within
     one line, or within a tenth when it says it is about (`~`, about,
     approximately). A table's row of totals (`Total`) is a count too, the
     sum of its rows, when each row counts one source file: an OTA table's
