@@ -3,7 +3,7 @@ sources: [internal/builtin/committer, roles/committer/role.yaml]
 checked: 82b6394
 judged: d77c33b
 verified: agent:documentalist
-judged-in-parts: 268cf0f
+judged-in-parts: 8d212d8
 ---
 # Committer
 

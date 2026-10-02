@@ -3,6 +3,7 @@ sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent
 checked: 5b8b173
 judged: 6013a50
 verified: agent:documentalist
+judged-in-parts: 8d212d8
 -->
 <h1>
   <picture>
