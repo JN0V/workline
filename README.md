@@ -27,7 +27,7 @@ Status (2026-09-24): used daily on its author's machine;
 | **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository and, when gardening, to other sites (lychee), identifiers gone from the code; docs citing a superseded decision; docs not confirmed for too long; derived blocks; Claude judges suspect and stale docs, opens an issue when the code disagrees with a spec, brings product docs up to date at the release, which waits for them, merges a repeated passage and a card too short, condenses a doc over budget, splits a card holding several concepts (checked by a second model), and its patches are checked | style |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
-| **Forges**: GitHub (comments, a comment edited in place, and labels tried live), simulated; GitLab tried on gitlab.com; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; GitHub issues and releases not yet tried live |
+| **Forges**: GitHub (comments, a comment edited in place, and labels tried live), simulated; GitLab tried on gitlab.com; none, kept in the clone (`forge: local`, `workline issues`); any other plugged by a command (`cmd:`, a Forgejo and Gitea sample) — ADR-0016; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; GitHub issues and releases not yet tried live; the Forgejo sample untried on a live instance |
 | Agents: Claude Code, and any command as `cmd:` | Codex, Antigravity, OpenCode built in; the generated model grid |
 
 ## Install
@@ -129,7 +129,7 @@ On your machine, on a forge, or both: each place fires its own events, and one
 routing (`routing.default.yaml`, changed in `.workline/config.yaml`) says which
 roles each event runs. A role behaves the same wherever it runs; only the
 trigger, the agent at hand and the way proposals are applied differ.
-Setting it up in CI, on GitHub or GitLab: [docs/ci.md](docs/ci.md).
+Setting it up in CI, on GitHub or GitLab, another forge, or none: [docs/ci.md](docs/ci.md).
 
 ```mermaid
 flowchart LR
