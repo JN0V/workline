@@ -88,7 +88,15 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
    people who may already write to the repository.
 3. **Gardening**: Build → Pipeline schedules → New schedule, nightly or
    weekly, on main. **The weekly sample** (below): a second schedule,
-   weekly, with the variable `WORKLINE_TASK` set to `sample`.
+   weekly, with the variable `WORKLINE_TASK` set to `sample`. A schedule's
+   variables need Settings → CI/CD → Variables, "Minimum role to use
+   pipeline variables", at **Maintainer**: a new gitlab.com project allows
+   no one, and setting the variable is refused (403, "not authorized to
+   set pipeline schedule variables").
+
+   gitlab.com runs a schedule at its own interval, not at the minute
+   written: a cron off the hour (`13 17 * * *`) was listed as due at 18:00
+   and ran at 18:08. Off the hour or not, expect it within the hour after.
 4. **Protect main**: merge requests only, pipelines must succeed.
 
 A fork's merge request runs in the fork, which has neither token: it is
@@ -109,10 +117,6 @@ roles:
       sample: {judge: "claude:opus"}   # Sonnet vouches by default: Opus reads
 ```
 
-`after: <tag>` beside it leaves out what was vouched for before that
-commit: before the release whose engine earns `checked` (v0.2.1 on
-workline), a `checked` could be moved unread, and was put back since.
-
 or as the CI variable `WORKLINE_JUDGE`; a `cmd:` running another provider's
 agent stands further apart when you have one. Without a judge, the docs
 drawn are listed for a person. The result goes to one issue, "workline: the
@@ -121,6 +125,16 @@ false labels it `documentalist-step-0` and opens a merge request putting it
 back, for you to review. On workline itself, Opus reads what Sonnet vouched
 for: another model of the same provider, the best independence there.
 A read costs one call of about 8k to 12k tokens a doc; one doc on most weeks.
+
+`after: <tag>` beside the judge leaves out what was vouched for before that
+commit: before the release whose engine earns `checked` (v0.2.1 on
+workline), a `checked` could be moved unread, and was put back since. A
+commit there is best quoted (`after: "7515148"`); unquoted, one with a
+leading zero is refused, YAML reading it as another number.
+
+The week sampled is the last whole one. For another (`--week 2026-W40`):
+on GitHub, run the workflow by hand with its `week` input; on GitLab, set
+the variable `WORKLINE_SAMPLE_WEEK` on the schedule, then play it.
 
 ## A self-managed GitLab
 
