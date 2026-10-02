@@ -1,0 +1,19 @@
+case: documentalist/parts-follow-whole-in-one-run
+about: "A gardening run judged in CI (no-apply, one merge request per task) that proposes the docs judged whole goes round again, the task it proposed counted as waiting: the doc put off to parts is judged in the same run, on a merge request of its own, never starved by the docs judged whole night after night (workline's first nightly, 2026-10-02)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && printf -- '---\\nsources: [src/auth/token.go]\\nchecked: %s\\n---\\n# Token lifetime\\n\\nTokens are short-lived.\\n' $C > docs/tech/ttl.md && git add -A && git commit -qm 'docs: confirm the auth doc, say tokens are short-lived'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/whole-then-parts.sh"', open-merge-request: true, no-apply: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 4   # the docs judged whole; then two parts and the fix
+  forge:
+    merge-requests:
+      - {id: 1, branch: "workline/documentalist/suspect", base: main, body: "`docs/tech/ttl.md`"}
+      - {id: 2, branch: "workline/documentalist/fix", base: main, body: "`docs/tech/auth.md` — judged in parts"}

@@ -135,4 +135,11 @@ task; running the task again updates it (ADR-0006). While
 (`gardening-paused`), and what it finds is still reported. While a task's
 own merge request waits, the docs it would judge wait too (ADR-0013): a doc
 judged in parts, whose task is `fix`, is then asked before the docs judged
-whole.
+whole. A task proposed by an earlier round of the same run counts as
+waiting: a CI night judged with `--no-apply` that proposes the docs judged
+whole goes round again, and the docs put off to parts are judged the same
+night, on the `fix` merge request (ADR-0013, amended) — workline's first
+nightly had put thirteen off "to a later round" a CI run never had. The
+merge request lists each doc it judged with what became of it: fixed and in
+how many places, still true, or nothing found wrong; `checked` moved or
+`judged` recorded.

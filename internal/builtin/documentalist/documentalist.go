@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -418,6 +419,9 @@ type suspectDoc struct {
 	// such a doc is not put in a task of its own.
 	note     string
 	deferred bool // left for the run's next round
+	// earlier: judged by an earlier round of this run, whose merge request
+	// is proposed, not opened yet: that round's finding stands.
+	earlier bool
 }
 
 // docEvidenceLines is what one doc shows of what changed in all its sources:
@@ -899,6 +903,10 @@ doc when its reader really gained something to know.
 		if sd == nil || judged[f.Where] != nil && sd.note == "" {
 			continue
 		}
+		if sd.earlier {
+			f.Rule = "" // what the earlier round said of it stands: left out below
+			continue
+		}
 		if sd.note != "" {
 			f.Message += "\n" + sd.note
 			if sd.deferred {
@@ -920,6 +928,7 @@ doc when its reader really gained something to know.
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
 	}
+	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool { return f.Rule == "" })
 	if left.Len() > 0 { // the engine runs another round, once this one is applied
 		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte(left.String()), 0o644); err != nil {
 			return fail(err)
@@ -1004,9 +1013,12 @@ func holdWaitingTasks(maps ...map[string]*suspectDoc) {
 	if os.Getenv("WORKLINE_EVENT") != "schedule" {
 		return
 	}
-	open := map[string]bool{}
+	open, proposed := map[string]bool{}, map[string]bool{}
 	for _, t := range strings.Fields(os.Getenv("WORKLINE_OPEN_MERGE_REQUEST_TASKS")) {
 		open[t] = true
+	}
+	for _, t := range strings.Fields(os.Getenv("WORKLINE_PROPOSED_TASKS")) {
+		proposed[t] = true
 	}
 	for i, docs := range maps {
 		kind := []string{"suspect", "stale"}[i]
@@ -1015,7 +1027,11 @@ func holdWaitingTasks(maps ...map[string]*suspectDoc) {
 			if sd.tooLarge {
 				task = "fix"
 			}
-			if sd.note == "" && open[task] {
+			switch {
+			case sd.note != "":
+			case proposed[task]: // an earlier round of this run judged it
+				sd.note, sd.earlier = "(judged in an earlier round of this run)", true
+			case open[task]:
 				sd.note = "(its task's merge request, workline/documentalist/" + task + ", waits for review: not put before an agent again until it is merged or closed)"
 			}
 		}

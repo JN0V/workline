@@ -1,6 +1,7 @@
 # ADR-0013: What was judged is not asked again before something changes
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-10-02 (a task proposed earlier in the
+  run waits too)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -53,3 +54,34 @@ it in review.
   in parts does; one more header line.
 - An agent forgetting `judged` is asked again, with the reason: a call more.
 - A note alone, with no patch, records nothing: that doc is asked again.
+
+## Amendment (2026-10-02)
+
+workline's first nightly gardening (roles/documentalist/tried.md,
+2026-10-02) judged one doc whole and put thirteen off "to be judged in parts
+in a later round": a CI run judged with `--no-apply` has one round, and a
+round judging docs whole asks no parts. The waiting above lets the parts go
+only on a night when the `suspect` merge request is still open; a person
+who merges it each morning, while the code keeps making docs suspect, starves
+the parts for good (seen on DomoticsCore too).
+
+- **A task proposed earlier in the run waits too.** A run judged with
+  `--no-apply --open-merge-request` goes round again when its round
+  proposed a merge request for a task no earlier round proposed, and it
+  deferred work (`in/more`). The next round is told that task waits, as an
+  open one (`WORKLINE_OPEN_MERGE_REQUEST_TASKS`, and alone in
+  `WORKLINE_PROPOSED_TASKS`), and counts it against
+  `max-open-merge-requests`. Each round is a run folder to apply, a merge
+  request of its own (ADR-0006). A doc put off to parts is so judged the
+  same night as the docs judged whole, unless the night's caps say
+  otherwise — `max-open-merge-requests`, `ai-max-tokens`,
+  `parts-max-per-run` — each of which says what waits.
+
+Chosen over alternating whole and parts across nights: alternating needs a
+memory of the last night's task, which the repository does not hold — and
+ADR-0013 keeps the record in the repository, not beside it; it would also
+leave a doc judged whole waiting a night it need not. Going round is what
+the engine already does on a machine that applies (the merge request opened,
+the next round sees it waiting); the change makes the CI run, which applies
+in another job, do the same. Its cost is a second task a night, within the
+caps above.
