@@ -1301,7 +1301,7 @@ func Post(runDir, repo string) int {
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
-		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback))); err != nil {
+		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld)); err != nil {
 			return fail(err)
 		}
 	}
@@ -1793,7 +1793,7 @@ func otherOf(pair []string, p string) string {
 // mergeRequest describes, for a run that opens one (ADR-0006), the merge
 // request its patches go to: a key per task, so running the task again
 // updates it, and a title a commit can carry.
-func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool) map[string]string {
+func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool, withheld []verdict.Finding) map[string]string {
 	kind := "suspect"
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "task-kind")); err == nil {
 		kind = strings.TrimSpace(string(data))
@@ -1841,6 +1841,14 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 		body.WriteString("\nDocs:\n\n")
 		for _, d := range docs {
 			fmt.Fprintf(&body, "- `%s`\n", d)
+		}
+	}
+	// The places a fix was refused in, left as they were: the person
+	// reviewing reads them here (ADR-0014, step 4).
+	if len(withheld) > 0 {
+		body.WriteString("\nLeft as they were, for a person — the fix refused there, the rest applied, `checked` not moved:\n\n")
+		for _, f := range withheld {
+			fmt.Fprintf(&body, "- `%s` (%s): %s\n", f.Where, f.Rule, f.Message)
 		}
 	}
 	body.WriteString("\nRunning the same task again updates this merge request; commits added to its branch by hand are overwritten.\n")
