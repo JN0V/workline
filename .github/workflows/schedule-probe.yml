@@ -1,0 +1,13 @@
+# Does GitHub fire this repository's schedules at all? A run every five
+# minutes that only prints when it was due and when it ran. Removed once
+# the answer is known.
+name: schedule probe
+on:
+  schedule: [{cron: "*/5 * * * *"}]
+  workflow_dispatch:
+permissions: {}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "event=${{ github.event_name }} schedule='${{ github.event.schedule }}' ran=$(date -u +%FT%TZ)"
