@@ -1,0 +1,14 @@
+case: product-owner/read-again-when-its-code-changed
+about: An issue already read is read again only when a commit since touched its sources, never because it is old; the one whose code did not change is listed by title only.
+given:
+  repo: backlog
+  setup:
+    - "printf '# Project\\n\\nExports rows as CSV and more.\\n' > README.md && git commit -qam 'docs: say more'"
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "The README says too little", body: "Say what the project does.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md: {contains: "- #7 Export drops the last row"}

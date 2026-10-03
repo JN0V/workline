@@ -22,6 +22,7 @@ var Catalogue = map[string]bool{
 	"issue":          true,
 	"handoff":        true,
 	"note":           true,
+	"sources":        true, // the code an issue is about, named, its evidence quoted (docs/spec/backlog-acts.md)
 	"close":          true, // an issue closed as a duplicate or obsolete, its evidence quoted (docs/spec/backlog-acts.md)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 }
@@ -151,7 +152,7 @@ func Write(path string, in []Intention) error {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "close": 4, "issue": 5, "handoff": 6, "note": 7,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "sources": 4, "close": 5, "issue": 6, "handoff": 7, "note": 8,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.

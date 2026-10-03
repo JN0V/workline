@@ -11,8 +11,12 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
 
 ## A run, when gardening (`schedule`)
 
-1. `pre` lists the open issues, with what the engine knows of each (its
-   state comment: its sources, the commit it was last confirmed at). An
+1. `pre` gives the agent a share of the open issues (`issues-per-run`):
+   those never read first, then those whose code changed since they were
+   read; each with what the engine knows of it (its state comment: its
+   sources, the commit it was last confirmed and read at) and the code it
+   names, up to `code-lines-max` lines in all. The others are listed by
+   title only. An
    issue without one gets it, at the commit the run is on, and is judged
    from the next run; one whose comment does not read is left out
    (`state-broken`), nothing written on it. The report issue is not judged.
@@ -31,6 +35,8 @@ Without an agent, only the state comments are written.
 roles:
   product-owner:
     settings:
+      issues-per-run: 8
+      code-lines-max: 1500
       acts:
         close-duplicate: {mode: act, max: 3}     # act | propose | off
         close-obsolete: {mode: propose, max: 3}

@@ -1,0 +1,15 @@
+case: product-owner/nothing-to-read-asks-nobody
+about: When every issue was read and none of their code changed since, the agent is not asked and nothing is written.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 7, comments: 1}
+      - {id: 8, absent: true}

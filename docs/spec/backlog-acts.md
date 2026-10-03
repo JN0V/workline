@@ -18,6 +18,7 @@ issue, marked `<!-- workline:sticky=product-owner/state -->`:
 ```yaml
 sources: [src/export/csv.go#WriteRows]   # what the issue is about, in the code
 confirmed: 1a8e5a4                       # the commit it was last found true at
+judged: 1a8e5a4                          # the commit the role last read it at
 ```
 
 An issue without that comment, or with one that does not read, is never
@@ -25,6 +26,16 @@ acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is
 written on the issue. The role's `pre` gives an issue it takes its first
 state, `confirmed` at the commit it read, with no sources until it is
 refined.
+
+## Reading
+
+A run reads at most `issues-per-run` issues, with at most `code-lines-max`
+lines of the code they name: those never read first, then those whose
+sources a commit touched since they were read. An issue whose code did not
+change is not read again, however old (ADR-0018); the others are listed by
+title only, so a duplicate can still be named. Each issue read gets
+`judged` moved to the run's commit; without an agent, or when its answer
+does not read, none is.
 
 ## Closing
 
@@ -48,12 +59,27 @@ refined.
   linking the original), an obsolete issue as completed; both with a
   comment that quotes the evidence and says how to undo: reopen it.
 
+## Naming its sources
+
+```yaml
+- sources:
+    issue: 12
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#12's WriteRows is defined here."
+```
+
+The files must be in the commit the run is on (1 to 5; `sources-unknown`
+otherwise), the quote found in one of them. Done, the issue's state gets
+them and loses `judged`: it is read again, with that code, at the next run.
+
 ## Autonomy and caps
 
 Each kind of act has a mode and a cap per run, set in the role's settings:
 
 ```yaml
 acts:
+  sources: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off
   close-obsolete:  {mode: propose, max: 3}
 ```
@@ -68,10 +94,11 @@ is there, not that the issue is solved).
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-lists what the last run did and what it proposes, each with its quote and
-how to undo it. Its own engine comment
-(`<!-- workline:sticky=product-owner/acts -->`) records the closings done
-and the kinds dropped back to `propose`.
+lists what the last run did and what is proposed, each with its quote and
+how to undo it. A proposal stays there from run to run until a person
+settles it — its issue closed — or a run decides it again. Its own engine
+comment (`<!-- workline:sticky=product-owner/acts -->`) records the
+closings done, the kinds dropped back to `propose`, and the proposals.
 
 ## Trust
 

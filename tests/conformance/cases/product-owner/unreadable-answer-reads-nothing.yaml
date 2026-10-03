@@ -1,0 +1,14 @@
+case: product-owner/unreadable-answer-reads-nothing
+about: An answer that does not read, asked for again and still unreadable, records no issue as read; they are given again at the next run.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: "cmd:sh $FIXTURES/agents/answers-unreadable.sh"}
+expect:
+  agent-calls: 2
+  findings: [{rule: agent-invalid-output}]
+  forge:
+    issues:
+      - {id: 7, comments: 1, comment-lacks: "judged:"}

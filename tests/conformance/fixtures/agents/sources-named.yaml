@@ -1,0 +1,10 @@
+- sources:
+    issue: 9
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#9's WriteRows is defined here."
+- sources:
+    issue: 12
+    sources: [src/export/gone.go]
+    quote: {path: src/export/gone.go, text: "func Gone() {"}
+    why: "a file that is not there"

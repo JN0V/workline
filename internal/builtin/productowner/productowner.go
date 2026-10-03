@@ -6,6 +6,7 @@
 package productowner
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -29,6 +31,12 @@ const (
 	filesPerIssue = 3    // files an issue names, given whole
 	codeLines     = 400  // lines of a file given
 )
+
+// Settings are the role's settings pre reads, as merged by the engine.
+type Settings struct {
+	IssuesPerRun int `json:"issues-per-run"` // issues read in one run
+	CodeLinesMax int `json:"code-lines-max"` // lines of code given in one run, all files together
+}
 
 // Pre lists the open issues in in/task.md. An issue without a state comment
 // gets one, through a fallback comment, and is judged from the next run; one
@@ -60,12 +68,25 @@ func Pre(runDir, repo string) int {
 		return fail(fmt.Errorf("the commit the run is on: %v", err))
 	}
 	commit := strings.TrimSpace(string(head))
+	s := Settings{IssuesPerRun: 8, CodeLinesMax: 1500}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json")); err == nil {
+		if err := json.Unmarshal(data, &s); err != nil {
+			return fail(fmt.Errorf("settings: %v", err))
+		}
+	}
 	var task strings.Builder
 	var fallback []intent.Intention
 	var findings []verdict.Finding
 	judged := 0
 	tracked := trackedFiles(repo)
 	var code []string // the files the issues name, given once each
+	var others []string
+	type due struct {
+		is       forge.Issue
+		st       *backlog.State
+		comments []string
+	}
+	var never, changed []due
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
@@ -89,14 +110,39 @@ func Pre(runDir, repo string) int {
 				Message: "its state comment does not read (" + err.Error() + "): the issue is not judged, nothing is written on it"})
 			continue
 		}
+		switch {
+		case st.Judged == "":
+			never = append(never, due{is, st, comments})
+		case sourcesChanged(repo, st):
+			changed = append(changed, due{is, st, comments})
+		default:
+			others = append(others, fmt.Sprintf("- #%d %s", is.ID, is.Title))
+		}
+	}
+	// Those never read first, then those whose code changed since; an issue
+	// whose code did not change is not read again (ADR-0018). Without an
+	// agent, nothing is read, and no issue is said to be.
+	toRead := append(never, changed...)
+	if os.Getenv("WORKLINE_AI") == "none" {
+		toRead = nil
+	}
+	for i, d := range toRead {
+		if i >= s.IssuesPerRun {
+			others = append(others, fmt.Sprintf("- #%d %s", d.is.ID, d.is.Title))
+			continue
+		}
 		judged++
-		files := named(is, st, tracked)
-		writeIssue(&task, is, st, comments, files)
+		files := named(d.is, d.st, tracked)
+		writeIssue(&task, d.is, d.st, d.comments, files)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
 			}
 		}
+		read := *d.st
+		read.Judged = commit
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
+			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
@@ -110,7 +156,11 @@ func Pre(runDir, repo string) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
 	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n", commit, judged)
-	writeCode(&task, repo, code)
+	if len(others) > 0 {
+		sort.Strings(others)
+		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
+	}
+	writeCode(&task, repo, code, s.CodeLinesMax)
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(intro+task.String()), 0o644); err != nil {
 		return fail(err)
 	}
@@ -183,7 +233,7 @@ func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string 
 
 // writeCode gives each file named, whole up to codeLines, with its last
 // commits: what changed it, so an issue the code solved can be told.
-func writeCode(b *strings.Builder, repo string, files []string) {
+func writeCode(b *strings.Builder, repo string, files []string, budget int) {
 	if len(files) == 0 {
 		return
 	}
@@ -195,9 +245,14 @@ func writeCode(b *strings.Builder, repo string, files []string) {
 		}
 		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
 		more := ""
-		if len(lines) > codeLines {
-			more = fmt.Sprintf("\n(%d more lines left out)", len(lines)-codeLines)
-			lines = lines[:codeLines]
+		if n := min(codeLines, budget); len(lines) > n {
+			more = fmt.Sprintf("\n(%d more lines left out)", len(lines)-n)
+			lines = lines[:n]
+		}
+		budget -= len(lines)
+		if len(lines) == 0 {
+			fmt.Fprintf(b, "## %s\n\nLeft out: the run's code budget is spent.\n\n", f)
+			continue
 		}
 		for i := range lines {
 			lines[i] = fmt.Sprintf("%4d  %s", i+1, lines[i])
@@ -205,6 +260,21 @@ func writeCode(b *strings.Builder, repo string, files []string) {
 		log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
 		fmt.Fprintf(b, "## %s\n\nLast commits:\n%s\n```\n%s\n```%s\n\n", f, strings.TrimSpace(string(log)), strings.Join(lines, "\n"), more)
 	}
+}
+
+// sourcesChanged says whether a commit since the issue was last read
+// touched one of its sources; an issue with none named is not read again.
+func sourcesChanged(repo string, st *backlog.State) bool {
+	var paths []string
+	for _, s := range st.Sources {
+		p, _, _ := strings.Cut(s, "#")
+		paths = append(paths, p)
+	}
+	if len(paths) == 0 {
+		return false
+	}
+	out, err := exec.Command("git", append([]string{"-C", repo, "log", "-1", "--format=%h", st.Judged + "..HEAD", "--"}, paths...)...).Output()
+	return err == nil && len(strings.TrimSpace(string(out))) > 0
 }
 
 func clip(s string, n int) string {

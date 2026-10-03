@@ -14,5 +14,5 @@ expect:
   forge:
     issues:
       - {id: 7, comments: 1, comment-contains: "confirmed: "}
-      - {id: 12, comments: 1, comment-contains: "confirmed: 0000000"}
+      - {id: 12, comments: 1, comment-contains: "confirmed: 0000000", comment-lacks: "judged:"}
       - {id: 13, comments: 0}

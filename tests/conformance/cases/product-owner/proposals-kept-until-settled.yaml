@@ -1,0 +1,20 @@
+case: product-owner/proposals-kept-until-settled
+about: A proposal stays in the report from run to run until a person settles it — its issue closed, here #8 — and the run's own proposals are added to it.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, closed: true, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Last row missing", body: "The last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "An older report."
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\n  - {issue: 8, act: close-obsolete, line: 'Close #8 as obsolete: the loop'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete-nine}
+expect:
+  forge:
+    issues:
+      - {id: 9, closed: false}
+      - {id: 10, body-contains: "- [ ] Close #7 as obsolete: the loop\n- [ ] Close #9 as obsolete", comment-lacks: "issue: 8"}

@@ -9,7 +9,7 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:close-duplicate}
 expect:
   status: pass
-  applied: [close]
+  applied: [comment, comment, close]   # the two issues read get their reading recorded, then the closing
   forge:
     issues:
       - {id: 7, closed: false}

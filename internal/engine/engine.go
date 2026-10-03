@@ -760,7 +760,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		done[i] = true
 	}
 	for i, in := range intents {
-		acted := in.Kind != "close" || plan.Acts(i)
+		acted := !slices.Contains(backlog.Kinds, in.Kind) || plan.Acts(i)
 		if done[i] {
 			if acted {
 				res.Applied = append(res.Applied, in.Kind)
@@ -1321,6 +1321,15 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	if err != nil {
 		return nil, err
 	}
+	if !a.askedAgent || a.external || a.unread != "" {
+		// A fallback marked if-answered records that the agent read what it
+		// was given: without an answer that reads, it is not written.
+		fallback = slices.DeleteFunc(fallback, func(f intent.Intention) bool {
+			m, _ := f.Value.(map[string]any)
+			only, _ := m["if-answered"].(bool)
+			return only
+		})
+	}
 	intents = intent.Merge(fallback, intents)
 	os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
@@ -1654,11 +1663,29 @@ func (a *applier) apply(in intent.Intention) error {
 		if d == nil || d.Mode != backlog.Act {
 			return nil // proposed in the report, or dropped with a finding
 		}
-		is := forge.Target{Kind: "issue", ID: d.Close.Issue}
-		if err := a.forge.Comment(is, backlog.Comment(d.Close, a.role), a.marker()); err != nil {
+		is := forge.Target{Kind: "issue", ID: d.Act.Issue}
+		if err := a.forge.Comment(is, backlog.Comment(d.Act, a.role), a.marker()); err != nil {
 			return err
 		}
-		return a.forge.(forge.Backlog).Close(d.Close.Issue, d.Close.DuplicateOf)
+		return a.forge.(forge.Backlog).Close(d.Act.Issue, d.Act.DuplicateOf)
+	case "sources":
+		// The code the issue is about, named: its state gets them, and the
+		// issue is read again, with them, at the next run.
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		is := forge.Target{Kind: "issue", ID: d.Act.Issue}
+		comments, err := a.forge.(forge.Backlog).Comments(is)
+		if err != nil {
+			return err
+		}
+		st, _, err := backlog.ReadState(comments, a.role)
+		if err != nil {
+			return fmt.Errorf("#%d: its state comment: %w", is.ID, err)
+		}
+		st.Sources, st.Judged = d.Act.Sources, ""
+		return a.forge.Sticky(is, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 	case "handoff":
 		a.handoffs = append(a.handoffs, in.Value)
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
@@ -1952,16 +1979,17 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 // resumed run reads the plan the first attempt wrote, as the forge it reads
 // has changed since. Nil when the run proposes none.
 func planActs(f forge.Forge, role string, settings map[string]any, st runState, runDir string, intents []intent.Intention) (*backlog.Plan, error) {
-	closes := map[int]backlog.Close{}
+	closes := map[int]backlog.Proposal{}
 	for i, in := range intents {
-		if in.Kind != "close" {
+		if !slices.Contains(backlog.Kinds, in.Kind) {
 			continue
 		}
-		var c backlog.Close
+		var c backlog.Proposal
 		data, _ := yaml.Marshal(in.Value)
 		if err := yaml.Unmarshal(data, &c); err != nil {
-			c = backlog.Close{Reason: "unreadable: " + err.Error()}
+			c = backlog.Proposal{Reason: "unreadable: " + err.Error()}
 		}
+		c.Do = in.Kind
 		closes[i] = c
 	}
 	if len(closes) == 0 {
@@ -1973,7 +2001,7 @@ func planActs(f forge.Forge, role string, settings map[string]any, st runState, 
 		return &p, yaml.Unmarshal(data, &p)
 	}
 	if f == nil {
-		return nil, fmt.Errorf("closing an issue needs a forge; %s", forge.Missing)
+		return nil, fmt.Errorf("an act on an issue needs a forge; %s", forge.Missing)
 	}
 	b, ok := f.(forge.Backlog)
 	if !ok {

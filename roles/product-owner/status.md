@@ -1,8 +1,9 @@
 # Product owner — where it stands (2026-10-03)
 
 **In one line:** its closings are built and pass conformance; on planted
-issues, Sonnet scores 11 of 11 in five runs of five (tried.md); never run
-on a real backlog.
+issues, Sonnet scores 11 of 11 in five runs of five; on a copy of
+DomoticsCore's roadmap (38 issues), eight issues rightly proposed as
+obsolete, none wrongly (tried.md).
 
 ## Built and tried with a real agent
 
@@ -11,6 +12,7 @@ on a real backlog.
 | A duplicate closed, its original quoted; a look-alike on the same code left open; a need left open | planted issues, local forge, Sonnet (tried.md) |
 | An issue the code solved proposed as obsolete, the code and the fixing commit quoted | the same |
 | A true issue on the code a fix touched left alone; a duplicate in other words closed | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
+| A real backlog read a share a run (4 issues, 1,500 lines of code), each read once; issues already done proposed as obsolete, the code quoted | a copy of DomoticsCore, 38 roadmap entries as issues, local forge |
 
 ## Built, tried without an agent
 
@@ -33,4 +35,7 @@ on a real backlog.
   runs that pause it.
 - Opening, splitting, refining, moving to `ready`, ordering, milestones.
 - One issue-opening mechanism for every role.
-- First real work: DomoticsCore's roadmap entries as issues, on a copy.
+- DomoticsCore's roadmap on its forge: the import as a tool, not a
+  script; milestones.
+- Naming sources the agent was not given: today it can only name a file
+  it was shown.

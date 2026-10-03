@@ -136,7 +136,9 @@ token), **apply** (trusted, no AI key).
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
    call: the AI is paid for decisions, not for routine. It may also write
    `in/fallback.yaml`: the proposals to use when no agent answers — the
-   documentalist's derived blocks, for example, and `in/task-kind`: one word
+   documentalist's derived blocks, for example; one marked `if-answered:
+   true` is written only when the agent's answer was read (the product
+   owner's record that it read an issue). And `in/task-kind`: one word
    naming the kind of question, when `model.tasks` asks something else of it.
    The engine then records a digest of `in/`.
 
