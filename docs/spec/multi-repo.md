@@ -3,6 +3,7 @@ sources: [internal/builtin/documentalist/documentalist.go]
 checked: d30d22a
 judged: 6013a50
 verified: agent:documentalist
+judged-in-parts: addaa0c
 ---
 # Several repositories — v1 (draft)
 
