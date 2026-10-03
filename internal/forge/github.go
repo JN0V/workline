@@ -1,6 +1,8 @@
 package forge
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -27,6 +29,7 @@ func (g *github) Issue(id int) (*Issue, error) {
 		Number int    `json:"number"`
 		Title  string `json:"title"`
 		Body   string `json:"body"`
+		State  string `json:"state"`
 		Labels []struct {
 			Name string `json:"name"`
 		} `json:"labels"`
@@ -34,11 +37,55 @@ func (g *github) Issue(id int) (*Issue, error) {
 	if err := decode(out, &v); err != nil {
 		return nil, err
 	}
-	is := &Issue{ID: v.Number, Title: v.Title, Body: v.Body, Labels: []string{}}
+	is := &Issue{ID: v.Number, Title: v.Title, Body: v.Body, Labels: []string{}, Closed: v.State == "closed"}
 	for _, l := range v.Labels {
 		is.Labels = append(is.Labels, l.Name)
 	}
 	return is, nil
+}
+
+// lines decodes the JSON values gh prints one after another, as --jq
+// prints them for every page.
+func lines[T any](out []byte) ([]T, error) {
+	var all []T
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); {
+		var v T
+		if err := dec.Decode(&v); err != nil {
+			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		all = append(all, v)
+	}
+	return all, nil
+}
+
+func (g *github) Issues() ([]Issue, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state=open&per_page=100",
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name]}")
+	if err != nil {
+		return nil, err
+	}
+	all, err := lines[Issue](out)
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, err
+}
+
+func (g *github) Comments(t Target) ([]string, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID), "--jq", ".[].body | tojson")
+	if err != nil {
+		return nil, err
+	}
+	return lines[string](out)
+}
+
+// Close closes with GitHub's own reason; a duplicate's original is named by
+// the engine's comment, "Duplicate of #n", which GitHub links.
+func (g *github) Close(id, dup int) error {
+	reason := "completed"
+	if dup > 0 {
+		reason = "duplicate"
+	}
+	_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "state=closed", "-f", "state_reason="+reason)
+	return err
 }
 
 func (g *github) hasComment(id int, marker string) (bool, error) {

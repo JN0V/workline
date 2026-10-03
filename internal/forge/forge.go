@@ -23,6 +23,7 @@ type Issue struct {
 	Title  string   `json:"title"`
 	Body   string   `json:"body"`
 	Labels []string `json:"labels"`
+	Closed bool     `json:"closed,omitempty"`
 }
 
 // Forge is what the engine needs from one.
@@ -49,6 +50,18 @@ type Forge interface {
 	OpenMergeRequests(prefix string) ([]string, error)
 	// MergeRequest says where a merge request comes from and goes.
 	MergeRequest(id int) (MergeRequest, error)
+}
+
+// Backlog is what a role acting on a project's issues needs from its forge
+// (docs/spec/backlog-acts.md). Every forge workline speaks has it.
+type Backlog interface {
+	// Issues lists the open issues, merge requests left out, by number.
+	Issues() ([]Issue, error)
+	// Comments lists the comments on t, oldest first.
+	Comments(t Target) ([]string, error)
+	// Close closes an issue: as a duplicate of dup when dup > 0, else as
+	// completed. Closing one already closed changes nothing.
+	Close(id, dup int) error
 }
 
 // MergeRequest is where a merge request comes from and where it goes.
@@ -99,3 +112,6 @@ func KeepsBranches(f Forge) bool {
 
 // Marker is the hidden text that makes a comment findable again.
 func Marker(key string) string { return "<!-- workline:" + key + " -->" }
+
+// Every forge workline speaks keeps a backlog.
+var _ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
