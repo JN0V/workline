@@ -353,7 +353,7 @@ func cite(q Quote) string {
 	if q.Issue > 0 {
 		where = fmt.Sprintf("#%d", q.Issue)
 	}
-	return fmt.Sprintf("%s says `%s`.", where, strings.ReplaceAll(squeeze(q.Text), "`", "'"))
+	return fmt.Sprintf("%s says `%s` —", where, strings.ReplaceAll(squeeze(q.Text), "`", "'"))
 }
 
 // Comment is what the closed issue is told.

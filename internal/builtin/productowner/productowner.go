@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -20,10 +22,12 @@ import (
 )
 
 const (
-	exitNothing  = 10
-	exitExternal = 3
-	bodyMax      = 3000 // characters of an issue's body given to the agent
-	commentsMax  = 5    // its last comments given
+	exitNothing   = 10
+	exitExternal  = 3
+	bodyMax       = 3000 // characters of an issue's body given to the agent
+	commentsMax   = 5    // its last comments given
+	filesPerIssue = 3    // files an issue names, given whole
+	codeLines     = 400  // lines of a file given
 )
 
 // Pre lists the open issues in in/task.md. An issue without a state comment
@@ -60,6 +64,8 @@ func Pre(runDir, repo string) int {
 	var fallback []intent.Intention
 	var findings []verdict.Finding
 	judged := 0
+	tracked := trackedFiles(repo)
+	var code []string // the files the issues name, given once each
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
@@ -84,7 +90,13 @@ func Pre(runDir, repo string) int {
 			continue
 		}
 		judged++
-		writeIssue(&task, is, st, comments)
+		files := named(is, st, tracked)
+		writeIssue(&task, is, st, comments, files)
+		for _, f := range files {
+			if !slices.Contains(code, f) {
+				code = append(code, f)
+			}
+		}
 	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
@@ -98,6 +110,7 @@ func Pre(runDir, repo string) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
 	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n", commit, judged)
+	writeCode(&task, repo, code)
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(intro+task.String()), 0o644); err != nil {
 		return fail(err)
 	}
@@ -106,7 +119,7 @@ func Pre(runDir, repo string) int {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments []string) {
+func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments []string, files []string) {
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
 		fmt.Fprintf(b, "Labels: %s\n", strings.Join(is.Labels, ", "))
@@ -115,7 +128,11 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	if len(st.Sources) > 0 {
 		sources = strings.Join(st.Sources, ", ")
 	}
-	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n\n", sources, st.Confirmed)
+	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
+	if len(files) > 0 {
+		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
+	}
+	b.WriteString("\n")
 	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyMax))
 	var kept []string
 	for _, c := range comments {
@@ -129,6 +146,64 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	}
 	for _, c := range kept {
 		fmt.Fprintf(b, "Comment:\n> %s\n\n", strings.ReplaceAll(clip(c, bodyMax), "\n", "\n> "))
+	}
+}
+
+// trackedFiles lists the files of the commit the run is on.
+func trackedFiles(repo string) map[string]bool {
+	out, _ := exec.Command("git", "-C", repo, "ls-files").Output()
+	files := map[string]bool{}
+	for _, f := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		files[f] = true
+	}
+	return files
+}
+
+var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
+
+// named lists the files an issue is about: its sources, then the paths its
+// title and body name that the commit holds, at most filesPerIssue.
+func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
+	var out []string
+	add := func(p string) {
+		p, _, _ = strings.Cut(p, "#")
+		p = strings.Trim(p, "./`'\"")
+		if tracked[p] && !slices.Contains(out, p) && len(out) < filesPerIssue {
+			out = append(out, p)
+		}
+	}
+	for _, s := range st.Sources {
+		add(s)
+	}
+	for _, m := range pathLike.FindAllString(is.Title+"\n"+is.Body, -1) {
+		add(m)
+	}
+	return out
+}
+
+// writeCode gives each file named, whole up to codeLines, with its last
+// commits: what changed it, so an issue the code solved can be told.
+func writeCode(b *strings.Builder, repo string, files []string) {
+	if len(files) == 0 {
+		return
+	}
+	b.WriteString("# Code the issues name, as it is at this commit\n\n")
+	for _, f := range files {
+		data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+f).Output()
+		if err != nil {
+			continue
+		}
+		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		more := ""
+		if len(lines) > codeLines {
+			more = fmt.Sprintf("\n(%d more lines left out)", len(lines)-codeLines)
+			lines = lines[:codeLines]
+		}
+		for i := range lines {
+			lines[i] = fmt.Sprintf("%4d  %s", i+1, lines[i])
+		}
+		log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
+		fmt.Fprintf(b, "## %s\n\nLast commits:\n%s\n```\n%s\n```%s\n\n", f, strings.TrimSpace(string(log)), strings.Join(lines, "\n"), more)
 	}
 }
 

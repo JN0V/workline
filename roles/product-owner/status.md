@@ -1,7 +1,14 @@
 # Product owner — where it stands (2026-10-03)
 
-**In one line:** its closings are built and pass conformance; nothing has
-run on a real backlog nor with a real agent yet.
+**In one line:** its closings are built and pass conformance; tried with
+Sonnet on four planted issues (tried.md), never on a real backlog.
+
+## Built and tried with a real agent
+
+| What | Tried on |
+|---|---|
+| A duplicate closed, its original quoted; a look-alike on the same code left open; a need left open | planted issues, local forge, Sonnet (tried.md) |
+| An issue the code solved proposed as obsolete, the code and the fixing commit quoted | the same |
 
 ## Built, tried without an agent
 
@@ -16,7 +23,7 @@ run on a real backlog nor with a real agent yet.
 
 ## Missing
 
-- An evaluation with a real agent on planted issues — truly obsolete,
+- An evaluation with a real agent on planted issues, in tests/evaluation — truly obsolete,
   duplicates, true ones that look obsolete — five runs or more; the weekly
   sample over its acts (ADR-0018, "Proof").
 - An obsolete issue announced first, then closed at the next run with a

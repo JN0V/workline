@@ -9,7 +9,10 @@ Propose a `close` for an issue only when the evidence settles it:
   words that show it is the same.
 - **obsolete** — the code it is about changed, and what it asks for or
   reports is now done or gone. Quote the code, as it reads now, that shows
-  it.
+  it — its words only, without the line numbers the task shows.
+
+The task gives the code the issues name, with the last commits that
+changed it.
 
 Nothing else: no other reason, no closing on a likeness alone. When in
 doubt, propose nothing, or say in a `note` what a person should look at.
