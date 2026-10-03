@@ -1668,6 +1668,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		return a.forge.(forge.Backlog).Close(d.Act.Issue, d.Act.DuplicateOf)
+	case "milestone":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.forge.(forge.Backlog).SetMilestone(d.Act.Issue, strings.TrimSpace(d.Act.Milestone))
 	case "sources":
 		// The code the issue is about, named: its state gets them, and the
 		// issue is read again, with them, at the next run.

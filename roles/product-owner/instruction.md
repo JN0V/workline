@@ -19,5 +19,10 @@ Nothing else: no other reason, no closing on a likeness alone.
 When the code given is not the code an issue is about, and you can tell
 which is — from the names the issue uses and the code given — propose
 `sources`: the files (1 to 5), and a line quoted from one of them that
-shows it. The issue is read again, with that code, at the next run. When in
+shows it. The issue is read again, with that code, at the next run.
+
+Put an issue still true in the milestone of the release it belongs to
+(`milestone`), when it has none or slipped: the task says the last release
+and the milestones open. Name a milestone after the release it is, the
+next one first; a few issues each, the most pressing in the nearest. When in
 doubt, propose nothing, or say in a `note` what a person should look at.

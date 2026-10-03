@@ -95,6 +95,17 @@ The files must be in the commit the run is on (1 to 5; `sources-unknown`
 otherwise), the quote found in one of them. Done, the issue's state gets
 them and loses `judged`: it is read again, with that code, at the next run.
 
+## Milestones
+
+```yaml
+- milestone: {issue: 12, milestone: "v2.14.0", why: "the next release's fix"}
+```
+
+Puts an open issue in the milestone of a release, created when none with
+that title is open. Ordering says nothing of an issue's truth: no quote,
+but its state must read as for any act. The task gives the last release
+tag and the milestones open; each issue says its own.
+
 ## Autonomy and caps
 
 Each kind of act has a mode and a cap per run, set in the role's settings:
@@ -102,6 +113,7 @@ Each kind of act has a mode and a cap per run, set in the role's settings:
 ```yaml
 acts:
   sources: {mode: act, max: 10}
+  milestone: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off
   close-obsolete:  {mode: propose, max: 3}
 ```

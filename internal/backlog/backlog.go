@@ -118,20 +118,21 @@ type Proposal struct {
 	Reason      string   `yaml:"reason,omitempty"`
 	DuplicateOf int      `yaml:"duplicate-of,omitempty"`
 	Sources     []string `yaml:"sources,omitempty"`
+	Milestone   string   `yaml:"milestone,omitempty"`
 	Quote       *Quote   `yaml:"quote"`
 	Why         string   `yaml:"why"`
 }
 
 // Kind is the kind of act, as settings name it.
 func (c Proposal) Kind() string {
-	if c.Do == "sources" {
-		return "sources"
+	if c.Do == "sources" || c.Do == "milestone" {
+		return c.Do
 	}
 	return "close-" + c.Reason
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"close", "sources"}
+var Kinds = []string{"close", "sources", "milestone"}
 
 // Decision is what becomes of one act.
 type Decision struct {
@@ -307,7 +308,13 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 // check says why a closing cannot be done, as a finding's rule and
 // message, or nothing.
 func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why string) {
-	if c.Do == "sources" {
+	if c.Do == "milestone" {
+		// Ordering says nothing of an issue's truth: no quote, its state
+		// readable all the same.
+		if t := strings.TrimSpace(c.Milestone); t == "" || len(t) > 60 || strings.ContainsAny(t, "\n") {
+			return "milestone-title", "a milestone is a title of one line, 60 characters at most"
+		}
+	} else if c.Do == "sources" {
 		if len(c.Sources) == 0 || len(c.Sources) > maxSources {
 			return "sources-unknown", fmt.Sprintf("an issue names 1 to %d sources", maxSources)
 		}
@@ -320,7 +327,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why 
 		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return strings.HasPrefix(s, c.Quote.Path) }) {
 			return "no-quote", "the quote naming the sources comes from one of them"
 		}
-	} else if !slices.Contains(closeReasons, c.Reason) {
+	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
 		return "close-reason", fmt.Sprintf("closing as %q: a role closes a duplicate or an obsolete issue; refusing a need is a person's (principle 1)", c.Reason)
 	}
 	if c.Reason == "duplicate" && (c.DuplicateOf <= 0 || c.DuplicateOf == c.Issue) {
@@ -334,6 +341,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why 
 		return "no-state", "the issue has no state comment yet: it is not acted on before the engine has one"
 	} else if err != nil {
 		return "state-broken", "the issue's state comment does not read (" + err.Error() + "): nothing is written on it"
+	}
+	if c.Do == "milestone" {
+		return "", ""
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
 		return "no-quote", "no quote: an act cites the code or the issue it rests on"
@@ -388,8 +398,11 @@ func (p *Plan) ReportBody() string {
 		switch d.Mode {
 		case Act:
 			undo := " Reopen it to undo."
-			if d.Act.Do == "sources" {
+			switch d.Act.Do {
+			case "sources":
 				undo = ""
+			case "milestone":
+				undo = " Move it back to undo."
 			}
 			did = append(did, "- "+describe(d.Act, "Closed")+undo)
 		}
@@ -413,6 +426,9 @@ func (p *Plan) ReportBody() string {
 
 // describe says one closing in a line, its evidence quoted.
 func describe(c Proposal, verb string) string {
+	if c.Do == "milestone" {
+		return fmt.Sprintf("Put #%d in the milestone %q: %s", c.Issue, c.Milestone, strings.TrimSpace(c.Why))
+	}
 	if c.Do == "sources" {
 		v := "Named"
 		if verb == "Close" {
