@@ -34,7 +34,8 @@ lines of the code they name: those never read first, then those whose
 sources a commit touched since they were read. An issue whose code did not
 change is not read again, however old (ADR-0018); the others are listed by
 title only, so a duplicate can still be named. Each issue read gets
-`judged` moved to the run's commit; without an agent, none is.
+`judged` moved to the run's commit; without an agent, or when its answer
+does not read, none is.
 
 ## Closing
 
@@ -93,10 +94,11 @@ is there, not that the issue is solved).
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-lists what the last run did and what it proposes, each with its quote and
-how to undo it. Its own engine comment
-(`<!-- workline:sticky=product-owner/acts -->`) records the closings done
-and the kinds dropped back to `propose`.
+lists what the last run did and what is proposed, each with its quote and
+how to undo it. A proposal stays there from run to run until a person
+settles it — its issue closed — or a run decides it again. Its own engine
+comment (`<!-- workline:sticky=product-owner/acts -->`) records the
+closings done, the kinds dropped back to `propose`, and the proposals.
 
 ## Trust
 

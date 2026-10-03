@@ -84,9 +84,17 @@ func FormatState(s State) string {
 
 // Record is what the role did, kept on its report issue.
 type Record struct {
-	Closed  []Closing `yaml:"closed,omitempty"`
-	Wrong   []Closing `yaml:"wrong,omitempty"`        // closings found wrong: their issue open again
-	Propose []string  `yaml:"propose,flow,omitempty"` // kinds of act back to propose, until the person says
+	Closed   []Closing `yaml:"closed,omitempty"`
+	Wrong    []Closing `yaml:"wrong,omitempty"`        // closings found wrong: their issue open again
+	Propose  []string  `yaml:"propose,flow,omitempty"` // kinds of act back to propose, until the person says
+	Proposed []Pending `yaml:"proposed,omitempty"`     // acts proposed, kept until their issue is closed or proposed again
+}
+
+// Pending is an act proposed to a person, as the report says it.
+type Pending struct {
+	Issue int    `yaml:"issue"`
+	Act   string `yaml:"act"`
+	Line  string `yaml:"line"`
 }
 
 // Closing is one issue the role closed.
@@ -139,7 +147,8 @@ type Plan struct {
 	Findings  []verdict.Finding `yaml:"findings"`
 	Record    Record            `yaml:"record"`
 	Report    int               `yaml:"report"`  // the report issue, 0 when none is open yet
-	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found
+	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found, proposals settled
+	open      map[int]bool      // the open issues, read once
 }
 
 // Setting is a kind of act's mode and cap.
@@ -216,7 +225,35 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		}
 		p.Decisions = append(p.Decisions, d)
 	}
+	p.keepProposed()
 	return p, nil
+}
+
+// keepProposed carries over the acts proposed by earlier runs whose issue
+// is still open and that this run did not decide again, then adds this
+// run's: a proposal stays in the report until a person settles it.
+func (p *Plan) keepProposed() {
+	decided := map[string]bool{}
+	for _, d := range p.Decisions {
+		if d.Mode != Off {
+			decided[fmt.Sprintf("%d/%s", d.Act.Issue, d.Act.Kind())] = true
+		}
+	}
+	var kept []Pending
+	for _, q := range p.Record.Proposed {
+		if p.open[q.Issue] && !decided[fmt.Sprintf("%d/%s", q.Issue, q.Act)] {
+			kept = append(kept, q)
+		}
+	}
+	for _, d := range p.Decisions {
+		if d.Mode == Propose {
+			kept = append(kept, Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close")})
+		}
+	}
+	if len(kept) != len(p.Record.Proposed) {
+		p.Changed = true
+	}
+	p.Record.Proposed = kept
 }
 
 // readRecord finds the report issue and what it records, and looks for
@@ -227,7 +264,9 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
+	p.open = map[int]bool{}
 	for _, is := range open {
+		p.open[is.ID] = true
 		if is.Title == ReportTitle(role) {
 			p.Report = is.ID
 		}
@@ -246,10 +285,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 		p.Record = Record{Propose: []string{"close-duplicate", "close-obsolete"}}
 		return nil
 	}
-	isOpen := map[int]bool{}
-	for _, is := range open {
-		isOpen[is.ID] = true
-	}
+	isOpen := p.open
 	var kept []Closing
 	for _, c := range p.Record.Closed {
 		if !isOpen[c.Issue] {
@@ -345,11 +381,10 @@ func squeeze(s string) string { return strings.Join(strings.Fields(s), " ") }
 // ReportBody is the report issue's body: what the run did and proposes.
 func (p *Plan) ReportBody() string {
 	var did, proposed []string
+	for _, q := range p.Record.Proposed {
+		proposed = append(proposed, "- [ ] "+q.Line)
+	}
 	for _, d := range p.Decisions {
-		if d.Act.Do == "sources" && d.Mode == Propose {
-			proposed = append(proposed, "- [ ] "+describe(d.Act, "Close"))
-			continue
-		}
 		switch d.Mode {
 		case Act:
 			undo := " Reopen it to undo."
@@ -357,12 +392,10 @@ func (p *Plan) ReportBody() string {
 				undo = ""
 			}
 			did = append(did, "- "+describe(d.Act, "Closed")+undo)
-		case Propose:
-			proposed = append(proposed, "- [ ] "+describe(d.Act, "Close"))
 		}
 	}
 	var b strings.Builder
-	b.WriteString("What the product owner did on its last run, and what it proposes. A closing undone (the issue reopened) puts that kind of act back to a person.\n")
+	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. A closing undone (the issue reopened) puts that kind of act back to a person.\n")
 	if len(p.Record.Propose) > 0 {
 		fmt.Fprintf(&b, "\nBack to propose after a wrong closing: %s.\n", strings.Join(p.Record.Propose, ", "))
 	}
