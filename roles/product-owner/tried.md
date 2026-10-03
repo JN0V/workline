@@ -76,3 +76,21 @@ each (Claude Code's own prompt is most of it), 7 to 12 seconds.
     and refused before any call: `code-lines-max` stays at 1,500.
 - Not rerun after the fixes: the 570k tokens again to see the report hold
   eight lines, which the cases now prove.
+
+## 2026-10-03 — the import as a command, milestones, Sonnet
+
+A fresh clone of DomoticsCore, no remote. `workline issues import
+docs/CODE-ROADMAP.md --apply --forge local`: 188 entries, 150 marked done,
+38 issues opened, the same 38 as the script's; its sources, by path or by
+backticked name, tests last, left none for 7 entries. Two runs of four
+issues (57k and 48k tokens in, 1.5k and 0.7k out):
+
+- **Milestones**, the last release v2.13.0 given: SEC-3 (HIGH) put in
+  `v2.14.0`, MEM-7 and MEM-8 (LOW) in `v2.15.0`, each with why. SEC-3's
+  code was not given — the import found no file for it — and the lots
+  table says it was merged long ago: put in a milestone on its title
+  alone. **Fixed** in the instruction: only an issue the code given shows
+  still true; not rerun.
+- **`sources` used for the first time**: BUG-5, which the import tied to
+  no file, named `NTP.h`, a line of it quoted; it is read again with it.
+- BUG-1 and BUG-4 proposed as obsolete again, as in the first try.
