@@ -109,6 +109,29 @@ were made true after the version was cut, which ADR-0010's hold would have
 ordered the other way. The role's `packages` setting reproduces its rules
 (roles/release-manager/README.md), but does not list `library.properties`.
 
+### release-please on DomoticsCore, tried (2026-10-03)
+
+A dry run (`release-please release-pr --dry-run --local`, v17) on a copy of
+DomoticsCore at b6c1b67, nothing written on GitHub: manifest mode, the root
+`.` and the twelve `DomoticsCore-*` folders as packages, `release-type:
+simple`, `bootstrap-sha` the v2.12.1 commit, each `library.json` by a `json`
+updater (`$.version`), each `metadata.version` line in `include/` and `src/`
+(ten files) and the root's `library.properties` (a start/end block) by
+generic markers. What it would have opened, from the commits since v2.12.1:
+root 2.12.2, MQTT 1.10.1, Storage 1.6.2, WebUI 1.12.1, the `refactor(ha)`
+moving nothing — what `bump_version.py` gives. A `feat(mqtt)` added: root
+2.13.0, MQTT 1.11.0; the root package sees every commit, so it moves by
+the highest level of any. A `Release-As: 3.0.0` footer in an empty commit
+moved all thirteen packages; `release-as` on the root package in the
+config moved the root alone, the person's override with its reason in that
+commit. The root CHANGELOG.md entry goes above `## [2.12.1]`, the
+hand-written preamble kept; release.yml's `awk` on `## [X.Y.Z]` still
+finds it. `version.txt` is not created (`createIfMissing: false`); each
+component's CHANGELOG.md would be (`skip-changelog` per package). Not
+tried: the tags and GitHub releases made per component, and whether
+`skip-github-release` keeps the next lookup right; a prose note in an
+entry, which the generated changelog does not carry.
+
 ## Patterns worth borrowing
 
 - **The release PR** (release-please, release-plz, changesets, releaser-pleaser):
