@@ -41,3 +41,38 @@ call, 5 to 6 seconds.
 What it does not measure yet: a duplicate by likeness only (proposed, not
 closed, by ADR-0018 — the engine does not tell it apart yet); a real
 backlog, its issues long and many; a wrong closing in the wild.
+
+## 2026-10-03 — DomoticsCore's roadmap, on a copy, Sonnet
+
+A clone of DomoticsCore (26b2ee0), no remote, the local forge. Its
+CODE-ROADMAP.md (7,580 lines, 192 entries) had 38 entries whose heading
+says nothing of done; a one-shot script, without AI, opened each as an
+issue keeping its id (`BUG-4 — NTP: …`), its sources the files it names,
+else the code its backticked names are in, else its component's header.
+Ten runs of four issues, about 45 to 62k tokens in and 230 to 1,300 out
+each (Claude Code's own prompt is most of it), 7 to 12 seconds.
+
+- **Eight issues proposed as obsolete**, the code quoted: BUG-1, BUG-4,
+  BUG-5, BUG-7, BUG-14, BUG-15, BUG-20, BUG-24. Each checked by hand
+  against the code: all eight right; the lots table agrees for NTP and
+  Storage. None closed: `close-obsolete` starts at `propose`.
+- **None proposed wrongly.** Where it could not see enough, it said so in
+  a note and closed nothing: BUG-6 (the member's type cut from what it was
+  given), BUG-9 (the config path cut), MEM-1 (partly done, re-scope it),
+  BUG-48 (a function's body not given), DOC-1 (two parts, one done).
+- **No `sources` proposed**, though twice it said the code given was not
+  the issue's (SEC-3's route, BUG-56's browser script): it could not tell
+  which file was. Only files it is given can be named.
+- **Defects found, fixed** (cases in tests/conformance/cases/product-owner):
+  - the report was rewritten each run with that run's proposals only: seven
+    of the eight were lost. A proposal now stays until a person settles it
+    (`proposals-kept-until-settled`);
+  - an answer that did not read (prose around YAML) was not asked for
+    again — the role had no `promote-after` — and the issues it held were
+    still recorded as read. It is asked for again once now, and an issue
+    is recorded as read only when the answer reads
+    (`unreadable-answer-reads-nothing`, `if-answered` in the role contract);
+  - the first try's prompt, 2,000 lines of code, was over the role's budget
+    and refused before any call: `code-lines-max` stays at 1,500.
+- Not rerun after the fixes: the 570k tokens again to see the report hold
+  eight lines, which the cases now prove.
