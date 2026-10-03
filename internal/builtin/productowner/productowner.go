@@ -63,6 +63,9 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	if os.Getenv("WORKLINE_EVENT") == "import" {
+		return preImport(runDir, repo, role, open)
+	}
 	head, err := exec.Command("git", "-C", repo, "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
 		return fail(fmt.Errorf("the commit the run is on: %v", err))
@@ -337,4 +340,54 @@ func write(runDir string, v verdict.Verdict) int {
 func fail(err error) int {
 	fmt.Fprintln(os.Stderr, "product-owner:", err)
 	return 1
+}
+
+// preImport gives the agent a share of a file — lines from to to, as the
+// command importing it cut them — to tell its items still to do, each to
+// open as an issue, its text quoted (docs/spec/backlog-acts.md, "Importing
+// a file"). The file's format is the agent's to read, not pre's.
+func preImport(runDir, repo, role string, open []forge.Issue) int {
+	input := func(name string) string {
+		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
+		return strings.TrimSpace(string(data))
+	}
+	file := input("file")
+	var from, to int
+	fmt.Sscan(input("from"), &from)
+	fmt.Sscan(input("to"), &to)
+	if file == "" || from < 1 || to < from {
+		return fail(fmt.Errorf("an import names a file and its lines: --input file=<path> from=<n> to=<n>"))
+	}
+	data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+file).Output()
+	if err != nil {
+		return fail(fmt.Errorf("%s is not in the commit the run is on", file))
+	}
+	lines := strings.Split(string(data), "\n")
+	if from > len(lines) {
+		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "nothing left to read in " + file})
+	}
+	to = min(to, len(lines))
+	var b strings.Builder
+	fmt.Fprintf(&b, "Import: lines %d to %d of `%s`, of %d. Each item still to do becomes an issue.\n\n", from, to, file, len(lines))
+	var titles []string
+	for _, is := range open {
+		if is.Title != backlog.ReportTitle(role) {
+			titles = append(titles, fmt.Sprintf("- #%d %s", is.ID, is.Title))
+		}
+	}
+	if len(titles) > 0 {
+		fmt.Fprintf(&b, "# The open issues, titles only\n\nAn item one of them already holds is not opened again.\n\n%s\n\n", strings.Join(titles, "\n"))
+	}
+	fmt.Fprintf(&b, "# `%s`, lines %d to %d\n\n```\n", file, from, to)
+	for i := from; i <= to; i++ {
+		fmt.Fprintf(&b, "%5d  %s\n", i, lines[i-1])
+	}
+	b.WriteString("```\n")
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("import\n"), 0o644); err != nil {
+		return fail(err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(b.String()), 0o644); err != nil {
+		return fail(err)
+	}
+	return 0
 }

@@ -1,5 +1,5 @@
 case: backlog/import-without-apply-writes-nothing
-about: Without --apply, importing only says what it would open; nothing reaches the forge.
+about: Without --apply, `workline issues import` reads the file and says what it would open; nothing reaches the forge.
 given:
   repo: backlog
   setup:
@@ -7,33 +7,24 @@ given:
       cat > ROADMAP.md <<'MD'
       # Roadmap
       
-      ## Priority 1
+      Where the project is going.
       
-      ### BUG-1 — Export: the header row is never written [HIGH] — **DONE (2026-01-01)**
+      ## Next
       
-      Fixed long ago.
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **A JSON export.** Done in 1.2.
       
-      ### BUG-2 — Export: the last row is lost [HIGH]
+      ## Later
       
-      WriteRows in src/export/csv.go stops one row short.
-      
-      #### A note under it
-      
-      Still part of BUG-2.
-      
-      ### BUG-3 — Export: an empty row becomes a blank line [LOW]
-      
-      `WriteRows` writes every row as it is.
-      
-      ## Priority 2
-      
-      Not an entry.
+      - Empty rows become blank lines; skip them.
       MD
       git add ROADMAP.md && git commit -qm 'docs: a roadmap'
   forge: {issues: []}
-run: {issues-import: [ROADMAP.md]}
+run: {issues-import: [ROADMAP.md], ai: fake:import-roadmap}
 expect:
   status: pass
+  agent-calls: 1
   forge:
     issues:
       - {id: 1, absent: true}

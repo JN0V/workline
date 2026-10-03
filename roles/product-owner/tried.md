@@ -94,3 +94,19 @@ issues (57k and 48k tokens in, 1.5k and 0.7k out):
 - **`sources` used for the first time**: BUG-5, which the import tied to
   no file, named `NTP.h`, a line of it quoted; it is read again with it.
 - BUG-1 and BUG-4 proposed as obsolete again, as in the first try.
+
+## 2026-10-03 — workline's own BACKLOG.md imported by the agent, Sonnet
+
+The parser of the first import read DomoticsCore's headings only, and found
+0 entries in workline's docs/BACKLOG.md (numbered and bulleted items, no
+ids, "Done … Left: …" inside the text). Replaced: the agent reads the file
+a share at a time and proposes `open`, its text quoted; the engine checks
+the quote and opens once.
+
+On a copy of workline, local forge: one share (238 lines), one call, 14.6k
+tokens in, 6.7k out. 30 issues opened; the eight items of the last section,
+each "Done", left; an item done in part titled by what is left ("Reusable
+action for install without Go in CI"). **Defect found, fixed**: an issue's
+body began with the last two lines of the item before — the quote was
+located from the first line holding its first word (`-`); it now starts at
+the last line that still holds it all (`TestLocate`).

@@ -24,19 +24,16 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
 
-	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/productowner"
@@ -45,6 +42,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/hooks"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/release"
 	wlreport "github.com/JN0V/workline/internal/report"
@@ -902,7 +900,9 @@ func issuesCmd(args []string) int {
 	repo := fs.String("repo", ".", "repository")
 	apply := fs.Bool("apply", false, "import: open the issues; without it, only say which")
 	forgeSpec := fs.String("forge", "", "import: github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
-	done := fs.String("done", backlog.DoneWords.String(), "import: what a heading says an entry is finished with, a regular expression")
+	ai := fs.String("ai", "", "import: the agent that reads the file (default: the project's, then yours)")
+	share := fs.Int("lines", 300, "import: lines of the file read in one call")
+	roles := fs.String("roles", "", "import: folder of roles (default: the shipped ones)")
 	asJSON := fs.Bool("json", false, "import: print the result as JSON")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
@@ -911,7 +911,7 @@ func issuesCmd(args []string) int {
 		return 64
 	}
 	if what == "import" {
-		return importIssues(root, id, *forgeSpec, *done, *apply, *asJSON)
+		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON)
 	}
 	l := &forge.Local{Repo: root}
 	switch {
@@ -1232,77 +1232,84 @@ func initCmd(args []string) int {
 	return exitFor(res.Status)
 }
 
-// importIssues opens an issue for each entry of a roadmap file not marked
-// done, its id kept in its title and the code it names as its sources
-// (docs/spec/backlog-acts.md, "Importing a roadmap"). Without apply, it
-// only says what it would open.
-func importIssues(root, file, forgeSpec, doneWords string, apply, asJSON bool) int {
+// importIssues moves a file — a roadmap, a backlog — to the forge's
+// issues: the product owner reads it a share at a time and proposes an
+// issue for each item still to do, its text quoted; the engine checks each
+// quote and opens it once (docs/spec/backlog-acts.md, "Importing a file").
+// Without apply, it only says what it would open.
+func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJSON bool) int {
 	out := os.Stdout
 	if asJSON {
 		out = os.Stderr // the text goes aside, the result alone on stdout
 	}
-	finish := func(status, summary string, findings []verdict.Finding, code int) int {
+	total := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
+	finish := func(code int) int {
 		if asJSON {
-			data, _ := json.MarshalIndent(map[string]any{"status": status, "summary": summary, "findings": findings}, "", "  ")
+			data, _ := json.MarshalIndent(total, "", "  ")
 			fmt.Println(string(data))
-		} else if summary != "" {
-			fmt.Fprintln(out, summary)
+		} else {
+			fmt.Fprintln(out, total.Summary)
 		}
 		return code
 	}
-	if file == "" {
-		fmt.Fprintln(os.Stderr, "usage: workline issues import <roadmap.md> [--apply] [--forge <forge>] [--done <regexp>] [--json]")
+	if file == "" || share < 20 {
+		fmt.Fprintln(os.Stderr, "usage: workline issues import <file> [--apply] [--ai <agent>] [--forge <forge>] [--lines <n>, 20 or more] [--json]")
 		return 64
 	}
-	done, err := regexp.Compile(doneWords)
+	data, err := exec.Command("git", "-C", root, "show", "HEAD:"+file).Output()
 	if err != nil {
-		return finish(verdict.Block, "--done: "+err.Error(), nil, 64)
+		fmt.Fprintf(os.Stderr, "workline: %s is not in the last commit: an import reads what is committed\n", file)
+		return 64
 	}
-	data, err := os.ReadFile(filepath.Join(root, file))
+	rolesDir, err := resolveRoles(roles)
 	if err != nil {
-		return finish(verdict.Block, err.Error(), nil, 1)
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
 	}
-	entries := backlog.ParseRoadmap(string(data), done)
-	open := 0
-	for i := range entries {
-		if entries[i].Done {
-			continue
+	absRoles, _ := filepath.Abs(rolesDir)
+	n := strings.Count(string(data), "\n")
+	if !strings.HasSuffix(string(data), "\n") {
+		n++
+	}
+	opened, proposed := 0, 0
+	for from := 1; from <= n; {
+		to := min(from+share-1, n)
+		res := engine.Run(engine.Options{Repo: root, RolesDir: absRoles, Role: "product-owner", Event: "import",
+			AI: ai, DefaultAI: userDefaultAI(), Forge: forgeSpec, NoApply: !apply,
+			Inputs: map[string]string{"file": file, "from": fmt.Sprint(from), "to": fmt.Sprint(to)}})
+		total.AgentCalls += res.AgentCalls
+		total.Calls = append(total.Calls, res.Calls...)
+		total.Findings = append(total.Findings, res.Findings...)
+		total.Applied = append(total.Applied, res.Applied...)
+		for _, k := range res.Applied {
+			if k == "open" {
+				opened++
+			}
 		}
-		open++
-		entries[i].Sources = backlog.ResolveSources(root, entries[i], 3)
-		if !apply {
-			fmt.Fprintf(out, "%s  (line %d; sources: %s)\n", entries[i].IssueTitle(), entries[i].Line, strings.Join(entries[i].Sources, ", "))
+		if !apply && res.RunDir != "" {
+			ins, _ := intent.Read(filepath.Join(res.RunDir, "out", "intentions.yaml"))
+			for _, in := range ins {
+				if m, ok := in.Value.(map[string]any); ok && in.Kind == "open" {
+					proposed++
+					fmt.Fprintf(out, "  would open: %v\n", m["title"])
+				}
+			}
 		}
-	}
-	counts := fmt.Sprintf("%d entries, %d marked done, %d to open", len(entries), len(entries)-open, open)
-	if !apply {
-		return finish(verdict.Pass, counts+"; nothing written: --apply opens them", nil, 0)
-	}
-	if forgeSpec == "" {
-		if cfg, err := role.LoadProjectConfig(root); err == nil {
-			forgeSpec = cfg.Forge
+		fmt.Fprintf(out, "lines %d to %d: %s\n", from, to, res.Status)
+		if res.Status != verdict.Pass {
+			total.Status = res.Status
+			total.Summary = fmt.Sprintf("stopped at lines %d to %d (%s); %d issues opened before — run it again: what is open is not opened twice", from, to, res.Summary, opened)
+			return finish(1)
 		}
-	}
-	f, err := forge.Open(forgeSpec, root)
-	if err != nil || f == nil {
-		return finish(verdict.Block, "importing opens issues on a forge; "+forge.Missing, nil, 64)
-	}
-	head, err := exec.Command("git", "-C", root, "rev-parse", "--short", "HEAD").Output()
-	if err != nil {
-		return finish(verdict.Block, err.Error(), nil, 1)
-	}
-	opened, already, err := backlog.Import(f, "product-owner", strings.TrimSpace(string(head)), entries)
-	summary := fmt.Sprintf("%s; %d issues opened", counts, len(opened))
-	if len(already) > 0 {
-		summary += "; already open: " + strings.Join(already, ", ")
-	}
-	if err != nil {
-		status := verdict.Block
-		if errors.Is(err, forge.ErrUnreachable) {
-			status = verdict.BlockedExternal
+		if to == n {
+			break
 		}
-		return finish(status, summary, []verdict.Finding{{Rule: "import-stopped",
-			Message: err.Error() + " — run it again: what is open is not opened twice"}}, 1)
+		from = to - share/5 + 1 // a fifth read again: an item cut at the end is whole in the next share
 	}
-	return finish(verdict.Pass, summary, nil, 0)
+	if apply {
+		total.Summary = fmt.Sprintf("%s read; %d issues opened", file, opened)
+	} else {
+		total.Summary = fmt.Sprintf("%s read; %d issues would be opened, before the engine checks their quotes — nothing written: --apply opens them", file, proposed)
+	}
+	return finish(0)
 }

@@ -1,0 +1,11 @@
+- open:
+    title: "Keep the last row"
+    quote:
+      path: ROADMAP.md
+      text: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export."
+- open:
+    title: "Skip empty rows"
+    quote: {path: ROADMAP.md, text: "Empty rows are dropped, as they should."}
+- open:
+    title: "Skip empty rows, again"
+    quote: {path: ROADMAP.md, text: "- Empty rows become blank lines; skip them."}
