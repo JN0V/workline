@@ -27,8 +27,12 @@ its score is tracked over time rather than passed or failed.
 tests/conformance/
   fixtures/repos/<name>.sh    builds a git repository from scratch, deterministically
   fixtures/agents/<name>.yaml proposals the fake agent returns
+  fixtures/roles/<name>/      roles of the tests only, beside the shipped ones
   cases/<area>/<case>.yaml    one behaviour each
 ```
+
+A role of the tests tries a mechanism no shipped role uses: `hands-over`
+asks for a handoff, which the routing cases follow.
 
 Repositories are built by scripts rather than stored, because a git repository
 cannot live inside another one, and because a script shows exactly what the

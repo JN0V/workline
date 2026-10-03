@@ -22,7 +22,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-var engineBin string
+var engineBin, rolesDir string
 
 func TestMain(m *testing.M) {
 	dir, err := os.MkdirTemp("", "workline-engine-")
@@ -37,6 +37,12 @@ func TestMain(m *testing.M) {
 		if err := build.Run(); err != nil {
 			panic("building the engine: " + err.Error())
 		}
+	}
+	// The shipped roles, and the roles only the tests use (fixtures/roles):
+	// a mechanism no shipped role needs is still tried on one of those.
+	rolesDir = filepath.Join(dir, "roles")
+	if err := linkRoles(rolesDir, "../../roles", "fixtures/roles"); err != nil {
+		panic("gathering the roles: " + err.Error())
 	}
 	code := m.Run()
 	os.RemoveAll(dir)
@@ -204,7 +210,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Forge != "" {
 		forgeSpec = c.Run.Forge
 	}
-	roles, _ := filepath.Abs("../../roles")
+	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
 	switch {
 	case c.Run.Gate != "":
@@ -498,6 +504,29 @@ func compare(c *caseFile, r *result, repo string) []string {
 		}
 	}
 	return p
+}
+
+// linkRoles makes dir a folder of roles: a link to each role of each source.
+func linkRoles(dir string, sources ...string) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, src := range sources {
+		entries, err := os.ReadDir(src)
+		if err != nil {
+			return err
+		}
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			abs, _ := filepath.Abs(filepath.Join(src, e.Name()))
+			if err := os.Symlink(abs, filepath.Join(dir, e.Name())); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // build creates a fixture repository in dir and runs the case's setup in it.
