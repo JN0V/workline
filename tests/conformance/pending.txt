@@ -1,10 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 
-product-owner/close-a-duplicate
-product-owner/no-quote-no-act
-product-owner/never-not-planned
-product-owner/broken-state-writes-nothing
-product-owner/obsolete-starts-as-proposed
-product-owner/closings-capped
-product-owner/wrong-closing-drops-to-propose

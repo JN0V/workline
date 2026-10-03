@@ -36,6 +36,7 @@ import (
 
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/builtin/productowner"
 	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
@@ -253,6 +254,10 @@ func builtin(args []string) int {
 		return documentalist.Pre(runDir, repo)
 	case "documentalist post":
 		return documentalist.Post(runDir, repo)
+	case "product-owner pre":
+		return productowner.Pre(runDir, repo)
+	case "product-owner post":
+		return productowner.Post(runDir, repo)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Judge: the acts are checked one by one when they are applied.
+exec "${WORKLINE_BIN:-workline}" builtin product-owner post
