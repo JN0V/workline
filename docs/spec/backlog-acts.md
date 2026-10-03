@@ -19,6 +19,7 @@ issue, marked `<!-- workline:sticky=product-owner/state -->`:
 sources: [src/export/csv.go#WriteRows]   # what the issue is about, in the code
 confirmed: 1a8e5a4                       # the commit it was last found true at
 judged: 1a8e5a4                          # the commit the role last read it at
+comments: 2                              # people's comments when it was read
 ```
 
 An issue without that comment, or with one that does not read, is never
@@ -30,10 +31,13 @@ refined.
 ## Reading
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name: those never read first, then those whose
-sources a commit touched since they were read. An issue whose code did not
-change is not read again, however old (ADR-0018); the others are listed by
-title only, so a duplicate can still be named. Each issue read gets
+lines of the code they name: those never read first, then those with
+something new since they were read — a commit touched their sources, a
+person commented (`comments` counts people's comments read), or a person
+reopened what the role closed. An issue with nothing new is not read again,
+however old (ADR-0018). An issue on the same code as one read is given
+whole beside it, as the original a duplicate would be closed against; the
+others are listed by title only. Each issue read gets
 `judged` moved to the run's commit; without an agent, or when its answer
 does not read, none is.
 
@@ -144,8 +148,8 @@ closings done, the kinds dropped back to `propose`, and the proposals.
 
 ## Trust
 
-A closing is wrong when its issue is open again. At the next run the engine
-reads the issues it closed; one open again puts that kind of act back to
-`propose`, whatever the settings say, with a finding `wrong-closing`; the
-report says so. Only the person sets it to `act` again. *Not built yet:
+A closing is wrong when its issue is open again. At the next run of the
+role, acts or not, the engine reads the issues it closed; one open again
+puts that kind of act back to `propose`, whatever the settings say, with a
+finding `wrong-closing`, and is read again; the report says so. Only the person sets it to `act` again. *Not built yet:
 how the person does so, reading a tick with its author.*
