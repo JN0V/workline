@@ -1,7 +1,7 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
 checked: 0560057
-judged: 571af87
+judged: 697e3c8
 verified: agent:documentalist
 ---
 # A forge plugged by a command — v1 (draft)
@@ -52,9 +52,11 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `operation` | Arguments | Does | Answers |
 |---|---|---|---|
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
-| `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels}]}` |
+| `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone}]}` |
 | `comments` | `target` | reads the comments on the target, oldest first | `{comments: [bodies]}` |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
+| `milestones` | | lists the titles of the open milestones | `{milestones: [titles]}` |
+| `set-milestone` | `id`, `milestone` | puts the issue in the open milestone with this title, creating it when there is none | `{}` |
 | `comment` | `target`, `body`, `marker` | posts `body` + a blank line + `marker` on the target, unless a comment there holds `marker` | `{}` |
 | `sticky` | `target`, `body`, `marker`, `create` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true | `{}` |
 | `label` | `target`, `add`, `remove` | adds the labels (creating them on the forge if needed), removes the others; one already there, or already gone, changes nothing | `{}` |

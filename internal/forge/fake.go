@@ -17,22 +17,24 @@ type Fake struct{ Path string }
 type FakeState struct {
 	Issues        []FakeItem `json:"issues"`
 	MergeRequests []FakeItem `json:"merge-requests"`
+	Milestones    []string   `json:"milestones,omitempty"`    // open milestones, by title
 	FailOnWrite   int        `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes        int        `json:"writes"`
 }
 
 // FakeItem is an issue or a merge request.
 type FakeItem struct {
-	ID       int      `json:"id"`
-	Branch   string   `json:"branch,omitempty"` // a merge request's source branch
-	Base     string   `json:"base,omitempty"`
-	Closed   bool     `json:"closed,omitempty"`
-	Reason   string   `json:"reason,omitempty"` // why it was closed: completed or duplicate
-	Fork     bool     `json:"fork,omitempty"`   // a merge request from a fork
-	Title    string   `json:"title,omitempty"`
-	Body     string   `json:"body,omitempty"`
-	Labels   []string `json:"labels"`
-	Comments []string `json:"comments"`
+	ID        int      `json:"id"`
+	Branch    string   `json:"branch,omitempty"` // a merge request's source branch
+	Base      string   `json:"base,omitempty"`
+	Closed    bool     `json:"closed,omitempty"`
+	Reason    string   `json:"reason,omitempty"` // why it was closed: completed or duplicate
+	Milestone string   `json:"milestone,omitempty"`
+	Fork      bool     `json:"fork,omitempty"` // a merge request from a fork
+	Title     string   `json:"title,omitempty"`
+	Body      string   `json:"body,omitempty"`
+	Labels    []string `json:"labels"`
+	Comments  []string `json:"comments"`
 }
 
 func (f *Fake) load() (*FakeState, error) {
@@ -100,7 +102,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 	var out []Issue
 	for _, it := range s.Issues {
 		if !it.Closed {
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -278,4 +280,26 @@ func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
 		return nil
 	})
 	return id, err
+}
+
+func (f *Fake) Milestones() ([]string, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	return s.Milestones, nil
+}
+
+func (f *Fake) SetMilestone(id int, title string) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(s.Milestones, title) {
+			s.Milestones = append(s.Milestones, title)
+		}
+		it.Milestone = title
+		return nil
+	})
 }

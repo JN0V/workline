@@ -60,7 +60,7 @@ func lines[T any](out []byte) ([]T, error) {
 
 func (g *github) Issues() ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state=open&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name]}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\")}")
 	if err != nil {
 		return nil, err
 	}
@@ -246,4 +246,48 @@ func (g *github) KeepIssue(title, body string, create bool) (int, error) {
 	var id int
 	fmt.Sscan(strings.TrimSpace(string(out)), &id)
 	return id, nil
+}
+
+// milestoneNumbers maps the open milestones' titles to their numbers.
+func (g *github) milestoneNumbers() (map[string]int, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/milestones?state=open&per_page=100", "--jq", ".[] | {number, title}")
+	if err != nil {
+		return nil, err
+	}
+	all, err := lines[struct {
+		Number int    `json:"number"`
+		Title  string `json:"title"`
+	}](out)
+	m := map[string]int{}
+	for _, x := range all {
+		m[x.Title] = x.Number
+	}
+	return m, err
+}
+
+func (g *github) Milestones() ([]string, error) {
+	m, err := g.milestoneNumbers()
+	var out []string
+	for t := range m {
+		out = append(out, t)
+	}
+	sort.Strings(out)
+	return out, err
+}
+
+func (g *github) SetMilestone(id int, title string) error {
+	m, err := g.milestoneNumbers()
+	if err != nil {
+		return err
+	}
+	n, ok := m[title]
+	if !ok {
+		out, err := g.api("-X", "POST", "repos/{owner}/{repo}/milestones", "-f", "title="+title, "--jq", ".number")
+		if err != nil {
+			return err
+		}
+		fmt.Sscan(strings.TrimSpace(string(out)), &n)
+	}
+	_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-F", fmt.Sprintf("milestone=%d", n))
+	return err
 }

@@ -84,10 +84,11 @@ type caseFile struct {
 		Gate    string            `yaml:"gate"`
 		Doctor  bool              `yaml:"doctor"`
 		Init    bool              `yaml:"init"`
-		Setup   []string          `yaml:"setup"`   // workline setup, with these options
-		Sample  []string          `yaml:"sample"`  // workline sample, with these options; then: apply writes what it found
-		Reports bool              `yaml:"reports"` // also write --sarif and --code-quality
-		Forge   string            `yaml:"forge"`   // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
+		Setup   []string          `yaml:"setup"`         // workline setup, with these options
+		Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
+		Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
+		Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
+		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 	} `yaml:"run"`
 	Expect struct {
 		Status      string                       `yaml:"status"`
@@ -222,6 +223,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = []string{"init", "--repo", repo, "--roles", roles, "--json"}
 	case c.Run.Setup != nil:
 		args = append(append([]string{"setup"}, c.Run.Setup...), "--json")
+	case c.Run.Import != nil:
+		args = append(append([]string{"issues", "import"}, c.Run.Import...), "--repo", repo, "--json")
 	case c.Run.Sample != nil:
 		// The read writes nothing to the forge: it is not given one.
 		args = append(append([]string{"sample"}, c.Run.Sample...), "--repo", repo, "--out", filepath.Join(work, "sample.json"), "--json")
@@ -602,7 +605,7 @@ func readPending(t *testing.T) map[string]bool {
 // compareForge checks the simulated forge's state: for each listed item, by
 // id, `comments` is a count, `labels` the exact set, `comment-contains` /
 // `comment-lacks` texts some comment holds, or none does, `branch`, `base`
-// `title` and the `reason` it was closed for an item's, `closed` whether it
+// `title`, the `reason` it was closed for and its `milestone` an item's, `closed` whether it
 // is, `body-contains` a text its body holds, and
 // `absent: true` no item with that id.
 func compareForge(want map[string]any, file string) []string {
@@ -639,7 +642,7 @@ func compareForge(want map[string]any, file string) []string {
 			if w, ok := wm["closed"]; ok && fmt.Sprint(found["closed"] == true) != fmt.Sprint(w) {
 				p = append(p, fmt.Sprintf("forge: %s %v closed = %v, want %v", kind, wm["id"], found["closed"] == true, w))
 			}
-			for _, k := range []string{"branch", "base", "title", "reason"} {
+			for _, k := range []string{"branch", "base", "title", "reason", "milestone"} {
 				if w, ok := wm[k]; ok && fmt.Sprint(found[k]) != fmt.Sprint(w) {
 					p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm["id"], k, found[k], w))
 				}

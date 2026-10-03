@@ -1,0 +1,41 @@
+case: backlog/import-opens-what-is-not-done
+about: Importing a roadmap opens an issue for each entry its heading does not say is done, its id kept in the title, its text and sub-headings as the body, the code it names — by path or by a backticked name — as its sources.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+      
+      ## Priority 1
+      
+      ### BUG-1 — Export: the header row is never written [HIGH] — **DONE (2026-01-01)**
+      
+      Fixed long ago.
+      
+      ### BUG-2 — Export: the last row is lost [HIGH]
+      
+      WriteRows in src/export/csv.go stops one row short.
+      
+      #### A note under it
+      
+      Still part of BUG-2.
+      
+      ### BUG-3 — Export: an empty row becomes a blank line [LOW]
+      
+      `WriteRows` writes every row as it is.
+      
+      ## Priority 2
+      
+      Not an entry.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge: {issues: []}
+run: {issues-import: [ROADMAP.md, --apply]}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 1, title: "BUG-2 — Export: the last row is lost [HIGH]", body-contains: "#### A note under it\n\nStill part of BUG-2.\n\nImported from line 9 of the project's roadmap, where it is `BUG-2`.", comment-contains: "sources: [src/export/csv.go]"}
+      - {id: 2, title: "BUG-3 — Export: an empty row becomes a blank line [LOW]", comment-contains: "sources: [src/export/csv.go]"}
+      - {id: 3, absent: true}

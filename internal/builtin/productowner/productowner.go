@@ -155,7 +155,7 @@ func Pre(runDir, repo string) int {
 		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
-	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n", commit, judged)
+	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n", commit, judged, releases(repo, b))
 	if len(others) > 0 {
 		sort.Strings(others)
 		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
@@ -177,6 +177,9 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	sources := "none named yet"
 	if len(st.Sources) > 0 {
 		sources = strings.Join(st.Sources, ", ")
+	}
+	if is.Milestone != "" {
+		fmt.Fprintf(b, "Milestone: %s\n", is.Milestone)
 	}
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
@@ -260,6 +263,20 @@ func writeCode(b *strings.Builder, repo string, files []string, budget int) {
 		log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
 		fmt.Fprintf(b, "## %s\n\nLast commits:\n%s\n```\n%s\n```%s\n\n", f, strings.TrimSpace(string(log)), strings.Join(lines, "\n"), more)
 	}
+}
+
+// releases says where the project stands: its last release, and the
+// milestones open, for the issues to be put in.
+func releases(repo string, b forge.Backlog) string {
+	last := "none yet"
+	if out, err := exec.Command("git", "-C", repo, "describe", "--tags", "--abbrev=0").Output(); err == nil {
+		last = strings.TrimSpace(string(out))
+	}
+	open := "none"
+	if ms, err := b.Milestones(); err == nil && len(ms) > 0 {
+		open = strings.Join(ms, ", ")
+	}
+	return fmt.Sprintf("Last release: %s. Open milestones: %s.\n", last, open)
 }
 
 // sourcesChanged says whether a commit since the issue was last read

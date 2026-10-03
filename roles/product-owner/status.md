@@ -12,6 +12,8 @@ obsolete, none wrongly (tried.md).
 | A duplicate closed, its original quoted; a look-alike on the same code left open; a need left open | planted issues, local forge, Sonnet (tried.md) |
 | An issue the code solved proposed as obsolete, the code and the fixing commit quoted | the same |
 | A true issue on the code a fix touched left alone; a duplicate in other words closed | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
+| A roadmap file imported as issues (`workline issues import`), ids kept, sources named | a copy of DomoticsCore, 38 of 188 entries, local forge |
+| Issues put in the next releases' milestones; the code an issue is about named | the same, two runs |
 | A real backlog read a share a run (4 issues, 1,500 lines of code), each read once; issues already done proposed as obsolete, the code quoted | a copy of DomoticsCore, 38 roadmap entries as issues, local forge |
 
 ## Built, tried without an agent
@@ -35,7 +37,7 @@ obsolete, none wrongly (tried.md).
   runs that pause it.
 - Opening, splitting, refining, moving to `ready`, ordering, milestones.
 - One issue-opening mechanism for every role.
-- DomoticsCore's roadmap on its forge: the import as a tool, not a
-  script; milestones.
+- DomoticsCore's roadmap on its GitHub: the import and the role run there,
+  GitHub's issues and milestones untried live.
 - Naming sources the agent was not given: today it can only name a file
   it was shown.

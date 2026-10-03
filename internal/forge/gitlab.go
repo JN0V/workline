@@ -228,13 +228,20 @@ func (g *gitlab) Issues() ([]Issue, error) {
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
 		Labels      []string `json:"labels"`
+		Milestone   *struct {
+			Title string `json:"title"`
+		} `json:"milestone"`
 	}](out)
 	var all []Issue
 	for _, f := range found {
 		if f.Labels == nil {
 			f.Labels = []string{}
 		}
-		all = append(all, Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels})
+		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels}
+		if f.Milestone != nil {
+			is.Milestone = f.Milestone.Title
+		}
+		all = append(all, is)
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
 	return all, err
@@ -458,4 +465,54 @@ func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {
 		IID int `json:"iid"`
 	}
 	return created.IID, decode(out, &created)
+}
+
+// milestoneIDs maps the active milestones' titles to their ids.
+func (g *gitlab) milestoneIDs() (map[string]int, error) {
+	out, err := g.api("--paginate", "projects/:id/milestones?state=active&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	all, err := pages[struct {
+		ID    int    `json:"id"`
+		Title string `json:"title"`
+	}](out)
+	m := map[string]int{}
+	for _, x := range all {
+		m[x.Title] = x.ID
+	}
+	return m, err
+}
+
+func (g *gitlab) Milestones() ([]string, error) {
+	m, err := g.milestoneIDs()
+	var out []string
+	for t := range m {
+		out = append(out, t)
+	}
+	sort.Strings(out)
+	return out, err
+}
+
+func (g *gitlab) SetMilestone(id int, title string) error {
+	m, err := g.milestoneIDs()
+	if err != nil {
+		return err
+	}
+	n, ok := m[title]
+	if !ok {
+		out, err := g.api("-X", "POST", "projects/:id/milestones", "-f", "title="+title)
+		if err != nil {
+			return err
+		}
+		var created struct {
+			ID int `json:"id"`
+		}
+		if err := decode(out, &created); err != nil {
+			return err
+		}
+		n = created.ID
+	}
+	_, err = g.api("-X", "PUT", path(Target{Kind: "issue", ID: id}), "-f", fmt.Sprintf("milestone_id=%d", n))
+	return err
 }

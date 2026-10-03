@@ -24,16 +24,19 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/productowner"
@@ -892,16 +895,23 @@ func issuesCmd(args []string) int {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		what, args = args[0], args[1:]
 	}
-	if what == "show" && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+	if (what == "show" || what == "import") && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		id, args = args[0], args[1:]
 	}
 	fs := flag.NewFlagSet("issues", flag.ExitOnError)
 	repo := fs.String("repo", ".", "repository")
+	apply := fs.Bool("apply", false, "import: open the issues; without it, only say which")
+	forgeSpec := fs.String("forge", "", "import: github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
+	done := fs.String("done", backlog.DoneWords.String(), "import: what a heading says an entry is finished with, a regular expression")
+	asJSON := fs.Bool("json", false, "import: print the result as JSON")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
 		return 64
+	}
+	if what == "import" {
+		return importIssues(root, id, *forgeSpec, *done, *apply, *asJSON)
 	}
 	l := &forge.Local{Repo: root}
 	switch {
@@ -1220,4 +1230,79 @@ func initCmd(args []string) int {
 		fmt.Fprintf(os.Stderr, "%d docs are suspect already: code they describe changed since they were last edited. The next push lists them; `workline docs` has them judged, or a merge request.\n", len(suspect))
 	}
 	return exitFor(res.Status)
+}
+
+// importIssues opens an issue for each entry of a roadmap file not marked
+// done, its id kept in its title and the code it names as its sources
+// (docs/spec/backlog-acts.md, "Importing a roadmap"). Without apply, it
+// only says what it would open.
+func importIssues(root, file, forgeSpec, doneWords string, apply, asJSON bool) int {
+	out := os.Stdout
+	if asJSON {
+		out = os.Stderr // the text goes aside, the result alone on stdout
+	}
+	finish := func(status, summary string, findings []verdict.Finding, code int) int {
+		if asJSON {
+			data, _ := json.MarshalIndent(map[string]any{"status": status, "summary": summary, "findings": findings}, "", "  ")
+			fmt.Println(string(data))
+		} else if summary != "" {
+			fmt.Fprintln(out, summary)
+		}
+		return code
+	}
+	if file == "" {
+		fmt.Fprintln(os.Stderr, "usage: workline issues import <roadmap.md> [--apply] [--forge <forge>] [--done <regexp>] [--json]")
+		return 64
+	}
+	done, err := regexp.Compile(doneWords)
+	if err != nil {
+		return finish(verdict.Block, "--done: "+err.Error(), nil, 64)
+	}
+	data, err := os.ReadFile(filepath.Join(root, file))
+	if err != nil {
+		return finish(verdict.Block, err.Error(), nil, 1)
+	}
+	entries := backlog.ParseRoadmap(string(data), done)
+	open := 0
+	for i := range entries {
+		if entries[i].Done {
+			continue
+		}
+		open++
+		entries[i].Sources = backlog.ResolveSources(root, entries[i], 3)
+		if !apply {
+			fmt.Fprintf(out, "%s  (line %d; sources: %s)\n", entries[i].IssueTitle(), entries[i].Line, strings.Join(entries[i].Sources, ", "))
+		}
+	}
+	counts := fmt.Sprintf("%d entries, %d marked done, %d to open", len(entries), len(entries)-open, open)
+	if !apply {
+		return finish(verdict.Pass, counts+"; nothing written: --apply opens them", nil, 0)
+	}
+	if forgeSpec == "" {
+		if cfg, err := role.LoadProjectConfig(root); err == nil {
+			forgeSpec = cfg.Forge
+		}
+	}
+	f, err := forge.Open(forgeSpec, root)
+	if err != nil || f == nil {
+		return finish(verdict.Block, "importing opens issues on a forge; "+forge.Missing, nil, 64)
+	}
+	head, err := exec.Command("git", "-C", root, "rev-parse", "--short", "HEAD").Output()
+	if err != nil {
+		return finish(verdict.Block, err.Error(), nil, 1)
+	}
+	opened, already, err := backlog.Import(f, "product-owner", strings.TrimSpace(string(head)), entries)
+	summary := fmt.Sprintf("%s; %d issues opened", counts, len(opened))
+	if len(already) > 0 {
+		summary += "; already open: " + strings.Join(already, ", ")
+	}
+	if err != nil {
+		status := verdict.Block
+		if errors.Is(err, forge.ErrUnreachable) {
+			status = verdict.BlockedExternal
+		}
+		return finish(status, summary, []verdict.Finding{{Rule: "import-stopped",
+			Message: err.Error() + " — run it again: what is open is not opened twice"}}, 1)
+	}
+	return finish(verdict.Pass, summary, nil, 0)
 }

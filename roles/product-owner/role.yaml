@@ -23,7 +23,7 @@ duties:
   writes: []        # never the code nor the docs: the forge's issues only
 
 # comment: the engine's state comment on each issue it takes (pre).
-intentions: [close, sources, comment, note]
+intentions: [close, sources, milestone, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -38,5 +38,6 @@ settings:
   # until the evaluation has measured how often it is wrong (ADR-0018).
   acts:
     sources: {mode: act, max: 10}     # the code an issue is about, named
+    milestone: {mode: act, max: 10}   # an issue put in a release's milestone
     close-duplicate: {mode: act, max: 3}
     close-obsolete: {mode: propose, max: 3}
