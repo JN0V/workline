@@ -16,8 +16,7 @@ import (
 // Local is a forge kept in the clone, never committed: for a project with no
 // forge, or one whose person works alone. Each issue is a Markdown file,
 // .git/workline/issues/<n>.md; each merge request is a local branch, recorded
-// the same way in .git/workline/merge-requests/<n>.md; a release's notes go
-// in .git/workline/releases/<tag>.md. Nothing is pushed: `workline issues`
+// the same way in .git/workline/merge-requests/<n>.md. Nothing is pushed: `workline issues`
 // reads them. Writes are idempotent, as on any forge.
 type Local struct{ Repo string }
 
@@ -324,24 +323,6 @@ func (l *Local) KeepIssue(title, body string, create bool) (int, error) {
 		return 0, err
 	}
 	return id, l.save("issue", &LocalItem{ID: id, Title: title, State: "open", Body: body})
-}
-
-func (l *Local) Release(tag, notes string) error {
-	if err := l.writable(); err != nil {
-		return err
-	}
-	d, err := l.dir()
-	if err != nil {
-		return err
-	}
-	p := filepath.Join(d, "releases", tag+".md")
-	if _, err := os.Stat(p); err == nil {
-		return nil // already published
-	}
-	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(p, []byte("# "+tag+"\n\n"+strings.TrimSpace(notes)+"\n"), 0o644)
 }
 
 func (l *Local) OpenMergeRequest(branch, base, title, body string) (int, error) {

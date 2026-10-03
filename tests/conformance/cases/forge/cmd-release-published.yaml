@@ -1,8 +1,0 @@
-case: forge/cmd-release-published
-about: "With `forge: cmd:<command>`, a release's notes are published through the command, by its tag."
-given: {repo: released, config: {forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'}}
-run: {route: release, ai: none}
-expect:
-  status: pass
-  files:
-    .git/forge-requests.jsonl: {contains: '"operation":"release","tag":"v1.3.0"'}

@@ -11,7 +11,7 @@ import (
 // requests share numbers, comments and labels there, so both use the issue
 // endpoints. Tried live on 2026-09-24: comment, label added (GitHub creates a
 // missing label), label removed, and every write replayed without duplicates.
-// Not yet tried live: OpenIssue and Release.
+// Not yet tried live: OpenIssue.
 type github struct{ repo string }
 
 func (g *github) api(args ...string) ([]byte, error) {
@@ -112,16 +112,6 @@ func (g *github) OpenIssue(title, body, marker string) (int, error) {
 	var id int
 	fmt.Sscan(strings.TrimSpace(string(out)), &id)
 	return id, nil
-}
-
-func (g *github) Release(tag, notes string) error {
-	if _, err := g.api("repos/{owner}/{repo}/releases/tags/" + tag); err == nil {
-		return nil // already published
-	} else if !errors.Is(err, errNotFound) {
-		return err
-	}
-	_, err := g.api("-X", "POST", "repos/{owner}/{repo}/releases", "-f", "tag_name="+tag, "-f", "name="+tag, "-f", "body="+notes)
-	return err
 }
 
 // openPulls lists the open pull requests as number and head branch.

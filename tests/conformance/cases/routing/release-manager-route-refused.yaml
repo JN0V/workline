@@ -1,0 +1,10 @@
+case: routing/release-manager-route-refused
+about: "A routing that still names the retired release manager is refused, loudly, the message pointing to a release tool (ADR-0017); the line runs nothing."
+given:
+  repo: released
+  config: {routing: {events: {release: [documentalist, release-manager]}}}
+run: {route: release, ai: none}
+expect:
+  status: block
+  steps: []
+  findings: [{rule: config-invalid, message: "ADR-0017"}, {rule: config-invalid, message: "release-please"}]

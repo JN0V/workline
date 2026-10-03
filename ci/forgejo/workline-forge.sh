@@ -121,16 +121,6 @@ keep-issue)
 	fi
 	jq -nc --argjson n "$n" '{id: $n}'
 	;;
-release)
-	tag=$(arg .tag)
-	code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: token $FORGEJO_TOKEN" "$base/releases/tags/$tag")
-	case "$code" in
-	200) ;; # already published
-	404) api POST "/releases" "$(arg_json '{tag_name: .tag, name: .tag, body: .notes}')" >/dev/null ;;
-	*) echo "releases/tags/$tag answered HTTP $code" >&2 && exit 1 ;;
-	esac
-	echo '{}'
-	;;
 open-merge-request)
 	n=$(all "/pulls?state=open" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
 	if [ -n "$n" ]; then

@@ -69,7 +69,59 @@ func CheckConfig(data []byte) error {
 	if err := check(doc.Content[0], config, nil, nil); err != nil {
 		return err
 	}
+	if err := notRetired(doc.Content[0]); err != nil {
+		return err
+	}
 	return asWritten(doc.Content[0])
+}
+
+// Retired says what replaces a role workline no longer ships, by its name.
+var Retired = map[string]string{
+	"release-manager": "the release-manager role is retired: workline cuts no releases, it works with the release tool a project has " +
+		"(docs/adr/0017-the-release-manager.md, ADR-0017). Release with one — release-please, release-plz, releaser-pleaser, " +
+		"semantic-release or changesets; GoReleaser to publish — and route `release: [documentalist]` before it",
+}
+
+// notRetired refuses a config naming a retired role — its settings, a step
+// of an event, a handoff — rather than leave a release nobody makes.
+func notRetired(n *yaml.Node) error {
+	for i := 0; n.Kind == yaml.MappingNode && i+1 < len(n.Content); i += 2 {
+		k, v := n.Content[i], n.Content[i+1]
+		var names []*yaml.Node
+		switch k.Value {
+		case "roles":
+			for j := 0; v.Kind == yaml.MappingNode && j < len(v.Content); j += 2 {
+				names = append(names, v.Content[j])
+			}
+		case "routing":
+			names = scalars(v)
+		}
+		for _, name := range names {
+			if why, ok := Retired[name.Value]; ok {
+				return &ConfigError{fmt.Sprintf("line %d: %s", name.Line, why)}
+			}
+		}
+	}
+	return nil
+}
+
+// scalars lists every text a part of the config holds, keys left out.
+func scalars(n *yaml.Node) []*yaml.Node {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		return []*yaml.Node{n}
+	case yaml.MappingNode:
+		var out []*yaml.Node
+		for i := 1; i < len(n.Content); i += 2 {
+			out = append(out, scalars(n.Content[i])...)
+		}
+		return out
+	}
+	var out []*yaml.Node
+	for _, c := range n.Content {
+		out = append(out, scalars(c)...)
+	}
+	return out
 }
 
 // asWritten refuses an unquoted value written as a commit is (hex digits)

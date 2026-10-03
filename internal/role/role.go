@@ -91,6 +91,9 @@ func (m Model) AnswerTimeout() (time.Duration, error) {
 func Load(rolesDir, name string) (*Role, error) {
 	dir := filepath.Join(rolesDir, name)
 	data, err := os.ReadFile(filepath.Join(dir, "role.yaml"))
+	if why, retired := Retired[name]; retired && os.IsNotExist(err) {
+		return nil, fmt.Errorf("role %q: %s", name, why)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("role %q: %w", name, err)
 	}

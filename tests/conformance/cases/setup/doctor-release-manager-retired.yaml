@@ -1,0 +1,10 @@
+case: setup/doctor-release-manager-retired
+about: "Doctor says a config still handing over from the retired release manager is refused, and which tool releases instead (ADR-0017)."
+given:
+  repo: documented
+  config:
+    routing: {handoffs: [{from: release-manager, to: documentalist}]}
+run: {doctor: true}
+expect:
+  findings:
+    - {rule: config-invalid, message: "ADR-0017"}

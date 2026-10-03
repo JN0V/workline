@@ -1,9 +1,0 @@
-case: forge/local-release-published
-about: "With `forge: local`, a release's notes are published in the clone, beside the tag."
-given: {repo: released, config: {forge: local}}
-run: {route: release, ai: none}
-expect:
-  status: pass
-  files:
-    CHANGELOG.md: {contains: "## v1.3.0"}
-    .git/workline/releases/v1.3.0.md: {contains: "v1.3.0"}

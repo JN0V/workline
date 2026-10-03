@@ -36,7 +36,6 @@ import (
 
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
-	"github.com/JN0V/workline/internal/builtin/releasemanager"
 	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
@@ -252,10 +251,6 @@ func builtin(args []string) int {
 		return documentalist.Pre(runDir, repo)
 	case "documentalist post":
 		return documentalist.Post(runDir, repo)
-	case "release-manager pre":
-		return releasemanager.Pre(runDir, repo)
-	case "release-manager post":
-		return releasemanager.Post(runDir)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99

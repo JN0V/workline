@@ -1,0 +1,9 @@
+case: engine/release-manager-retired
+about: "The release manager is retired (ADR-0017): its settings in a config, or a run asked of it, are refused, pointing to a release tool, never ignored."
+given:
+  repo: released
+  config: {roles: {release-manager: {settings: {flow: direct}}}}
+run: {role: documentalist, event: release, ai: none}
+expect:
+  status: block
+  findings: [{rule: config-invalid, message: "ADR-0017"}, {rule: config-invalid, message: "release-please"}]

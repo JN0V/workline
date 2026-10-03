@@ -1,2 +1,0 @@
-- release: {version: v1.3.0, notes: "Export to CSV."}
-- patch: {file: CHANGELOG.md, content: "# Changelog\n\nRewritten by hand.\n"}
