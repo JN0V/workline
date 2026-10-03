@@ -135,8 +135,8 @@ token), **apply** (trusted, no AI key).
 2. **Prepare — `pre`.** Gathers what the role needs into `in/`. If a decision
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
    call: the AI is paid for decisions, not for routine. It may also write
-   `in/fallback.yaml`: the proposals to use when no agent answers — the release
-   manager's generated changelog, for example, and `in/task-kind`: one word
+   `in/fallback.yaml`: the proposals to use when no agent answers — the
+   documentalist's derived blocks, for example, and `in/task-kind`: one word
    naming the kind of question, when `model.tasks` asks something else of it.
    The engine then records a digest of `in/`.
 
@@ -172,8 +172,8 @@ token), **apply** (trusted, no AI key).
    read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
-   example, the release manager's `post` refuses a version the commits did not
-   produce). A question no check can answer, `post` does not answer: it
+   example, the committer's `post` refuses a rewritten message that fails the
+   same checks, or carries a secret). A question no check can answer, `post` does not answer: it
    writes it to `out/judge.yaml` (`{question, material}`), and once `post`
    passes, the engine puts it to a judge model at the best independence
    available from the agent (ADR-0005): `WORKLINE_JUDGE` when set, else
@@ -226,8 +226,8 @@ token), **apply** (trusted, no AI key).
 
 Writes to git and to a forge are not transactional: a comment can be posted and
 the label call fail. So every intention is applied idempotently — a label that
-is already there, a comment carrying the run's marker, a tag that already points
-to the right commit all count as done — and `workline apply <run-dir>` resumes a
+is already there, a comment carrying the run's marker, a merge request already
+open from the branch (updated, not opened again) all count as done — and `workline apply <run-dir>` resumes a
 run from `out/run.yaml`, with the evidence of the original run, without calling
 the agent again.
 

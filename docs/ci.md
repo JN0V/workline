@@ -187,7 +187,7 @@ workline writes in its own clone:
 forge: local
 ```
 
-Issues, merge requests and releases are then files under `.git/workline/`,
+Issues and merge requests are then files under `.git/workline/`,
 never committed; gardening's merge requests are local branches, nothing
 pushed; `workline issues` lists them, `workline issues show <n>` (or `!<n>`
 for a merge request) shows one, and you merge a branch with git. There is no
