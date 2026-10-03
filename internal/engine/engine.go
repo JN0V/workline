@@ -811,10 +811,11 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 	if err != nil {
 		return verdict.Finding{}, err
 	}
-	branch, here, err := f.MergeRequestBranch(st.Target.ID)
+	from, err := f.MergeRequest(st.Target.ID)
 	if err != nil {
 		return verdict.Finding{}, err
 	}
+	branch, here := from.Branch, from.Here
 	why := "it comes from a fork, where this job cannot push"
 	if here {
 		why, err = commitOnto(st, branch, mr.Title, forge.KeepsBranches(f))

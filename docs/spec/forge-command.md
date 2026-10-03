@@ -59,7 +59,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `keep-issue` | `title`, `body`, `create` | rewrites the body of the open issue with this title; with none, opens it when `create` is true | `{id}`, 0 when none was opened |
 | `open-merge-request` | `branch`, `base`, `title`, `body` | opens a merge request from `branch` (already pushed to `origin` by the engine) into `base`, or updates the title and body of the one open from `branch` | `{id}` |
 | `open-merge-requests` | `prefix` | lists the open merge requests whose branch starts with `prefix` | `{branches: [names]}` |
-| `merge-request-branch` | `id` | the branch a merge request comes from, and whether it lives in this repository rather than a fork | `{branch, here}` |
+| `merge-request-branch` | `id` | the branch a merge request comes from, the branch it goes into, and whether it lives in this repository rather than a fork | `{branch, base, here}`; without `base`, a fix for a release pull request goes in a comment (ADR-0017) |
 
 Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the

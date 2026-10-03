@@ -28,7 +28,7 @@ func TestGitLabAPI(t *testing.T) {
 		case r.Method == "GET" && p == "/merge_requests/7/notes":
 			json.NewEncoder(w).Encode([]map[string]any{{"id": 2, "body": "old <!-- workline:k -->"}})
 		case r.Method == "GET" && p == "/merge_requests/7":
-			json.NewEncoder(w).Encode(map[string]any{"source_branch": "feat", "source_project_id": 3, "target_project_id": 3})
+			json.NewEncoder(w).Encode(map[string]any{"source_branch": "feat", "target_branch": "main", "source_project_id": 3, "target_project_id": 3})
 		case r.Method == "PUT" || r.Method == "POST":
 			body, _ := io.ReadAll(r.Body)
 			form, _ := url.ParseQuery(string(body))
@@ -57,9 +57,9 @@ func TestGitLabAPI(t *testing.T) {
 		t.Fatalf("sticky: %q", got)
 	}
 	// A merge request's branch, and whether it lives in this project.
-	branch, here, err := g.MergeRequestBranch(7)
-	if err != nil || branch != "feat" || !here {
-		t.Fatalf("branch: %q %v %v", branch, here, err)
+	mr, err := g.MergeRequest(7)
+	if err != nil || mr.Branch != "feat" || mr.Base != "main" || !mr.Here {
+		t.Fatalf("branch: %+v %v", mr, err)
 	}
 	// A refused token is the forge out of reach, not the role's fault.
 	t.Setenv("GITLAB_TOKEN", "wrong")

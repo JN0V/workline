@@ -346,20 +346,21 @@ func (g *gitlab) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
-func (g *gitlab) MergeRequestBranch(id int) (string, bool, error) {
+func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 	out, err := g.api(path(Target{Kind: "merge-request", ID: id}))
 	if err != nil {
-		return "", false, err
+		return MergeRequest{}, err
 	}
 	var mr struct {
 		Source        string `json:"source_branch"`
+		Target        string `json:"target_branch"`
 		SourceProject int    `json:"source_project_id"`
 		TargetProject int    `json:"target_project_id"`
 	}
 	if err := decode(out, &mr); err != nil {
-		return "", false, err
+		return MergeRequest{}, err
 	}
-	return mr.Source, mr.SourceProject == mr.TargetProject, nil
+	return MergeRequest{Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject}, nil
 }
 
 func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {

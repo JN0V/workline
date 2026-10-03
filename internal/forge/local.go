@@ -358,12 +358,12 @@ func (l *Local) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
-func (l *Local) MergeRequestBranch(id int) (string, bool, error) {
+func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	it, err := l.Item("merge-request", id)
 	if err != nil {
-		return "", false, err
+		return MergeRequest{}, err
 	}
-	return it.Branch, true, nil
+	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: true}, nil
 }
 
 func (l *Local) keepsBranches() {}

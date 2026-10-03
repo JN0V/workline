@@ -146,11 +146,12 @@ func (c *command) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
-func (c *command) MergeRequestBranch(id int) (string, bool, error) {
+func (c *command) MergeRequest(id int) (MergeRequest, error) {
 	var a struct {
 		Branch string `json:"branch"`
+		Base   string `json:"base"`
 		Here   bool   `json:"here"`
 	}
 	err := c.call("merge-request-branch", map[string]any{"id": id}, &a)
-	return a.Branch, a.Here, err
+	return MergeRequest{Branch: a.Branch, Base: a.Base, Here: a.Here}, err
 }

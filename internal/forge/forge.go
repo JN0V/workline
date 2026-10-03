@@ -47,9 +47,15 @@ type Forge interface {
 	// OpenMergeRequests lists the branches of the open merge requests whose
 	// branch starts with prefix, sorted.
 	OpenMergeRequests(prefix string) ([]string, error)
-	// MergeRequestBranch is the branch a merge request comes from, and
-	// whether it lives in this repository (not in a fork).
-	MergeRequestBranch(id int) (branch string, here bool, err error)
+	// MergeRequest says where a merge request comes from and goes.
+	MergeRequest(id int) (MergeRequest, error)
+}
+
+// MergeRequest is where a merge request comes from and where it goes.
+type MergeRequest struct {
+	Branch string // the branch it comes from
+	Base   string // the branch it goes into; "" when the forge does not say
+	Here   bool   // the branch lives in this repository, not in a fork
 }
 
 // ErrUnreachable marks a forge that did not answer: the run is blocked by

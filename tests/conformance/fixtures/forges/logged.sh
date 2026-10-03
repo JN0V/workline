@@ -18,7 +18,7 @@ fi
 case "$WORKLINE_FORGE_OPERATION" in
 issue) printf '%s\n' '{"id": 8, "title": "Export as CSV", "body": "## Need\nExport as CSV\n## Verification\nA test exports three rows\n## Validation\nThe product owner opens it\n## Scope\nsrc/export", "labels": ["workline:to-refine"]}' ;;
 open-merge-requests) echo '{"branches": []}' ;;
-merge-request-branch) echo '{"branch": "feature", "here": true}' ;;
+merge-request-branch) echo '{"branch": "feature", "base": "main", "here": true}' ;;
 open-issue | keep-issue | open-merge-request) echo '{"id": 7}' ;;
 *) echo '{}' ;;
 esac
