@@ -141,6 +141,7 @@ func runRole(args []string) int {
 	tamper := fs.Bool("test-tamper-before-apply", false, "conformance tests only")
 	forgeSpec := fs.String("forge", "", "forge: github, gitlab, none, fake:<file> (default: the project's `forge` setting)")
 	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
+	branch := fs.String("branch", "", "the branch the merge request --target names comes from, when the forge is not to be asked (default: the forge says)")
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "stop after judging; apply later with `workline apply <run-dir>`")
@@ -178,7 +179,7 @@ func runRole(args []string) int {
 	res := engine.Run(engine.Options{
 		Repo: absRepo, RolesDir: absRoles, Role: name, Event: *event, AI: *ai,
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
-		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
+		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
 	})
 	if err := wlreport.Write(absRepo, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -795,6 +796,7 @@ func routeCmd(args []string) int {
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	forgeSpec := fs.String("forge", "", "forge: github, gitlab, none, fake:<file> (default: the project's `forge` setting)")
 	target := fs.String("target", "", "issue:<n> or merge-request:<n>, where comments and labels go")
+	branch := fs.String("branch", "", "the branch the merge request --target names comes from, when the forge is not to be asked (default: the forge says)")
 	var scope multi
 	fs.Var(&scope, "scope", "a path pattern the task is about (repeatable)")
 	noApply := fs.Bool("no-apply", false, "judge every step, apply none; apply later with `workline apply` and the runs listed as pending")
@@ -817,7 +819,7 @@ func routeCmd(args []string) int {
 		return 64
 	}
 	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
-		Forge: *forgeSpec, Target: t, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
+		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
 	if err := wlreport.Write(abs, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1

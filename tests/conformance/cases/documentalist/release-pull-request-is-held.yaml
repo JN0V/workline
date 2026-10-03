@@ -1,0 +1,13 @@
+case: documentalist/release-pull-request-is-held
+about: "A pull request a release tool opened — release-please's branch — is the release: on it the documentalist holds what was made suspect since the last tag, as at the release, though no commit of the pull request touched it (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.1.0'"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: suspect, where: docs/tech/auth.md, level: block, message: "since v1.0.0"}]

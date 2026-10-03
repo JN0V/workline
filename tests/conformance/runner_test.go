@@ -69,6 +69,7 @@ type caseFile struct {
 	Run struct {
 		Role    string            `yaml:"role"`
 		Target  map[string]int    `yaml:"target"`
+		Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
 		NoApply bool              `yaml:"no-apply"`
 		OpenMR  bool              `yaml:"open-merge-request"`
 		PushMR  bool              `yaml:"push-to-merge-request"`
@@ -254,6 +255,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	for kind, id := range c.Run.Target {
 		args = append(args, "--target", fmt.Sprintf("%s:%d", kind, id))
+	}
+	if c.Run.Branch != "" {
+		args = append(args, "--branch", c.Run.Branch)
 	}
 	for _, s := range c.Run.Scope {
 		args = append(args, "--scope", s)

@@ -1,0 +1,13 @@
+case: documentalist/merge-request-not-held-as-a-release
+about: "A merge request from a branch no release tool names is not the release: a doc made suspect before it, which its commits did not touch, is left for gardening and holds nothing."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git checkout -qb feature && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'docs: start a changelog'"
+  forge: {merge-requests: [{id: 1, branch: feature, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "left for gardening"}]

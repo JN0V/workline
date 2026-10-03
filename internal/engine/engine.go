@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
@@ -44,7 +45,11 @@ type Options struct {
 
 	Forge  string        // forge spec, see forge.Open; empty = the project's `forge` setting
 	Target *forge.Target // the issue or merge request comments and labels go on
-	Scope  []string      // paths the task is about; a patch outside is refused
+	// Branch is the one the targeted merge request comes from, when the job
+	// knows it without the forge (a CI job without the forge's token); else
+	// the forge is asked. Its branch tells a release tool's (ADR-0017).
+	Branch string
+	Scope  []string // paths the task is about; a patch outside is refused
 	// NoApply stops after judging: the proposals and what apply needs are kept
 	// in the run folder, for `workline apply` in another job holding the token.
 	NoApply bool
@@ -265,7 +270,11 @@ func run(o Options, res *Result) error {
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
+	releaseFrom := releaseRequest(r, &o, res)
 	env := scriptEnv(runDir, r.Name, o)
+	if releaseFrom != "" {
+		env = append(env, "WORKLINE_RELEASE_BRANCH="+releaseFrom)
+	}
 	if o.OpenMergeRequest {
 		// The role decides what it proposes when enough of its merge requests wait.
 		f, err := forge.Open(o.Forge, o.Repo)
@@ -1607,6 +1616,41 @@ func writeInputs(runDir string, inputs map[string]string, settings map[string]an
 		return err
 	}
 	return os.WriteFile(filepath.Join(runDir, "in", "settings.json"), data, 0o644)
+}
+
+// releaseRequest runs a role that has release duties on `release` when the
+// merge request a run targets is a release tool's, told by its branch
+// (ADR-0017): that pull request is the release, merged before anything is
+// tagged. It returns the branch, "" when it is not a release's. When the
+// branch cannot be learnt, it says so and the run stays a merge request's.
+func releaseRequest(r *role.Role, o *Options, res *Result) string {
+	if o.Event != "merge-request" || !r.Accepts("release") {
+		return ""
+	}
+	rs, err := release.Load(o.Repo)
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
+		return ""
+	}
+	branch := o.Branch
+	if branch == "" && o.Target != nil && o.Target.Kind == "merge-request" {
+		f, err := forge.Open(o.Forge, o.Repo)
+		if err == nil && f != nil {
+			var mr forge.MergeRequest
+			mr, err = f.MergeRequest(o.Target.ID)
+			branch = mr.Branch
+		}
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn",
+				Message: fmt.Sprintf("whether %s comes from a release tool's branch is unknown, so it is not held as the release: %v; give its branch with --branch", o.Target, err)})
+			return ""
+		}
+	}
+	if !rs.IsBranch(branch) {
+		return ""
+	}
+	o.Event = "release"
+	return branch
 }
 
 func scriptEnv(runDir, roleName string, o Options) []string {

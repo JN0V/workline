@@ -1,0 +1,12 @@
+case: documentalist/release-pull-request-propagates-product-docs
+about: "On a release pull request, the product docs due at the release are due: one not brought up to date holds it, as at the release (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"
+    - "git checkout -qb release-please--branches--main && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore(main): release 1.1.0'"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: due, where: docs/product/sign-in.md, level: block}]
