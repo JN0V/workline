@@ -1,0 +1,12 @@
+case: documentalist/release-pull-request-judged-fix-holds
+about: "Judged without applying, as CI's first job does, a fix proposed on a release pull request already holds it: the fix will not be on its branch but on a merge request of its own, still to merge (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git checkout -q -b release-please--branches--main && git checkout -q --detach"
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, branch: release-please--branches--main, ai: "fake:doc-fixed", push-to-merge-request: true, no-apply: true}
+expect:
+  status: block
+  findings: [{rule: fixed-elsewhere, where: release-please--branches--main, level: block}]

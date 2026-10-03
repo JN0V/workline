@@ -1,0 +1,21 @@
+case: documentalist/release-pull-request-fix-goes-to-its-own
+about: "On a release pull request run with --push-to-merge-request, the fix is not pushed onto the tool's branch, which the tool rewrites: it goes to a merge request of its own on the release's base, and the release pull request stays held until that one is merged (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: block
+  applied: [patch]
+  findings: [{rule: fixed-elsewhere, where: docs/tech/auth.md, level: block, message: "merge request #2"}]
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "Access tokens last two hours."}
+    release-please--branches--main: {docs/tech/auth.md: "Access tokens last one hour."}
+  forge:
+    merge-requests:
+      - {id: 1, comments: 0}
+      - {id: 2, branch: workline/documentalist/release, base: main}
