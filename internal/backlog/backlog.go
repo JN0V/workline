@@ -28,6 +28,7 @@ const (
 type State struct {
 	Sources   []string `yaml:"sources"`
 	Confirmed string   `yaml:"confirmed"`
+	Judged    string   `yaml:"judged,omitempty"` // the commit the role last read it at
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -76,7 +77,8 @@ func FormatState(s State) string {
 	data, _ := yaml.Marshal(struct {
 		Sources   []string `yaml:"sources,flow"`
 		Confirmed string   `yaml:"confirmed"`
-	}{s.Sources, s.Confirmed})
+		Judged    string   `yaml:"judged,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -299,7 +301,7 @@ func (p *Plan) found(f forge.Backlog, repo string, q Quote) bool {
 			return false
 		}
 		comments, _ := f.Comments(forge.Target{Kind: "issue", ID: q.Issue})
-		where = append([]string{is.Body}, comments...)
+		where = append([]string{is.Title, is.Body}, comments...)
 	}
 	for _, w := range where {
 		if strings.Contains(squeeze(w), want) {

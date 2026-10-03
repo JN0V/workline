@@ -28,6 +28,10 @@ intentions: [close, comment, note]
 without-ai: pass
 
 settings:
+  # A run reads the issues never read first, then those whose code changed
+  # since; one whose code did not change is not read again.
+  issues-per-run: 8
+  code-lines-max: 1500     # lines of code given in one run, all files together
   # Each kind of act: act (done, up to max a run), propose (in the report,
   # for a person), off (dropped). Closing as obsolete starts at propose
   # until the evaluation has measured how often it is wrong (ADR-0018).

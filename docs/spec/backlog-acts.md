@@ -18,6 +18,7 @@ issue, marked `<!-- workline:sticky=product-owner/state -->`:
 ```yaml
 sources: [src/export/csv.go#WriteRows]   # what the issue is about, in the code
 confirmed: 1a8e5a4                       # the commit it was last found true at
+judged: 1a8e5a4                          # the commit the role last read it at
 ```
 
 An issue without that comment, or with one that does not read, is never
@@ -25,6 +26,15 @@ acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is
 written on the issue. The role's `pre` gives an issue it takes its first
 state, `confirmed` at the commit it read, with no sources until it is
 refined.
+
+## Reading
+
+A run reads at most `issues-per-run` issues, with at most `code-lines-max`
+lines of the code they name: those never read first, then those whose
+sources a commit touched since they were read. An issue whose code did not
+change is not read again, however old (ADR-0018); the others are listed by
+title only, so a duplicate can still be named. Each issue read gets
+`judged` moved to the run's commit; without an agent, none is.
 
 ## Closing
 
