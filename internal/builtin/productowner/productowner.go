@@ -142,7 +142,7 @@ func Pre(runDir, repo string) int {
 		read := *d.st
 		read.Judged = commit
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
-			"issue": d.is.ID, "sticky": "state", "update-only": true, "body": backlog.FormatState(read)}})
+			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {

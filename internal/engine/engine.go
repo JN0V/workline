@@ -1321,6 +1321,15 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	if err != nil {
 		return nil, err
 	}
+	if !a.askedAgent || a.external || a.unread != "" {
+		// A fallback marked if-answered records that the agent read what it
+		// was given: without an answer that reads, it is not written.
+		fallback = slices.DeleteFunc(fallback, func(f intent.Intention) bool {
+			m, _ := f.Value.(map[string]any)
+			only, _ := m["if-answered"].(bool)
+			return only
+		})
+	}
 	intents = intent.Merge(fallback, intents)
 	os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {

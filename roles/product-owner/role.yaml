@@ -13,6 +13,7 @@ model:
   capability: reasoning
   tier: standard
   effort: medium
+  promote-after: 1   # an answer that does not read is asked for again once
 
 context:
   budget: 32000
