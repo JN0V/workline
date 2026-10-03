@@ -30,6 +30,8 @@ the need and accept the result, the machine does the work in between —
 and the Scrum Guide's split: a product manager owns why and what (needs,
 market, what others do), a Product Owner owns how and when (the backlog:
 its items, their order, refining them, milestones and releases).
+The panel then attacked that freedom; what it found is in the guards
+below.
 
 ## Decision
 
@@ -45,14 +47,15 @@ into the backlog.
 - opens issues, and splits a need into technical tasks (sub-issues);
 - refines: writes an issue's Scope and Verification, finds the code it
   concerns and names it as its sources, asks the reporter what is missing;
-- moves an issue to `ready` once its four fields are there
-  (docs/spec/routing.md lets a product role do so); `ready` is a state,
-  never a gate on other work;
+- moves an issue to `ready` once its four fields are there and its Need
+  and Validation are the person's — written or accepted by them, not
+  drafts (docs/spec/routing.md lets a product role do so);
 - orders the backlog; creates the milestones of the next releases, fills
   them, moves what slipped;
-- closes a duplicate, linking the original; closes an issue the code made
-  obsolete, the code quoted, with a comment inviting an answer if wrong —
-  an answer has it judged again.
+- answers a reporter, removes the labels it set itself, merges two issues
+  into one;
+- closes a duplicate, linking the original, and an issue the code made
+  obsolete (below); reopens its own closing when someone answers it.
 
 **It leaves to the person** what principle 1 gives them: stating a need,
 and accepting a result. So it never closes as *not planned* — refusing a
@@ -61,6 +64,19 @@ as settled (it may draft them, marked as drafts), and never deletes.
 
 A fix merged elsewhere than the branch a release is cut from is work in
 progress: the issue stays open, the report says where the fix is.
+
+An issue opened by someone outside the project is theirs: the first time
+it is split, renamed or moved to `ready`, that is proposed to them in a
+comment, not done.
+
+**Closing as obsolete is the costliest act**: a quote proves the text is
+there, not that the issue is solved (the panel, unanimous). So it is
+announced first — a comment on the issue, the code quoted, the commit that
+changed it named — and done at the next run if nobody answered and a
+second, independent judge agreed (another model, as ADR-0005); a closing
+for a test now passing, or for the code named gone, needs no second
+judge. A duplicate on the same sources and claim is closed alone; one by
+likeness only is proposed.
 
 ### What makes that freedom safe
 
@@ -84,14 +100,21 @@ what it proposes, each with its quote and how to undo it; one comment,
 "N new", so it notifies. A box ticked there is read only from someone with
 write access.
 
-**Caps** per run and per kind of act. **Autonomy is a setting per kind of
-act** (act, propose, off), as Linear's per property; the default is the
-list above.
+**Caps** per run and per kind of act — closings low at first (three),
+raised as trust is earned — and on the share of the backlog moved in one
+run (a fifth); the order before a run is written in the report, to put it
+back. **Autonomy is a setting per kind of act** (act, propose, off), as
+Linear's per property; the default is the list above, but closing as
+obsolete, which starts at "propose" until the evaluation has measured how
+often it is wrong.
 
-**Trust is earned and lost**, as `checked` is: the weekly sample reads its
-acts (ADR-0015); one closing found wrong puts that kind of act back to
-"propose" until the person sets it again. Proposed, done and undone are
-counted; if its report is ignored for three runs, it pauses and says so.
+**Trust is earned and lost**, as `checked` is. A closing is wrong when a
+person with write access, or the reporter, reopens it, or when the weekly
+sample (ADR-0015) finds it wrong; one wrong closing puts that kind of act
+back to "propose", and only the person sets it to "act" again, the measure
+shown in the report. A run is ignored when its report proposed something
+and nobody ticked, answered or reopened anything; after three, it pauses
+and says so.
 
 ### Opening issues, for every role
 
@@ -124,8 +147,9 @@ a copy, applying nothing.
 
 ## Open — for the person
 
-1. The pause and the drop: after how many ignored runs, and whether one
-   wrong closing is the right trigger.
+1. The numbers: three ignored runs, three closings a run at first, a fifth
+   of the backlog, one wrong closing to drop an act — the panel's, to be
+   measured.
 2. When the product manager assistant is written up.
 
 ## Consequences
