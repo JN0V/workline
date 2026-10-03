@@ -17,6 +17,7 @@ stars and dates were checked against the GitHub API that day.
 | [ci-and-forge.md](ci-and-forge.md) | Running the documentalist in CI on GitHub: models, protected main, a bot's commits, forks |
 | [release-manager.md](release-manager.md) | Focused: release PR vs tag vs direct, where versions live, what stays human |
 | [product-owner.md](product-owner.md) | Focused: what forges, bots and AI triage tools do for a backlog, and what a product owner role would add |
+| [self-evaluation.md](self-evaluation.md) | Focused: how automation and agents are judged in production, and how systems that improve their own agents keep people in control |
 | [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
 
 ## Method
