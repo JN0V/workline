@@ -1,4 +1,4 @@
-# ADR-0018: A PO assistant keeps the backlog, between the need and its acceptance
+# ADR-0018: A product owner keeps the backlog, between the need and its acceptance
 
 - **Status:** proposed — the points under "Open" wait for the person
 - **Date:** 2026-10-03
@@ -14,7 +14,7 @@ entries, its state split between a table and the headings, written by every
 session. The person asked for a role that does a Product Owner's work on
 the backlog, and for borrowing what exists before building.
 
-docs/research/po-assistant.md found that the forges already carry a backlog
+docs/research/product-owner.md found that the forges already carry a backlog
 (forms, milestones, sub-issues, close reasons, labels), that bots already
 keep one report issue in place (Renovate) and cap an agent's writes
 (GitHub's *safe outputs*), and that no tool re-checks an issue **because
@@ -37,10 +37,14 @@ below.
 
 ### The role and its freedom
 
-**A role, the PO assistant**, of its own, sharing the documentalist's
-suspect-and-quote core (duplicated where needed, extracted at a third use).
-A product manager assistant, later, brings needs in; this one turns them
-into the backlog.
+**A role, the product owner** (`product-owner`), of its own, sharing the
+documentalist's suspect-and-quote core (duplicated where needed, extracted
+at a third use). Named after the job, as the documentalist is, not "PO
+assistant": it does a Product Owner's work, which nobody else will do
+beside it; its limits are principle 1 and the guards below, not its name.
+A project with a human Product Owner sets its acts to "propose". A product
+manager role (`product-manager`), later, brings needs in; this one turns
+them into the backlog.
 
 **It acts alone**, through the engine, on what a Product Owner does:
 
@@ -56,6 +60,8 @@ into the backlog.
   into one;
 - closes a duplicate, linking the original, and an issue the code made
   obsolete (below); reopens its own closing when someone answers it.
+
+### What stays the person's
 
 **It leaves to the person** what principle 1 gives them: stating a need,
 and accepting a result. So it never closes as *not planned* — refusing a
@@ -121,8 +127,8 @@ and says so.
 Every role that needs one opens an issue through one engine mechanism, set
 now: no duplicate (a stable key per role and subject), labelled
 `needs-triage`, its sources and the commit it was seen at in the engine's
-comment, a cap per run; no role but the PO assistant closes. The
-documentalist's issues and the reviewer's go through it; the PO assistant
+comment, a cap per run; no role but the product owner closes. The
+documentalist's issues and the reviewer's go through it; the product owner
 takes them from there.
 
 ### Borrowed, built, proved
@@ -150,7 +156,7 @@ a copy, applying nothing.
 1. The numbers: three ignored runs, three closings a run at first, a fifth
    of the backlog, one wrong closing to drop an act — the panel's, to be
    measured.
-2. When the product manager assistant is written up.
+2. When the product manager role is written up.
 
 ## Consequences
 

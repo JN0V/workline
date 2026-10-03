@@ -1,4 +1,4 @@
-# PO assistant — focused research (2026-10-03)
+# Product owner — focused research (2026-10-03)
 
 **Verdict.** The forges already hold everything a backlog needs — issue
 forms, milestones, sub-issues, close reasons, closing keywords, labels — and
@@ -8,7 +8,7 @@ nobody does is ask whether an issue is still true **because the code it is
 about changed**: every "obsolete" signal in use is inactivity, which the
 literature and the communities reject, or the reporter's silence taken for
 consent. That is the documentalist's `sources`/`checked` mechanism applied to
-issues, and the place a PO assistant adds something: it proposes, with the
+issues, and the place a product owner role adds something: it proposes, with the
 code quoted; a person orders, accepts, groups and closes, as the Scrum Guide
 keeps the Product Owner accountable even when the work is delegated.
 
