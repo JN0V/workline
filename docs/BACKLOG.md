@@ -44,10 +44,13 @@ Then, once both work well here:
   release manager; workline works with release-please, releaser-pleaser,
   semantic-release and the like. Done: the role and its cases retired;
   workline's own `workline.yml` judges with the engine built from the
-  commit. In order: release-please
-  (with the App, GoReleaser after it) cuts one real release of workline;
-  the documentalist's release hold on the release pull request a tool
-  opens; later, doctor and `init` detect the tool or recommend one.
+  commit; release-please set up for workline (step 3, docs/ci.md), with
+  the App, GoReleaser after it in the same run, `apply` on the last
+  release looked up. Left, in order: step 3's bar, one real release whose
+  only step by hand is the merge (tag on the merged commit; binaries,
+  image and notes on the release; the four template pins moved); the
+  documentalist's release hold on the release pull request a tool opens;
+  later, doctor and `init` detect the tool or recommend one.
 - **Install without Go in CI.** Done (v0.1.0, 2026-10-01): releases with
   their binaries (GoReleaser), the image ghcr.io/jn0v/workline the GitLab
   template runs in, the GitHub templates downloading a pinned release;

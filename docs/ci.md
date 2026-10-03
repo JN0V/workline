@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/workline.yml]
+sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml]
 checked: 64eee70
 judged: a0f1e8a
 ---
@@ -43,8 +43,25 @@ request's `judge`, from the pull request's commit. A project never runs, in the 
 commit ships: a pull request moving the templates to a version not yet
 tagged would download nothing, and its check go red, as on each release
 from v0.2.0 to v0.2.3 (ADR-0017). The pull request's `apply`, which holds
-the write token, still runs the pinned release: a change to the engine
-never runs with that token before it is released.
+the write token, runs the last release of workline holding its engine,
+looked up when it runs: a change to the engine never runs with that token
+before it is released, and no pin of its own waits for the tag.
+
+**How workline itself releases** (ADR-0017): with release-please, and no
+tag by hand. On each push to `main`, release-please.yml, with the GitHub
+App's token, keeps one pull request open, "chore(main): release X": the
+next version from the conventional commits since the last tag (`feat`
+moves the minor while workline is at 0.x, as a breaking change does),
+CHANGELOG.md, and the templates' `WORKLINE_VERSION`, each on a line marked
+`x-release-please-version` (release-please-config.json). The App's token,
+not the job's: a pull request opened with `GITHUB_TOKEN` starts no
+workflow, so its checks would never run. The person merges it; that is the
+decision. release-please then tags the merged commit, `vX.Y.Z`, and writes
+the GitHub release with its notes; in the same run, release.yml builds the
+binaries with GoReleaser, which uploads them to that release and keeps its
+notes (`release.mode: keep-existing`), and pushes the image. A failed
+publish is run again from the Actions page, never tagged again: a tag
+pushed is never moved (the Go proxy keeps its first commit).
 
 ## GitHub
 
