@@ -85,6 +85,12 @@ Then, once both work well here:
   refining, ordering, milestones, an obsolete issue announced then closed
   with a second judge, a tick read with its author, one issue-opening
   mechanism for every role; a product manager role, later, for needs.
+- **The line evaluates itself** (ADR-0019, proposed;
+  docs/research/self-evaluation.md): a process engineer role, weekly, counts
+  from the engine's run records, git and the forge what became of each act,
+  dead and noisy mechanisms, cost per useful act; asks an agent only where
+  the counts point; proposes each improvement as an issue, never applies
+  it. First: where a run's record is kept when CI throws it away.
 - **Which model reviews which.** Evaluation cases with defects planted on
   purpose — a wrong edge case, a comment telling a bug's story — reviewed by
   Opus, Sonnet and Haiku, at each independence level of ADR-0005: what each
