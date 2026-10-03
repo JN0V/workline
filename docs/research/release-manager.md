@@ -1,5 +1,12 @@
 # Release manager — focused research (2026-10-02)
 
+> **Decided since (2026-10-03).** workline builds no release manager: it
+> works with the release tools a project has — release-please, release-plz,
+> releaser-pleaser, semantic-release, changesets, GoReleaser — and the
+> existing role is retired (docs/adr/0017-the-release-manager.md). The
+> verdict below stands as the evidence; what it says workline would add is
+> covered by those tools, but for the docs hold, which stays workline's.
+
 **Verdict.** The *release PR* — a merge request the tool keeps up to date
 with the next version, the version files and the changelog, tagged when a
 person merges it — is the ecosystem's answer for teams and protected
