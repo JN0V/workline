@@ -723,7 +723,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if err != nil {
 		return err
 	}
-	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings), settings: settings,
+	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
 		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name}
 	done := map[int]bool{}
 	for _, i := range st.Applied {
@@ -1375,11 +1375,10 @@ func invalid(r *role.Role, in []intent.Intention, line *routing.Config) ([]strin
 type applier struct {
 	repo, runDir string
 	targets      map[string]string
-	writes       []string       // paths the role may write
-	settings     map[string]any // the role's merged settings
-	written      []string       // files changed by this run's patches
-	handoffs     []any          // next roles asked for, recorded for routing
-	forge        forge.Forge    // nil when the project has no forge
+	writes       []string    // paths the role may write
+	written      []string    // files changed by this run's patches
+	handoffs     []any       // next roles asked for, recorded for routing
+	forge        forge.Forge // nil when the project has no forge
 	target       *forge.Target
 	runID, role  string
 	index        int // position of the intention being applied, for its marker
@@ -1419,8 +1418,6 @@ func (a *applier) apply(in intent.Intention) error {
 		return err
 	case "patch":
 		return a.patch(in.Value)
-	case "release":
-		return a.release(in.Value)
 	case "comment":
 		// A sticky comment, {body, sticky: key}, is one comment edited on
 		// each run; with update-only, it is never created.
@@ -1535,53 +1532,6 @@ func (a *applier) patch(v any) error {
 	}
 	a.written = append(a.written, touched...)
 	return nil
-}
-
-// release commits what this run wrote, then tags it. Only the direct flow
-// exists locally; the merge-request flow needs a forge.
-func (a *applier) release(v any) error {
-	m, ok := v.(map[string]any)
-	version, _ := m["version"].(string)
-	notes, _ := m["notes"].(string)
-	if !ok || version == "" {
-		return errors.New("expected {version, notes}")
-	}
-	if flow, _ := a.settings["flow"].(string); flow != "direct" {
-		return fmt.Errorf("the %q flow is not built yet; set flow: direct", flow)
-	}
-	if len(a.written) > 0 {
-		if _, err := git(a.repo, nil, append([]string{"add", "--"}, a.written...)...); err != nil {
-			return err
-		}
-		if _, err := git(a.repo, nil, "commit", "-q", "-m", "chore(release): "+version); err != nil {
-			return err
-		}
-	}
-	head, err := git(a.repo, nil, "rev-parse", "HEAD")
-	if err != nil {
-		return err
-	}
-	if tagged, err := git(a.repo, nil, "rev-parse", "-q", "--verify", version+"^{commit}"); err == nil {
-		if tagged == head {
-			return a.publish(version, notes) // tagged already: only the forge may be missing it
-		}
-		return fmt.Errorf("tag %s already exists on another commit", version)
-	}
-	if notes == "" {
-		notes = version
-	}
-	if _, err = git(a.repo, nil, "tag", "-a", version, "-m", notes); err != nil {
-		return err
-	}
-	return a.publish(version, notes)
-}
-
-// publish puts the release on the forge, when there is one.
-func (a *applier) publish(version, notes string) error {
-	if a.forge == nil {
-		return nil
-	}
-	return a.forge.Release(version, notes)
 }
 
 func strs(v any) []string {

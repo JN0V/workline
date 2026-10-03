@@ -17,7 +17,6 @@ type Fake struct{ Path string }
 type FakeState struct {
 	Issues        []FakeItem `json:"issues"`
 	MergeRequests []FakeItem `json:"merge-requests"`
-	Releases      []FakeRel  `json:"releases"`
 	FailOnWrite   int        `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes        int        `json:"writes"`
 }
@@ -33,12 +32,6 @@ type FakeItem struct {
 	Body     string   `json:"body,omitempty"`
 	Labels   []string `json:"labels"`
 	Comments []string `json:"comments"`
-}
-
-// FakeRel is a published release.
-type FakeRel struct {
-	Tag   string `json:"tag"`
-	Notes string `json:"notes"`
 }
 
 func (f *Fake) load() (*FakeState, error) {
@@ -175,18 +168,6 @@ func (f *Fake) OpenIssue(title, body, marker string) (int, error) {
 		return nil
 	})
 	return id, err
-}
-
-func (f *Fake) Release(tag, notes string) error {
-	return f.write(func(s *FakeState) error {
-		for _, r := range s.Releases {
-			if r.Tag == tag {
-				return nil
-			}
-		}
-		s.Releases = append(s.Releases, FakeRel{Tag: tag, Notes: notes})
-		return nil
-	})
 }
 
 func (f *Fake) OpenMergeRequest(branch, base, title, body string) (int, error) {

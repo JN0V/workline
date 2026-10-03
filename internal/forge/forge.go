@@ -1,5 +1,5 @@
 // Package forge applies what reaches a forge — comments, labels, issues,
-// releases — on GitHub, GitLab, or a simulated forge for the tests. Every
+// merge requests — on GitHub, GitLab, or a simulated forge for the tests. Every
 // write is idempotent, so a run interrupted half-way can be resumed.
 package forge
 
@@ -41,8 +41,6 @@ type Forge interface {
 	// KeepIssue rewrites the body of the open issue with this title, or opens
 	// it when there is none and create is true: one issue, kept in place.
 	KeepIssue(title, body string, create bool) (int, error)
-	// Release publishes notes for an existing tag, unless already published.
-	Release(tag, notes string) error
 	// OpenMergeRequest opens a merge request from branch into base, or
 	// updates the title and body of the one already open from branch.
 	OpenMergeRequest(branch, base, title, body string) (int, error)

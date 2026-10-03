@@ -123,10 +123,6 @@ func (c *command) KeepIssue(title, body string, create bool) (int, error) {
 	return a.ID, err
 }
 
-func (c *command) Release(tag, notes string) error {
-	return c.call("release", map[string]any{"tag": tag, "notes": notes}, nil)
-}
-
 func (c *command) OpenMergeRequest(branch, base, title, body string) (int, error) {
 	var a idAnswer
 	err := c.call("open-merge-request", map[string]any{"branch": branch, "base": base, "title": title, "body": body}, &a)

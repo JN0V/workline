@@ -1,0 +1,12 @@
+contract: 1
+name: hands-over
+mission: A role of the tests only — it writes the changelog and may hand over to the documentalist — so handoffs are tried though no shipped role asks for one.
+
+events: [merge]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: [CHANGELOG.md]
+intentions: [patch, handoff, note]
+without-ai: pass

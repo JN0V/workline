@@ -1,5 +1,5 @@
 case: documentalist/release-waits-for-due-docs
-about: At the release, the documentalist runs before the release manager; a product doc due then and not brought up to date blocks the line, so nothing is released.
+about: At the release, the documentalist runs before the release tool tags; a product doc due then and not brought up to date blocks the line, so nothing is released.
 given:
   repo: documented
   setup: ["sed -i 's/Access tokens last one hour./Access tokens last two hours./' docs/tech/auth.md && git commit -qam 'docs(auth): tokens last two hours'"]

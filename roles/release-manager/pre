@@ -1,3 +1,0 @@
-#!/bin/sh
-# Prepare: the next version and its changelog, from the commits.
-exec "${WORKLINE_BIN:-workline}" builtin release-manager pre

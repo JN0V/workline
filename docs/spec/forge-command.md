@@ -1,7 +1,7 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
 checked: 0560057
-judged: bca29fb
+judged: 14ecc48
 verified: agent:documentalist
 ---
 # A forge plugged by a command — v1 (draft)
@@ -57,28 +57,28 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `label` | `target`, `add`, `remove` | adds the labels (creating them on the forge if needed), removes the others; one already there, or already gone, changes nothing | `{}` |
 | `open-issue` | `title`, `body`, `marker` | on the open issue with this title, comments as `comment` does; with none, opens one, its body `body` + `marker` | `{id}` |
 | `keep-issue` | `title`, `body`, `create` | rewrites the body of the open issue with this title; with none, opens it when `create` is true | `{id}`, 0 when none was opened |
-| `release` | `tag`, `notes` | publishes the notes for the existing tag, unless a release of it is already there | `{}` |
 | `open-merge-request` | `branch`, `base`, `title`, `body` | opens a merge request from `branch` (already pushed to `origin` by the engine) into `base`, or updates the title and body of the one open from `branch` | `{id}` |
 | `open-merge-requests` | `prefix` | lists the open merge requests whose branch starts with `prefix` | `{branches: [names]}` |
 | `merge-request-branch` | `id` | the branch a merge request comes from, and whether it lives in this repository rather than a fork | `{branch, here}` |
 
 Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the
-branches under the prefix, sorted.
+branches under the prefix, sorted. There is no `release` operation:
+releases are the project's release tool's, not workline's (ADR-0017).
 
 ## What stays with the engine
 
 Git is the engine's: it commits and pushes the branches of merge requests
 (`--open-merge-request`, `--push-to-merge-request`, the weekly sample) to
 `origin` itself; the command is asked only for what is the forge's — issues,
-comments, labels, merge requests, releases. A command is not sandboxed: what
+comments, labels, merge requests. A command is not sandboxed: what
 it does with the tokens it is given is its own promise, not the engine's.
 
 ## Tested
 
 The conformance cases `forge/cmd-*` plug a fake script
 (tests/conformance/fixtures/forges/logged.sh) that records each request: a
-merge request's comment, a release, a work item read and labelled, the
+merge request's comment, a work item read and labelled, the
 weekly sample written, a forge failing (`blocked-external`) and refusing
 (`block`). The Forgejo sample was run against a mock of the API only, not
 yet on a live instance.

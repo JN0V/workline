@@ -1,0 +1,3 @@
+#!/bin/sh
+# Always a question for the agent: what the changelog says of the change.
+echo "Add the change to CHANGELOG.md." > "$WORKLINE_RUN_DIR/in/task.md"

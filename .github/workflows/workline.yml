@@ -1,4 +1,10 @@
-# workline on its own pull requests: ci/github/workline.yml, as shipped.
+# workline on its own pull requests: ci/github/workline.yml, but for one
+# thing. judge runs the engine built from the pull request's commit, as
+# gardening and the sample do: a project never runs, in the checks of a
+# commit, the pin that commit ships (ADR-0017), and a pull request moving
+# the templates' pins to a version not yet tagged stays green. apply, which
+# holds the write token, keeps running the release pinned below: what a
+# pull request changes in the engine never runs with that token.
 # workline on GitHub Actions — copy to .github/workflows/workline.yml.
 #
 # The project's routing decides what runs on a merge request (.workline/config.yaml,
@@ -32,7 +38,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.2.3          # a release of workline: update it to take a newer one
+  WORKLINE_VERSION: v0.2.3          # the release apply runs; judge builds this commit's engine
   WORKLINE_RUNS_DIR: ${{ github.workspace }}/.workline-runs
 
 jobs:
@@ -49,13 +55,16 @@ jobs:
       # doc checked here names a commit the branch holds.
       - uses: actions/checkout@v4
         with: {fetch-depth: 0, ref: "${{ github.event.pull_request.head.sha }}"}
-      # The engine at the version pinned above, and the tools its roles use,
-      # from their releases, checksums verified: seconds, not a build.
+      # The engine built from this commit, and the tools its roles use, from
+      # their releases, checksums verified.
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
       - name: workline
         run: |
-          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"; cd "$RUNNER_TEMP"
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          go build -o "$bin/workline" ./cmd/workline
+          cd "$RUNNER_TEMP"
           get() { curl -fsSLO "$1/$2" && curl -fsSL "$1/$3" | grep " $2\$" | sha256sum -c - && tar -xzf "$2" -C "$bin" "$4"; }
-          get "https://github.com/JN0V/workline/releases/download/$WORKLINE_VERSION" workline_linux_amd64.tar.gz checksums.txt workline
           get https://github.com/gitleaks/gitleaks/releases/download/v8.30.1 gitleaks_8.30.1_linux_x64.tar.gz gitleaks_8.30.1_checksums.txt gitleaks
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version

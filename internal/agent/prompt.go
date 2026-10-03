@@ -14,7 +14,6 @@ var contracts = map[string]string{
 	"comment":        `- comment: "text of the comment"`,
 	"label":          `- label: {add: [name], remove: [name]}`,
 	"issue":          `- issue: {title: "short title", body: "what is wrong, where, how it was noticed"}`,
-	"release":        `- release: {version: "the version you were given", notes: "release notes"}`,
 	"handoff":        `- handoff: {role: "next role", reason: "why"}`,
 	"note":           `- note: "a message for a person"`,
 	"claim":          `- claim: {lines: "12-14", status: contradicted, quote: "the doc's words, as they read", source: {path: "src/file.go", lines: "40-41", quote: "the source's words, as they read"}, why: "why they disagree"}`,

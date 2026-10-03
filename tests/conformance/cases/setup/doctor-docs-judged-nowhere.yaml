@@ -3,7 +3,7 @@ about: A repository whose line runs the documentalist neither on merge requests 
 given:
   repo: documented
   config:
-    routing: {events: {release: [release-manager]}}
+    routing: {events: {release: []}}
 run: {doctor: true}
 expect:
   status: pass

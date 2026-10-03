@@ -67,7 +67,6 @@ refuses. The catalogue is closed and belongs to the engine:
 | `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened) | forge |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened) | forge (`forge: local` keeps it in the clone); refused without one |
-| `release` | tag a commit with a version and publish release notes | git and forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported` | never: read by `pre`, which puts the parts' claims together |

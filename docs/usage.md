@@ -123,7 +123,6 @@ and links the line reports on every run are only counted. `git push
 | `.workline/work/<id>.md` | a work item, without a forge |
 | `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels in its front matter, then its body and comments — never committed; `workline issues` reads them. With no forge (`none`), an issue a role opens is refused, as every write that needs a forge; in CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes |
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
-| `.git/workline/releases/<tag>.md` | `forge: local`: a release's notes |
 | `.workline/off` | empty: the global hook skips this repository |
 | `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push (ADR-0011); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
 | `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
@@ -156,7 +155,7 @@ roles:
       sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
-  handoffs: [{from: release-manager, to: documentalist}]
+  handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
   max-handoffs: 3
 gates:                      # docs/spec/gates.md
   merge:
@@ -166,7 +165,9 @@ repos:                      # other repositories docs may depend on (docs/spec/m
 ```
 
 A key the engine does not know blocks, with its line: an ignored setting is one
-someone believes in and nothing applies. A commit written unquoted is a number
+someone believes in and nothing applies. So does a role retired, named in
+`roles:` or `routing:`: the release manager is gone, and the message names the
+release tool to use instead (ADR-0017). A commit written unquoted is a number
 to YAML when all digits (`after: 7515148`): a setting naming a commit reads it
 as written. One YAML reads otherwise than written — a leading zero
 (`0123456`, octal), an `e` between digits (`1234e56`, a float) — blocks,

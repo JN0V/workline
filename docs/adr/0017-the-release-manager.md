@@ -1,6 +1,6 @@
 # ADR-0017: workline does not cut releases; it works with the release tools a project has
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-03)
 - **Date:** 2026-10-02; rewritten 2026-10-03 on the person's decision
 - **Amends:** ADR-0010 (the hold "at the release" moves onto the release
   pull request a tool opens); ADR-0016 (a release's notes are no longer one

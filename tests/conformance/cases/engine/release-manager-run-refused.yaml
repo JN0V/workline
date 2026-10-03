@@ -1,0 +1,7 @@
+case: engine/release-manager-run-refused
+about: "A run asked of the retired release manager is refused, naming ADR-0017 and a release tool, rather than a role not found."
+given: {repo: released}
+run: {role: release-manager, event: release, ai: none}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "ADR-0017"}, {rule: engine-error, message: "release-please"}]

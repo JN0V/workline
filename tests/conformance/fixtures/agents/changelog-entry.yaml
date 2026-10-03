@@ -1,0 +1,1 @@
+- patch: {file: CHANGELOG.md, content: "# Changelog\n\n## Unreleased\n\n- Export your data as CSV.\n"}

@@ -1,6 +1,6 @@
 # ADR-0016: What workline writes goes where the project lives
 
-- **Status:** accepted; built 2026-10-02
+- **Status:** accepted; built 2026-10-02; amended 2026-10-03 (no release notes)
 - **Date:** 2026-10-02
 - **Amends:** ADR-0010 and ADR-0015, whose merge requests, tracking issues
   and comments assumed GitHub or GitLab
@@ -74,3 +74,11 @@ in a repository's refs — more than workline needs, and a tool to install.
   them is not.
 - Native Gitea and Forgejo support, and the GitLab side of the sample, are
   not built or not tried (docs/BACKLOG.md).
+
+## Amendment (2026-10-03)
+
+A release's notes are no longer one of workline's writes: the release
+manager is retired (ADR-0017), and with it every forge's `Release`, the
+`release` operation of a forge command and `.git/workline/releases/`. A
+project with no forge tags by hand, after `workline route release`. The
+rest of the decision is unchanged.

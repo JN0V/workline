@@ -80,12 +80,12 @@ two tokens set as masked variables (the GitLab one expires about
   rest conformance only (fake readers).
 - **Where it writes** (ADR-0016): on the project's forge, wherever it
   lives. `forge: local` keeps the comments, issues, labels, gardening's
-  merge requests (local branches, nothing pushed), the sample's writes and
-  a release's notes in the clone (`.git/workline/`), read with `workline
+  merge requests (local branches, nothing pushed) and the sample's writes
+  in the clone (`.git/workline/`), read with `workline
   issues`; `forge: cmd:<command>` plugs another forge by a JSON contract
   (docs/spec/forge-command.md), with a sample for Forgejo and Gitea
   (ci/forgejo/). With no forge, an issue is refused as every other write;
-  in CI, the local forge refuses its writes. Conformance only (seventeen
+  in CI, the local forge refuses its writes. Conformance only (fifteen
   cases, a fake command); the Forgejo script's labels run against a mock
   of its API (ci/forgejo/workline_forge_test.go), no live instance.
 - **Beyond our repositories** (docs/research/documentalist-genericity.md,

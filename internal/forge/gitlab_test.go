@@ -29,8 +29,6 @@ func TestGitLabAPI(t *testing.T) {
 			json.NewEncoder(w).Encode([]map[string]any{{"id": 2, "body": "old <!-- workline:k -->"}})
 		case r.Method == "GET" && p == "/merge_requests/7":
 			json.NewEncoder(w).Encode(map[string]any{"source_branch": "feat", "source_project_id": 3, "target_project_id": 3})
-		case r.Method == "GET" && p == "/releases/v1.0.0":
-			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
 		case r.Method == "PUT" || r.Method == "POST":
 			body, _ := io.ReadAll(r.Body)
 			form, _ := url.ParseQuery(string(body))
@@ -57,14 +55,6 @@ func TestGitLabAPI(t *testing.T) {
 	}
 	if len(got) != 1 || got[0] != "PUT /merge_requests/7/notes/2 body=new\n\n<!-- workline:k -->" {
 		t.Fatalf("sticky: %q", got)
-	}
-	// A release the forge does not have yet is created.
-	got = nil
-	if err := g.Release("v1.0.0", "notes"); err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 1 || !strings.HasPrefix(got[0], "POST /releases ") {
-		t.Fatalf("release: %q", got)
 	}
 	// A merge request's branch, and whether it lives in this project.
 	branch, here, err := g.MergeRequestBranch(7)

@@ -5,7 +5,6 @@ events:
   commit-msg:    [committer]
   merge-request: [committer, documentalist]
   schedule:      [documentalist]
-  release:       [documentalist, release-manager]   # docs due at the release first: they gate it
-handoffs:
-  - {from: release-manager, to: documentalist}
+  release:       [documentalist]   # before the project's release tool: the docs due at the release gate it
+handoffs: []
 max-handoffs: 3

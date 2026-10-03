@@ -3,7 +3,6 @@ package forge
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -284,16 +283,6 @@ func (g *gitlab) OpenIssue(title, body, marker string) (int, error) {
 		IID int `json:"iid"`
 	}
 	return created.IID, decode(out, &created)
-}
-
-func (g *gitlab) Release(tag, notes string) error {
-	if _, err := g.api("projects/:id/releases/" + url.PathEscape(tag)); err == nil {
-		return nil
-	} else if !errors.Is(err, errNotFound) {
-		return err
-	}
-	_, err := g.api("-X", "POST", "projects/:id/releases", "-f", "tag_name="+tag, "-f", "description="+notes)
-	return err
 }
 
 // openMergeRequests lists the open merge requests as iid by source branch.
