@@ -1,0 +1,17 @@
+case: product-owner/close-a-duplicate
+about: A duplicate whose original is quoted is closed with the forge's own reason, a comment linking the original and saying how to undo, and the report lists it.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-duplicate}
+expect:
+  status: pass
+  applied: [close]
+  forge:
+    issues:
+      - {id: 7, closed: false}
+      - {id: 12, closed: true, reason: duplicate, comment-contains: "Duplicate of #7", comment-lacks: "not planned"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "#12"}

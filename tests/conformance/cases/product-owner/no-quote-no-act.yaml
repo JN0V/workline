@@ -1,0 +1,16 @@
+case: product-owner/no-quote-no-act
+about: A closing whose quote is not found again, or that has none, is dropped; nothing is written on the issue.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-no-quote}
+expect:
+  findings: [{rule: no-quote, where: "#12"}, {rule: no-quote, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, closed: false, comments: 1}
+      - {id: 12, closed: false, comments: 1}

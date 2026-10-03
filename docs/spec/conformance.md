@@ -107,7 +107,8 @@ a `PATH` without a tool, or with a fake one first.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
-  and `comment-lacks` (a text some comment holds, or none does),
+  and `comment-lacks` (a text some comment holds, or none does), `closed`
+  and the `reason` it was closed for,
   `body-contains` (a text its body holds).
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
   case's `origin`, or the message of that branch's tip.

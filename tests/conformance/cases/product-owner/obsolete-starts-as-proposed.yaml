@@ -1,0 +1,13 @@
+case: product-owner/obsolete-starts-as-proposed
+about: Closing as obsolete starts at propose; the issue stays open, the report proposes it with the code quoted.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete}
+expect:
+  forge:
+    issues:
+      - {id: 7, closed: false, comments: 1}
+      - {id: 8, title: "Backlog — product owner", body-contains: "for i := 0; i < len(rows); i++ {"}

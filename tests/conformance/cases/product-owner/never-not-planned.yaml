@@ -1,0 +1,13 @@
+case: product-owner/never-not-planned
+about: Refusing a need is the person's; a closing as not planned is dropped, the issue left open.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-not-planned}
+expect:
+  findings: [{rule: close-reason, where: "#12"}]
+  forge:
+    issues:
+      - {id: 12, closed: false, comments: 1}
