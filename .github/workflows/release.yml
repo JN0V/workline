@@ -1,11 +1,16 @@
-# A tag v* publishes a release of workline (docs/BACKLOG.md, "Install without
-# Go in CI"): the engine for each system on the GitHub release (.goreleaser.yaml),
-# and the image CI templates run in, ghcr.io/jn0v/workline:<tag> (Dockerfile),
-# so a job downloads a fixed version in seconds instead of building main.
+# Publishes a release of workline (ADR-0017): release-please.yml calls it
+# once it has tagged the merged release pull request and written the
+# release's notes. GoReleaser builds the engine for each system, with the
+# roles inside it, and puts the archives on that release, its notes kept
+# (.goreleaser.yaml); then the image CI templates run in,
+# ghcr.io/jn0v/workline:<tag> (Dockerfile), so a job downloads a fixed
+# version in seconds instead of building main. Called in release-please's
+# run, not on the tag's push: it needs no event a token may not start.
 name: release
 on:
-  push:
-    tags: ["v*"]
+  workflow_call:
+    inputs:
+      tag: {description: "the tag release-please made, v0.3.0", required: true, type: string}
 permissions: {}
 
 jobs:
@@ -14,15 +19,17 @@ jobs:
     permissions: {contents: write, packages: write}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 0, ref: "refs/tags/${{ inputs.tag }}"}
       - uses: actions/setup-go@v5
         with: {go-version-file: go.mod}
       - uses: goreleaser/goreleaser-action@v6
         with: {version: "~> v2", args: release --clean}
-        env: {GITHUB_TOKEN: "${{ github.token }}"}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GORELEASER_CURRENT_TAG: ${{ inputs.tag }}
       - name: The image CI runs in
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag }}
           TOKEN: ${{ github.token }}
         run: |
           image=ghcr.io/$(echo "$GITHUB_REPOSITORY_OWNER" | tr A-Z a-z)/workline

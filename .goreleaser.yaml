@@ -1,7 +1,9 @@
-# Releases of workline (docs/BACKLOG.md, "Install without Go in CI"): a tag
-# v* builds the engine for each system, with the roles inside it, and puts
-# the archives on the GitHub release; release.yml then builds the image CI
-# runs in (Dockerfile). Try it with `goreleaser release --snapshot --clean`.
+# Releases of workline (ADR-0017): release-please tags the merged release
+# pull request and writes the GitHub release's notes; GoReleaser, from
+# release.yml, builds the engine for each system, with the roles inside it,
+# and puts the archives on that release, its notes kept. release.yml then
+# builds the image CI runs in (Dockerfile). Try it with
+# `goreleaser release --snapshot --clean`.
 version: 2
 project_name: workline
 builds:
@@ -20,7 +22,9 @@ archives:
 checksum:
   name_template: checksums.txt
 changelog:
-  disable: true                     # the notes are a release tool's, to come (ADR-0017)
+  disable: true                     # the notes are release-please's (CHANGELOG.md)
 release:
+  mode: keep-existing               # the release exists, with release-please's notes
+  replace_existing_artifacts: true  # a failed publish run again uploads what it built
   draft: false
   prerelease: auto

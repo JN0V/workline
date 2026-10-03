@@ -1,0 +1,41 @@
+# workline's releases (ADR-0017): release-please keeps one pull request
+# open with the next version, CHANGELOG.md and the templates' WORKLINE_VERSION
+# pins (release-please-config.json); a person merges it, and that is the
+# decision to release. On that merge, release-please tags the merged commit
+# and writes the GitHub release's notes, then release.yml publishes the
+# binaries and the image on it.
+#
+# It runs with the GitHub App's token (variable WORKLINE_APP_ID, secret
+# WORKLINE_APP_PRIVATE_KEY), never the job's own: a pull request opened with
+# GITHUB_TOKEN starts no workflow, so the release pull request would get no
+# check. With no App, the job fails, loud.
+name: release-please
+on:
+  push:
+    branches: [main]
+permissions: {}
+concurrency: {group: release-please, cancel-in-progress: false}
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions: {}                 # the App's token writes, not this job's
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - id: release
+        uses: googleapis/release-please-action@v5
+        with: {token: "${{ steps.app.outputs.token }}"}
+
+  release:
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    permissions: {contents: write, packages: write}
+    uses: ./.github/workflows/release.yml
+    with: {tag: "${{ needs.release-please.outputs.tag }}"}
