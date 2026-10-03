@@ -81,6 +81,8 @@ a `PATH` without a tool, or with a fake one first.
 - `init: true` instead of `role` — run `workline init` on the repository;
 - `setup: [<option>...]` instead of `role` — run `workline setup` with these
   options, on a git config of the case's own;
+- `issues-import: [<argument>...]` instead of `role` — `workline issues
+  import` on the repository, on the simulated forge;
 - `sample: [<option>...]` instead of `role` — draw and read the weekly
   sample (`workline sample`), with no forge; `then: apply` then writes what
   it found with `workline sample --apply`, on the simulated forge;

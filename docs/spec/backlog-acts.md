@@ -37,6 +37,28 @@ title only, so a duplicate can still be named. Each issue read gets
 `judged` moved to the run's commit; without an agent, or when its answer
 does not read, none is.
 
+## Importing a roadmap
+
+`workline issues import <file>` moves a roadmap file to the forge, once,
+without AI (principle 4). An entry is a heading of level 2 to 4 starting
+with an id (`### BUG-4 — NTP: use-after-free [HIGH]`) and the text under
+it, down to the next heading of its level or above. One whose heading says
+it is done (`--done`, by default *done*, *closed*, *withdrawn*, *refuted*,
+*superseded*, *merged*, *fixed*, *wontfix*) stays in the file. Each other
+becomes an issue:
+
+- its title `<id> — <heading>`, so it is found again by its id: an entry
+  whose id an open issue carries is not opened again, and an import
+  stopped half-way is run again;
+- its body the entry's text, and the line it came from;
+- its state comment: the files the entry names, by path or by a name one
+  file alone has, then the code its backticked names are in, tests last,
+  three at most; confirmed at the commit imported.
+
+Without `--apply`, it lists what it would open and writes nothing. The
+file then stays as it is, read-only, for its history; what the product
+owner finds done is proposed for closing as any issue.
+
 ## Closing
 
 ```yaml
