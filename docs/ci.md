@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml]
+sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/workline.yml]
 checked: 64eee70
 judged: a0f1e8a
 ---
@@ -35,6 +35,16 @@ What every forge needs first, in the repository:
 The templates run a release of workline, `WORKLINE_VERSION` at their top:
 update it to take a newer one. `workline version` in a job's log says which
 ran.
+
+workline's own workflows (.github/workflows/) are the templates, but for
+the engine: they build it from the commit they run on rather than run a
+release — gardening and the sample, both jobs, from `main`; a pull
+request's `judge`, from the pull request's commit. A project never runs, in the checks of a commit, the pin that
+commit ships: a pull request moving the templates to a version not yet
+tagged would download nothing, and its check go red, as on each release
+from v0.2.0 to v0.2.3 (ADR-0017). The pull request's `apply`, which holds
+the write token, still runs the pinned release: a change to the engine
+never runs with that token before it is released.
 
 ## GitHub
 
