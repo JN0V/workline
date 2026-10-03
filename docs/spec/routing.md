@@ -1,7 +1,7 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
 checked: d579043
-judged: 0b863bf
+judged: a8b1742
 verified: agent:documentalist
 ---
 # Routing — v1 (draft)
