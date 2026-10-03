@@ -1,0 +1,13 @@
+case: product-owner/original-given-whole
+about: An open issue already read, on the same code as one read now, is given whole beside it — the original a duplicate would be closed against, and quoted; one on other code is listed by title only.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "The README says too little", body: "Say what the project does.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md: {contains: "# Other open issues on the same code\n\nNot to judge in this run: given whole, as the original a duplicate would be closed against.\n\n## #7 Export drops the last row\n\nEvery CSV file: the export drops the last row.\n\n# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n- #8 The README says too little"}

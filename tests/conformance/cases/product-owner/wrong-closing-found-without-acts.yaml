@@ -1,0 +1,20 @@
+case: product-owner/wrong-closing-found-without-acts
+about: A closing a person undid is found at the next run even when the agent proposes nothing; the reopened issue is read again.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost on Windows", body: "Not the same bug.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 13
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\nclosed:\n  - {issue: 9, act: close-duplicate}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  findings: [{rule: wrong-closing, where: "#9"}]
+  forge:
+    issues:
+      - {id: 13, body-contains: "Back to propose after a wrong closing: close-duplicate", comment-contains: "propose: [close-duplicate]"}

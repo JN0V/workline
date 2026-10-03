@@ -1,43 +1,41 @@
-# Product owner — where it stands (2026-10-03)
+# Product owner — where it stands (2026-10-04)
 
-**In one line:** its closings are built and pass conformance; on planted
-issues, Sonnet scores 11 of 11 in five runs of five; on a copy of
-DomoticsCore's roadmap (38 issues), eight issues rightly proposed as
-obsolete, none wrongly (tried.md).
+**In one line:** it keeps a backlog on GitHub for real — reads it a share a
+run, closes duplicates, proposes what the code made obsolete, names an
+issue's code, sets milestones, finds a closing a person undid — tried live
+on JN0V/workline-sandbox and on copies of two real backlogs; not yet in
+anyone's CI (no release holds it), and refining is not built (tried.md).
 
 ## Built and tried with a real agent
 
 | What | Tried on |
 |---|---|
-| A duplicate closed, its original quoted; a look-alike on the same code left open; a need left open | planted issues, local forge, Sonnet (tried.md) |
-| An issue the code solved proposed as obsolete, the code and the fixing commit quoted | the same |
-| A true issue on the code a fix touched left alone; a duplicate in other words closed | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
-| A roadmap file imported as issues (`workline issues import`), ids kept, sources named | a copy of DomoticsCore, 38 of 188 entries, local forge |
-| Issues put in the next releases' milestones; the code an issue is about named | the same, two runs |
-| A real backlog read a share a run (4 issues, 1,500 lines of code), each read once; issues already done proposed as obsolete, the code quoted | a copy of DomoticsCore, 38 roadmap entries as issues, local forge |
+| A duplicate closed, its original quoted, with GitHub's own reason | JN0V/workline-sandbox, live (#3 → #2) |
+| A closing a person undid found at the next run, that act back to propose, the report saying so; the person's comment read | the same (#3 reopened) |
+| An issue the code solved proposed as obsolete, the code quoted | the sandbox (#4); a copy of DomoticsCore, 8 of 38, all right |
+| A real backlog read a share a run; an issue read again when its code changed or a person wrote | copies of DomoticsCore; the sandbox |
+| A duplicate's original given whole though read before | the sandbox |
+| The code an issue is about named (`sources`) | the sandbox (#3); DomoticsCore (BUG-5) |
+| Issues put in the next releases' milestones | a copy of DomoticsCore |
+| A backlog file, whatever its form, opened as issues (`workline issues import`) | workline's BACKLOG.md, 30 issues, one call |
+| A true issue on the code a fix touched left alone; a look-alike left open | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
 
-## Built, tried without an agent
+Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
+issues, comments, closings and the report tried live; its milestones, and
+GitLab's whole backlog, untried live.
 
-- Closing a duplicate, its original quoted; closing as obsolete proposed,
-  the code quoted; never as not planned; no quote found, no act; an issue
-  with no state comment, or one that does not read, never acted on; a cap
-  per run and per kind; a closing undone puts that kind back to propose.
-  Conformance only (tests/conformance/cases/product-owner).
-- The forge's backlog — the open issues listed, their comments read, an
-  issue closed with a reason — on the simulated and local forges, and a
-  `cmd:` forge's protocol. GitHub and GitLab written, untried live.
+## Missing, in the order to build it
 
-## Missing
-
-- The weekly sample over its acts (ADR-0018, "Proof"); a duplicate by
-  likeness only told from one on the same sources and claim.
-- An obsolete issue announced first, then closed at the next run with a
-  second judge; sources re-checked only when they changed; a person
-  setting an act back to `act`, a tick read with its author; the ignored
-  runs that pause it.
-- Opening, splitting, refining, moving to `ready`, ordering, milestones.
-- One issue-opening mechanism for every role.
-- DomoticsCore's roadmap on its GitHub: the import and the role run there,
-  GitHub's issues and milestones untried live.
-- Naming sources the agent was not given: today it can only name a file
-  it was shown.
+1. **In CI**: a release holding it, then the schedule line on a real
+   project (docs/ci.md, "The product owner"); DomoticsCore, with the
+   person's yes.
+2. **Refining**: an issue's Scope and Verification written, moved to
+   `ready` when its Need and Validation are a person's; split into
+   sub-issues; the reporter asked what is missing.
+3. **Ordering** the backlog, moving what slipped.
+4. **Obsolete closed, not only proposed**: announced first, closed at the
+   next run if nobody answered and a second judge agreed.
+5. **The person's hand**: a tick read with its author — a proposal
+   accepted, an act set back to `act`; ignored runs pausing it.
+6. **One issue-opening mechanism for every role**; the weekly sample over
+   its acts; a file the agent was not shown named as a source.

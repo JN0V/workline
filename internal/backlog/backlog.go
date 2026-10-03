@@ -29,7 +29,8 @@ const (
 type State struct {
 	Sources   []string `yaml:"sources"`
 	Confirmed string   `yaml:"confirmed"`
-	Judged    string   `yaml:"judged,omitempty"` // the commit the role last read it at
+	Judged    string   `yaml:"judged,omitempty"`   // the commit the role last read it at
+	Comments  int      `yaml:"comments,omitempty"` // people's comments when it was last read
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -79,7 +80,8 @@ func FormatState(s State) string {
 		Sources   []string `yaml:"sources,flow"`
 		Confirmed string   `yaml:"confirmed"`
 		Judged    string   `yaml:"judged,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged})
+		Comments  int      `yaml:"comments,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -560,4 +562,39 @@ func Locate(repo, path, text string) (from, to int, original string, ok bool) {
 		}
 	}
 	return 0, 0, "", false
+}
+
+// PeopleComments counts an issue's comments that are not the engine's.
+func PeopleComments(comments []string) int {
+	n := 0
+	for _, c := range comments {
+		if !strings.Contains(c, "<!-- workline:") {
+			n++
+		}
+	}
+	return n
+}
+
+// ClosedByRole lists the issues the role's record says it closed, read from
+// its report issue's comments; nil when there is none or it does not read.
+func ClosedByRole(f forge.Backlog, role string, open []forge.Issue) []int {
+	for _, is := range open {
+		if is.Title != ReportTitle(role) {
+			continue
+		}
+		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
+		if err != nil {
+			return nil
+		}
+		var r Record
+		if _, err := readBlock(comments, RecordMarker(role), &r); err != nil {
+			return nil
+		}
+		var ids []int
+		for _, c := range r.Closed {
+			ids = append(ids, c.Issue)
+		}
+		return ids
+	}
+	return nil
 }
