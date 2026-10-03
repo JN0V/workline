@@ -18,4 +18,4 @@ expect:
   forge:
     merge-requests:
       - {id: 1, comments: 0}
-      - {id: 2, branch: workline/documentalist/release, base: main}
+      - {id: 2, branch: workline/documentalist/release, base: main, body-contains: "for the release (task: suspect)"}

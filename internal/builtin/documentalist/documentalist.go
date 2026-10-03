@@ -2021,7 +2021,11 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 		title = "docs: " + kind + ", proposed by the documentalist"
 	}
 	var body strings.Builder
-	fmt.Fprintf(&body, "Proposed by workline's documentalist, when gardening (task: %s).\n", kind)
+	when := "when gardening"
+	if os.Getenv("WORKLINE_EVENT") == "release" { // a release tool's pull request waits for it (ADR-0017)
+		when = "for the release"
+	}
+	fmt.Fprintf(&body, "Proposed by workline's documentalist, %s (task: %s).\n", when, kind)
 	if len(docs) > 0 {
 		body.WriteString("\nDocs:\n\n")
 		for _, d := range docs {
