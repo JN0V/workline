@@ -59,7 +59,7 @@ workline:judge:
     - status=0
     - >
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
-      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID
+      --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
       --code-quality gl-code-quality.json --json > line.json || status=$?
     - exit $status

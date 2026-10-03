@@ -64,12 +64,15 @@ jobs:
 
       - name: The line for this pull request (proposals only)
         id: line
-        env: {CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}"}
+        # The branch tells a release tool's pull request, held as the release
+        # (ADR-0017); from a fork it is anyone's text: a variable, never
+        # written into the script.
+        env: {CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", HEAD_REF: "${{ github.head_ref }}"}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           status=0
           workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
-            --forge github --target merge-request:${{ github.event.pull_request.number }} \
+            --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
             --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
             --sarif workline.sarif --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
