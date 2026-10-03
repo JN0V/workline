@@ -40,10 +40,11 @@ this repository before any other role is added.
 
 Then, once both work well here:
 
-- **Releases with the project's own tool** (ADR-0017, proposed): no
+- **Releases with the project's own tool** (ADR-0017, accepted): no
   release manager; workline works with release-please, releaser-pleaser,
-  semantic-release and the like. In order: retire the role and its cases;
-  workline's own `workline.yml` builds from the commit; release-please
+  semantic-release and the like. Done: the role and its cases retired;
+  workline's own `workline.yml` judges with the engine built from the
+  commit. In order: release-please
   (with the App, GoReleaser after it) cuts one real release of workline;
   the documentalist's release hold on the release pull request a tool
   opens; later, doctor and `init` detect the tool or recommend one.
