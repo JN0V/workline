@@ -19,11 +19,12 @@ func (t Target) String() string { return fmt.Sprintf("%s #%d", t.Kind, t.ID) }
 
 // Issue is what the line reads from a work item.
 type Issue struct {
-	ID     int      `json:"id"`
-	Title  string   `json:"title"`
-	Body   string   `json:"body"`
-	Labels []string `json:"labels"`
-	Closed bool     `json:"closed,omitempty"`
+	ID        int      `json:"id"`
+	Title     string   `json:"title"`
+	Body      string   `json:"body"`
+	Labels    []string `json:"labels"`
+	Closed    bool     `json:"closed,omitempty"`
+	Milestone string   `json:"milestone,omitempty"` // the title of the milestone it is in, if any
 }
 
 // Forge is what the engine needs from one.
@@ -62,6 +63,11 @@ type Backlog interface {
 	// Close closes an issue: as a duplicate of dup when dup > 0, else as
 	// completed. Closing one already closed changes nothing.
 	Close(id, dup int) error
+	// Milestones lists the titles of the open milestones.
+	Milestones() ([]string, error)
+	// SetMilestone puts an issue in the open milestone with this title,
+	// creating it when there is none.
+	SetMilestone(id int, title string) error
 }
 
 // MergeRequest is where a merge request comes from and where it goes.

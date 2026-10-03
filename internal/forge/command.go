@@ -191,3 +191,15 @@ func (c *command) MergeRequest(id int) (MergeRequest, error) {
 	err := c.call("merge-request-branch", map[string]any{"id": id}, &a)
 	return MergeRequest{Branch: a.Branch, Base: a.Base, Here: a.Here}, err
 }
+
+func (c *command) Milestones() ([]string, error) {
+	var a struct {
+		Milestones []string `json:"milestones"`
+	}
+	err := c.call("milestones", nil, &a)
+	return a.Milestones, err
+}
+
+func (c *command) SetMilestone(id int, title string) error {
+	return c.call("set-milestone", map[string]any{"id": id, "milestone": title}, nil)
+}

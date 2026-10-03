@@ -94,4 +94,10 @@ func TestLocalBacklog(t *testing.T) {
 	if is, _ := l.Issue(1); !is.Closed {
 		t.Fatal("#1 not read as closed")
 	}
+	if err := l.SetMilestone(2, "v1.0.0"); err != nil {
+		t.Fatal(err)
+	}
+	if ms, err := l.Milestones(); err != nil || len(ms) != 1 || ms[0] != "v1.0.0" {
+		t.Fatalf("Milestones = %v, %v", ms, err)
+	}
 }

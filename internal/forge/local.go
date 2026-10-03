@@ -22,14 +22,15 @@ type Local struct{ Repo string }
 
 // LocalItem is an issue or a merge request of the local forge.
 type LocalItem struct {
-	ID       int      `yaml:"-"`
-	Title    string   `yaml:"title"`
-	State    string   `yaml:"state"` // open or closed, as written; see Local.StateOf
-	Labels   []string `yaml:"labels,flow"`
-	Branch   string   `yaml:"branch,omitempty"` // a merge request's local branch
-	Base     string   `yaml:"base,omitempty"`
-	Body     string   `yaml:"-"`
-	Comments []string `yaml:"-"`
+	ID        int      `yaml:"-"`
+	Title     string   `yaml:"title"`
+	State     string   `yaml:"state"` // open or closed, as written; see Local.StateOf
+	Labels    []string `yaml:"labels,flow"`
+	Milestone string   `yaml:"milestone,omitempty"`
+	Branch    string   `yaml:"branch,omitempty"` // a merge request's local branch
+	Base      string   `yaml:"base,omitempty"`
+	Body      string   `yaml:"-"`
+	Comments  []string `yaml:"-"`
 }
 
 // commentLine starts each comment in an item's file. It is not a marker
@@ -249,7 +250,7 @@ func (l *Local) Issues() ([]Issue, error) {
 	var out []Issue
 	for _, it := range items {
 		if it.State == "open" {
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone})
 		}
 	}
 	return out, nil
@@ -395,3 +396,24 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 }
 
 func (l *Local) keepsBranches() {}
+
+// Milestones are the ones its open issues are in: the local forge keeps no
+// milestone apart from them.
+func (l *Local) Milestones() ([]string, error) {
+	open, err := l.Issues()
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, is := range open {
+		if is.Milestone != "" && !slices.Contains(out, is.Milestone) {
+			out = append(out, is.Milestone)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+func (l *Local) SetMilestone(id int, title string) error {
+	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Milestone = title })
+}
