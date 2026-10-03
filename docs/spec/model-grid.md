@@ -3,7 +3,7 @@ sources: [internal/agent, internal/engine/engine.go]
 checked: d30d22a
 judged: 6013a50
 verified: agent:documentalist
-judged-in-parts: a8b1742
+judged-in-parts: addaa0c
 ---
 # Model grid — v1 (draft)
 
@@ -110,8 +110,9 @@ aliases stand for the tiers.*
 ## Stepping up after failures
 
 A light model is the right default, not a ceiling. When the agent's intentions
-are refused, or `post` blocks on what the agent produced, the engine may retry
-one tier up:
+are refused, or `post` blocks on what the agent produced — not a `final`
+block, which the answer did not cause (docs/spec/role-outcome.md) — the
+engine may retry one tier up:
 
 ```yaml
 model:

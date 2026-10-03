@@ -28,6 +28,10 @@ type Verdict struct {
 	Status   string    `yaml:"status" json:"status"`
 	Summary  string    `yaml:"summary,omitempty" json:"summary,omitempty"`
 	Findings []Finding `yaml:"findings,omitempty" json:"findings,omitempty"`
+	// Final: a block that does not come from the agent's answer — a release
+	// held by docs it was not asked about, a check that could not run — so
+	// asking the agent again would change nothing.
+	Final bool `yaml:"final,omitempty" json:"final,omitempty"`
 }
 
 // Read loads a verdict file.

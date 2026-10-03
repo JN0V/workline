@@ -1391,11 +1391,14 @@ func Post(runDir, repo string) int {
 		}
 	}
 	v := verdict.Verdict{Status: verdict.Pass, Findings: kept}
+	// Nothing of the answer was refused: what blocks — a release held, docs
+	// due, a check that could not run — is not the answer's, and asking the
+	// agent again would change none of it.
 	switch {
 	case due > 0 && due == blocking:
-		v.Status, v.Summary = verdict.Block, fmt.Sprintf("%d docs due at this moment are not up to date yet: they wait for an agent, or a person", due)
+		v.Status, v.Summary, v.Final = verdict.Block, fmt.Sprintf("%d docs due at this moment are not up to date yet: they wait for an agent, or a person", due), true
 	case blocking > 0:
-		v.Status, v.Summary = verdict.Block, "some sources could not be judged, or some checks could not run"
+		v.Status, v.Summary, v.Final = verdict.Block, "some sources could not be judged, or some checks could not run", true
 	case len(intents) > 0:
 		v.Summary = "docs updated"
 	case len(kept) > 0:
