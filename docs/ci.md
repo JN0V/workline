@@ -2,7 +2,7 @@
 sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml]
 checked: 64eee70
 judged: a0f1e8a
-judged-in-parts: a8b1742
+judged-in-parts: 9b78c1e
 ---
 # Setting up workline in CI
 
