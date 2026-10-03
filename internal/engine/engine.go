@@ -377,7 +377,7 @@ func run(o Options, res *Result) error {
 			os.Remove(filepath.Join(runDir, "out", "judge.yaml"))
 			continue
 		}
-		if !a.askedAgent || v.Status != verdict.Block {
+		if !a.askedAgent || v.Status != verdict.Block || v.Final {
 			break
 		}
 		failures++

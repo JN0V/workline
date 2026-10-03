@@ -1,0 +1,12 @@
+case: documentalist/release-hold-is-not-asked-again
+about: "A release held by a doc the agent's answer left as it was is not the agent's answer refused: it is not asked again, with every finding of the release as its feedback — which once made the prompt twice the role's budget (workline's release pull request #56)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: release, ai: "fake:proposes-nothing"}
+expect:
+  status: block
+  agent-calls: 1
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "since v1.0.0"}]

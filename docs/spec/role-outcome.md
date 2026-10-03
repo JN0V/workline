@@ -19,12 +19,19 @@ findings:
   - rule: internal-code
     where: commit a1b2c3d, subject
     message: "'AC-3' means nothing outside the project; say what changed."
+final: false   # true: the block is not the agent's answer's, so it is not asked again
 ```
 
 Every run ends with a status; there is no run without one. `blocked-external`
 means something outside the role failed — an expired token, a used-up quota, a
 forge that did not answer. It is not the role's verdict on the work, and it must
 never be read as one.
+
+A `block` from `post` after the agent answered has the agent asked again,
+with the findings as the reasons (docs/spec/model-grid.md), unless `final`:
+`post` says the block does not come from the answer — a release held by
+docs the answer was not about, a check that could not run — and asking
+again would change nothing, but grow the question with every finding.
 
 Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 `--sarif` writes them for code scanning, `--code-quality` as GitLab's Code
