@@ -5,6 +5,7 @@
 package backlog
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -119,20 +120,21 @@ type Proposal struct {
 	DuplicateOf int      `yaml:"duplicate-of,omitempty"`
 	Sources     []string `yaml:"sources,omitempty"`
 	Milestone   string   `yaml:"milestone,omitempty"`
+	Title       string   `yaml:"title,omitempty"` // an issue to open
 	Quote       *Quote   `yaml:"quote"`
 	Why         string   `yaml:"why"`
 }
 
 // Kind is the kind of act, as settings name it.
 func (c Proposal) Kind() string {
-	if c.Do == "sources" || c.Do == "milestone" {
+	if c.Do == "sources" || c.Do == "milestone" || c.Do == "open" {
 		return c.Do
 	}
 	return "close-" + c.Reason
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"close", "sources", "milestone"}
+var Kinds = []string{"open", "close", "sources", "milestone"}
 
 // Decision is what becomes of one act.
 type Decision struct {
@@ -150,6 +152,8 @@ type Plan struct {
 	Report    int               `yaml:"report"`  // the report issue, 0 when none is open yet
 	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found, proposals settled
 	open      map[int]bool      // the open issues, read once
+	bodies    []string          // their bodies, to find an import again
+	seen      map[string]bool   // the imports this run decided
 }
 
 // Setting is a kind of act's mode and cap.
@@ -188,7 +192,11 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		return nil, err
 	}
 	dropped := func(c Proposal, rule, msg string) {
-		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: fmt.Sprintf("#%d", c.Issue), Message: msg})
+		where := fmt.Sprintf("#%d", c.Issue)
+		if c.Do == "open" {
+			where = c.Title
+		}
+		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
 	done := map[string]int{}
 	var indexes []int
@@ -265,9 +273,10 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
-	p.open = map[int]bool{}
+	p.open, p.seen = map[int]bool{}, map[string]bool{}
 	for _, is := range open {
 		p.open[is.ID] = true
+		p.bodies = append(p.bodies, is.Body)
 		if is.Title == ReportTitle(role) {
 			p.Report = is.ID
 		}
@@ -308,6 +317,25 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 // check says why a closing cannot be done, as a finding's rule and
 // message, or nothing.
 func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why string) {
+	if c.Do == "open" {
+		// An issue opened from a file: its text is the file's, quoted, never
+		// written by the agent; opened once.
+		if t := strings.TrimSpace(c.Title); t == "" || len(t) > 120 || strings.Contains(t, "\n") {
+			return "open-title", "an issue's title is one line, 120 characters at most"
+		}
+		if c.Quote == nil || c.Quote.Path == "" || strings.TrimSpace(c.Quote.Text) == "" {
+			return "no-quote", "an issue opened from a file quotes its text: {path, text}"
+		}
+		if !p.found(f, repo, *c.Quote) {
+			return "no-quote", fmt.Sprintf("the quote is not found in %s", c.Quote.Path)
+		}
+		key := forge.Marker(ImportKey(*c.Quote))
+		if p.seen[key] || slices.ContainsFunc(p.bodies, func(b string) bool { return strings.Contains(b, key) }) {
+			return "already-open", "an open issue already holds this text"
+		}
+		p.seen[key] = true
+		return "", ""
+	}
 	if c.Do == "milestone" {
 		// Ordering says nothing of an issue's truth: no quote, its state
 		// readable all the same.
@@ -426,6 +454,13 @@ func (p *Plan) ReportBody() string {
 
 // describe says one closing in a line, its evidence quoted.
 func describe(c Proposal, verb string) string {
+	if c.Do == "open" {
+		v := "Opened"
+		if verb == "Close" {
+			v = "Open"
+		}
+		return fmt.Sprintf("%s %q, from %s.", v, c.Title, c.Quote.Path)
+	}
 	if c.Do == "milestone" {
 		return fmt.Sprintf("Put #%d in the milestone %q: %s", c.Issue, c.Milestone, strings.TrimSpace(c.Why))
 	}
@@ -484,4 +519,45 @@ func (p *Plan) Decision(i int) *Decision {
 func (p *Plan) Acts(i int) bool {
 	d := p.Decision(i)
 	return d != nil && d.Mode == Act
+}
+
+// ImportKey is the marker key of an issue opened from a file's text: the
+// file and a digest of the text, so the same text is never opened twice.
+func ImportKey(q Quote) string {
+	sum := sha256.Sum256([]byte(squeeze(q.Text)))
+	return fmt.Sprintf("import=%s:%x", q.Path, sum[:6])
+}
+
+// Locate finds a quote in a file, as written but for spaces: the lines it
+// spans, from 1, and those lines as the file has them.
+func Locate(repo, path, text string) (from, to int, original string, ok bool) {
+	out, err := exec.Command("git", "-C", repo, "show", "HEAD:"+path).Output()
+	if err != nil {
+		return 0, 0, "", false
+	}
+	lines := strings.Split(string(out), "\n")
+	want := squeeze(text)
+	if want == "" {
+		return 0, 0, "", false
+	}
+	first := strings.Fields(want)[0]
+	for i := range lines {
+		if !strings.Contains(lines[i], first) {
+			continue
+		}
+		acc := ""
+		for j := i; j < len(lines) && len(squeeze(acc)) <= len(want)+len(lines[j]); j++ {
+			acc += lines[j] + "\n"
+			if strings.Contains(squeeze(acc), want) {
+				// The first line holding the quote's first word may come
+				// before it: start at the last line that still holds it all.
+				k := i
+				for k < j && strings.Contains(squeeze(strings.Join(lines[k+1:j+1], "\n")), want) {
+					k++
+				}
+				return k + 1, j + 1, strings.Join(lines[k:j+1], "\n"), true
+			}
+		}
+	}
+	return 0, 0, "", false
 }

@@ -1668,6 +1668,29 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		return a.forge.(forge.Backlog).Close(d.Act.Issue, d.Act.DuplicateOf)
+	case "open":
+		// An issue opened from a file's text, quoted as the file has it, and
+		// given its state: confirmed at this commit, no sources yet.
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		q := *d.Act.Quote
+		body, where := strings.TrimSpace(q.Text), "`"+q.Path+"`"
+		if from, to, original, ok := backlog.Locate(a.repo, q.Path, q.Text); ok {
+			body, where = strings.TrimSpace(original), fmt.Sprintf("`%s`, lines %d to %d", q.Path, from, to)
+		}
+		body += fmt.Sprintf("\n\nOpened from %s by the %s role.", where, a.role)
+		id, err := a.forge.OpenIssue(strings.TrimSpace(d.Act.Title), body, forge.Marker(backlog.ImportKey(q)))
+		if err != nil {
+			return err
+		}
+		head, err := exec.Command("git", "-C", a.repo, "rev-parse", "--short", "HEAD").Output()
+		if err != nil {
+			return err
+		}
+		st := backlog.State{Confirmed: strings.TrimSpace(string(head))}
+		return a.forge.Sticky(forge.Target{Kind: "issue", ID: id}, backlog.FormatState(st), backlog.StateMarker(a.role), true)
 	case "milestone":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

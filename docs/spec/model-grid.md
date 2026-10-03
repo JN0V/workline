@@ -3,7 +3,7 @@ sources: [internal/agent, internal/engine/engine.go]
 checked: d30d22a
 judged: 6013a50
 verified: agent:documentalist
-judged-in-parts: 5bc542f
+judged-in-parts: b1f9880
 ---
 # Model grid — v1 (draft)
 

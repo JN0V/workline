@@ -1,0 +1,34 @@
+case: backlog/import-opens-what-is-quoted
+about: Importing a file, the agent proposes an issue for each item still to do; the engine opens one whose text it finds in the file, its body that text as the file has it and where it came from, with its state; a text not in the file is dropped, and one an open issue already holds is not opened again.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+      
+      Where the project is going.
+      
+      ## Next
+      
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **A JSON export.** Done in 1.2.
+      
+      ## Later
+      
+      - Empty rows become blank lines; skip them.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge:
+    issues:
+      - {id: 3, title: "Skip empty rows", body: "- Empty rows become blank lines; skip them.\n\nOpened from ROADMAP.md.\n\n<!-- workline:import=ROADMAP.md:7bbf8cf05601 -->", labels: [], comments: []}
+run: {role: product-owner, event: import, input: {file: ROADMAP.md, from: "1", to: "13"}, ai: fake:import-roadmap}
+expect:
+  status: pass
+  findings: [{rule: no-quote, where: "Skip empty rows"}, {rule: already-open, where: "Skip empty rows, again"}]
+  forge:
+    issues:
+      - {id: 4, title: "Keep the last row", body-contains: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\nOpened from `ROADMAP.md`, lines 7 to 8 by the product-owner role.", comment-contains: "sources: []"}
+      - {id: 5, title: "Backlog — product owner", body-contains: "Opened \"Keep the last row\""}
+      - {id: 6, absent: true}

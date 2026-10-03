@@ -37,27 +37,34 @@ title only, so a duplicate can still be named. Each issue read gets
 `judged` moved to the run's commit; without an agent, or when its answer
 does not read, none is.
 
-## Importing a roadmap
+## Importing a file
 
-`workline issues import <file>` moves a roadmap file to the forge, once,
-without AI (principle 4). An entry is a heading of level 2 to 4 starting
-with an id (`### BUG-4 — NTP: use-after-free [HIGH]`) and the text under
-it, down to the next heading of its level or above. One whose heading says
-it is done (`--done`, by default *done*, *closed*, *withdrawn*, *refuted*,
-*superseded*, *merged*, *fixed*, *wontfix*) stays in the file. Each other
-becomes an issue:
+`workline issues import <file>` moves a roadmap, a backlog or notes to the
+forge's issues, once. Formats differ from one project to the next, and
+telling an item from an introduction, or done from still to do, is
+judgement: the product owner reads the file, not a parser (principle 4).
 
-- its title `<id> — <heading>`, so it is found again by its id: an entry
-  whose id an open issue carries is not opened again, and an import
-  stopped half-way is run again;
-- its body the entry's text, and the line it came from;
-- its state comment: the files the entry names, by path or by a name one
-  file alone has, then the code its backticked names are in, tests last,
-  three at most; confirmed at the commit imported.
+- The command cuts the file by size only (`--lines`, 300 by default), a
+  fifth of each share read again in the next, so an item cut at the end of
+  one is whole in the other; it runs the role on each share, on the event
+  `import`.
+- The agent proposes an `open` for each item still to do, or done in part:
 
-Without `--apply`, it lists what it would open and writes nothing. The
-file then stays as it is, read-only, for its history; what the product
-owner finds done is proposed for closing as any issue.
+  ```yaml
+  - open: {title: "Keep the last row", quote: {path: ROADMAP.md, text: "1. **Keep the last row.** WriteRows stops one row short."}}
+  ```
+
+- The engine opens it only if the quote is in the file as committed, but
+  for spaces (`no-quote`); its body is the file's text at those lines, and
+  where it came from — never words of the agent's. An open issue already
+  holding the same text is not opened again (`already-open`, a digest of
+  the text in a marker), so an import stopped half-way is run again. Each
+  issue gets its state, confirmed at the commit, no sources: gardening
+  names them (`sources`).
+- Without `--apply`, it says what it would open, the quotes not checked
+  yet, and writes nothing. `open` is capped per share (`acts.open.max`).
+
+The file then stays as it is, for its history.
 
 ## Closing
 
@@ -112,6 +119,7 @@ Each kind of act has a mode and a cap per run, set in the role's settings:
 
 ```yaml
 acts:
+  open: {mode: act, max: 30}
   sources: {mode: act, max: 10}
   milestone: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off

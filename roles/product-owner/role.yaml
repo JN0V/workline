@@ -3,7 +3,9 @@ name: product-owner
 mission: The backlog stays true to the code and in order, between the need a person states and the result they accept.
 
 # schedule: gardening — the open issues read against the code (ADR-0018).
-events: [schedule]
+# import: `workline issues import <file>` — a roadmap or backlog file read a
+#         share at a time, its items still to do opened as issues.
+events: [schedule, import]
 
 requires: [git]
 
@@ -23,7 +25,7 @@ duties:
   writes: []        # never the code nor the docs: the forge's issues only
 
 # comment: the engine's state comment on each issue it takes (pre).
-intentions: [close, sources, milestone, comment, note]
+intentions: [open, close, sources, milestone, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -37,6 +39,7 @@ settings:
   # for a person), off (dropped). Closing as obsolete starts at propose
   # until the evaluation has measured how often it is wrong (ADR-0018).
   acts:
+    open: {mode: act, max: 30}        # an item of a file opened as an issue, when importing
     sources: {mode: act, max: 10}     # the code an issue is about, named
     milestone: {mode: act, max: 10}   # an issue put in a release's milestone
     close-duplicate: {mode: act, max: 3}

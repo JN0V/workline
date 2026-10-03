@@ -75,6 +75,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `label` | add or remove labels | forge |
 | `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened) | forge (`forge: local` keeps it in the clone); refused without one |
 | `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine (docs/spec/backlog-acts.md) | forge |
+| `open` | open an issue from a file's item, its text quoted, once (docs/spec/backlog-acts.md, "Importing a file") | forge |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `handoff` | name the next role and why | engine |
