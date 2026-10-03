@@ -102,23 +102,34 @@ type Quote struct {
 	Text  string `yaml:"text"`
 }
 
-// Close is a closing the agent proposed.
-type Close struct {
-	Issue       int    `yaml:"issue"`
-	Reason      string `yaml:"reason"`
-	DuplicateOf int    `yaml:"duplicate-of"`
-	Quote       *Quote `yaml:"quote"`
-	Why         string `yaml:"why"`
+// Proposal is an act on an issue the agent proposed: a closing, or the code it
+// is about named as its sources.
+type Proposal struct {
+	Do          string   `yaml:"do"` // close or sources: the intention's kind
+	Issue       int      `yaml:"issue"`
+	Reason      string   `yaml:"reason,omitempty"`
+	DuplicateOf int      `yaml:"duplicate-of,omitempty"`
+	Sources     []string `yaml:"sources,omitempty"`
+	Quote       *Quote   `yaml:"quote"`
+	Why         string   `yaml:"why"`
 }
 
-// Kind is the kind of act a closing is, as settings name it.
-func (c Close) Kind() string { return "close-" + c.Reason }
+// Kind is the kind of act, as settings name it.
+func (c Proposal) Kind() string {
+	if c.Do == "sources" {
+		return "sources"
+	}
+	return "close-" + c.Reason
+}
+
+// Kinds are the intentions that are acts on the backlog.
+var Kinds = []string{"close", "sources"}
 
 // Decision is what becomes of one act.
 type Decision struct {
-	Index int    `yaml:"index"` // the intention's place in the run
-	Mode  string `yaml:"mode"`  // act, propose, or off (dropped)
-	Close Close  `yaml:"close"`
+	Index int      `yaml:"index"` // the intention's place in the run
+	Mode  string   `yaml:"mode"`  // act, propose, or off (dropped)
+	Act   Proposal `yaml:"act"`
 }
 
 // Plan is what a run does with its acts, decided once, so a resumed run
@@ -157,13 +168,16 @@ func Settings(settings map[string]any) map[string]Setting {
 
 var closeReasons = []string{"duplicate", "obsolete"}
 
-// Decide plans the closings proposed, given at their place in the run.
-func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Close) (*Plan, error) {
+// maxSources bounds the files an issue names.
+const maxSources = 5
+
+// Decide plans the acts proposed, given at their place in the run.
+func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal) (*Plan, error) {
 	p := &Plan{}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
-	dropped := func(c Close, rule, msg string) {
+	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: fmt.Sprintf("#%d", c.Issue), Message: msg})
 	}
 	done := map[string]int{}
@@ -174,7 +188,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 	slices.Sort(indexes)
 	for _, i := range indexes {
 		c := closes[i]
-		d := Decision{Index: i, Mode: Off, Close: c}
+		d := Decision{Index: i, Mode: Off, Act: c}
 		mode, why := p.check(f, repo, role, c)
 		switch {
 		case why != "":
@@ -195,7 +209,9 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			}
 			if d.Mode == Act {
 				done[c.Kind()]++
-				p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
+				if c.Do == "close" {
+					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
+				}
 			}
 		}
 		p.Decisions = append(p.Decisions, d)
@@ -254,8 +270,21 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 
 // check says why a closing cannot be done, as a finding's rule and
 // message, or nothing.
-func (p *Plan) check(f forge.Backlog, repo, role string, c Close) (rule, why string) {
-	if !slices.Contains(closeReasons, c.Reason) {
+func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why string) {
+	if c.Do == "sources" {
+		if len(c.Sources) == 0 || len(c.Sources) > maxSources {
+			return "sources-unknown", fmt.Sprintf("an issue names 1 to %d sources", maxSources)
+		}
+		for _, s := range c.Sources {
+			path, _, _ := strings.Cut(s, "#")
+			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
+				return "sources-unknown", fmt.Sprintf("%s is not in the commit the run is on", path)
+			}
+		}
+		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return strings.HasPrefix(s, c.Quote.Path) }) {
+			return "no-quote", "the quote naming the sources comes from one of them"
+		}
+	} else if !slices.Contains(closeReasons, c.Reason) {
 		return "close-reason", fmt.Sprintf("closing as %q: a role closes a duplicate or an obsolete issue; refusing a need is a person's (principle 1)", c.Reason)
 	}
 	if c.Reason == "duplicate" && (c.DuplicateOf <= 0 || c.DuplicateOf == c.Issue) {
@@ -271,7 +300,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c Close) (rule, why str
 		return "state-broken", "the issue's state comment does not read (" + err.Error() + "): nothing is written on it"
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
-		return "no-quote", "no quote: a closing cites the code or the issue it rests on"
+		return "no-quote", "no quote: an act cites the code or the issue it rests on"
 	}
 	if !p.found(f, repo, *c.Quote) {
 		return "no-quote", fmt.Sprintf("the quote %q is not found where it says", c.Quote.Text)
@@ -317,11 +346,19 @@ func squeeze(s string) string { return strings.Join(strings.Fields(s), " ") }
 func (p *Plan) ReportBody() string {
 	var did, proposed []string
 	for _, d := range p.Decisions {
+		if d.Act.Do == "sources" && d.Mode == Propose {
+			proposed = append(proposed, "- [ ] "+describe(d.Act, "Close"))
+			continue
+		}
 		switch d.Mode {
 		case Act:
-			did = append(did, "- "+describe(d.Close, "Closed")+" Reopen it to undo.")
+			undo := " Reopen it to undo."
+			if d.Act.Do == "sources" {
+				undo = ""
+			}
+			did = append(did, "- "+describe(d.Act, "Closed")+undo)
 		case Propose:
-			proposed = append(proposed, "- [ ] "+describe(d.Close, "Close"))
+			proposed = append(proposed, "- [ ] "+describe(d.Act, "Close"))
 		}
 	}
 	var b strings.Builder
@@ -342,7 +379,14 @@ func (p *Plan) ReportBody() string {
 }
 
 // describe says one closing in a line, its evidence quoted.
-func describe(c Close, verb string) string {
+func describe(c Proposal, verb string) string {
+	if c.Do == "sources" {
+		v := "Named"
+		if verb == "Close" {
+			v = "Name"
+		}
+		return fmt.Sprintf("%s the code #%d is about: %s. %s %s", v, c.Issue, strings.Join(c.Sources, ", "), cite(*c.Quote), strings.TrimSpace(c.Why))
+	}
 	what := fmt.Sprintf("%s #%d as obsolete", verb, c.Issue)
 	if c.Reason == "duplicate" {
 		what = fmt.Sprintf("%s #%d as a duplicate of #%d", verb, c.Issue, c.DuplicateOf)
@@ -359,7 +403,7 @@ func cite(q Quote) string {
 }
 
 // Comment is what the closed issue is told.
-func Comment(c Close, role string) string {
+func Comment(c Proposal, role string) string {
 	head := "Obsolete: the code it is about changed."
 	if c.Reason == "duplicate" {
 		head = fmt.Sprintf("Duplicate of #%d", c.DuplicateOf)

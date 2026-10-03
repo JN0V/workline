@@ -1,0 +1,16 @@
+case: product-owner/sources-named
+about: The code an issue is about, named with a line of it quoted, goes into its state, which loses judged so the issue is read again with it; a file the commit does not hold is refused, the state left as it was.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "WriteRows loses rows.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Gone", body: "Something gone.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:sources-named}
+expect:
+  findings: [{rule: sources-unknown, where: "#12"}]
+  forge:
+    issues:
+      - {id: 9, comments: 1, comment-contains: "sources: [src/export/csv.go]\nconfirmed: d8c4dff\n```", comment-lacks: "judged:"}
+      - {id: 12, comments: 1, comment-contains: "sources: [README.md]\nconfirmed: d8c4dff\njudged:"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "Named the code #9 is about: src/export/csv.go."}

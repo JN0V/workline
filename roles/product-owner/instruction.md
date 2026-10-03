@@ -14,5 +14,10 @@ Propose a `close` for an issue only when the evidence settles it:
 The task gives the code the issues name, with the last commits that
 changed it.
 
-Nothing else: no other reason, no closing on a likeness alone. When in
+Nothing else: no other reason, no closing on a likeness alone.
+
+When the code given is not the code an issue is about, and you can tell
+which is — from the names the issue uses and the code given — propose
+`sources`: the files (1 to 5), and a line quoted from one of them that
+shows it. The issue is read again, with that code, at the next run. When in
 doubt, propose nothing, or say in a `note` what a person should look at.

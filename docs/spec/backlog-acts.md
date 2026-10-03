@@ -58,12 +58,27 @@ title only, so a duplicate can still be named. Each issue read gets
   linking the original), an obsolete issue as completed; both with a
   comment that quotes the evidence and says how to undo: reopen it.
 
+## Naming its sources
+
+```yaml
+- sources:
+    issue: 12
+    sources: [src/export/csv.go]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#12's WriteRows is defined here."
+```
+
+The files must be in the commit the run is on (1 to 5; `sources-unknown`
+otherwise), the quote found in one of them. Done, the issue's state gets
+them and loses `judged`: it is read again, with that code, at the next run.
+
 ## Autonomy and caps
 
 Each kind of act has a mode and a cap per run, set in the role's settings:
 
 ```yaml
 acts:
+  sources: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off
   close-obsolete:  {mode: propose, max: 3}
 ```
