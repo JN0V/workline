@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
@@ -44,7 +45,11 @@ type Options struct {
 
 	Forge  string        // forge spec, see forge.Open; empty = the project's `forge` setting
 	Target *forge.Target // the issue or merge request comments and labels go on
-	Scope  []string      // paths the task is about; a patch outside is refused
+	// Branch is the one the targeted merge request comes from, when the job
+	// knows it without the forge (a CI job without the forge's token); else
+	// the forge is asked. Its branch tells a release tool's (ADR-0017).
+	Branch string
+	Scope  []string // paths the task is about; a patch outside is refused
 	// NoApply stops after judging: the proposals and what apply needs are kept
 	// in the run folder, for `workline apply` in another job holding the token.
 	NoApply bool
@@ -265,7 +270,11 @@ func run(o Options, res *Result) error {
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
 	}
+	releaseFrom := releaseRequest(r, &o, res)
 	env := scriptEnv(runDir, r.Name, o)
+	if releaseFrom != "" {
+		env = append(env, "WORKLINE_RELEASE_BRANCH="+releaseFrom)
+	}
 	if o.OpenMergeRequest {
 		// The role decides what it proposes when enough of its merge requests wait.
 		f, err := forge.Open(o.Forge, o.Repo)
@@ -456,7 +465,7 @@ func run(o Options, res *Result) error {
 		o.Forge = cfg.Forge
 	}
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
-		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Models: authors(res.Calls)}
+		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Release: releaseFrom, Models: authors(res.Calls)}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
@@ -467,6 +476,12 @@ func run(o Options, res *Result) error {
 			if in.Kind == "handoff" {
 				res.Findings = append(res.Findings, deferred(r.Name, in.Value))
 			}
+		}
+		// Judged here, the fix is not on the release pull request: it waits.
+		if releaseFrom != "" && o.PushToMergeRequest && slices.ContainsFunc(intents, func(i intent.Intention) bool { return i.Kind == "patch" }) {
+			res.Status = verdict.Block
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "fixed-elsewhere", Level: "block", Where: releaseFrom,
+				Message: "once applied, the fix goes to a merge request of its own into the release's base, not onto this branch, which the release tool rewrites: the release waits until it is merged"})
 		}
 		return nil
 	}
@@ -677,6 +692,10 @@ type runState struct {
 	// branch; Pushed once they did, as a commit or as a comment.
 	PushToMergeRequest bool `yaml:"push-to-merge-request,omitempty"`
 	Pushed             bool `yaml:"pushed,omitempty"`
+	// Release: the targeted merge request is a release tool's, from this
+	// branch, which the tool rewrites: the patches go to a merge request of
+	// their own on its base instead (ADR-0017).
+	Release string `yaml:"release,omitempty"`
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
@@ -770,6 +789,34 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			return err
 		}
 	}
+	if st.PushToMergeRequest && st.Release != "" && len(st.Written) > 0 {
+		if !st.Pushed {
+			finding, id, err := fixElsewhere(f, st, runDir)
+			if errors.Is(err, forge.ErrUnreachable) {
+				res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while proposing the fix; resume with: workline apply %s", runDir)
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+				return nil
+			}
+			if err != nil {
+				return fmt.Errorf("propose the fix: %w", err)
+			}
+			st.Pushed, st.MergeRequest = true, id
+			if err := st.save(runDir); err != nil {
+				return err
+			}
+			if id == 0 { // in a comment, for a person
+				res.Findings = append(res.Findings, finding)
+			}
+		}
+		// Until the fix is merged, the release waits for it.
+		res.Status = verdict.Block
+		for _, w := range st.Written {
+			if st.MergeRequest != 0 {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "fixed-elsewhere", Level: "block", Where: w,
+					Message: fmt.Sprintf("fixed in merge request #%d, not on %s, which the release tool rewrites: the release waits until #%d is merged", st.MergeRequest, st.Release, st.MergeRequest)})
+			}
+		}
+	}
 	res.MergeRequest = st.MergeRequest
 	if st.PushToMergeRequest && len(st.Written) > 0 && !st.Pushed {
 		if f == nil || st.Target == nil || st.Target.Kind != "merge-request" {
@@ -793,6 +840,103 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	return nil
 }
 
+// fixElsewhere puts what the run's patches wrote, on a release tool's pull
+// request, on a merge request of the role's own into the release's base
+// (ADR-0017): the tool rewrites its branch from the base, so a commit pushed
+// there would be lost, and once the fix is merged the tool brings it in. It
+// returns the merge request opened; 0 when the patches could not go there and
+// went in a comment, said by the finding. The working tree goes back to
+// where it was.
+func fixElsewhere(f forge.Forge, st runState, runDir string) (verdict.Finding, int, error) {
+	if f == nil || st.Target == nil || st.Target.Kind != "merge-request" {
+		return verdict.Finding{}, 0, errors.New("--push-to-merge-request needs a forge and --target merge-request:<n>")
+	}
+	var mr struct{ Title, Body string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		yaml.Unmarshal(data, &mr)
+	}
+	if mr.Title == "" {
+		mr.Title = "docs: what the release waits for"
+	}
+	diff, err := git(st.Repo, nil, append([]string{"diff", "--"}, st.Written...)...)
+	if err != nil {
+		return verdict.Finding{}, 0, err
+	}
+	to, err := f.MergeRequest(st.Target.ID)
+	if err != nil {
+		return verdict.Finding{}, 0, err
+	}
+	why := "the forge does not say which branch the release goes into"
+	if to.Base != "" {
+		why, err = commitOntoBase(st, to.Base, mr.Title, forge.KeepsBranches(f))
+		if err != nil {
+			return verdict.Finding{}, 0, err
+		}
+	}
+	if why == "" {
+		body := fmt.Sprintf("**Proposed by workline's %s** for the release pull request #%d (%s), which waits for it: "+
+			"fixed here, not on its branch, which the release tool rewrites from %s. Once this is merged, the tool "+
+			"brings it in, and the release is no longer held.\n\n%s", st.Role, st.Target.ID, st.Release, to.Base, mr.Body)
+		id, err := f.OpenMergeRequest(branchPrefix(st.Role)+"release", to.Base, mr.Title, body)
+		return verdict.Finding{}, id, err
+	}
+	body := fmt.Sprintf("**Proposed by workline's %s**, not opened as a merge request: %s. Apply it on %s with `git apply`; the release waits for it:\n\n```diff\n%s\n```", st.Role, why, to.Base, diff)
+	if err := f.Sticky(*st.Target, body, forge.Marker("sticky="+st.Role+"/patch"), true); err != nil {
+		return verdict.Finding{}, 0, err
+	}
+	return verdict.Finding{Rule: "fix-in-comment", Level: "block", Where: st.Release,
+		Message: "the fix went in a comment, for a person to apply on the release's base: " + why}, 0, nil
+}
+
+// commitOntoBase commits what the run wrote onto the tip of base, on the
+// role's release branch, and pushes it — force: the branch is the role's,
+// and holds only the last fix. It says why not when the patches collide
+// with the base. The working tree goes back to where it was.
+func commitOntoBase(st runState, base, title string, local bool) (why string, err error) {
+	orig, err := git(st.Repo, nil, "symbolic-ref", "-q", "--short", "HEAD")
+	if err != nil {
+		if orig, err = git(st.Repo, nil, "rev-parse", "HEAD"); err != nil {
+			return "", err
+		}
+	}
+	back := func() {
+		git(st.Repo, nil, append([]string{"reset", "-q", "--"}, st.Written...)...)
+		git(st.Repo, nil, "checkout", "-q", orig)
+	}
+	tip := "FETCH_HEAD"
+	if local {
+		if tip, err = git(st.Repo, nil, "rev-parse", "--verify", "refs/heads/"+base); err != nil {
+			return "", fmt.Errorf("the release's base %s is not in this clone", base)
+		}
+	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", base); err != nil {
+		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+	}
+	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
+		back()
+		return fmt.Sprintf("the docs it fixes differ on %s", base), nil
+	}
+	for _, s := range [][]string{append([]string{"add", "--"}, st.Written...), {"commit", "-q", "-m", title, "-m", st.trailers()}} {
+		if _, err := git(st.Repo, nil, s...); err != nil {
+			back()
+			return "", err
+		}
+	}
+	branch := branchPrefix(st.Role) + "release"
+	move := []string{"push", "-q", "--force", "origin", "HEAD:refs/heads/" + branch}
+	if local {
+		move = []string{"branch", "-q", "-f", branch, "HEAD"}
+	}
+	if _, err := git(st.Repo, nil, move...); err != nil {
+		back()
+		if local {
+			return "", err
+		}
+		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+	}
+	_, err = git(st.Repo, nil, "checkout", "-q", orig)
+	return "", err
+}
+
 // pushToMergeRequest commits what the run's patches wrote to the branch of
 // the merge request it targets, as pre-commit.ci and autofix.ci do: a
 // suggestion can only sit on lines the merge request changes, and a doc made
@@ -811,10 +955,11 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 	if err != nil {
 		return verdict.Finding{}, err
 	}
-	branch, here, err := f.MergeRequestBranch(st.Target.ID)
+	from, err := f.MergeRequest(st.Target.ID)
 	if err != nil {
 		return verdict.Finding{}, err
 	}
+	branch, here := from.Branch, from.Here
 	why := "it comes from a fork, where this job cannot push"
 	if here {
 		why, err = commitOnto(st, branch, mr.Title, forge.KeepsBranches(f))
@@ -1606,6 +1751,41 @@ func writeInputs(runDir string, inputs map[string]string, settings map[string]an
 		return err
 	}
 	return os.WriteFile(filepath.Join(runDir, "in", "settings.json"), data, 0o644)
+}
+
+// releaseRequest runs a role that has release duties on `release` when the
+// merge request a run targets is a release tool's, told by its branch
+// (ADR-0017): that pull request is the release, merged before anything is
+// tagged. It returns the branch, "" when it is not a release's. When the
+// branch cannot be learnt, it says so and the run stays a merge request's.
+func releaseRequest(r *role.Role, o *Options, res *Result) string {
+	if o.Event != "merge-request" || !r.Accepts("release") {
+		return ""
+	}
+	rs, err := release.Load(o.Repo)
+	if err != nil {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
+		return ""
+	}
+	branch := o.Branch
+	if branch == "" && o.Target != nil && o.Target.Kind == "merge-request" {
+		f, err := forge.Open(o.Forge, o.Repo)
+		if err == nil && f != nil {
+			var mr forge.MergeRequest
+			mr, err = f.MergeRequest(o.Target.ID)
+			branch = mr.Branch
+		}
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn",
+				Message: fmt.Sprintf("whether %s comes from a release tool's branch is unknown, so it is not held as the release: %v; give its branch with --branch", o.Target, err)})
+			return ""
+		}
+	}
+	if !rs.IsBranch(branch) {
+		return ""
+	}
+	o.Event = "release"
+	return branch
 }
 
 func scriptEnv(runDir, roleName string, o Options) []string {

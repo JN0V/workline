@@ -241,7 +241,10 @@ open, and `WORKLINE_OPEN_MERGE_REQUEST_TASKS`, their tasks (each branch, the
 role's prefix cut, separated by spaces), when the run opens one (ADR-0006,
 0013). The tasks an earlier round of the same run proposed and did not open
 yet (`--no-apply`) are counted among them, and also given alone in
-`WORKLINE_PROPOSED_TASKS`.
+`WORKLINE_PROPOSED_TASKS`. On a merge request a release tool opened (its
+branch one of `release.branches`), a role that runs on `release` is run on
+it: `WORKLINE_EVENT` is `release`, and `WORKLINE_RELEASE_BRANCH` names the
+branch (ADR-0017).
 
 ### Exit codes
 

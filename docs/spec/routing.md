@@ -75,7 +75,10 @@ routing:
 
 workline cuts no releases: a release tool does (release-please,
 semantic-release…), and `release` runs the documentalist before it, so the
-docs due at the release gate it (ADR-0010, ADR-0017). A routing that still
+docs due at the release gate it (ADR-0010, ADR-0017). A tool that opens a
+release pull request needs no `release` step: on `merge-request`, a role
+that runs on `release` runs as on `release` when the merge request comes
+from a release tool's branch (`release.branches`). A routing that still
 names the retired `release-manager` is refused, saying which tool to use.
 
 - Steps run in the listed order. The first step that ends in `block`,

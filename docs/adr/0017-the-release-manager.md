@@ -215,7 +215,11 @@ next starts.
 3. **release-please for workline**, with the App and GoReleaser after it.
    *Bar*: one real release where the person's only step is the merge; the
    tag on the merged commit; binaries, image and non-empty notes on the
-   release; the five template pins moved in the release pull request.
+   release; the four template pins moved in the release pull request.
+   *Met* with v0.3.0 (2026-10-03): pull request #52 opened by the App,
+   merged by the person, nothing else done by hand; the tag on the merge
+   commit a8b1742; seven assets, the image `v0.3.0` and the notes
+   release-please wrote on the release; the four pins moved in #52.
 4. **The documentalist on a release pull request**: release branches
    recognised, the hold and the docs due at the release run there, fixes
    to their own pull request, the shared last-release lookup. *Bar*: on
@@ -223,6 +227,10 @@ next starts.
    tag holds the release pull request release-please opened, then clears
    once its fix is merged; a depth-1 clone is refused; a hotfix tag merged
    back is not taken for the last release.
+   *Built* (2026-10-03), the bar's last two met by conformance cases
+   (documentalist/release-*); the judging job, which holds no forge token,
+   is given the branch (`--branch`), the forge asked otherwise; the
+   setting is `release: {branches, tags}`. The sandbox try waits.
 5. **Doctor and `init`**, later: the tool detected, one recommended when
    none, `GITHUB_TOKEN` on a release workflow reported, a shipped pin
    executed by the project's own CI reported. *Bar*: each said on a

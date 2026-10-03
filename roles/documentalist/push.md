@@ -28,11 +28,23 @@ those kept go in one `docs:` commit (ADR-0007). It judges from where the docs
 were last judged, a ref it moves (`refs/workline/docs-judged`), pushed or
 not: a repository pushed to main with no merge request is caught up there.
 
-**At the release**, a doc made suspect since the last tag holds it until it
-is judged (ADR-0010): by the agent, as the release runs the documentalist
+**At the release**, a doc made suspect since the last release holds it until
+it is judged (ADR-0010): by the agent, as the release runs the documentalist
 first, by `workline docs`, or by a person moving `checked`. One suspect
-already at the tag was let through then; one judged without being vouched
-for, or in parts, waits for a person and does not hold it.
+already at that release was let through then; one judged without being
+vouched for, or in parts, waits for a person and does not hold it. The last
+release is the highest version tag merged (`release.tags`, `v*` by
+default), prereleases left out, never the nearest tag, which a hotfix merged
+back would be; a shallow clone, which may lack it, holds the release.
+
+A release tool's pull request — its branch one of `release.branches`,
+release-please's and the like by default — is the release (ADR-0017): on
+it the documentalist does what it does at the release, every doc suspect
+since the last one and the docs due then, not only what the pull
+request's commits touched. Its fix does not go onto that branch, which the
+tool rewrites: it goes to a merge request of its own into the release's
+base, `workline/documentalist/release`, and the release pull request stays
+held until that one is merged and the tool brings it in.
 
 ## Adopting a repository
 

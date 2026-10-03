@@ -1,0 +1,12 @@
+case: documentalist/release-ignores-a-prerelease-tag
+about: "A prerelease tag is not the last release: a doc made suspect since the last release, before a release candidate, still holds the release (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag v1.1.0-rc.1"
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+run: {role: documentalist, event: release, ai: none}
+expect:
+  status: block
+  findings: [{rule: suspect, where: docs/tech/auth.md, level: block, message: "since v1.0.0"}]

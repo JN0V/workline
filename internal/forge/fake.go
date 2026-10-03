@@ -204,16 +204,16 @@ func (f *Fake) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
-func (f *Fake) MergeRequestBranch(id int) (string, bool, error) {
+func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	s, err := f.load()
 	if err != nil {
-		return "", false, err
+		return MergeRequest{}, err
 	}
 	it, err := s.item(Target{Kind: "merge-request", ID: id})
 	if err != nil {
-		return "", false, err
+		return MergeRequest{}, err
 	}
-	return it.Branch, !it.Fork, nil
+	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: !it.Fork}, nil
 }
 
 func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {

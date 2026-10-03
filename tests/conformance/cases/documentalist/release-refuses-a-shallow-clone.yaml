@@ -1,0 +1,12 @@
+case: documentalist/release-refuses-a-shallow-clone
+about: "In a shallow clone the last release cannot be found, and starting from no tag would hold the release on every doc ever suspect: the release is held, saying to fetch the whole history (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0"
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+    - "git rev-parse HEAD > .git/shallow"
+run: {role: documentalist, event: release, ai: none}
+expect:
+  status: block
+  findings: [{rule: shallow-clone, level: block, message: "fetch-depth: 0"}]

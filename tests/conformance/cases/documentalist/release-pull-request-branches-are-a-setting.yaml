@@ -1,0 +1,14 @@
+case: documentalist/release-pull-request-branches-are-a-setting
+about: "The branches a release pull request comes from are a setting, `release.branches`: one the project names is the release, and the tools' defaults it replaces are not (ADR-0017)."
+given:
+  repo: documented
+  config: {release: {branches: ["release/*"]}}
+  setup:
+    - "git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "git checkout -qb release/1.1 && echo '# Changelog' > CHANGELOG.md && git add CHANGELOG.md && git commit -qm 'chore: release 1.1.0'"
+  forge: {merge-requests: [{id: 1, branch: release/1.1, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, input: {range: "main..HEAD"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: suspect, where: docs/tech/auth.md, level: block, message: "since v1.0.0"}]

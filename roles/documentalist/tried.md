@@ -716,3 +716,22 @@ On 2026-09-27, on workline's own repository:
   "waits for review" in !3, not judged again (ADR-0013); !3 left as it
   was. Not tried: a fork's merge request; a `checked` found false (its
   label and merge request on GitLab); a self-managed instance.
+
+On 2026-10-03, a release tool's pull request (ADR-0017 step 4), on a copy of
+github.com/JN0V/workline-sandbox with the `local` forge, the engine of
+branch feat/release-hold-on-tool-prs: v0.1.0 tagged, tokens moved to two
+hours on `main`, then a branch `release-please--branches--main` with a
+CHANGELOG commit, merge request #1 from it into `main`. Without an agent,
+the run on `merge-request` blocked: auth.md "made suspect since v0.1.0
+… this merge request comes from release-please--branches--main, a release
+tool's branch: it is the release", though the pull request's commit did
+not touch it; sign-in.md pending behind it. With Claude (Sonnet 5.5, 7.5k
+tokens in, 0.7k out) and `--push-to-merge-request`: auth.md fixed and
+vouched for, committed on `workline/documentalist/release` on top of
+`main`, not of the release branch, which was left as it was; merge request
+#2 into `main` opened; the run blocked, "fixed in merge request #2 … the
+release waits until #2 is merged"; the working tree back where it was. The
+agent also opened an issue on the stale comment in token.go, rightly. One
+defect, fixed: #2's body said "when gardening". Not tried: on GitHub, a
+pull request release-please opened with the App, the hold clearing once
+the fix is merged and release-please rewrote its branch.

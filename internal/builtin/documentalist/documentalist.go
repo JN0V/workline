@@ -8,6 +8,7 @@ package documentalist
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -21,6 +22,7 @@ import (
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/tools"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
@@ -495,6 +497,11 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
+	// The release is every doc made suspect since the last one, not only
+	// those the release pull request's own commits touched.
+	if os.Getenv("WORKLINE_EVENT") == "release" {
+		ranged = false
+	}
 	var findings []verdict.Finding
 	if len(docs) == 0 && os.Getenv("WORKLINE_EVENT") != "init" {
 		// Not an error, but never a silent "all good": say what was looked at.
@@ -887,7 +894,9 @@ doc when its reader really gained something to know.
 		}
 	}
 	if os.Getenv("WORKLINE_EVENT") == "release" {
-		holdTheRelease(findings, suspects, repo)
+		if findings, err = holdTheRelease(findings, suspects, repo); err != nil {
+			return fail(err)
+		}
 	}
 	var left strings.Builder
 	for i := range findings {
@@ -970,17 +979,33 @@ doc when its reader really gained something to know.
 	return 0
 }
 
-// holdTheRelease has the docs made suspect since the last tag hold the
+// holdTheRelease has the docs made suspect since the last release hold the
 // release until they are judged (ADR-0010): where there is no merge
-// request, the release is when docs are made true. A doc already suspect at
-// the tag was let through then; one judged without being vouched for, or
-// in parts, waits for a person, and does not hold it. Without a tag, every
-// suspect doc holds the first release.
-func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc, repo string) {
-	tag, err := git(repo, "describe", "--tags", "--abbrev=0")
-	since := "the first release"
-	if err == nil && tag != "" {
+// request, the release is when docs are made true; on a release tool's pull
+// request, before it is merged (ADR-0017). A doc already suspect at the
+// release was let through then; one judged without being vouched for, or in
+// parts, waits for a person, and does not hold it. Without a release, every
+// suspect doc holds the first one; in a shallow clone, which may lack it,
+// the release is held.
+func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc, repo string) ([]verdict.Finding, error) {
+	rs, err := release.Load(repo)
+	if err != nil {
+		return findings, err
+	}
+	tag, err := release.Last(repo, rs.Tags)
+	if errors.Is(err, release.ErrShallow) {
+		return append(findings, verdict.Finding{Rule: "shallow-clone", Level: "block",
+			Message: "the release waits: " + err.Error()}), nil
+	}
+	if err != nil {
+		return findings, err
+	}
+	since, on := "the first release", ""
+	if tag != "" {
 		since = tag
+	}
+	if b := os.Getenv("WORKLINE_RELEASE_BRANCH"); b != "" {
+		on = " (this merge request comes from " + b + ", a release tool's branch: it is the release)"
 	}
 	for i := range findings {
 		f := &findings[i]
@@ -992,8 +1017,9 @@ func holdTheRelease(findings []verdict.Finding, suspects map[string]*suspectDoc,
 			continue
 		}
 		f.Level = "block"
-		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — by the agent, `workline docs`, or a person moving `checked`)"
+		f.Message += "\n(made suspect since " + since + ": the release waits until it is judged — by the agent, `workline docs`, or a person moving `checked`" + on + ")"
 	}
+	return findings, nil
 }
 
 // changedSince says whether a source of the doc, in this repository,
@@ -1995,7 +2021,11 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 		title = "docs: " + kind + ", proposed by the documentalist"
 	}
 	var body strings.Builder
-	fmt.Fprintf(&body, "Proposed by workline's documentalist, when gardening (task: %s).\n", kind)
+	when := "when gardening"
+	if os.Getenv("WORKLINE_EVENT") == "release" { // a release tool's pull request waits for it (ADR-0017)
+		when = "for the release"
+	}
+	fmt.Fprintf(&body, "Proposed by workline's documentalist, %s (task: %s).\n", when, kind)
 	if len(docs) > 0 {
 		body.WriteString("\nDocs:\n\n")
 		for _, d := range docs {

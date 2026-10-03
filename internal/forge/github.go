@@ -164,13 +164,16 @@ func (g *github) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
-func (g *github) MergeRequestBranch(id int) (string, bool, error) {
-	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "--jq", "[.head.ref, (.head.repo.full_name == .base.repo.full_name)] | @tsv")
+func (g *github) MergeRequest(id int) (MergeRequest, error) {
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "--jq", "[.head.ref, .base.ref, (.head.repo.full_name == .base.repo.full_name)] | @tsv")
 	if err != nil {
-		return "", false, err
+		return MergeRequest{}, err
 	}
-	branch, here, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
-	return branch, here == "true", nil
+	f := strings.Split(strings.TrimSpace(string(out)), "\t")
+	if len(f) != 3 {
+		return MergeRequest{}, fmt.Errorf("pull request %d: unexpected answer %q", id, out)
+	}
+	return MergeRequest{Branch: f[0], Base: f[1], Here: f[2] == "true"}, nil
 }
 
 func (g *github) KeepIssue(title, body string, create bool) (int, error) {
