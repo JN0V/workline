@@ -16,6 +16,7 @@ stars and dates were checked against the GitHub API that day.
 | [push-approval.md](push-approval.md) | How a git hook asks a person with no terminal: an editor's button, an agent's shell |
 | [ci-and-forge.md](ci-and-forge.md) | Running the documentalist in CI on GitHub: models, protected main, a bot's commits, forks |
 | [release-manager.md](release-manager.md) | Focused: release PR vs tag vs direct, where versions live, what stays human |
+| [product-owner.md](product-owner.md) | Focused: what forges, bots and AI triage tools do for a backlog, and what a product owner role would add |
 | [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
 
 ## Method
