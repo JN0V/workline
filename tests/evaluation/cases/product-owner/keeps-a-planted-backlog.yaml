@@ -1,0 +1,17 @@
+case: product-owner/keeps-a-planted-backlog
+about: Five open issues on a CSV export whose last-row bug a commit fixed. #1 is that bug, made obsolete — proposed for closing, never closed, as closing as obsolete starts at propose. #3 duplicates #2 (no header row), both still true — #3 closed as its duplicate. #4 (empty rows written as blank lines) is still true though the fix touched the same loop — left alone. #5 is a need — left alone.
+given:
+  repo: backlog-planted
+run: {role: product-owner, event: schedule}
+grade:
+  - {status: pass}
+  - {agent-calls-max: 1}
+  - {file-contains: {.git/workline/issues/6.md: "Close #1 as obsolete"}}
+  - {file-contains: {.git/workline/issues/1.md: "state: open"}}
+  - {file-contains: {.git/workline/issues/3.md: "state: closed"}}
+  - {file-contains: {.git/workline/issues/3.md: "Duplicate of #2"}}
+  - {file-contains: {.git/workline/issues/2.md: "state: open"}}
+  - {file-contains: {.git/workline/issues/4.md: "state: open"}}
+  - {file-lacks: {.git/workline/issues/6.md: "#4 "}}
+  - {file-contains: {.git/workline/issues/5.md: "state: open"}}
+  - {file-lacks: {.git/workline/issues/6.md: "#5 "}}
