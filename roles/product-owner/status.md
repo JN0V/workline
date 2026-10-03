@@ -1,7 +1,8 @@
 # Product owner — where it stands (2026-10-03)
 
-**In one line:** its closings are built and pass conformance; tried with
-Sonnet on four planted issues (tried.md), never on a real backlog.
+**In one line:** its closings are built and pass conformance; on planted
+issues, Sonnet scores 11 of 11 in five runs of five (tried.md); never run
+on a real backlog.
 
 ## Built and tried with a real agent
 
@@ -9,6 +10,7 @@ Sonnet on four planted issues (tried.md), never on a real backlog.
 |---|---|
 | A duplicate closed, its original quoted; a look-alike on the same code left open; a need left open | planted issues, local forge, Sonnet (tried.md) |
 | An issue the code solved proposed as obsolete, the code and the fixing commit quoted | the same |
+| A true issue on the code a fix touched left alone; a duplicate in other words closed | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
 
 ## Built, tried without an agent
 
@@ -23,9 +25,8 @@ Sonnet on four planted issues (tried.md), never on a real backlog.
 
 ## Missing
 
-- An evaluation with a real agent on planted issues, in tests/evaluation — truly obsolete,
-  duplicates, true ones that look obsolete — five runs or more; the weekly
-  sample over its acts (ADR-0018, "Proof").
+- The weekly sample over its acts (ADR-0018, "Proof"); a duplicate by
+  likeness only told from one on the same sources and claim.
 - An obsolete issue announced first, then closed at the next run with a
   second judge; sources re-checked only when they changed; a person
   setting an act back to `act`, a tick read with its author; the ignored
