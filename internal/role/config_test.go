@@ -12,7 +12,7 @@ func TestCheckConfig(t *testing.T) {
 		{"gates:\n  release:\n    checks: [{id: x, run: y, output: sarif, max: {error: 0}, timeout: 5m}]\n", ""},
 		{"repos:\n  api: {url: ../api, branch: main}\n", ""},
 		{"", ""},
-		{"rolse: {}\n", `line 1: unknown key "rolse" at the top level (known: ai, forge, gates, repos, roles, routing)`},
+		{"rolse: {}\n", `line 1: unknown key "rolse" at the top level (known: ai, forge, gates, release, repos, roles, routing)`},
 		{"roles:\n  committer:\n    from: https://x\n", `unknown key "from" in roles.committer: a role taken from elsewhere`},
 		{"routing:\n  handoffs: [{from: a, too: b}]\n", `unknown key "too" in routing.handoffs`},
 		{"gates:\n  release:\n    checks: [{id: x, timout: 5m}]\n", `unknown key "timout" in gates.release.checks`},

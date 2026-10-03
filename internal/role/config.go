@@ -47,7 +47,8 @@ var (
 			"checks":   {keys: map[string]*shape{"id": free, "run": free, "output": free, "max": free, "optional": free, "timeout": free}},
 			"enforce":  free,
 		}}},
-		"repos": {any: &shape{keys: map[string]*shape{"url": free, "branch": free}}},
+		"repos":   {any: &shape{keys: map[string]*shape{"url": free, "branch": free}}},
+		"release": {keys: map[string]*shape{"branches": free, "tags": free}},
 	}}
 )
 

@@ -42,6 +42,7 @@ import (
 	"github.com/JN0V/workline/internal/gate"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/line"
+	"github.com/JN0V/workline/internal/release"
 	wlreport "github.com/JN0V/workline/internal/report"
 	"github.com/JN0V/workline/internal/review"
 	"github.com/JN0V/workline/internal/role"
@@ -632,7 +633,7 @@ const docsJudgedRef = "refs/workline/docs-judged"
 // docsJudgedFrom is the commit `workline docs` judges after, and how to say
 // it: the one asked for; else where the docs were last judged — the point
 // HEAD shares with it, after a rebase or on another branch; else the last
-// tag; else none, every commit.
+// release (internal/release); else none, every commit.
 func docsJudgedFrom(root, since string) (string, string) {
 	if since != "" {
 		return since, since
@@ -642,9 +643,10 @@ func docsJudgedFrom(root, since string) (string, string) {
 			return strings.TrimSpace(string(base)), "they were last judged, " + docsJudgedRef
 		}
 	}
-	if tag, err := exec.Command("git", "-C", root, "describe", "--tags", "--abbrev=0").Output(); err == nil {
-		t := strings.TrimSpace(string(tag))
-		return t, "the last tag, " + t
+	if rs, err := release.Load(root); err == nil {
+		if t, err := release.Last(root, rs.Tags); err == nil && t != "" {
+			return t, "the last release, " + t
+		}
 	}
 	return "", "the first commit"
 }

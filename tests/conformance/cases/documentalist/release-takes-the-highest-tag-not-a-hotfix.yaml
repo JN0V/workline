@@ -1,0 +1,15 @@
+case: documentalist/release-takes-the-highest-tag-not-a-hotfix
+about: "The last release is the highest version tag merged into HEAD, not the nearest one: a hotfix tag merged back after a later release is not taken for it, and a doc made suspect before that release does not hold the next (ADR-0017)."
+given:
+  repo: documented
+  setup:
+    - "git tag v1.0.0 && git checkout -qb hotfix"
+    - "echo '// fixed' > src/fix.go && git add src && git commit -qm 'fix: the hotfix' && git tag v1.0.1 && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag v1.1.0"
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+    - "git merge -q --no-ff hotfix -m 'Merge the hotfix back'"
+    - "test \"$(git describe --tags --abbrev=0)\" = v1.0.1"   # the nearest tag, which was taken before
+run: {role: documentalist, event: release, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md}]
