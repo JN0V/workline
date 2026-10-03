@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
@@ -744,13 +745,26 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
 		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name}
+	plan, err := planActs(f, r.Name, settings, st, runDir, intents)
+	if errors.Is(err, forge.ErrUnreachable) {
+		res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while reading the backlog; resume with: workline apply %s", runDir)
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	ap.plan = plan
 	done := map[int]bool{}
 	for _, i := range st.Applied {
 		done[i] = true
 	}
 	for i, in := range intents {
+		acted := in.Kind != "close" || plan.Acts(i)
 		if done[i] {
-			res.Applied = append(res.Applied, in.Kind)
+			if acted {
+				res.Applied = append(res.Applied, in.Kind)
+			}
 			continue
 		}
 		ap.index = i
@@ -771,7 +785,19 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		if err := st.save(runDir); err != nil {
 			return err
 		}
-		res.Applied = append(res.Applied, in.Kind)
+		if acted {
+			res.Applied = append(res.Applied, in.Kind)
+		}
+	}
+	if plan != nil {
+		res.Findings = append(res.Findings, plan.Findings...)
+		if err := report(f, r.Name, plan); errors.Is(err, forge.ErrUnreachable) {
+			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while writing the backlog report; resume with: workline apply %s", runDir)
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
+			return nil
+		} else if err != nil {
+			return fmt.Errorf("the backlog report: %w", err)
+		}
 	}
 	res.Handoffs = ap.handoffs
 	if st.OpenMergeRequest && len(st.Written) > 0 && st.MergeRequest == 0 {
@@ -1526,7 +1552,8 @@ type applier struct {
 	forge        forge.Forge // nil when the project has no forge
 	target       *forge.Target
 	runID, role  string
-	index        int // position of the intention being applied, for its marker
+	index        int           // position of the intention being applied, for its marker
+	plan         *backlog.Plan // what becomes of the acts on the backlog, nil without any
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -1574,7 +1601,11 @@ func (a *applier) apply(in intent.Intention) error {
 		if err := a.needForge("comment"); err != nil {
 			return err
 		}
-		if a.target == nil {
+		target := a.target
+		if n, ok := m["issue"].(int); ok { // a role keeping the backlog comments on the issue it names
+			target = &forge.Target{Kind: "issue", ID: n}
+		}
+		if target == nil {
 			return errors.New("a comment needs a target issue or merge request (--target)")
 		}
 		if sticky {
@@ -1583,9 +1614,9 @@ func (a *applier) apply(in intent.Intention) error {
 				return errors.New("a sticky comment needs a key: {body, sticky: key}")
 			}
 			only, _ := m["update-only"].(bool)
-			return a.forge.Sticky(*a.target, body, forge.Marker("sticky="+a.role+"/"+key), !only)
+			return a.forge.Sticky(*target, body, forge.Marker("sticky="+a.role+"/"+key), !only)
 		}
-		return a.forge.Comment(*a.target, body, a.marker())
+		return a.forge.Comment(*target, body, a.marker())
 	case "label":
 		m, _ := in.Value.(map[string]any)
 		if err := a.needForge("label"); err != nil {
@@ -1618,6 +1649,16 @@ func (a *applier) apply(in intent.Intention) error {
 		}
 		_, err := a.forge.OpenIssue(title, body, a.marker())
 		return err
+	case "close":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil // proposed in the report, or dropped with a finding
+		}
+		is := forge.Target{Kind: "issue", ID: d.Close.Issue}
+		if err := a.forge.Comment(is, backlog.Comment(d.Close, a.role), a.marker()); err != nil {
+			return err
+		}
+		return a.forge.(forge.Backlog).Close(d.Close.Issue, d.Close.DuplicateOf)
 	case "handoff":
 		a.handoffs = append(a.handoffs, in.Value)
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
@@ -1905,4 +1946,57 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged", Level: "warn", Message: "yes: " + ans.Why + " (" + who + ")"})
 	}
 	return nil
+}
+
+// planActs decides what becomes of the run's acts on the backlog, once: a
+// resumed run reads the plan the first attempt wrote, as the forge it reads
+// has changed since. Nil when the run proposes none.
+func planActs(f forge.Forge, role string, settings map[string]any, st runState, runDir string, intents []intent.Intention) (*backlog.Plan, error) {
+	closes := map[int]backlog.Close{}
+	for i, in := range intents {
+		if in.Kind != "close" {
+			continue
+		}
+		var c backlog.Close
+		data, _ := yaml.Marshal(in.Value)
+		if err := yaml.Unmarshal(data, &c); err != nil {
+			c = backlog.Close{Reason: "unreadable: " + err.Error()}
+		}
+		closes[i] = c
+	}
+	if len(closes) == 0 {
+		return nil, nil
+	}
+	file := filepath.Join(runDir, "out", "acts.yaml")
+	if data, err := os.ReadFile(file); err == nil {
+		var p backlog.Plan
+		return &p, yaml.Unmarshal(data, &p)
+	}
+	if f == nil {
+		return nil, fmt.Errorf("closing an issue needs a forge; %s", forge.Missing)
+	}
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return nil, errors.New("this forge cannot list or close issues")
+	}
+	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes)
+	if err != nil {
+		return nil, err
+	}
+	data, _ := yaml.Marshal(p)
+	return p, os.WriteFile(file, data, 0o644)
+}
+
+// report writes the role's report issue, when the run did or proposes
+// something, or found a closing wrong: its body what the run did, its
+// record comment what the role did so far.
+func report(f forge.Forge, role string, p *backlog.Plan) error {
+	if !p.Changed && !slices.ContainsFunc(p.Decisions, func(d backlog.Decision) bool { return d.Mode != backlog.Off }) {
+		return nil
+	}
+	id, err := f.KeepIssue(backlog.ReportTitle(role), p.ReportBody(), true)
+	if err != nil || id == 0 {
+		return err
+	}
+	return f.Sticky(forge.Target{Kind: "issue", ID: id}, backlog.FormatRecord(p.Record), backlog.RecordMarker(role), true)
 }
