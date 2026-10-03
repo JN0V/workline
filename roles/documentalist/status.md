@@ -12,6 +12,11 @@ large backlog in parts has run once on DomoticsCore, right but for a
 badge's link; a fix in parts once followed a stale code comment; a
 repository without merge requests is built but untried for real.
 
+Sandboxes for trying CI for real: github.com/JN0V/workline-sandbox and
+its fork jn0v-lab/workline-sandbox; gitlab.com/JN0V/workline-sandbox, its
+two tokens set as masked variables (the GitLab one expires about
+2026-10-31).
+
 ## Built and tried for real
 
 | What | Tried on |
@@ -44,9 +49,8 @@ repository without merge requests is built but untried for real.
   release, and condensing, splitting or merging, which give no source; a
   doc they create is born without `checked`. Conformance only, no agent
   run on it yet. The `checked` already moved without being earned are put
-  back to `judged`: workline's 10 docs (0669684), DomoticsCore's 16 on its
-  local branch docs/undo-unearned-checked, not pushed
-  (docs/research/documentalist-fixes-reviewed.md).
+  back to `judged`: workline's 10 docs (0669684), DomoticsCore's 16
+  (0d86737 on its main) (docs/research/documentalist-fixes-reviewed.md).
 - **A partial claim settled by another part** (workline #29, where a stale
   code comment won over the setting): a passage one part finds partial and
   another supports is not handed to the fix. Conformance only; to watch on
@@ -122,8 +126,7 @@ repository without merge requests is built but untried for real.
    version was left stale in sibling docs. The plan, reviewed by seven
    independent reviewers: ADR-0014 (accepted). Its step 0 is built — the
    engine refuses a `checked` the agent could not have earned, and the
-   `checked` already moved are put back (above); its release waits for the
-   person to merge #35 and fix/partial-settled-by-another. Step 1 is
+   `checked` already moved are put back (above), released in v0.2.0. Step 1 is
    built and its baseline measured (below, "Measures"). Step 2 is built:
    `count-off`, `value-left`, the removal rule and "a comment is not
    evidence", measured with no agent (below). Step 3's gate is passed
@@ -187,6 +190,15 @@ falsehood 5/5 in gardening, 3/5 before and 2/5 after on the version bump — a
 frozen line count vouched for (2 runs each), a test count no source shows
 (1 run); about 42k tokens a run. The three `count-off` findings were lost
 in every run, step 2 not being built; the engine reports them now.
+
+To measure the `drifted` cases again, as they were run (`-v` for the
+notes):
+
+```sh
+for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/; done
+# the summary pools every run of a case: keep one engine's rows apart (the workline column)
+awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
+```
 
 ADR-0014 step 2, no agent (tried.md, 2026-10-01): `count-off` on a copy
 of DomoticsCore, 60 reports, all real, the three known counts among them;
