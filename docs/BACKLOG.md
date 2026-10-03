@@ -79,11 +79,12 @@ Then, once both work well here:
   GitHub, GitLab, any forge by `cmd:`, or the clone (`local`). Left: which
   role opens, updates and closes an issue for a bug it finds; a fix's pull
   request linked to its issue and closing it; a project's own roadmap
-  files replaced by its issues. Proposed: a product owner role that keeps
-  the backlog between a need and its acceptance — opens, refines, orders,
-  groups into milestones, closes duplicates and what the code made
-  obsolete, the code quoted (ADR-0018, docs/research/product-owner.md); a
-  product manager role, later, for needs.
+  files replaced by its issues. The product owner role (ADR-0018) keeps
+  the backlog between a need and its acceptance; its closings are built
+  (docs/spec/backlog-acts.md, roles/product-owner/status.md). Left: opening,
+  refining, ordering, milestones, an obsolete issue announced then closed
+  with a second judge, a tick read with its author, one issue-opening
+  mechanism for every role; a product manager role, later, for needs.
 - **Which model reviews which.** Evaluation cases with defects planted on
   purpose — a wrong edge case, a comment telling a bug's story — reviewed by
   Opus, Sonnet and Haiku, at each independence level of ADR-0005: what each

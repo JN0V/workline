@@ -1,0 +1,5 @@
+- close: {issue: 8, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the export drops the last row"}, why: "same row"}
+- close: {issue: 9, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the export drops the last row"}, why: "same row"}
+- close: {issue: 10, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the export drops the last row"}, why: "same row"}
+- close: {issue: 11, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the export drops the last row"}, why: "same row"}
+- close: {issue: 12, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the export drops the last row"}, why: "same row"}

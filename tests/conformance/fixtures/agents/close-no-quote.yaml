@@ -1,0 +1,11 @@
+- close:
+    issue: 12
+    reason: duplicate
+    duplicate-of: 7
+    quote: {issue: 7, text: "the export crashes on an empty file"}
+    why: "#12 looks like #7."
+- close:
+    issue: 9
+    reason: duplicate
+    duplicate-of: 7
+    why: "#9 looks like #7."

@@ -1,0 +1,5 @@
+- close:
+    issue: 7
+    reason: obsolete
+    quote: {path: src/export/csv.go, text: "for i := 0; i < len(rows); i++ {"}
+    why: "WriteRows now loops to the last row."

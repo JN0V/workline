@@ -194,6 +194,7 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
 		Labels      []string `json:"labels"`
+		State       string   `json:"state"`
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
@@ -201,7 +202,72 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 	if v.Labels == nil {
 		v.Labels = []string{}
 	}
-	return &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels}, nil
+	return &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels, Closed: v.State == "closed"}, nil
+}
+
+// pages decodes the arrays a paginated call prints, one a page.
+func pages[T any](out []byte) ([]T, error) {
+	var all []T
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); {
+		var page []T
+		if err := dec.Decode(&page); err != nil {
+			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		all = append(all, page...)
+	}
+	return all, nil
+}
+
+func (g *gitlab) Issues() ([]Issue, error) {
+	out, err := g.api("--paginate", "projects/:id/issues?state=opened&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	found, err := pages[struct {
+		IID         int      `json:"iid"`
+		Title       string   `json:"title"`
+		Description string   `json:"description"`
+		Labels      []string `json:"labels"`
+	}](out)
+	var all []Issue
+	for _, f := range found {
+		if f.Labels == nil {
+			f.Labels = []string{}
+		}
+		all = append(all, Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, err
+}
+
+func (g *gitlab) Comments(t Target) ([]string, error) {
+	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	notes, err := pages[struct {
+		Body   string `json:"body"`
+		System bool   `json:"system"`
+	}](out)
+	var all []string
+	for _, n := range notes {
+		if !n.System { // GitLab's own notes: "changed the description", …
+			all = append(all, n.Body)
+		}
+	}
+	return all, err
+}
+
+// Close closes an issue; a duplicate through GitLab's own quick action,
+// which closes it and links the original.
+func (g *gitlab) Close(id, dup int) error {
+	t := Target{Kind: "issue", ID: id}
+	if dup > 0 {
+		_, err := g.api("-X", "POST", path(t)+"/notes", "-f", fmt.Sprintf("body=/duplicate #%d", dup))
+		return err
+	}
+	_, err := g.api("-X", "PUT", path(t), "-f", "state_event=close")
+	return err
 }
 
 func (g *gitlab) Comment(t Target, body, marker string) error {

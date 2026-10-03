@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prepare: the open issues, each with what the engine knows of it.
+exec "${WORKLINE_BIN:-workline}" builtin product-owner pre

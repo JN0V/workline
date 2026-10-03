@@ -1,0 +1,28 @@
+case: product-owner/closings-capped
+about: Past the cap of a run, closings are proposed rather than done.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {close-duplicate: {mode: act, max: 3}}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-five-duplicates}
+expect:
+  findings: [{rule: act-cap, message: "close-duplicate"}]
+  forge:
+    issues:
+      - {id: 8, closed: true}
+      - {id: 9, closed: true}
+      - {id: 10, closed: true}
+      - {id: 11, closed: false, comments: 1}
+      - {id: 12, closed: false, comments: 1}
+      - {id: 13, title: "Backlog — product owner", body-contains: "#11"}

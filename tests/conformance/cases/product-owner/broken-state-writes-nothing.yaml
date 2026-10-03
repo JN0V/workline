@@ -1,0 +1,14 @@
+case: product-owner/broken-state-writes-nothing
+about: An issue whose engine comment does not read is never acted on; nothing is written on it, not even a repaired comment.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go\nconfirmed: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-duplicate}
+expect:
+  findings: [{rule: state-broken, where: "#12"}]
+  forge:
+    issues:
+      - {id: 12, closed: false, comments: 1, comment-contains: "sources: [src/export/csv.go\n"}

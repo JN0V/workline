@@ -61,3 +61,37 @@ func TestLocalRoundTrip(t *testing.T) {
 		t.Fatalf("kept body = %q", got.Body)
 	}
 }
+
+// The backlog of the local forge: the open issues listed, their comments
+// read back, a closing that lists the issue no more, closing again nothing.
+func TestLocalBacklog(t *testing.T) {
+	for _, v := range []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI"} {
+		t.Setenv(v, "")
+	}
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	l := &Local{Repo: repo}
+	for _, title := range []string{"one", "two"} {
+		if _, err := l.OpenIssue(title, "body", Marker("run="+title)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	l.Comment(Target{Kind: "issue", ID: 2}, "a comment", Marker("c"))
+	if c, err := l.Comments(Target{Kind: "issue", ID: 2}); err != nil || len(c) != 1 || !strings.Contains(c[0], "a comment") {
+		t.Fatalf("Comments = %q, %v", c, err)
+	}
+	for range 2 {
+		if err := l.Close(1, 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	open, err := l.Issues()
+	if err != nil || len(open) != 1 || open[0].ID != 2 {
+		t.Fatalf("Issues = %+v, %v", open, err)
+	}
+	if is, _ := l.Issue(1); !is.Closed {
+		t.Fatal("#1 not read as closed")
+	}
+}

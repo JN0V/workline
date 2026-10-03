@@ -93,6 +93,42 @@ func (c *command) Issue(id int) (*Issue, error) {
 	return &is, nil
 }
 
+func (c *command) Issues() ([]Issue, error) {
+	var a struct {
+		Issues []Issue `json:"issues"`
+	}
+	if err := c.call("issues", nil, &a); err != nil {
+		return nil, err
+	}
+	var out []Issue // only the open ones, by number, whatever the command sent
+	for _, is := range a.Issues {
+		if !is.Closed {
+			if is.Labels == nil {
+				is.Labels = []string{}
+			}
+			out = append(out, is)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+func (c *command) Comments(t Target) ([]string, error) {
+	var a struct {
+		Comments []string `json:"comments"`
+	}
+	err := c.call("comments", map[string]any{"target": t}, &a)
+	return a.Comments, err
+}
+
+func (c *command) Close(id, dup int) error {
+	args := map[string]any{"id": id}
+	if dup > 0 {
+		args["duplicate-of"] = dup
+	}
+	return c.call("close", args, nil)
+}
+
 func (c *command) Comment(t Target, body, marker string) error {
 	return c.call("comment", map[string]any{"target": t, "body": body, "marker": marker}, nil)
 }

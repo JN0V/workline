@@ -238,7 +238,35 @@ func (l *Local) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.State != "open"}, nil
+}
+
+func (l *Local) Issues() ([]Issue, error) {
+	items, err := l.Items("issue")
+	if err != nil {
+		return nil, err
+	}
+	var out []Issue
+	for _, it := range items {
+		if it.State == "open" {
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels})
+		}
+	}
+	return out, nil
+}
+
+func (l *Local) Comments(t Target) ([]string, error) {
+	it, err := l.Item(t.Kind, t.ID)
+	if err != nil {
+		return nil, err
+	}
+	return it.Comments, nil
+}
+
+// Close closes an issue; the local forge keeps no reason, the engine's
+// comment says it.
+func (l *Local) Close(id, dup int) error {
+	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.State = "closed" })
 }
 
 func (l *Local) Comment(t Target, body, marker string) error {

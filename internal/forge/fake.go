@@ -27,7 +27,8 @@ type FakeItem struct {
 	Branch   string   `json:"branch,omitempty"` // a merge request's source branch
 	Base     string   `json:"base,omitempty"`
 	Closed   bool     `json:"closed,omitempty"`
-	Fork     bool     `json:"fork,omitempty"` // a merge request from a fork
+	Reason   string   `json:"reason,omitempty"` // why it was closed: completed or duplicate
+	Fork     bool     `json:"fork,omitempty"`   // a merge request from a fork
 	Title    string   `json:"title,omitempty"`
 	Body     string   `json:"body,omitempty"`
 	Labels   []string `json:"labels"`
@@ -88,7 +89,48 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed}, nil
+}
+
+func (f *Fake) Issues() ([]Issue, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	var out []Issue
+	for _, it := range s.Issues {
+		if !it.Closed {
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+func (f *Fake) Comments(t Target) ([]string, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(t)
+	if err != nil {
+		return nil, err
+	}
+	return it.Comments, nil
+}
+
+func (f *Fake) Close(id, dup int) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil || it.Closed {
+			return err
+		}
+		it.Closed, it.Reason = true, "completed"
+		if dup > 0 {
+			it.Reason = "duplicate"
+		}
+		return nil
+	})
 }
 
 func (f *Fake) Comment(t Target, body, marker string) error {
