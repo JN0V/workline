@@ -128,7 +128,8 @@ up to date. Nothing is
 forgotten; nothing drags a small fix into a rewrite of the user guide.
 
 A doc following another doc along an edge due later stays `pending` until
-then, even once the doc it follows is fixed and merged. On `release`, the
+then, even once the doc it follows is fixed and merged. On `release` — or on
+a release tool's pull request, which is the release (ADR-0017) — the
 documentalist runs before the release tool tags: each doc due at the release is
 `due`, and becomes the `propagate` task — brought up to date for its reader,
 growing when the reader gained something to know. A `due` doc left as it was

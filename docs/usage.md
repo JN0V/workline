@@ -38,9 +38,10 @@ Options of `run-role` and `route`:
 | `--input-file name=path` | `run-role` only: an input read from a file, written back by the intention that targets it (the hook's message file) |
 | `--forge <forge>` | `github` (needs `gh`), `gitlab` (its API, with `GITLAB_TOKEN`, else glab's token if glab is set up, else CI's job token; the instance and project from CI, else `GITLAB_HOST` and the remote), `local` (kept in the clone, never pushed: below), `cmd:<command>` (another forge, plugged by a command: docs/spec/forge-command.md), `none`; default: the project's `forge` |
 | `--target issue:<n>` / `merge-request:<n>` | where comments and labels go |
+| `--branch <name>` | the branch the merge request `--target` names comes from, for a job that does not ask the forge (CI's judging job, which holds no token); default: the forge says. A release tool's branch (`release.branches`) has the merge request held as the release (ADR-0017) |
 | `--scope <glob>` | a path the task is about, repeatable; a patch outside it is refused |
 | `--no-apply` | judge, then stop; apply later, in a job that holds the write token |
-| `--push-to-merge-request` | with a forge and `--target merge-request:<n>`: what the patches write is committed to that merge request's branch and pushed, without force; from a fork, or when the branch moved on, the diff goes in one comment instead. With `local`, committed on the local branch, nothing pushed |
+| `--push-to-merge-request` | with a forge and `--target merge-request:<n>`: what the patches write is committed to that merge request's branch and pushed, without force; from a fork, or when the branch moved on, the diff goes in one comment instead. With `local`, committed on the local branch, nothing pushed. On a release tool's merge request, which the tool rewrites, it goes instead to a merge request of its own, `workline/<role>/release`, into the release's base, and the release waits until it is merged (ADR-0017) |
 | `--open-merge-request` | with a forge: what the patches write goes on a branch `workline/<role>/<task>`, pushed, with a merge request opened or updated for it; the role is told how many of its merge requests are open (ADR-0006). With `local`, the branch stays in the clone |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--sarif <file>` / `--code-quality <file>` | also write the findings as SARIF (GitHub code scanning) or a GitLab Code Quality report; `route`: every step's (docs/spec/role-outcome.md) |
@@ -162,6 +163,9 @@ gates:                      # docs/spec/gates.md
     checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]
 repos:                      # other repositories docs may depend on (docs/spec/multi-repo.md)
   api: {url: "https://github.com/acme/api.git", branch: main}
+release:                    # how the project's release tool works (ADR-0017)
+  branches: ["release/*"]   # its pull requests' branches; default: release-please's, releaser-pleaser's, release-plz's, changesets'
+  tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
 ```
 
 A key the engine does not know blocks, with its line: an ignored setting is one
@@ -188,5 +192,7 @@ A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
 `WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`, `WORKLINE_FORGE` when a
 forge is given, `WORKLINE_TARGET` (`merge-request:12`) with a target too, and
 `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
-`WORKLINE_PROPOSED_TASKS` with `--open-merge-request`. A role run by a handoff
+`WORKLINE_PROPOSED_TASKS` with `--open-merge-request`. On a release tool's
+merge request, a role that runs on `release` gets `WORKLINE_EVENT=release`
+and `WORKLINE_RELEASE_BRANCH`, the branch (ADR-0017). A role run by a handoff
 receives the inputs `handoff-from` and `handoff-reason`.

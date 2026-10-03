@@ -56,8 +56,12 @@ moves the minor while workline is at 0.x, as a breaking change does),
 CHANGELOG.md, and the templates' `WORKLINE_VERSION`, each on a line marked
 `x-release-please-version` (release-please-config.json). The App's token,
 not the job's: a pull request opened with `GITHUB_TOKEN` starts no
-workflow, so its checks would never run. The person merges it; that is the
-decision. release-please then tags the merged commit, `vX.Y.Z`, and writes
+workflow, so its checks would never run. On that pull request, workline.yml
+holds it as the release (ADR-0017): the judging job passes the branch it
+comes from (`--branch`), a release tool's, and the documentalist holds it
+on every doc made suspect since the last release; its fix goes to a pull
+request of its own on `main`, which release-please brings in once merged.
+The person merges it; that is the decision. release-please then tags the merged commit, `vX.Y.Z`, and writes
 the GitHub release with its notes; in the same run, release.yml builds the
 binaries with GoReleaser, which uploads them to that release and keeps its
 notes (`release.mode: keep-existing`), and pushes the image. A failed

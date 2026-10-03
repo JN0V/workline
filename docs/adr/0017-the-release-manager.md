@@ -227,6 +227,10 @@ next starts.
    tag holds the release pull request release-please opened, then clears
    once its fix is merged; a depth-1 clone is refused; a hotfix tag merged
    back is not taken for the last release.
+   *Built* (2026-10-03), the bar's last two met by conformance cases
+   (documentalist/release-*); the judging job, which holds no forge token,
+   is given the branch (`--branch`), the forge asked otherwise; the
+   setting is `release: {branches, tags}`. The sandbox try waits.
 5. **Doctor and `init`**, later: the tool detected, one recommended when
    none, `GITHUB_TOKEN` on a release workflow reported, a shipped pin
    executed by the project's own CI reported. *Bar*: each said on a

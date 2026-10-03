@@ -47,9 +47,11 @@ Then, once both work well here:
   commit; release-please set up for workline (step 3, docs/ci.md), with
   the App, GoReleaser after it in the same run, `apply` on the last
   release looked up; step 3's bar met by v0.3.0, the merge the only step
-  by hand. Left, in order: the documentalist's release hold on the
-  release pull request a tool opens (step 4); later, doctor and `init`
-  detect the tool or recommend one.
+  by hand; step 4 built, the documentalist holding the release pull
+  request a tool opens. Left, in order: step 4's try on
+  JN0V/workline-sandbox (a doc made suspect since the last tag holds
+  release-please's pull request, clears once its fix is merged); later,
+  doctor and `init` detect the tool or recommend one.
 - **Install without Go in CI.** Done (v0.1.0, 2026-10-01): releases with
   their binaries (GoReleaser), the image ghcr.io/jn0v/workline the GitLab
   template runs in, the GitHub templates downloading a pinned release;
