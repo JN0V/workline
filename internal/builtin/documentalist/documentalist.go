@@ -2037,7 +2037,7 @@ func trackingIssue(findings []verdict.Finding) (intent.Intention, bool) {
 	if list.Len() == 0 {
 		value["body"], value["update-only"] = "Nothing is due: every doc that follows another is up to date.", true
 	} else {
-		value["body"] = "These docs follow docs that changed, and are brought up to date at the moment their edge names — the release, by default — when the documentalist runs before the release manager; until then, the release waits for them.\n\n" + list.String()
+		value["body"] = "These docs follow docs that changed, and are brought up to date at the moment their edge names — the release, by default — when the documentalist runs at the release (`workline route release`), before the release tool tags; until then, the release waits for them.\n\n" + list.String()
 	}
 	return intent.Intention{Kind: "issue", Value: value}, true
 }

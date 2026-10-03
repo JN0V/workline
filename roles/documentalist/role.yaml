@@ -6,9 +6,9 @@ mission: The docs stay true to the code, short enough to be read, and the produc
 # pre-push: the same on the machine, before the commits leave it: listed at
 #           the push, judged with `workline docs`, each change reviewed (ADR-0007).
 # schedule: gardening — freshness, duplicates, budgets, across the whole repo.
-# handoff: from the release manager, when a release changes how the project is used.
-# release: before the release manager: the docs due at the release are brought
-#          up to date; until they are, the release waits.
+# handoff: from a project's own role, when routing allows it; no shipped role asks.
+# release: before the project's release tool tags (ADR-0017): the docs due at
+#          the release are brought up to date; until they are, the release waits.
 # init: `workline init` adopting a repository: the docs saying nothing of the
 #       code they describe get their `sources` proposed, for a person to review.
 events: [merge-request, pre-push, schedule, handoff, release, init]
