@@ -3,6 +3,7 @@ sources: [tests/conformance/runner_test.go, tests/evaluation]
 checked: edfd466
 judged: 6013a50
 verified: agent:documentalist
+judged-in-parts: 44b0153
 ---
 # Conformance — v1 (draft)
 

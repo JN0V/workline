@@ -26,3 +26,18 @@ since (obsolete); #2 the same symptom in a user's words, naming no code
 - Seen, not fixed: the agent wrote "changed it after this was reported",
   though no issue's date is given; the report's record reads `{}` when
   empty.
+
+## 2026-10-03 — the evaluation, five runs, Sonnet
+
+`product-owner/keeps-a-planted-backlog` (tests/evaluation): five issues
+planted on the local forge of a project whose last-row bug a commit fixed —
+#1 that bug (obsolete), #2 no header row and #3 its duplicate in other
+words, #4 empty rows written as blank lines (still true, on the loop the fix
+touched: the trap), #5 a need. Five runs, 11 of 11 each: #1 proposed as
+obsolete and left open, #3 closed as a duplicate of #2, #2, #4 and #5 left
+alone and not proposed. About 3,800 tokens in and 360 to 570 out a run, one
+call, 5 to 6 seconds.
+
+What it does not measure yet: a duplicate by likeness only (proposed, not
+closed, by ADR-0018 — the engine does not tell it apart yet); a real
+backlog, its issues long and many; a wrong closing in the wild.
