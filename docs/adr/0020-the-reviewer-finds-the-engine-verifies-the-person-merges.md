@@ -18,10 +18,14 @@ scale. Issue #87 asks for a reviewer role.
 docs/research/code-review.md found that the AI reviewers that hold up split
 finding from verifying, let no reviewer merge, and keep what is posted
 capped; that a cynical persona changes nothing while asking for concrete
-findings and what is missing does (BMAD); that self-triage by the same model
+findings and what is missing does; that self-triage by the same model
 is common and weak; and that none decides mechanically whether a finding
 belongs to the change or was there before — the model says "pre-existing",
 or nothing.
+
+Borrowed, credited there: BMAD-METHOD's lenses run apart, its floor on
+candidate findings, its verified triage and its bounded rounds; Claude Code
+Review's verification step; gh-aw's cap; CodeRabbit's warn before block.
 
 ## Decision
 
@@ -45,10 +49,11 @@ before the push; and on the merge request, a safety net.
    one question (ADR-0009), in a context of its own, answering `finding`s
    only: a new intention, `{severity, title, why, cause, symptom, fix}`,
    whose quotes the engine finds again. The commit messages are given as
-   the author's testimony, not evidence. A lens may be asked to look for a
-   number of candidates first, from the change's size (BMAD's floor, on
-   candidates only; its worth measured by #90); finding nothing is not a
-   failure, and nothing requires a finding to be shown.
+   claims to check against the code, not as proof. A lens may be asked to
+   look for a number of candidates first, from the change's size (a floor
+   on candidates only, never on what is shown; its worth measured by #90);
+   finding nothing is not a failure, and nothing requires a finding to be
+   shown.
 3. **The engine checks the quotes.** A finding whose cause, or symptom, it
    does not find again — in the file at the head of the range, or among the
    lines the change removed — is dropped and said (`finding-unfounded`),
