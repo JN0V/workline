@@ -89,6 +89,16 @@ judge refused, each said with its reason, most "the code that would show it
 is not given" — the judge sees thirty lines around the cause. A nit, kept:
 a message reading "the forge: <nil>", fixed.
 
+The next push, the same lens on the whole range again (51k in, 5k out;
+three judges, 13k in): two nits, true, fixed — the changed files' names
+split on spaces; and three findings refused. One of them was true: the
+verdict listed a run's advisories twice. The judge said no because the
+function adding them first was not in the thirty lines it read — a
+verification's false negative, for #90 to count. **Fixed** in the code. Also
+refused, and true as a consequence: on this repository every push gets the
+correctness lens, since with `forge-writes: false` no record is read in CI,
+and the turn of the lenses never moves (status.md).
+
 Not tried: the judging job reading the record with its read token
 (`forge-writes: true`); GitLab; a fork; a lens unreachable mid-run; `ai-findings: block`;
 `workline init --review` on a real repository (unit-tested only); every

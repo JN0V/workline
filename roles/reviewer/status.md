@@ -42,4 +42,9 @@ Conformance: tests/conformance/cases/reviewer.
    should be is for #90's measure.
 8. **Tried in CI with forge writes**: workline's own pull requests run it
    with `forge-writes: false` until a release ships the role to the apply
-   job, so the record and the summary comment are untried there.
+   job, so the record and the summary comment are untried there, and each
+   push gets the correctness lens on the whole range: without a record, the
+   turn of the lenses does not move.
+9. **The judge's material**: thirty lines around the cause; it refused a
+   true finding whose evidence lay further (tried.md). The functions the
+   cause calls or is called by, given whole, are the next step.
