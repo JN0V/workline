@@ -323,7 +323,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		fmt.Fprintf(&code, "### %s\n\n```\n%s%s\n```\n\n", f, strings.Join(lines, "\n"), cut)
 	}
 	floor := ""
-	if s.FinderFloor { // BMAD's floor, from the size of what is read: the change and its files
+	if s.FinderFloor { // a floor on candidates, never on what is shown; from the size of what is read
 		kb := float64(len(diff)+code.Len()) / 1024
 		n := min(int(math.Floor(math.Sqrt(kb)+1)), 10)
 		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", n)
@@ -333,7 +333,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		if err != nil {
 			return err
 		}
-		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nTheir messages are the author's testimony, not evidence.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\nRead them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
+		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nThey say what the author meant; they prove nothing: check each claim against the code.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\nRead them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
 			lens, strings.TrimSpace(text), floor, log, diff, code.String())
 		dir := filepath.Join(runDir, "in", "parts", fmt.Sprintf("%d-%s", i+1, lens))
 		if err := os.MkdirAll(dir, 0o755); err != nil {
