@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: cc3a4f4
+checked: 3f10209
 verified: agent:claude-code
 ---
 # Product owner
@@ -14,8 +14,9 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
 ## A run, when gardening (`schedule`)
 
 1. `pre` gives the agent a share of the open issues (`issues-per-run`):
-   those never read first, then those whose code changed, that someone
-   commented on or edited, or reopened after it closed them, since read; each with its
+   those an act was proposed on only for a run's cap first, then those
+   never read, then those whose code changed, that someone commented on
+   or edited, or reopened after it closed them, since read; each with its
    state comment (its sources, the commit it was last confirmed and read at),
    who opened it, which of its four sections it has, and the code it names —
    by path, by a file's name alone, by a symbol quoted as code, in its body

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: cc3a4f4
+checked: 3f10209
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)

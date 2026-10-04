@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: cc3a4f4
+checked: 3f10209
 verified: agent:claude-code
 ---
 # Acts on the backlog
