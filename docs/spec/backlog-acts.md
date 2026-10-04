@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 3f10209
+checked: 8994e1a
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -11,8 +11,8 @@ What the engine does when a role acts on a project's issues rather than on
 its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
 it. This page is the contract; the acts built are closing, naming an
-issue's sources, putting it in a milestone, opening one from a file, and
-refining one to ready.
+issue's sources, putting it in a milestone, ordering it, opening one from
+a file, and refining one to ready.
 
 ## The issue's state
 
@@ -25,6 +25,7 @@ confirmed: 1a8e5a4                       # the commit it was last found true at
 judged: 1a8e5a4                          # the commit the role last read it at
 comments: 2                              # people's comments when it was read
 body: 3f9a1c0e2b7d                       # a digest of its body, when last read or written
+priority: 2                              # the priority the role last set (Ordering)
 ```
 
 An issue without that comment, or with one that does not read, is never
@@ -134,6 +135,34 @@ that title is open. Ordering says nothing of an issue's truth: no quote,
 but its state must read as for any act. The task gives the last release
 tag and the milestones open; each issue says its own.
 
+**What slipped** is moved by the engine, with or without an agent: an
+open issue whose milestone is named after a tag that exists is put in
+the nearest open milestone not released, in version order (`v1.9.0`
+before `v1.10.0`); with none left, the move is proposed in the report,
+the issue left where it is. The engine's move comes first: an agent's
+milestone for the same issue in the same run is dropped.
+
+## Ordering
+
+```yaml
+- order: {issue: 12, priority: 1, why: "it loses rows from every report"}
+```
+
+Sets an issue's priority: one label, `workline:priority/1` (the most
+pressing) to `workline:priority/4`, created when the project has none,
+the other three taken off. A level outside 1 to 4 is dropped
+(`priority-level`); the priority it has already, too (`priority-same`).
+The issue's state records the priority set. A priority label other than
+the one recorded — set by a person, or by a person over the role's, or
+taken off by one — is a person's: the act is dropped and the label kept
+(`priority-kept`); the task shows it as a person's. No quote; the state
+must read, as for any act.
+
+**The backlog's order** is derived, never stored: the nearest milestone
+first (titles in version order; an issue in none after every one in
+one), then the priority (an issue with none after 4), then the lowest
+number (`backlog.Less`). The task lists the issues not read in that order.
+
 ## Refining to ready
 
 An issue is `ready` when four sections are written in its body — `## Need`,
@@ -204,6 +233,7 @@ acts:
   ready: {mode: act, max: 5}
   ask: {mode: act, max: 3}
   milestone: {mode: act, max: 10}
+  order: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off
   close-obsolete:  {mode: propose, max: 3}
 ```
@@ -212,6 +242,12 @@ acts:
 - `propose`: written in the report issue for a person, not done.
 - `off`: dropped.
 
+A run moves at most a share of the open issues, the report issue left
+out: `moved-percent-max` (20, a fifth, by default; rounded up, one at
+least). Milestones — the engine's slips included — and priorities count
+together, an issue moved twice once; past the share, a move is proposed
+(`moved-cap`). Milestones are applied before priorities.
+
 Closing as obsolete starts at `propose` (ADR-0018: a quote proves the text
 is there, not that the issue is solved).
 
@@ -219,7 +255,9 @@ is there, not that the issue is solved).
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
 lists what the last run did and what is proposed, each closing with its
-quote and how to undo it. A proposal stays there from run to run until a person
+quote and how to undo it. Under "Before this run", each issue the run
+moved is listed with its priority and milestone as they were, to put the
+order back. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to
 open past the cap stays there until an open issue holds its text: an
 import run again opens it. Its own engine

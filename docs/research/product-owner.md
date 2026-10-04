@@ -82,6 +82,28 @@ active contributors after a stale bot.
 8. **Migrating a backlog**: one cut-over, the old id kept in each issue,
    the old file kept read-only (CPython, Apache Lucene).
 
+## Priority and ranking (2026-10-04)
+
+Where projects keep an issue's place in the backlog, in their words:
+*priority*, *rank*, *triage*.
+
+| Where | How | What a role can write |
+|---|---|---|
+| Kubernetes | [`priority/*` labels](https://github.com/kubernetes/community/blob/master/contributors/guide/issue-triage.md): `critical-urgent`, `important-soon`, `important-longterm`, `backlog` | A label, by any triager |
+| Rust | [`P-critical`, `P-high`, `P-medium`, `P-low`](https://forge.rust-lang.org/compiler/prioritization.html) labels, set at a weekly triage | A label |
+| Linear | [Four levels](https://linear.app/docs/priority) — Urgent, High, Medium, Low — and "No priority" | A field |
+| GitLab | [Scoped labels](https://docs.gitlab.com/user/project/labels/#scoped-labels) (`priority::1`, one of a scope at a time; Premium) and an [issue reorder API](https://docs.gitlab.com/api/issues/#reorder-an-issue) for a board's rank | A label; a rank with the API |
+| GitHub | Issue fields with a Priority — for organisations only; a [Projects v2](https://docs.github.com/en/issues/planning-and-tracking-with-projects) item's position, with a token scoped to the project | Neither, on a user account (JN0V's) without a project token |
+| GitLab, iterations | [Open issues roll over](https://docs.gitlab.com/user/group/iterations/) to the next iteration when one ends | — the engine's slip, borrowed |
+
+**Decision** (ADR-0018, "Ordering"): priority as labels, four levels
+(`workline:priority/1` to `/4`, 1 the most pressing), the way Kubernetes,
+Rust and Linear count; one at a time, as GitLab's scoped labels; the order
+itself derived — nearest milestone, priority, number — not stored. A
+forge's native rank (GitLab's reorder, a GitHub project's position) is
+deferred: it is not on every forge workline speaks, nor writable with the
+token a role holds.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was
