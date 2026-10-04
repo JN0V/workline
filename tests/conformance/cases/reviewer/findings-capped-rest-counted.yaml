@@ -1,0 +1,13 @@
+case: reviewer/findings-capped-rest-counted
+about: "Past findings-max, the findings on the change are not shown nor checked: they are counted, and the run says so."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'", "printf '\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"]
+  config: {roles: {reviewer: {settings: {findings-max: 1}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-two-nits"}
+expect:
+  status: pass
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Nit: the divisor reads better named"}
+    - {rule: findings-capped, message: "1 more findings on the change"}
+  no-findings: [{rule: correctness, where: "calc/calc.go:20"}]

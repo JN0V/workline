@@ -1,0 +1,5 @@
+# Two lenses of the reviewer: the first finds nothing, the second answers
+# what does not read.
+calls:
+  - []
+  - "this is not a list of findings"

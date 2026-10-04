@@ -88,6 +88,7 @@ type Result struct {
 	maxTokens    int      // the role's ai-max-tokens: what the run may spend; 0, no cap
 	proposed     []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
 	capped       bool     // a call was refused, the run having spent maxTokens
+	partRefused  []string // what the parts answered and may not: refused with them
 }
 
 // errTokensSpent refuses a call once the run has spent its ai-max-tokens.
@@ -329,6 +330,21 @@ func run(o Options, res *Result) error {
 			return err
 		}
 	}
+	// Questions only a judge answers, one each (a reviewer's findings,
+	// ADR-0020): each asked apart, at the best independence; pre then
+	// settles what follows from the answers.
+	if questions, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "question.yaml")); len(questions) > 0 {
+		if err := askQuestions(o, ag, runDir, questions, res); err != nil {
+			return err
+		}
+		code, err := script(r, "pre", o.Repo, append(env[:len(env):len(env)], "WORKLINE_PARTS=answered", "WORKLINE_JUDGED=answered"))
+		if err != nil {
+			return err
+		}
+		if stop, err := prepared(code, r, cfg, runDir, res); stop || err != nil {
+			return err
+		}
+	}
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {
 		return err
@@ -509,6 +525,13 @@ func prepared(code int, r *role.Role, cfg *role.ProjectConfig, runDir string, re
 		return true, nil
 	case exitExternal:
 		res.Status, res.Summary = verdict.BlockedExternal, "pre: an outside service failed"
+		// What pre found before the service failed is still said.
+		if v, err := verdict.Read(filepath.Join(runDir, "out", "verdict.yaml")); err == nil {
+			res.Findings = append(res.Findings, v.Findings...)
+			if v.Summary != "" {
+				res.Summary = v.Summary
+			}
+		}
 		return true, nil
 	}
 	return true, fmt.Errorf("pre exited with code %d", code)
@@ -516,27 +539,33 @@ func prepared(code int, r *role.Role, cfg *role.ProjectConfig, runDir string, re
 
 // askParts asks each part of a question (in/parts/<name>/task.md), sorted by
 // name, in a context of its own, on the tier model.tasks.part names, and puts
-// each answer back as in/parts/<name>/answer.yaml. A part answers only
-// claims, which inform and are never applied: a part that fails, or answers
-// anything else, is said, and its answer never given back as one. Without an
-// agent, no part is asked.
+// each answer back as in/parts/<name>/answer.yaml. A part answers only what
+// the role's part-intentions name — claims, unless it says otherwise; a
+// reviewer's lens, findings — which inform and are never applied: a part that
+// fails, or answers anything else, is said, and its answer never given back
+// as one; why is written beside it, in/parts/<name>/unanswered, its first
+// word the kind of failure (unavailable, spent, invalid, refused). Without
+// an agent, no part is asked.
 func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []string, res *Result) error {
 	if ag == nil {
 		return nil
 	}
 	sort.Strings(tasks)
-	asked := *r // a part's needs, and the one intention it may answer with
+	asked := *r // a part's needs, and the intentions it may answer with
 	asked.Model = r.Model.For("part")
-	asked.Intentions = []string{"claim"}
+	asked.Intentions = r.PartAnswers()
+	claims := slices.Equal(asked.Intentions, []string{"claim"})
 	gone := "" // the agent could not be reached: the other parts would fail the same
+	goneKind := ""
 	for _, task := range tasks {
 		name := filepath.Base(filepath.Dir(task))
-		unanswered := func(why string) {
+		unanswered := func(kind, why string) {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-unanswered", Where: name, Level: "warn",
 				Message: "this part of the question got no answer that can be read (" + why + "): what it holds was judged by no one"})
+			os.WriteFile(filepath.Join(filepath.Dir(task), "unanswered"), []byte(kind+": "+why+"\n"), 0o644)
 		}
 		if gone != "" {
-			unanswered("not asked: " + gone)
+			unanswered(goneKind, "not asked: "+gone)
 			continue
 		}
 		dir := filepath.Join(runDir, "parts", name)
@@ -555,17 +584,20 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		err = callAgent(ag, agent.Request{RunDir: dir, Repo: o.Repo, Role: &asked, Tier: asked.Model.Tier}, "part", runDir, res)
 		switch {
 		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent):
-			gone = err.Error()
-			unanswered(gone)
+			gone, goneKind = err.Error(), "unavailable"
+			if errors.Is(err, errTokensSpent) {
+				goneKind = "spent"
+			}
+			unanswered(goneKind, gone)
 			continue
-		case errors.Is(err, agent.ErrInvalidOutput):
+		case errors.Is(err, agent.ErrInvalidOutput) && claims:
 			// One item written wrong spoils the whole list for a YAML
 			// reader: the items are read one by one, the broken ones kept
 			// as unreadable claims, which the role counts as dropped.
 			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
 			read, broken := claimsOneByOne(string(raw))
 			if read == 0 {
-				unanswered(err.Error())
+				unanswered("invalid", err.Error())
 				continue
 			}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-partly-read", Where: name, Level: "warn",
@@ -573,31 +605,35 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			if err := intent.Write(filepath.Join(dir, "out", "intentions.yaml"), append(claimsRead(string(raw)), broken...)); err != nil {
 				return err
 			}
+		case errors.Is(err, agent.ErrInvalidOutput):
+			unanswered("invalid", err.Error())
+			continue
 		case err != nil:
 			return err
 		}
-		claims, err := intent.Read(filepath.Join(dir, "out", "intentions.yaml"))
+		answers, err := intent.Read(filepath.Join(dir, "out", "intentions.yaml"))
 		if err != nil {
-			unanswered(err.Error())
+			unanswered("invalid", err.Error())
 			continue
 		}
 		var other []string
-		for _, c := range claims {
-			if c.Kind != "claim" {
+		for _, c := range answers {
+			if !slices.Contains(asked.Intentions, c.Kind) {
 				other = append(other, c.Kind)
 			}
 		}
 		if len(other) > 0 {
-			unanswered("it answered " + strings.Join(other, ", ") + "; a part answers with claims only")
+			if !claims { // a lens proposing to act: refused, as any intention a role may not emit
+				res.partRefused = append(res.partRefused, other...)
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "intention-refused", Where: name,
+					Message: strings.Join(other, ", ") + " is not allowed: a part answers with " + strings.Join(asked.Intentions, ", ") + " only"})
+			}
+			unanswered("refused", "it answered "+strings.Join(other, ", ")+"; a part answers with "+strings.Join(asked.Intentions, ", ")+" only")
 			continue
 		}
 		answer := []byte("[]\n") // nothing to say of this share is an answer too
-		if len(claims) > 0 {
-			list := make([]map[string]any, len(claims))
-			for i, c := range claims {
-				list[i] = map[string]any{c.Kind: c.Value}
-			}
-			if answer, err = yaml.Marshal(list); err != nil {
+		if len(answers) > 0 {
+			if answer, err = intent.Marshal(answers); err != nil {
 				return err
 			}
 		}
@@ -1336,15 +1372,15 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return nil, err
 	}
-	res.Refused = []string{}
+	res.Refused = append([]string{}, res.partRefused...)
 	if refused, why := invalid(r, intents, line); len(refused) > 0 {
-		res.Refused = refused // the set is refused whole; these are the kinds that caused it
+		res.Refused = append(res.Refused, refused...) // the set is refused whole; these are the kinds that caused it
 		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused", Message: why})
 		intents = nil
 		os.Remove(filepath.Join(runDir, "out", "intentions.yaml"))
 	}
 	if bad := outOfBounds(o.Repo, intents, r.Writes(settings), o.Scope); len(bad) > 0 {
-		res.Refused = []string{"patch"}
+		res.Refused = append(append([]string{}, res.partRefused...), "patch")
 		a.findings = append(a.findings, verdict.Finding{Rule: "intention-refused",
 			Message: "a patch reaches outside the task or the role's duties: " + strings.Join(bad, ", ") + "; anything found there belongs in an issue"})
 		intents = nil
@@ -1657,6 +1693,9 @@ func (a *applier) apply(in intent.Intention) error {
 		if err := a.needForge("issue"); err != nil {
 			return err
 		}
+		if key, _ := m["key"].(string); key != "" {
+			return a.keyedIssue(title, body, key, strs(m["sources"]))
+		}
 		_, err := a.forge.OpenIssue(title, body, a.marker())
 		return err
 	case "close":
@@ -1733,6 +1772,50 @@ func (a *applier) apply(in intent.Intention) error {
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
 	}
 	return fmt.Errorf("not implemented yet in this engine")
+}
+
+// LabelTriage marks an issue a role opened, until a person or the product
+// owner takes it (ADR-0018, "Opening issues, for every role").
+const LabelTriage = "needs-triage"
+
+// keyedIssue opens an issue a role found outside its task, once: its key,
+// stable for the same subject, is hidden in the body, and an open issue
+// holding it already is left as it is — not opened again, not commented.
+// The new issue is labelled needs-triage, and given the product owner's
+// state comment — the code it is about, and the commit it was seen at — so
+// the backlog's keeper reads it from its next run (ADR-0018, ADR-0020).
+func (a *applier) keyedIssue(title, body, key string, sources []string) error {
+	b, ok := a.forge.(forge.Backlog)
+	if !ok {
+		return errors.New("this forge cannot list issues, to open one only once")
+	}
+	marker := forge.Marker("issue=" + a.role + "/" + key)
+	open, err := b.Issues()
+	if err != nil {
+		return err
+	}
+	for _, is := range open {
+		if strings.Contains(is.Body, marker) {
+			return nil
+		}
+	}
+	id, err := a.forge.OpenIssue(title, body, marker)
+	if err != nil {
+		return err
+	}
+	if err := b.EnsureLabel(LabelTriage, "ededed", "Opened by a workline role: a person or the product owner takes it from here"); err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: id}
+	if err := a.forge.Label(t, []string{LabelTriage}, nil); err != nil {
+		return err
+	}
+	head, err := git(a.repo, nil, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return err
+	}
+	st := backlog.State{Sources: sources, Confirmed: head}
+	return a.forge.Sticky(t, backlog.FormatState(st), backlog.StateMarker("product-owner"), true)
 }
 
 // order sets an issue's one priority label, the others taken off, and
@@ -2015,6 +2098,7 @@ func scriptEnv(runDir, roleName string, o Options) []string {
 		"WORKLINE_AI="+ai,
 		"WORKLINE_ROLE="+roleName,
 		"WORKLINE_BIN="+self,
+		"WORKLINE_ROLES_DIR="+o.RolesDir,
 	)
 	if o.Forge != "" && o.Forge != "none" {
 		env = append(env, "WORKLINE_FORGE="+o.Forge) // what the role may write to
@@ -2118,6 +2202,85 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged-no", Message: ans.Why + " (" + who + ")"})
 	default:
 		v.Findings = append(v.Findings, verdict.Finding{Rule: "judged", Level: "warn", Message: "yes: " + ans.Why + " (" + who + ")"})
+	}
+	return nil
+}
+
+// askQuestions puts each question pre wrote (in/judge/<key>/question.yaml:
+// {question, material}) to a judge, in a context of its own, at the best
+// independence available from the agents that answered the run (ADR-0005),
+// and writes its answer beside it (answer.yaml: {yes, why, model, judge,
+// level}, or {error} when it could not answer). Without an agent, or once
+// the run spent its ai-max-tokens, none is asked; the agent unreachable, the
+// rest are not asked either. Unlike a post's question, a no refuses nothing:
+// pre reads each answer, a finding at a time.
+func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, res *Result) error {
+	if ag == nil {
+		return nil
+	}
+	sort.Strings(questions)
+	var authorModels []string
+	for _, c := range res.Calls {
+		if c.Task != "judge" && c.Model != "" {
+			authorModels = append(authorModels, c.Model)
+		}
+	}
+	last := ""
+	if len(authorModels) > 0 {
+		last = authorModels[len(authorModels)-1]
+	}
+	spec := os.Getenv("WORKLINE_JUDGE")
+	if spec == "" {
+		spec = judge.Pick(o.AI, last)
+	}
+	judgeRole, err := role.Load(o.RolesDir, "judge")
+	if err != nil {
+		return err
+	}
+	gone := ""
+	for _, file := range questions {
+		answer := map[string]any{}
+		var q struct{ Question, Material string }
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		if err := yaml.Unmarshal(data, &q); err != nil || q.Question == "" {
+			return fmt.Errorf("%s: a question is needed: %v", file, err)
+		}
+		switch {
+		case gone != "":
+			answer["error"] = "not asked: " + gone
+		case res.overBudget():
+			res.capped = true
+			answer["error"] = "not asked: " + errTokensSpent.Error()
+		default:
+			ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
+			res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
+			res.AgentCalls++
+			if data, err := json.Marshal(ans.Call); err == nil { // kept with the run's calls, what it cost
+				if f, err := os.OpenFile(filepath.Join(runDir, "out", "calls.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+					f.Write(append(data, '\n'))
+					f.Close()
+				}
+			}
+			if err != nil {
+				answer["error"] = err.Error()
+				if errors.Is(err, agent.ErrUnavailable) {
+					gone = err.Error()
+				}
+				break
+			}
+			answer = map[string]any{"yes": ans.Yes, "why": ans.Why, "model": ans.Model, "judge": spec,
+				"author": last, "level": judge.Independence(spec, ans.Model, o.AI, authorModels)}
+		}
+		out, err := yaml.Marshal(answer)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(filepath.Dir(file), "answer.yaml"), out, 0o644); err != nil {
+			return err
+		}
 	}
 	return nil
 }

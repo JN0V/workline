@@ -80,6 +80,72 @@ func RoutePrePush(repo string) (steps []string, changed bool, err error) {
 	return adopted, true, nil
 }
 
+// AddReviewer has the project's merge requests reviewed (ADR-0020): the
+// reviewer is added at the end of the project's merge-request line, or of
+// the shipped one when the project routes none. It returns the steps the
+// line runs afterwards, and whether the file changed.
+func AddReviewer(repo string) (steps []string, changed bool, err error) {
+	file := filepath.Join(repo, ".workline", "config.yaml")
+	data, err := os.ReadFile(file)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, false, err
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return nil, false, fmt.Errorf(".workline/config.yaml: %w", err)
+	}
+	if len(doc.Content) == 0 {
+		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
+	}
+	top := doc.Content[0]
+	if top.Kind != yaml.MappingNode {
+		return nil, false, fmt.Errorf(".workline/config.yaml: not a mapping")
+	}
+	child := func(m *yaml.Node, key string) *yaml.Node {
+		if v := value(m, key); v != nil {
+			return v
+		}
+		v := &yaml.Node{Kind: yaml.MappingNode}
+		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
+		return v
+	}
+	events := child(child(top, "routing"), "events")
+	line := value(events, "merge-request")
+	if line == nil {
+		c, err := Load(repo)
+		if err != nil {
+			return nil, false, err
+		}
+		line = &yaml.Node{Kind: yaml.SequenceNode, Style: yaml.FlowStyle}
+		for _, s := range c.Events["merge-request"] {
+			line.Content = append(line.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: s})
+		}
+		events.Content = append(events.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "merge-request"}, line)
+	}
+	if err := line.Decode(&steps); err != nil {
+		return nil, false, fmt.Errorf(".workline/config.yaml: routing.events.merge-request: %w", err)
+	}
+	for _, s := range steps {
+		if s == "reviewer" {
+			return steps, false, nil
+		}
+	}
+	line.Content = append(line.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "reviewer"})
+	var out bytes.Buffer
+	enc := yaml.NewEncoder(&out)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return nil, false, err
+	}
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		return nil, false, err
+	}
+	if err := os.WriteFile(file, out.Bytes(), 0o644); err != nil {
+		return nil, false, err
+	}
+	return append(steps, "reviewer"), true, nil
+}
+
 // value returns the value of key in a mapping node, or nil.
 func value(m *yaml.Node, key string) *yaml.Node {
 	if m == nil || m.Kind != yaml.MappingNode {

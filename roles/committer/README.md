@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml]
-checked: 1bab30d
+checked: 8bdd941
 verified: agent:claude-code
 ---
 # Committer
@@ -19,7 +19,7 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 | `blank-after-subject` | a second line that is not empty: git would read it as part of the subject |
 | `subject-length` | a subject over `subject-max` characters (72) |
 | `body-length` | a body over `body-max-lines` lines (12), not counting comments, blank lines and trailers |
-| `internal-code` | a reference that means nothing outside the project (`AC-3`) in the subject; it belongs in a trailer (`Refs: AC-3`). `internal-codes-allow` lists standard identifiers that look like one (`SHA-256`, `RFC-1234`) |
+| `internal-code` | a reference that means nothing outside the project (`AC-3`) in the subject; it belongs in a trailer (`Refs: AC-3`). `internal-codes-allow` lists standard identifiers that look like one (`SHA-256`, `RFC-1234`). The reviewer reads the same lists in the comments a change adds (roles/reviewer) |
 | `possible-internal-code` | a code with no dash (`F207`, `internal-codes-maybe`), as often a public name (`ESP32`): the agent judges it, and may keep it; without AI it blocks; on commits already made, only a warning |
 
 Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! …`,

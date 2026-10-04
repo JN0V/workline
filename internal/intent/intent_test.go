@@ -2,6 +2,7 @@ package intent
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -84,5 +85,17 @@ func TestNormalizeDiffMergesOverlappingHunks(t *testing.T) {
 	clash := "diff --git a/d.md b/d.md\n--- a/d.md\n+++ b/d.md\n@@ -1,2 +1,2 @@\n a\n-b\n+B\n@@ -2,1 +2,1 @@\n-b\n+X\n"
 	if got := NormalizeDiff(clash); got != clash {
 		t.Fatalf("hunks disagreeing were merged:\n%s", got)
+	}
+}
+
+func TestWriteReadsBackATabbedQuote(t *testing.T) {
+	in := []Intention{{Kind: "finding", Value: map[string]any{"quote": "\t\tif !ok {\n\t\t\treturn w"}}}
+	file := filepath.Join(t.TempDir(), "intentions.yaml")
+	if err := Write(file, in); err != nil {
+		t.Fatal(err)
+	}
+	back, err := Read(file)
+	if err != nil || len(back) != 1 || back[0].Value.(map[string]any)["quote"] != "\t\tif !ok {\n\t\t\treturn w" {
+		t.Errorf("read back: %v %v", back, err)
 	}
 }

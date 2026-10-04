@@ -1,0 +1,10 @@
+case: reviewer/independence-level-in-verdict
+about: A verified finding says how far its judge stood from the lens that found it, and both models (ADR-0005).
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "verified, independence: model (review-related → judge-yes)"}]
+  calls: [{agent: fake, task: part}, {agent: fake, task: judge, model: judge-yes}]

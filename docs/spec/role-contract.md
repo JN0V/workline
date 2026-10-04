@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 551c43d
+checked: 7fd9a2e
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -88,6 +88,8 @@ duties:
                                 # `$settings.<name>` uses a project setting
 
 intentions: [commit-message, note]   # subset of the catalogue below
+part-intentions: [claim]        # what a part of a question answers with (In parts);
+                                # claims when unset; a reviewer's lens, findings
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
 
@@ -143,17 +145,34 @@ token), **apply** (trusted, no AI key).
 
    **In parts** (ADR-0009). A question too large for one call is written as
    several instead: `in/parts/<name>/task.md`, each whole in itself, and no
-   `in/task.md`. The engine asks each part in a context of its own, one after
-   the other, on the tier `model.tasks.part` names, each call counted and
-   kept like any other; a part answers only `claim` intentions, which are
-   never applied: they inform. The answers are put back as
-   `in/parts/<name>/answer.yaml`, and `pre` runs again, with
+   `in/task.md`; or several lenses on one change, each a question of its
+   own (ADR-0020). The engine asks each part in a context of its own, one
+   after the other, on the tier `model.tasks.part` names, each call counted
+   and kept like any other; a part answers only what the role's
+   `part-intentions` name — `claim`s when it names none, a reviewer's lens
+   `finding`s — which are never applied: they inform. The answers are put
+   back as `in/parts/<name>/answer.yaml`, and `pre` runs again, with
    `WORKLINE_PARTS=answered`, to put them together — no AI — and write the
    one question that follows, `in/task.md`, or none. Only then is the digest
-   recorded. A part that fails, or answers what is not a claim, is said
-   (`part-unanswered`), never read as an answer; one broken in places is read
-   claim by claim (`part-partly-read`); without an agent, no part is
-   asked, and `pre` runs again with none answered.
+   recorded. A part that fails, or answers what it may not, is said
+   (`part-unanswered`), never read as an answer, and why is written beside
+   its task, `in/parts/<name>/unanswered`, its first word the kind of
+   failure (`unavailable`, `spent`, `invalid`, `refused`); a lens proposing
+   anything but findings is refused besides (`intention-refused`). One
+   broken in places is read claim by claim (`part-partly-read`); without an
+   agent, no part is asked, and `pre` runs again with none answered.
+
+   **Questions for a judge** (ADR-0020). `pre` may then write questions
+   only a judge answers, one each: `in/judge/<key>/question.yaml`,
+   `{question, material}`. The engine asks each apart, at the best
+   independence available from the agents that answered the run (as in
+   step 4), writes its answer beside it — `answer.yaml`, `{yes, why, model,
+   judge, author, level}`, or `{error}`; the call kept with the run's,
+   `out/calls.jsonl` — and runs `pre` again with
+   `WORKLINE_JUDGED=answered`, to read them. A no refuses nothing there:
+   `pre` reads the answers one by one (the reviewer drops a finding judged
+   no). Without an agent, or once `ai-max-tokens` is spent, none is asked;
+   the agent unreachable, the rest are not either.
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
    (`model-grid.md`), receives the facets and `in/task.md`. It runs read-only
@@ -235,7 +254,9 @@ the agent again.
 
 Scripts receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI` (the agent
 name or `none`), `WORKLINE_ROLE`, `WORKLINE_BIN` (the engine running them,
-which the shipped roles call for their built-in steps), `WORKLINE_FORGE` (the
+which the shipped roles call for their built-in steps), `WORKLINE_ROLES_DIR`
+(the folder the role was taken from, where its siblings are),
+`WORKLINE_FORGE` (the
 configured forge, when one is set), `WORKLINE_TARGET`
 (`merge-request:12`, `issue:3`) when a forge and a target are given, and
 `WORKLINE_OPEN_MERGE_REQUESTS`, how many of the role's merge requests are
@@ -257,7 +278,7 @@ release's base, and the release waits until it is merged (`fixed-elsewhere`).
 | 0 | continue | pass |
 | 1 | error | block |
 | 2 | — | a human must decide |
-| 3 | an outside service failed (auth, quota, network) | same |
+| 3 | an outside service failed (auth, quota, network); a verdict it wrote keeps its findings | same |
 | 10 | no question for the agent: stop; a verdict `pre` wrote is final, none means pass | — |
 
 Anything else is an error. An error is loud and blocks; it never passes.

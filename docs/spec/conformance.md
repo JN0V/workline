@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: cc3a4f4
+checked: 8bdd941
 verified: agent:claude-code
 ---
 # Conformance — v1 (draft)
@@ -81,6 +81,8 @@ a `PATH` without a tool, or with a fake one first.
   options, on a git config of the case's own;
 - `issues-import: [<argument>...]` instead of `role` — `workline issues
   import` on the repository, on the simulated forge;
+- `review: [<option>...]` instead of `role` — `workline review` on the
+  repository, with these options;
 - `sample: [<option>...]` instead of `role` — draw and read the weekly
   sample (`workline sample`), with no forge; `then: apply` then writes what
   it found with `workline sample --apply`, on the simulated forge;

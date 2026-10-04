@@ -7,6 +7,7 @@
 //	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
 //	                  [--sarif <file>] [--code-quality <file>]
 //	workline route <event> [same options as run-role, but --input-file]
+//	workline review [--base <ref>] [--lenses all|<lens,...>] [--repo <dir>] [--ai ...] [--json]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
 //	workline issues [list] [--repo <dir>] | show <n>|!<n> [--repo <dir>]   (the local forge)
 //	workline apply <run-dir>... | --line <route result> [--json]
@@ -15,7 +16,7 @@
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
 //	workline docs [--repo <dir>] [--ai ...]
-//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--json]
+//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -37,6 +38,7 @@ import (
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/productowner"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/doctor"
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
@@ -77,6 +79,8 @@ func main() {
 		os.Exit(gateCmd(os.Args[2:]))
 	case "route":
 		os.Exit(routeCmd(os.Args[2:]))
+	case "review":
+		os.Exit(reviewCmd(os.Args[2:]))
 	case "item":
 		os.Exit(itemCmd(os.Args[2:]))
 	case "apply":
@@ -228,6 +232,58 @@ func report(r *engine.Result) {
 	}
 }
 
+// reviewCmd has the reviewer review a branch on this machine, at the end of
+// development, before it is pushed: base..HEAD, every lens (ADR-0020). The
+// findings are printed for the person; out/review.json in the run folder,
+// or --json, gives them to the author's agent, to fix before pushing.
+func reviewCmd(args []string) int {
+	fs := flag.NewFlagSet("review", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository to review")
+	base := fs.String("base", "", "where the change starts: the branch it goes into (default: the reviewer's `base` setting, main)")
+	lenses := fs.String("lenses", "", "all (the default on a machine), or the lenses to ask, separated by commas")
+	ai := fs.String("ai", "", "agent: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file> (default: the project's `ai` setting, else yours)")
+	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles (default: the roles built into this binary)")
+	forgeSpec := fs.String("forge", "", "forge the issues for what lies outside the change go to (default: the project's `forge` setting)")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF")
+	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
+	_ = fs.Parse(args)
+	root, err := gitRoot(*repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+		return 64
+	}
+	rolesDir, err := resolveRoles(*roles)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	absRoles, _ := filepath.Abs(rolesDir)
+	inputs := map[string]string{}
+	if *base != "" {
+		inputs["range"] = *base + "..HEAD"
+	}
+	if *lenses != "" {
+		inputs["lenses"] = *lenses
+	}
+	res := engine.Run(engine.Options{Repo: root, RolesDir: absRoles, Role: "reviewer", Event: "review", AI: *ai, DefaultAI: userDefaultAI(),
+		Inputs: inputs, Forge: *forgeSpec})
+	if err := wlreport.Write(root, wlreport.FromRole("reviewer", res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+		if _, err := os.Stat(filepath.Join(res.RunDir, "out", "review.json")); err == nil {
+			fmt.Fprintf(os.Stderr, "For the author's agent: %s\n", filepath.Join(res.RunDir, "out", "review.json"))
+		}
+	}
+	return exitFor(res.Status)
+}
+
 // resolveRoles returns the given folder, or the built-in roles extracted to the cache.
 func resolveRoles(dir string) (string, error) {
 	if dir != "" {
@@ -259,6 +315,10 @@ func builtin(args []string) int {
 		return productowner.Pre(runDir, repo)
 	case "product-owner post":
 		return productowner.Post(runDir, repo)
+	case "reviewer pre":
+		return reviewer.Pre(runDir, repo)
+	case "reviewer post":
+		return reviewer.Post(runDir, repo)
 	}
 	fmt.Fprintf(os.Stderr, "workline builtin: no built-in step %q\n", strings.Join(args, " "))
 	return 99
@@ -1177,6 +1237,7 @@ func initCmd(args []string) int {
 	ai := fs.String("ai", "", "agent proposing each doc's sources (default: the project's, else yours, else none)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	review := fs.Bool("review", false, "also have the reviewer review each merge request (ADR-0020): added to the project's merge-request line")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -1196,6 +1257,18 @@ func initCmd(args []string) int {
 	config := "pre-push runs " + strings.Join(steps, ", ") + ", as the project set it"
 	if changed {
 		config = "pre-push now runs " + strings.Join(steps, ", ") + " (.workline/config.yaml)"
+	}
+	if *review {
+		steps, changed, err := routing.AddReviewer(root)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		if changed {
+			config += "; merge requests now run " + strings.Join(steps, ", ")
+		} else {
+			config += "; merge requests run " + strings.Join(steps, ", ") + ", the reviewer among them already"
+		}
 	}
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
 	if *asJSON {

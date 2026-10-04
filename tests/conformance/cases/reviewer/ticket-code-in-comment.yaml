@@ -1,0 +1,11 @@
+case: reviewer/ticket-code-in-comment
+about: A code internal to the project in a comment the change adds blocks, by the committer's own list; one on a line the change did not touch is not looked at.
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n (PROJ-12).\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: none}
+expect:
+  status: block
+  findings: [{rule: internal-code, where: "calc/calc.go:20", message: "PROJ-12"}]
+  no-findings: [{rule: internal-code, where: "calc/calc.go:5"}]

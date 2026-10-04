@@ -1,0 +1,10 @@
+case: reviewer/agent-unreachable-is-blocked-external
+about: An agent that cannot be reached ends the run blocked-external, never a pass nor the change's fault; what the rules found is still said.
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// one\\n// two\\n// three\\n// four\\n// five\\n// six\\n// seven\\n// eight\\n// nine\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "unavailable:quota"}
+expect:
+  status: blocked-external
+  findings: [{rule: long-comment, where: "calc/calc.go:20"}]

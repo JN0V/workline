@@ -1,0 +1,13 @@
+case: reviewer/never-approves-nor-patches
+about: "A lens proposing a patch is refused: the reviewer never changes the code nor approves; the lens counts as not answered."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-patch"}
+expect:
+  status: pass
+  refused: [patch]
+  findings:
+    - {rule: intention-refused, message: "patch is not allowed"}
+    - {rule: lens-failed, message: "the correctness lens"}
+  files: {calc/calc.go: {contains: "return total / (len(values) - 1)"}}

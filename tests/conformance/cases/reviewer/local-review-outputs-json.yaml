@@ -1,0 +1,12 @@
+case: reviewer/local-review-outputs-json
+about: "`workline review` reviews base..HEAD on the machine, every lens asked, and gives the findings as JSON for the author's agent: each with its place, its cause quoted, and whether it is the change's."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {review: [--base, main], ai: "fake:review-related"}
+expect:
+  status: pass
+  calls: [{task: part}, {task: part}, {task: part}, {task: judge}]
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "also found on this line — edge-cases: Average divides by one less than the count"}]
+  run-files: {out/review.json: {contains: '"related": true'}}

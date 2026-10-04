@@ -1,0 +1,11 @@
+case: reviewer/bug-story-in-comment-blocks-without-ai
+about: A comment the change adds telling the code's history ("the bug was", "used to", "previously") blocks, by a rule, before any agent is asked.
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// The bug was an overflow here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: bug-story, where: "calc/calc.go:21", message: "The bug was"}]

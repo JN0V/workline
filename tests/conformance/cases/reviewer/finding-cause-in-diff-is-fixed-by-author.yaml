@@ -1,0 +1,18 @@
+case: reviewer/finding-cause-in-diff-is-fixed-by-author
+about: A finding whose cause lies on a line the change added belongs to the change, for its author to fix; it is reported on that line, verified, and no issue is opened for it.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: [comment]
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: "calc/calc.go:11"}

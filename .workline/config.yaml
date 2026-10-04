@@ -27,9 +27,18 @@ roles:
       derive:
         conformance-cases: "n=$(ls tests/conformance/cases/*/*.yaml | wc -l); p=$(grep -cvE '^(#|$)' tests/conformance/pending.txt || true); echo $((n - p))"
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
+  reviewer:
+    settings:
+      # A pull request's apply job runs the last release of workline
+      # (docs/ci.md), which knows no reviewer until one ships it: nothing
+      # is proposed for it to apply until then. The findings stay in the
+      # verdict, the job's summary and code scanning.
+      forge-writes: false
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
-  # the documentalist has the docs they made suspect judged. Gardening at
+  # the documentalist has the docs they made suspect judged. On a pull
+  # request, the reviewer reads the code too (ADR-0020). Gardening at
   # night: the docs, then the backlog — the GitHub issues, kept by the
   # product owner (ADR-0018).
-  events: {pre-push: [committer, documentalist], schedule: [documentalist, product-owner]}
+  events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, reviewer],
+    schedule: [documentalist, product-owner]}

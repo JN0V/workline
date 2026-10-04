@@ -1,0 +1,4 @@
+#!/bin/sh
+# Prepare: the rules on the comments the change adds; the lenses' questions;
+# their answers read, the quotes found again; the judge's answers read.
+exec "${WORKLINE_BIN:-workline}" builtin reviewer pre

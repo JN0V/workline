@@ -1,0 +1,11 @@
+case: reviewer/finding-without-quote-dropped
+about: A finding whose cause is not found again in the code, nor among the lines the change removed, is dropped and said (finding-unfounded), never reported on the change.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-unfounded"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: finding-unfounded, message: "its cause is not found in calc/calc.go"}]
+  no-findings: [{rule: correctness, where: "calc/calc.go:11"}]

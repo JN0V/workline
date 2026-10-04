@@ -1,0 +1,24 @@
+case: reviewer/finding-cause-outside-diff-becomes-issue
+about: "A finding whose cause lies outside the change is not the author's to fix there: it is not reported on the merge request, it becomes an issue labelled needs-triage, with the product owner's state; one an open issue holds already is not opened again."
+given:
+  repo: reviewed
+  setup: ["printf '\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - {id: 1, title: "Parse drops errors", labels: [], comments: [], body: "Found earlier.\n\n<!-- workline:issue=reviewer/calc/calc.go#ac759254 -->"}
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-outside"}
+expect:
+  status: pass
+  applied: [comment, issue, issue]
+  no-findings:
+    - {rule: correctness, where: "calc/calc.go:16"}
+    - {rule: correctness, where: "calc/calc.go:11"}
+  forge:
+    issues:
+      - {id: 1, comments: 0}
+      - {id: 2, title: "Average panics on no values", labels: [needs-triage], body-contains: "workline:issue=reviewer/calc/calc.go#721bb819", comment-contains: "sources: [calc/calc.go]"}
+      - {id: 3, absent: true}
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: "not the author's to fix here"}

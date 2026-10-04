@@ -1,0 +1,3 @@
+#!/bin/sh
+# Judge: the verdict from what pre settled; the record of what was reviewed.
+exec "${WORKLINE_BIN:-workline}" builtin reviewer post
