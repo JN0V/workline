@@ -3,8 +3,9 @@
 **In one line:** it reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
 the change's findings told from the rest by where their cause lies, each
-important one judged; built and in conformance, tried with a real agent
-(tried.md), not released yet.
+important one judged; built and in conformance, tried with a real agent on
+a copy of workline and live on a sandbox pull request (tried.md), not
+released yet.
 
 ## Built
 
@@ -16,7 +17,8 @@ important one judged; built and in conformance, tried with a real agent
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
 | A judge for each important finding, the level said; a no drops it | `judged-no-not-reported`, `independence-level-in-verdict` |
 | Warn until measured; caps; an agent unreachable | `new-ai-rules-warn`, `findings-capped-rest-counted`, `agent-unreachable-is-blocked-external` |
-| `workline review`, findings as JSON | `local-review-outputs-json` |
+| `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
+| A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
 
 Conformance: tests/conformance/cases/reviewer.
 
@@ -35,3 +37,9 @@ Conformance: tests/conformance/cases/reviewer.
    templates (`--input lenses=all` exists; no template passes it yet).
 6. **A closed issue's key**: only open issues are looked at, so a subject a
    person closed may be opened again.
+7. **The tests lens outside the change**: a test missing for code the
+   change did not touch was opened as an issue (tried.md); whether it
+   should be is for #90's measure.
+8. **Tried in CI**: the judging job reading the record with its read
+   token; workline's own pull requests run it with `forge-writes: false`
+   until a release ships the role to the apply job.
