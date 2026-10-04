@@ -78,7 +78,7 @@ Claude Code, run this way (the command the judge's trial used):
 | 64 | the command was misused |
 
 `workline gate` returns 0 or 1. An unknown option exits 2, from Go's option
-parser, which a script cannot tell from `human` (docs/BACKLOG.md).
+parser, which a script cannot tell from `human` (#101).
 
 ## Before a push
 

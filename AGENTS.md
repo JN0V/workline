@@ -9,14 +9,15 @@ against it. Then only what the task needs:
 | where a role stands | `roles/<name>/status.md` (built, tried, missing), then `tried.md` |
 | the engine | docs/spec/ (role contract, routing, gates, model grid, conformance, multi-repo) and docs/adr/ |
 | what exists elsewhere | docs/research/ — its README says how to search |
-| what comes next | docs/BACKLOG.md |
+| what comes next | the GitHub issues (`gh issue list`); docs/BACKLOG.md is archived |
 
 ## How we work
 
 - **Borrow before building**: research what exists, in the ecosystem's words
   (docs/research/README.md), before designing anything new.
 - **Write it down in the repository**: decisions in docs/adr/, findings in
-  docs/research/, parked topics in docs/BACKLOG.md. Not in chat, not in memory.
+  docs/research/, work to do or parked as a GitHub issue (ADR-0018: the
+  product owner keeps them). Not in chat, not in memory, not in a file.
 - **Docs follow the code**: a doc that describes code names it in `sources`,
   with the commit it was `checked` against. When the documentalist reports it
   `suspect`, check it against the change, fix what is wrong, and move `checked`.

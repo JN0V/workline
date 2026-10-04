@@ -29,5 +29,7 @@ roles:
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
-  # the documentalist has the docs they made suspect judged.
-  events: {pre-push: [committer, documentalist]}
+  # the documentalist has the docs they made suspect judged. Gardening at
+  # night: the docs, then the backlog — the GitHub issues, kept by the
+  # product owner (ADR-0018).
+  events: {pre-push: [committer, documentalist], schedule: [documentalist, product-owner]}
