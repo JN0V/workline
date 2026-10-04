@@ -1,7 +1,8 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
 checked: 1bab30d
-verified: agent:claude-code
+verified: agent:documentalist
+judged: 5b48158
 -->
 <h1>
   <picture>
