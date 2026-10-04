@@ -74,8 +74,11 @@ func localRecord(repo string) string {
 func loadRecord(repo string, s Settings) (Record, string, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
 		f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
-		if err != nil || f == nil {
+		if err != nil {
 			return Record{}, "forge", fmt.Errorf("the forge: %v", err)
+		}
+		if f == nil {
+			return Record{}, "forge", fmt.Errorf("no forge to read the merge request's comments from")
 		}
 		b, ok := f.(forge.Backlog)
 		if !ok {

@@ -58,6 +58,21 @@ func TestStoryOverTwoLines(t *testing.T) {
 	}
 }
 
+func TestParseDiffInsideAHunk(t *testing.T) {
+	diff := "diff --git a/q.sql b/q.sql\n--- a/q.sql\n+++ b/q.sql\n@@ -3,2 +3,2 @@\n--- an old comment\n-select 1;\n+++ a new one\n+select 2;\n" +
+		"diff --git a/gone.go b/gone.go\ndeleted file mode 100644\n--- a/gone.go\n+++ /dev/null\n@@ -1 +0,0 @@\n-package gone\n"
+	c := parseDiff(diff)
+	if got := c.Added["q.sql"]; len(got) != 2 || got[0] != (Line{"q.sql", 3, "++ a new one"}) || got[1].At != 4 {
+		t.Errorf("added: %v", c.Added)
+	}
+	if got := c.Removed["q.sql"]; len(got) != 2 || got[0].Text != "-- an old comment" {
+		t.Errorf("removed: %v", c.Removed)
+	}
+	if got := c.Removed["gone.go"]; len(got) != 1 || got[0].Text != "package gone" {
+		t.Errorf("a deleted file's lines: %v", c.Removed)
+	}
+}
+
 func TestLocate(t *testing.T) {
 	lines := []string{"func A() {", "\treturn  x / y", "}", "func B() {", "\treturn x / y", "}", "", "if !ok {", "\treturn w", "}"}
 	for _, c := range []struct {

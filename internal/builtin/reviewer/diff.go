@@ -27,26 +27,37 @@ var hunk = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
 // readChange reads `git diff -U0 from to -- files`, every line it adds and
 // removes placed in the new file.
 func readChange(repo, from, to string, files []string) (Change, error) {
-	c := Change{Added: map[string][]Line{}, Removed: map[string][]Line{}}
 	if len(files) == 0 {
-		return c, nil
+		return Change{Added: map[string][]Line{}, Removed: map[string][]Line{}}, nil
 	}
 	out, err := git(repo, append([]string{"diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", from, to, "--"}, files...)...)
 	if err != nil {
-		return c, err
+		return Change{}, err
 	}
-	path, old, at := "", "", 0
+	return parseDiff(out), nil
+}
+
+// parseDiff reads a unified diff without context. A file's `---` and `+++`
+// lines are read only in its header, before its first hunk: inside one, a
+// line removed that read `-- x` is `--- x`, and is a line, not a file.
+func parseDiff(out string) Change {
+	c := Change{Added: map[string][]Line{}, Removed: map[string][]Line{}}
+	path, old, at, header := "", "", 0, false
 	for _, l := range strings.Split(out, "\n") {
 		switch {
-		case strings.HasPrefix(l, "--- "):
+		case strings.HasPrefix(l, "diff --git "):
+			header = true
+		case header && strings.HasPrefix(l, "--- "):
 			old = strings.TrimPrefix(strings.TrimPrefix(l, "--- "), "a/")
-		case strings.HasPrefix(l, "+++ "):
+		case header && strings.HasPrefix(l, "+++ "):
 			path = strings.TrimPrefix(strings.TrimPrefix(l, "+++ "), "b/")
 			if path == "/dev/null" {
 				path = old // deleted: its removed lines are the file's
 			}
 		case hunk.MatchString(l):
+			header = false
 			at, _ = strconv.Atoi(hunk.FindStringSubmatch(l)[1])
+		case header:
 		case strings.HasPrefix(l, "+"):
 			c.Added[path] = append(c.Added[path], Line{path, at, l[1:]})
 			at++
@@ -54,7 +65,7 @@ func readChange(repo, from, to string, files []string) (Change, error) {
 			c.Removed[path] = append(c.Removed[path], Line{path, at, l[1:]})
 		}
 	}
-	return c, nil
+	return c
 }
 
 // addedAt says whether the change added line n of path.
