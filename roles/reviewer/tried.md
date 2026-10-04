@@ -75,8 +75,22 @@ merge-request:8`, with the range CI would give.
   finding on the change; `Expired` found again, not opened again; the
   summary comment edited in place, its record holding both commits.
 
-Not tried: the judging job in CI reading the record with its read token;
-GitLab; a fork; a lens unreachable mid-run; `ai-findings: block`;
+## 2026-10-04 — its own pull request, in CI
+
+workline#124, the judging job of .github/workflows/workline.yml, the engine
+built from the pull request, `forge-writes: false` (nothing for the apply
+job, which runs the last release): one lens, correctness, on the whole
+range — 51k tokens in, 2k out on Sonnet; seven judges on Opus, about 33k
+in, 2.7k out. One finding verified, true: a line the change removed that
+read `-- x` (an SQL comment) shows as `--- x` in the diff, and the parser
+took it for a file's header. **Fixed**: `---` and `+++` are read only
+before a file's first hunk (`TestParseDiffInsideAHunk`). Six findings the
+judge refused, each said with its reason, most "the code that would show it
+is not given" — the judge sees thirty lines around the cause. A nit, kept:
+a message reading "the forge: <nil>", fixed.
+
+Not tried: the judging job reading the record with its read token
+(`forge-writes: true`); GitLab; a fork; a lens unreachable mid-run; `ai-findings: block`;
 `workline init --review` on a real repository (unit-tested only); every
 lens at once on a merge request (`lenses=all`). Left open on the sandbox for
 a person to look at: pull request #8 and issue #9.

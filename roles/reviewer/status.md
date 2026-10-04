@@ -40,6 +40,6 @@ Conformance: tests/conformance/cases/reviewer.
 7. **The tests lens outside the change**: a test missing for code the
    change did not touch was opened as an issue (tried.md); whether it
    should be is for #90's measure.
-8. **Tried in CI**: the judging job reading the record with its read
-   token; workline's own pull requests run it with `forge-writes: false`
-   until a release ships the role to the apply job.
+8. **Tried in CI with forge writes**: workline's own pull requests run it
+   with `forge-writes: false` until a release ships the role to the apply
+   job, so the record and the summary comment are untried there.
