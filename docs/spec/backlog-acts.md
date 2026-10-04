@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 9313a65
+checked: 4565d76
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -51,7 +51,7 @@ with no AI:
 | Closed as not planned or duplicate | A person's no: nothing written (`issue-closed`, said in the run). |
 | Closed otherwise | Done, or no reason kept (GitLab, the local forge): one comment, once, "found again" with the commit; left closed (`issue-closed`). |
 | New, past `issues-max` | Not opened, counted (`issues-capped`); found again, opened at a later run. Three by default; the product owner's import has its own cap (`open`). |
-| New | Opened: the role named (a line, and `<!-- workline:opened-by=<role> -->`), `needs-triage` for a finding, the product owner's state. |
+| New | Opened: the role named in a line; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state. |
 
 ## Reading
 
