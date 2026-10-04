@@ -14,11 +14,9 @@ author fixes, the person merges (ADR-0020).
 
 ## A run
 
-1. **The range.** `workline review` on a machine: `base..HEAD`, the base
-   the `base` setting names (`main`) or `--base`. On a merge request
-   (`merge-request`, opt-in in the routing), the range CI gives. A change
-   touching only what is not code (`ignore`: Markdown, `docs/`, licences)
-   asks nobody.
+1. **The range.** `workline review`: `base..HEAD` (`base`, `--base`); on a
+   merge request (opt-in), the range CI gives. A change touching only what
+   is not code (`ignore`) asks nobody.
 2. **The rules**, on the lines the change adds, no agent: a comment telling
    the code's history (`bug-story`: `story-words`, "used to", "the bug
    was", "previously"); a code internal to the project in a comment
@@ -26,9 +24,8 @@ author fixes, the person merges (ADR-0020).
    allowed list); a comment block over `comment-block-max` lines
    (`long-comment`, a warning). While a rule blocks, no agent is asked.
 3. **The record.** The commits a review answered whole are not asked
-   again: on a merge request, the record is hidden in the summary comment;
-   on a machine, in `.git/workline/reviewer-record`. Every commit reviewed
-   already, only the rules run.
+   again: the record is hidden in the summary comment on a merge request,
+   in `.git/workline/reviewer-record` on a machine.
 4. **The lenses**, each a part of the question in a context of its own
    (`lenses/<lens>.md`, a project's own in `.workline/roles/reviewer/lenses/`):
    correctness, edge cases, tests. Every one on a machine; on a merge
@@ -54,10 +51,9 @@ author fixes, the person merges (ADR-0020).
    outside it, the rest is counted. On a merge request, one summary
    comment, edited on each run (`forge-writes`).
 
-A lens that fails is said (`lens-failed`), and the commits stay unrecorded:
-the run did not review them whole. An agent unreachable ends the run
-`blocked-external`. Without an agent, the rules run and the run says the
-change waits for a person (`not-reviewed`).
+A lens that fails is said (`lens-failed`), the commits left unrecorded. An
+agent unreachable: `blocked-external`. No agent: the rules alone, the change
+left for a person (`not-reviewed`).
 
 ## On a machine
 

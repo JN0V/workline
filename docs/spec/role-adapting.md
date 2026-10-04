@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
 verified: agent:claude-code
-checked: 551c43d
+checked: 8bdd941
 status: draft
 ---
 # Adapting a role
@@ -34,7 +34,7 @@ level that is enough — each one is heavier than the one before:
 |---|---|---|
 | Other values: limits, patterns, paths | **settings** | `.workline/config.yaml`, `roles.<name>.settings` |
 | A rule bites too hard, or is not wanted | **enforcement** | `roles.<name>.enforce`: `warn` or `off` per rule |
-| The AI should write differently: language, tone, sections | **facets** | `.workline/roles/<name>/policy.md` (or any facet), replacing the shipped one |
+| The AI should write differently: language, tone, sections | **facets** | `.workline/roles/<name>/policy.md` (or any facet, or a reviewer's lens, `lenses/<lens>.md`), replacing the shipped one |
 | Extra checks on top of the role's own: release only from `main`, a migration needs a note… | **gates** | the `gates:` section of `.workline/config.yaml`, run by routing before or after the role |
 | Different logic: another convention, another way to check it | **a role of its own** | a folder of roles given by `--roles` or `WORKLINE_ROLES` today; `roles.<name>.from`, pinned, once built — a fork of the shipped role, or a new one |
 

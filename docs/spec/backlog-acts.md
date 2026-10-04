@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 551c43d
+checked: 8bdd941
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -32,7 +32,9 @@ An issue without that comment, or with one that does not read, is never
 acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is
 written on the issue. The role's `pre` gives an issue it takes its first
 state, `confirmed` at the commit it read, with no sources until an act
-names them.
+names them. An issue another role opens for what it found outside its task
+(the reviewer's, ADR-0020) gets its state from the engine as it is opened —
+its sources, and the commit it was seen at — and `needs-triage`.
 
 ## Reading
 

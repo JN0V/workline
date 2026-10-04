@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 551c43d
+checked: 8bdd941
 verified: agent:claude-code
 ---
 # Model grid — v1 (draft)
@@ -144,9 +144,11 @@ best level available, and its verdict says which; a role or a project may
 require a minimum (`at-least: provider`), below which it runs as `--ai none`
 ([ADR-0005](../adr/0005-independence-takes-the-best-level-available.md)).
 
-*Built so far: the evaluation's judge, and the engine's judge step
-(role-contract.md, "Judge"), which pick the best level and say which; the
-engine reads no `independent-of` nor `at-least` yet. `cmd:<command>` runs any
+*Built so far: the evaluation's judge, the engine's judge step
+(role-contract.md, "Judge") and the questions `pre` writes for a judge
+(role-contract.md, "In parts"), which pick the best level and say which; the
+engine reads no `independent-of` nor `at-least` yet — the reviewer reads its
+own floor, `judge-at-least` (roles/reviewer). `cmd:<command>` runs any
 other agent (docs/usage.md).*
 
 ## Known limits
