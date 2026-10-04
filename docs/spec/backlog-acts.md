@@ -1,14 +1,17 @@
 ---
 type: reference
-sources: [internal/backlog, internal/engine, internal/forge]
+sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Acts on the backlog
 
 What the engine does when a role acts on a project's issues rather than on
 its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
-it. This page is the contract; the first act built is closing.
+it. This page is the contract; the acts built are closing, naming an
+issue's sources, putting it in a milestone, and opening one from a file.
 
 ## The issue's state
 
@@ -25,8 +28,8 @@ comments: 2                              # people's comments when it was read
 An issue without that comment, or with one that does not read, is never
 acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is
 written on the issue. The role's `pre` gives an issue it takes its first
-state, `confirmed` at the commit it read, with no sources until it is
-refined.
+state, `confirmed` at the commit it read, with no sources until an act
+names them.
 
 ## Reading
 
@@ -35,11 +38,11 @@ lines of the code they name: those never read first, then those with
 something new since they were read — a commit touched their sources, a
 person commented (`comments` counts people's comments read), or a person
 reopened what the role closed. An issue with nothing new is not read again,
-however old (ADR-0018). An issue on the same code as one read is given
-whole beside it, as the original a duplicate would be closed against; the
-others are listed by title only. Each issue read gets
-`judged` moved to the run's commit; without an agent, or when its answer
-does not read, none is.
+however old (ADR-0018). An issue on the same code as one read is given with
+its body beside it, up to six, as the original a duplicate would be closed
+against; the others are listed by title only. Each issue read gets `judged`
+moved to the run's commit; without an agent, or when its answer does not
+read, none is.
 
 ## Importing a file
 
@@ -85,8 +88,8 @@ The file then stays as it is, for its history.
 - **Never not planned.** Refusing a need is the person's (principle 1): any
   other reason is dropped (`close-reason`), the issue left open.
 - **No quote, no act.** The quote must be found again, as written but for
-  spaces, in the file at the commit the run is on, or in the issue's body
-  or one of its comments. A quote missing or not found drops the act
+  spaces, in the file at the commit the run is on, or in the issue's title,
+  body or one of its comments. A quote missing or not found drops the act
   (`no-quote`).
 - A duplicate is closed with the forge's own reason (GitHub's `duplicate`,
   linking the original), an obsolete issue as completed; both with a
@@ -103,8 +106,9 @@ The file then stays as it is, for its history.
 ```
 
 The files must be in the commit the run is on (1 to 5; `sources-unknown`
-otherwise), the quote found in one of them. Done, the issue's state gets
-them and loses `judged`: it is read again, with that code, at the next run.
+otherwise), a quote from a file found in one of them. Done, the issue's
+state gets them and loses `judged`: it is read again, with that code, at the
+next run.
 
 ## Milestones
 
@@ -140,8 +144,8 @@ is there, not that the issue is solved).
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-lists what the last run did and what is proposed, each with its quote and
-how to undo it. A proposal stays there from run to run until a person
+lists what the last run did and what is proposed, each closing with its
+quote and how to undo it. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. Its own engine
 comment (`<!-- workline:sticky=product-owner/acts -->`) records the
 closings done, the kinds dropped back to `propose`, and the proposals.

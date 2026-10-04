@@ -1,8 +1,7 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: d579043
-judged: a8b1742
-verified: agent:documentalist
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Routing — v1 (draft)
 
@@ -36,12 +35,13 @@ to-refine ──► ready ──► in-progress ──► review ──► valid
 | Scope | What part of the project does it touch? |
 
 Verification is what the line checks on its own; validation is what a person
-decides at the end. Writing both before starting is what keeps the machine from
-grading its own work. The engine checks that the four are present and not
-empty; it does not judge their quality. A person — or a product role, once it exists — moves an item to
-`ready`. Development roles only take `ready` items, and the item's **scope**
-becomes the run's scope (see "Stay on the task" in the role contract). *Not
-built yet: the scope is given with `--scope`; no role takes items yet.*
+decides at the end. Writing both before starting is what keeps the machine
+from grading its own work. The engine checks that the four are present and
+not empty; it does not judge their quality. A person moves an item to
+`ready`; no role does yet. Development roles only take `ready` items, and
+the item's **scope** becomes the run's scope (see "Stay on the task" in the
+role contract). *Not built yet: the scope is given with `--scope`; no role
+takes items yet.*
 
 `review` is the machine's part: reviewers and gates run the verification.
 `validation` is the person's part: the item reaches `done` only when the person
@@ -122,5 +122,5 @@ the move to `ready`, and its check; transitions are not logged yet.*
 
 ## Not in this version
 
-The developer, reviewer and tester roles, which will consume `ready` items; the
-product role that helps refine them.
+The developer, reviewer and tester roles, which will consume `ready` items;
+refining items, which the product owner does not do yet.

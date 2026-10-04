@@ -1,9 +1,8 @@
 ---
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-verified: agent:documentalist
-checked: 347b403
-judged: 6013a50
+verified: agent:claude-code
+checked: 1bab30d
 status: draft
 ---
 # Adapting a role
@@ -33,11 +32,11 @@ level that is enough — each one is heavier than the one before:
 
 | Need | Level | Where |
 |---|---|---|
-| Other values: tag prefix, versioning scheme, limits, paths | **settings** | `.workline/config.yaml`, `roles.<name>.settings` |
+| Other values: limits, patterns, paths | **settings** | `.workline/config.yaml`, `roles.<name>.settings` |
 | A rule bites too hard, or is not wanted | **enforcement** | `roles.<name>.enforce`: `warn` or `off` per rule |
 | The AI should write differently: language, tone, sections | **facets** | `.workline/roles/<name>/policy.md` (or any facet), replacing the shipped one |
 | Extra checks on top of the role's own: release only from `main`, a migration needs a note… | **gates** | the `gates:` section of `.workline/config.yaml`, run by routing before or after the role |
-| Different logic: another way to compute versions, another convention | **a role of its own** | a folder of roles given by `--roles` or `WORKLINE_ROLES` today; `roles.<name>.from`, pinned, once built — a fork of the shipped role, or a new one |
+| Different logic: another convention, another way to check it | **a role of its own** | a folder of roles given by `--roles` or `WORKLINE_ROLES` today; `roles.<name>.from`, pinned, once built — a fork of the shipped role, or a new one |
 
 Settings, enforcement and facets change how a role behaves without touching its
 code. A gate adds checks without replacing anything. Only the last level
@@ -50,10 +49,11 @@ role's conformance cases are the way to check the fork still keeps the contract.
 guarded by tests, recorded in the role's README ("Tried for real"), or in the
 page it links to.*
 
-When a role lets a defect through, fixing the output is not enough. The defect
-is recorded in the role's `DEFECTS.md` (what happened, why, the countermeasure,
-the result), and it is closed only when a mechanical check — a `post` rule, a
-gate, a test — makes it hard to repeat.
+When a role lets a defect through, fixing the output is not enough. The
+defect is recorded in the role's `DEFECTS.md` (what happened, why, the
+countermeasure, the result), and it is closed only when a mechanical check —
+a rule the role checks after its agent, a gate, a test — makes it hard to
+repeat.
 
 The "why" is found with the five whys: ask why the defect happened, then why
 that happened, until the answer is a cause the project can act on rather than a
