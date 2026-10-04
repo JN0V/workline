@@ -1,5 +1,11 @@
 # Backlog
 
+> **Archived on 2026-10-04: no longer updated.** workline's backlog is
+> its [GitHub issues](https://github.com/JN0V/workline/issues), one an item
+> (ADR-0018), opened from this file by `workline issues import`, and kept
+> by the product owner every night. File new work there. This file stays
+> for its history, and for the records that cite it.
+
 ## Next, in order
 
 Where the documentalist stands, what is measured and what comes next for
