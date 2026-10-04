@@ -141,7 +141,7 @@ func Pre(runDir, repo string) int {
 			continue
 		}
 		judged++
-		files := named(d.is, d.st, tracked)
+		files := named(repo, d.is, d.st, tracked)
 		writeIssue(&task, d.is, d.st, d.comments, files)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
@@ -171,7 +171,7 @@ func Pre(runDir, repo string) int {
 	var related strings.Builder
 	shown := 0
 	for _, d := range rest {
-		files := named(d.is, d.st, tracked)
+		files := named(repo, d.is, d.st, tracked)
 		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
 			shown++
 			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
@@ -287,7 +287,11 @@ func trackedFiles(repo string) map[string]bool {
 }
 
 // provenance is the line the engine ends an imported issue with.
-var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.$`)
+var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.\r?$`)
+
+// symbol is a name of the code an issue quotes as code: `WriteRows`,
+// `Core::publish()`.
+var symbol = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)(?:\\(\\))?`")
 
 var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
 
@@ -295,7 +299,7 @@ var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`
 // title and body name that the commit holds, at most filesPerIssue. A file
 // named alone (`csv.go:5`, as a roadmap writes it) is the one file of the
 // commit with that name; a name two files share is not guessed.
-func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
+func named(repo string, is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
 		p, _, _ = strings.Cut(p, "#")
@@ -316,7 +320,38 @@ func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string 
 	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
+	// A symbol quoted as code: the file of the commit that holds it, when
+	// one or two do, docs left out — the issue's code, found for it.
+	for _, m := range symbol.FindAllStringSubmatch(is.Title+"\n"+body, -1) {
+		name := m[1]
+		if i := strings.LastIndex(name, "::"); i >= 0 {
+			name = name[i+2:]
+		}
+		if len(out) >= filesPerIssue || len(name) < 4 {
+			break
+		}
+		for _, f := range holding(repo, name) {
+			add(f)
+		}
+	}
 	return out
+}
+
+// holding lists the files of the commit holding a name, as a word, docs
+// left out; none when more than two do: too common to tell.
+func holding(repo, name string) []string {
+	out, err := exec.Command("git", "-C", repo, "grep", "-l", "-w", "-F", name, "HEAD", "--", ".", ":!*.md").Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		files = append(files, strings.TrimPrefix(l, "HEAD:"))
+	}
+	if len(files) > 2 {
+		return nil
+	}
+	return files
 }
 
 // writeCode gives each file named, whole up to codeLines, with its last
