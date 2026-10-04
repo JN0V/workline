@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 )
@@ -86,6 +87,15 @@ func (g *github) Issues() ([]Issue, error) {
 // the owner, a member of the organisation, a collaborator.
 func insider(association string) bool {
 	return association == "OWNER" || association == "MEMBER" || association == "COLLABORATOR"
+}
+
+func (g *github) EnsureLabel(name, color, description string) error {
+	_, err := g.api("repos/{owner}/{repo}/labels/" + url.PathEscape(name))
+	if !errors.Is(err, errNotFound) {
+		return err
+	}
+	_, err = g.api("-X", "POST", "repos/{owner}/{repo}/labels", "-f", "name="+name, "-f", "color="+color, "-f", "description="+description)
+	return err
 }
 
 func (g *github) SetBody(id int, body string) error {

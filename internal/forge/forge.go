@@ -72,6 +72,9 @@ type Backlog interface {
 	SetMilestone(id int, title string) error
 	// SetBody rewrites an issue's body.
 	SetBody(id int, body string) error
+	// EnsureLabel creates a label when the project has none of that name,
+	// so a person finds it in the forge's list to set.
+	EnsureLabel(name, color, description string) error
 }
 
 // MergeRequest is where a merge request comes from and where it goes.

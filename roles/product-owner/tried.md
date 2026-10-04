@@ -202,3 +202,15 @@ opened on JN0V/workline-sandbox for it.
   in place: no duplicate, the run lost.
 - Not tried: `ready` on an outsider's issue (proposed; conformance only),
   an issue whose reporter never answers.
+
+## 2026-10-04 — drafts accepted with a label, live on the sandbox
+
+The person said deleting a line in each issue would not do: no one does
+that for ten issues. Accepting is a label now, `workline:accepted`, set
+on one issue or on many from the list of issues; only who may triage sets
+a label. JN0V/workline-sandbox #7, its Need and Validation drafted: the
+label set by hand; the next run, no agent call, took the draft lines out
+and moved it to `workline:ready`. Not tried live: an issue form's
+`### ` sections (conformance only), the label created by the engine with
+the first draft (created by hand on workline and DomoticsCore, whose drafts
+predate it).

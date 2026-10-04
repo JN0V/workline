@@ -106,6 +106,12 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 		st, found, err := backlog.ReadState(comments, role)
+		if found && err == nil && backlog.Accepted(is) {
+			// A person accepted its drafts, with the label: the engine moves
+			// it to ready if its sections are there, with no agent.
+			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
+				"issue": is.ID, "why": "its drafts accepted by a person (" + backlog.LabelAccepted + ")", "own": true}})
+		}
 		switch {
 		case !found:
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{

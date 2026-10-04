@@ -233,8 +233,14 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		indexes = append(indexes, i)
 	}
 	slices.Sort(indexes)
+	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
+		if c.Do == "ready" && decided[c.key()] {
+			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
+			continue
+		}
+		decided[c.key()] = true
 		mode, why := p.check(f, repo, role, &c)
 		d := Decision{Index: i, Mode: Off, Act: c}
 		switch {
@@ -249,7 +255,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
 			}
-			if d.Mode == Act && c.Do == "ready" && !p.issues[c.Issue].Insider {
+			if d.Mode == Act && c.Do == "ready" && !p.issues[c.Issue].Insider && !Accepted(p.issues[c.Issue]) {
 				// The reporter has no write access: the issue is theirs
 				// (ADR-0018), moving it is for a person to decide.
 				d.Mode = Propose
@@ -471,7 +477,7 @@ func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) 
 				Message: "already in the body, left as it is: " + strings.Join(kept, ", ")})
 		}
 	case "ready":
-		if missing := NotReady(is.Body); len(missing) > 0 {
+		if missing := NotReady(is.Body, Accepted(is)); len(missing) > 0 {
 			return "not-ready", "it stays to refine: " + strings.Join(missing, "; ")
 		}
 	case "ask":
@@ -496,37 +502,93 @@ func DraftLine(role string) string {
 	return fmt.Sprintf("*Draft by the %s: edit it, then delete this line to make it yours.* %s", strings.ReplaceAll(role, "-", " "), DraftMarker)
 }
 
-// Refine is an issue's body with the sections it lacks added after its
-// text, which stays as it is; added and kept name the sections written and
-// those already there, left alone.
+// Refine is an issue's body with the sections it lacks written: one there
+// but empty (an issue form's "_No response_") filled in place, one missing
+// added after the text, which stays as it is; added and kept name the
+// sections written and those already there, left alone.
 func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	have := work.Sections(body)
 	given := map[string]string{"Need": c.Need, "Verification": c.Verification, "Validation": c.Validation, "Scope": c.Scope}
-	var b strings.Builder
-	b.WriteString(strings.TrimRight(body, " \n"))
+	body = strings.TrimRight(body, " \r\n")
 	var added, kept []string
 	for _, name := range Sections {
 		text := strings.TrimSpace(given[name])
 		if text == "" {
 			continue
 		}
-		if _, ok := have[name]; ok {
+		if slices.Contains(drafted, name) {
+			text = DraftLine(role) + "\n\n" + text
+		}
+		old, ok := have[name]
+		switch {
+		case ok && strings.TrimSpace(old) != "":
 			kept = append(kept, name)
 			continue
+		case ok:
+			body = fill(body, name, text)
+		default:
+			body += "\n\n## " + name + "\n\n" + text
 		}
 		added = append(added, name)
-		b.WriteString("\n\n## " + name + "\n\n")
-		if slices.Contains(drafted, name) {
-			b.WriteString(DraftLine(role) + "\n\n")
-		}
-		b.WriteString(text)
 	}
-	return b.String(), added, kept
+	return body, added, kept
+}
+
+// fill writes text under the heading of an empty section, in place.
+func fill(body, name, text string) string {
+	lines := strings.Split(body, "\n")
+	for i, l := range lines {
+		if h, ok := work.Heading(l); !ok || h != name {
+			continue
+		}
+		end := i + 1
+		for end < len(lines) {
+			if _, ok := work.Heading(lines[end]); ok || strings.HasPrefix(lines[end], "# ") {
+				break
+			}
+			end++
+		}
+		tail := ""
+		if end < len(lines) {
+			tail = "\n\n" + strings.Join(lines[end:], "\n")
+		}
+		return strings.Join(lines[:i+1], "\n") + "\n\n" + text + tail
+	}
+	return body
+}
+
+// The labels of an issue on its way to ready (docs/spec/routing.md).
+const (
+	LabelToRefine = "workline:to-refine"
+	LabelDraft    = "workline:draft"    // the role drafted its Need or Validation
+	LabelAccepted = "workline:accepted" // a person accepted the drafts: only who may triage sets a label
+	LabelReady    = "workline:ready"
+)
+
+// Accepted says whether a person accepted an issue's drafts, by its label
+// — read on the issue, never taken from a proposal.
+func Accepted(is forge.Issue) bool { return slices.Contains(is.Labels, LabelAccepted) }
+
+// StripDrafts takes the draft lines out of a body: the drafts are a
+// person's once accepted.
+func StripDrafts(body string) string {
+	var out []string
+	lines := strings.Split(body, "\n")
+	for i := 0; i < len(lines); i++ {
+		if strings.Contains(lines[i], DraftMarker) {
+			if i+1 < len(lines) && strings.TrimSpace(lines[i+1]) == "" {
+				i++ // and the blank line after it
+			}
+			continue
+		}
+		out = append(out, lines[i])
+	}
+	return strings.Join(out, "\n")
 }
 
 // NotReady says what keeps an issue's body from ready: a section missing or
-// empty, Need or Validation still a draft.
-func NotReady(body string) []string {
+// empty, Need or Validation still a draft no person accepted.
+func NotReady(body string, accepted bool) []string {
 	have := work.Sections(body)
 	var out []string
 	for _, name := range Sections {
@@ -534,7 +596,7 @@ func NotReady(body string) []string {
 		switch {
 		case text == "":
 			out = append(out, "## "+name+" is missing or empty")
-		case slices.Contains(drafted, name) && strings.Contains(text, DraftMarker):
+		case !accepted && slices.Contains(drafted, name) && strings.Contains(text, DraftMarker):
 			out = append(out, "## "+name+" is a draft, not a person's yet")
 		}
 	}

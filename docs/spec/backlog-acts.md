@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 5173ead
+checked: cc3a4f4
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -152,21 +152,31 @@ what it can and asks for the rest:
 ```
 
 - **`refine`** adds the sections the body does not have, after its text,
-  which stays as it is. A section already there — a person's, or one the
-  role wrote before — is never rewritten (`section-kept`). Need and
-  Validation are drafts: each follows a line saying so, holding a hidden
-  marker (`<!-- workline:draft -->`); a person makes one theirs by editing
-  it and deleting that line. Scope names its files (`sources`, 1 to 5, in
+  which stays as it is; one there but empty — an issue form's field left
+  `_No response_` — is filled in place (an issue form writes its fields as
+  `### ` headings, read as `## ` ones). A section with text — a person's,
+  or one the role wrote before — is never rewritten (`section-kept`). Need
+  and Validation are drafts: each follows a line saying so, holding a
+  hidden marker (`<!-- workline:draft -->`), and the issue gets the label
+  `workline:draft`. **A person accepts them with one label,
+  `workline:accepted`** — on the issue, or on many at once from the list of
+  issues; the engine creates that label with the first draft, so it is
+  there to pick; only who may triage sets a label, so it is a person of the
+  project's. The engine then takes the draft lines out and moves the issue
+  to ready, with no agent. Editing a draft and deleting its line makes it
+  a person's too. Scope names its files (`sources`, 1 to 5, in
   the commit, as for naming its sources), which the issue's state gets when
   it has none. Nothing to add drops the act (`nothing-to-refine`). The
   issue gets the label `workline:to-refine`.
 - **`ready`** is checked by the engine, not taken from the agent: the four
   sections there and not empty, no draft marker in Need or Validation
-  (`not-ready` otherwise, naming what is missing). Done, the issue gets
+  unless the issue bears `workline:accepted` — read on the issue, never in
+  a proposal (`not-ready` otherwise, naming what is missing). Done, the issue gets
   `workline:ready` and loses `workline:to-refine`, as `workline item ready`
-  does. An issue opened by someone without write access to the project is
-  theirs: moving it to ready is proposed in the report, never done
-  (`reporter-outside`). A forge that does not say who has write access
+  does, and loses `workline:draft` and `workline:accepted`. An issue opened
+  by someone without write access to the project is theirs: moving it to
+  ready is proposed in the report, never done (`reporter-outside`) —
+  unless a person of the project accepted it with the label. A forge that does not say who has write access
   (GitLab, for now) counts every reporter as outside.
 - **`ask`** comments on the issue, naming its reporter, with the agent's
   questions — once an issue (`already-asked`). The answer is a person's

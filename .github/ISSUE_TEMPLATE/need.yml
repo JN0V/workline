@@ -1,0 +1,30 @@
+# A need, as workline's product owner reads it — copy to
+# .github/ISSUE_TEMPLATE/need.yml. GitHub writes each field under a
+# "### <label>" heading: the four sections an issue needs to be ready
+# (docs/spec/routing.md). Write what you know; the product owner drafts the
+# rest from the code, and you accept its drafts with the label
+# workline:accepted (docs/spec/backlog-acts.md, "Refining to ready").
+name: A need
+description: Something the project should do, or do differently.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Need
+      description: Who needs what, and why?
+    validations: {required: true}
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: How will the machine prove it works — which tests, which checks? Leave it empty if you do not know.
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Who will accept the result, looking at what?
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Which part of the project does it touch? Leave it empty if you do not know.

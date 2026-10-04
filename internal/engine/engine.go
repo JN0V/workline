@@ -1741,10 +1741,21 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 	case "ask":
 		return f.Comment(t, backlog.Ask(is.Author, c.Questions), backlog.AskMarker(role))
 	case "ready":
-		if missing := backlog.NotReady(is.Body); len(missing) > 0 {
+		accepted := backlog.Accepted(*is)
+		if missing := backlog.NotReady(is.Body, accepted); len(missing) > 0 {
 			return nil // changed since the plan: it stays to refine
 		}
-		return f.Label(t, []string{"workline:ready"}, []string{"workline:to-refine"})
+		if accepted && strings.Contains(is.Body, backlog.DraftMarker) {
+			// The drafts are the person's: their lines go.
+			body := backlog.StripDrafts(is.Body)
+			if err := b.SetBody(c.Issue, body); err != nil {
+				return err
+			}
+			if err := keepBody(f, role, t, body, nil); err != nil {
+				return err
+			}
+		}
+		return f.Label(t, []string{backlog.LabelReady}, []string{backlog.LabelToRefine, backlog.LabelDraft, backlog.LabelAccepted})
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -1752,21 +1763,36 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 			return err
 		}
 	}
-	if err := f.Label(t, []string{"workline:to-refine"}, nil); err != nil {
+	labels := []string{backlog.LabelToRefine}
+	if slices.Contains(added, "Need") || slices.Contains(added, "Validation") {
+		labels = append(labels, backlog.LabelDraft)
+		// The label a person accepts the drafts with, there to be picked
+		// from the forge's list.
+		if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+			return err
+		}
+	}
+	if err := f.Label(t, labels, nil); err != nil {
 		return err
 	}
-	// The state: the files the scope names when it had none, and the body
-	// as the engine left it, so only a person's change has it read again.
+	return keepBody(f, role, t, body, c.Sources)
+}
+
+// keepBody records in an issue's state the body the engine left, so only a
+// person's change has it read again, and the files its scope names when it
+// had none.
+func keepBody(f forge.Forge, role string, t forge.Target, body string, sources []string) error {
+	b := f.(forge.Backlog)
 	comments, err := b.Comments(t)
 	if err != nil {
 		return err
 	}
 	st, _, err := backlog.ReadState(comments, role)
 	if err != nil {
-		return fmt.Errorf("#%d: its state comment: %w", c.Issue, err)
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
 	if len(st.Sources) == 0 {
-		st.Sources = c.Sources
+		st.Sources = sources
 	}
 	st.Body = backlog.BodyDigest(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)

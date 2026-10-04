@@ -25,13 +25,15 @@ func Path(repo, id string) string {
 
 var stateLine = regexp.MustCompile(`(?m)^state: .*$`)
 
-// Sections returns the text under each "## " heading.
+// Sections returns the text under each "## " or "### " heading — an
+// issue form writes its fields as the latter. A field left empty in a form
+// ("_No response_") is empty.
 func Sections(content string) map[string]string {
 	out := map[string]string{}
 	name := ""
 	for _, l := range strings.Split(content, "\n") {
-		if h, ok := strings.CutPrefix(l, "## "); ok {
-			name = strings.TrimSpace(h)
+		if h, ok := Heading(l); ok {
+			name = h
 			out[name] = ""
 			continue
 		}
@@ -39,7 +41,26 @@ func Sections(content string) map[string]string {
 			out[name] += l + "\n"
 		}
 	}
+	for k, v := range out {
+		if strings.TrimSpace(v) == NoResponse {
+			out[k] = ""
+		}
+	}
 	return out
+}
+
+// NoResponse is what an issue form writes for a field left empty.
+const NoResponse = "_No response_"
+
+// Heading reads a section's heading line, "## Name" or "### Name".
+func Heading(line string) (string, bool) {
+	line = strings.TrimRight(line, "\r")
+	for _, p := range []string{"## ", "### "} {
+		if h, ok := strings.CutPrefix(line, p); ok {
+			return strings.TrimSpace(h), true
+		}
+	}
+	return "", false
 }
 
 // Ready moves an item to ready if its four sections are written, and says

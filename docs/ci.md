@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go]
-checked: 6873d4e
+checked: cc3a4f4
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -155,6 +155,14 @@ write when applying); on GitLab, the apply token's `api` scope covers them.
 Its acts and proposals are listed in one issue, "Backlog — product owner".
 A roadmap or backlog file is moved to issues once, by hand:
 `workline issues import <file>`, then `--apply`.
+
+It refines issues to `ready`, drafting their Need and Validation, and
+labels them `workline:draft`. To accept the drafts, set the label
+`workline:accepted` — on an issue, or on many at once from the list of
+issues: the next run moves them to `ready`, with no agent. An issue form
+with the four sections, [ci/github/issue-form-need.yml](../ci/github/issue-form-need.yml),
+copied to `.github/ISSUE_TEMPLATE/need.yml`, has a person's issue arrive
+with what they know already written.
 
 ## The weekly sample
 

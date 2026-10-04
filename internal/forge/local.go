@@ -414,6 +414,9 @@ func (l *Local) Milestones() ([]string, error) {
 	return out, nil
 }
 
+// EnsureLabel: the local forge keeps no list of labels apart from its items.
+func (l *Local) EnsureLabel(name, color, description string) error { return nil }
+
 func (l *Local) SetBody(id int, body string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Body = body })
 }
