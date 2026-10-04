@@ -98,6 +98,7 @@ type Pending struct {
 	Issue int    `yaml:"issue"`
 	Act   string `yaml:"act"`
 	Line  string `yaml:"line"`
+	Key   string `yaml:"key,omitempty"` // an issue to open: the text it would be opened from (ImportKey)
 }
 
 // Closing is one issue the role closed.
@@ -133,6 +134,24 @@ func (c Proposal) Kind() string {
 		return c.Do
 	}
 	return "close-" + c.Reason
+}
+
+// where names the act's issue in a finding: its number, or the title of
+// one to open.
+func (c Proposal) where() string {
+	if c.Do == "open" {
+		return c.Title
+	}
+	return fmt.Sprintf("#%d", c.Issue)
+}
+
+// key tells one proposal from another in the report: its issue and kind,
+// or for an issue to open, the text it would be opened from.
+func (c Proposal) key() string {
+	if c.Do == "open" && c.Quote != nil {
+		return ImportKey(*c.Quote)
+	}
+	return fmt.Sprintf("%d/%s", c.Issue, c.Kind())
 }
 
 // Kinds are the intentions that are acts on the backlog.
@@ -194,11 +213,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		return nil, err
 	}
 	dropped := func(c Proposal, rule, msg string) {
-		where := fmt.Sprintf("#%d", c.Issue)
-		if c.Do == "open" {
-			where = c.Title
-		}
-		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: where, Message: msg})
+		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
 	done := map[string]int{}
 	var indexes []int
@@ -224,7 +239,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
 				d.Mode = Propose
-				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: fmt.Sprintf("#%d", c.Issue),
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
 					Message: fmt.Sprintf("%s: at most %d a run; this one is proposed", c.Kind(), s.Max)})
 			}
 			if d.Mode == Act {
@@ -241,24 +256,36 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 }
 
 // keepProposed carries over the acts proposed by earlier runs whose issue
-// is still open and that this run did not decide again, then adds this
-// run's: a proposal stays in the report until a person settles it.
+// is still open — or, for an issue to open, that no open issue holds yet —
+// and that this run did not decide again, then adds this run's: a proposal
+// stays in the report until a person settles it.
 func (p *Plan) keepProposed() {
 	decided := map[string]bool{}
 	for _, d := range p.Decisions {
 		if d.Mode != Off {
-			decided[fmt.Sprintf("%d/%s", d.Act.Issue, d.Act.Kind())] = true
+			decided[d.Act.key()] = true
 		}
 	}
 	var kept []Pending
 	for _, q := range p.Record.Proposed {
-		if p.open[q.Issue] && !decided[fmt.Sprintf("%d/%s", q.Issue, q.Act)] {
+		key, settled := q.Key, false
+		if key == "" {
+			key, settled = fmt.Sprintf("%d/%s", q.Issue, q.Act), !p.open[q.Issue]
+		} else {
+			marker := forge.Marker(key)
+			settled = slices.ContainsFunc(p.bodies, func(b string) bool { return strings.Contains(b, marker) })
+		}
+		if !settled && !decided[key] {
 			kept = append(kept, q)
 		}
 	}
 	for _, d := range p.Decisions {
 		if d.Mode == Propose {
-			kept = append(kept, Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close")})
+			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close")}
+			if d.Act.Do == "open" {
+				q.Key = d.Act.key()
+			}
+			kept = append(kept, q)
 		}
 	}
 	if len(kept) != len(p.Record.Proposed) {
@@ -449,7 +476,7 @@ func (p *Plan) ReportBody() string {
 		b.WriteString("\n## Done\n\n" + strings.Join(did, "\n") + "\n")
 	}
 	if len(proposed) > 0 {
-		b.WriteString("\n## Proposed\n\nFor a person: close the issue if you agree.\n\n" + strings.Join(proposed, "\n") + "\n")
+		b.WriteString("\n## Proposed\n\nFor a person: close the issue if you agree; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
 	return b.String()
 }

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: c094dd9
+checked: 964a9ab
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -75,7 +75,9 @@ judgement: the product owner reads the file, not a parser (principle 4).
   issue gets its state, confirmed at the commit, no sources: gardening
   names them (`sources`).
 - Without `--apply`, it says what it would open, the quotes not checked
-  yet, and writes nothing. `open` is capped per share (`acts.open.max`).
+  yet, and writes nothing. `open` is capped per share (`acts.open.max`):
+  past it, an item is proposed in the report, and the import run again
+  opens it.
 
 The file then stays as it is, for its history.
 
@@ -152,7 +154,9 @@ is there, not that the issue is solved).
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
 lists what the last run did and what is proposed, each closing with its
 quote and how to undo it. A proposal stays there from run to run until a person
-settles it — its issue closed — or a run decides it again. Its own engine
+settles it — its issue closed — or a run decides it again. An issue to
+open past the cap stays there until an open issue holds its text: an
+import run again opens it. Its own engine
 comment (`<!-- workline:sticky=product-owner/acts -->`) records the
 closings done, the kinds dropped back to `propose`, and the proposals.
 
