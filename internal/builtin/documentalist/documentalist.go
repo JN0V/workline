@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -280,6 +281,62 @@ var onMainSeen = map[string]anchored{}
 // headersOnly says whether a commit changed, under path, only the headers of
 // docs: recording who checked a doc changes nothing it says, and would
 // otherwise make the docs naming a folder of docs suspect at every check.
+// semver is a version number, as release tools write and bump them.
+var semver = regexp.MustCompile(`v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`)
+
+// versionsOnly says whether a commit changed path only by putting one
+// version number in place of another, line for line — a release tool's
+// bump (release-please's `x-release-please-version`, a manifest) — and
+// which versions it replaced.
+func versionsOnly(dir, commit, path string) (bool, []string) {
+	out, err := git(dir, "show", "--format=", "-U0", "--no-color", commit, "--", path)
+	if err != nil || out == "" {
+		return false, nil
+	}
+	var removed, added, old []string
+	for _, l := range strings.Split(out, "\n") {
+		switch {
+		case strings.HasPrefix(l, "---"), strings.HasPrefix(l, "+++"):
+		case strings.HasPrefix(l, "-"):
+			old = append(old, semver.FindAllString(l[1:], -1)...)
+			removed = append(removed, semver.ReplaceAllString(l[1:], "V"))
+		case strings.HasPrefix(l, "+"):
+			added = append(added, semver.ReplaceAllString(l[1:], "V"))
+		}
+	}
+	if len(removed) == 0 || len(removed) != len(added) {
+		return false, nil
+	}
+	for i := range removed {
+		if removed[i] != added[i] || !strings.Contains(removed[i], "V") {
+			return false, nil
+		}
+	}
+	return true, old
+}
+
+// dropBumps leaves out of a doc's commits ("%h %s" lines), on a release
+// tool's pull request, those that only bumped a version in path, unless the
+// doc quotes a version they replaced: the tool's own bump says nothing else
+// a doc describes, and would make the release's docs suspect at every
+// release. Elsewhere a bump is a change like any: the docs it touches are
+// judged (the evaluation's drifted-version-bump).
+func dropBumps(dir, commits, path, doc string) string {
+	if commits == "" || strings.HasPrefix(commits, "(") {
+		return commits
+	}
+	var kept []string
+	for _, l := range strings.Split(commits, "\n") {
+		hash, _, _ := strings.Cut(l, " ")
+		bump, old := versionsOnly(dir, hash, path)
+		quoted := slices.ContainsFunc(old, func(v string) bool { return strings.Contains(doc, strings.TrimPrefix(v, "v")) })
+		if !bump || quoted {
+			kept = append(kept, l)
+		}
+	}
+	return strings.Join(kept, "\n")
+}
+
 func headersOnly(dir, commit, path string) bool {
 	under := strings.TrimSuffix(path, "/")
 	files := commitFiles(dir, commit)
@@ -553,6 +610,9 @@ func Pre(runDir, repo string) int {
 				commits = fmt.Sprintf("(`checked` names %s, which %s does not hold, and no commit brought it there)", checked, where.rev)
 			} else if err == nil {
 				commits, err = changed(where.dir, checked, where.rev, path, anchor)
+				if err == nil && name == "" && os.Getenv("WORKLINE_RELEASE_BRANCH") != "" {
+					commits = dropBumps(where.dir, commits, path, tree.Docs[d.Path])
+				}
 			}
 			if _, ok := err.(external); ok {
 				fmt.Fprintln(os.Stderr, "documentalist:", err)

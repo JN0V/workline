@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
-checked: dde4264
+checked: 545b60a
 verified: agent:claude-code
 ---
 # Documentalist — the checks
@@ -13,7 +13,10 @@ are cut. Part of [the documentalist](README.md).
 1. **Suspects.** For each doc, list commits since its `checked` commit that
    touched its `sources`, named in a `<!-- workline … -->` comment at its top,
    which no rendering shows, or in a frontmatter the doc has. A commit
-   changing only docs' headers, who checked them, is no change. A `checked`
+   changing only docs' headers, who checked them, is no change; nor, on a
+   release tool's pull request, is one only putting a version number in
+   place of another, line for line — the tool's bump, which would hold
+   every release — unless the doc quotes the version replaced. A `checked`
    naming a commit the branch does not hold — one of a merge request since
    squashed or rebased — stands for the commit that brought it there, as
    does a `judged` or `judged-in-parts` (ADR-0013); with
