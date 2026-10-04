@@ -104,3 +104,14 @@ Not tried: the judging job reading the record with its read token
 `workline init --review` on a real repository (unit-tested only); every
 lens at once on a merge request (`lenses=all`). Left open on the sandbox for
 a person to look at: pull request #8 and issue #9.
+
+## 2026-10-04 — its own pull request, in CI, with forge writes
+
+workline#132, the override `forge-writes: false` removed from
+.workline/config.yaml: the judging job built from the pull request, the
+apply job on v0.9.0, the first release with the reviewer.
+
+- **Push 1** (the setting removed, status.md updated): the correctness
+  lens, Sonnet, 2.7k tokens in, 0.4k out; no finding, no judge. The apply
+  job posted the summary comment, its record holding the commit reviewed
+  (`reviewed=c1b6a73… runs=1`); no issue opened.
