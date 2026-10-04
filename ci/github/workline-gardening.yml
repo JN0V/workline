@@ -1,9 +1,10 @@
 # workline gardening on GitHub Actions — copy to .github/workflows/workline-gardening.yml.
 #
 # On a schedule, the project's `schedule` line runs (by default the
-# documentalist): each task it takes up becomes a pull request of its own, on
-# a branch workline/<role>/<task>, updated when the task runs again, and no
-# more are proposed while max-open-merge-requests of them wait (ADR-0006).
+# documentalist; add the product owner to keep the backlog, docs/ci.md):
+# each task it takes up becomes a pull request of its own, on a branch
+# workline/<role>/<task>, updated when the task runs again, and no more are
+# proposed while max-open-merge-requests of them wait (ADR-0006).
 # The review is on those pull requests; nothing is merged here (ADR-0011).
 #
 # Two jobs, two trust zones, as for pull requests (workline.yml):
@@ -34,7 +35,8 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
-    permissions: {contents: read, pull-requests: read}
+    # issues: the product owner, when the schedule line runs it, reads them.
+    permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
       proposed: ${{ steps.line.outputs.proposed }}
@@ -91,7 +93,9 @@ jobs:
     needs: judge
     if: always() && needs.judge.outputs.proposed == 'true'
     runs-on: ubuntu-latest
-    permissions: {contents: write, pull-requests: write}
+    # issues: the product owner's acts (comments, closings, milestones) and
+    # its report issue.
+    permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''

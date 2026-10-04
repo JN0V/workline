@@ -110,3 +110,29 @@ action for install without Go in CI"). **Defect found, fixed**: an issue's
 body began with the last two lines of the item before — the quote was
 located from the first line holding its first word (`-`); it now starts at
 the last line that still holds it all (`TestLocate`).
+
+## 2026-10-04 — live on GitHub, JN0V/workline-sandbox, Sonnet
+
+Three issues planted on the sandbox (`src/auth/token.go`, one-hour tokens):
+#2 two-hour sessions (true), #3 the same need in a user's words, #4 "give
+3600 a name" (solved: `const TokenTTL = 3600`). The engine on this machine,
+`--forge github`. Each run 4.2 to 4.4k tokens in, 0.2 to 0.8k out.
+
+- **Run 1**, no agent: each issue got its state comment.
+- **Run 2**: #3's code named (`token.go`), its duplicate left for the next
+  run; #4 proposed as obsolete, in the report issue #5.
+- **Run 3**: #3 read again, not closed: "#2 looks like a duplicate, but
+  only its title was available". **Fixed**: an issue on the same code as
+  one read is given whole beside it (`original-given-whole`). Rerun: #3
+  closed as a duplicate of #2, GitHub's reason `DUPLICATE`, #2's words
+  quoted.
+- **#3 reopened by hand**, with a comment: "not the same, the session must
+  survive a browser restart". The next run found nothing to read and did
+  not see it. **Two defects, fixed**: the record of closings was read only
+  when a run had acts — it is read on every run of the role now
+  (`wrong-closing-found-without-acts`); an issue was read again only when
+  its code changed — also now when a person commented since
+  (`read-again-when-someone-wrote`) or after the role's closing was undone.
+  Rerun: `wrong-closing` on #3, `close-duplicate` back to propose, the
+  report saying so; the agent read the comment, left #3 open and asked a
+  person to reword it around the restart.
