@@ -3,6 +3,7 @@
 package intent
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -145,15 +146,33 @@ func Write(path string, in []Intention) error {
 	if len(in) == 0 {
 		return nil
 	}
+	data, err := Marshal(in)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+// Marshal writes proposals as Read reads them: YAML, or JSON — which YAML
+// reads too — when the YAML written would not read back: the YAML library
+// writes a text starting with a tab as a block it then refuses ("found a
+// tab character where an indentation space is expected"), and code quoted
+// from a file often starts with one.
+func Marshal(in []Intention) ([]byte, error) {
 	list := make([]map[string]any, len(in))
 	for i, x := range in {
 		list[i] = map[string]any{x.Kind: x.Value}
 	}
 	data, err := yaml.Marshal(list)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return os.WriteFile(path, data, 0o644)
+	var back []map[string]any
+	if yaml.Unmarshal(data, &back) == nil {
+		return data, nil
+	}
+	data, err = json.MarshalIndent(list, "", "  ")
+	return append(data, '\n'), err
 }
 
 // applyOrder is the order intentions are applied in, whatever order they were

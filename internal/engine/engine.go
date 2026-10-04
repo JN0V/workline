@@ -633,11 +633,7 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		}
 		answer := []byte("[]\n") // nothing to say of this share is an answer too
 		if len(answers) > 0 {
-			list := make([]map[string]any, len(answers))
-			for i, c := range answers {
-				list[i] = map[string]any{c.Kind: c.Value}
-			}
-			if answer, err = yaml.Marshal(list); err != nil {
+			if answer, err = intent.Marshal(answers); err != nil {
 				return err
 			}
 		}
@@ -2262,6 +2258,12 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 			ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
 			res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 			res.AgentCalls++
+			if data, err := json.Marshal(ans.Call); err == nil { // kept with the run's calls, what it cost
+				if f, err := os.OpenFile(filepath.Join(runDir, "out", "calls.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+					f.Write(append(data, '\n'))
+					f.Close()
+				}
+			}
 			if err != nil {
 				answer["error"] = err.Error()
 				if errors.Is(err, agent.ErrUnavailable) {
