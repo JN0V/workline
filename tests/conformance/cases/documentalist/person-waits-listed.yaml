@@ -1,0 +1,17 @@
+case: documentalist/person-waits-listed
+about: When gardening with a forge, the docs only a person can clear are listed in one issue kept in place — each with why, and what to do, the commit to set in `checked` named — not left in the job's log.
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $C/\" docs/tech/auth.md && sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: fix the token lifetime, not vouched for'"
+  forge: {issues: []}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 1, title: "Docs due at the next release"}
+      - {id: 2, title: "Docs waiting for a person", body-contains: "- [ ] `docs/tech/auth.md` — "}
+      - {id: 2, body-contains: "then set `checked: "}
+      - {id: 3, absent: true}

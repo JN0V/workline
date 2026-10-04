@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
-checked: 1bab30d
+checked: dde4264
 verified: agent:claude-code
 ---
 # Documentalist — the checks
@@ -142,7 +142,9 @@ due at the release is `due`, and becomes the `propagate` task — brought up
 to date for its reader, growing when the reader gained something to know. A
 `due` doc left as it was blocks, so the line stops and nothing is released.
 When gardening, with a forge, the docs due are listed in one issue, "Docs
-due at the next release", kept in place.
+due at the next release", kept in place; and the docs only a person can
+clear — too large for the agent, or judged without being vouched for —
+in another, "Docs waiting for a person", each with why and what to do.
 
 **Code never rewrites the authority.** When the code disagrees with a doc marked
 as the truth (`truth.doc`: a spec, an ADR, the architecture), the doc is not

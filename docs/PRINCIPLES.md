@@ -32,3 +32,7 @@ choice is unclear, it is settled against this page.
     read as a pass.
 13. **Borrow before building.** Look for what exists — in the words the
     ecosystem uses — and build only what is missing.
+14. **Automatic where it can be, written where it cannot.** What the
+    machine can do, it does, without being asked. What needs a person is
+    written where they look — what to do, why, and how — never left in a
+    job's log or in someone's memory.

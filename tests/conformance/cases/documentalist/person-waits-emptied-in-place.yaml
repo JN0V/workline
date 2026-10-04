@@ -1,0 +1,14 @@
+case: documentalist/person-waits-emptied-in-place
+about: With no doc waiting for a person any more, the issue already open says so, and no other is opened; none is opened to say nothing.
+given:
+  repo: documented
+  forge:
+    issues:
+      - {id: 4, title: "Docs waiting for a person", body: "- [ ] `docs/old.md` — a person judges it", labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 4, body-contains: "No doc waits for a person"}
+      - {id: 5, absent: true}

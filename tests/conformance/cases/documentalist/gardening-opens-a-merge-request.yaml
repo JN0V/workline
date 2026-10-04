@@ -8,7 +8,7 @@ given:
 run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
 expect:
   status: pass
-  applied: [patch, issue]   # the tracking issue, only kept if already open
+  applied: [patch, issue, issue]   # the two kept issues, docs due and docs waiting for a person, each only kept if already open
   forge:
     merge-requests:
       - {id: 1, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place"}

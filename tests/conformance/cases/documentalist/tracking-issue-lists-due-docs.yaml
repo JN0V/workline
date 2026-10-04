@@ -7,7 +7,7 @@ given:
 run: {role: documentalist, event: schedule, ai: none}
 expect:
   status: pass
-  applied: [issue]
+  applied: [issue, issue]   # docs due, then docs waiting for a person (kept only if already open)
   forge:
     issues:
       - {id: 1, title: "Docs due at the next release", body-contains: "`docs/product/sign-in.md` — docs/tech/auth.md#token-refresh changed"}
