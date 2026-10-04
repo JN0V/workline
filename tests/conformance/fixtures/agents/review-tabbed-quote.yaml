@@ -1,0 +1,13 @@
+# A lens of the reviewer quoting two lines of code as they read, the first
+# starting with a tab, and the closing brace on its own line written after
+# it: the answer must read back, and the quote be found.
+- finding:
+    severity: nit
+    title: the divisor reads better named
+    why: (len(values) - 1) says nothing of why
+    cause: {path: calc/calc.go, quote: "\treturn total / (len(values) - 1)\n}"}
+- finding:
+    severity: nit
+    title: the loop and its sum, quoted as one line
+    why: an agent often quotes two lines as one
+    cause: {path: calc/calc.go, quote: "for _, v := range values { total += v"}

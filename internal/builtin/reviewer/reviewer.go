@@ -417,7 +417,7 @@ func readLenses(runDir, repo string, s Settings) int {
 		}
 		q := map[string]string{"question": "Is this finding about the code true: does the code quoted, as it reads, fail the way the finding says? Answer no if it is not a defect, if the code shown handles it, or if the finding only guesses.",
 			"material": material(repo, st, f)}
-		data, _ := yaml.Marshal(q)
+		data, _ := json.Marshal(q) // JSON, which YAML reads: code quoted may start a line with a tab
 		if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
 			return fail(err)
 		}
@@ -438,15 +438,16 @@ func readLenses(runDir, repo string, s Settings) int {
 // lies on a line the change added or removed. why says why it is dropped.
 func found(repo string, st state, lens string, v any) (Finding, string) {
 	var raw struct {
-		Severity string `yaml:"severity"`
-		Title    string `yaml:"title"`
-		Why      string `yaml:"why"`
-		Fix      string `yaml:"fix"`
-		Cause    *Quote `yaml:"cause"`
-		Symptom  *Quote `yaml:"symptom"`
+		Severity string `json:"severity"`
+		Title    string `json:"title"`
+		Why      string `json:"why"`
+		Fix      string `json:"fix"`
+		Cause    *Quote `json:"cause"`
+		Symptom  *Quote `json:"symptom"`
 	}
-	data, _ := yaml.Marshal(v)
-	if err := yaml.Unmarshal(data, &raw); err != nil {
+	// Through JSON: YAML would not read back a quote starting with a tab.
+	data, _ := json.Marshal(v)
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return Finding{Title: fmt.Sprint(v)}, "it does not read: " + err.Error()
 	}
 	f := Finding{Lens: lens, Severity: strings.ToLower(strings.TrimSpace(raw.Severity)), Title: strings.TrimSpace(raw.Title), Why: strings.TrimSpace(raw.Why), Fix: strings.TrimSpace(raw.Fix), Symptom: raw.Symptom}

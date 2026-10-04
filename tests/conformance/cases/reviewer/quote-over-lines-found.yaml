@@ -1,0 +1,12 @@
+case: reviewer/quote-over-lines-found
+about: "A lens's quote is found spaces and line breaks aside: lines starting with a tab, as code reads, and two lines quoted as one; the answer holding them reads back."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-tabbed-quote"}
+expect:
+  status: pass
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Nit: the divisor reads better named"}
+    - {rule: nits-outside, message: "1 nits outside the change"}
+  no-findings: [{rule: finding-unfounded}, {rule: lens-failed}]
