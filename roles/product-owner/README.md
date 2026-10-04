@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 1bab30d
+checked: c094dd9
 verified: agent:claude-code
 ---
 # Product owner
@@ -33,8 +33,9 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
 
 Without an agent, only the state comments are written. On `import`,
 `workline issues import <file>` has the agent read a committed file a
-share at a time, and opens each item still to do as an issue quoting it,
-never twice (`open`); without `--apply`, it only says what it would open.
+share at a time — with the lines elsewhere in the file that name its
+items' ids, where a file often says what is done — and opens each item
+still to do as an issue quoting it, never twice (`open`); without `--apply`, it only says what it would open.
 
 ## Settings
 

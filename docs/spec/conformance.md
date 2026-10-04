@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 1bab30d
+checked: c094dd9
 verified: agent:claude-code
 ---
 # Conformance — v1 (draft)
@@ -127,7 +127,7 @@ a `PATH` without a tool, or with a fake one first.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
-  text (`contains`).
+  text (`contains`), or not (`not-contains`).
 - `files` — paths that must exist, or contain a text or each of a list of
   texts, or lack one (`lacks`), afterwards.
 

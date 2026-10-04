@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 1bab30d
+checked: c094dd9
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -55,6 +55,12 @@ judgement: the product owner reads the file, not a parser (principle 4).
   fifth of each share read again in the next, so an item cut at the end of
   one is whole in the other; it runs the role on each share, on the event
   `import`.
+- A file often says an item is done far from the item — a table of what
+  shipped, a summary at the end. With each share, the agent is given the
+  lines of the rest of the file that name an id the share holds (`BUG-6`,
+  `LO-12`: capitals, a dash, a number), those of a table or a heading
+  first, four an id at most. Which of them says the item is done is its
+  judgement; an item without an id is read from its share alone.
 - The agent proposes an `open` for each item still to do, or done in part:
 
   ```yaml
