@@ -1,0 +1,12 @@
+case: product-owner/role-finding-read-as-draft
+about: "An issue a role opened on a finding is the product owner's from its next run: read first, never read before, named as that role's draft to refine, not as an outsider's."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "WriteRows stops one row short", author: "github-actions[bot]", labels: [needs-triage], body: "The loop ends one row early.\n\nOpened by the reviewer role.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/export/csv.go#00000000 -->", comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "Opened by: the reviewer role, on a finding of its own — a draft to refine"}
