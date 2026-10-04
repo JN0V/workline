@@ -88,42 +88,42 @@ func fileAt(repo, commit, path string) (string, bool) {
 // of spaces inside made one.
 func norm(s string) string { return strings.Join(strings.Fields(s), " ") }
 
-// locate finds a quote in a file's lines: each line of the quote, spaces
-// aside, held by consecutive lines of the file. It returns the line numbers
-// of every place it is found, 1-based, each the first line of the place.
-func locate(lines []string, quote string) []int {
-	var want []string
-	for _, q := range strings.Split(quote, "\n") {
-		if n := norm(q); n != "" {
-			want = append(want, n)
-		}
-	}
-	if len(want) == 0 {
+// Place is where a quote is found: its first and last lines, 1-based.
+type Place struct{ From, To int }
+
+// locate finds a quote in a file's lines, spaces and line breaks aside: an
+// agent often quotes two lines as one, or one line as two. It returns every
+// place it is found.
+func locate(lines []string, quote string) []Place {
+	want := norm(quote)
+	if want == "" {
 		return nil
 	}
-	var found []int
-	for i := 0; i+len(want) <= len(lines); i++ {
-		ok := true
-		for k, w := range want {
-			if !strings.Contains(norm(lines[i+k]), w) {
-				ok = false
-				break
-			}
+	var text strings.Builder
+	var lineAt []int // the line each character of text comes from
+	for i, l := range lines {
+		n := norm(l)
+		if n == "" {
+			continue
 		}
-		if ok {
-			found = append(found, i+1)
+		if text.Len() > 0 {
+			text.WriteByte(' ')
+			lineAt = append(lineAt, i+1)
 		}
-	}
-	return found
-}
-
-// quoteLines counts the lines a quote spans, blank ones left out.
-func quoteLines(quote string) int {
-	n := 0
-	for _, q := range strings.Split(quote, "\n") {
-		if norm(q) != "" {
-			n++
+		text.WriteString(n)
+		for range len(n) {
+			lineAt = append(lineAt, i+1)
 		}
 	}
-	return n
+	all := text.String()
+	var found []Place
+	for start := 0; ; {
+		i := strings.Index(all[start:], want)
+		if i < 0 {
+			return found
+		}
+		at := start + i
+		found = append(found, Place{lineAt[at], lineAt[at+len(want)-1]})
+		start = at + 1
+	}
 }

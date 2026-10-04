@@ -59,15 +59,20 @@ func TestStoryOverTwoLines(t *testing.T) {
 }
 
 func TestLocate(t *testing.T) {
-	lines := []string{"func A() {", "\treturn  x / y", "}", "func B() {", "\treturn x / y", "}"}
-	if got := locate(lines, "return x / y"); !slices.Equal(got, []int{2, 5}) {
-		t.Errorf("one line, spaces aside: %v", got)
-	}
-	if got := locate(lines, "func B() {\n  return x / y"); !slices.Equal(got, []int{4}) {
-		t.Errorf("two lines: %v", got)
-	}
-	if got := locate(lines, "return x / z"); got != nil {
-		t.Errorf("not there: %v", got)
+	lines := []string{"func A() {", "\treturn  x / y", "}", "func B() {", "\treturn x / y", "}", "", "if !ok {", "\treturn w", "}"}
+	for _, c := range []struct {
+		quote string
+		want  []Place
+	}{
+		{"return x / y", []Place{{2, 2}, {5, 5}}},       // one line, spaces aside
+		{"func B() {\n  return x / y", []Place{{4, 5}}}, // two lines
+		{"if !ok { return w }", []Place{{8, 10}}},       // three lines quoted as one
+		{"}\nfunc B", []Place{{3, 4}}},                  // across a line break
+		{"return x / z", nil},
+	} {
+		if got := locate(lines, c.quote); !slices.Equal(got, c.want) {
+			t.Errorf("%q: %v, want %v", c.quote, got, c.want)
+		}
 	}
 }
 

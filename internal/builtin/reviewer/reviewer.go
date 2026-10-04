@@ -63,6 +63,7 @@ type Finding struct {
 	Symptom  *Quote   `json:"symptom,omitempty"`
 	Where    string   `json:"where"`          // the cause's file and line
 	Related  bool     `json:"related"`        // the cause lies in the change: the author fixes it
+	Line     string   `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
 	Also     []string `json:"also,omitempty"` // other findings on the same line, merged into this one: lens and title
 	Verified string   `json:"verified,omitempty"`
 	Level    string   `json:"independence,omitempty"`
@@ -275,8 +276,8 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		fmt.Fprintf(&code, "### %s\n\n```\n%s%s\n```\n\n", f, strings.Join(lines, "\n"), cut)
 	}
 	floor := ""
-	if s.FinderFloor {
-		kb := float64(len(diff)) / 1024
+	if s.FinderFloor { // BMAD's floor, from the size of what is read: the change and its files
+		kb := float64(len(diff)+code.Len()) / 1024
 		n := min(int(math.Floor(math.Sqrt(kb)+1)), 10)
 		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", n)
 	}
@@ -285,7 +286,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		if err != nil {
 			return err
 		}
-		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nTheir messages are the author's testimony, not evidence.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\n%s",
+		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nTheir messages are the author's testimony, not evidence.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\nRead them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
 			lens, strings.TrimSpace(text), floor, log, diff, code.String())
 		dir := filepath.Join(runDir, "in", "parts", fmt.Sprintf("%d-%s", i+1, lens))
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -330,11 +331,17 @@ func readLenses(runDir, repo string, s Settings) int {
 				Message: fmt.Sprintf("the %s lens got no answer that reads (%s): what it looks for was not reviewed", lens, strings.TrimSpace(string(why)))})
 			continue
 		}
-		answers, err := intent.Read(filepath.Join(dir, "answer.yaml"))
-		if err != nil || !exists(filepath.Join(dir, "answer.yaml")) {
+		if !exists(filepath.Join(dir, "answer.yaml")) {
 			c.Failed = append(c.Failed, lens)
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn",
 				Message: fmt.Sprintf("the %s lens was not asked: what it looks for was not reviewed", lens)})
+			continue
+		}
+		answers, err := intent.Read(filepath.Join(dir, "answer.yaml"))
+		if err != nil {
+			c.Failed = append(c.Failed, lens)
+			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn",
+				Message: fmt.Sprintf("the %s lens's answer does not read (%v): what it looks for was not reviewed", lens, err)})
 			continue
 		}
 		for _, a := range answers {
@@ -451,15 +458,14 @@ func found(repo string, st state, lens string, v any) (Finding, string) {
 	}
 	f.Cause = Quote{Path: clean(raw.Cause.Path), Quote: raw.Cause.Quote}
 	text, ok := fileAt(repo, st.Head, f.Cause.Path)
-	places := []int{}
+	var places []Place
 	if ok {
 		places = locate(strings.Split(text, "\n"), f.Cause.Quote)
 	}
-	span := quoteLines(f.Cause.Quote)
 	for _, p := range places {
-		for n := p; n < p+span; n++ {
+		for n := p.From; n <= p.To; n++ {
 			if st.Change.addedAt(f.Cause.Path, n) {
-				f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, p), true
+				f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true
 				break
 			}
 		}
@@ -468,7 +474,8 @@ func found(repo string, st state, lens string, v any) (Finding, string) {
 		}
 	}
 	if f.Where == "" && len(places) > 0 {
-		f.Where = fmt.Sprintf("%s:%d", f.Cause.Path, places[0])
+		f.Where = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From)
+		f.Line = norm(strings.Split(text, "\n")[places[0].From-1])
 	}
 	if f.Where == "" {
 		var removed []string
@@ -476,7 +483,7 @@ func found(repo string, st state, lens string, v any) (Finding, string) {
 			removed = append(removed, l.Text)
 		}
 		if at := locate(removed, f.Cause.Quote); len(at) > 0 {
-			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, st.Change.Removed[f.Cause.Path][at[0]-1].At), true
+			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, st.Change.Removed[f.Cause.Path][at[0].From-1].At), true
 		}
 	}
 	if f.Where == "" {
@@ -515,7 +522,7 @@ func material(repo string, st state, f Finding) string {
 	if f.Symptom != nil {
 		text, _ := fileAt(repo, st.Head, f.Symptom.Path)
 		if p := locate(strings.Split(text, "\n"), f.Symptom.Quote); len(p) > 0 {
-			around(*f.Symptom, p[0])
+			around(*f.Symptom, p[0].From)
 		}
 	}
 	if diff, err := git(repo, "diff", "-U3", "--no-color", "--no-ext-diff", st.Base, st.Head, "--", f.Cause.Path); err == nil && diff != "" {
@@ -748,9 +755,10 @@ func summaryComment(v Review, issues int) string {
 }
 
 // issueKey names a finding outside the change the same way each time it is
-// found: its file, and its cause's words.
+// found, however much of it a lens quotes: its file, and the line its cause
+// starts at, as it reads.
 func issueKey(f Finding) string {
-	sum := sha256.Sum256([]byte(f.Cause.Path + "\n" + norm(strings.ReplaceAll(f.Cause.Quote, "\n", " "))))
+	sum := sha256.Sum256([]byte(f.Cause.Path + "\n" + f.Line))
 	return f.Cause.Path + "#" + hex.EncodeToString(sum[:])[:8]
 }
 

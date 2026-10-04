@@ -17,8 +17,9 @@ Read the change, then the files it changes. Report each defect as a
 - `title` in a few words, `why`: how it fails, and when. `fix`: what would
   fix it, in a sentence.
 
-Report what you find anywhere in what you are given, in the change or not:
-the engine tells which belongs to the change from where its cause lies.
-A defect the change did not cause is still worth an issue.
+Read the files given whole, not only the lines the change touches: a
+defect in them the change did not cause — there before it — is reported
+too, as any other. The engine tells which belongs to the change from where
+its cause lies, and sends the others to an issue, not to the author.
 
 Nothing found is an answer too: `[]`.
