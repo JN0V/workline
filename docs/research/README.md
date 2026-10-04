@@ -19,6 +19,7 @@ stars and dates were checked against the GitHub API that day.
 | [product-owner.md](product-owner.md) | Focused: what forges, bots and AI triage tools do for a backlog, and what a product owner role would add |
 | [self-evaluation.md](self-evaluation.md) | Focused: how automation and agents are judged in production, and how systems that improve their own agents keep people in control |
 | [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
+| [code-review.md](code-review.md) | Focused: how AI code reviewers find, verify and post findings, and what a reviewer role takes from them |
 
 ## Method
 
