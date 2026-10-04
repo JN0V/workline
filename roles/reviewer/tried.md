@@ -123,4 +123,10 @@ apply job on v0.9.0, the first release with the reviewer.
   the same: the files are listed over the whole range, so the lens got an
   empty diff and .workline/config.yaml whole, the first commit's file, and
   its finding was on lines no commit touched. A push changing no code
-  should ask nobody and record its commits.
+  should ask nobody and record its commits. **Fixed**: the files a lens
+  gets are those the new commits change; none that is code, nobody is
+  asked, the commits recorded and the turn kept
+  (`push-without-code-asks-nobody`, `lens-given-new-commits-files`).
+- **Push 3** (this file and status.md): the tests lens, third in turn
+  (2.2k in, 0.15k out), the same defect; one comment still, `runs=3`; no
+  issue opened.
