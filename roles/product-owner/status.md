@@ -2,9 +2,10 @@
 
 **In one line:** it keeps a backlog on GitHub for real — reads it a share a
 run, closes duplicates, proposes what the code made obsolete, names an
-issue's code, sets milestones, finds a closing a person undid — tried live
-on JN0V/workline-sandbox and on copies of two real backlogs; not yet in
-anyone's CI (no release holds it), and refining is not built (tried.md).
+issue's code, sets milestones, finds a closing a person undid, refines an
+issue to `ready` and asks its reporter what is missing — nightly in
+DomoticsCore's CI since v0.5.0 (its roadmap imported, 56 issues), refining
+tried live there and on JN0V/workline-sandbox, not released yet (tried.md).
 
 ## Built and tried with a real agent
 
@@ -19,6 +20,7 @@ anyone's CI (no release holds it), and refining is not built (tried.md).
 | Issues put in the next releases' milestones | a copy of DomoticsCore |
 | A backlog file, whatever its form, opened as issues (`workline issues import`) | workline's BACKLOG.md, 30 issues, one call |
 | A true issue on the code a fix touched left alone; a look-alike left open | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
+| Refining: Scope and Verification from the code, Need and Validation drafted; the drafts accepted by a person, the issue moved to `ready` by the engine's check; a vague issue's reporter asked, the answer read, the issue refined | JN0V/workline-sandbox, live (#6, #7); DomoticsCore, live (#163, #167, #168, #171, #172) |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones, and
@@ -26,12 +28,11 @@ GitLab's whole backlog, untried live.
 
 ## Missing, in the order to build it
 
-1. **In CI**: a release holding it, then the schedule line on a real
-   project (docs/ci.md, "The product owner"); DomoticsCore, with the
-   person's yes.
-2. **Refining**: an issue's Scope and Verification written, moved to
-   `ready` when its Need and Validation are a person's; split into
-   sub-issues; the reporter asked what is missing.
+1. **Released with refining**: v0.5.0 runs the PO nightly on DomoticsCore
+   without it.
+2. **Refining, what is left**: splitting a need into sub-issues;
+   renaming; asking again after an answer; an outsider's issue proposed
+   to its reporter rather than in the report; GitLab's write access.
 3. **Ordering** the backlog, moving what slipped.
 4. **Obsolete closed, not only proposed**: announced first, closed at the
    next run if nobody answered and a second judge agreed.

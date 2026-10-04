@@ -165,3 +165,40 @@ DomoticsCore itself, without `--apply`: 7,580 lines, 32 shares, Sonnet.
   by its title (`import-capped-kept-proposed`). The five were opened by one
   more run on that share (`run-role product-owner --event import`), #187 to
   #191: 56 issues from the roadmap.
+
+## 2026-10-04 — refining, live on DomoticsCore and on the sandbox, Sonnet
+
+The engine on this machine, `run-role product-owner --event schedule
+--forge github`, on DomoticsCore's imported issues, then on two issues
+opened on JN0V/workline-sandbox for it.
+
+- **No refine at all, three runs**, each found and fixed:
+  - the imported issues name their files bare (`MQTT_impl.h:8`) or name
+    only a symbol (`MQTTPublishEvent`), and the line the import ends with,
+    and its hidden key, named the roadmap itself — the agent got no code
+    and said so (`code-named-by-its-file-name`, `code-named-by-a-symbol`;
+    GitHub's bodies end their lines in CRLF, which the first fix missed);
+  - with the code, the prompt was 32.7k tokens, over the role's 32k: the
+    budget is 40k now;
+  - then, in the agent's own note: "the answer format offers no refine or
+    ask" — the output contract had no shape for them. A test now holds
+    every intention of the catalogue to have one
+    (`TestEveryIntentionHasItsShape`).
+- **DomoticsCore** (66.7k tokens in, 3.2k out): #163, #167, #168, #171,
+  #172 refined — Scope and Verification from the code (a native test, the
+  hook it can use), Need and Validation drafted; #173 past the cap of 5,
+  proposed. The drafts began "Draft:", which the engine's line says
+  already: the instruction asks for the text alone.
+- **The sandbox**, each run 5 to 7k tokens in: #6 (clear) refined; its two
+  drafts accepted by hand (their lines deleted); the next run read it
+  again for its body changed, proposed `ready`, the engine checked it and
+  labelled it `workline:ready`. #7 ("It is slow sometimes") asked four
+  questions, `@JN0V` named; answered, the next run drafted its Need and
+  Validation from the answer. **Defect found, fixed**: the file the answer
+  named was not given — only the body was searched (`code-named-in-a-comment`);
+  rerun, #7 got its Scope and Verification, its drafts left alone.
+- A run seconds after the one that wrote the issues' state comments did
+  not see them — GitHub listed the comments late — and wrote them again,
+  in place: no duplicate, the run lost.
+- Not tried: `ready` on an outsider's issue (proposed; conformance only),
+  an issue whose reporter never answers.
