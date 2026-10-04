@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
@@ -91,8 +92,10 @@ func Pre(runDir, repo string) int {
 		st       *backlog.State
 		comments []string
 	}
-	var never, changed, rest []due
+	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
+	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
 	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
+	capped := backlog.CappedByRole(b, role, open)   // an act proposed only for the cap
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
@@ -123,6 +126,8 @@ func Pre(runDir, repo string) int {
 			continue
 		}
 		switch {
+		case slices.Contains(capped, is.ID):
+			again = append(again, due{is, st, comments})
 		case st.Judged == "":
 			never = append(never, due{is, st, comments})
 		case sourcesChanged(repo, st),
@@ -137,7 +142,7 @@ func Pre(runDir, repo string) int {
 	// Those never read first, then those whose code changed since; an issue
 	// whose code did not change is not read again (ADR-0018). Without an
 	// agent, nothing is read, and no issue is said to be.
-	toRead := append(never, changed...)
+	toRead := append(append(again, never...), changed...)
 	if os.Getenv("WORKLINE_AI") == "none" {
 		toRead = nil
 	}
@@ -147,6 +152,7 @@ func Pre(runDir, repo string) int {
 			continue
 		}
 		judged++
+		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
 		writeIssue(&task, d.is, d.st, d.comments, files)
 		for _, f := range files {
@@ -158,6 +164,9 @@ func Pre(runDir, repo string) int {
 		read.Judged, read.Comments, read.Body = commit, backlog.PeopleComments(d.comments), backlog.BodyDigest(d.is.Body)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
+	}
+	if err := os.WriteFile(filepath.Join(runDir, "in", "issues-read"), []byte(strings.Join(readIDs, "\n")), 0o644); err != nil {
+		return fail(err)
 	}
 	if len(fallback) > 0 {
 		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {

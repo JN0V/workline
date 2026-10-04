@@ -36,7 +36,10 @@ names them.
 ## Reading
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name: those never read first, then those with
+lines of the code they name: first those an act was proposed on only
+because a run's cap was reached — though nothing changed on them, the act
+is decided again, and the proposal leaves the report once its issue is
+read —, then those never read, then those with
 something new since they were read — a commit touched their sources, a
 person commented (`comments` counts people's comments read), a person
 changed its body (`body`), or a person reopened what the role closed. An issue with nothing new is not read again,

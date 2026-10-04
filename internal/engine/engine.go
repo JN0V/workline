@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2118,7 +2119,15 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if !ok {
 		return nil, errors.New("this forge cannot list or close issues")
 	}
-	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes)
+	var read []int
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "issues-read")); err == nil {
+		for _, f := range strings.Fields(string(data)) {
+			if n, err := strconv.Atoi(f); err == nil {
+				read = append(read, n)
+			}
+		}
+	}
+	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes, read)
 	if err != nil {
 		return nil, err
 	}
