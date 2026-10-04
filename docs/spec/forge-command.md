@@ -1,8 +1,7 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 0560057
-judged: 697e3c8
-verified: agent:documentalist
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
 
@@ -18,7 +17,9 @@ forge: 'cmd:sh ci/forgejo/workline-forge.sh'
 
 or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
-[ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh).
+[ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It does
+not answer the backlog's operations yet (`issues`, `comments`, `close`,
+`milestones`, `set-milestone`), nor a merge request's `base`.
 
 ## One request, one run
 
@@ -68,7 +69,8 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 
 Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the
-branches under the prefix, sorted. There is no `release` operation:
+branches under the prefix, sorted; of `issues`, only the open ones, by
+number. There is no `release` operation:
 releases are the project's release tool's, not workline's (ADR-0017).
 
 ## What stays with the engine

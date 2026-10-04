@@ -1,9 +1,7 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml]
-checked: 82b6394
-judged: d77c33b
-verified: agent:documentalist
-judged-in-parts: 268cf0f
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Committer
 
@@ -22,6 +20,7 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 | `subject-length` | a subject over `subject-max` characters (72) |
 | `body-length` | a body over `body-max-lines` lines (12), not counting comments, blank lines and trailers |
 | `internal-code` | a reference that means nothing outside the project (`AC-3`) in the subject; it belongs in a trailer (`Refs: AC-3`). `internal-codes-allow` lists standard identifiers that look like one (`SHA-256`, `RFC-1234`) |
+| `possible-internal-code` | a code with no dash (`F207`, `internal-codes-maybe`), as often a public name (`ESP32`): the agent judges it, and may keep it; without AI it blocks; on commits already made, only a warning |
 
 Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! …`,
 `amend! …`) are not checked. A message that passes asks no agent.
@@ -74,7 +73,8 @@ commits are already made: the verdict lists them, to fix with `git rebase -i`.
 
 ## Judge (`post`, no AI)
 
-- The rewrite must pass the same checks.
+- The rewrite must pass the same checks, but `possible-internal-code`: the
+  agent judged it.
 - It must keep every trailer of the original (`Co-Authored-By:`, `Refs:`…), on
   its own line in the last paragraph (`trailer-dropped`).
 - A rewrite keeps the author's type, scope and breaking mark, when the header

@@ -1,9 +1,7 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
-checked: 5b8b173
-judged: 6013a50
-verified: agent:documentalist
-judged-in-parts: 4b7ade2
+checked: 1bab30d
+verified: agent:claude-code
 -->
 <h1>
   <picture>
@@ -18,7 +16,7 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->291<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->294<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|
@@ -27,7 +25,7 @@ Status (2026-09-24): used daily on its author's machine;
 | **Product owner** (beta): reads the open issues against the code; closes a duplicate, its original quoted, up to a cap a run; proposes closing what the code made obsolete; a closing undone puts that act back to a person (ADR-0018) | refining, ordering; not yet in any CI |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
-| **Forges**: GitHub (comments, a comment edited in place, and labels tried live), simulated; GitLab tried on gitlab.com; none, kept in the clone (`forge: local`, `workline issues`); any other plugged by a command (`cmd:`, a Forgejo and Gitea sample) — ADR-0016; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; GitHub issues not yet tried live; the Forgejo sample untried on a live instance |
+| **Forges**: GitHub (comments, a comment edited in place, labels and issues tried live), simulated; GitLab tried on gitlab.com; none, kept in the clone (`forge: local`, `workline issues`); any other plugged by a command (`cmd:`, a Forgejo and Gitea sample) — ADR-0016; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; GitHub milestones untried live; the Forgejo sample untried on a live instance |
 | Agents: Claude Code, and any command as `cmd:` | Codex, Antigravity, OpenCode built in; the generated model grid |
 
 ## Install

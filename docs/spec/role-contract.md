@@ -1,8 +1,7 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: d30d22a
-judged: 6013a50
-verified: agent:documentalist
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
 
@@ -23,7 +22,7 @@ roles/<name>/
   policy.md
   pre               deterministic: gathers input, decides whether a decision is needed
   post              deterministic: validates, decides the verdict
-  skills/           optional, Agent Skills format (SKILL.md)
+  skills/           optional, Agent Skills format (SKILL.md); not read yet
 ```
 
 `pre` and `post` are executables in any language. The engine runs them; it does
@@ -152,11 +151,12 @@ token), **apply** (trusted, no AI key).
    `WORKLINE_PARTS=answered`, to put them together — no AI — and write the
    one question that follows, `in/task.md`, or none. Only then is the digest
    recorded. A part that fails, or answers what is not a claim, is said
-   (`part-unanswered`), never read as an answer; without an agent, no part is
+   (`part-unanswered`), never read as an answer; one broken in places is read
+   claim by claim (`part-partly-read`); without an agent, no part is
    asked, and `pre` runs again with none answered.
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
-   (`model-grid.md`), receives the facets, `in/` and `task.md`. It runs read-only
+   (`model-grid.md`), receives the facets and `in/task.md`. It runs read-only
    and writes one file: `out/intentions.yaml`. The agent's proposals replace
    the fallback ones of the same kind — for patches, only those of the files
    the agent's patches touch; fallback proposals of other kinds stay. A
@@ -201,14 +201,14 @@ token), **apply** (trusted, no AI key).
    depends on them, then what only informs — whatever order the agent used,
    and each one is recorded in `out/run.yaml` (`applied:`) as it succeeds.
 6. **Again.** If `pre` took less than there was to do, it writes `in/more`:
-   the findings it defers, one `<rule> <where>` a line.
-   When the run passed and applied something, the engine then runs the role
+   the findings it defers, one `<rule> <where>` a line. When the run passed
+   and applied something other than a note, the engine then runs the role
    again, from step 2, in a new run folder that sees what was applied — five
    rounds at most. The result adds up the rounds' calls and applied
    intentions; a later round's finding replaces an earlier one of the same
-   rule and place, and a deferred one is dropped once the next round runs.
-   A run judged with `--no-apply` applies nothing a next round could see:
-   it goes round again only when, with `--open-merge-request`, the round
+   rule and place, and a deferred one is dropped once the next round runs. A
+   run judged with `--no-apply` applies nothing a next round could see: it
+   goes round again only when, with `--open-merge-request`, the round
    proposed a merge request for a task no earlier round of the run proposed
    (the key of `out/merge-request.yaml`). The next round is told that task
    waits, as one open on the forge, and takes up what was deferred — on a
@@ -219,10 +219,10 @@ token), **apply** (trusted, no AI key).
    **A cap on tokens.** A role setting `ai-max-tokens` caps what one run may
    spend, every round, part and retry together: the tokens in, cache
    included, and out, as the agents report them. It is checked before each
-   call against what was spent, never estimated, so the call that crosses
-   it is paid; the agent is asked nothing more, and the run says so
-   (`ai-max-tokens`, a warning) and passes: what is left waits for the next
-   run. 0 or unset, no cap.
+   call against what was spent, never estimated, so the call that crosses it
+   is paid; the agent is asked nothing more, and the run says so
+   (`ai-max-tokens`, a warning): what is left waits for the next run. 0 or
+   unset, no cap.
 
 ### When apply stops half-way
 
@@ -246,7 +246,9 @@ yet (`--no-apply`) are counted among them, and also given alone in
 `WORKLINE_PROPOSED_TASKS`. On a merge request a release tool opened (its
 branch one of `release.branches`), a role that runs on `release` is run on
 it: `WORKLINE_EVENT` is `release`, and `WORKLINE_RELEASE_BRANCH` names the
-branch (ADR-0017).
+branch (ADR-0017). A fix judged there is not pushed onto that branch, which
+the release tool rewrites: it goes to a merge request of its own into the
+release's base, and the release waits until it is merged (`fixed-elsewhere`).
 
 ### Exit codes
 

@@ -1,9 +1,7 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go]
-checked: d30d22a
-judged: 6013a50
-verified: agent:documentalist
-judged-in-parts: addaa0c
+checked: 545b60a
+verified: agent:claude-code
 ---
 # Several repositories — v1 (draft)
 
@@ -62,3 +60,8 @@ The dependent checks its sources; the sources do not notify it.
 A work item's scope may name paths in several repositories
 (`api:src/export/**`, `docs:guide/export.md`). Each repository's run applies the
 part that belongs to it; a patch is never applied across repositories.
+
+*Built so far: `repos`, sources and `checked` in other repositories, read
+by the documentalist, and a repository it cannot reach `blocked-external`.
+Not built: the central runner, an issue opened in another repository, and a
+scope across repositories.*

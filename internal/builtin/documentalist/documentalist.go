@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -280,6 +281,62 @@ var onMainSeen = map[string]anchored{}
 // headersOnly says whether a commit changed, under path, only the headers of
 // docs: recording who checked a doc changes nothing it says, and would
 // otherwise make the docs naming a folder of docs suspect at every check.
+// semver is a version number, as release tools write and bump them.
+var semver = regexp.MustCompile(`v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`)
+
+// versionsOnly says whether a commit changed path only by putting one
+// version number in place of another, line for line — a release tool's
+// bump (release-please's `x-release-please-version`, a manifest) — and
+// which versions it replaced.
+func versionsOnly(dir, commit, path string) (bool, []string) {
+	out, err := git(dir, "show", "--format=", "-U0", "--no-color", commit, "--", path)
+	if err != nil || out == "" {
+		return false, nil
+	}
+	var removed, added, old []string
+	for _, l := range strings.Split(out, "\n") {
+		switch {
+		case strings.HasPrefix(l, "---"), strings.HasPrefix(l, "+++"):
+		case strings.HasPrefix(l, "-"):
+			old = append(old, semver.FindAllString(l[1:], -1)...)
+			removed = append(removed, semver.ReplaceAllString(l[1:], "V"))
+		case strings.HasPrefix(l, "+"):
+			added = append(added, semver.ReplaceAllString(l[1:], "V"))
+		}
+	}
+	if len(removed) == 0 || len(removed) != len(added) {
+		return false, nil
+	}
+	for i := range removed {
+		if removed[i] != added[i] || !strings.Contains(removed[i], "V") {
+			return false, nil
+		}
+	}
+	return true, old
+}
+
+// dropBumps leaves out of a doc's commits ("%h %s" lines), on a release
+// tool's pull request, those that only bumped a version in path, unless the
+// doc quotes a version they replaced: the tool's own bump says nothing else
+// a doc describes, and would make the release's docs suspect at every
+// release. Elsewhere a bump is a change like any: the docs it touches are
+// judged (the evaluation's drifted-version-bump).
+func dropBumps(dir, commits, path, doc string) string {
+	if commits == "" || strings.HasPrefix(commits, "(") {
+		return commits
+	}
+	var kept []string
+	for _, l := range strings.Split(commits, "\n") {
+		hash, _, _ := strings.Cut(l, " ")
+		bump, old := versionsOnly(dir, hash, path)
+		quoted := slices.ContainsFunc(old, func(v string) bool { return strings.Contains(doc, strings.TrimPrefix(v, "v")) })
+		if !bump || quoted {
+			kept = append(kept, l)
+		}
+	}
+	return strings.Join(kept, "\n")
+}
+
 func headersOnly(dir, commit, path string) bool {
 	under := strings.TrimSuffix(path, "/")
 	files := commitFiles(dir, commit)
@@ -553,6 +610,9 @@ func Pre(runDir, repo string) int {
 				commits = fmt.Sprintf("(`checked` names %s, which %s does not hold, and no commit brought it there)", checked, where.rev)
 			} else if err == nil {
 				commits, err = changed(where.dir, checked, where.rev, path, anchor)
+				if err == nil && name == "" && os.Getenv("WORKLINE_RELEASE_BRANCH") != "" {
+					commits = dropBumps(where.dir, commits, path, tree.Docs[d.Path])
+				}
 			}
 			if _, ok := err.(external); ok {
 				fmt.Fprintln(os.Stderr, "documentalist:", err)
@@ -944,6 +1004,17 @@ doc when its reader really gained something to know.
 		}
 	}
 	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool { return f.Rule == "" })
+	// Once each finding says what became of its doc: those left to a person.
+	if i, ok := personIssue(findings, repo); ok {
+		file := filepath.Join(runDir, "in", "fallback.yaml")
+		fallback, err := intent.Read(file)
+		if err != nil {
+			return fail(err)
+		}
+		if err := intent.Write(file, append(fallback, i)); err != nil {
+			return fail(err)
+		}
+	}
 	if left.Len() > 0 { // the engine runs another round, once this one is applied
 		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte(left.String()), 0o644); err != nil {
 			return fail(err)
@@ -2072,5 +2143,57 @@ func trackingIssue(findings []verdict.Finding) (intent.Intention, bool) {
 	} else {
 		value["body"] = "These docs follow docs that changed, and are brought up to date at the moment their edge names — the release, by default — when the documentalist runs at the release (`workline route release`), before the release tool tags; until then, the release waits for them.\n\n" + list.String()
 	}
+	return intent.Intention{Kind: "issue", Value: value}, true
+}
+
+// forAPerson says whether a finding leaves its doc to a person: every note
+// that does ends by saying what "a person" does — reads it, judges it,
+// fixes the places refused — then moves `checked`.
+func forAPerson(f verdict.Finding) bool {
+	switch f.Rule {
+	case "suspect", "due", "stale":
+		return strings.Contains(f.Message, "a person ")
+	}
+	return false
+}
+
+// personIssue keeps, when gardening with a forge, one issue listing the
+// docs only a person can clear, each with why and what to do: what the
+// machine cannot do is said where the person looks, not left in a job's
+// log (principle 14). They stay suspect until cleared; those not judged
+// since their sources changed hold the next release (holdTheRelease).
+func personIssue(findings []verdict.Finding, repo string) (intent.Intention, bool) {
+	if os.Getenv("WORKLINE_FORGE") == "" || os.Getenv("WORKLINE_EVENT") != "schedule" {
+		return intent.Intention{}, false
+	}
+	why := map[string]string{}
+	var docs []string
+	for _, f := range findings {
+		if !forAPerson(f) {
+			continue
+		}
+		doc, _, _ := strings.Cut(f.Where, "#")
+		if _, seen := why[doc]; !seen {
+			docs = append(docs, doc)
+		}
+		lines := strings.Split(f.Message, "\n")
+		why[doc] = strings.Trim(lines[len(lines)-1], "()")
+	}
+	sort.Strings(docs)
+	value := map[string]any{"title": "Docs waiting for a person", "sticky": true}
+	if len(docs) == 0 {
+		value["body"], value["update-only"] = "No doc waits for a person: the documentalist judged every one it could.", true
+		return intent.Intention{Kind: "issue", Value: value}, true
+	}
+	head := "HEAD"
+	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--short", "HEAD").Output(); err == nil {
+		head = strings.TrimSpace(string(out))
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "The documentalist could not clear these docs by itself: they stay suspect until a person does, and those made suspect since the last release, unless judged since, hold the next one. For each one: read it whole against its sources (the ones its header names), fix what is wrong, then set `checked: %s` and `verified: human:<you>` in its header, and commit — on a branch, through a pull request. A doc too large for the agent can also be split or condensed, or its `sources` narrowed to the files it describes, so the agent judges it next time.\n\n", head)
+	for _, d := range docs {
+		fmt.Fprintf(&b, "- [ ] `%s` — %s\n", d, why[d])
+	}
+	value["body"] = b.String()
 	return intent.Intention{Kind: "issue", Value: value}, true
 }

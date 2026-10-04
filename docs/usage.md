@@ -1,8 +1,7 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: d30d22a
-judged: 6013a50
-verified: agent:documentalist
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Using workline
 
@@ -123,7 +122,7 @@ and links the line reports on every run are only counted. `git push
 | `.workline/config.yaml` | the project's settings, below |
 | `.workline/roles/<role>/<facet>` | a facet replacing the shipped one (`policy.md`, `instruction.md`…) |
 | `.workline/work/<id>.md` | a work item, without a forge |
-| `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels in its front matter, then its body and comments — never committed; `workline issues` reads them. With no forge (`none`), an issue a role opens is refused, as every write that needs a forge; in CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes |
+| `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels, milestone in its front matter, then its body and comments — never committed; `workline issues` reads them. With no forge (`none`), an issue a role opens is refused, as every write that needs a forge; in CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes |
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
 | `.workline/off` | empty: the global hook skips this repository |
 | `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push (ADR-0011); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |

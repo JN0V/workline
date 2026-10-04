@@ -1,9 +1,7 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: d30d22a
-judged: 6013a50
-verified: agent:documentalist
-judged-in-parts: 9b78c1e
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Model grid — v1 (draft)
 
@@ -29,7 +27,7 @@ model:
   within one provider, not scores: `light` is that provider's cheap, fast
   family, `frontier` its best.
 - **effort** — how long the model may think. Each agent maps it to its own
-  setting; values a model does not support are clamped to the nearest one.
+  setting; Claude reads `none` as `low`.
 - **tasks** — a kind of task that needs other thinking than the rest of the
   role, named by `pre` in `in/task-kind`: the documentalist judges a doc on
   `standard`, and condenses one on `frontier` (`tasks: {condense: {tier:
@@ -104,8 +102,8 @@ pinned only when a measurement shows the new one doing worse
 
 *Built so far: the record, the notice, and forcing one model or effort for
 every role (`--ai claude:<model>@<effort>`, also in `ai:`), which the
-evaluation uses to compare them. Not yet: the grid, pins per role; Claude's
-aliases stand for the tiers.*
+evaluation uses to compare them. Not yet: the grid, pins or forbidden models
+per project; Claude's aliases stand for the tiers.*
 
 ## Stepping up after failures
 

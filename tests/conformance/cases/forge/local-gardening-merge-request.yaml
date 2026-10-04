@@ -6,7 +6,7 @@ given:
 run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
 expect:
   status: pass
-  applied: [patch, issue]
+  applied: [patch, issue, issue]   # with the two kept issues, docs due and docs waiting for a person
   branches:
     workline/documentalist/duplicates-docs-faq-md-docs-sessions-md: {docs/faq.md: "See [how long a session lasts](sessions.md#how-long-a-session-lasts)."}
   files:
