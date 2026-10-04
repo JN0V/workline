@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/JN0V/workline/compare/v0.6.0...v0.7.0) (2026-10-04)
+
+
+### Features
+
+* **product-owner:** a person accepts the drafts with one label ([#114](https://github.com/JN0V/workline/issues/114)) ([f1e0400](https://github.com/JN0V/workline/commit/f1e0400e758fbb2be50e3d1569639af9b6ed6a66))
+
 ## [0.6.0](https://github.com/JN0V/workline/compare/v0.5.0...v0.6.0) (2026-10-04)
 
 
