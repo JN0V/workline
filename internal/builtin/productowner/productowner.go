@@ -262,6 +262,20 @@ func sections(body string) string {
 	return out
 }
 
+// byName is the one tracked file with this name, or "".
+func byName(name string, tracked map[string]bool) string {
+	found := ""
+	for f := range tracked {
+		if f == name || strings.HasSuffix(f, "/"+name) {
+			if found != "" {
+				return ""
+			}
+			found = f
+		}
+	}
+	return found
+}
+
 // trackedFiles lists the files of the commit the run is on.
 func trackedFiles(repo string) map[string]bool {
 	out, _ := exec.Command("git", "-C", repo, "ls-files").Output()
@@ -275,12 +289,17 @@ func trackedFiles(repo string) map[string]bool {
 var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
 
 // named lists the files an issue is about: its sources, then the paths its
-// title and body name that the commit holds, at most filesPerIssue.
+// title and body name that the commit holds, at most filesPerIssue. A file
+// named alone (`csv.go:5`, as a roadmap writes it) is the one file of the
+// commit with that name; a name two files share is not guessed.
 func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
 		p, _, _ = strings.Cut(p, "#")
 		p = strings.Trim(p, "./`'\"")
+		if !tracked[p] && !strings.Contains(p, "/") {
+			p = byName(p, tracked)
+		}
 		if tracked[p] && !slices.Contains(out, p) && len(out) < filesPerIssue {
 			out = append(out, p)
 		}
