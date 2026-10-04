@@ -24,6 +24,7 @@ type Issue struct {
 	Body      string   `json:"body"`
 	Labels    []string `json:"labels"`
 	Closed    bool     `json:"closed,omitempty"`
+	Reason    string   `json:"reason,omitempty"`    // why it was closed, when the forge says: completed, not_planned, duplicate
 	Milestone string   `json:"milestone,omitempty"` // the title of the milestone it is in, if any
 	Author    string   `json:"author,omitempty"`    // who opened it
 	Insider   bool     `json:"insider,omitempty"`   // its author has write access to the project; false when the forge does not say
@@ -60,6 +61,9 @@ type Forge interface {
 type Backlog interface {
 	// Issues lists the open issues, merge requests left out, by number.
 	Issues() ([]Issue, error)
+	// AllIssues lists the issues open and closed, merge requests left out,
+	// by number: a subject a role found is looked for in both (OpenOnce).
+	AllIssues() ([]Issue, error)
 	// Comments lists the comments on t, oldest first.
 	Comments(t Target) ([]string, error)
 	// Close closes an issue: as a duplicate of dup when dup > 0, else as

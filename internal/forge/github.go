@@ -64,9 +64,13 @@ func lines[T any](out []byte) ([]T, error) {
 	return all, nil
 }
 
-func (g *github) Issues() ([]Issue, error) {
-	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state=open&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association}")
+func (g *github) Issues() ([]Issue, error) { return g.issues("open") }
+
+func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
+
+func (g *github) issues(state string) ([]Issue, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\")}")
 	if err != nil {
 		return nil, err
 	}

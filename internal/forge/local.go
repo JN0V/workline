@@ -256,6 +256,19 @@ func (l *Local) Issues() ([]Issue, error) {
 	return out, nil
 }
 
+// AllIssues: the local forge keeps no close reason.
+func (l *Local) AllIssues() ([]Issue, error) {
+	items, err := l.Items("issue")
+	if err != nil {
+		return nil, err
+	}
+	var out []Issue
+	for _, it := range items {
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Insider: true, Closed: it.State != "open"})
+	}
+	return out, nil
+}
+
 func (l *Local) Comments(t Target) ([]string, error) {
 	it, err := l.Item(t.Kind, t.ID)
 	if err != nil {
