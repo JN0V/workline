@@ -80,47 +80,59 @@ func mechanical(c Change, s Settings, codes committer.Settings) ([]verdict.Findi
 	}
 	sort.Strings(files)
 	var out []verdict.Finding
-	for _, f := range files {
-		blockStart, blockLen, last := 0, 0, -1
-		flush := func() {
-			if s.CommentBlockMax > 0 && blockLen > s.CommentBlockMax {
-				out = append(out, verdict.Finding{Rule: "long-comment", Level: "warn", Where: fmt.Sprintf("%s:%d", f, blockStart),
-					Message: fmt.Sprintf("a comment of %d lines; the limit is %d: say what the code does in a few lines, and put the reasons in the docs", blockLen, s.CommentBlockMax)})
+	// A story may run over the lines of one comment ("Fields used / to
+	// drop"): it is looked for in the comment's lines joined.
+	tells := func(f string, lines []Line) {
+		joined, starts := "", []int{}
+		for _, l := range lines {
+			starts = append(starts, len(joined))
+			joined += l.Text + " "
+		}
+		for _, re := range story {
+			if loc := re.FindStringIndex(joined); loc != nil {
+				at := lines[0].At
+				for i, st := range starts {
+					if st <= loc[0] {
+						at = lines[i].At
+					}
+				}
+				out = append(out, verdict.Finding{Rule: "bug-story", Where: fmt.Sprintf("%s:%d", f, at),
+					Message: fmt.Sprintf("the comment tells the code's history (%q): say what the code does now; how it was, and the bug, belong in the commit message", strings.TrimSpace(joined[loc[0]:loc[1]]))})
+				return
 			}
-			blockLen = 0
+		}
+	}
+	for _, f := range files {
+		var block []Line // whole-line comments, one after the other
+		flush := func() {
+			if s.CommentBlockMax > 0 && len(block) > s.CommentBlockMax {
+				out = append(out, verdict.Finding{Rule: "long-comment", Level: "warn", Where: fmt.Sprintf("%s:%d", f, block[0].At),
+					Message: fmt.Sprintf("a comment of %d lines; the limit is %d: say what the code does in a few lines, and put the reasons in the docs", len(block), s.CommentBlockMax)})
+			}
+			if len(block) > 0 {
+				tells(f, block)
+			}
+			block = nil
 		}
 		for _, l := range c.Added[f] {
 			text, ok, whole := comment(f, l.Text)
-			if !whole { // a block is whole-line comments, one after the other
+			if !whole || len(block) > 0 && block[len(block)-1].At != l.At-1 {
 				flush()
-				last = -1
-			} else {
-				if last != l.At-1 {
-					flush()
-				}
-				if blockLen == 0 {
-					blockStart = l.At
-				}
-				blockLen++
-				last = l.At
 			}
 			if !ok {
 				continue
 			}
-			where := fmt.Sprintf("%s:%d", f, l.At)
-			for _, re := range story {
-				if m := re.FindString(text); m != "" {
-					out = append(out, verdict.Finding{Rule: "bug-story", Where: where,
-						Message: fmt.Sprintf("the comment tells the code's history (%q): say what the code does now; how it was, and the bug, belong in the commit message", m)})
-					break
-				}
+			if whole {
+				block = append(block, Line{f, l.At, text})
+			} else {
+				tells(f, []Line{{f, l.At, text}})
 			}
 			found, err := committer.InternalCodes(text, codes)
 			if err != nil {
 				return nil, err
 			}
 			for _, code := range found {
-				out = append(out, verdict.Finding{Rule: "internal-code", Where: where,
+				out = append(out, verdict.Finding{Rule: "internal-code", Where: fmt.Sprintf("%s:%d", f, l.At),
 					Message: fmt.Sprintf("%q means nothing to a reader of the code: say what it refers to", code)})
 			}
 		}

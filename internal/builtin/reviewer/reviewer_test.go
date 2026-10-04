@@ -46,6 +46,18 @@ func TestLongCommentCountsWholeLines(t *testing.T) {
 	}
 }
 
+func TestStoryOverTwoLines(t *testing.T) {
+	c := Change{Added: map[string][]Line{"a.go": {
+		{"a.go", 7, "// Args splits the range. Fields used"},
+		{"a.go", 8, "// to drop the empty words."},
+		{"a.go", 9, "func Args() {}"},
+	}}}
+	found, err := mechanical(c, Settings{StoryWords: []string{`\bused to\b`}}, committer.Settings{})
+	if err != nil || len(found) != 1 || found[0].Rule != "bug-story" || found[0].Where != "a.go:7" {
+		t.Errorf("a story over two lines of one comment: %v %v", found, err)
+	}
+}
+
 func TestLocate(t *testing.T) {
 	lines := []string{"func A() {", "\treturn  x / y", "}", "func B() {", "\treturn x / y", "}"}
 	if got := locate(lines, "return x / y"); !slices.Equal(got, []int{2, 5}) {

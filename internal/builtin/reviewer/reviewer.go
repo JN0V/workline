@@ -54,17 +54,18 @@ type Settings struct {
 
 // Finding is one defect a lens reported, once its quotes were found again.
 type Finding struct {
-	Lens     string `json:"lens"`
-	Severity string `json:"severity"` // important or nit
-	Title    string `json:"title"`
-	Why      string `json:"why"`
-	Fix      string `json:"fix,omitempty"`
-	Cause    Quote  `json:"cause"`
-	Symptom  *Quote `json:"symptom,omitempty"`
-	Where    string `json:"where"`   // the cause's file and line
-	Related  bool   `json:"related"` // the cause lies in the change: the author fixes it
-	Verified string `json:"verified,omitempty"`
-	Level    string `json:"independence,omitempty"`
+	Lens     string   `json:"lens"`
+	Severity string   `json:"severity"` // important or nit
+	Title    string   `json:"title"`
+	Why      string   `json:"why"`
+	Fix      string   `json:"fix,omitempty"`
+	Cause    Quote    `json:"cause"`
+	Symptom  *Quote   `json:"symptom,omitempty"`
+	Where    string   `json:"where"`          // the cause's file and line
+	Related  bool     `json:"related"`        // the cause lies in the change: the author fixes it
+	Also     []string `json:"also,omitempty"` // other findings on the same line, merged into this one: lens and title
+	Verified string   `json:"verified,omitempty"`
+	Level    string   `json:"independence,omitempty"`
 }
 
 // Quote is a place a finding quotes.
@@ -343,14 +344,22 @@ func readLenses(runDir, repo string, s Settings) int {
 					Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})
 				continue
 			}
-			if dup := slices.IndexFunc(slices.Concat(c.Related, c.Outside), func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
-				continue // two lenses on the same line: the first is kept
-			}
+			list := &c.Outside
 			if f.Related {
-				c.Related = append(c.Related, f)
-			} else {
-				c.Outside = append(c.Outside, f)
+				list = &c.Related
 			}
+			// Two findings on one line are merged, never one dropped: the
+			// important one leads, the other said beside it.
+			if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
+				o := &(*list)[dup]
+				if f.Severity == "important" && o.Severity != "important" {
+					f.Also, *o = append(o.Also, o.Lens+": "+o.Title), f
+				} else {
+					o.Also = append(o.Also, f.Lens+": "+f.Title)
+				}
+				continue
+			}
+			*list = append(*list, f)
 		}
 	}
 	if unavailable > 0 && unavailable == len(st.Lenses) {
@@ -676,6 +685,9 @@ func message(f Finding) string {
 	}
 	if f.Symptom != nil {
 		m += fmt.Sprintf(" (shows at %s)", f.Symptom.Path)
+	}
+	if len(f.Also) > 0 {
+		m += " (also found on this line — " + strings.Join(f.Also, "; ") + ")"
 	}
 	if f.Verified != "" {
 		m += " (" + f.Verified + ")"
