@@ -117,7 +117,13 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	if op.Triage {
 		o.opened++
 	}
-	body := fmt.Sprintf("%s\n\nOpened%s by the %s role.\n\n%s", strings.TrimRight(op.Body, "\n"), op.From, op.Role, forge.Marker("opened-by="+op.Role))
+	body := fmt.Sprintf("%s\n\nOpened%s by the %s role.", strings.TrimRight(op.Body, "\n"), op.From, op.Role)
+	if op.Triage {
+		// A finding of the role's own, which the product owner reads as
+		// that role's draft (OpenedBy); an item imported from a file is
+		// a person's words, and is not marked so.
+		body += "\n\n" + forge.Marker("opened-by="+op.Role)
+	}
 	id, err := o.f.OpenIssue(strings.TrimSpace(op.Title), body, forge.Marker(op.Key))
 	if err != nil {
 		return "", 0, err
@@ -136,7 +142,8 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	return Opened, id, o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
 }
 
-// OpenedBy is the role that opened an issue through Openings, or "".
+// OpenedBy is the role that opened an issue on a finding of its own
+// through Openings, or "".
 func OpenedBy(body string) string {
 	_, rest, ok := strings.Cut(body, "<!-- workline:opened-by=")
 	if !ok {
