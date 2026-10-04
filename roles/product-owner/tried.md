@@ -154,3 +154,14 @@ DomoticsCore itself, without `--apply`: 7,580 lines, 32 shares, Sonnet.
   first run had found were left out this time (BUG-94, CI-7, CI-16): the
   agent's variance, not the lines given. Not fixed: an import run again
   opens only what no open issue holds, so a second run picks them up.
+- **Applied** (`--apply`), 1.24M tokens in: 52 issues opened, JN0V/DomoticsCore
+  #134 to #186, the report #135. MEM-1 opened though the file says it is done
+  (the "Resolved in v2.0.1" table, the tracking summary): the agent's miss,
+  closed by hand with those lines quoted. **Two defects, fixed**: the share
+  holding the LO table had 35 items, `open` capped at 30 — the five past it
+  were proposed, then dropped from the report by the next share, having
+  no issue number to stay by; and the `act-cap` finding named them "#0".
+  A proposed open is now kept until an open issue holds its text, and named
+  by its title (`import-capped-kept-proposed`). The five were opened by one
+  more run on that share (`run-role product-owner --event import`), #187 to
+  #191: 56 issues from the roadmap.
