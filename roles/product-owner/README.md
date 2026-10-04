@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 551c43d
+checked: 9313a65
 verified: agent:claude-code
 ---
 # Product owner
@@ -18,7 +18,8 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    never read, then those whose code changed, that someone commented on
    or edited, or reopened after it closed them, since read; each with its
    state comment (its sources, the commit it was last confirmed and read at),
-   who opened it, which of its four sections it has, and the code it names —
+   who opened it — a workline role's issue named as that role's draft to
+   refine —, which of its four sections it has, and the code it names —
    by path, by a file's name alone, by a symbol quoted as code, in its body
    or a person's comment — up to `code-lines-max` lines in all; up to six
    others on the same code whole, the rest by title. An issue with no state
@@ -55,6 +56,12 @@ agent, otherwise, only the state comments are written. On `import`,
 share at a time — with the lines elsewhere in the file that name its
 items' ids, where a file often says what is done — and opens each item
 still to do as an issue quoting it, never twice (`open`); without `--apply`, it only says what it would open.
+
+Every role opens an issue through one way the engine keeps for the
+product owner (ADR-0018; docs/spec/backlog-acts.md, "Opening issues"): a
+key per subject, an issue open or closed holding it never opened again,
+the role named, `needs-triage`, a cap a run (`issues-max`); the product
+owner reads it from its next run.
 
 ## Settings
 

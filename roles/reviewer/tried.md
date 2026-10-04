@@ -137,3 +137,25 @@ apply job on v0.9.0, the first release with the reviewer.
   as new. One nit on the change, three findings the judge refused; the
   comment edited in place, `runs=4`; no issue opened. The documentalist's
   commit that followed was not judged again (`Workline-Role:`).
+
+## 2026-10-04 — the one way to open issues, on JN0V/workline-sandbox, live
+
+The engine of this branch, `workline review --base review-base --lenses
+correctness --forge github --ai claude` on `review-try` (pull request #8's
+commits), the local record set aside so the lens is asked again. Issue #9
+was opened by v0.9.0, its key in the older form (`issue=reviewer/…`).
+
+- **Run 1**, #9 open: `Expired` found again, under another title; the
+  engine keyed it from the line it quotes — the same key — and opened
+  nothing, wrote nothing on #9 (4.2k in, 0.5k out; one judge, 3.4k in,
+  0.2k out).
+- **#9 closed as completed** by hand, then **run 2**: found again; one
+  comment on #9, "Found again by the reviewer role at 5fe3b28", #9 left
+  closed, no issue opened, the run saying so (`issue-closed`) (4.2k in,
+  0.5k out; two judges, 6.9k in, 0.4k out).
+- **Run 3**: found again; nothing more written on #9 — said once (4.2k
+  in, 0.3k out; one judge, 3.4k in, 0.2k out).
+
+#9 reopened after, as it was. Tokens: about 26k in, 2.1k out in all.
+Not tried live: closed as not planned (conformance only), two roles on one
+line, the cap.

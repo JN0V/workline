@@ -21,6 +21,7 @@ released in v0.9.0.
 | Warn until measured; caps; an agent unreachable | `new-ai-rules-warn`, `findings-capped-rest-counted`, `agent-unreachable-is-blocked-external` |
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
+| An issue outside the change opened through the one way every role shares: a subject an issue holds, open or closed, not opened again (ADR-0018) | backlog `issue-*` cases; the sandbox, live (#9) |
 
 Conformance: tests/conformance/cases/reviewer.
 
@@ -37,11 +38,9 @@ Conformance: tests/conformance/cases/reviewer.
 4. **Inline comments** on the forge's own review (#81: the bot's identity).
 5. **Every lens once when a merge request becomes ready**, from the
    templates (`--input lenses=all` exists; no template passes it yet).
-6. **A closed issue's key**: only open issues are looked at, so a subject a
-   person closed may be opened again.
-7. **The tests lens outside the change**: a test missing for code the
+6. **The tests lens outside the change**: a test missing for code the
    change did not touch was opened as an issue (tried.md); whether it
    should be is for #90's measure.
-8. **The judge's material**: thirty lines around the cause; it refused a
+7. **The judge's material**: thirty lines around the cause; it refused a
    true finding whose evidence lay further (tried.md). The functions the
    cause calls or is called by, given whole, are the next step.
