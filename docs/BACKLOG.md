@@ -129,6 +129,16 @@ last.
 
 ### Engine and CI
 
+- **A derived block on a release tool's pull request.** On a release pull
+  request every fix goes to a merge request of its own into the base
+  (ADR-0017), but a derived block quoting a version is a function of the
+  release branch: fixed on the base, it would say the next version before
+  the release and flip back. Found making DomoticsCore's README follow its
+  versions, which took live badges and release-please's own marker
+  instead. To decide: regenerate derived blocks on the release branch
+  itself (the tool's rewrite loses them, the next run puts them back), or
+  leave them to the merge; and a version quoted only in a derived block
+  should make no doc suspect (a case was written, then set aside).
 - **Granularity of a task's scope.** The scope comes from the `ready` work item
   (routing spec). Still open: paths, modules or components, and how a module is
   declared.

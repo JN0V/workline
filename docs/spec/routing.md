@@ -38,7 +38,8 @@ Verification is what the line checks on its own; validation is what a person
 decides at the end. Writing both before starting is what keeps the machine
 from grading its own work. The engine checks that the four are present and
 not empty; it does not judge their quality. A person moves an item to
-`ready`; no role does yet. Development roles only take `ready` items, and
+`ready`, or the product owner does once Need and Validation are a person's
+(docs/spec/backlog-acts.md, "Refining to ready"). Development roles only take `ready` items, and
 the item's **scope** becomes the run's scope (see "Stay on the task" in the
 role contract). *Not built yet: the scope is given with `--scope`; no role
 takes items yet.*
@@ -123,4 +124,4 @@ the move to `ready`, and its check; transitions are not logged yet.*
 ## Not in this version
 
 The developer, reviewer and tester roles, which will consume `ready` items;
-refining items, which the product owner does not do yet.
+splitting an item into sub-issues, which the product owner does not do yet.

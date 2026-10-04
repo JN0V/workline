@@ -1,0 +1,10 @@
+- refine:
+    issue: 9
+    scope: "WriteRows in src/export/csv.go."
+    sources: [src/export/csv.go]
+    need: "A need of the agent's."
+    why: "Scope missing."
+- refine:
+    issue: 10
+    need: "Again."
+    why: "Every section is there."

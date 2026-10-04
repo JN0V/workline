@@ -21,6 +21,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 const (
@@ -119,7 +120,8 @@ func Pre(runDir, repo string) int {
 		case st.Judged == "":
 			never = append(never, due{is, st, comments})
 		case sourcesChanged(repo, st),
-			backlog.PeopleComments(comments) != st.Comments, // someone wrote since it was read
+			backlog.PeopleComments(comments) != st.Comments,         // someone wrote since it was read
+			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
 			slices.Contains(reopened, is.ID):
 			changed = append(changed, due{is, st, comments})
 		default:
@@ -139,7 +141,7 @@ func Pre(runDir, repo string) int {
 			continue
 		}
 		judged++
-		files := named(d.is, d.st, tracked)
+		files := named(repo, d.is, d.st, d.comments, tracked)
 		writeIssue(&task, d.is, d.st, d.comments, files)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
@@ -147,7 +149,7 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		read := *d.st
-		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
+		read.Judged, read.Comments, read.Body = commit, backlog.PeopleComments(d.comments), backlog.BodyDigest(d.is.Body)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 	}
@@ -169,7 +171,7 @@ func Pre(runDir, repo string) int {
 	var related strings.Builder
 	shown := 0
 	for _, d := range rest {
-		files := named(d.is, d.st, tracked)
+		files := named(repo, d.is, d.st, d.comments, tracked)
 		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
 			shown++
 			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
@@ -205,6 +207,14 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	if is.Milestone != "" {
 		fmt.Fprintf(b, "Milestone: %s\n", is.Milestone)
 	}
+	if is.Author != "" {
+		outside := ""
+		if !is.Insider {
+			outside = ", without write access to the project"
+		}
+		fmt.Fprintf(b, "Opened by: %s%s\n", is.Author, outside)
+	}
+	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
@@ -226,6 +236,46 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	}
 }
 
+// sections says which of the four sections an issue's body has, and which
+// are drafts no person made theirs yet.
+func sections(body string) string {
+	have := work.Sections(body)
+	var there, missing []string
+	for _, name := range backlog.Sections {
+		text := strings.TrimSpace(have[name])
+		switch {
+		case text == "":
+			missing = append(missing, name)
+		case strings.Contains(text, backlog.DraftMarker):
+			there = append(there, name+" (draft)")
+		default:
+			there = append(there, name)
+		}
+	}
+	out := "none"
+	if len(there) > 0 {
+		out = strings.Join(there, ", ")
+	}
+	if len(missing) > 0 {
+		out += "; missing: " + strings.Join(missing, ", ")
+	}
+	return out
+}
+
+// byName is the one tracked file with this name, or "".
+func byName(name string, tracked map[string]bool) string {
+	found := ""
+	for f := range tracked {
+		if f == name || strings.HasSuffix(f, "/"+name) {
+			if found != "" {
+				return ""
+			}
+			found = f
+		}
+	}
+	return found
+}
+
 // trackedFiles lists the files of the commit the run is on.
 func trackedFiles(repo string) map[string]bool {
 	out, _ := exec.Command("git", "-C", repo, "ls-files").Output()
@@ -236,15 +286,31 @@ func trackedFiles(repo string) map[string]bool {
 	return files
 }
 
+// provenance is the line the engine ends an imported issue with.
+var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.\r?$`)
+
+// marker is the engine's hidden text in a body: the file it was imported
+// from, a key.
+var marker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
+
+// symbol is a name of the code an issue quotes as code: `WriteRows`,
+// `Core::publish()`.
+var symbol = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)(?:\\(\\))?`")
+
 var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
 
 // named lists the files an issue is about: its sources, then the paths its
-// title and body name that the commit holds, at most filesPerIssue.
-func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
+// title and body name that the commit holds, at most filesPerIssue. A file
+// named alone (`csv.go:5`, as a roadmap writes it) is the one file of the
+// commit with that name; a name two files share is not guessed.
+func named(repo string, is forge.Issue, st *backlog.State, comments []string, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
 		p, _, _ = strings.Cut(p, "#")
 		p = strings.Trim(p, "./`'\"")
+		if !tracked[p] && !strings.Contains(p, "/") {
+			p = byName(p, tracked)
+		}
 		if tracked[p] && !slices.Contains(out, p) && len(out) < filesPerIssue {
 			out = append(out, p)
 		}
@@ -252,10 +318,49 @@ func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string 
 	for _, s := range st.Sources {
 		add(s)
 	}
-	for _, m := range pathLike.FindAllString(is.Title+"\n"+is.Body, -1) {
+	// The file an issue was imported from is where it was written, not
+	// the code it is about.
+	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
+	for _, c := range comments {
+		if !strings.Contains(c, "<!-- workline:") { // a person's: an answer may name the code
+			body += "\n" + c
+		}
+	}
+	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
+	// A symbol quoted as code: the file of the commit that holds it, when
+	// one or two do, docs left out — the issue's code, found for it.
+	for _, m := range symbol.FindAllStringSubmatch(is.Title+"\n"+body, -1) {
+		name := m[1]
+		if i := strings.LastIndex(name, "::"); i >= 0 {
+			name = name[i+2:]
+		}
+		if len(out) >= filesPerIssue || len(name) < 4 {
+			break
+		}
+		for _, f := range holding(repo, name) {
+			add(f)
+		}
+	}
 	return out
+}
+
+// holding lists the files of the commit holding a name, as a word, docs
+// left out; none when more than two do: too common to tell.
+func holding(repo, name string) []string {
+	out, err := exec.Command("git", "-C", repo, "grep", "-l", "-w", "-F", name, "HEAD", "--", ".", ":!*.md").Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		files = append(files, strings.TrimPrefix(l, "HEAD:"))
+	}
+	if len(files) > 2 {
+		return nil
+	}
+	return files
 }
 
 // writeCode gives each file named, whole up to codeLines, with its last

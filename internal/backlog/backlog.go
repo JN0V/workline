@@ -16,6 +16,7 @@ import (
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // Modes of an act.
@@ -31,6 +32,7 @@ type State struct {
 	Confirmed string   `yaml:"confirmed"`
 	Judged    string   `yaml:"judged,omitempty"`   // the commit the role last read it at
 	Comments  int      `yaml:"comments,omitempty"` // people's comments when it was last read
+	Body      string   `yaml:"body,omitempty"`     // a digest of its body, when the role last read or wrote it
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -81,7 +83,8 @@ func FormatState(s State) string {
 		Confirmed string   `yaml:"confirmed"`
 		Judged    string   `yaml:"judged,omitempty"`
 		Comments  int      `yaml:"comments,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments})
+		Body      string   `yaml:"body,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -126,11 +129,19 @@ type Proposal struct {
 	Title       string   `yaml:"title,omitempty"` // an issue to open
 	Quote       *Quote   `yaml:"quote"`
 	Why         string   `yaml:"why"`
+	// Refining: the sections written, Need and Validation as drafts; Added,
+	// the engine's, says which the body did not have yet.
+	Scope        string   `yaml:"scope,omitempty"`
+	Verification string   `yaml:"verification,omitempty"`
+	Need         string   `yaml:"need,omitempty"`
+	Validation   string   `yaml:"validation,omitempty"`
+	Added        []string `yaml:"added,omitempty"`
+	Questions    string   `yaml:"questions,omitempty"` // asking the reporter
 }
 
 // Kind is the kind of act, as settings name it.
 func (c Proposal) Kind() string {
-	if c.Do == "sources" || c.Do == "milestone" || c.Do == "open" {
+	if c.Do != "close" {
 		return c.Do
 	}
 	return "close-" + c.Reason
@@ -155,7 +166,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "sources", "milestone"}
+var Kinds = []string{"open", "close", "sources", "milestone", "refine", "ready", "ask"}
 
 // Decision is what becomes of one act.
 type Decision struct {
@@ -173,8 +184,9 @@ type Plan struct {
 	Report    int               `yaml:"report"`  // the report issue, 0 when none is open yet
 	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found, proposals settled
 	open      map[int]bool      // the open issues, read once
-	bodies    []string          // their bodies, to find an import again
-	seen      map[string]bool   // the imports this run decided
+	issues    map[int]forge.Issue
+	bodies    []string        // their bodies, to find an import again
+	seen      map[string]bool // the imports this run decided
 }
 
 // Setting is a kind of act's mode and cap.
@@ -223,8 +235,8 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 	slices.Sort(indexes)
 	for _, i := range indexes {
 		c := closes[i]
+		mode, why := p.check(f, repo, role, &c)
 		d := Decision{Index: i, Mode: Off, Act: c}
-		mode, why := p.check(f, repo, role, c)
 		switch {
 		case why != "":
 			dropped(c, mode, why)
@@ -236,6 +248,13 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			d.Mode = s.Mode
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
+			}
+			if d.Mode == Act && c.Do == "ready" && !p.issues[c.Issue].Insider {
+				// The reporter has no write access: the issue is theirs
+				// (ADR-0018), moving it is for a person to decide.
+				d.Mode = Propose
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "reporter-outside", Where: c.where(),
+					Message: "opened by someone without write access to the project: moving it to ready is proposed, not done"})
 			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
 				d.Mode = Propose
@@ -302,9 +321,10 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
-	p.open, p.seen = map[int]bool{}, map[string]bool{}
+	p.open, p.seen, p.issues = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}
 	for _, is := range open {
 		p.open[is.ID] = true
+		p.issues[is.ID] = is
 		p.bodies = append(p.bodies, is.Body)
 		if is.Title == ReportTitle(role) {
 			p.Report = is.ID
@@ -345,7 +365,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 
 // check says why a closing cannot be done, as a finding's rule and
 // message, or nothing.
-func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why string) {
+func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why string) {
 	if c.Do == "open" {
 		// An issue opened from a file: its text is the file's, quoted, never
 		// written by the agent; opened once.
@@ -364,6 +384,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why 
 		}
 		p.seen[key] = true
 		return "", ""
+	}
+	if rule, why := p.checkRefining(repo, role, c); rule != "" {
+		return rule, why
 	}
 	if c.Do == "milestone" {
 		// Ordering says nothing of an issue's truth: no quote, its state
@@ -399,8 +422,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why 
 	} else if err != nil {
 		return "state-broken", "the issue's state comment does not read (" + err.Error() + "): nothing is written on it"
 	}
-	if c.Do == "milestone" {
-		return "", ""
+	if c.Do == "ask" && slices.ContainsFunc(comments, func(s string) bool { return strings.Contains(s, AskMarker(role)) }) {
+		return "already-asked", "its reporter was asked already: an issue is asked once"
+	}
+	if c.Do == "milestone" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" {
+		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
 		return "no-quote", "no quote: an act cites the code or the issue it rests on"
@@ -409,6 +435,128 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c Proposal) (rule, why 
 		return "no-quote", fmt.Sprintf("the quote %q is not found where it says", c.Quote.Text)
 	}
 	return "", ""
+}
+
+// checkRefining checks a refine, a ready or an ask against the issue as it
+// is: what refining would add, whether it is ready, whether its reporter
+// was asked already.
+func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) {
+	is, ok := p.issues[c.Issue]
+	switch {
+	case c.Do != "refine" && c.Do != "ready" && c.Do != "ask":
+		return "", ""
+	case !ok:
+		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
+	}
+	switch c.Do {
+	case "refine":
+		if c.Scope != "" || len(c.Sources) > 0 {
+			if len(c.Sources) == 0 || len(c.Sources) > maxSources {
+				return "sources-unknown", fmt.Sprintf("a scope names 1 to %d files (sources)", maxSources)
+			}
+			for _, s := range c.Sources {
+				path, _, _ := strings.Cut(s, "#")
+				if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
+					return "sources-unknown", fmt.Sprintf("%s is not in the commit the run is on", path)
+				}
+			}
+		}
+		_, added, kept := Refine(is.Body, *c, role)
+		c.Added = added
+		if len(added) == 0 {
+			return "nothing-to-refine", "every section it writes is in the body already: none is rewritten"
+		}
+		if len(kept) > 0 {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "section-kept", Where: c.where(),
+				Message: "already in the body, left as it is: " + strings.Join(kept, ", ")})
+		}
+	case "ready":
+		if missing := NotReady(is.Body); len(missing) > 0 {
+			return "not-ready", "it stays to refine: " + strings.Join(missing, "; ")
+		}
+	case "ask":
+		if strings.TrimSpace(c.Questions) == "" {
+			return "ask-empty", "an ask holds the questions"
+		}
+	}
+	return "", ""
+}
+
+// Sections are an issue's, in the order they are written.
+var Sections = []string{"Need", "Verification", "Validation", "Scope"}
+
+// drafted are the sections the role writes as drafts: a person's to state.
+var drafted = []string{"Need", "Validation"}
+
+// DraftMarker marks a section the role drafted and no person made theirs.
+var DraftMarker = forge.Marker("draft")
+
+// DraftLine opens a drafted section; deleting it makes the section a person's.
+func DraftLine(role string) string {
+	return fmt.Sprintf("*Draft by the %s: edit it, then delete this line to make it yours.* %s", strings.ReplaceAll(role, "-", " "), DraftMarker)
+}
+
+// Refine is an issue's body with the sections it lacks added after its
+// text, which stays as it is; added and kept name the sections written and
+// those already there, left alone.
+func Refine(body string, c Proposal, role string) (string, []string, []string) {
+	have := work.Sections(body)
+	given := map[string]string{"Need": c.Need, "Verification": c.Verification, "Validation": c.Validation, "Scope": c.Scope}
+	var b strings.Builder
+	b.WriteString(strings.TrimRight(body, " \n"))
+	var added, kept []string
+	for _, name := range Sections {
+		text := strings.TrimSpace(given[name])
+		if text == "" {
+			continue
+		}
+		if _, ok := have[name]; ok {
+			kept = append(kept, name)
+			continue
+		}
+		added = append(added, name)
+		b.WriteString("\n\n## " + name + "\n\n")
+		if slices.Contains(drafted, name) {
+			b.WriteString(DraftLine(role) + "\n\n")
+		}
+		b.WriteString(text)
+	}
+	return b.String(), added, kept
+}
+
+// NotReady says what keeps an issue's body from ready: a section missing or
+// empty, Need or Validation still a draft.
+func NotReady(body string) []string {
+	have := work.Sections(body)
+	var out []string
+	for _, name := range Sections {
+		text := strings.TrimSpace(have[name])
+		switch {
+		case text == "":
+			out = append(out, "## "+name+" is missing or empty")
+		case slices.Contains(drafted, name) && strings.Contains(text, DraftMarker):
+			out = append(out, "## "+name+" is a draft, not a person's yet")
+		}
+	}
+	return out
+}
+
+// BodyDigest is what the state keeps of a body, to tell when a person
+// changed it.
+func BodyDigest(body string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(body)))
+	return fmt.Sprintf("%x", sum[:6])
+}
+
+// AskMarker marks the comment asking an issue's reporter, once.
+func AskMarker(role string) string { return forge.Marker(role + "/ask") }
+
+// Ask is the comment asking the reporter what is missing.
+func Ask(author, questions string) string {
+	if author == "" {
+		return "To refine this issue: " + strings.TrimSpace(questions)
+	}
+	return fmt.Sprintf("@%s, to refine this issue: %s", author, strings.TrimSpace(questions))
 }
 
 // found says whether a quote is there, as written but for spaces: in a file
@@ -460,6 +608,12 @@ func (p *Plan) ReportBody() string {
 				undo = ""
 			case "milestone":
 				undo = " Move it back to undo."
+			case "refine":
+				undo = " Edit its body to undo."
+			case "ready":
+				undo = " Remove the label workline:ready to undo."
+			case "ask":
+				undo = ""
 			}
 			did = append(did, "- "+describe(d.Act, "Closed")+undo)
 		}
@@ -476,7 +630,7 @@ func (p *Plan) ReportBody() string {
 		b.WriteString("\n## Done\n\n" + strings.Join(did, "\n") + "\n")
 	}
 	if len(proposed) > 0 {
-		b.WriteString("\n## Proposed\n\nFor a person: close the issue if you agree; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
+		b.WriteString("\n## Proposed\n\nFor a person: do what a line says if you agree — close the issue, write the section, set the label; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
 	return b.String()
 }
@@ -492,6 +646,22 @@ func describe(c Proposal, verb string) string {
 	}
 	if c.Do == "milestone" {
 		return fmt.Sprintf("Put #%d in the milestone %q: %s", c.Issue, c.Milestone, strings.TrimSpace(c.Why))
+	}
+	done := verb != "Close"
+	switch c.Do {
+	case "refine":
+		var names []string
+		for _, n := range c.Added {
+			if slices.Contains(drafted, n) {
+				n += " (draft)"
+			}
+			names = append(names, n)
+		}
+		return fmt.Sprintf("%s #%d: %s. %s", map[bool]string{true: "Refined", false: "Refine"}[done], c.Issue, strings.Join(names, ", "), strings.TrimSpace(c.Why))
+	case "ready":
+		return fmt.Sprintf("%s #%d to ready: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, strings.TrimSpace(c.Why))
+	case "ask":
+		return fmt.Sprintf("%s #%d's reporter: %s", map[bool]string{true: "Asked", false: "Ask"}[done], c.Issue, strings.TrimSpace(c.Questions))
 	}
 	if c.Do == "sources" {
 		v := "Named"

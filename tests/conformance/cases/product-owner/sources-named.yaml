@@ -11,6 +11,6 @@ expect:
   findings: [{rule: sources-unknown, where: "#12"}]
   forge:
     issues:
-      - {id: 9, comments: 1, comment-contains: "sources: [src/export/csv.go]\nconfirmed: d8c4dff\n```", comment-lacks: "judged:"}
+      - {id: 9, comments: 1, comment-contains: "sources: [src/export/csv.go]\nconfirmed: d8c4dff\nbody: ", comment-lacks: "judged:"}
       - {id: 12, comments: 1, comment-contains: "sources: [README.md]\nconfirmed: d8c4dff\njudged:"}
       - {id: 13, title: "Backlog — product owner", body-contains: "Named the code #9 is about: src/export/csv.go."}

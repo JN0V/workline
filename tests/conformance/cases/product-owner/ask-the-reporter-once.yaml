@@ -1,0 +1,21 @@
+case: product-owner/ask-the-reporter-once
+about: Asking, the engine comments on the issue, naming its reporter, with the agent's questions — once an issue.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Rows lost again"
+        body: "Lost."
+        author: bob
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@bob, to refine this issue: before?\n\n<!-- workline:product-owner/ask -->"]
+run: {role: product-owner, event: schedule, ai: fake:ask-two}
+expect:
+  findings: [{rule: already-asked, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, comment-contains: "@ann, to refine this issue: Which rows are lost: the last one, or any?"}
+      - {id: 10, comments: 2}

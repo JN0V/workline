@@ -1,0 +1,2 @@
+- ask: {issue: 9, questions: "Which rows are lost: the last one, or any?", why: "unclear"}
+- ask: {issue: 10, questions: "Again?", why: "asked already"}

@@ -1715,11 +1715,61 @@ func (a *applier) apply(in intent.Intention) error {
 		}
 		st.Sources, st.Judged = d.Act.Sources, ""
 		return a.forge.Sticky(is, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+	case "refine", "ready", "ask":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return refining(a.forge, a.role, d.Act)
 	case "handoff":
 		a.handoffs = append(a.handoffs, in.Value)
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
 	}
 	return fmt.Errorf("not implemented yet in this engine")
+}
+
+// refining applies a refine, a ready or an ask, against the issue as it is
+// now (docs/spec/backlog-acts.md, "Refining to ready").
+func refining(f forge.Forge, role string, c backlog.Proposal) error {
+	b := f.(forge.Backlog)
+	is, err := f.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	switch c.Do {
+	case "ask":
+		return f.Comment(t, backlog.Ask(is.Author, c.Questions), backlog.AskMarker(role))
+	case "ready":
+		if missing := backlog.NotReady(is.Body); len(missing) > 0 {
+			return nil // changed since the plan: it stays to refine
+		}
+		return f.Label(t, []string{"workline:ready"}, []string{"workline:to-refine"})
+	}
+	body, added, _ := backlog.Refine(is.Body, c, role)
+	if len(added) > 0 {
+		if err := b.SetBody(c.Issue, body); err != nil {
+			return err
+		}
+	}
+	if err := f.Label(t, []string{"workline:to-refine"}, nil); err != nil {
+		return err
+	}
+	// The state: the files the scope names when it had none, and the body
+	// as the engine left it, so only a person's change has it read again.
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", c.Issue, err)
+	}
+	if len(st.Sources) == 0 {
+		st.Sources = c.Sources
+	}
+	st.Body = backlog.BodyDigest(body)
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
 }
 
 // allowed reports whether a repository path is within the role's duties.writes.

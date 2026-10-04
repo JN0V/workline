@@ -250,7 +250,7 @@ func (l *Local) Issues() ([]Issue, error) {
 	var out []Issue
 	for _, it := range items {
 		if it.State == "open" {
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Insider: true})
 		}
 	}
 	return out, nil
@@ -412,6 +412,10 @@ func (l *Local) Milestones() ([]string, error) {
 	}
 	sort.Strings(out)
 	return out, nil
+}
+
+func (l *Local) SetBody(id int, body string) error {
+	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Body = body })
 }
 
 func (l *Local) SetMilestone(id int, title string) error {

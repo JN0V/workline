@@ -1,0 +1,18 @@
+case: product-owner/ready-checked-by-the-engine
+about: Ready is the engine's check, not the agent's word — four sections, Need and Validation no drafts — and an issue opened by someone without write access is the reporter's, moving it proposed in the report.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost, from outside", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: zed, insider: false, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  findings: [{rule: not-ready, where: "#10"}, {rule: reporter-outside, where: "#11"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 10, labels: [workline:to-refine]}
+      - {id: 11, labels: []}
+      - {id: 12, title: "Backlog — product owner", body-contains: "- [ ] Move #11 to ready"}

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 1bab30d
+checked: 5173ead
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -77,6 +77,9 @@ refuses. The catalogue is closed and belongs to the engine:
 | `open` | open an issue from a file's item, its text quoted, once (docs/spec/backlog-acts.md, "Importing a file") | forge |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
+| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there (docs/spec/backlog-acts.md, "Refining to ready") | forge |
+| `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft; an outsider's is proposed | forge |
+| `ask` | ask an issue's reporter what is missing, once | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |

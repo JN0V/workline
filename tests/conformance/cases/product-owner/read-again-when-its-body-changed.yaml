@@ -1,0 +1,12 @@
+case: product-owner/read-again-when-its-body-changed
+about: An issue whose body changed since the role last read or wrote it — a draft accepted, a section written — is read again; one whose state holds no digest yet is not, for that.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost, now with a need.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Old state", body: "No digest.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md: {contains: "## #9 Rows lost", not-contains: "## #10"}

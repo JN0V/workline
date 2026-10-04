@@ -200,6 +200,10 @@ func (c *command) Milestones() ([]string, error) {
 	return a.Milestones, err
 }
 
+func (c *command) SetBody(id int, body string) error {
+	return c.call("set-body", map[string]any{"id": id, "body": body}, nil)
+}
+
 func (c *command) SetMilestone(id int, title string) error {
 	return c.call("set-milestone", map[string]any{"id": id, "milestone": title}, nil)
 }

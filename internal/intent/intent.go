@@ -26,6 +26,9 @@ var Catalogue = map[string]bool{
 	"milestone":      true, // an issue put in a release's milestone (docs/spec/backlog-acts.md)
 	"sources":        true, // the code an issue is about, named, its evidence quoted (docs/spec/backlog-acts.md)
 	"close":          true, // an issue closed as a duplicate or obsolete, its evidence quoted (docs/spec/backlog-acts.md)
+	"refine":         true, // the sections an issue lacks written, Need and Validation as drafts (docs/spec/backlog-acts.md)
+	"ready":          true, // an issue moved to ready, once the engine finds it so (docs/spec/backlog-acts.md)
+	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 }
 
@@ -154,7 +157,7 @@ func Write(path string, in []Intention) error {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "milestone": 7, "issue": 8, "handoff": 9, "note": 10,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "milestone": 7, "refine": 8, "ready": 9, "ask": 10, "issue": 11, "handoff": 12, "note": 13,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.
