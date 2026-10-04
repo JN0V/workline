@@ -43,7 +43,9 @@ Conformance: tests/conformance/cases/reviewer.
 8. **Tried in CI with forge writes**: workline's own pull requests run it
    with forge writes on (the role's default) since v0.9.0 shipped the
    role to the apply job; the summary comment, the record and the turn of
-   the lenses there are being tried (tried.md).
+   the lenses there are being tried (tried.md): comment, record and turn
+   work; a push changing no code still asks a lens, given the earlier
+   commits' files with an empty diff.
 9. **The judge's material**: thirty lines around the cause; it refused a
    true finding whose evidence lay further (tried.md). The functions the
    cause calls or is called by, given whole, are the next step.
