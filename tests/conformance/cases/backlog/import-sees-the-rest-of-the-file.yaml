@@ -1,0 +1,33 @@
+case: backlog/import-sees-the-rest-of-the-file
+about: Importing a share of a file, the agent is given the lines outside the share that name an item's id found in it — a table of what shipped, a summary — so an item the file says elsewhere is done is not opened; an id named nowhere else is not listed, nor one the share does not hold.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      | Lot | Items | State |
+      |---|---|---|
+      | Export | EXP-2 | Merged |
+
+      ## Next
+
+      ### EXP-2 — Keep the last row
+      WriteRows stops one row short.
+
+      ### EXP-3 — A JSON export
+      Wanted by EXP-20's users.
+
+      ## Shipped
+
+      - EXP-2 landed in 1.3.
+      - EXP-9 landed in 1.2.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge: {issues: []}
+run: {role: product-owner, event: import, input: {file: ROADMAP.md, from: "7", to: "13"}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "# What the rest of the file says of this share's items\n\nThe lines outside the share that name an id the share holds. An item they say is done, merged or dropped is not opened.\n\n- EXP-2\n     5  | Export | EXP-2 | Merged |\n    17  - EXP-2 landed in 1.3.", not-contains: "EXP-9"}

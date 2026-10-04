@@ -486,6 +486,13 @@ func compare(c *caseFile, r *result, repo string) []string {
 				p = append(p, fmt.Sprintf("%s does not hold %q", name, text))
 			}
 		}
+		if text, ok := want["not-contains"]; ok {
+			for _, f := range found {
+				if data, _ := os.ReadFile(f); strings.Contains(string(data), text) {
+					p = append(p, fmt.Sprintf("%s holds %q", name, text))
+				}
+			}
+		}
 	}
 	for _, text := range e.Notes {
 		if !strings.Contains(strings.Join(r.Notes, "\n"), text) {

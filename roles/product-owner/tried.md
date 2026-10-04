@@ -136,3 +136,21 @@ Three issues planted on the sandbox (`src/auth/token.go`, one-hour tokens):
   Rerun: `wrong-closing` on #3, `close-duplicate` back to propose, the
   report saying so; the agent read the comment, left #3 open and asked a
   person to reword it around the restart.
+
+## 2026-10-04 — DomoticsCore's roadmap, read by the agent, before applying
+
+`workline issues import docs/CODE-ROADMAP.md --forge github` on
+DomoticsCore itself, without `--apply`: 7,580 lines, 32 shares, Sonnet.
+
+- **First run**: 69 issues would be opened, 0.75M tokens in. About fifteen
+  were done: MEM-1, BUG-1, BUG-4 to BUG-7, BUG-9 to BUG-12, BUG-15, SSE-1,
+  their headings without a "DONE", the file saying so elsewhere — the
+  lots table at its top, the "Resolved in v2.0.1" table near its end —
+  in another share. BUG-6 twice, under two titles. **Fixed**: each share
+  comes with the lines of the rest of the file that name its ids
+  (`import-sees-the-rest-of-the-file`).
+- **Rerun**: 55, none of the fifteen; 1.25M tokens in — the ids' lines
+  cost a share about two thirds more. Three items still to do that the
+  first run had found were left out this time (BUG-94, CI-7, CI-16): the
+  agent's variance, not the lines given. Not fixed: an import run again
+  opens only what no open issue holds, so a second run picks them up.

@@ -404,6 +404,7 @@ func preImport(runDir, repo, role string, open []forge.Issue) int {
 		fmt.Fprintf(&b, "%5d  %s\n", i, lines[i-1])
 	}
 	b.WriteString("```\n")
+	b.WriteString(elsewhere(lines, from, to))
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("import\n"), 0o644); err != nil {
 		return fail(err)
 	}
@@ -411,4 +412,62 @@ func preImport(runDir, repo, role string, open []forge.Issue) int {
 		return fail(err)
 	}
 	return 0
+}
+
+const (
+	mentionsPerID = 4   // lines given for one id, those of a table or a heading first
+	mentionsIDs   = 40  // ids looked for in one share
+	mentionChars  = 240 // characters of a line given
+)
+
+var itemID = regexp.MustCompile(`\b[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]+\b`)
+
+// elsewhere gives the lines outside a share that name an id the share
+// holds: a file often says an item is done far from the item itself — a
+// table of what shipped, a summary — and a share alone would open it again.
+// Which line says what is the agent's to read; pre only finds them.
+func elsewhere(lines []string, from, to int) string {
+	var ids []string
+	for _, l := range lines[from-1 : to] {
+		for _, id := range itemID.FindAllString(l, -1) {
+			if !slices.Contains(ids, id) && len(ids) < mentionsIDs {
+				ids = append(ids, id)
+			}
+		}
+	}
+	sort.Strings(ids)
+	var b strings.Builder
+	for _, id := range ids {
+		named := regexp.MustCompile(`(^|[^A-Za-z0-9-])` + regexp.QuoteMeta(id) + `($|[^0-9])`)
+		var structure, prose []int
+		for i, l := range lines {
+			if i+1 >= from && i+1 <= to || !named.MatchString(l) {
+				continue
+			}
+			if t := strings.TrimSpace(l); strings.HasPrefix(t, "|") || strings.HasPrefix(t, "#") {
+				structure = append(structure, i)
+			} else {
+				prose = append(prose, i)
+			}
+		}
+		at := append(structure, prose...)
+		if len(at) == 0 {
+			continue
+		}
+		more := ""
+		if len(at) > mentionsPerID {
+			more = fmt.Sprintf("    (%d more lines name it)\n", len(at)-mentionsPerID)
+			at = at[:mentionsPerID]
+		}
+		sort.Ints(at)
+		fmt.Fprintf(&b, "- %s\n", id)
+		for _, i := range at {
+			fmt.Fprintf(&b, "%6d  %s\n", i+1, clip(lines[i], mentionChars))
+		}
+		b.WriteString(more)
+	}
+	if b.Len() == 0 {
+		return ""
+	}
+	return "\n# What the rest of the file says of this share's items\n\nThe lines outside the share that name an id the share holds. An item they say is done, merged or dropped is not opened.\n\n" + b.String()
 }
