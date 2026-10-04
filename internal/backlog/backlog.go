@@ -630,7 +630,7 @@ func (p *Plan) ReportBody() string {
 		b.WriteString("\n## Done\n\n" + strings.Join(did, "\n") + "\n")
 	}
 	if len(proposed) > 0 {
-		b.WriteString("\n## Proposed\n\nFor a person: close the issue if you agree; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
+		b.WriteString("\n## Proposed\n\nFor a person: do what a line says if you agree — close the issue, write the section, set the label; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
 	return b.String()
 }
