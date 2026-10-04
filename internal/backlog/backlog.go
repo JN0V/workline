@@ -33,6 +33,7 @@ type State struct {
 	Judged    string   `yaml:"judged,omitempty"`   // the commit the role last read it at
 	Comments  int      `yaml:"comments,omitempty"` // people's comments when it was last read
 	Body      string   `yaml:"body,omitempty"`     // a digest of its body, when the role last read or wrote it
+	Priority  int      `yaml:"priority,omitempty"` // the priority the role last set: another on the issue is a person's
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -84,7 +85,8 @@ func FormatState(s State) string {
 		Judged    string   `yaml:"judged,omitempty"`
 		Comments  int      `yaml:"comments,omitempty"`
 		Body      string   `yaml:"body,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body})
+		Priority  int      `yaml:"priority,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -140,6 +142,12 @@ type Proposal struct {
 	Validation   string   `yaml:"validation,omitempty"`
 	Added        []string `yaml:"added,omitempty"`
 	Questions    string   `yaml:"questions,omitempty"` // asking the reporter
+	// Ordering: the priority set (1 to 4); a milestone left because it is
+	// released (From, the engine's); and, the engine's, the issue's
+	// priority and milestone before the run, written in the report.
+	Priority int    `yaml:"priority,omitempty"`
+	From     string `yaml:"from,omitempty"`
+	Before   string `yaml:"before,omitempty"`
 }
 
 // Kind is the kind of act, as settings name it.
@@ -169,7 +177,11 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "sources", "milestone", "refine", "ready", "ask"}
+var Kinds = []string{"open", "close", "sources", "milestone", "order", "refine", "ready", "ask"}
+
+// moves are the acts that move an issue in the backlog's order: capped
+// together, at a share of the open issues a run (ADR-0018).
+var moves = []string{"milestone", "order"}
 
 // Decision is what becomes of one act.
 type Decision struct {
@@ -223,10 +235,20 @@ var closeReasons = []string{"duplicate", "obsolete"}
 // maxSources bounds the files an issue names.
 const maxSources = 5
 
+// MovedPercent reads the role's `moved-percent-max` setting: the share of
+// the open issues a run may move, in percent; a fifth when it is not set.
+func MovedPercent(settings map[string]any) int {
+	if n, ok := settings["moved-percent-max"].(int); ok && n > 0 {
+		return n
+	}
+	return 20
+}
+
 // Decide plans the acts proposed, given at their place in the run.
 // read lists the issues the run read: a proposal made only for a cap is
-// dropped once its issue was read again, decided again or not.
-func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal, read []int) (*Plan, error) {
+// dropped once its issue was read again, decided again or not. A run
+// moves at most movedPercent of the open issues (milestone and order).
+func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal, read []int, movedPercent int) (*Plan, error) {
 	p := &Plan{read: read}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
@@ -235,6 +257,14 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
 	done := map[string]int{}
+	moved := map[int]bool{} // the issues moved in this run
+	backlogSize := 0
+	for id := range p.open {
+		if id != p.Report {
+			backlogSize++
+		}
+	}
+	movedMax := max(1, (backlogSize*movedPercent+99)/100)
 	var indexes []int
 	for i := range closes {
 		indexes = append(indexes, i)
@@ -243,7 +273,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
-		if c.Do == "ready" && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "milestone" || c.Do == "order") && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			continue
 		}
@@ -269,10 +299,24 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "reporter-outside", Where: c.where(),
 					Message: "opened by someone without write access to the project: moving it to ready is proposed, not done"})
 			}
+			if c.Do == "milestone" && c.Milestone == "" {
+				d.Mode = Propose // slipped, no open milestone to move it to: a person's to place
+			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
-				d.Mode, d.Capped = Propose, true
+				d.Mode, d.Capped = Propose, c.From == ""
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
 					Message: fmt.Sprintf("%s: at most %d a run; this one is proposed", c.Kind(), s.Max)})
+			}
+			if d.Mode == Act && slices.Contains(moves, c.Do) && !moved[c.Issue] {
+				if len(moved) >= movedMax {
+					// The engine's own move (a slip) is found again at the
+					// next run: its issue is not read again for it.
+					d.Mode, d.Capped = Propose, c.From == ""
+					p.Findings = append(p.Findings, verdict.Finding{Rule: "moved-cap", Where: c.where(),
+						Message: fmt.Sprintf("a run moves at most %d of the %d open issues (moved-percent-max: %d); this move is proposed", movedMax, backlogSize, movedPercent)})
+				} else {
+					moved[c.Issue] = true
+				}
 			}
 			if d.Mode == Act {
 				done[c.Kind()]++
@@ -404,11 +448,26 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkRefining(repo, role, c); rule != "" {
 		return rule, why
 	}
-	if c.Do == "milestone" {
+	if c.Do == "milestone" || c.Do == "order" {
 		// Ordering says nothing of an issue's truth: no quote, its state
 		// readable all the same.
-		if t := strings.TrimSpace(c.Milestone); t == "" || len(t) > 60 || strings.ContainsAny(t, "\n") {
-			return "milestone-title", "a milestone is a title of one line, 60 characters at most"
+		is, ok := p.issues[c.Issue]
+		if !ok {
+			return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
+		}
+		c.Before = Before(is)
+		switch {
+		case c.Do == "order" && (c.Priority < 1 || c.Priority > Levels):
+			return "priority-level", fmt.Sprintf("a priority is a level from 1, the most pressing, to %d", Levels)
+		case c.Do == "order":
+		case c.From != "" && (c.From != is.Milestone || !Released(repo, c.From)):
+			return "not-slipped", fmt.Sprintf("#%d is not in the released milestone %q", c.Issue, c.From)
+		case c.From != "" && c.Milestone == "":
+			// slipped, no milestone to move it to: proposed
+		default:
+			if t := strings.TrimSpace(c.Milestone); t == "" || len(t) > 60 || strings.ContainsAny(t, "\n") {
+				return "milestone-title", "a milestone is a title of one line, 60 characters at most"
+			}
 		}
 	} else if c.Do == "sources" {
 		if len(c.Sources) == 0 || len(c.Sources) > maxSources {
@@ -433,15 +492,25 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if err != nil {
 		return "no-state", err.Error()
 	}
-	if _, found, err := ReadState(comments, role); !found {
+	st, found, err := ReadState(comments, role)
+	if !found {
 		return "no-state", "the issue has no state comment yet: it is not acted on before the engine has one"
 	} else if err != nil {
 		return "state-broken", "the issue's state comment does not read (" + err.Error() + "): nothing is written on it"
 	}
+	if c.Do == "order" {
+		set := PriorityLabels(p.issues[c.Issue])
+		switch {
+		case !(len(set) == 0 && st.Priority == 0) && !(len(set) == 1 && set[0] == st.Priority):
+			return "priority-kept", "its priority was set by a person (a label the role did not set, or took off): it is kept"
+		case len(set) == 1 && set[0] == c.Priority:
+			return "priority-same", fmt.Sprintf("it has priority %d already", c.Priority)
+		}
+	}
 	if c.Do == "ask" && slices.ContainsFunc(comments, func(s string) bool { return strings.Contains(s, AskMarker(role)) }) {
 		return "already-asked", "its reporter was asked already: an issue is asked once"
 	}
-	if c.Do == "milestone" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -678,8 +747,8 @@ func (p *Plan) ReportBody() string {
 			switch d.Act.Do {
 			case "sources":
 				undo = ""
-			case "milestone":
-				undo = " Move it back to undo."
+			case "milestone", "order":
+				undo = " Put it back as it was before this run (below) to undo."
 			case "refine":
 				undo = " Edit its body to undo."
 			case "ready":
@@ -701,6 +770,17 @@ func (p *Plan) ReportBody() string {
 	if len(did) > 0 {
 		b.WriteString("\n## Done\n\n" + strings.Join(did, "\n") + "\n")
 	}
+	var before []string
+	listed := map[int]bool{}
+	for _, d := range p.Decisions {
+		if d.Mode == Act && slices.Contains(moves, d.Act.Do) && !listed[d.Act.Issue] {
+			listed[d.Act.Issue] = true
+			before = append(before, fmt.Sprintf("- #%d: %s", d.Act.Issue, d.Act.Before))
+		}
+	}
+	if len(before) > 0 {
+		b.WriteString("\n## Before this run\n\nThe issues this run moved, as they were: to put the order back, set their priority label and milestone to these.\n\n" + strings.Join(before, "\n") + "\n")
+	}
 	if len(proposed) > 0 {
 		b.WriteString("\n## Proposed\n\nFor a person: do what a line says if you agree — close the issue, write the section, set the label; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
@@ -716,8 +796,14 @@ func describe(c Proposal, verb string) string {
 		}
 		return fmt.Sprintf("%s %q, from %s.", v, c.Title, c.Quote.Path)
 	}
+	if c.Do == "milestone" && c.Milestone == "" {
+		return fmt.Sprintf("Move #%d out of the milestone %q, released: no open milestone to move it to. %s", c.Issue, c.From, strings.TrimSpace(c.Why))
+	}
 	if c.Do == "milestone" {
-		return fmt.Sprintf("Put #%d in the milestone %q: %s", c.Issue, c.Milestone, strings.TrimSpace(c.Why))
+		return fmt.Sprintf("Put #%d in the milestone %q (was: %s): %s", c.Issue, c.Milestone, c.Before, strings.TrimSpace(c.Why))
+	}
+	if c.Do == "order" {
+		return fmt.Sprintf("Set #%d's priority to %d (was: %s): %s", c.Issue, c.Priority, c.Before, strings.TrimSpace(c.Why))
 	}
 	done := verb != "Close"
 	switch c.Do {

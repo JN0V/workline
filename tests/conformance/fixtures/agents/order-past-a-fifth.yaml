@@ -1,0 +1,5 @@
+- milestone: {issue: 1, milestone: "v1.1.0", why: "the next release's"}
+- order: {issue: 1, priority: 2, why: "next"}
+- order: {issue: 2, priority: 1, why: "first"}
+- order: {issue: 3, priority: 3, why: "later"}
+- milestone: {issue: 4, milestone: "v1.1.0", why: "the next release's"}

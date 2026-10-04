@@ -108,7 +108,9 @@ write access.
 
 **Caps** per run and per kind of act — closings low at first (three),
 raised as trust is earned — and on the share of the backlog moved in one
-run (a fifth); the order before a run is written in the report, to put it
+run (a fifth, `moved-percent-max`: milestones and priorities together, an
+issue moved twice counted once); the order before a run — each moved
+issue's priority and milestone — is written in the report, to put it
 back. **Autonomy is a setting per kind of act** (act, propose, off), as
 Linear's per property; the default is the list above, but closing as
 obsolete, which starts at "propose" until the evaluation has measured how
@@ -121,6 +123,32 @@ back to "propose", and only the person sets it to "act" again, the measure
 shown in the report. A run is ignored when its report proposed something
 and nobody ticked, answered or reopened anything; after three, it pauses
 and says so.
+
+### Ordering
+
+*Amended 2026-10-04* (docs/research/product-owner.md, "Priority and
+ranking").
+
+**Stored in the forge's own fields**: an issue's release in its milestone,
+its priority in one label of four, `workline:priority/1` (the most
+pressing) to `/4` — as Kubernetes', Rust's and Linear's levels; one at a
+time, as GitLab's scoped labels. The order is derived, not stored:
+**the nearest milestone first** (titles in version order, an issue in
+none last), **then the priority** (none after 4), **then the lowest
+number**. Any role reads it the same way (`backlog.Less`), the developer
+taking the first ready issue in it. A forge's native rank (GitLab's
+reorder, a GitHub project's position) is deferred: not on every forge, nor
+writable with a role's token.
+
+**A person's priority is kept**: the issue's state records the priority
+the role last set; a label other than that one is a person's, and the
+role's act on it is dropped (`priority-kept`).
+
+**What slipped moves without AI**: an open issue in a milestone named
+after a tag that exists is moved by the engine to the nearest open
+milestone not released, or proposed in the report when there is none —
+a check, not a judgement (principle 4), as GitLab rolls issues over to the
+next iteration.
 
 ### Opening issues, for every role
 
@@ -136,7 +164,7 @@ takes them from there.
 **Borrowed**: issue forms for the four fields, milestones, sub-issues,
 close reasons, labels, `KeepIssue`, `Sticky`. **To build**: listing a
 project's open issues on every forge; milestones and closing with a reason
-in the forge interface; "its sources changed since it was confirmed" for an
+in the forge interface; the priority labels and the order rule; "its sources changed since it was confirmed" for an
 issue; the judgement with quotes; reading a tick with its author.
 
 **Proof** before calling it done: conformance cases (each act's cap; no

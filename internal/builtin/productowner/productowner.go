@@ -95,6 +95,15 @@ func Pre(runDir, repo string) int {
 	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
 	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
 	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
+	milestones, err := b.Milestones()
+	if errors.Is(err, forge.ErrUnreachable) {
+		fmt.Fprintln(os.Stderr, err)
+		return exitExternal
+	}
+	if err != nil {
+		return fail(err)
+	}
+	next := backlog.NextMilestone(repo, milestones) // where an issue that slipped goes
 	capped := backlog.CappedByRole(b, role, open)   // an act proposed only for the cap
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
@@ -124,6 +133,13 @@ func Pre(runDir, repo string) int {
 			findings = append(findings, verdict.Finding{Rule: "state-broken", Where: fmt.Sprintf("#%d", is.ID),
 				Message: "its state comment does not read (" + err.Error() + "): the issue is not judged, nothing is written on it"})
 			continue
+		}
+		if backlog.Released(repo, is.Milestone) {
+			// Its milestone's release is tagged: it slipped, and the engine
+			// moves it to the next, with no agent (or proposes, with none).
+			fallback = append(fallback, intent.Intention{Kind: "milestone", Value: map[string]any{
+				"issue": is.ID, "milestone": next, "from": is.Milestone, "own": true,
+				"why": fmt.Sprintf("slipped: %s is released (its tag exists).", is.Milestone)}})
 		}
 		switch {
 		case slices.Contains(capped, is.ID):
@@ -185,6 +201,8 @@ func Pre(runDir, repo string) int {
 	// duplicate's original is quoted (ADR-0018).
 	var related strings.Builder
 	shown := 0
+	// The rest in the backlog's order: nearest milestone, priority, number.
+	sort.SliceStable(rest, func(i, j int) bool { return backlog.Less(rest[i].is, rest[j].is) })
 	for _, d := range rest {
 		files := named(repo, d.is, d.st, d.comments, tracked)
 		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
@@ -192,13 +210,12 @@ func Pre(runDir, repo string) int {
 			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
 			continue
 		}
-		others = append(others, fmt.Sprintf("- #%d %s", d.is.ID, d.is.Title))
+		others = append(others, fmt.Sprintf("- #%d %s%s", d.is.ID, d.is.Title, place(d.is)))
 	}
 	if shown > 0 {
 		fmt.Fprintf(&task, "# Other open issues on the same code\n\nNot to judge in this run: given whole, as the original a duplicate would be closed against.\n\n%s", related.String())
 	}
 	if len(others) > 0 {
-		sort.Strings(others)
 		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
 	}
 	writeCode(&task, repo, code, s.CodeLinesMax)
@@ -221,6 +238,13 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	}
 	if is.Milestone != "" {
 		fmt.Fprintf(b, "Milestone: %s\n", is.Milestone)
+	}
+	if set := backlog.PriorityLabels(is); len(set) > 0 {
+		whose := ""
+		if len(set) != 1 || set[0] != st.Priority {
+			whose = " (a person's: kept)"
+		}
+		fmt.Fprintf(b, "Priority: %d%s\n", backlog.Priority(is), whose)
 	}
 	if is.Author != "" {
 		outside := ""
@@ -249,6 +273,21 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	for _, c := range kept {
 		fmt.Fprintf(b, "Comment:\n> %s\n\n", strings.ReplaceAll(clip(c, bodyMax), "\n", "\n> "))
 	}
+}
+
+// place says an issue's milestone and priority, when it has them.
+func place(is forge.Issue) string {
+	var out []string
+	if is.Milestone != "" {
+		out = append(out, is.Milestone)
+	}
+	if n := backlog.Priority(is); n > 0 {
+		out = append(out, fmt.Sprintf("priority %d", n))
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	return " (" + strings.Join(out, ", ") + ")"
 }
 
 // sections says which of the four sections an issue's body has, and which

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 3f10209
+checked: 551c43d
 verified: agent:claude-code
 ---
 # Product owner
@@ -27,17 +27,25 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
 2. The agent proposes acts: a closing — a duplicate, its original's words
    quoted, or an issue the code made obsolete, the code quoted; the code
    an issue is about (`sources`), a line of it quoted; the milestone of
-   the release an issue still true belongs to; refining toward `ready` —
+   the release an issue still true belongs to; its priority (`order`, 1
+   to 4, a label `workline:priority/N`); refining toward `ready` —
    the sections an issue lacks (`refine`: Scope and Verification from the
    code, Need and Validation as drafts a person makes theirs), the move to
    `ready` (`ready`), or a question to its reporter (`ask`).
 3. The engine checks each one when it applies it — never as not planned,
    the quote found again, the issue's state readable, no section a person
    wrote rewritten, `ready` only when the four sections are there and none
-   a draft, an outsider's issue proposed — and does it,
+   a draft, an outsider's issue proposed, a priority a person set kept,
+   at most a fifth of the open issues moved a run — and does it,
    proposes it, or drops it, by the kind's mode and cap (`acts`). One
    report issue lists what was done and proposed. A closing undone, the
    issue reopened, puts that kind back to `propose` (`wrong-closing`).
+   The report says each moved issue's priority and milestone before the
+   run, to put the order back.
+
+An issue in a milestone whose release is tagged slipped: the engine moves
+it to the nearest open milestone not released, with or without an agent,
+or proposes it in the report when there is none.
 
 A person accepts the drafts with one label, `workline:accepted`, on one
 issue or many from the list of issues: the next run takes the draft lines
@@ -56,10 +64,12 @@ roles:
     settings:
       issues-per-run: 8
       code-lines-max: 1500
+      moved-percent-max: 20                      # milestones and priorities, together
       acts:
         open: {mode: act, max: 30}               # when importing
         sources: {mode: act, max: 10}
         milestone: {mode: act, max: 10}
+        order: {mode: act, max: 10}
         close-duplicate: {mode: act, max: 3}     # act | propose | off
         close-obsolete: {mode: propose, max: 3}
         refine: {mode: act, max: 5}

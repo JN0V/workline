@@ -1,0 +1,19 @@
+case: product-owner/order-before-written-in-report
+about: The report says, for each issue a run moved, its priority and milestone before the run, so a person can put the order back.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100}
+  forge:
+    milestones: [v1.0.0, v1.1.0]
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", milestone: v1.0.0, labels: [workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 3\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-and-milestone}
+expect:
+  forge:
+    issues:
+      - {id: 9, milestone: v1.1.0, labels: [workline:priority/1]}
+      - {id: 10, title: "Backlog — product owner", body-contains: "## Before this run"}
+      - {id: 10, body-contains: "- #9: priority 3, milestone v1.0.0"}

@@ -1,0 +1,15 @@
+case: product-owner/order-keeps-a-persons-priority
+about: A priority a person set — a label the role's state does not record, or one other than it recorded — is kept; the role's act on it is dropped, and said.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [workline:priority/2], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", labels: [workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 3\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-two}
+expect:
+  findings: [{rule: priority-kept, where: "#9"}, {rule: priority-kept, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:priority/2], comment-lacks: "priority:"}
+      - {id: 10, labels: [workline:priority/1], comment-contains: "priority: 3"}

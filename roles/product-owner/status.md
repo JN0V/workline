@@ -3,9 +3,11 @@
 **In one line:** it keeps a backlog on GitHub for real — reads it a share a
 run, closes duplicates, proposes what the code made obsolete, names an
 issue's code, sets milestones, finds a closing a person undid, refines an
-issue to `ready` and asks its reporter what is missing — nightly in
+issue to `ready` and asks its reporter what is missing, orders the backlog
+and moves what slipped — nightly in
 DomoticsCore's CI since v0.5.0 (its roadmap imported, 56 issues), refining
-tried live there and on JN0V/workline-sandbox, not released yet (tried.md).
+tried live there and on JN0V/workline-sandbox, ordering on the sandbox,
+not released yet (tried.md).
 
 ## Built and tried with a real agent
 
@@ -22,6 +24,8 @@ tried live there and on JN0V/workline-sandbox, not released yet (tried.md).
 | A true issue on the code a fix touched left alone; a look-alike left open | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
 | Refining: Scope and Verification from the code, Need and Validation drafted; the drafts accepted by a person, the issue moved to `ready` by the engine's check; a vague issue's reporter asked, the answer read, the issue refined | JN0V/workline-sandbox, live (#6, #7); DomoticsCore, live (#163, #167, #168, #171, #172) |
 
+| Ordering: one priority label of four set, a person's kept; an issue whose milestone is released moved to the next by the engine, no agent; a fifth of the backlog moved a run, the rest proposed; the order before the run in the report | JN0V/workline-sandbox, live (#2, #4, #6, #7) |
+
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones, and
 GitLab's whole backlog, untried live.
@@ -33,10 +37,13 @@ GitLab's whole backlog, untried live.
 2. **Refining, what is left**: splitting a need into sub-issues;
    renaming; asking again after an answer; an outsider's issue proposed
    to its reporter rather than in the report; GitLab's write access.
-3. **Ordering** the backlog, moving what slipped.
-4. **Obsolete closed, not only proposed**: announced first, closed at the
+3. **Obsolete closed, not only proposed**: announced first, closed at the
    next run if nobody answered and a second judge agreed.
-5. **The person's hand**: a tick read with its author — a proposal
+4. **The person's hand**: a tick read with its author — a proposal
    accepted, an act set back to `act`; ignored runs pausing it.
-6. **One issue-opening mechanism for every role**; the weekly sample over
+5. **One issue-opening mechanism for every role**; the weekly sample over
    its acts; a file the agent was not shown named as a source.
+6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
+   GitHub project's position), deferred (ADR-0018); milestones ranked by
+   their due date, not only their title; the engine refusing a person's
+   priority, tried in conformance only.

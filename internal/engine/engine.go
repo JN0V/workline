@@ -1698,6 +1698,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.forge.(forge.Backlog).SetMilestone(d.Act.Issue, strings.TrimSpace(d.Act.Milestone))
+	case "order":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return order(a.forge, a.role, d.Act)
 	case "sources":
 		// The code the issue is about, named: its state gets them, and the
 		// issue is read again, with them, at the next run.
@@ -1728,6 +1734,41 @@ func (a *applier) apply(in intent.Intention) error {
 	}
 	return fmt.Errorf("not implemented yet in this engine")
 }
+
+// order sets an issue's one priority label, the others taken off, and
+// records it in the issue's state: a priority other than the one recorded
+// is a person's (docs/spec/backlog-acts.md, "Ordering").
+func order(f forge.Forge, role string, c backlog.Proposal) error {
+	b := f.(forge.Backlog)
+	label := backlog.PriorityLabel(c.Priority)
+	if err := b.EnsureLabel(label, priorityColors[c.Priority], fmt.Sprintf("Priority %d of %d, 1 the most pressing: set by the %s or a person", c.Priority, backlog.Levels, strings.ReplaceAll(role, "-", " "))); err != nil {
+		return err
+	}
+	var others []string
+	for n := 1; n <= backlog.Levels; n++ {
+		if n != c.Priority {
+			others = append(others, backlog.PriorityLabel(n))
+		}
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	if err := f.Label(t, []string{label}, others); err != nil {
+		return err
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Priority = c.Priority
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+}
+
+// priorityColors are the priority labels' colours, the most pressing the
+// warmest.
+var priorityColors = map[int]string{1: "b60205", 2: "d93f0b", 3: "fbca04", 4: "c5def5"}
 
 // refining applies a refine, a ready or an ask, against the issue as it is
 // now (docs/spec/backlog-acts.md, "Refining to ready").
@@ -2127,7 +2168,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			}
 		}
 	}
-	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes, read)
+	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes, read, backlog.MovedPercent(settings))
 	if err != nil {
 		return nil, err
 	}

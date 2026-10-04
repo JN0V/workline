@@ -1,0 +1,16 @@
+case: product-owner/slipped-without-a-milestone-proposed
+about: An issue whose milestone is released, with no open milestone left to move it to, is proposed in the report for a person to place, and left where it is.
+given:
+  repo: backlog
+  setup: ["git tag v1.0.0"]
+  forge:
+    milestones: [v1.0.0]
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", milestone: v1.0.0, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, milestone: v1.0.0}
+      - {id: 10, title: "Backlog — product owner", body-contains: "- [ ] Move #9 out of the milestone \"v1.0.0\""}

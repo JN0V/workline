@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go]
-checked: 3f10209
+checked: 551c43d
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -163,6 +163,12 @@ issues: the next run moves them to `ready`, with no agent. An issue form
 with the four sections, [ci/github/issue-form-need.yml](../ci/github/issue-form-need.yml),
 copied to `.github/ISSUE_TEMPLATE/need.yml`, has a person's issue arrive
 with what they know already written.
+
+It orders the backlog: a priority label, `workline:priority/1` (the most
+pressing) to `/4`, on the issues it reads — one a person set is kept —
+and an issue whose milestone's release is tagged moved to the next open
+milestone. A run moves at most a fifth of the open issues
+(`moved-percent-max`); the report lists them as they were, to put back.
 
 ## The weekly sample
 

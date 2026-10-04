@@ -214,3 +214,29 @@ and moved it to `workline:ready`. Not tried live: an issue form's
 `### ` sections (conformance only), the label created by the engine with
 the first draft (created by hand on workline and DomoticsCore, whose drafts
 predate it).
+
+## 2026-10-04 — ordering, live on the sandbox, Sonnet
+
+JN0V/workline-sandbox, a fresh clone, the engine on this machine, `--forge
+github`. Set up by hand: a tag `v0.1.0` in the clone (not pushed), the
+milestones `v0.1.0` and `v0.2.0`, #4 in `v0.1.0`, `workline:priority/2` set
+on #3 by a person; a comment on #2, #6, #7, then #3, to have them read again.
+
+- **Run 1** (7.5k tokens in, 1.6k out), five open issues, so one move a
+  run (a fifth): #4 **moved by the engine** from `v0.1.0`, released, to
+  `v0.2.0`, no agent needed for it; the agent's orders — #7 first (sign-in
+  slow for everyone), #2 second, #6 third — and a milestone for #2 were
+  past the share: proposed (`moved-cap`), the report saying each issue's
+  priority and milestone before.
+- **Run 2** (8.3k in, 1.1k out), `moved-percent-max: 100` in the clone's
+  config: the capped issues read again first; #7 got `workline:priority/1`,
+  #2 and #6 `/3`, #2 the milestone `v0.2.0`; the labels `/1` and `/3`
+  created by the engine; each issue's state recorded its priority; the
+  report listed the three as they were before. #3, its priority shown to
+  the agent as a person's, was not ordered: the agent asked its reporter
+  instead which need it holds, #2's or #6's.
+- Seen, fixed: the labels' description named the role `product-owner`;
+  the slip's line ran into the next sentence.
+- Not tried live: the engine refusing an order over a person's priority
+  (`priority-kept`, conformance only: the agent did not propose one);
+  a slipped issue with no open milestone left; GitLab.
