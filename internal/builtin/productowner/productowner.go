@@ -30,6 +30,7 @@ const (
 	commentsMax   = 5    // its last comments given
 	filesPerIssue = 3    // files an issue names, given whole
 	codeLines     = 400  // lines of a file given
+	relatedMax    = 6    // other issues on the same code, given whole
 )
 
 // Settings are the role's settings pre reads, as merged by the engine.
@@ -89,7 +90,8 @@ func Pre(runDir, repo string) int {
 		st       *backlog.State
 		comments []string
 	}
-	var never, changed []due
+	var never, changed, rest []due
+	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
@@ -116,10 +118,12 @@ func Pre(runDir, repo string) int {
 		switch {
 		case st.Judged == "":
 			never = append(never, due{is, st, comments})
-		case sourcesChanged(repo, st):
+		case sourcesChanged(repo, st),
+			backlog.PeopleComments(comments) != st.Comments, // someone wrote since it was read
+			slices.Contains(reopened, is.ID):
 			changed = append(changed, due{is, st, comments})
 		default:
-			others = append(others, fmt.Sprintf("- #%d %s", is.ID, is.Title))
+			rest = append(rest, due{is, st, comments})
 		}
 	}
 	// Those never read first, then those whose code changed since; an issue
@@ -131,7 +135,7 @@ func Pre(runDir, repo string) int {
 	}
 	for i, d := range toRead {
 		if i >= s.IssuesPerRun {
-			others = append(others, fmt.Sprintf("- #%d %s", d.is.ID, d.is.Title))
+			rest = append(rest, d)
 			continue
 		}
 		judged++
@@ -143,7 +147,7 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		read := *d.st
-		read.Judged = commit
+		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 	}
@@ -159,6 +163,23 @@ func Pre(runDir, repo string) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
 	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n", commit, judged, releases(repo, b))
+	// An issue not read in this run, on the same code as one read, is given
+	// whole: it may be the original a duplicate is closed against, and a
+	// duplicate's original is quoted (ADR-0018).
+	var related strings.Builder
+	shown := 0
+	for _, d := range rest {
+		files := named(d.is, d.st, tracked)
+		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
+			shown++
+			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
+			continue
+		}
+		others = append(others, fmt.Sprintf("- #%d %s", d.is.ID, d.is.Title))
+	}
+	if shown > 0 {
+		fmt.Fprintf(&task, "# Other open issues on the same code\n\nNot to judge in this run: given whole, as the original a duplicate would be closed against.\n\n%s", related.String())
+	}
 	if len(others) > 0 {
 		sort.Strings(others)
 		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))

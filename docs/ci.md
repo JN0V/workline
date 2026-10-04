@@ -2,7 +2,7 @@
 sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml]
 checked: 64eee70
 judged: a0f1e8a
-judged-in-parts: a8b1742
+judged-in-parts: 9b78c1e
 ---
 # Setting up workline in CI
 
@@ -133,6 +133,29 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
 
 A fork's merge request runs in the fork, which has neither token: it is
 judged without an agent, and nothing is applied or commented.
+
+## The product owner
+
+To keep the backlog too (ADR-0018), add it to the schedule line in
+`.workline/config.yaml`; gardening then runs it after the documentalist:
+
+```yaml
+routing:
+  events:
+    schedule: [documentalist, product-owner]
+roles:
+  product-owner:
+    settings:
+      issues-per-run: 8        # issues read a night
+      acts:
+        close-duplicate: {mode: propose}   # a person closes, until trust is earned
+```
+
+The GitHub template gives its jobs the issues they need (read when judging,
+write when applying); on GitLab, the apply token's `api` scope covers them.
+Its acts and proposals are listed in one issue, "Backlog — product owner".
+A roadmap or backlog file is moved to issues once, by hand:
+`workline issues import <file>`, then `--apply`.
 
 ## The weekly sample
 

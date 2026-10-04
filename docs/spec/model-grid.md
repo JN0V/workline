@@ -3,7 +3,7 @@ sources: [internal/agent, internal/engine/engine.go]
 checked: d30d22a
 judged: 6013a50
 verified: agent:documentalist
-judged-in-parts: b1f9880
+judged-in-parts: 9b78c1e
 ---
 # Model grid — v1 (draft)
 
@@ -124,7 +124,8 @@ model:
 
 The ladder stops at `frontier`. The number of attempts is capped at
 `promote-after` + 1: the last one is the only one a tier up.
-An answer that could not be read at all is asked once more on the same tier, besides.
+An answer that could not be read at all is asked once more on the same tier,
+besides, when `promote-after` is above 0.
 
 ## Independent judgement
 

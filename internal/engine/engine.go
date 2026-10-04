@@ -745,7 +745,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
 		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name}
-	plan, err := planActs(f, r.Name, settings, st, runDir, intents)
+	plan, err := planActs(f, r, settings, st, runDir, intents)
 	if errors.Is(err, forge.ErrUnreachable) {
 		res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while reading the backlog; resume with: workline apply %s", runDir)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
@@ -2007,7 +2007,8 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 // planActs decides what becomes of the run's acts on the backlog, once: a
 // resumed run reads the plan the first attempt wrote, as the forge it reads
 // has changed since. Nil when the run proposes none.
-func planActs(f forge.Forge, role string, settings map[string]any, st runState, runDir string, intents []intent.Intention) (*backlog.Plan, error) {
+func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState, runDir string, intents []intent.Intention) (*backlog.Plan, error) {
+	role := r.Name
 	closes := map[int]backlog.Proposal{}
 	for i, in := range intents {
 		if !slices.Contains(backlog.Kinds, in.Kind) {
@@ -2021,7 +2022,12 @@ func planActs(f forge.Forge, role string, settings map[string]any, st runState, 
 		c.Do = in.Kind
 		closes[i] = c
 	}
-	if len(closes) == 0 {
+	// A role keeping a backlog reads its record on every run, acts or not:
+	// a closing a person undid is found at the next run, whatever it does.
+	if len(closes) == 0 && !slices.ContainsFunc(r.Intentions, func(k string) bool { return slices.Contains(backlog.Kinds, k) }) {
+		return nil, nil
+	}
+	if len(closes) == 0 && f == nil {
 		return nil, nil
 	}
 	file := filepath.Join(runDir, "out", "acts.yaml")
