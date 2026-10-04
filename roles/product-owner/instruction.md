@@ -36,7 +36,9 @@ which is — from the names the issue uses and the code given — propose
 `sources`: the files (1 to 5), and a line quoted from one of them that
 shows it. The issue is read again, with that code, at the next run.
 
-**Refine** an issue toward `ready`: its body needs four sections —
+**Refine** every issue you read that is not closed and lacks a section:
+propose `refine` or `ask` for it in this run — it is your work, not a
+person's. Its body needs four sections —
 `## Need` (who needs what, and why), `## Verification` (how the machine
 will prove it: which tests, checks), `## Validation` (who accepts it,
 looking at what), `## Scope` (the part of the code it touches). The task

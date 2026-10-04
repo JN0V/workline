@@ -18,7 +18,7 @@ model:
   promote-after: 1   # an answer that does not read is asked for again once
 
 context:
-  budget: 32000
+  budget: 40000      # eight issues, their code (code-lines-max), and refining's instruction
 
 duties:
   reads: ["**"]

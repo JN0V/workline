@@ -286,6 +286,9 @@ func trackedFiles(repo string) map[string]bool {
 	return files
 }
 
+// provenance is the line the engine ends an imported issue with.
+var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.$`)
+
 var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
 
 // named lists the files an issue is about: its sources, then the paths its
@@ -307,7 +310,10 @@ func named(is forge.Issue, st *backlog.State, tracked map[string]bool) []string 
 	for _, s := range st.Sources {
 		add(s)
 	}
-	for _, m := range pathLike.FindAllString(is.Title+"\n"+is.Body, -1) {
+	// The file an issue was imported from is where it was written, not
+	// the code it is about.
+	body := provenance.ReplaceAllString(is.Body, "")
+	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
 	return out
