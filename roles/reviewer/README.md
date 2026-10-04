@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: b2b447e
+checked: 2e0ca4b
 verified: agent:claude-code
 ---
 # Reviewer
@@ -30,7 +30,7 @@ author fixes, the person merges (ADR-0020).
    correctness, edge cases, tests. Every one on a machine; on a merge
    request one a push, in turn (`lenses-per-push`), every one with
    `--input lenses=all`. Each gets the commits not reviewed yet (their
-   messages as claims to check), the change, and the files it changes, to read
+   messages as claims), the change, and the files it changes, to read
    whole; it answers `finding`s: severity, title, why, its cause quoted,
    its symptom when elsewhere, a fix.
 5. **The quotes.** The engine finds each cause again, spaces and line
