@@ -1,0 +1,18 @@
+case: product-owner/slipped-milestone-moved-without-ai
+about: An open issue in a milestone named after a release already tagged slipped; with no agent, the engine moves it to the nearest open milestone not released, in version order, and says so in the report. One in a milestone not released stays.
+given:
+  repo: backlog
+  setup: ["git tag v1.0.0"]
+  forge:
+    milestones: [v1.0.0, v1.10.0, v1.9.0]
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", milestone: v1.0.0, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", milestone: v1.10.0, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, milestone: v1.9.0}
+      - {id: 10, milestone: v1.10.0}
+      - {id: 11, title: "Backlog — product owner", body-contains: "Put #9 in the milestone \"v1.9.0\""}

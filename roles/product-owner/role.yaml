@@ -25,7 +25,7 @@ duties:
   writes: []        # never the code nor the docs: the forge's issues only
 
 # comment: the engine's state comment on each issue it takes (pre).
-intentions: [open, close, sources, milestone, refine, ready, ask, comment, note]
+intentions: [open, close, sources, milestone, order, refine, ready, ask, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -38,10 +38,14 @@ settings:
   # Each kind of act: act (done, up to max a run), propose (in the report,
   # for a person), off (dropped). Closing as obsolete starts at propose
   # until the evaluation has measured how often it is wrong (ADR-0018).
+  # A run moves at most this share of the open issues, in percent —
+  # milestones and priorities counted together; past it, proposed (ADR-0018).
+  moved-percent-max: 20
   acts:
     open: {mode: act, max: 30}        # an item of a file opened as an issue, when importing
     sources: {mode: act, max: 10}     # the code an issue is about, named
-    milestone: {mode: act, max: 10}   # an issue put in a release's milestone
+    milestone: {mode: act, max: 10}   # an issue put in a release's milestone; one that slipped moved by the engine
+    order: {mode: act, max: 10}       # an issue's priority, workline:priority/1 to /4; a person's kept
     close-duplicate: {mode: act, max: 3}
     close-obsolete: {mode: propose, max: 3}
     refine: {mode: act, max: 5}       # the sections an issue lacks, Need and Validation as drafts

@@ -1,0 +1,2 @@
+- order: {issue: 9, priority: 1, why: "Rows lost hurt every report."}
+- milestone: {issue: 9, milestone: "v1.1.0", why: "the next release's fix"}

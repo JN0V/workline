@@ -1,0 +1,27 @@
+case: product-owner/order-capped-to-a-fifth
+about: A run moves at most a fifth of the open issues — put in a milestone or ordered, counted together, an issue moved twice counted once; past it, the moves are proposed in the report. Milestones are applied before priorities.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 1, title: "Issue 1", body: "Something 1.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 2, title: "Issue 2", body: "Something 2.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 3, title: "Issue 3", body: "Something 3.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 4, title: "Issue 4", body: "Something 4.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Issue 5", body: "Something 5.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 6, title: "Issue 6", body: "Something 6.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Issue 7", body: "Something 7.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Issue 8", body: "Something 8.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Issue 9", body: "Something 9.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Issue 10", body: "Something 10.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-past-a-fifth}
+expect:
+  findings: [{rule: moved-cap, where: "#2"}, {rule: moved-cap, where: "#3"}]
+  forge:
+    issues:
+      - {id: 1, milestone: v1.1.0, labels: [workline:priority/2]}
+      - {id: 2, labels: []}
+      - {id: 3, labels: []}
+      - {id: 4, milestone: v1.1.0}
+      - {id: 11, title: "Backlog — product owner", body-contains: "- [ ] Set #3's priority to 3"}
+      - {id: 11, body-contains: "- [ ] Set #2's priority to 1"}
