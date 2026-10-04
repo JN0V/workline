@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go]
-checked: dde4264
+checked: 545b60a
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
