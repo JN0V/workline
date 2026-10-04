@@ -130,3 +130,10 @@ apply job on v0.9.0, the first release with the reviewer.
 - **Push 3** (this file and status.md): the tests lens, third in turn
   (2.2k in, 0.15k out), the same defect; one comment still, `runs=3`; no
   issue opened.
+- **Push 4** (the fix, then `main` merged in): the correctness lens, back
+  at the start of the turn (21k in, 1.2k out; three judges on Opus, about
+  9.4k in, 0.9k out), given the code the new commits change: the fix, its
+  cases, and what the merge brought from `main` — a merge's commits count
+  as new. One nit on the change, three findings the judge refused; the
+  comment edited in place, `runs=4`; no issue opened. The documentalist's
+  commit that followed was not judged again (`Workline-Role:`).
