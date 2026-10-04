@@ -1,0 +1,15 @@
+case: documentalist/version-bump-not-suspect
+about: On a release tool's pull request, a commit that only puts one version number in place of another in a source makes no doc suspect unless the doc quotes the version replaced — else the release's own bump would hold it at every release; a real change beside it still does.
+given:
+  repo: documented
+  setup:
+    - "mkdir -p ci && printf 'env:\\n  VERSION: v1.2.0   # x-release-please-version\\n  NAME: tool\\n' > ci/job.yml && git add ci && git commit -qm 'ci: the job'"
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [ci/job.yml]\\nchecked: %s\\n---\\n# The job\\n\\nIt runs the tool.\\n' $C > docs/tech/job.md && git add docs && git commit -qm 'docs: the job'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.2.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/v1.2.0/v1.3.0/' ci/job.yml && git commit -qam 'chore(main): release 1.3.0' && git push -q origin release-please--branches--main"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: none}
+expect:
+  findings: [{rule: suspect, where: docs/tech/auth.md}]
+  no-findings: [{rule: suspect, where: docs/tech/job.md}]
