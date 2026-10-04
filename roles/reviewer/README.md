@@ -1,7 +1,8 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
 checked: d805123
-verified: agent:claude-code
+verified: agent:documentalist
+judged: 507e86b
 ---
 # Reviewer
 
