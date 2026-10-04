@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 8bdd941
+checked: 7fd9a2e
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -167,7 +167,8 @@ token), **apply** (trusted, no AI key).
    `{question, material}`. The engine asks each apart, at the best
    independence available from the agents that answered the run (as in
    step 4), writes its answer beside it — `answer.yaml`, `{yes, why, model,
-   judge, author, level}`, or `{error}` — and runs `pre` again with
+   judge, author, level}`, or `{error}`; the call kept with the run's,
+   `out/calls.jsonl` — and runs `pre` again with
    `WORKLINE_JUDGED=answered`, to read them. A no refuses nothing there:
    `pre` reads the answers one by one (the reviewer drops a finding judged
    no). Without an agent, or once `ai-max-tokens` is spent, none is asked;

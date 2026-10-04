@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 8bdd941
+checked: 7fd9a2e
 verified: agent:claude-code
 ---
 # Using workline
@@ -133,7 +133,8 @@ and links the line reports on every run are only counted. `git push
 
 Runs are kept in `.git/workline/runs/` (the last
 <!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
-agent call with what it cost in `out/calls.jsonl`, the agent's last answer
+agent call with what it cost in `out/calls.jsonl` (a judge's too, when
+`pre` asked it), the agent's last answer
 as it came in `out/agent-answer.txt`, each refused answer in
 `out/refused-<n>.yaml` (as it came: `out/refused-<n>-answer.txt`), and the
 claims an accepted answer gave, judged and never applied, in
