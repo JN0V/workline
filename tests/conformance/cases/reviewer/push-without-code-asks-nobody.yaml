@@ -1,0 +1,15 @@
+case: reviewer/push-without-code-asks-nobody
+about: On a merge request whose earlier commits changed code, a push whose new commits change only what the reviewer ignores asks no lens; its commits are recorded, and the turn of the lenses does not move.
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+    - "printf 'More words.\\n' >> README.md && git commit -qam 'docs: say more'"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  run-files: {out/review.json: {contains: "the 1 new commits recorded"}}
+  # Two commits now (a comma between them), and the run not counted.
+  files: {.git/workline/reviewer-record: {contains: [",", " runs=1 -->"]}}
