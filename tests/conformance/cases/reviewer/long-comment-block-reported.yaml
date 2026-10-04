@@ -1,0 +1,12 @@
+case: reviewer/long-comment-block-reported
+about: A comment block the change adds over comment-block-max lines is reported, as a warning; without an agent, the run says the change waits for a person's review.
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// one\\n// two\\n// three\\n// four\\n// five\\n// six\\n// seven\\n// eight\\n// nine\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: long-comment, where: "calc/calc.go:20", message: "a comment of 9 lines"}
+    - {rule: not-reviewed, message: "waits for a person's review"}

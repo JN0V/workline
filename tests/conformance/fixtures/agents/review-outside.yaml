@@ -1,0 +1,13 @@
+# A lens of the reviewer, on the `reviewed` fixture once Double is added:
+# two defects the change did not cause, both from before it.
+- finding:
+    severity: important
+    title: Parse drops the conversion error
+    why: "\"x\" reads as 0, and the caller cannot tell it from a real 0"
+    cause: {path: calc/calc.go, quote: "n, _ := strconv.Atoi(s)"}
+    fix: return the error
+- finding:
+    severity: important
+    title: Average panics on no values
+    why: an empty slice divides by zero
+    cause: {path: calc/calc.go, quote: "return total / len(values)"}

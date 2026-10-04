@@ -1,0 +1,11 @@
+# A lens of the reviewer, two nits on the change.
+- finding:
+    severity: nit
+    title: the divisor reads better named
+    why: (len(values) - 1) says nothing of why
+    cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+- finding:
+    severity: nit
+    title: Double on one line
+    why: the other functions are written over several lines
+    cause: {path: calc/calc.go, quote: "func Double(n int) int { return 2 * n }"}

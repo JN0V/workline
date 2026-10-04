@@ -1,0 +1,10 @@
+case: reviewer/docs-only-asks-nobody
+about: A change touching only what is not code (the reviewer's ignore) asks no agent, and says so.
+given:
+  repo: reviewed
+  setup:
+    - "printf 'More words.\\n' >> README.md && git commit -qam 'docs: say more'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0

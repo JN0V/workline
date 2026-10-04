@@ -1,0 +1,6 @@
+# A lens of the reviewer quoting code the file does not hold.
+- finding:
+    severity: important
+    title: the count is wrong
+    why: it divides by the count
+    cause: {path: calc/calc.go, quote: "return total / count"}

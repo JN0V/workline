@@ -1,0 +1,11 @@
+case: reviewer/reviewed-commits-not-asked-again
+about: Commits a review answered whole are recorded, and not put before an agent again; the rules still run.
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0

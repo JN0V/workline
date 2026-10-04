@@ -137,6 +137,11 @@ func skipped(subject string) bool {
 	return false
 }
 
+// InternalCodes finds the codes internal to the project in a text, by the
+// committer's settings: the reviewer looks for them in the comments a change
+// adds (roles/reviewer).
+func InternalCodes(text string, s Settings) ([]string, error) { return internalCodes(text, s) }
+
 func internalCodes(subject string, s Settings) ([]string, error) {
 	cleaned := subject
 	for _, a := range s.InternalCodesAllow {

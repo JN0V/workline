@@ -1,0 +1,7 @@
+# A lens of the reviewer proposing to fix the code itself, and to approve.
+- patch: |
+    --- a/calc/calc.go
+    +++ b/calc/calc.go
+    @@ -11 +11 @@
+    -	return total / (len(values) - 1)
+    +	return total / len(values)

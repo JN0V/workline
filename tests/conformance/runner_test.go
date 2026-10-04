@@ -86,6 +86,7 @@ type caseFile struct {
 		Init    bool              `yaml:"init"`
 		Setup   []string          `yaml:"setup"`         // workline setup, with these options
 		Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
+		Review  []string          `yaml:"review"`        // workline review, with these options
 		Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
 		Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
 		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
@@ -223,6 +224,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 		args = []string{"init", "--repo", repo, "--roles", roles, "--json"}
 	case c.Run.Setup != nil:
 		args = append(append([]string{"setup"}, c.Run.Setup...), "--json")
+	case c.Run.Review != nil:
+		args = append(append([]string{"review"}, c.Run.Review...), "--repo", repo, "--roles", roles, "--json")
 	case c.Run.Import != nil:
 		args = append(append([]string{"issues", "import"}, c.Run.Import...), "--repo", repo, "--json")
 	case c.Run.Sample != nil:

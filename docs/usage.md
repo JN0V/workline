@@ -15,6 +15,7 @@ What a role does is in its own README (`roles/<name>/README.md`).
 | `workline run-role <role> --event <event>` | runs one role: prepare, propose, judge, apply, again if `pre` left work for later (`in/more`), up to 5 rounds |
 | `workline route <event>` | runs the steps routing names for the event, in order; the first that does not pass stops the line |
 | `workline apply <run-dir>...` or `--line <file>` | applies runs judged with `--no-apply`, or resumes a run stopped while applying; `--line` takes the runs a `route --no-apply --json` result lists as `pending` |
+| `workline review` | the reviewer reviews this branch before it is pushed (roles/reviewer, ADR-0020): `<base>..HEAD` (`--base`, default the role's `base` setting, `main`), every lens (`--lenses` names some); the rules on the comments the change adds, then each lens, each finding's quote found again, the change's findings told from those outside it, each important one judged. Prints the findings, and the path of the run's `out/review.json`, for the author's agent to fix them before pushing; `--json`, `--sarif`, `--code-quality`, `--ai`, `--forge` (where an issue for what lies outside the change goes) |
 | `workline gate <name>` | runs a gate declared in `.workline/config.yaml` |
 | `workline item ready <id>` | moves a work item to `ready`, once its Need, Verification, Validation and Scope are written (`--forge` reads it from the forge) |
 | `workline issues` / `workline issues show <n>` / `show !<n>` | reads the local forge (`forge: local`, ADR-0016): lists the issues (`#<n>`) and merge requests (`!<n>`) kept in the clone, with their state and labels, or shows one whole, its comments after its body; writes nothing |
@@ -128,6 +129,7 @@ and links the line reports on every run are only counted. `git push
 | `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push (ADR-0011); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
 | `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
+| `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
 
 Runs are kept in `.git/workline/runs/` (the last
 <!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
@@ -185,11 +187,12 @@ replace the role's, key by key, one level deep.
 | `WORKLINE_AI` | the agent the git hook uses |
 | `WORKLINE_ROLES` | a folder of roles, as `--roles` |
 | `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
-| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; and the evaluation's judge |
+| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, a documentalist's split); and the evaluation's judge |
 | `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
 
 A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
-`WORKLINE_AI`, `WORKLINE_ROLE` and `WORKLINE_BIN`, `WORKLINE_FORGE` when a
+`WORKLINE_AI`, `WORKLINE_ROLE`, `WORKLINE_BIN` and `WORKLINE_ROLES_DIR`
+(the folder of roles), `WORKLINE_FORGE` when a
 forge is given, `WORKLINE_TARGET` (`merge-request:12`) with a target too, and
 `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
 `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`. On a release tool's

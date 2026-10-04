@@ -1,0 +1,10 @@
+case: reviewer/new-ai-rules-warn
+about: "What the lenses find, verified, warns until the evaluation has measured it (ai-findings warn): the run passes, the finding a warning in SARIF."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related", reports: true}
+expect:
+  status: pass
+  sarif: [{rule: reviewer/correctness, uri: calc/calc.go, line: 11, level: warning}]

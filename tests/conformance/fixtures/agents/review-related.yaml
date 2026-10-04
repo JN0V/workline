@@ -1,0 +1,8 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average divides by
+# one less than the count: a defect the change causes, quoted.
+- finding:
+    severity: important
+    title: Average divides by one less than the count
+    why: the mean of [2, 4] comes out 6, and one value divides by zero
+    cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+    fix: divide by len(values)

@@ -1,0 +1,12 @@
+case: reviewer/judged-no-not-reported
+about: An important finding the judge refuses is not reported on the change; it is dropped and said, with the judge's reason.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: finding-judged-no, message: "the judge: "}]
+  no-findings: [{rule: correctness, where: "calc/calc.go:11"}]
