@@ -1,10 +1,10 @@
 case: product-owner/code-named-by-a-symbol
-about: An issue naming no file but a symbol of the code — `WriteRows`, quoted as code — gets the file that holds it, docs left out; a symbol in more files than an issue takes is not guessed. A body with CRLF line ends reads as any other.
+about: An issue naming no file but a symbol of the code — `WriteRows`, quoted as code — gets the file that holds it, docs left out; a symbol in more files than an issue takes is not guessed. A body with CRLF line ends reads as any other; the engine's own lines and markers name no code.
 given:
   repo: backlog
   forge:
     issues:
-      - {id: 7, title: "Rows", body: "| LO-2 | Export | `WriteRows` stops short, and `Project` too |\r\n\r\nOpened from `README.md`, lines 1 to 3 by the product-owner role.\r\n", labels: [], comments: ["```yaml\nsources: []\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Rows", body: "| LO-2 | Export | `WriteRows` stops short, and `Project` too |\r\n\r\nOpened from `README.md`, lines 1 to 3 by the product-owner role.\r\n\r\n<!-- workline:import=README.md:a383a9b7cbf9 -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   status: pass

@@ -289,6 +289,10 @@ func trackedFiles(repo string) map[string]bool {
 // provenance is the line the engine ends an imported issue with.
 var provenance = regexp.MustCompile(`(?m)^Opened from .* by the [\w -]+ role\.\r?$`)
 
+// marker is the engine's hidden text in a body: the file it was imported
+// from, a key.
+var marker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
+
 // symbol is a name of the code an issue quotes as code: `WriteRows`,
 // `Core::publish()`.
 var symbol = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)(?:\\(\\))?`")
@@ -316,7 +320,7 @@ func named(repo string, is forge.Issue, st *backlog.State, tracked map[string]bo
 	}
 	// The file an issue was imported from is where it was written, not
 	// the code it is about.
-	body := provenance.ReplaceAllString(is.Body, "")
+	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
 	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
