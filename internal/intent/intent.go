@@ -30,6 +30,7 @@ var Catalogue = map[string]bool{
 	"refine":         true, // the sections an issue lacks written, Need and Validation as drafts (docs/spec/backlog-acts.md)
 	"ready":          true, // an issue moved to ready, once the engine finds it so (docs/spec/backlog-acts.md)
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
+	"finding":        true, // a lens's answer (in/parts): a defect, its cause quoted; read by pre, never applied (ADR-0020)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 }
 

@@ -72,7 +72,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), which may create a file (`--- /dev/null`) or delete one (`+++ /dev/null`), or `{file, content}` to replace one file; limited to `duties.writes` | locally, as a merge request of its own (`--open-merge-request`), or as a commit on the merge request run on (`--push-to-merge-request`) |
 | `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened); `issue: n` puts it on that issue instead | forge |
 | `label` | add or remove labels | forge |
-| `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened) | forge (`forge: local` keeps it in the clone); refused without one |
+| `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened); `{title, body, key, sources}` opens one once — the key hidden in its body, an open issue holding it left as it is — labelled `needs-triage`, with the product owner's state comment naming `sources` and the commit (ADR-0018, ADR-0020) | forge (`forge: local` keeps it in the clone); refused without one |
 | `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine (docs/spec/backlog-acts.md) | forge |
 | `open` | open an issue from a file's item, its text quoted, once (docs/spec/backlog-acts.md, "Importing a file") | forge |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
@@ -83,6 +83,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `ask` | ask an issue's reporter what is missing, once | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
+| `finding` | a lens's answer (role contract, "In parts"): `{severity, title, why, cause: {path, quote}, symptom, fix}`, `severity` `important` or `nit`; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 
 A role that needs another intention asks for it to be added here; it does not

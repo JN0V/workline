@@ -21,8 +21,11 @@ type Role struct {
 	Requires   []string `yaml:"requires"`
 	Uses       []string `yaml:"uses"`
 	Intentions []string `yaml:"intentions"`
-	Model      Model    `yaml:"model"`
-	Duties     struct {
+	// PartIntentions are what a part of a question may answer with
+	// (in/parts): claims when unset; a reviewer's lens answers findings.
+	PartIntentions []string `yaml:"part-intentions"`
+	Model          Model    `yaml:"model"`
+	Duties         struct {
 		Reads  []string `yaml:"reads"`
 		Writes []string `yaml:"writes"`
 	} `yaml:"duties"`
@@ -109,6 +112,15 @@ func Load(rolesDir, name string) (*Role, error) {
 	}
 	r.Dir = dir
 	return &r, nil
+}
+
+// PartAnswers are the intentions a part of a question may answer with:
+// `part-intentions`, else claims (docs/spec/role-contract.md, "In parts").
+func (r *Role) PartAnswers() []string {
+	if len(r.PartIntentions) > 0 {
+		return r.PartIntentions
+	}
+	return []string{"claim"}
 }
 
 // Accepts reports whether the role can run on event.
