@@ -151,8 +151,8 @@ func prepare(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	var files []string
-	for _, f := range strings.Fields(names) {
-		if !pathglob.Any(s.Ignore, f) {
+	for _, f := range strings.Split(strings.TrimSpace(names), "\n") { // a name may hold a space
+		if f != "" && !pathglob.Any(s.Ignore, f) {
 			files = append(files, f)
 		}
 	}
@@ -621,7 +621,6 @@ func settle(runDir, repo string, s Settings) int {
 		}
 	}
 	v.Findings = append(v.Findings, c.Logged...)
-	v.Findings = append(v.Findings, st.Advisories...)
 	if v.Complete {
 		v.Record = st.Record.add(st.Commits)
 	}
