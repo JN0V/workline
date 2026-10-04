@@ -1,5 +1,5 @@
 ---
-sources: [roles/product-owner, internal/builtin/productowner, internal/backlog]
+sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
 checked: 1bab30d
 verified: agent:claude-code
 ---

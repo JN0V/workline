@@ -1,6 +1,6 @@
 ---
 type: reference
-sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner]
+sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
 checked: 1bab30d
 verified: agent:claude-code
