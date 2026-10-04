@@ -9,28 +9,21 @@
 * **engine:** close an issue, its evidence quoted, by mode and cap ([b92c3a4](https://github.com/JN0V/workline/commit/b92c3a412fc6de65808afa6f0b217a4ce592b257))
 * **forge:** list open issues, read comments, close with a reason ([598490f](https://github.com/JN0V/workline/commit/598490f593fcf63559c1a3b7305891096fdec02c))
 * **forge:** list open milestones, put an issue in one ([25f5be5](https://github.com/JN0V/workline/commit/25f5be59124e78f02ba5e706b986b08daaa11575))
-* import a roadmap as issues; milestones for the product owner ([bd8fafd](https://github.com/JN0V/workline/commit/bd8fafd8d2005c71a037b435b54d5905c61b8391))
-* **issues:** import a roadmap file's open entries as issues ([495f0b1](https://github.com/JN0V/workline/commit/495f0b1ae43c20ad82f0255e55805a160cf10a02))
-* **product-owner:** close duplicates and propose obsolete issues ([1360957](https://github.com/JN0V/workline/commit/1360957b496a9e893aa400a52e992c677602f18b))
 * **product-owner:** give the agent the code an issue names ([571af87](https://github.com/JN0V/workline/commit/571af875779d41d950069b16a75adcb7e245d9ce))
-* **product-owner:** import a backlog file by reading it, not parsing it ([20caba6](https://github.com/JN0V/workline/commit/20caba6a4730a8d6a30ce86b3d6a591b0bdd6135))
 * **product-owner:** import a backlog file by reading it, not parsing it ([b1f9880](https://github.com/JN0V/workline/commit/b1f98804a7c86ce7bbe38616e0659ad200e46ac2))
 * **product-owner:** name the code an issue is about, quoted ([11d5457](https://github.com/JN0V/workline/commit/11d54575bd9a2e4eeeef9cb471c06d111a3dd73c))
 * **product-owner:** put an issue in a release's milestone ([9026e91](https://github.com/JN0V/workline/commit/9026e91576ceb59314b0a993f0ebc5cb7699fd85))
-* **product-owner:** read a real backlog, name sources, keep proposals ([e0d4916](https://github.com/JN0V/workline/commit/e0d49161c4548225f8c324df269c2367dfeaff0b))
 * **product-owner:** read a share of the backlog a run, again on change ([cfa827b](https://github.com/JN0V/workline/commit/cfa827b6e192bdc0db1d4be7d877a2f030dcd330))
 * **product-owner:** the role, closing duplicates and proposing obsolete ([84abfe6](https://github.com/JN0V/workline/commit/84abfe6e2495c0ce02cba2af5f34ec0279924bfd))
 
 
 ### Bug Fixes
 
-* **documentalist:** a release tool's version bump makes no doc suspect ([f6fe16b](https://github.com/JN0V/workline/commit/f6fe16b7f59dd4456a7e4ee021374cc907e39a80))
 * **documentalist:** a release tool's version bump makes no doc suspect ([545b60a](https://github.com/JN0V/workline/commit/545b60ae74ce5883dcbd9804abffa1d4a402d42d))
 * **product-owner:** an unreadable answer reads no issue ([9510691](https://github.com/JN0V/workline/commit/95106912335d6b7225364571e363624f355f00f5))
 * **product-owner:** give duplicate's original whole, though read before ([b2863af](https://github.com/JN0V/workline/commit/b2863afe321cd5257d7ffba1933be675cc62152e))
 * **product-owner:** keep a proposal in the report until it is settled ([104e79e](https://github.com/JN0V/workline/commit/104e79e1e624c63383a22fbb7e00db2766bc490b))
 * **product-owner:** see an undone closing and a new comment at once ([a03d3d4](https://github.com/JN0V/workline/commit/a03d3d4f86959d7cd8ffa88273d10c9a26fc36fd))
-* **product-owner:** what a live run on GitHub found; run it in CI ([1bab30d](https://github.com/JN0V/workline/commit/1bab30da7faadcef02787a6fc7a363a9b88939da))
 
 ## [0.4.0](https://github.com/JN0V/workline/compare/v0.3.0...v0.4.0) (2026-10-03)
 
