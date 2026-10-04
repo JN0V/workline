@@ -1,0 +1,43 @@
+case: backlog/import-capped-kept-proposed
+about: Importing past the cap of `open`, an item is proposed, the finding naming its title; it stays in the report at the next share, until an open issue holds its text.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+      
+      Where the project is going.
+      
+      ## Next
+      
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **A JSON export.** Done in 1.2.
+      
+      ## Later
+      
+      - Empty rows become blank lines; skip them.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {open: {mode: act, max: 1}}
+  forge:
+    issues:
+      - id: 1
+        title: "Backlog — product owner"
+        body: "An earlier share's report."
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 0, act: open, line: 'Open \"Sort the columns\", from ROADMAP.md.', key: 'import=ROADMAP.md:aaaaaaaaaaaa'}\n  - {issue: 0, act: open, line: 'Open \"Name the file\", from ROADMAP.md.', key: 'import=ROADMAP.md:bbbbbbbbbbbb'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+      - {id: 2, title: "Name the file", body: "Name it.\n\n<!-- workline:import=ROADMAP.md:bbbbbbbbbbbb -->", labels: [], comments: []}
+run: {role: product-owner, event: import, input: {file: ROADMAP.md, from: "1", to: "13"}, ai: fake:import-roadmap}
+expect:
+  findings: [{rule: no-quote, where: "Skip empty rows"}, {rule: act-cap, where: "Skip empty rows, again"}]
+  forge:
+    issues:
+      - {id: 3, title: "Keep the last row"}
+      - {id: 4, absent: true}
+      - {id: 1, body-contains: "- [ ] Open \"Sort the columns\", from ROADMAP.md.\n- [ ] Open \"Skip empty rows, again\", from ROADMAP.md.", comment-lacks: "Name the file"}
