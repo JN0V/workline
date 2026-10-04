@@ -4,8 +4,8 @@
 merge request (opt-in): rules first, lenses as parts, quotes found again,
 the change's findings told from the rest by where their cause lies, each
 important one judged; built and in conformance, tried with a real agent on
-a copy of workline and live on a sandbox pull request (tried.md), not
-released yet.
+a copy of workline and live on a sandbox pull request (tried.md),
+released in v0.9.0.
 
 ## Built
 
@@ -41,10 +41,9 @@ Conformance: tests/conformance/cases/reviewer.
    change did not touch was opened as an issue (tried.md); whether it
    should be is for #90's measure.
 8. **Tried in CI with forge writes**: workline's own pull requests run it
-   with `forge-writes: false` until a release ships the role to the apply
-   job, so the record and the summary comment are untried there, and each
-   push gets the correctness lens on the whole range: without a record, the
-   turn of the lenses does not move.
+   with forge writes on (the role's default) since v0.9.0 shipped the
+   role to the apply job; the summary comment, the record and the turn of
+   the lenses there are being tried (tried.md).
 9. **The judge's material**: thirty lines around the cause; it refused a
    true finding whose evidence lay further (tried.md). The functions the
    cause calls or is called by, given whole, are the next step.
