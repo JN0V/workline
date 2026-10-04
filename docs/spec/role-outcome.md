@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 5173ead
+checked: cc3a4f4
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -78,7 +78,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there (docs/spec/backlog-acts.md, "Refining to ready") | forge |
-| `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft; an outsider's is proposed | forge |
+| `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
 | `ask` | ask an issue's reporter what is missing, once | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |

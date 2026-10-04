@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: c094dd9
+checked: cc3a4f4
 verified: agent:claude-code
 ---
 # Conformance — v1 (draft)
@@ -115,8 +115,9 @@ a `PATH` without a tool, or with a fake one first.
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   and `comment-lacks` (a text some comment holds, or none does), `closed`
   and the `reason` it was closed for, its `milestone`, `branch`, `base` and
-  `title`, `body-contains` (a text its body holds); `absent: true` — no item
-  with that id.
+  `title`, `body-contains` and `body-lacks` (a text its body holds, or does
+  not); `absent: true` — no item with that id. `labels` there lists the
+  labels the forge defines, their order as id, by `title`.
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
   case's `origin`, or the message of that branch's tip.
 - `branches` — a text a file holds on a local branch of the repository.

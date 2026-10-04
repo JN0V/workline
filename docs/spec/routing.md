@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 1bab30d
+checked: cc3a4f4
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -117,7 +117,8 @@ On a forge, the state of a work item is a label (`workline:ready`,
 `workline:in-progress`…), readable by humans and by any CI. Without a forge, it
 is the `state:` line of the item's file in `.workline/work/<id>.md`, whose
 `## Need`, `## Verification`, `## Validation` and `## Scope` sections
-`workline item ready <id>` checks before moving it. Either way, a state changes only through the
+`workline item ready <id>` checks before moving it — `### ` headings too,
+as an issue form writes them, a field left `_No response_` empty. Either way, a state changes only through the
 engine, one transition at a time, and each transition is logged. *Built so far:
 the move to `ready`, and its check; transitions are not logged yet.*
 

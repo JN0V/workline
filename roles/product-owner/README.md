@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 5173ead
+checked: cc3a4f4
 verified: agent:claude-code
 ---
 # Product owner
@@ -38,7 +38,10 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    report issue lists what was done and proposed. A closing undone, the
    issue reopened, puts that kind back to `propose` (`wrong-closing`).
 
-Without an agent, only the state comments are written. On `import`,
+A person accepts the drafts with one label, `workline:accepted`, on one
+issue or many from the list of issues: the next run takes the draft lines
+out and moves each to `ready`, with or without an agent. Without an
+agent, otherwise, only the state comments are written. On `import`,
 `workline issues import <file>` has the agent read a committed file a
 share at a time — with the lines elsewhere in the file that name its
 items' ids, where a file often says what is done — and opens each item
