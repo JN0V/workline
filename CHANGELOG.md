@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/JN0V/workline/compare/v0.7.0...v0.7.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **product-owner:** an act capped is decided again at the next run ([#118](https://github.com/JN0V/workline/issues/118)) ([9c8b415](https://github.com/JN0V/workline/commit/9c8b415073b49c8f1cd30d07bda388d838506114))
+
 ## [0.7.0](https://github.com/JN0V/workline/compare/v0.6.0...v0.7.0) (2026-10-04)
 
 
