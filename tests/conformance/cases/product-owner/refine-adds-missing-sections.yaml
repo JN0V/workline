@@ -11,6 +11,6 @@ expect:
   findings: [{rule: sources-unknown, where: "#12"}]
   forge:
     issues:
-      - {id: 9, body-contains: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nEvery row exported, so a report counts what was sold.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe maintainer opens an export of a known day.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [workline:to-refine], comment-contains: "sources: [src/export/csv.go]"}
+      - {id: 9, body-contains: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nEvery row exported, so a report counts what was sold.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe maintainer opens an export of a known day.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [workline:to-refine, workline:draft], comment-contains: "sources: [src/export/csv.go]"}
       - {id: 12, body-contains: "Import XML.", labels: []}
       - {id: 13, title: "Backlog — product owner", body-contains: "Refined #9: Need (draft), Verification, Validation (draft), Scope."}

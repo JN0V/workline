@@ -1,0 +1,12 @@
+case: product-owner/refine-an-issue-form
+about: An issue opened from an issue form has its sections as level-three headings, an empty field reading "_No response_"; refining fills an empty one in place rather than adding it again, and leaves the reporter's alone.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "### Need\n\nThe monthly report counts every sale.\n\n### Verification\n\n_No response_\n\n### Validation\n\nAnn opens a known day.\n\n### Scope\n\n_No response_", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  forge:
+    issues:
+      - {id: 9, body-contains: "### Need\n\nThe monthly report counts every sale.\n\n### Verification\n\nA test writes three rows and reads three lines back.\n\n### Validation\n\nAnn opens a known day.\n\n### Scope\n\nWriteRows in src/export/csv.go.", body-lacks: "No response", labels: [workline:to-refine]}

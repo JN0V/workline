@@ -104,8 +104,8 @@ func Merge(fallback, agent []Intention) []Intention {
 			if kept {
 				out = append(out, f)
 			}
-		case !proposed[f.Kind] || sticky(f):
-			out = append(out, f) // a role's sticky proposal is its own record, not an alternative to the agent's
+		case !proposed[f.Kind] || sticky(f) || own(f):
+			out = append(out, f) // a role's sticky proposal is its own record, and an act pre decided is the engine's: neither an alternative to the agent's
 		}
 	}
 	return append(append(out, agent...), beside...)
@@ -303,6 +303,14 @@ func name(header, prefix string) string {
 }
 
 // sticky says whether a proposal keeps one comment or issue in place.
+// own says whether a fallback is an act pre decided itself, kept beside
+// the agent's of the same kind (a person's acceptance, read on a label).
+func own(in Intention) bool {
+	m, _ := in.Value.(map[string]any)
+	o, _ := m["own"].(bool)
+	return o
+}
+
 func sticky(in Intention) bool {
 	m, ok := in.Value.(map[string]any)
 	if !ok {

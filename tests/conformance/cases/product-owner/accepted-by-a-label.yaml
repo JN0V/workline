@@ -1,0 +1,18 @@
+case: product-owner/accepted-by-a-label
+about: A person accepts the drafts with one label, workline:accepted — which only someone allowed to triage can set — and the engine, with no agent, takes the draft lines out and moves the issue to ready, an outsider's too; one still lacking a section stays to refine. The agent cannot accept for a person — the label is read on the issue, not in a proposal.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: zed, insider: false, labels: [workline:to-refine, workline:draft, workline:accepted], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "No scope", body: "## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need.\n\n## Verification\n\nB.\n\n## Validation\n\nC.", author: ann, insider: true, labels: [workline:to-refine, workline:draft, workline:accepted], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Not accepted", body: "## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine, workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-eleven}
+expect:
+  findings: [{rule: not-ready, where: "#10"}, {rule: not-ready, where: "#11"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready], body-contains: "## Need\n\nThe monthly report counts every sale.", body-lacks: "workline:draft"}
+      - {id: 9, comment-contains: "body: "}
+      - {id: 10, labels: [workline:to-refine, workline:draft, workline:accepted]}
+      - {id: 11, labels: [workline:to-refine, workline:draft]}
