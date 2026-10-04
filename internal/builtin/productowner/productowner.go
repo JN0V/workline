@@ -21,6 +21,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 const (
@@ -119,7 +120,8 @@ func Pre(runDir, repo string) int {
 		case st.Judged == "":
 			never = append(never, due{is, st, comments})
 		case sourcesChanged(repo, st),
-			backlog.PeopleComments(comments) != st.Comments, // someone wrote since it was read
+			backlog.PeopleComments(comments) != st.Comments,         // someone wrote since it was read
+			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
 			slices.Contains(reopened, is.ID):
 			changed = append(changed, due{is, st, comments})
 		default:
@@ -147,7 +149,7 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		read := *d.st
-		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
+		read.Judged, read.Comments, read.Body = commit, backlog.PeopleComments(d.comments), backlog.BodyDigest(d.is.Body)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 	}
@@ -205,6 +207,14 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	if is.Milestone != "" {
 		fmt.Fprintf(b, "Milestone: %s\n", is.Milestone)
 	}
+	if is.Author != "" {
+		outside := ""
+		if !is.Insider {
+			outside = ", without write access to the project"
+		}
+		fmt.Fprintf(b, "Opened by: %s%s\n", is.Author, outside)
+	}
+	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
@@ -224,6 +234,32 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	for _, c := range kept {
 		fmt.Fprintf(b, "Comment:\n> %s\n\n", strings.ReplaceAll(clip(c, bodyMax), "\n", "\n> "))
 	}
+}
+
+// sections says which of the four sections an issue's body has, and which
+// are drafts no person made theirs yet.
+func sections(body string) string {
+	have := work.Sections(body)
+	var there, missing []string
+	for _, name := range backlog.Sections {
+		text := strings.TrimSpace(have[name])
+		switch {
+		case text == "":
+			missing = append(missing, name)
+		case strings.Contains(text, backlog.DraftMarker):
+			there = append(there, name+" (draft)")
+		default:
+			there = append(there, name)
+		}
+	}
+	out := "none"
+	if len(there) > 0 {
+		out = strings.Join(there, ", ")
+	}
+	if len(missing) > 0 {
+		out += "; missing: " + strings.Join(missing, ", ")
+	}
+	return out
 }
 
 // trackedFiles lists the files of the commit the run is on.

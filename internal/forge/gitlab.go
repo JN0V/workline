@@ -231,13 +231,18 @@ func (g *gitlab) Issues() ([]Issue, error) {
 		Milestone   *struct {
 			Title string `json:"title"`
 		} `json:"milestone"`
+		Author struct {
+			Username string `json:"username"`
+		} `json:"author"`
 	}](out)
 	var all []Issue
 	for _, f := range found {
 		if f.Labels == nil {
 			f.Labels = []string{}
 		}
-		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels}
+		// Who has write access is not in the issue: every reporter is taken
+		// for an outsider (docs/spec/backlog-acts.md, "Refining to ready").
+		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username}
 		if f.Milestone != nil {
 			is.Milestone = f.Milestone.Title
 		}
@@ -492,6 +497,11 @@ func (g *gitlab) Milestones() ([]string, error) {
 	}
 	sort.Strings(out)
 	return out, err
+}
+
+func (g *gitlab) SetBody(id int, body string) error {
+	_, err := g.api("-X", "PUT", path(Target{Kind: "issue", ID: id}), "-f", "description="+body)
+	return err
 }
 
 func (g *gitlab) SetMilestone(id int, title string) error {

@@ -19,7 +19,7 @@ or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It does
 not answer the backlog's operations yet (`issues`, `comments`, `close`,
-`milestones`, `set-milestone`), nor a merge request's `base`.
+`milestones`, `set-milestone`, `set-body`), nor a merge request's `base`.
 
 ## One request, one run
 
@@ -53,11 +53,12 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `operation` | Arguments | Does | Answers |
 |---|---|---|---|
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
-| `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone}]}` |
+| `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, author, insider}]}` — `insider` true when the author has write access to the project; left out, the author is taken for an outsider |
 | `comments` | `target` | reads the comments on the target, oldest first | `{comments: [bodies]}` |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
 | `milestones` | | lists the titles of the open milestones | `{milestones: [titles]}` |
 | `set-milestone` | `id`, `milestone` | puts the issue in the open milestone with this title, creating it when there is none | `{}` |
+| `set-body` | `id`, `body` | rewrites the issue's body | `{}` |
 | `comment` | `target`, `body`, `marker` | posts `body` + a blank line + `marker` on the target, unless a comment there holds `marker` | `{}` |
 | `sticky` | `target`, `body`, `marker`, `create` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true | `{}` |
 | `label` | `target`, `add`, `remove` | adds the labels (creating them on the forge if needed), removes the others; one already there, or already gone, changes nothing | `{}` |

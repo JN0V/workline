@@ -36,6 +36,19 @@ which is — from the names the issue uses and the code given — propose
 `sources`: the files (1 to 5), and a line quoted from one of them that
 shows it. The issue is read again, with that code, at the next run.
 
+**Refine** an issue toward `ready`: its body needs four sections —
+`## Need` (who needs what, and why), `## Verification` (how the machine
+will prove it: which tests, checks), `## Validation` (who accepts it,
+looking at what), `## Scope` (the part of the code it touches). The task
+says which it has, and which are drafts. Propose `refine` with those it
+lacks: `scope` and `sources` (the files, 1 to 5, from the code given),
+`verification` from the code and its tests; `need` and `validation` only
+from the issue's own words — they are drafts, the reporter's to make
+theirs. A section it has is never rewritten. When the issue does not say
+enough to draft its need, propose `ask` instead: `questions`, short, for
+its reporter. When the four sections are there and neither Need nor
+Validation is a draft, propose `ready`: the engine checks it.
+
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;
 one whose code you were not given waits for its sources: the task says the last release

@@ -25,6 +25,8 @@ type Issue struct {
 	Labels    []string `json:"labels"`
 	Closed    bool     `json:"closed,omitempty"`
 	Milestone string   `json:"milestone,omitempty"` // the title of the milestone it is in, if any
+	Author    string   `json:"author,omitempty"`    // who opened it
+	Insider   bool     `json:"insider,omitempty"`   // its author has write access to the project; false when the forge does not say
 }
 
 // Forge is what the engine needs from one.
@@ -68,6 +70,8 @@ type Backlog interface {
 	// SetMilestone puts an issue in the open milestone with this title,
 	// creating it when there is none.
 	SetMilestone(id int, title string) error
+	// SetBody rewrites an issue's body.
+	SetBody(id int, body string) error
 }
 
 // MergeRequest is where a merge request comes from and where it goes.

@@ -33,11 +33,16 @@ func (g *github) Issue(id int) (*Issue, error) {
 		Labels []struct {
 			Name string `json:"name"`
 		} `json:"labels"`
+		User struct {
+			Login string `json:"login"`
+		} `json:"user"`
+		Association string `json:"author_association"`
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
 	}
-	is := &Issue{ID: v.Number, Title: v.Title, Body: v.Body, Labels: []string{}, Closed: v.State == "closed"}
+	is := &Issue{ID: v.Number, Title: v.Title, Body: v.Body, Labels: []string{}, Closed: v.State == "closed",
+		Author: v.User.Login, Insider: insider(v.Association)}
 	for _, l := range v.Labels {
 		is.Labels = append(is.Labels, l.Name)
 	}
@@ -60,13 +65,32 @@ func lines[T any](out []byte) ([]T, error) {
 
 func (g *github) Issues() ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state=open&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\")}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association}")
 	if err != nil {
 		return nil, err
 	}
-	all, err := lines[Issue](out)
+	found, err := lines[struct {
+		Issue
+		Association string `json:"association"`
+	}](out)
+	var all []Issue
+	for _, f := range found {
+		f.Issue.Insider = insider(f.Association)
+		all = append(all, f.Issue)
+	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
 	return all, err
+}
+
+// insider says whether GitHub's author_association gives write access:
+// the owner, a member of the organisation, a collaborator.
+func insider(association string) bool {
+	return association == "OWNER" || association == "MEMBER" || association == "COLLABORATOR"
+}
+
+func (g *github) SetBody(id int, body string) error {
+	_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "body="+body)
+	return err
 }
 
 func (g *github) Comments(t Target) ([]string, error) {

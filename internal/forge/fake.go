@@ -35,6 +35,8 @@ type FakeItem struct {
 	Body      string   `json:"body,omitempty"`
 	Labels    []string `json:"labels"`
 	Comments  []string `json:"comments"`
+	Author    string   `json:"author,omitempty"`
+	Insider   bool     `json:"insider,omitempty"`
 }
 
 func (f *Fake) load() (*FakeState, error) {
@@ -91,7 +93,7 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider}, nil
 }
 
 func (f *Fake) Issues() ([]Issue, error) {
@@ -102,7 +104,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 	var out []Issue
 	for _, it := range s.Issues {
 		if !it.Closed {
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -288,6 +290,17 @@ func (f *Fake) Milestones() ([]string, error) {
 		return nil, err
 	}
 	return s.Milestones, nil
+}
+
+func (f *Fake) SetBody(id int, body string) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil {
+			return err
+		}
+		it.Body = body
+		return nil
+	})
 }
 
 func (f *Fake) SetMilestone(id int, title string) error {
