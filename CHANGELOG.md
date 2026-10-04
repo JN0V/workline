@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/JN0V/workline/compare/v0.5.0...v0.6.0) (2026-10-04)
+
+
+### Features
+
+* **product-owner:** find an issue's code by the symbols it quotes ([1597eb5](https://github.com/JN0V/workline/commit/1597eb51b9c8f58344ad421a0cede8e198c454ad))
+* **product-owner:** refine an issue to ready ([9004ad5](https://github.com/JN0V/workline/commit/9004ad59c7503b4c788641fadf67222be4fe1a95))
+
+
+### Bug Fixes
+
+* **product-owner:** a file named alone is the one the commit holds ([7717def](https://github.com/JN0V/workline/commit/7717def50dd25eb506cad5b70abeb61f0dcf8e1a))
+* **product-owner:** an import past its cap keeps what it proposed ([6a2679c](https://github.com/JN0V/workline/commit/6a2679c76bcdbfb201408902ff699f74c853a314))
+* **product-owner:** an import sees what the rest of the file says ([c094dd9](https://github.com/JN0V/workline/commit/c094dd9a22dd737b98aeee2bc87e404ccd34e829))
+* **product-owner:** an issue's import line names no code; refine each ([db1d1f2](https://github.com/JN0V/workline/commit/db1d1f2cf4af46caabc47424e1ce7f667915a245))
+* **product-owner:** draft is agent's text alone; report says what to do ([c42196d](https://github.com/JN0V/workline/commit/c42196d4a3f2e67569d9b0a5d00fa2b479a9b7fb))
+* **product-owner:** show the agent how to refine, ready and ask ([19a02f7](https://github.com/JN0V/workline/commit/19a02f71097a13eb58423b363639cab4eb588445))
+* **product-owner:** the code a person names in a comment is given ([5173ead](https://github.com/JN0V/workline/commit/5173ead1c717ec34e5185021437831068fb775f3))
+
 ## [0.5.0](https://github.com/JN0V/workline/compare/v0.4.0...v0.5.0) (2026-10-04)
 
 
