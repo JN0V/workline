@@ -16,7 +16,7 @@
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
 //	workline docs [--repo <dir>] [--ai ...]
-//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--json]
+//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -1237,6 +1237,7 @@ func initCmd(args []string) int {
 	ai := fs.String("ai", "", "agent proposing each doc's sources (default: the project's, else yours, else none)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	review := fs.Bool("review", false, "also have the reviewer review each merge request (ADR-0020): added to the project's merge-request line")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -1256,6 +1257,18 @@ func initCmd(args []string) int {
 	config := "pre-push runs " + strings.Join(steps, ", ") + ", as the project set it"
 	if changed {
 		config = "pre-push now runs " + strings.Join(steps, ", ") + " (.workline/config.yaml)"
+	}
+	if *review {
+		steps, changed, err := routing.AddReviewer(root)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		if changed {
+			config += "; merge requests now run " + strings.Join(steps, ", ")
+		} else {
+			config += "; merge requests run " + strings.Join(steps, ", ") + ", the reviewer among them already"
+		}
 	}
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
 	if *asJSON {

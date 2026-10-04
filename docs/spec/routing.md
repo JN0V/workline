@@ -122,7 +122,17 @@ as an issue form writes them, a field left `_No response_` empty. Either way, a 
 engine, one transition at a time, and each transition is logged. *Built so far:
 the move to `ready`, and its check; transitions are not logged yet.*
 
+## The reviewer, opt-in
+
+The reviewer (ADR-0020) is in no shipped line: a project adds it to its
+`merge-request` line, by hand or with `workline init --review`, and runs
+it on a machine before a push with `workline review`. On a merge request it
+reviews the commits not reviewed yet, one lens a push; with `--input
+lenses=all`, every lens. It never moves an item: `review` stays the
+machine's part, `validation` the person's.
+
 ## Not in this version
 
-The developer, reviewer and tester roles, which will consume `ready` items;
-splitting an item into sub-issues, which the product owner does not do yet.
+The developer and tester roles, which will consume `ready` items; the
+reviewer's review of a spec before an item goes `ready`; splitting an item
+into sub-issues, which the product owner does not do yet.
