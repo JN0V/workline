@@ -23,6 +23,10 @@ is common and weak; and that none decides mechanically whether a finding
 belongs to the change or was there before — the model says "pre-existing",
 or nothing.
 
+Borrowed, credited there: BMAD-METHOD's lenses run apart, its floor on
+candidate findings, its verified triage and its bounded rounds; Claude Code
+Review's verification step; gh-aw's cap; CodeRabbit's warn before block.
+
 ## Decision
 
 **One role, two subjects, two moments.** The `reviewer` reviews code — and,
