@@ -129,6 +129,15 @@ last.
 
 ### Engine and CI
 
+- **A doc-only merge request runs no build.** Doc changes are frequent —
+  the documentalist's merge requests, a person's — and a project's CI
+  rebuilds everything for them: DomoticsCore builds three boards and its
+  on-device suites (JN0V/DomoticsCore#195). The way, in the ecosystem's
+  words: a first job tells what changed (`dorny/paths-filter`, GitLab's
+  `rules: changes`), the heavy jobs skipped with `if:`; never a
+  workflow-level `paths-ignore`, which leaves required checks waiting
+  forever. To write into docs/ci.md and the CI templates once tried on
+  DomoticsCore; workline's own `test` job too.
 - **A derived block on a release tool's pull request.** On a release pull
   request every fix goes to a merge request of its own into the base
   (ADR-0017), but a derived block quoting a version is a function of the
