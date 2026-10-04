@@ -20,25 +20,22 @@ CodeRabbit's incremental review among the caps and caches (ci-and-forge.md,
 
 ## Finders and verification
 
-- **BMAD-METHOD, `bmad-code-review`**
-  ([skills/bmad-code-review](https://github.com/bmad-code-org/BMAD-METHOD/tree/main/skills/bmad-code-review)).
-  Lenses, each a subagent: the *Blind Hunter* sees the diff only; the *Edge
-  Case Hunter* does "exhaustive path enumeration — mechanically walk every
-  branch"; a *Verification Gap Reviewer*; an *Intent Alignment Auditor*.
-  Only the Blind Hunter has a finding floor: "N = min(floor(sqrt(kB) + 1),
-  10), where kB is the file's size in kilobytes" (`customize.toml`). A claims
-  check reads the pull request's story as "the author's testimony, not
-  evidence" (`references/claims-check.md`).
-  Triage (`step-03-triage.md`): "Disregard any severity a reviewing subagent
-  assigned", verify "at the cited file and line", verdicts `high`, `medium`,
-  `low`, `false`, `maybe-false`, routed to patch, decision_needed or defer —
-  "never drop, merge, or silently skip one". Verification-gap findings
-  arrive pre-verified. `bmad-build-auto/step-04-review.md` halts a repair
-  loop past 5 iterations: "non-convergence". The v6.0.0 "ADVERSARIAL Senior
-  Developer" review asked for "3-10 specific issues in every review minimum".
-  CHANGELOG #2675: "the 'cynical, jaded reviewer' framing made no difference
-  to residual-bug hit rate, while requiring at least ten concrete findings
-  and asking what is missing did."
+- **A lens-based review workflow** (an open-source agent method's code
+  review). Several finders, each a subagent in a context of its own: one
+  given the diff and nothing else; one for edge cases, following each
+  branch and boundary the change touches; one for the verification gap —
+  would the checks fail if the behaviour broke where it is used; one for
+  intent, the change against the issue it links. The author's account
+  (commit messages, the pull request's body) is a set of claims to contest,
+  not evidence. Only the diff-only finder has a floor on its number of
+  candidates, growing with the square root of the change's size and capped
+  at ten. A triage step sets each finder's severity aside, verifies each
+  claim at the file and line it cites, and gives every finding a verdict
+  and a route — none dropped without one. A repair loop stops after five
+  rounds and hands over to a person. An earlier version required a minimum
+  number of *reported* findings; its changelog later found a harsh
+  reviewer persona did nothing for the bugs left, while a floor on concrete
+  findings and asking what is missing did.
 - **Claude Code Review** ([docs](https://code.claude.com/docs/en/code-review)):
   finders in parallel, then "a verification step checks candidates against
   actual code behavior to filter out false positives"; findings labelled
@@ -104,23 +101,23 @@ CodeRabbit's incremental review among the caps and caches (ci-and-forge.md,
 
 | Taken | From |
 |---|---|
-| Lenses as finders, each in a context of its own; commit messages are testimony | BMAD |
+| Lenses as finders, each in a context of its own; commit messages are claims to contest | the lens-based workflow |
 | A verification step for every important candidate, at another model when one is there | Claude Code Review; ADR-0005 |
-| A finding floor on candidates only, its value to be measured (#90) | BMAD's formula |
+| A finding floor on candidates only, its value to be measured (#90) | the lens-based workflow |
 | Important and Nit, pre-existing apart | Claude Code Review |
 | Skip what is not code, and what was reviewed already | the plugin; CodeRabbit's incremental review |
-| Never drop silently: each finding dropped is said, with why | BMAD's triage |
+| Never drop silently: each finding dropped is said, with why | the lens-based workflow's triage |
 | Warn before block, the level per rule | CodeRabbit's pre-merge checks; role-outcome.md |
 | Findings kept to what the change touches | reviewdog's `added` filter, decided by the cause's quote |
 | A cap on what is posted, the rest counted | gh-aw's safe outputs |
-| A loop bounded at five rounds, then a person | BMAD's non-convergence |
+| A loop bounded at five rounds, then a person | the lens-based workflow's repair loop |
 | Never approve, never merge | Copilot's default, Claude Code Review's neutral check |
 
 | Refused | Why |
 |---|---|
-| A minimum of *posted* findings (v6's 3 to 10) | it manufactures noise; the floor stays on candidates, which the engine and the judge filter |
+| A minimum of *reported* findings (the lens-based workflow's earlier version) | it manufactures noise; the floor stays on candidates, which the engine and the judge filter |
 | Self-triage by the same model (Qodo's self-reflection) | ADR-0005: the best independence available, said |
-| The reviewer patching (BMAD's `patch` route) | one role, one job: the author fixes (principle 2) |
+| The reviewer patching (a triage route in the lens-based workflow) | one role, one job: the author fixes (principle 2) |
 | A menu asking the person at each step | people at both ends only (principle 1) |
 | Approving (Copilot's preview, CodeRabbit's auto-approve) | the person merges |
 
