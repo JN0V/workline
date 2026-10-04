@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/JN0V/workline/compare/v0.7.1...v0.8.0) (2026-10-04)
+
+
+### Features
+
+* **product-owner:** order the backlog and move what slipped ([#122](https://github.com/JN0V/workline/issues/122)) ([9bb2be5](https://github.com/JN0V/workline/commit/9bb2be55cd58af5a4e4c4a55bc30d459e4cf0c89))
+
 ## [0.7.1](https://github.com/JN0V/workline/compare/v0.7.0...v0.7.1) (2026-10-04)
 
 
