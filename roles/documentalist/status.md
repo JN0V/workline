@@ -242,7 +242,7 @@ refused and the rest of the doc's patch, to be sent again unchanged; each
 run keeps the agent's answers as they came and the accepted claims
 (`out/agent-answer.txt`, `out/refused-<n>-answer.txt`, `out/claims.yaml`).
 The line no part claimed, the fixed bug left for a person, and a part's
-`supported` resting on a comment are parked (docs/BACKLOG.md).
+`supported` resting on a comment are parked (#106).
 
 ADR-0014 step 4, the acceptance (tried.md, 2026-10-02; Sonnet, 4.63M
 tokens): the held-out set — WaterMeter, DomoticsCore after #114,

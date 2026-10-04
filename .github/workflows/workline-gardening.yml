@@ -16,7 +16,8 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
-    permissions: {contents: read, pull-requests: read}
+    # issues: the product owner reads them.
+    permissions: {contents: read, pull-requests: read, issues: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
       proposed: ${{ steps.line.outputs.proposed }}
@@ -67,7 +68,8 @@ jobs:
     needs: judge
     if: always() && needs.judge.outputs.proposed == 'true'
     runs-on: ubuntu-latest
-    permissions: {contents: write, pull-requests: write}
+    # issues: the product owner's acts and its report issue.
+    permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app
         if: vars.WORKLINE_APP_ID != ''

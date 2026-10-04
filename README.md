@@ -209,4 +209,4 @@ real cases, and costs tokens, so it runs only when asked:
 - [CI](docs/ci.md) — setting it up on GitHub, gitlab.com, a self-managed GitLab
 - [Principles](docs/PRINCIPLES.md) — the rules every choice is checked against
 - [Role contract](docs/spec/role-contract.md) — what a role is
-- [Decisions](docs/adr/) · [Research](docs/research/) · [Backlog](docs/BACKLOG.md)
+- [Decisions](docs/adr/) · [Research](docs/research/) · [Backlog](https://github.com/JN0V/workline/issues)
