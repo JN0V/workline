@@ -102,6 +102,9 @@ type Pending struct {
 	Act   string `yaml:"act"`
 	Line  string `yaml:"line"`
 	Key   string `yaml:"key,omitempty"` // an issue to open: the text it would be opened from (ImportKey)
+	// Capped: proposed only because the run's cap was reached, not left to
+	// a person by its mode: its issue is read again at the next run.
+	Capped bool `yaml:"capped,omitempty"`
 }
 
 // Closing is one issue the role closed.
@@ -170,9 +173,10 @@ var Kinds = []string{"open", "close", "sources", "milestone", "refine", "ready",
 
 // Decision is what becomes of one act.
 type Decision struct {
-	Index int      `yaml:"index"` // the intention's place in the run
-	Mode  string   `yaml:"mode"`  // act, propose, or off (dropped)
-	Act   Proposal `yaml:"act"`
+	Index  int      `yaml:"index"` // the intention's place in the run
+	Mode   string   `yaml:"mode"`  // act, propose, or off (dropped)
+	Act    Proposal `yaml:"act"`
+	Capped bool     `yaml:"capped,omitempty"` // proposed only for the cap
 }
 
 // Plan is what a run does with its acts, decided once, so a resumed run
@@ -187,6 +191,7 @@ type Plan struct {
 	issues    map[int]forge.Issue
 	bodies    []string        // their bodies, to find an import again
 	seen      map[string]bool // the imports this run decided
+	read      []int           // the issues this run read
 }
 
 // Setting is a kind of act's mode and cap.
@@ -219,8 +224,10 @@ var closeReasons = []string{"duplicate", "obsolete"}
 const maxSources = 5
 
 // Decide plans the acts proposed, given at their place in the run.
-func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal) (*Plan, error) {
-	p := &Plan{}
+// read lists the issues the run read: a proposal made only for a cap is
+// dropped once its issue was read again, decided again or not.
+func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal, read []int) (*Plan, error) {
+	p := &Plan{read: read}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
@@ -263,7 +270,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 					Message: "opened by someone without write access to the project: moving it to ready is proposed, not done"})
 			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
-				d.Mode = Propose
+				d.Mode, d.Capped = Propose, true
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
 					Message: fmt.Sprintf("%s: at most %d a run; this one is proposed", c.Kind(), s.Max)})
 			}
@@ -300,13 +307,16 @@ func (p *Plan) keepProposed() {
 			marker := forge.Marker(key)
 			settled = slices.ContainsFunc(p.bodies, func(b string) bool { return strings.Contains(b, marker) })
 		}
+		if q.Capped && slices.Contains(p.read, q.Issue) {
+			settled = true // read again: the agent decided it anew, or not at all
+		}
 		if !settled && !decided[key] {
 			kept = append(kept, q)
 		}
 	}
 	for _, d := range p.Decisions {
 		if d.Mode == Propose {
-			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close")}
+			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close"), Capped: d.Capped}
 			if d.Act.Do == "open" {
 				q.Key = d.Act.key()
 			}
@@ -832,6 +842,42 @@ func PeopleComments(comments []string) int {
 		}
 	}
 	return n
+}
+
+// CappedByRole lists the issues an act was proposed on only because a run's
+// cap was reached: they are read again, though nothing changed on them.
+func CappedByRole(f forge.Backlog, role string, open []forge.Issue) []int {
+	r := record(f, role, open)
+	if r == nil {
+		return nil
+	}
+	var ids []int
+	for _, q := range r.Proposed {
+		if q.Capped && q.Issue > 0 {
+			ids = append(ids, q.Issue)
+		}
+	}
+	return ids
+}
+
+// record reads the role's record from its report issue; nil when there is
+// none or it does not read.
+func record(f forge.Backlog, role string, open []forge.Issue) *Record {
+	for _, is := range open {
+		if is.Title != ReportTitle(role) {
+			continue
+		}
+		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
+		if err != nil {
+			return nil
+		}
+		var r Record
+		if _, err := readBlock(comments, RecordMarker(role), &r); err != nil {
+			return nil
+		}
+		return &r
+	}
+	return nil
 }
 
 // ClosedByRole lists the issues the role's record says it closed, read from

@@ -1,0 +1,25 @@
+case: product-owner/capped-act-read-again
+about: An act proposed only because the run's cap was reached has its issue read again at the next run — first, before an issue never read — though nothing changed on it; read again, the proposal leaves the report, decided anew or not. A proposal left to a person by its mode is neither read again nor dropped for that.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {issues-per-run: 1}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Gone", body: "Something gone.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 11
+        title: "Backlog — product owner"
+        body: "An earlier report."
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 9, act: refine, line: 'Refine #9', capped: true}\n  - {issue: 10, act: close-obsolete, line: 'Close #10 as obsolete'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+      - {id: 12, title: "Never read", body: "New.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md: {contains: "## #9 Rows lost\n\nSections", not-contains: "## #12 Never read\n\nSections"}
+  forge:
+    issues:
+      - {id: 11, comment-contains: "Close #10 as obsolete", comment-lacks: "Refine #9"}
