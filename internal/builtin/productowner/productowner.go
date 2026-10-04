@@ -141,7 +141,7 @@ func Pre(runDir, repo string) int {
 			continue
 		}
 		judged++
-		files := named(repo, d.is, d.st, tracked)
+		files := named(repo, d.is, d.st, d.comments, tracked)
 		writeIssue(&task, d.is, d.st, d.comments, files)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
@@ -171,7 +171,7 @@ func Pre(runDir, repo string) int {
 	var related strings.Builder
 	shown := 0
 	for _, d := range rest {
-		files := named(repo, d.is, d.st, tracked)
+		files := named(repo, d.is, d.st, d.comments, tracked)
 		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
 			shown++
 			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
@@ -303,7 +303,7 @@ var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`
 // title and body name that the commit holds, at most filesPerIssue. A file
 // named alone (`csv.go:5`, as a roadmap writes it) is the one file of the
 // commit with that name; a name two files share is not guessed.
-func named(repo string, is forge.Issue, st *backlog.State, tracked map[string]bool) []string {
+func named(repo string, is forge.Issue, st *backlog.State, comments []string, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
 		p, _, _ = strings.Cut(p, "#")
@@ -321,6 +321,11 @@ func named(repo string, is forge.Issue, st *backlog.State, tracked map[string]bo
 	// The file an issue was imported from is where it was written, not
 	// the code it is about.
 	body := marker.ReplaceAllString(provenance.ReplaceAllString(is.Body, ""), "")
+	for _, c := range comments {
+		if !strings.Contains(c, "<!-- workline:") { // a person's: an answer may name the code
+			body += "\n" + c
+		}
+	}
 	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
