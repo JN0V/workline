@@ -18,7 +18,7 @@ given:
 run: {role: documentalist, event: schedule, ai: none}
 expect:
   status: pass
-  applied: [issue]
+  applied: [issue, issue]   # docs due, and docs waiting for a person (kept only if open)
   files:
     .git/workline/issues/4.md: {contains: "`docs/product/sign-in.md` — docs/tech/auth.md#token-refresh changed", lacks: "docs/old.md"}
     .git/workline/issues/5.md: {exists: false}

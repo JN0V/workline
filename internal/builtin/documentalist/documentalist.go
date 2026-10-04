@@ -944,6 +944,17 @@ doc when its reader really gained something to know.
 		}
 	}
 	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool { return f.Rule == "" })
+	// Once each finding says what became of its doc: those left to a person.
+	if i, ok := personIssue(findings, repo); ok {
+		file := filepath.Join(runDir, "in", "fallback.yaml")
+		fallback, err := intent.Read(file)
+		if err != nil {
+			return fail(err)
+		}
+		if err := intent.Write(file, append(fallback, i)); err != nil {
+			return fail(err)
+		}
+	}
 	if left.Len() > 0 { // the engine runs another round, once this one is applied
 		if err := os.WriteFile(filepath.Join(runDir, "in", "more"), []byte(left.String()), 0o644); err != nil {
 			return fail(err)
@@ -2072,5 +2083,57 @@ func trackingIssue(findings []verdict.Finding) (intent.Intention, bool) {
 	} else {
 		value["body"] = "These docs follow docs that changed, and are brought up to date at the moment their edge names — the release, by default — when the documentalist runs at the release (`workline route release`), before the release tool tags; until then, the release waits for them.\n\n" + list.String()
 	}
+	return intent.Intention{Kind: "issue", Value: value}, true
+}
+
+// forAPerson says whether a finding leaves its doc to a person: every note
+// that does ends by saying what "a person" does — reads it, judges it,
+// fixes the places refused — then moves `checked`.
+func forAPerson(f verdict.Finding) bool {
+	switch f.Rule {
+	case "suspect", "due", "stale":
+		return strings.Contains(f.Message, "a person ")
+	}
+	return false
+}
+
+// personIssue keeps, when gardening with a forge, one issue listing the
+// docs only a person can clear, each with why and what to do: what the
+// machine cannot do is said where the person looks, not left in a job's
+// log (principle 14). They stay suspect until cleared; those not judged
+// since their sources changed hold the next release (holdTheRelease).
+func personIssue(findings []verdict.Finding, repo string) (intent.Intention, bool) {
+	if os.Getenv("WORKLINE_FORGE") == "" || os.Getenv("WORKLINE_EVENT") != "schedule" {
+		return intent.Intention{}, false
+	}
+	why := map[string]string{}
+	var docs []string
+	for _, f := range findings {
+		if !forAPerson(f) {
+			continue
+		}
+		doc, _, _ := strings.Cut(f.Where, "#")
+		if _, seen := why[doc]; !seen {
+			docs = append(docs, doc)
+		}
+		lines := strings.Split(f.Message, "\n")
+		why[doc] = strings.Trim(lines[len(lines)-1], "()")
+	}
+	sort.Strings(docs)
+	value := map[string]any{"title": "Docs waiting for a person", "sticky": true}
+	if len(docs) == 0 {
+		value["body"], value["update-only"] = "No doc waits for a person: the documentalist judged every one it could.", true
+		return intent.Intention{Kind: "issue", Value: value}, true
+	}
+	head := "HEAD"
+	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--short", "HEAD").Output(); err == nil {
+		head = strings.TrimSpace(string(out))
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "The documentalist could not clear these docs by itself: they stay suspect until a person does, and those made suspect since the last release, unless judged since, hold the next one. For each one: read it whole against its sources (the ones its header names), fix what is wrong, then set `checked: %s` and `verified: human:<you>` in its header, and commit — on a branch, through a pull request. A doc too large for the agent can also be split or condensed, or its `sources` narrowed to the files it describes, so the agent judges it next time.\n\n", head)
+	for _, d := range docs {
+		fmt.Fprintf(&b, "- [ ] `%s` — %s\n", d, why[d])
+	}
+	value["body"] = b.String()
 	return intent.Intention{Kind: "issue", Value: value}, true
 }
