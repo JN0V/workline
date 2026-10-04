@@ -1766,6 +1766,11 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 	labels := []string{backlog.LabelToRefine}
 	if slices.Contains(added, "Need") || slices.Contains(added, "Validation") {
 		labels = append(labels, backlog.LabelDraft)
+		// The label a person accepts the drafts with, there to be picked
+		// from the forge's list.
+		if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+			return err
+		}
 	}
 	if err := f.Label(t, labels, nil); err != nil {
 		return err

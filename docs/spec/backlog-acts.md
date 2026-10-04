@@ -160,7 +160,8 @@ what it can and asks for the rest:
   hidden marker (`<!-- workline:draft -->`), and the issue gets the label
   `workline:draft`. **A person accepts them with one label,
   `workline:accepted`** — on the issue, or on many at once from the list of
-  issues; only who may triage sets a label, so it is a person of the
+  issues; the engine creates that label with the first draft, so it is
+  there to pick; only who may triage sets a label, so it is a person of the
   project's. The engine then takes the draft lines out and moves the issue
   to ready, with no agent. Editing a draft and deleting its line makes it
   a person's too. Scope names its files (`sources`, 1 to 5, in

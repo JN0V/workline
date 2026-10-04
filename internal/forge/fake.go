@@ -18,6 +18,7 @@ type FakeState struct {
 	Issues        []FakeItem `json:"issues"`
 	MergeRequests []FakeItem `json:"merge-requests"`
 	Milestones    []string   `json:"milestones,omitempty"`    // open milestones, by title
+	Labels        []FakeItem `json:"labels,omitempty"`        // labels defined, their name as id
 	FailOnWrite   int        `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes        int        `json:"writes"`
 }
@@ -290,6 +291,18 @@ func (f *Fake) Milestones() ([]string, error) {
 		return nil, err
 	}
 	return s.Milestones, nil
+}
+
+func (f *Fake) EnsureLabel(name, color, description string) error {
+	return f.write(func(s *FakeState) error {
+		for _, l := range s.Labels {
+			if fmt.Sprint(l.Title) == name {
+				return nil
+			}
+		}
+		s.Labels = append(s.Labels, FakeItem{ID: len(s.Labels) + 1, Title: name, Body: description, Labels: []string{}})
+		return nil
+	})
 }
 
 func (f *Fake) SetBody(id int, body string) error {

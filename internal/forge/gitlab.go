@@ -3,6 +3,7 @@ package forge
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -497,6 +498,15 @@ func (g *gitlab) Milestones() ([]string, error) {
 	}
 	sort.Strings(out)
 	return out, err
+}
+
+func (g *gitlab) EnsureLabel(name, color, description string) error {
+	_, err := g.api("projects/:id/labels/" + url.PathEscape(name))
+	if !errors.Is(err, errNotFound) {
+		return err
+	}
+	_, err = g.api("-X", "POST", "projects/:id/labels", "-f", "name="+name, "-f", "color=#"+color, "-f", "description="+description)
+	return err
 }
 
 func (g *gitlab) SetBody(id int, body string) error {

@@ -200,6 +200,10 @@ func (c *command) Milestones() ([]string, error) {
 	return a.Milestones, err
 }
 
+func (c *command) EnsureLabel(name, color, description string) error {
+	return c.call("ensure-label", map[string]any{"name": name, "color": color, "description": description}, nil)
+}
+
 func (c *command) SetBody(id int, body string) error {
 	return c.call("set-body", map[string]any{"id": id, "body": body}, nil)
 }
