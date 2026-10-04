@@ -28,7 +28,14 @@ What every forge needs first, in the repository:
          ai-max-tokens: 400000      # what a run may spend, all calls together
          max-open-merge-requests: 3 # gardening waits while this many wait
    ```
-3. A Claude subscription's token, for Claude to judge: `claude setup-token`
+3. The reviewer, if you want each merge request's code read (ADR-0020,
+   roles/reviewer): `workline init --review` adds it to the line. The
+   judging job reads its summary comment, to review only the commits it
+   has not: the GitHub template gives it a read token (`pull-requests:
+   read`); on GitLab, CI's job token may not read a merge request's notes,
+   so give `GITLAB_TOKEN` (`read_api`), or each push reviews the whole
+   merge request again, said (`record-unread`).
+4. A Claude subscription's token, for Claude to judge: `claude setup-token`
    prints one (`sk-ant-oat01-…`). Without it, every check still runs and the
    docs needing judgement are listed for a person.
 

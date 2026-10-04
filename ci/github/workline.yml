@@ -6,7 +6,8 @@
 # (ADR-0010); the review is the pull request's (ADR-0011).
 #
 # Two jobs, two trust zones (docs/research/server-side.md):
-#   judge  runs the line; it can read the code, and holds no write token but
+#   judge  runs the line; it can read the code and the pull request's
+#          comments, and holds no write token but
 #          code scanning's, which only uploads its findings as SARIF (free on
 #          public repositories; private ones need GitHub Advanced Security —
 #          remove that step otherwise). It stops before applying (--no-apply).
@@ -37,7 +38,9 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
-    permissions: {contents: read, security-events: write}
+    # pull-requests read: the reviewer, when the line runs it, reads its
+    # summary comment, to review only the commits it has not reviewed yet.
+    permissions: {contents: read, security-events: write, pull-requests: read}
     # Only whether the token is there: the token itself goes to the one step
     # that calls the agent, not to installs whose scripts could read it.
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
@@ -67,7 +70,7 @@ jobs:
         # The branch tells a release tool's pull request, held as the release
         # (ADR-0017); from a fork it is anyone's text: a variable, never
         # written into the script.
-        env: {CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", HEAD_REF: "${{ github.head_ref }}"}
+        env: {CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", HEAD_REF: "${{ github.head_ref }}", GH_TOKEN: "${{ github.token }}"}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
           status=0
