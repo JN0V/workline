@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/JN0V/workline/compare/v0.8.0...v0.9.0) (2026-10-04)
+
+
+### Features
+
+* **reviewer:** review code on the machine and on merge requests ([#124](https://github.com/JN0V/workline/issues/124)) ([012e9bb](https://github.com/JN0V/workline/commit/012e9bbec962f7756fe6879770d013e827764c08))
+
 ## [0.8.0](https://github.com/JN0V/workline/compare/v0.7.1...v0.8.0) (2026-10-04)
 
 
