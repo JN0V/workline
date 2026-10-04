@@ -152,12 +152,44 @@ next iteration.
 
 ### Opening issues, for every role
 
-Every role that needs one opens an issue through one engine mechanism, set
-now: no duplicate (a stable key per role and subject), labelled
-`needs-triage`, its sources and the commit it was seen at in the engine's
-comment, a cap per run; no role but the product owner closes. The
-documentalist's issues and the reviewer's go through it; the product owner
-takes them from there.
+*Amended 2026-10-04* (docs/research/product-owner.md, "A subject found
+again"): the way in, made precise when the reviewer became its second user.
+An amendment, not a new record: the decision — one way in, the product
+owner's from there — stands; this says what it guarantees.
+
+Every role that needs one opens an issue through one engine mechanism
+(`backlog.Openings`), mechanical, no AI in it:
+
+- **A key per subject, made by the engine**, never by an agent, hidden in
+  the issue's body (`<!-- workline:issue=<key> -->`), as Sentry's
+  fingerprint or code scanning's: a finding on code quotes its line (`at`),
+  which the engine finds again — the key is the file and that line as it
+  reads, spaces aside; without one, the title. **Two roles finding the
+  same line get the same key**: one issue.
+- **Looked for in the issues open and closed**, read once a run. Open: left
+  as it is, nothing written. Closed as *not planned* or as a duplicate: a
+  person's no, as Renovate leaves a pull request a person closed and
+  SonarQube an issue *accepted* or *false positive* — nothing written.
+  Closed otherwise (done, or a forge that keeps no reason): the subject is
+  back, perhaps a regression, which Sentry and SonarQube reopen; here it is
+  **said once on the closed issue**, with the commit, and it stays closed —
+  reopening is the person's, and no role closes nor reopens another's
+  issue. **Something new** is a different key: the line changed, a new
+  subject, a new issue.
+- **The role named**, in a line and a hidden `opened-by` marker; labelled
+  `needs-triage`; the product owner's state comment, its sources and the
+  commit it was seen at.
+- **A cap per run** (`issues-max`, three by default, a role's setting): a
+  new subject past it is counted (`issues-capped`) and opened at a later
+  run that finds it again.
+
+The product owner takes them from there, as any issue it never read:
+first in its next run, named to its agent as that role's draft to refine.
+Its own import of a backlog file goes through the same way, keyed by the
+text it quotes; a text whose issue was closed is not opened again. The
+report issues — the documentalist's, the product owner's, the weekly
+sample's — are not subjects: each is one issue kept in place
+(`KeepIssue`), as Renovate's dashboard.
 
 ### Borrowed, built, proved
 

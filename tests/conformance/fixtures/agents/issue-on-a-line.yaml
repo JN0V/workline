@@ -1,0 +1,6 @@
+# An agent finding a bug in the code while reading a doc: an issue on the
+# line it is about, keyed by the engine from that line.
+- issue:
+    title: The comment still says one hour
+    body: The comment above TokenTTL says one hour; the value is two.
+    at: {path: src/auth/token.go, text: "// Tokens last one hour."}

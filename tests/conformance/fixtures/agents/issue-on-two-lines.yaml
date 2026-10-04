@@ -1,0 +1,9 @@
+# Two issues on two lines of src/auth/token.go, once the TTL is two hours.
+- issue:
+    title: The comment still says one hour
+    body: The comment above TokenTTL says one hour; the value is two.
+    at: {path: src/auth/token.go, text: "// Tokens last one hour."}
+- issue:
+    title: TokenTTL has no unit
+    body: Seconds or minutes, the constant does not say.
+    at: {path: src/auth/token.go, text: "const TokenTTL = 7200"}

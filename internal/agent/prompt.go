@@ -13,7 +13,7 @@ var contracts = map[string]string{
 	"patch":          "- patch: |\n    a unified diff",
 	"comment":        `- comment: "text of the comment"`,
 	"label":          `- label: {add: [name], remove: [name]}`,
-	"issue":          `- issue: {title: "short title", body: "what is wrong, where, how it was noticed"}`,
+	"issue":          `- issue: {title: "short title", body: "what is wrong, where, how it was noticed", at: {path: "src/file.go", text: "the line it is about, as it reads"}}  # at: when it is about code; an issue open or closed on that line already, it is not opened again`,
 	"close":          `- close: {issue: 12, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the words, as they read"}, why: "why"}  # or reason: obsolete, quote: {path: "src/file.go", text: "the code, as it reads"}`,
 	"sources":        `- sources: {issue: 12, sources: ["src/file.go"], quote: {path: "src/file.go", text: "the code, as it reads"}, why: "why this is the code the issue is about"}`,
 	"open":           `- open: {title: "short title", quote: {path: "docs/ROADMAP.md", text: "the item's text, as the file has it"}}`,

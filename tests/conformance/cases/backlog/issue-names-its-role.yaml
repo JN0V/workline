@@ -1,0 +1,12 @@
+case: backlog/issue-names-its-role
+about: "An issue a role opens on a finding goes through the one way every role opens one (ADR-0018): its subject keyed by the engine from the line it quotes, the role named in it, labelled needs-triage, the product owner's state on it with the code it is about."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge: {issues: [], merge-requests: [{id: 1, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:issue-on-a-line"}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 1, title: "The comment still says one hour", labels: [needs-triage], body-contains: "Opened by the documentalist role.\n\n<!-- workline:opened-by=documentalist -->\n\n<!-- workline:issue=src/auth/token.go#18a2b655 -->", comment-contains: "sources: [src/auth/token.go]"}

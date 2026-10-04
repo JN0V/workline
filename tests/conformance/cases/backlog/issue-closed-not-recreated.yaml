@@ -1,0 +1,21 @@
+case: backlog/issue-closed-not-recreated
+about: "A subject an issue held, closed, is never opened again nor reopened: closed as not planned, a person's no, nothing is written; closed as done, it is said once on it that it was found again, and it stays closed."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge:
+    issues:
+      - {id: 1, title: "Stale comment on TokenTTL", closed: true, reason: not_planned, labels: [], comments: [], body: "Opened by the reviewer role.\n\n<!-- workline:issue=src/auth/token.go#18a2b655 -->"}
+      - {id: 2, title: "TokenTTL has no unit", closed: true, reason: completed, labels: [], comments: [], body: "Opened by the reviewer role.\n\n<!-- workline:issue=src/auth/token.go#1b68fd4e -->"}
+    merge-requests: [{id: 1, labels: [], comments: []}]
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:issue-on-two-lines"}
+expect:
+  status: pass
+  findings:
+    - {rule: issue-closed, where: "#1", message: "closed as not planned or as a duplicate: nothing written"}
+    - {rule: issue-closed, where: "#2", message: "said once on it that it was found again"}
+  forge:
+    issues:
+      - {id: 1, closed: true, comments: 0}
+      - {id: 2, closed: true, comments: 1, comment-contains: "Found again by the documentalist role"}
+      - {id: 3, absent: true}

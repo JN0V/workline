@@ -1,0 +1,16 @@
+case: backlog/issue-two-roles-one-issue
+about: "Two roles finding the same line get the same key: the issue the reviewer opened holds it, and the documentalist opens none, nor writes on it."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge:
+    issues:
+      - {id: 1, title: "Stale comment on TokenTTL", labels: [needs-triage], comments: [], body: "Found by a lens.\n\nOpened by the reviewer role.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/auth/token.go#18a2b655 -->"}
+    merge-requests: [{id: 1, labels: [], comments: []}]
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:issue-on-a-line"}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 1, comments: 0}
+      - {id: 2, absent: true}
