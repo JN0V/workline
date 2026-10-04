@@ -139,7 +139,7 @@ func Pre(runDir, repo string) int {
 			// moves it to the next, with no agent (or proposes, with none).
 			fallback = append(fallback, intent.Intention{Kind: "milestone", Value: map[string]any{
 				"issue": is.ID, "milestone": next, "from": is.Milestone, "own": true,
-				"why": fmt.Sprintf("slipped: %s is released (its tag exists)", is.Milestone)}})
+				"why": fmt.Sprintf("slipped: %s is released (its tag exists).", is.Milestone)}})
 		}
 		switch {
 		case slices.Contains(capped, is.ID):

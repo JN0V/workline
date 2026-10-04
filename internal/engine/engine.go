@@ -1741,7 +1741,7 @@ func (a *applier) apply(in intent.Intention) error {
 func order(f forge.Forge, role string, c backlog.Proposal) error {
 	b := f.(forge.Backlog)
 	label := backlog.PriorityLabel(c.Priority)
-	if err := b.EnsureLabel(label, priorityColors[c.Priority], fmt.Sprintf("Priority %d of %d, 1 the most pressing: set by the %s or a person", c.Priority, backlog.Levels, role)); err != nil {
+	if err := b.EnsureLabel(label, priorityColors[c.Priority], fmt.Sprintf("Priority %d of %d, 1 the most pressing: set by the %s or a person", c.Priority, backlog.Levels, strings.ReplaceAll(role, "-", " "))); err != nil {
 		return err
 	}
 	var others []string
