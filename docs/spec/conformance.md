@@ -1,9 +1,7 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: edfd466
-judged: 6013a50
-verified: agent:documentalist
-judged-in-parts: 44b0153
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Conformance — v1 (draft)
 
@@ -88,13 +86,18 @@ a `PATH` without a tool, or with a fake one first.
   it found with `workline sample --apply`, on the simulated forge;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
-  (`{merge-request: 1}`);
+  (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
+- `open-merge-request: true` or `push-to-merge-request: true` — put what the
+  patches write on a merge request;
+- `reports: true` — also write the findings as SARIF and Code Quality;
 - `scope` — the run's scope, as a ready work item would give it;
 - `no-apply: true` — judge, and stop before applying;
 - `forge` — a forge spec given as `--forge` instead of the simulated forge
   (`local`, `none`, `cmd:<command>`), the sample's `then: apply` included;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
-  every run a line judged and did not apply;
+  every run a line judged and did not apply; `then: resume-elsewhere` — the
+  same with another cache and the roles built into the engine, as CI's
+  second job;
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 `expect` lists only what the case is about; anything not listed is not checked.
@@ -111,13 +114,16 @@ a `PATH` without a tool, or with a fake one first.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   and `comment-lacks` (a text some comment holds, or none does), `closed`
-  and the `reason` it was closed for, its `milestone`,
-  `body-contains` (a text its body holds).
+  and the `reason` it was closed for, its `milestone`, `branch`, `base` and
+  `title`, `body-contains` (a text its body holds); `absent: true` — no item
+  with that id.
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
   case's `origin`, or the message of that branch's tip.
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
 - `notes` — texts the agent's notes must hold, all rounds together.
+- `sarif` / `code-quality` / `left-out` — with `reports`, results each report
+  must hold, and the places neither may name.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
@@ -144,17 +150,17 @@ a `PATH` without a tool, or with a fake one first.
   as the forge (docs/spec/forge-command.md): it writes each request it gets
   to `.git/forge-requests.jsonl`, for `files` to check, and answers as a
   small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
-- **Simulated forge.** An in-memory forge holding issues, labels, comments,
-  merge requests and releases. It can be told to fail on the N-th write, to
-  test recovery after a partial apply.
+- **Simulated forge.** A forge kept in a JSON file, holding issues, labels,
+  comments, merge requests and milestones. It can be told to fail on the
+  N-th write, to test recovery after a partial apply.
 
 ## Evaluation
 
 An evaluation case uses the same `given` and `run`, with a real agent, and adds
 `grade`: what a good answer contains ("the message names the changed
 behaviour", "the product doc keeps every MUST"). Grading is done by checks where
-possible, and by a judge from another provider where not (`independent-of` in
-the model grid).
+possible, and by a judge model where not, as far from the graded one as can
+be (below).
 
 ```
 tests/evaluation/

@@ -1,7 +1,7 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go]
-checked: 6013a50
-verified: agent:documentalist
+sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Documentalist — the judge
 
@@ -150,7 +150,9 @@ be checked afterwards.
 
 Asked again as often as the role allows and still refused, a doc's fix is
 left out (`left-out`, saying why), and the other docs' fixes are judged again
-without it and applied; the doc stays as it was, suspect.
+without it and applied; the doc stays as it was, suspect. A block the answer
+did not cause — docs due, a release held, a check that could not run — is
+never asked again: another answer would change none of it.
 
 Once the fixes pass, two findings are added, never refusing: a `count-off`
 a fix brought right says "fixed in this run"; and a version a fix replaces

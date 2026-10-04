@@ -1,8 +1,7 @@
 ---
-sources: [ci/github, ci/gitlab, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml]
-checked: 64eee70
-judged: a0f1e8a
-judged-in-parts: 9b78c1e
+sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go]
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Setting up workline in CI
 
@@ -90,9 +89,9 @@ pushed is never moved (the Go proxy keeps its first commit).
    App's ID), secret `WORKLINE_APP_PRIVATE_KEY` (the whole `.pem`).
    Without an App, gardening needs Settings → Actions → General → "Allow
    GitHub Actions to create and approve pull requests".
-4. **Protect main** (Settings → Rules): pull requests only, the `workline`
-   check required. The review is on the pull request (ADR-0011): an agent
-   never merges.
+4. **Protect main** (Settings → Rules): pull requests only, the `judge`
+   check required (workline.yml's verdict). The review is on the pull
+   request (ADR-0011): an agent never merges.
 5. **A private repository** without GitHub Advanced Security: remove the
    `upload-sarif` step of workline.yml, code scanning being paid there.
 

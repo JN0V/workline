@@ -1,9 +1,8 @@
 ---
 type: reference
-sources: [internal/engine, internal/intent, internal/role, internal/agent]
-verified: agent:documentalist
-checked: 347b403
-judged: 6013a50
+sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
+verified: agent:claude-code
+checked: 1bab30d
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -80,11 +79,11 @@ refuses. The catalogue is closed and belongs to the engine:
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
-| `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported` | never: read by `pre`, which puts the parts' claims together |
+| `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 
 A role that needs another intention asks for it to be added here; it does not
-invent one. Intentions that reach the forge are applied by a separate step that
-holds the write token and no AI key.
+invent one. Intentions that reach the forge can be applied by a separate step
+(`--no-apply`, then `workline apply`) that holds the write token and no AI key.
 
 ## Stay on the task
 
@@ -109,10 +108,11 @@ one commit are refused, with a note to split the commit instead.
 
 ## No AI
 
-When `--ai none`, or when the agent fails, the run still completes: `post` runs
-without intentions and `without-ai` states what that means. *Not read yet:
-each role's `post` decides on its own today. And when the agent could not be
-reached and `post` does not pass, the run ends `blocked-external`, not `block`.*
+When `--ai none`, or when the agent fails, the run still completes: `post`
+runs on the role's own proposals alone, and `without-ai` states what that
+means. *Not read yet: each role's `post` decides on its own today. And when
+the agent could not be reached and `post` does not pass, the run ends
+`blocked-external`, not `block`.*
 
 - `block` — the check failed and only a human can fix it; the verdict says how.
 - `report` — the work is left as a note or a TODO for a human.

@@ -1,5 +1,7 @@
 ---
 sources: [roles/product-owner, internal/builtin/productowner, internal/backlog]
+checked: 1bab30d
+verified: agent:claude-code
 ---
 # Product owner
 
@@ -12,24 +14,27 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
 ## A run, when gardening (`schedule`)
 
 1. `pre` gives the agent a share of the open issues (`issues-per-run`):
-   those never read first, then those whose code changed since they were
-   read; each with what the engine knows of it (its state comment: its
-   sources, the commit it was last confirmed and read at) and the code it
-   names, up to `code-lines-max` lines in all. The others are listed by
-   title only. An
-   issue without one gets it, at the commit the run is on, and is judged
-   from the next run; one whose comment does not read is left out
-   (`state-broken`), nothing written on it. The report issue is not judged.
-2. The agent reads them and proposes acts: a closing — a duplicate, its
-   original's words quoted, or an issue the code made obsolete, the code
-   quoted; the code an issue is about (`sources`), a line of it quoted; the
-   milestone of the release an issue still true belongs to.
+   those never read first, then those whose code changed, that someone
+   commented on, or reopened after it closed them, since read; each with its
+   state comment (its sources, the commit it was last confirmed and read at)
+   and the code it names, up to `code-lines-max` lines in all; up to six
+   others on the same code whole, the rest by title. An issue with no state
+   comment gets one, judged from the next run; one whose comment does not
+   read is left out (`state-broken`), as is the report issue.
+2. The agent proposes acts: a closing — a duplicate, its original's words
+   quoted, or an issue the code made obsolete, the code quoted; the code
+   an issue is about (`sources`), a line of it quoted; the milestone of
+   the release an issue still true belongs to.
 3. The engine checks each one when it applies it — never as not planned,
    the quote found again, the issue's state readable — and does it,
-   proposes it, or drops it, by the kind's mode and cap (`acts` in the
-   settings). One report issue lists what was done and proposed.
+   proposes it, or drops it, by the kind's mode and cap (`acts`). One
+   report issue lists what was done and proposed. A closing undone, the
+   issue reopened, puts that kind back to `propose` (`wrong-closing`).
 
-Without an agent, only the state comments are written.
+Without an agent, only the state comments are written. On `import`,
+`workline issues import <file>` has the agent read a committed file a
+share at a time, and opens each item still to do as an issue quoting it,
+never twice (`open`); without `--apply`, it only says what it would open.
 
 ## Settings
 
@@ -40,6 +45,7 @@ roles:
       issues-per-run: 8
       code-lines-max: 1500
       acts:
+        open: {mode: act, max: 30}               # when importing
         sources: {mode: act, max: 10}
         milestone: {mode: act, max: 10}
         close-duplicate: {mode: act, max: 3}     # act | propose | off
