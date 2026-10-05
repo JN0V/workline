@@ -1418,12 +1418,7 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 		if len(shares) > 0 {
 			shares[len(shares)-1].Own = from - 1
 		}
-		shares = append(shares, sh)
-		if !apply {
-			for _, o := range sh.Opens {
-				fmt.Fprintf(out, "  would open: %s\n", o.Title)
-			}
-		}
+		shares = append(shares, sh) // what would be opened is the map's, its quotes checked
 		fmt.Fprintf(out, "lines %d to %d: %s\n", from, to, res.Status)
 		if res.Status != verdict.Pass {
 			total.Status = res.Status
