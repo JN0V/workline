@@ -27,13 +27,6 @@ roles:
       derive:
         conformance-cases: "n=$(ls tests/conformance/cases/*/*.yaml | wc -l); p=$(grep -cvE '^(#|$)' tests/conformance/pending.txt || true); echo $((n - p))"
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
-  reviewer:
-    settings:
-      # A pull request's apply job runs the last release of workline
-      # (docs/ci.md), which knows no reviewer until one ships it: nothing
-      # is proposed for it to apply until then. The findings stay in the
-      # verdict, the job's summary and code scanning.
-      forge-writes: false
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull

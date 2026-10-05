@@ -150,12 +150,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
-	var files []string
-	for _, f := range strings.Split(strings.TrimSpace(names), "\n") { // a name may hold a space
-		if f != "" && !pathglob.Any(s.Ignore, f) {
-			files = append(files, f)
-		}
-	}
+	files := code(s, names)
 	if len(files) == 0 {
 		return final(runDir, Review{Status: verdict.Pass, Summary: "no code changed (only files the reviewer leaves, by its `ignore`): nobody asked"})
 	}
@@ -199,6 +194,16 @@ func prepare(runDir, repo string, s Settings) int {
 	if status(mech) == verdict.Block {
 		return final(runDir, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
 	}
+	// A lens reads what the commits not reviewed yet change, not every file
+	// of the merge request; when they change no code, nobody is asked.
+	if start != base {
+		if files, err = codeFiles(repo, s, start, head); err != nil {
+			return fail(err)
+		}
+		if len(files) == 0 {
+			return recordOnly(runDir, s, st)
+		}
+	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "not-reviewed", Level: "warn",
 			Message: "no agent: only the rules that need no judgement ran; the change waits for a person's review"})
@@ -212,6 +217,48 @@ func prepare(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
+		return fail(err)
+	}
+	return 0
+}
+
+// code is the files of a `git diff --name-only` the reviewer reviews: those
+// its `ignore` does not leave.
+func code(s Settings, names string) []string {
+	var files []string
+	for _, f := range strings.Split(strings.TrimSpace(names), "\n") { // a name may hold a space
+		if f != "" && !pathglob.Any(s.Ignore, f) {
+			files = append(files, f)
+		}
+	}
+	return files
+}
+
+// codeFiles is the code the commits from..head change.
+func codeFiles(repo string, s Settings, from, head string) ([]string, error) {
+	names, err := git(repo, "diff", "--name-only", "--no-renames", from, head)
+	if err != nil {
+		return nil, err
+	}
+	return code(s, names), nil
+}
+
+// recordOnly settles a run whose new commits change no code: nobody asked,
+// the commits recorded as reviewed, and the turn of the lenses left where
+// it was, for the next push that changes code.
+func recordOnly(runDir string, s Settings, st state) int {
+	v := review(st, nil, fmt.Sprintf("no code changed since the last review (only files the reviewer leaves, by its `ignore`): nobody asked, the %d new commits recorded", slices.Index(st.Commits, st.From)))
+	v.Complete = true
+	v.Record = st.Record.add(st.Commits)
+	v.Record.Runs = st.Record.Runs
+	var fallback []intent.Intention
+	if mergeRequest() != nil && s.ForgeWrites {
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0)}})
+	}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
+		return fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
 		return fail(err)
 	}
 	return 0

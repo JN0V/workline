@@ -104,3 +104,36 @@ Not tried: the judging job reading the record with its read token
 `workline init --review` on a real repository (unit-tested only); every
 lens at once on a merge request (`lenses=all`). Left open on the sandbox for
 a person to look at: pull request #8 and issue #9.
+
+## 2026-10-04 — its own pull request, in CI, with forge writes
+
+workline#132, the override `forge-writes: false` removed from
+.workline/config.yaml: the judging job built from the pull request, the
+apply job on v0.9.0, the first release with the reviewer.
+
+- **Push 1** (the setting removed, status.md updated): the correctness
+  lens, Sonnet, 2.7k tokens in, 0.4k out; no finding, no judge. The apply
+  job posted the summary comment, its record holding the commit reviewed
+  (`reviewed=c1b6a73… runs=1`); no issue opened.
+- **Push 2** (this file only): only the new commit reviewed, the
+  edge-cases lens next in turn (2.2k in, 0.9k out); the summary comment
+  edited in place, its record holding both commits (`runs=2`); no issue
+  opened. One finding dropped, its quote not found in the file. But the
+  commit changed only what the reviewer ignores, and a lens was asked all
+  the same: the files are listed over the whole range, so the lens got an
+  empty diff and .workline/config.yaml whole, the first commit's file, and
+  its finding was on lines no commit touched. A push changing no code
+  should ask nobody and record its commits. **Fixed**: the files a lens
+  gets are those the new commits change; none that is code, nobody is
+  asked, the commits recorded and the turn kept
+  (`push-without-code-asks-nobody`, `lens-given-new-commits-files`).
+- **Push 3** (this file and status.md): the tests lens, third in turn
+  (2.2k in, 0.15k out), the same defect; one comment still, `runs=3`; no
+  issue opened.
+- **Push 4** (the fix, then `main` merged in): the correctness lens, back
+  at the start of the turn (21k in, 1.2k out; three judges on Opus, about
+  9.4k in, 0.9k out), given the code the new commits change: the fix, its
+  cases, and what the merge brought from `main` — a merge's commits count
+  as new. One nit on the change, three findings the judge refused; the
+  comment edited in place, `runs=4`; no issue opened. The documentalist's
+  commit that followed was not judged again (`Workline-Role:`).

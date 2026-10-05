@@ -1,7 +1,8 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 2e0ca4b
-verified: agent:claude-code
+checked: d805123
+verified: agent:documentalist
+judged: 507e86b
 ---
 # Reviewer
 
@@ -24,14 +25,15 @@ author fixes, the person merges (ADR-0020).
    a rule blocks, no agent is asked.
 3. **The record.** Commits a review answered whole are not asked again;
    it is kept in the summary comment on a merge request,
-   `.git/workline/reviewer-record` on a machine.
+   `.git/workline/reviewer-record` on a machine. New commits that change
+   no code are recorded, nobody asked, the turn of the lenses kept.
 4. **The lenses**, each a part of the question in a context of its own
    (`lenses/<lens>.md`, a project's own in `.workline/roles/reviewer/lenses/`):
    correctness, edge cases, tests. Every one on a machine; on a merge
    request one a push, in turn (`lenses-per-push`), every one with
    `--input lenses=all`. Each gets the commits not reviewed yet (their
-   messages as claims), the change, and the files it changes, to read
-   whole; it answers `finding`s: severity, title, why, its cause quoted,
+   messages as claims), what they change, and the files they change, to
+   read whole; it answers `finding`s: severity, title, why, its cause quoted,
    its symptom when elsewhere, a fix.
 5. **The quotes.** The engine finds each cause again, spaces and line
    breaks aside, in the file at the head of the range or among the lines

@@ -4,8 +4,8 @@
 merge request (opt-in): rules first, lenses as parts, quotes found again,
 the change's findings told from the rest by where their cause lies, each
 important one judged; built and in conformance, tried with a real agent on
-a copy of workline and live on a sandbox pull request (tried.md), not
-released yet.
+a copy of workline and live on a sandbox pull request (tried.md),
+released in v0.9.0.
 
 ## Built
 
@@ -13,6 +13,8 @@ released yet.
 |---|---|
 | The rules on the comments a change adds: a bug's story, an internal code, a block too long; while they block, no agent | cases `bug-story-in-comment-blocks-without-ai`, `ticket-code-in-comment`, `long-comment-block-reported` |
 | Only code reviewed; commits reviewed whole not asked again | `docs-only-asks-nobody`, `reviewed-commits-not-asked-again` |
+| A push changing no code asks nobody, its commits recorded; a lens gets only what the new commits change | `push-without-code-asks-nobody`, `lens-given-new-commits-files` |
+| On workline's own pull requests in CI, forge writes on: the summary comment edited in place, the record, the lenses in turn (tried.md) | workline#132 |
 | Lenses as parts, answering findings only; a patch refused | `never-approves-nor-patches`, `lens-failed-not-clean` |
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
 | A judge for each important finding, the level said; a no drops it | `judged-no-not-reported`, `independence-level-in-verdict` |
@@ -40,11 +42,6 @@ Conformance: tests/conformance/cases/reviewer.
 7. **The tests lens outside the change**: a test missing for code the
    change did not touch was opened as an issue (tried.md); whether it
    should be is for #90's measure.
-8. **Tried in CI with forge writes**: workline's own pull requests run it
-   with `forge-writes: false` until a release ships the role to the apply
-   job, so the record and the summary comment are untried there, and each
-   push gets the correctness lens on the whole range: without a record, the
-   turn of the lenses does not move.
-9. **The judge's material**: thirty lines around the cause; it refused a
+8. **The judge's material**: thirty lines around the cause; it refused a
    true finding whose evidence lay further (tried.md). The functions the
    cause calls or is called by, given whole, are the next step.
