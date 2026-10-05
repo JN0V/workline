@@ -18,7 +18,8 @@ import (
 // the one asked of JN0V/workline #79, 2026-10-05, a commit added.
 func TestGitHubTrail(t *testing.T) {
 	bin := t.TempDir()
-	script := "#!/bin/sh\n" + `cat <<'EOF'
+	args := filepath.Join(bin, "args")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + args + "\n" + `cat <<'EOF'
 {"data":{"repository":{"issue":{"timelineItems":{"nodes":[
 {"__typename":"CrossReferencedEvent","createdAt":"2026-10-04T08:00:00Z","source":{"__typename":"PullRequest","number":112}},
 {"__typename":"LabeledEvent","createdAt":"2026-10-05T09:01:54Z","label":{"name":"workline:priority/3"}},
@@ -46,6 +47,14 @@ EOF
 	}}
 	if !reflect.DeepEqual(tr, want) {
 		t.Errorf("trail = %+v\nwant %+v", tr, want)
+	}
+	// What the answer is read from is asked: the canned answer above would
+	// pass whatever the query.
+	asked, _ := os.ReadFile(args)
+	for _, w := range []string{"LABELED_EVENT", "CONNECTED_EVENT", "CROSS_REFERENCED_EVENT", "REFERENCED_EVENT", "isCrossRepository", "nameWithOwner", "abbreviatedOid", "number=79"} {
+		if !strings.Contains(string(asked), w) {
+			t.Errorf("gh not asked for %q: %s", w, asked)
+		}
 	}
 }
 
