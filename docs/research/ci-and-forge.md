@@ -80,3 +80,42 @@ made to stop (2022).
   promptfoo keys on provider, prompt, config and variables, and never
   caches an error. The key belongs to the engine: content ids, the exact
   model, the role's version.
+
+## A bot writing GitLab issues from CI (2026-10-05)
+
+In GitLab's words: *project access token*, *bot user*, *CI/CD job token*,
+*Planner role*, *service account*. Checked against docs.gitlab.com and
+tried on gitlab.com (JN0V/workline-sandbox, a Free user's project).
+
+- **The job token reaches no issue.** [CI/CD job token](https://docs.gitlab.com/ci/jobs/ci_job_token/):
+  its endpoints are packages, releases, deployments, pipelines, repository
+  files, merge requests read; not issues, labels, members, nor GraphQL
+  ("You cannot use job tokens to authenticate GraphQL requests").
+- **A project access token is a bot user** ([docs](https://docs.gitlab.com/user/project/settings/project_access_tokens/)):
+  `project_<id>_bot_<random>`, a member of that project only, non-billable,
+  its own role and scopes, a year at most. Documented as Premium on
+  gitlab.com, any tier on self-managed; on 2026-10-05 the API made four on
+  the Free user's sandbox (Guest, Planner, Reporter, Developer). A *group*
+  access token covers a group's projects (Premium on gitlab.com);
+  *service accounts* likewise, untried. glab makes one and stores it as a
+  masked variable in one pipe: `glab token create … | glab variable set
+  KEY --masked`, the token never shown.
+- **Roles** ([permissions](https://docs.gitlab.com/user/permissions/)):
+  Planner (17.7) creates and edits issues, labels and milestones; Reporter
+  triages; Developer pushes. Tried with a Planner token: issues opened,
+  titles and bodies of another's issue rewritten, labels and milestones
+  created and set, closed, `/duplicate`, a task converted — but a task
+  given its parent refused ("it's not allowed to add this type of parent
+  item"), where Reporter and Owner succeed. A note, only its author or a
+  Maintainer edits: the bot's PUT on the owner's note, 403.
+- **Who is of the project**: an issue carries no author association;
+  `GET /projects/:id/members/all` lists members direct and inherited with
+  their `access_level` (Guest 10, Planner 15, Reporter 20, Developer 30,
+  Maintainer 40, Owner 50); a bot is told by its username, not by a field
+  of the note's author.
+- **Closing**: no close reason in the REST API; `/duplicate #n` closes and
+  links.
+
+**Decision** (ADR-0023): a project access token, Reporter for the
+backlog alone, Developer with `write_repository` for gardening; members
+from Planner up are of the project.

@@ -1,0 +1,17 @@
+case: forge/gitlab-guest-is-outsider
+about: On GitLab, an issue opened by a Guest of the project, or by someone not a member, is an outsider's — refining it, the text is proposed to its reporter in a comment, nothing written in the body.
+given:
+  repo: backlog
+  forge:
+    members:
+      - {username: owner, access_level: 50}
+      - {username: zed, access_level: 10}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-an-outsider, forge: gitlab}
+expect:
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Need", labels: [workline:to-refine]}
+      - {id: 9, comment-contains: "@zed, the product owner read this issue and would refine it as below."}
+      - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=1 -->"}

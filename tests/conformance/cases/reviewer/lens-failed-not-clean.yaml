@@ -1,11 +1,13 @@
 case: reviewer/lens-failed-not-clean
-about: A lens whose answer does not read is said, never read as nothing found; the commits are not recorded as reviewed.
+about: A lens whose answer does not read, asked for again once and still unreadable, is said, never read as nothing found; the commits are not recorded as reviewed.
 given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,tests"}, ai: "fake:review-then-unreadable"}
 expect:
   status: pass
-  agent-calls: 2
-  findings: [{rule: lens-failed, message: "the tests lens got no answer that reads"}]
+  agent-calls: 3
+  findings:
+    - {rule: part-asked-again, where: tests}
+    - {rule: lens-failed, message: "the tests lens got no answer that reads"}
   run-files: {out/review.json: {contains: '"complete": false'}}

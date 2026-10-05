@@ -51,10 +51,12 @@ func ReportTitle(role string) string { return "Backlog — " + strings.ReplaceAl
 var fenced = regexp.MustCompile("(?s)```yaml\n(.*?)```")
 
 // readBlock decodes the fenced YAML block of the comment carrying marker
-// into v. found is false when no comment carries it; err when it does not
-// read.
+// into v: the last, when another user's left behind could not be edited
+// (GitLab: a note is its author's). found is false when no comment carries
+// it; err when it does not read.
 func readBlock(comments []string, marker string, v any) (found bool, err error) {
-	for _, c := range comments {
+	for i := len(comments) - 1; i >= 0; i-- {
+		c := comments[i]
 		if !strings.Contains(c, marker) {
 			continue
 		}
@@ -153,7 +155,11 @@ type Proposal struct {
 	// a comment rather than written in the body (an outsider's issue).
 	Round      int  `yaml:"round,omitempty"`
 	ToReporter bool `yaml:"to-reporter,omitempty"`
-	Spent      bool `yaml:"spent,omitempty"` // the rounds spent: proposed to a person
+	// Agreed, the engine's: who agreed in a reply to the text last proposed
+	// to the reporter, which this refine writes; checked again on the forge
+	// (Agreement), never taken from the agent.
+	Agreed string `yaml:"agreed,omitempty"`
+	Spent  bool   `yaml:"spent,omitempty"` // the rounds spent: proposed to a person
 	// Ordering: the priority set (1 to 4); a milestone left because it is
 	// released (From, the engine's); and, the engine's, the issue's
 	// priority and milestone before the run, written in the report.
@@ -501,6 +507,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		p.seen[key] = true
 		return "", ""
 	}
+	if rule, why := p.checkAgreed(f, role, c); rule != "" {
+		return rule, why
+	}
 	if rule, why := p.checkRefining(repo, role, c); rule != "" {
 		return rule, why
 	}
@@ -616,7 +625,7 @@ func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) 
 		// An outsider's issue is theirs (ADR-0021): the refined text is
 		// proposed to its reporter in a comment until they, or a person of
 		// the project, agree. A role's finding is the line's own draft.
-		c.ToReporter = !is.Insider && !Accepted(is) && OpenedBy(is.Body) == ""
+		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == ""
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
 		if len(added) == 0 {
@@ -1055,7 +1064,7 @@ func ProposalComment(author string, c Proposal, role string) string {
 	if q := strings.TrimSpace(c.Questions); q != "" {
 		fmt.Fprintf(&b, "**What it still needs:** %s\n\n", q)
 	}
-	fmt.Fprintf(&b, "To agree, copy these sections into your issue (edit it), changing what is wrong; or reply, and it reads your answer at its next run. A maintainer may agree for the project with the label `%s`: the sections are then written in the issue.\n\n", LabelAccepted)
+	fmt.Fprintf(&b, "To agree, reply `%s` alone: the sections are then written in your issue at its next run. Or copy them into your issue (edit it), changing what is wrong; or reply what is wrong, and it reads your answer at its next run. A maintainer may agree for the project with the label `%s`: the sections are then written in the issue, and it moves to ready.\n\n", AgreeWord, LabelAccepted)
 	kept := struct {
 		Need         string   `yaml:"need,omitempty"`
 		Verification string   `yaml:"verification,omitempty"`
@@ -1108,6 +1117,77 @@ func LastProposal(comments []string, role string) *Proposal {
 		return &p
 	}
 	return nil
+}
+
+// AgreeWord is the reply that agrees to a text proposed to a reporter: its
+// first line, case, spaces and a final "." or "!" aside (ADR-0021).
+const AgreeWord = "agreed"
+
+// Agreement is who agreed, in a reply, to the text last proposed to an
+// issue's reporter (ADR-0021): after the last round, that round a
+// proposal, the last comment of the reporter or of a person of the
+// project — never a bot's, nor someone's the forge does not name — has
+// AgreeWord as its first line. "" when there is none.
+func Agreement(notes []forge.Note, is forge.Issue, role string) string {
+	last := -1
+	for i, n := range notes {
+		if Round(n.Body, role) {
+			last = i
+		}
+	}
+	if last < 0 {
+		return ""
+	}
+	if m, _ := EngineMarker(notes[last].Body); !strings.Contains(m, "/proposal=") {
+		return "" // the last round asked: a question is not agreed to
+	}
+	// The last word of those who may agree: a stranger's "+1" or a bot's
+	// note after it neither gives nor takes back an agreement; a later
+	// word of the reporter's or the project's does.
+	var reply *forge.Note
+	for i := last + 1; i < len(notes); i++ {
+		n := &notes[i]
+		if _, engine := EngineMarker(n.Body); engine || n.Bot || n.Author == "" || (n.Author != is.Author && !n.Insider) {
+			continue
+		}
+		reply = n
+	}
+	if reply == nil {
+		return ""
+	}
+	first, _, _ := strings.Cut(strings.TrimSpace(reply.Body), "\n")
+	first = strings.ToLower(strings.TrimSpace(first))
+	if first != AgreeWord && first != AgreeWord+"." && first != AgreeWord+"!" {
+		return ""
+	}
+	return reply.Author
+}
+
+// checkAgreed checks a refine written on a reply's agreement against the
+// forge itself: the agreement there, by the same person, and the sections
+// those last proposed. Anything else is not written.
+func (p *Plan) checkAgreed(f forge.Backlog, role string, c *Proposal) (rule, why string) {
+	if c.Agreed == "" {
+		return "", ""
+	}
+	if c.Do != "refine" {
+		c.Agreed = ""
+		return "", ""
+	}
+	is, ok := p.issues[c.Issue]
+	if !ok {
+		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
+	}
+	notes, err := f.Notes(forge.Target{Kind: "issue", ID: c.Issue})
+	if err != nil {
+		return "no-state", err.Error()
+	}
+	last := LastProposal(forge.Bodies(notes), role)
+	if who := Agreement(notes, is, role); who == "" || who != c.Agreed || last == nil ||
+		last.Need != c.Need || last.Verification != c.Verification || last.Validation != c.Validation || last.Scope != c.Scope {
+		return "not-agreed", "no reply agreeing to the text last proposed to its reporter: nothing of it is written in the body"
+	}
+	return "", ""
 }
 
 // found says whether a quote is there, as written but for spaces: in a file

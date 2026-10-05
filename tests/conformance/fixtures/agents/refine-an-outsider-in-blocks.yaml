@@ -1,0 +1,17 @@
+# The product owner's proposal to an outsider, its texts written as block
+# scalars, as the output contract asks for code and quotes (#138).
+- refine:
+    issue: 9
+    scope: |
+      `WriteRows` in src/export/csv.go, and its test.
+    sources: [src/export/csv.go]
+    verification: |
+      A test writes three rows and reads three lines back.
+    need: |
+      Every row exported, so a report counts what was sold.
+    validation: |
+      The reporter opens an export of a known day.
+    questions: |
+      Is it every export, or only a long one?
+    why: |
+      `WriteRows` drops its last row: the loop stops one short. # not a comment

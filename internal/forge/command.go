@@ -133,11 +133,30 @@ func (c *command) AllIssues() ([]Issue, error) {
 }
 
 func (c *command) Comments(t Target) ([]string, error) {
+	notes, err := c.Notes(t)
+	return Bodies(notes), err
+}
+
+// Notes reads the answer to comments: each comment its body alone, or
+// {body, author, insider, bot} (docs/spec/forge-command.md).
+func (c *command) Notes(t Target) ([]Note, error) {
 	var a struct {
-		Comments []string `json:"comments"`
+		Comments []json.RawMessage `json:"comments"`
 	}
-	err := c.call("comments", map[string]any{"target": t}, &a)
-	return a.Comments, err
+	if err := c.call("comments", map[string]any{"target": t}, &a); err != nil {
+		return nil, err
+	}
+	notes := make([]Note, 0, len(a.Comments))
+	for _, raw := range a.Comments {
+		var n Note
+		if err := json.Unmarshal(raw, &n.Body); err != nil {
+			if err := json.Unmarshal(raw, &n); err != nil {
+				return nil, fmt.Errorf("%w: comments: a comment is a text or {body, author, insider, bot}: %v", ErrUnreachable, err)
+			}
+		}
+		notes = append(notes, n)
+	}
+	return notes, nil
 }
 
 func (c *command) Close(id, dup int) error {

@@ -18,14 +18,15 @@ import (
 // mock answers the API calls the label and all-issues operations make,
 // and records them.
 type mock struct {
-	mu    sync.Mutex
-	calls []string // "METHOD path body"
+	refuse bool // the permission lookup refused: a token that may not ask
+	mu     sync.Mutex
+	calls  []string // "METHOD path body"
 }
 
 func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	m.mu.Lock()
-	m.calls = append(m.calls, strings.TrimSpace(r.Method+" "+r.URL.Path+" "+string(body)))
+	m.calls = append(m.calls, strings.TrimSpace(r.Method+" "+r.URL.EscapedPath()+" "+string(body)))
 	m.mu.Unlock()
 	const repo = "/api/v1/repos/owner/name"
 	switch {
@@ -54,6 +55,24 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			fmt.Fprint(w, `[]`)
 		}
+	case r.Method == "GET" && r.URL.Path == repo+"/issues/3/comments":
+		if r.URL.Query().Get("page") == "1" {
+			fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"id": 7, "login": "zed"}}, {"body": "agreed", "user": {"id": 8, "login": "dev"}},
+				{"body": "agreed", "user": {"id": -2, "login": "forgejo-actions"}}, {"body": "agreed", "user": {"id": 9, "login": "renovate-bot"}},
+				{"body": "old", "user": {"id": 10, "login": "gone"}}, {"body": "built", "user": {"id": 11, "login": "ci[bot]"}}]`)
+		} else {
+			fmt.Fprint(w, `[]`)
+		}
+	case strings.HasPrefix(r.URL.Path, repo+"/collaborators/") && m.refuse:
+		http.Error(w, `{"message": "Only admins can query all permissions"}`, http.StatusForbidden)
+	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/dev/permission":
+		fmt.Fprint(w, `{"permission": "write"}`)
+	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/zed/permission",
+		r.URL.Path == repo+"/collaborators/forgejo-actions/permission", r.URL.Path == repo+"/collaborators/renovate-bot/permission",
+		r.URL.Path == repo+"/collaborators/ci[bot]/permission":
+		fmt.Fprint(w, `{"permission": "read"}`)
+	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/gone/permission":
+		http.Error(w, `{"message": "user does not exist"}`, http.StatusNotFound)
 	default:
 		http.Error(w, "not mocked", http.StatusNotFound)
 	}
@@ -61,6 +80,16 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // run runs the script on one operation against the mock, and returns its answer.
 func run(t *testing.T, m *mock, op string, req any) string {
+	t.Helper()
+	out, err := try(t, m, op, req)
+	if err != nil {
+		t.Fatalf("%s: %v\n%s\ncalls: %q", op, err, out, m.calls)
+	}
+	return out
+}
+
+// try runs the script on one operation, its exit said.
+func try(t *testing.T, m *mock, op string, req any) (string, error) {
 	t.Helper()
 	for _, tool := range []string{"sh", "curl", "jq"} {
 		if _, err := exec.LookPath(tool); err != nil {
@@ -75,10 +104,7 @@ func run(t *testing.T, m *mock, op string, req any) string {
 	cmd.Env = []string{"PATH=" + lookPath(), "WORKLINE_FORGE_OPERATION=" + op,
 		"FORGEJO_URL=" + srv.URL, "FORGEJO_TOKEN=t", "FORGEJO_REPO=owner/name"}
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("%s: %v\n%s\ncalls: %q", op, err, out, m.calls)
-	}
-	return strings.TrimSpace(string(out))
+	return strings.TrimSpace(string(out)), err
 }
 
 // all-issues lists the issues open and closed, every page, pull requests
@@ -95,6 +121,29 @@ func TestAllIssues(t *testing.T) {
 		`{"body":"","closed":false,"id":2,"labels":[],"title":"Open"}]`
 	if b, _ := json.Marshal(got.Issues); string(b) != want {
 		t.Errorf("issues = %s\nwant     %s", b, want)
+	}
+}
+
+// comments answers each comment with its author, and whether they may
+// write to the repository.
+func TestComments(t *testing.T) {
+	m := &mock{}
+	out := run(t, m, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}})
+	if !slices.Contains(m.calls, "GET /api/v1/repos/owner/name/collaborators/ci%5Bbot%5D/permission") {
+		t.Errorf("a login not escaped in the URL; calls: %q", m.calls)
+	}
+	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false,"bot":false},` +
+		`{"body":"agreed","author":"dev","insider":true,"bot":false},` +
+		`{"body":"agreed","author":"forgejo-actions","insider":false,"bot":true},` +
+		`{"body":"agreed","author":"renovate-bot","insider":false,"bot":true},` +
+		`{"body":"old","author":"gone","insider":false,"bot":false},` +
+		`{"body":"built","author":"ci[bot]","insider":false,"bot":true}]}`
+	if out != want {
+		t.Errorf("answer = %s\nwant     %s", out, want)
+	}
+	// A lookup refused is said, never read as "outside the project".
+	if out, err := try(t, &mock{refuse: true}, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}}); err == nil {
+		t.Errorf("a refused permission lookup passed: %s", out)
 	}
 }
 

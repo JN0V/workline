@@ -1,0 +1,15 @@
+case: product-owner/outsider-proposal-in-block-scalars
+about: A proposal to an outsider whose texts are block scalars, as the output contract asks for code and quotes, reads as written — backticks, colons and a hash kept, the line ends aside.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-an-outsider-in-blocks}
+expect:
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Need", labels: [workline:to-refine]}
+      - {id: 9, comment-contains: "**What it understood:** `WriteRows` drops its last row: the loop stops one short. # not a comment"}
+      - {id: 9, comment-contains: "**What it still needs:** Is it every export, or only a long one?"}
+      - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=1 -->"}

@@ -31,6 +31,10 @@ func run(repo, bin string, args ...string) ([]byte, error) {
 
 var errNotFound = fmt.Errorf("not found")
 
+// errForbidden marks a write the forge refused for who the token is: a
+// note another user wrote, a role too low.
+var errForbidden = fmt.Errorf("%w: forbidden", ErrUnreachable)
+
 func decode(data []byte, v any) error {
 	if err := json.Unmarshal(data, v); err != nil {
 		return fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)

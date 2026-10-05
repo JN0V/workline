@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
-checked: eb4f69b
+checked: 8a3a2b7
 judged: 9ad8c58
 verified: agent:claude-code
 -->
@@ -17,7 +17,7 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->357<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->369<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|
@@ -27,7 +27,7 @@ Status (2026-09-24): used daily on its author's machine;
 | **Reviewer** (beta): reviews a branch before the push (`workline review`) and, opt-in, each merge request; rules on the comments a change adds (a bug's story, an internal code), then lenses (correctness, edge cases, tests) whose quotes the engine finds again; a finding whose cause lies in the change goes to its author, one outside it to an issue; each important one checked by a judge, the independence said; never approves nor patches (ADR-0020) | specs, the developer's loop, inline comments |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
-| **Forges**: GitHub (comments, a comment edited in place, labels and issues tried live), simulated; GitLab tried on gitlab.com; none, kept in the clone (`forge: local`, `workline issues`); any other plugged by a command (`cmd:`, a Forgejo and Gitea sample) — ADR-0016; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; the Forgejo sample untried on a live instance |
+| **Forges**: GitHub (comments, a comment edited in place, labels and issues tried live), simulated; GitLab tried on gitlab.com (a project access token, its members told from outsiders); none, kept in the clone (`forge: local`, `workline issues`); any other plugged by a command (`cmd:`, a Forgejo and Gitea sample) — ADR-0016; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; the Forgejo sample untried on a live instance |
 | Agents: Claude Code, and any command as `cmd:` | Codex, Antigravity, OpenCode built in; the generated model grid |
 
 ## Install

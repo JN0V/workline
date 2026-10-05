@@ -386,8 +386,7 @@ func run(o Options, res *Result) error {
 		// judged again, whole, the next night (DomoticsCore, ADR-0014 step 4).
 		if a.askedAgent && a.unread != "" && v.Status != verdict.Block && !unreadAsked && r.Model.PromoteAfter > 0 {
 			unreadAsked = true
-			fb := "- agent-invalid-output: " + a.unread + "\n\nNothing of that answer could be read: send it again as valid YAML (a string holding a double quote is written between single quotes, or its quotes escaped).\n"
-			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(fb), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(runDir, "out", "feedback.md"), []byte(unreadFeedback(a.unread)), 0o644); err != nil {
 				return err
 			}
 			os.Rename(filepath.Join(runDir, "out", "agent-answer.txt"), filepath.Join(runDir, "out", "unread-answer.txt"))
@@ -581,7 +580,22 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		if err := os.WriteFile(filepath.Join(dir, "in", "task.md"), data, 0o644); err != nil {
 			return err
 		}
-		err = callAgent(ag, agent.Request{RunDir: dir, Repo: o.Repo, Role: &asked, Tier: asked.Model.Tier}, "part", runDir, res)
+		req := agent.Request{RunDir: dir, Repo: o.Repo, Role: &asked, Tier: asked.Model.Tier}
+		err = callAgent(ag, req, "part", runDir, res)
+		// An answer that reads not at all is asked for again once, as the
+		// main question's is (#138): a lens's text starting with a backtick
+		// left a merge request not reviewed whole. The call counts as any
+		// other; the second answer not reading either, the part fails.
+		if why := partUnread(err, dir, claims); why != "" && asked.Model.PromoteAfter > 0 {
+			if err := os.WriteFile(filepath.Join(dir, "out", "feedback.md"), []byte(unreadFeedback(why)), 0o644); err != nil {
+				return err
+			}
+			os.Rename(filepath.Join(dir, "out", "agent-answer.txt"), filepath.Join(dir, "out", "unread-answer.txt"))
+			os.Remove(filepath.Join(dir, "out", "intentions.yaml"))
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-asked-again", Where: name, Level: "warn",
+				Message: "the answer to this part did not read (" + why + "): asked for again once, with what the reader said"})
+			err = callAgent(ag, req, "part", runDir, res)
+		}
 		switch {
 		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent):
 			gone, goneKind = err.Error(), "unavailable"
@@ -642,6 +656,34 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 		}
 	}
 	return nil
+}
+
+// partUnread says why a part's answer reads not at all, or "" when it reads,
+// in places at least (claims are then read one by one), or when the agent
+// gave no answer to read (unreachable, tokens spent).
+func partUnread(err error, dir string, claims bool) string {
+	if errors.Is(err, agent.ErrInvalidOutput) {
+		if claims {
+			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
+			if read, _ := claimsOneByOne(string(raw)); read > 0 {
+				return ""
+			}
+		}
+		return err.Error()
+	}
+	if err != nil {
+		return ""
+	}
+	if _, rerr := intent.Read(filepath.Join(dir, "out", "intentions.yaml")); rerr != nil {
+		return rerr.Error()
+	}
+	return ""
+}
+
+// unreadFeedback is what the agent is told when nothing of its answer read.
+func unreadFeedback(why string) string {
+	return "- agent-invalid-output: " + why + "\n\nNothing of that answer could be read: send it again as valid YAML. " +
+		agent.BlockScalars + "\n"
 }
 
 // answerItems cuts an answer into its top-level list items: each starts

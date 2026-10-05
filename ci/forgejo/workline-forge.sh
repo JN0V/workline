@@ -9,7 +9,8 @@
 #
 #   FORGEJO_URL    https://codeberg.org, or your instance (no trailing /)
 #   FORGEJO_TOKEN  a token with the repository's issue and pull request
-#                  scopes, write; read-only is enough for `workline item`
+#                  scopes, write; read-only is enough for `workline item`;
+#                  `comments` needs its user to administer the repository
 #   FORGEJO_REPO   owner/name (default: read from the `origin` remote)
 #
 # Forgejo and Gitea answer the GitHub-like API /api/v1. A sample, written
@@ -79,6 +80,40 @@ all-issues)
 	# issue as done (docs/spec/forge-command.md).
 	all "/issues?state=all&type=issues" | jq -c '{issues: [.[] | select(.pull_request == null)
 		| {id: .number, title, body: (.body // ""), labels: [(.labels // [])[].name], closed: (.state == "closed")}]}'
+	;;
+comments)
+	# Oldest first, each with its author; `insider` when the author may
+	# write to the repository (Forgejo's permission: write, admin or owner),
+	# asked once an author — which needs the token's user to administer the
+	# repository: a lookup refused fails the operation, loud, rather than
+	# taking everyone for an outsider. An author gone (404) is outside.
+	# Forgejo's API has no bot field: its system users (a negative id: the
+	# ghost, the actions user) and a login ending in "-bot" or "[bot]" are
+	# bots, whose `agreed` never counts.
+	got=$(all "/issues/$(arg .target.id)/comments")
+	perms='{}'
+	tmp=$(mktemp)
+	# One login a line, read whole; put in the URL escaped, curl's globbing
+	# off: a login like `ci[bot]` is a name, not a range.
+	printf '%s' "$got" | jq -r '[.[].user.login] | unique | .[]' > "$tmp.logins"
+	while IFS= read -r u; do
+		code=$(curl -gsS -o "$tmp" -w '%{http_code}' -H "Authorization: token $FORGEJO_TOKEN" \
+			"$base/collaborators/$(jq -rn --arg u "$u" '$u | @uri')/permission") || exit 1
+		case "$code" in
+		200) p=$(jq -r '.permission // "none"' "$tmp") ;;
+		404) p=none ;;
+		*)
+			echo "the permission of $u could not be read (HTTP $code): the token's user must administer the repository" >&2
+			rm -f "$tmp" "$tmp.logins"
+			exit 1
+			;;
+		esac
+		perms=$(printf '%s' "$perms" | jq -c --arg u "$u" --arg p "$p" '. + {($u): $p}')
+	done < "$tmp.logins"
+	rm -f "$tmp" "$tmp.logins"
+	printf '%s' "$got" | jq -c --argjson perms "$perms" '{comments: [.[] | {body: (.body // ""), author: .user.login,
+		insider: ($perms[.user.login] | IN("write", "admin", "owner")),
+		bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$")))}]}'
 	;;
 comment | sticky)
 	n=$(arg .target.id)

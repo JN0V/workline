@@ -102,6 +102,7 @@ func Pre(runDir, repo string) int {
 		is       forge.Issue
 		st       *backlog.State
 		comments []string
+		notes    []forge.Note // the comments with their authors
 	}
 	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
 	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
@@ -120,7 +121,8 @@ func Pre(runDir, repo string) int {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
 		}
-		comments, err := b.Comments(forge.Target{Kind: "issue", ID: is.ID})
+		notes, err := b.Notes(forge.Target{Kind: "issue", ID: is.ID})
+		comments := forge.Bodies(notes)
 		if errors.Is(err, forge.ErrUnreachable) {
 			fmt.Fprintln(os.Stderr, err)
 			return exitExternal
@@ -133,10 +135,31 @@ func Pre(runDir, repo string) int {
 		// may change it, the agent reads it first — and only while the body
 		// still lacks what it adds.
 		p := backlog.LastProposal(comments, role)
+		agreed := ""
 		if p != nil {
-			if _, adds, _ := backlog.Refine(is.Body, *p, role); len(adds) == 0 || backlog.ReadExchange(comments, role).Answered {
+			_, adds, _ := backlog.Refine(is.Body, *p, role)
+			if len(adds) > 0 {
+				agreed = backlog.Agreement(notes, is, role)
+			}
+			// An answer may change it, unless it is the agreement itself.
+			if len(adds) == 0 || (backlog.ReadExchange(comments, role).Answered && agreed == "") {
 				p = nil
 			}
+		}
+		if found && err == nil && agreed != "" && !backlog.Accepted(is) {
+			// Its reporter, or a person of the project, replied `agreed` to
+			// the text last proposed: the engine writes what the body still
+			// lacks, with no agent; ready, a split or a rename stay the
+			// project's, by the label (ADR-0021).
+			whose := "its reporter"
+			if agreed != is.Author {
+				whose = "a person of the project"
+			}
+			lp := backlog.LastProposal(comments, role)
+			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
+				"issue": is.ID, "need": lp.Need, "verification": lp.Verification, "validation": lp.Validation,
+				"scope": lp.Scope, "sources": lp.Sources, "own": true, "agreed": agreed,
+				"why": fmt.Sprintf("the text proposed to its reporter, agreed to by @%s (%s) in a reply.", agreed, whose)}})
 		}
 		if found && err == nil && backlog.Accepted(is) && p != nil {
 			// A refined text proposed to an outsider, agreed to by a person
@@ -171,17 +194,20 @@ func Pre(runDir, repo string) int {
 				"why": fmt.Sprintf("slipped: %s is released (its tag exists).", is.Milestone)}})
 		}
 		switch {
+		case agreed != "":
+			// Agreed to: written this run, not read again for that reply.
+			rest = append(rest, due{is, st, comments, notes})
 		case slices.Contains(capped, is.ID):
-			again = append(again, due{is, st, comments})
+			again = append(again, due{is, st, comments, notes})
 		case st.Judged == "":
-			never = append(never, due{is, st, comments})
+			never = append(never, due{is, st, comments, notes})
 		case sourcesChanged(repo, st),
 			backlog.PeopleComments(comments) != st.Comments,         // someone wrote since it was read
 			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
 			slices.Contains(reopened, is.ID):
-			changed = append(changed, due{is, st, comments})
+			changed = append(changed, due{is, st, comments, notes})
 		default:
-			rest = append(rest, due{is, st, comments})
+			rest = append(rest, due{is, st, comments, notes})
 		}
 	}
 	// Those never read first, then those whose code changed since; an issue
@@ -199,7 +225,7 @@ func Pre(runDir, repo string) int {
 		judged++
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.comments, files)
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
@@ -256,7 +282,8 @@ func Pre(runDir, repo string) int {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, comments []string, files []string) {
+func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string) {
+	comments := forge.Bodies(notes)
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
 		fmt.Fprintf(b, "Labels: %s\n", strings.Join(is.Labels, ", "))
@@ -316,14 +343,15 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	}
 	b.WriteString("\n")
 	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyMax))
-	var kept []string
-	for _, c := range comments {
+	type said struct{ who, text string }
+	var kept []said
+	for _, n := range notes {
 		switch {
-		case backlog.Round(c, role):
-			kept = append(kept, "(The product owner wrote:) "+marker.ReplaceAllString(c, ""))
+		case backlog.Round(n.Body, role):
+			kept = append(kept, said{"", "(The product owner wrote:) " + marker.ReplaceAllString(n.Body, "")})
 		default:
-			if _, engine := backlog.EngineMarker(c); !engine {
-				kept = append(kept, marker.ReplaceAllString(c, "")) // a person's, quoting the engine's maybe
+			if _, engine := backlog.EngineMarker(n.Body); !engine {
+				kept = append(kept, said{author(n, is), marker.ReplaceAllString(n.Body, "")}) // a person's, quoting the engine's maybe
 			}
 		}
 	}
@@ -332,8 +360,25 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		kept = kept[len(kept)-commentsMax:]
 	}
 	for _, c := range kept {
-		fmt.Fprintf(b, "Comment:\n> %s\n\n", strings.ReplaceAll(clip(c, bodyMax), "\n", "\n> "))
+		fmt.Fprintf(b, "Comment%s:\n> %s\n\n", c.who, strings.ReplaceAll(clip(c.text, bodyMax), "\n", "\n> "))
 	}
+}
+
+// author says who wrote a comment, as the agent is told: its reporter, a
+// person of the project, a bot, or someone else — whose word decides
+// nothing (ADR-0021); "" when the forge does not say.
+func author(n forge.Note, is forge.Issue) string {
+	switch {
+	case n.Author == "":
+		return ""
+	case n.Bot:
+		return " by @" + n.Author + ", a bot"
+	case n.Author == is.Author:
+		return " by @" + n.Author + ", its reporter"
+	case n.Insider:
+		return " by @" + n.Author + ", of the project"
+	}
+	return " by @" + n.Author + ", outside the project"
 }
 
 // place says an issue's milestone and priority, when it has them.

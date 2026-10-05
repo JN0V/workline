@@ -14,9 +14,11 @@
 #          are listed for a person. GitLab gives a variable to the whole job,
 #          installs included, where GitHub gives it to one step.
 #   The findings show in the merge request's Code Quality report, on every tier.
-#   apply  holds WORKLINE_GITLAB_TOKEN (a project access token with the `api`
-#          and `write_repository` scopes) and no AI key. A doc fix is committed
-#          to the merge request's branch (--push-to-merge-request).
+#   apply  holds WORKLINE_GITLAB_TOKEN (a project access token, role Developer,
+#          scopes `api` and `write_repository`: one glab command in
+#          docs/ci.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
+#          no AI key. A doc fix is committed to the merge request's branch
+#          (--push-to-merge-request).
 #
 # Both variables are masked, and NOT protected: GitLab gives a protected
 # variable only to protected branches, never to a merge request's. Anyone who
@@ -32,7 +34,7 @@
 # trusted; the engine talks to the instance the job runs on (CI_API_V4_URL).
 # The agent still needs npm's registry and Anthropic's API.
 variables:
-  WORKLINE_VERSION: v0.10.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.11.0          # a release of workline: update it to take a newer one (x-release-please-version)
   WORKLINE_IMAGE: ghcr.io/jn0v/workline
   WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs
 
