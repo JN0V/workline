@@ -1,0 +1,12 @@
+case: product-owner/rename-sets-title
+about: A rename sets an issue's title alone, its body untouched, and records in its state the title the role set.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:rename-nine}
+expect:
+  forge:
+    issues:
+      - {id: 9, title: "The CSV export drops the last row", body-contains: "The export loses the last row.", comment-contains: "title: The CSV export drops the last row"}

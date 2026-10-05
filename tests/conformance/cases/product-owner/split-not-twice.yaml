@@ -1,0 +1,15 @@
+case: product-owner/split-not-twice
+about: An issue the role split already — its state lists its children — is not split again, whatever the agent proposes at a later run; nothing is opened.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nsplit: [10, 11]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Keep the last row", body: "Part of #9.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "Part of #9.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:split-two}
+expect:
+  findings: [{rule: already-split, where: "#9"}]
+  forge:
+    issues:
+      - {id: 12, absent: true}

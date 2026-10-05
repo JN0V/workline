@@ -1,0 +1,15 @@
+case: product-owner/split-children-linked-to-parent
+about: On a forge with sub-issues, each child of a split is linked to its parent natively, and the parent's body is left as it is.
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:split-two}
+expect:
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Sub-issues", comment-contains: "split: [10, 11]"}
+      - {id: 10, parent: 9}
+      - {id: 11, parent: 9}

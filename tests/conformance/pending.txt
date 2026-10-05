@@ -1,3 +1,11 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
 
+product-owner/split-opens-children-with-sections
+product-owner/split-children-linked-to-parent
+product-owner/split-children-listed-in-parent
+product-owner/split-not-twice
+product-owner/split-capped
+product-owner/rename-sets-title
+product-owner/rename-keeps-a-persons-title
+product-owner/rename-undo-in-report
