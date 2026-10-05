@@ -39,3 +39,17 @@ func TestListChildren(t *testing.T) {
 		t.Fatalf("list rewritten = %q", again)
 	}
 }
+
+// Two children are one when their titles differ only in case or spaces;
+// distinct titles, or one title under two parents, are not.
+func TestSplitKey(t *testing.T) {
+	same := SplitKey(9, "Keep the last row")
+	for _, title := range []string{"Keep the last row", "keep the LAST row", "  Keep  the last\trow "} {
+		if SplitKey(9, title) != same {
+			t.Errorf("SplitKey(9, %q) differs from %q's", title, "Keep the last row")
+		}
+	}
+	if SplitKey(9, "Quote commas") == same || SplitKey(10, "Keep the last row") == same {
+		t.Error("another title, or another parent, gives the same key")
+	}
+}
