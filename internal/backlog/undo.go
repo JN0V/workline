@@ -125,14 +125,14 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 				switch {
 				case ok && ch.Closed && ch.Reason == "not_planned":
 					evidence = fmt.Sprintf("#%d, split from #%d by the role, closed as not planned by a person", id, d.Issue)
-				case ok && ch.Closed:
+				case !ok || ch.Closed: // closed, or gone from the forge: deleted, moved
 					closed++
 				}
 				if evidence != "" {
 					break
 				}
 			}
-			gone = evidence == "" && closed == len(st.Split) // every child done: nothing left to undo
+			gone = evidence == "" && closed == len(st.Split) // no child left open: nothing left to undo
 		}
 		switch {
 		case evidence != "":

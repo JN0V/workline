@@ -561,7 +561,8 @@ and in the report:
 
 A title, priority or milestone a person set to a third value is theirs:
 the act is no longer watched, and demotes nothing. An act whose issue is
-closed is no longer watched; a split, once each child is closed. A move
+closed is no longer watched; a split, once each child is closed or gone
+from the forge (deleted, moved). A move
 the engine made itself (a slip) and an act a person ticked are not the
 role's choice, and are not watched. The record keeps the newest 200.
 Changing the level never lifts a demotion.
