@@ -13,9 +13,10 @@ and says nothing of how. It is over its length already, and these are two
 acts with their own guards, so they get their own record rather than a
 third amendment. docs/research/product-owner.md ("Splitting and
 renaming") found GitHub's sub-issues writable with the token a role holds,
-GitLab's children of an issue to be tasks — another work item type, not an
-issue —, a task list in the body rendered on both, and backlog practice
-splitting what is not *Small* or *Testable* (INVEST, SPIDR).
+GitLab's children of an issue to be tasks — a work item type its REST API
+still lists and acts on as an issue, linked through GraphQL only —, a task
+list in the body rendered on both, and backlog practice splitting what is
+not *Small* or *Testable* (INVEST, SPIDR).
 
 ## Decision
 
@@ -36,10 +37,17 @@ each proved by its own Verification — is broken into 2 to 6 children.
   children it opened and does not open them twice. They are the role's
   own breakdown, not a finding: no `needs-triage`, not counted in
   `issues-max`; the cap is the act's, splits a run.
-- **Linked where the forge links**: a native sub-issue on GitHub; a task
-  list under `## Sub-issues` in the parent's body elsewhere — GitLab,
-  whose children of an issue are tasks the line does not read, the local
-  forge, a forge plugged by a command that says it has none.
+- **Linked where the forge links**: a sub-issue on GitHub; a task on
+  GitLab — opened as an issue, then converted and given its parent with
+  two GraphQL calls, the only way GitLab links them; read, labelled and
+  commented by REST afterwards as any issue. A task list under
+  `## Sub-issues` in the parent's body elsewhere: the local forge, a
+  GitLab that refuses (an instance without work items), a forge plugged
+  by a command that says it has none.
+- **Not epics**: GitLab's epics are a group's, Premium and up, a
+  portfolio across projects — a roadmap's theme, not the parts of one
+  need, and absent from a user namespace on Free. Grouping themes is for
+  later, the product manager's.
 - **It moves nothing**: the parent keeps its milestone and priority; the
   children are new issues, never read yet, read and ordered at the next
   run within its moved share. A split is not counted in that share.
@@ -69,8 +77,10 @@ left as it was, but for its task list.
 - A need too big for one change reaches the developer as parts, each
   ready on its own; the parent shows the whole and its progress where the
   forge counts sub-issues.
-- On GitLab, the children are issues listed in the parent, not tasks: a
-  GitLab project sees no progress bar. Writing tasks waits for the line to
-  read work items.
+- On GitLab the children are tasks: GitLab shows them under the parent
+  with its progress; a task cannot hold children of its own, so a child
+  split again there lists its parts in its body. GitLab does not say who
+  has write access yet, so every reporter is an outsider there: a split
+  or a rename is proposed until a person sets `workline:accepted`.
 - Not built: a child moved to another parent, or a split undone by the
   role; a parent's own readiness while its children are open.
