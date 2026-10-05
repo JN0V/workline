@@ -113,6 +113,25 @@ func (c *command) Issues() ([]Issue, error) {
 	return out, nil
 }
 
+// AllIssues asks its own operation, all-issues: a command that does not
+// know it refuses it, and the opening fails loud, rather than a closed
+// subject being taken for one never seen.
+func (c *command) AllIssues() ([]Issue, error) {
+	var a struct {
+		Issues []Issue `json:"issues"`
+	}
+	if err := c.call("all-issues", nil, &a); err != nil {
+		return nil, err
+	}
+	for i := range a.Issues {
+		if a.Issues[i].Labels == nil {
+			a.Issues[i].Labels = []string{}
+		}
+	}
+	sort.Slice(a.Issues, func(i, j int) bool { return a.Issues[i].ID < a.Issues[j].ID })
+	return a.Issues, nil
+}
+
 func (c *command) Comments(t Target) ([]string, error) {
 	var a struct {
 		Comments []string `json:"comments"`

@@ -246,7 +246,11 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 		}
 		fmt.Fprintf(b, "Priority: %d%s\n", backlog.Priority(is), whose)
 	}
-	if is.Author != "" {
+	if by := backlog.OpenedBy(is.Body); by != "" {
+		// A role's finding, opened through the one way (ADR-0018): the
+		// product owner takes it from here, as any other issue.
+		fmt.Fprintf(b, "Opened by: the %s role, on a finding of its own — a draft to refine: its Need and Validation are not a person's yet\n", by)
+	} else if is.Author != "" {
 		outside := ""
 		if !is.Insider {
 			outside = ", without write access to the project"

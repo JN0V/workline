@@ -4,10 +4,11 @@
 run, closes duplicates, proposes what the code made obsolete, names an
 issue's code, sets milestones, finds a closing a person undid, refines an
 issue to `ready` and asks its reporter what is missing, orders the backlog
-and moves what slipped — nightly in
-DomoticsCore's CI since v0.5.0 (its roadmap imported, 56 issues), refining
-tried live there and on JN0V/workline-sandbox, ordering on the sandbox,
-not released yet (tried.md).
+and moves what slipped, and keeps the one way every role opens an issue —
+nightly in DomoticsCore's CI (v0.7.1 there, refining included, ordering
+not: its roadmap imported, 56 issues), refining tried live there and on
+JN0V/workline-sandbox, ordering on the sandbox and released in v0.8.0
+(tried.md).
 
 ## Built and tried with a real agent
 
@@ -25,6 +26,7 @@ not released yet (tried.md).
 | Refining: Scope and Verification from the code, Need and Validation drafted; the drafts accepted by a person, the issue moved to `ready` by the engine's check; a vague issue's reporter asked, the answer read, the issue refined | JN0V/workline-sandbox, live (#6, #7); DomoticsCore, live (#163, #167, #168, #171, #172) |
 
 | Ordering: one priority label of four set, a person's kept; an issue whose milestone is released moved to the next by the engine, no agent; a fifth of the backlog moved a run, the rest proposed; the order before the run in the report | JN0V/workline-sandbox, live (#2, #4, #6, #7) |
+| One way for every role to open an issue: a key per subject made by the engine, looked for in the issues open and closed — open, left; closed as not planned or duplicate, left; closed as done, said once — the role named, `needs-triage`, a cap a run; a role's issue read as its draft to refine | JN0V/workline-sandbox, live with the reviewer (#9 found again open, then closed: said once); cases in tests/conformance/cases/backlog (`issue-*`) and product-owner |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones, and
@@ -32,8 +34,8 @@ GitLab's whole backlog, untried live.
 
 ## Missing, in the order to build it
 
-1. **Released with refining**: v0.5.0 runs the PO nightly on DomoticsCore
-   without it.
+1. **Released with ordering**: DomoticsCore's nightly runs v0.7.1, with
+   refining; ordering came in v0.8.0, the one way to open issues after it.
 2. **Refining, what is left**: splitting a need into sub-issues;
    renaming; asking again after an answer; an outsider's issue proposed
    to its reporter rather than in the report; GitLab's write access.
@@ -41,8 +43,11 @@ GitLab's whole backlog, untried live.
    next run if nobody answered and a second judge agreed.
 4. **The person's hand**: a tick read with its author — a proposal
    accepted, an act set back to `act`; ignored runs pausing it.
-5. **One issue-opening mechanism for every role**; the weekly sample over
-   its acts; a file the agent was not shown named as a source.
+5. **The weekly sample over its acts**; a file the agent was not shown
+   named as a source. The one way to open issues is built (ADR-0018,
+   amended); left: its import's plan does not yet see a closed issue
+   (the engine leaves it closed, said), and a forge plugged by a command
+   must answer `all-issues`.
 6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
    GitHub project's position), deferred (ADR-0018); milestones ranked by
    their due date, not only their title; the engine refusing a person's

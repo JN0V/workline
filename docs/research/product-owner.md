@@ -104,6 +104,30 @@ forge's native rank (GitLab's reorder, a GitHub project's position) is
 deferred: it is not on every forge workline speaks, nor writable with the
 token a role holds.
 
+## A subject found again (2026-10-04)
+
+How tools that open an item for what they find keep from opening it twice,
+and what they do when the item was closed — in their words: *fingerprint*,
+*grouping*, *regression*, *ignore*.
+
+| Tool | Same subject | Closed, found again |
+|---|---|---|
+| [Sentry](https://docs.sentry.io/concepts/data-management/event-grouping/) | Events with the same *fingerprint* are one issue; a fingerprint can be set by rules | Resolved: reopened as *regressed*, and alerted. Archived: silent, forever or until it escalates |
+| [SonarQube](https://docs.sonarsource.com/sonarqube-server/10.5/user-guide/issues) | An issue is tracked across analyses by its rule and location | Fixed: reopened when an analysis finds it again. *Accepted* or *false positive*, set by a person: kept, never reopened |
+| [GitHub code scanning](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/resolving-code-scanning-alerts) | SARIF `partialFingerprints` follow an alert across commits (server-side.md) | Dismissed: dismissed on every branch, a person may reopen it |
+| [Renovate](https://docs.renovatebot.com/key-concepts/pull-requests/) | One pull request per update; the dashboard issue kept in place | Closed unmerged: that update is ignored, never recreated; a newer version opens a new one ("immortal" pull requests, for groups, are the exception it warns about) |
+
+Two shared rules: **the key is the tool's, computed, not a person's or a
+model's guess**; and **a person's "no" is never undone by the tool**, while
+"fixed" seen again is a signal. Where the tools reopen a fixed item, a
+workline role cannot: no role but the product owner closes or reopens.
+
+**Decision** (ADR-0018, "Opening issues, for every role"): the key is the
+engine's, from the line of code a finding quotes; issues open and closed
+are looked in; closed as not planned or duplicate, nothing; closed
+otherwise, said once on the issue, left closed; the line changed, a new
+subject.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was

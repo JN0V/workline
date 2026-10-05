@@ -7,8 +7,6 @@
 package reviewer
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -659,7 +657,7 @@ func settle(runDir, repo string, s Settings) int {
 		v.Outside = append(v.Outside, f)
 		if s.ForgeWrites && os.Getenv("WORKLINE_FORGE") != "" {
 			fallback = append(fallback, intent.Intention{Kind: "issue", Value: map[string]any{
-				"title": f.Title, "key": issueKey(f), "sources": []string{f.Cause.Path},
+				"title": f.Title, "at": map[string]any{"path": f.Cause.Path, "text": f.Line},
 				"body": fmt.Sprintf("%s\n\nAt `%s`:\n\n```\n%s\n```\n\n%s\n\nFound outside the change it reviewed (%s), so not the author's to fix there: the reviewer's %s lens, %s.",
 					f.Why, f.Where, strings.TrimSpace(f.Cause.Quote), fixLine(f), short(st.Head), f.Lens, f.Verified)}})
 		} else {
@@ -799,14 +797,6 @@ func summaryComment(v Review, issues int) string {
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes, a person merges.\n\n")
 	b.WriteString(v.Record.String())
 	return b.String()
-}
-
-// issueKey names a finding outside the change the same way each time it is
-// found, however much of it a lens quotes: its file, and the line its cause
-// starts at, as it reads.
-func issueKey(f Finding) string {
-	sum := sha256.Sum256([]byte(f.Cause.Path + "\n" + f.Line))
-	return f.Cause.Path + "#" + hex.EncodeToString(sum[:])[:8]
 }
 
 // final writes a verdict pre settles alone, with nothing to ask: no agent,

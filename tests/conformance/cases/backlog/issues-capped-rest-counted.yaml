@@ -1,0 +1,16 @@
+case: backlog/issues-capped-rest-counted
+about: "Past the role's issues-max, a new subject is not opened: it is counted, and found again at a later run."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  config: {roles: {documentalist: {settings: {issues-max: 1}}}}
+  forge: {issues: [], merge-requests: [{id: 1, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:issue-on-two-lines"}
+expect:
+  status: pass
+  findings:
+    - {rule: issues-capped, message: "1 more issues not opened (issues-max 1)"}
+  forge:
+    issues:
+      - {id: 1, title: "The comment still says one hour"}
+      - {id: 2, absent: true}

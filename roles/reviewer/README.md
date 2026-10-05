@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: d805123
+checked: eef5682
 verified: agent:documentalist
 judged: 507e86b
 ---
@@ -41,8 +41,8 @@ author fixes, the person merges (ADR-0020).
    (`finding-unfounded`). Two on one line are merged, the second said.
 6. **Related or not.** A cause on a line the change added or removed: the
    change's, reported on that line, for its author to fix. Elsewhere: an
-   issue, once (its key, the file and the cause's line, hidden in its body;
-   an open one holding it is left),
+   issue, once (ADR-0018: its key the file and the cause's line; held by
+   an issue open or closed, none opened),
    labelled `needs-triage`, with the product owner's state; never on the
    merge request. A nit there is left, counted.
 7. **The judge**, apart, for each important finding, at the best

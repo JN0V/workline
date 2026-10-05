@@ -781,7 +781,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		return err
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
-		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name}
+		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings}
 	plan, err := planActs(f, r, settings, st, runDir, intents)
 	if errors.Is(err, forge.ErrUnreachable) {
 		res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while reading the backlog; resume with: workline apply %s", runDir)
@@ -825,6 +825,11 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		if acted {
 			res.Applied = append(res.Applied, in.Kind)
 		}
+	}
+	res.Findings = append(res.Findings, ap.findings...)
+	if ap.capped > 0 {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "issues-capped", Level: "warn",
+			Message: fmt.Sprintf("%d more issues not opened (issues-max %d): found again, they are opened at a later run", ap.capped, ap.opens.Max)})
 	}
 	if plan != nil {
 		res.Findings = append(res.Findings, plan.Findings...)
@@ -1600,6 +1605,10 @@ type applier struct {
 	runID, role  string
 	index        int           // position of the intention being applied, for its marker
 	plan         *backlog.Plan // what becomes of the acts on the backlog, nil without any
+	settings     map[string]any
+	opens        *backlog.Openings // the run's issues opened, made on the first
+	capped       int               // findings not opened as issues, past issues-max
+	findings     []verdict.Finding // what the applying says
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -1689,15 +1698,10 @@ func (a *applier) apply(in intent.Intention) error {
 			_, err := a.forge.KeepIssue(title, body+fmt.Sprintf("\n\nKept up to date by the %s role.", a.role), !only)
 			return err
 		}
-		body += fmt.Sprintf("\n\nOpened by the %s role.", a.role)
 		if err := a.needForge("issue"); err != nil {
 			return err
 		}
-		if key, _ := m["key"].(string); key != "" {
-			return a.keyedIssue(title, body, key, strs(m["sources"]))
-		}
-		_, err := a.forge.OpenIssue(title, body, a.marker())
-		return err
+		return a.openIssue(title, body, m)
 	case "close":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
@@ -1720,17 +1724,21 @@ func (a *applier) apply(in intent.Intention) error {
 		if from, to, original, ok := backlog.Locate(a.repo, q.Path, q.Text); ok {
 			body, where = strings.TrimSpace(original), fmt.Sprintf("`%s`, lines %d to %d", q.Path, from, to)
 		}
-		body += fmt.Sprintf("\n\nOpened from %s by the %s role.", where, a.role)
-		id, err := a.forge.OpenIssue(strings.TrimSpace(d.Act.Title), body, forge.Marker(backlog.ImportKey(q)))
+		o, err := a.openings()
 		if err != nil {
 			return err
 		}
-		head, err := exec.Command("git", "-C", a.repo, "rev-parse", "--short", "HEAD").Output()
+		head, err := git(a.repo, nil, "rev-parse", "--short", "HEAD")
 		if err != nil {
 			return err
 		}
-		st := backlog.State{Confirmed: strings.TrimSpace(string(head))}
-		return a.forge.Sticky(forge.Target{Kind: "issue", ID: id}, backlog.FormatState(st), backlog.StateMarker(a.role), true)
+		// Through the one way: a text closed as an issue is not opened again.
+		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.ImportKey(q), Title: d.Act.Title, Body: body, From: " from " + where, Commit: head})
+		if err == nil && outcome == backlog.Settled {
+			a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
+				Message: fmt.Sprintf("%q: #%d, closed, holds this text; not opened again", d.Act.Title, id)})
+		}
+		return err
 	case "milestone":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
@@ -1774,48 +1782,71 @@ func (a *applier) apply(in intent.Intention) error {
 	return fmt.Errorf("not implemented yet in this engine")
 }
 
-// LabelTriage marks an issue a role opened, until a person or the product
-// owner takes it (ADR-0018, "Opening issues, for every role").
-const LabelTriage = "needs-triage"
-
-// keyedIssue opens an issue a role found outside its task, once: its key,
-// stable for the same subject, is hidden in the body, and an open issue
-// holding it already is left as it is — not opened again, not commented.
-// The new issue is labelled needs-triage, and given the product owner's
-// state comment — the code it is about, and the commit it was seen at — so
-// the backlog's keeper reads it from its next run (ADR-0018, ADR-0020).
-func (a *applier) keyedIssue(title, body, key string, sources []string) error {
-	b, ok := a.forge.(forge.Backlog)
-	if !ok {
-		return errors.New("this forge cannot list issues, to open one only once")
-	}
-	marker := forge.Marker("issue=" + a.role + "/" + key)
-	open, err := b.Issues()
-	if err != nil {
-		return err
-	}
-	for _, is := range open {
-		if strings.Contains(is.Body, marker) {
-			return nil
+// openings is the run's one way to open an issue (backlog.Openings), made
+// on the first one; the role's issues-max caps its findings opened.
+func (a *applier) openings() (*backlog.Openings, error) {
+	if a.opens == nil {
+		max := 3
+		switch n := a.settings["issues-max"].(type) {
+		case int:
+			max = n
+		case float64:
+			max = int(n)
 		}
+		o, err := backlog.NewOpenings(a.forge, max)
+		if err != nil {
+			return nil, err
+		}
+		a.opens = o
 	}
-	id, err := a.forge.OpenIssue(title, body, marker)
+	return a.opens, nil
+}
+
+// openIssue opens an issue a role found outside its task, once, through
+// the one way every role opens one (ADR-0018). Its subject is keyed by the
+// engine, never by the agent: the line of code it quotes (`at`), found
+// again here, or else its title.
+func (a *applier) openIssue(title, body string, m map[string]any) error {
+	o, err := a.openings()
 	if err != nil {
-		return err
-	}
-	if err := b.EnsureLabel(LabelTriage, "ededed", "Opened by a workline role: a person or the product owner takes it from here"); err != nil {
-		return err
-	}
-	t := forge.Target{Kind: "issue", ID: id}
-	if err := a.forge.Label(t, []string{LabelTriage}, nil); err != nil {
 		return err
 	}
 	head, err := git(a.repo, nil, "rev-parse", "--short", "HEAD")
 	if err != nil {
 		return err
 	}
-	st := backlog.State{Sources: sources, Confirmed: head}
-	return a.forge.Sticky(t, backlog.FormatState(st), backlog.StateMarker("product-owner"), true)
+	op := backlog.Opening{Role: a.role, Title: title, Body: body, Key: backlog.TitleKey(title), Sources: strs(m["sources"]), Commit: head, Triage: true}
+	if at, ok := m["at"].(map[string]any); ok {
+		path, _ := at["path"].(string)
+		text, _ := at["text"].(string)
+		if _, _, original, found := backlog.Locate(a.repo, path, text); found {
+			line, _, _ := strings.Cut(original, "\n")
+			op.Key = backlog.CodeKey(path, line)
+			if !slices.Contains(op.Sources, path) {
+				op.Sources = append(op.Sources, path)
+			}
+		} else {
+			// Keyed by its title instead: another role finding the same
+			// line would not meet it, so it is said.
+			a.findings = append(a.findings, verdict.Finding{Rule: "issue-quote-not-found", Level: "warn", Where: path,
+				Message: fmt.Sprintf("%q: the line it quotes is not found in %s; keyed by its title, a duplicate on that line not seen", title, path)})
+		}
+	}
+	// The form a role's key had before every role shared one: its name first.
+	op.Also = []string{"issue=" + a.role + "/" + strings.TrimPrefix(op.Key, "issue=")}
+	outcome, id, err := o.Open(op)
+	if err != nil {
+		return err
+	}
+	switch outcome {
+	case backlog.Capped:
+		a.capped++
+	case backlog.Settled, backlog.FoundAgain:
+		a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
+			Message: fmt.Sprintf("%q: #%d, closed, holds this subject; not opened again (%s)", title, id, map[string]string{
+				backlog.Settled: "closed as not planned or as a duplicate: nothing written", backlog.FoundAgain: "said once on it that it was found again"}[outcome])})
+	}
+	return nil
 }
 
 // order sets an issue's one priority label, the others taken off, and

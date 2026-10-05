@@ -29,7 +29,7 @@ type FakeItem struct {
 	Branch    string   `json:"branch,omitempty"` // a merge request's source branch
 	Base      string   `json:"base,omitempty"`
 	Closed    bool     `json:"closed,omitempty"`
-	Reason    string   `json:"reason,omitempty"` // why it was closed: completed or duplicate
+	Reason    string   `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
 	Milestone string   `json:"milestone,omitempty"`
 	Fork      bool     `json:"fork,omitempty"` // a merge request from a fork
 	Title     string   `json:"title,omitempty"`
@@ -107,6 +107,19 @@ func (f *Fake) Issues() ([]Issue, error) {
 		if !it.Closed {
 			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider})
 		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+func (f *Fake) AllIssues() ([]Issue, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	var out []Issue
+	for _, it := range s.Issues {
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil

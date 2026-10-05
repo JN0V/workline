@@ -18,7 +18,7 @@ expect:
   forge:
     issues:
       - {id: 1, comments: 0}
-      - {id: 2, title: "Average panics on no values", labels: [needs-triage], body-contains: "workline:issue=reviewer/calc/calc.go#721bb819", comment-contains: "sources: [calc/calc.go]"}
+      - {id: 2, title: "Average panics on no values", labels: [needs-triage], body-contains: "workline:issue=calc/calc.go#721bb819", comment-contains: "sources: [calc/calc.go]"}
       - {id: 3, absent: true}
     merge-requests:
       - {id: 5, comments: 1, comment-contains: "not the author's to fix here"}

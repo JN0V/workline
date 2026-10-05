@@ -219,8 +219,13 @@ func pages[T any](out []byte) ([]T, error) {
 	return all, nil
 }
 
-func (g *gitlab) Issues() ([]Issue, error) {
-	out, err := g.api("--paginate", "projects/:id/issues?state=opened&per_page=100")
+func (g *gitlab) Issues() ([]Issue, error) { return g.issues("opened") }
+
+// AllIssues: GitLab keeps no close reason; a closed issue's is left empty.
+func (g *gitlab) AllIssues() ([]Issue, error) { return g.issues("all") }
+
+func (g *gitlab) issues(state string) ([]Issue, error) {
+	out, err := g.api("--paginate", "projects/:id/issues?state="+state+"&per_page=100")
 	if err != nil {
 		return nil, err
 	}
@@ -235,6 +240,7 @@ func (g *gitlab) Issues() ([]Issue, error) {
 		Author struct {
 			Username string `json:"username"`
 		} `json:"author"`
+		State string `json:"state"`
 	}](out)
 	var all []Issue
 	for _, f := range found {
@@ -243,7 +249,7 @@ func (g *gitlab) Issues() ([]Issue, error) {
 		}
 		// Who has write access is not in the issue: every reporter is taken
 		// for an outsider (docs/spec/backlog-acts.md, "Refining to ready").
-		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username}
+		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Closed: f.State == "closed"}
 		if f.Milestone != nil {
 			is.Milestone = f.Milestone.Title
 		}
