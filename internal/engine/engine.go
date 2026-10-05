@@ -1825,6 +1825,11 @@ func (a *applier) openIssue(title, body string, m map[string]any) error {
 			if !slices.Contains(op.Sources, path) {
 				op.Sources = append(op.Sources, path)
 			}
+		} else {
+			// Keyed by its title instead: another role finding the same
+			// line would not meet it, so it is said.
+			a.findings = append(a.findings, verdict.Finding{Rule: "issue-quote-not-found", Level: "warn", Where: path,
+				Message: fmt.Sprintf("%q: the line it quotes is not found in %s; keyed by its title, a duplicate on that line not seen", title, path)})
 		}
 	}
 	// The form a role's key had before every role shared one: its name first.

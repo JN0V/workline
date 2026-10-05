@@ -101,7 +101,17 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	}
 	switch {
 	case is != nil && !is.Closed:
-		return StillOpen, is.ID, nil
+		// A run stopped between opening it and giving it its label and
+		// state is resumed here: what is missing is written, once.
+		if !strings.Contains(is.Body, "Opened"+op.From+" by the "+op.Role+" role.") {
+			return StillOpen, is.ID, nil
+		}
+		t := forge.Target{Kind: "issue", ID: is.ID}
+		comments, err := o.b.Comments(t)
+		if err != nil || slices.ContainsFunc(comments, func(c string) bool { return strings.Contains(c, StateMarker(Keeper)) }) {
+			return StillOpen, is.ID, err
+		}
+		return StillOpen, is.ID, o.finish(t, op)
 	case is != nil && (is.Reason == "not_planned" || is.Reason == "duplicate" || !op.Triage):
 		return Settled, is.ID, nil
 	case is != nil:
@@ -114,9 +124,6 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	case op.Triage && o.opened >= o.Max:
 		return Capped, 0, nil
 	}
-	if op.Triage {
-		o.opened++
-	}
 	body := fmt.Sprintf("%s\n\nOpened%s by the %s role.", strings.TrimRight(op.Body, "\n"), op.From, op.Role)
 	if op.Triage {
 		// A finding of the role's own, which the product owner reads as
@@ -128,18 +135,27 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
+	if op.Triage {
+		o.opened++
+	}
 	o.issues = append(o.issues, forge.Issue{ID: id, Title: op.Title, Body: body + "\n\n" + forge.Marker(op.Key)})
-	t := forge.Target{Kind: "issue", ID: id}
+	return Opened, id, o.finish(forge.Target{Kind: "issue", ID: id}, op)
+}
+
+// finish gives an issue just opened its label, for a finding, and the
+// keeper's state: written last, so a run stopped before is completed when
+// resumed (Open).
+func (o *Openings) finish(t forge.Target, op Opening) error {
 	if op.Triage {
 		if err := o.b.EnsureLabel(LabelTriage, "ededed", "Opened by a workline role: a person or the product owner takes it from here"); err != nil {
-			return "", 0, err
+			return err
 		}
 		if err := o.f.Label(t, []string{LabelTriage}, nil); err != nil {
-			return "", 0, err
+			return err
 		}
 	}
 	st := State{Sources: op.Sources, Confirmed: op.Commit}
-	return Opened, id, o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
+	return o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
 }
 
 // OpenedBy is the role that opened an issue on a finding of its own

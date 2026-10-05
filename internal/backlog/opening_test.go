@@ -40,3 +40,27 @@ func TestOpenedByOnlyOnFindings(t *testing.T) {
 		t.Errorf("a finding: opened by %q, want reviewer", by)
 	}
 }
+
+// A run stopped after opening an issue, before its label and state, is
+// completed when resumed: the issue found open gets what it lacks.
+func TestOpenResumedCompletesTheIssue(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "forge.json")
+	key := CodeKey("a.go", "x := 1")
+	state := `{"issues": [{"id": 1, "title": "Found", "labels": [], "comments": [], "body": "A finding.\n\nOpened by the reviewer role.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:` + key + ` -->"}], "merge-requests": []}`
+	if err := os.WriteFile(path, []byte(state), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := &forge.Fake{Path: path}
+	o, _ := NewOpenings(f, 3)
+	op := Opening{Role: "reviewer", Key: key, Title: "Found", Body: "A finding.", Sources: []string{"a.go"}, Commit: "0000000", Triage: true}
+	for i := 0; i < 2; i++ { // the second run finds it whole, and writes nothing
+		if got, id, err := o.Open(op); err != nil || got != StillOpen || id != 1 {
+			t.Fatalf("run %d: %s #%d, %v", i, got, id, err)
+		}
+	}
+	is, _ := f.Issue(1)
+	comments, _ := f.Comments(forge.Target{Kind: "issue", ID: 1})
+	if len(is.Labels) != 1 || is.Labels[0] != LabelTriage || len(comments) != 1 || !strings.Contains(comments[0], "sources: [a.go]") {
+		t.Errorf("labels %v, comments %q", is.Labels, comments)
+	}
+}
