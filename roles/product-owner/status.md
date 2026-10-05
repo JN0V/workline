@@ -14,7 +14,9 @@ delivered and which of its Verification is proved, for a person to
 accept — and renames a vague title, orders the backlog
 — an issue that waits on another after it, never offered first — and
 moves what slipped, opens its report with what is next and what is
-stuck, and keeps the one way every role opens an issue —
+stuck, flags the issues built on a need a person rewrote — its parts
+read again, every act on them proposed, a ready one moved back to
+refine only on a person's tick —, and keeps the one way every role opens an issue —
 nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
 ordering included, the reviewer not enabled: its roadmap imported, 56
 issues), refining tried live there and on JN0V/workline-sandbox, ordering
@@ -52,6 +54,8 @@ on the sandbox (tried.md).
 | What an issue waits on (ADR-0028): `depend` and a split's child's `after` written in GitHub's dependencies, or a marked `Blocked by #n.` line in the body on GitLab Free; read back with a person's links and lines; a blocked issue ordered after its open blockers, never `next-ready`; a closed blocker unblocking; the report's "Waiting" | JN0V/workline-sandbox on GitHub (#29 after #28 by a split, #26 and #29 on #25) and on GitLab (#23, #24 on #22, a body line; #22 closed then reopened), live; cycles, a person's link kept, the level, an undo in conformance (`depend-*`, `backlog/*blocker*`, `cycle-*`, `undo-depend-demotes`) |
 
 | The report opens with what is next and what is stuck (ADR-0031), no agent: the first `next-max` ready issues of the order waiting on nothing, with milestone and priority; each issue waiting on a person past `stuck-days` — ready with no pull request nor commit since the label, its reporter not answering, a proposal unticked, an announcement due and unjudged —, with since when; an issue once; rebuilt each run, the report rewritten when it changed | JN0V/workline-sandbox on GitHub (report #5: Next #7, #6; #6's label day read from the timeline) and on GitLab (report #10: the label days of #6, #13, #15 from its label events, #15's question from its note's day), live; workline itself without applying (Next #79; #65, #91, #92 asked today; #83, #85, #87 proposed); conformance `report-*` |
+
+| A changed need (ADR-0032): a person's rewrite of an issue's Need or Scope found with no agent against what its state kept; its parts read again first with the text as it was and as it is, every act on them proposed (`need-changed`); `unready`, back to refine, always proposed, done on a person's tick; the issues waiting on it — and, its Scope changed, those on the same code — listed; the report's "Changed needs", a box to tick once checked; the same change flagged once | JN0V/workline-sandbox on GitHub (#10's Need rewritten: #12, #13 read again, a planted answer; #13 moved back to refine by a tick), live, no agent called; an imported file's lines changed, the tick on a change, an edit outside the sections in conformance (`changed-*`, `unchanged-need-flags-nothing`, `unready-ticked-moves-back`) |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried
@@ -107,3 +111,9 @@ checked.
    maintainer reading #110 after a run on workline (#164's Validation);
    the Forgejo sample's `trail`; a pull request closed unmerged still
    counting as started.
+10. **A changed need, what is left** (ADR-0032): a real agent's answer on
+   the parts read again — whether it proposes `unready` when it should,
+   and only then; an imported file's lines changed, tried live (the
+   sandbox's imported file was never pushed); GitLab; a change to
+   Verification or Validation, if live use asks; the maintainer reading
+   the report against #165's Validation.
