@@ -73,6 +73,13 @@ case "$WORKLINE_FORGE_OPERATION" in
 issue)
 	api GET "/issues/$(arg .id)" | jq -c '{id: .number, title, body: (.body // ""), labels: [.labels[].name]}'
 	;;
+all-issues)
+	# Open and closed, pull requests left out. Forgejo and Gitea keep no
+	# close reason: `reason` is left out, and the engine reads a closed
+	# issue as done (docs/spec/forge-command.md).
+	all "/issues?state=all&type=issues" | jq -c '{issues: [.[] | select(.pull_request == null)
+		| {id: .number, title, body: (.body // ""), labels: [(.labels // [])[].name], closed: (.state == "closed")}]}'
+	;;
 comment | sticky)
 	n=$(arg .target.id)
 	marker=$(arg .marker)
