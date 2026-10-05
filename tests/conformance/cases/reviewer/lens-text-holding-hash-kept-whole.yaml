@@ -1,0 +1,15 @@
+case: reviewer/lens-text-holding-hash-kept-whole
+about: A lens's text written plain holding ` #20` — which YAML reads as a comment — reaches the report whole, and what was mended is said; a closed value annotated with `# a note` keeps only its value (#156).
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/lens-why-with-hash.sh"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: answer-mended, where: 1-correctness, message: "2 plain text(s) holding ` #`"}
+    - {rule: correctness, message: "The divisor is one less than the count, as in #20"}
+  no-findings: [{rule: part-asked-again}, {rule: lens-failed}]
+  run-files:
+    out/review.json: {contains: "is already covered by #20."}

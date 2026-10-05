@@ -70,7 +70,8 @@ func (c command) Propose(req Request) (Call, error) {
 	}
 	// The answer as it came, kept for audit, as Claude's is.
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), out.Bytes(), 0o644)
-	proposals, err := proposalsFrom(out.String())
+	proposals, mended, err := proposalsFrom(out.String())
+	call.Mended = mended
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 085be89
+checked: d07cdba
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -199,6 +199,23 @@ token), **apply** (trusted, no AI key).
    or ` #` as a YAML block scalar (`|`), which takes code as it is; the
    request again repeats it (#138). YAML, not JSON: code wrapped in JSON
    comes out worse (docs/research/portability.md).
+   Before any of that, the engine mends two slips agents keep making, in
+   the one place every role's answers are read (`agent.Mend`), and says
+   what it mended (`answer-mended`, the answer as it came kept in
+   `out/agent-answer.txt`): code quoted with its tabs under a block
+   scalar — its first line starting with a tab, or lines pasted at the
+   start of the line — which the YAML reader refuses as indentation, is
+   indented with spaces, and given an indentation indicator (`|2`) when
+   its first line starts with a tab, the text of the block kept as
+   written (PR #157); this only when the answer does not read for that
+   reason, and never tabs indenting the YAML itself. A plain value
+   followed on its line by ` #…`, which the reader would drop as a
+   comment, is read whole, as written, when it is free text — several
+   words, or a `#` stuck to what follows (`#20`) — while a single word
+   annotated `# a note` (a severity, a path) keeps only its value (#156).
+   Read whole rather than asked again: the text on the line is exactly
+   what the agent wrote, a quote included, and asking costs a call that
+   may repeat the slip.
    *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
    read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.

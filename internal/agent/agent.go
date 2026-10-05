@@ -55,6 +55,8 @@ type Call struct {
 	TokensOut    int     `json:"tokens-out,omitempty"`
 	CostUSD      float64 `json:"cost-usd,omitempty"`
 	Seconds      float64 `json:"seconds"`
+	// Mended: what the engine fixed of the answer before reading it (Mend).
+	Mended []string `json:"mended,omitempty"`
 }
 
 // Agent answers the question in in/task.md by writing out/intentions.yaml,

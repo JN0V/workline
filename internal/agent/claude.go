@@ -79,7 +79,8 @@ func (c claude) Propose(req Request) (Call, error) {
 	// The answer as it came, kept for audit: what the engine reads of it
 	// may drop what it holds (claims are judged, never applied).
 	_ = os.WriteFile(filepath.Join(req.RunDir, "out", "agent-answer.txt"), []byte(answer.Result), 0o644)
-	proposals, err := proposalsFrom(answer.Result)
+	proposals, mended, err := proposalsFrom(answer.Result)
+	call.Mended = mended
 	if err != nil {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
@@ -121,15 +122,17 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 	return r, true
 }
 
-// proposalsFrom extracts the YAML list from an answer, tolerating a code fence.
-// The answer itself is tried first: a proposal may hold a code fence of its
-// own (a doc's code block, moved by a patch). Only when it does not read is it
-// taken from between the first and the last fence lines.
-func proposalsFrom(answer string) ([]byte, error) {
+// proposalsFrom extracts the YAML list from an answer, tolerating a code fence,
+// and says what Mend mended of it. The answer itself is tried first: a
+// proposal may hold a code fence of its own (a doc's code block, moved by a
+// patch). Only when it does not read is it taken from between the first and
+// the last fence lines.
+func proposalsFrom(answer string) ([]byte, []string, error) {
 	s := strings.TrimSpace(answer)
 	if s == "[]" { // nothing to propose, said: a part whose share says nothing of the doc
-		return []byte("[]\n"), nil
+		return []byte("[]\n"), nil, nil
 	}
+	s, mended := Mend(s)
 	var list []map[string]any
 	if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
 		// What the reader says is kept: the agent is asked again with it.
@@ -148,23 +151,23 @@ func proposalsFrom(answer string) ([]byte, error) {
 			}
 		}
 		if first < 0 || last == first {
-			return nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
+			return nil, nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
-		s = strings.TrimSpace(strings.Join(lines[first+1:last], "\n"))
+		s, mended = Mend(strings.TrimSpace(strings.Join(lines[first+1:last], "\n")))
 		list = nil
 		if err := yaml.Unmarshal([]byte(s), &list); err != nil || len(list) == 0 {
 			if err != nil {
 				why = err.Error()
 			}
-			return nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
+			return nil, nil, fmt.Errorf("expected a YAML list of proposals (%s)", why)
 		}
 	}
 	for i, m := range list {
 		if len(m) != 1 {
-			return nil, fmt.Errorf("proposal %d holds %d kinds; each holds exactly one", i+1, len(m))
+			return nil, nil, fmt.Errorf("proposal %d holds %d kinds; each holds exactly one", i+1, len(m))
 		}
 	}
-	return []byte(s + "\n"), nil
+	return []byte(s + "\n"), mended, nil
 }
 
 func lastLine(s string) string {

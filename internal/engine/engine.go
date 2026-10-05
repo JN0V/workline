@@ -612,13 +612,16 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			// reader: the items are read one by one, the broken ones kept
 			// as unreadable claims, which the role counts as dropped.
 			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-			read, broken := claimsOneByOne(string(raw))
+			read, broken, mended := claimsOneByOne(string(raw))
 			if read == 0 {
 				unanswered("invalid", err.Error())
 				continue
 			}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-partly-read", Where: name, Level: "warn",
 				Message: fmt.Sprintf("the answer to this part was not valid as a whole: %d claims read one by one, %d that could not be read counted as dropped", read, len(broken))})
+			for _, m := range mended {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-mended", Where: name, Level: "warn", Message: m})
+			}
 			if err := intent.Write(filepath.Join(dir, "out", "intentions.yaml"), append(claimsRead(string(raw)), broken...)); err != nil {
 				return err
 			}
@@ -668,7 +671,7 @@ func partUnread(err error, dir string, claims bool) string {
 	if errors.Is(err, agent.ErrInvalidOutput) {
 		if claims {
 			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-			if read, _ := claimsOneByOne(string(raw)); read > 0 {
+			if read, _, _ := claimsOneByOne(string(raw)); read > 0 {
 				return ""
 			}
 		}
@@ -690,14 +693,20 @@ func unreadFeedback(why string) string {
 }
 
 // answerItems cuts an answer into its top-level list items: each starts
-// with "- " at the start of a line and runs to the next.
+// with "- " at the start of a line and runs to the next, or to a fence.
+// Every other line in between is the item's, one at the start of the line
+// too (code pasted as it is), so an item never reads from text cut short;
+// a line starting with "- " starts the next.
 func answerItems(answer string) []string {
 	var items []string
+	open := false
 	for _, l := range strings.Split(answer, "\n") {
 		switch {
 		case strings.HasPrefix(l, "- "):
-			items = append(items, l+"\n")
-		case len(items) > 0 && (strings.HasPrefix(l, " ") || l == ""):
+			items, open = append(items, l+"\n"), true
+		case strings.HasPrefix(l, "```"):
+			open = false
+		case open:
 			items[len(items)-1] += l + "\n"
 		}
 	}
@@ -708,6 +717,7 @@ func answerItems(answer string) []string {
 func claimsRead(answer string) []intent.Intention {
 	var out []intent.Intention
 	for _, item := range answerItems(answer) {
+		item, _ = agent.Mend(item)
 		var one []map[string]any
 		if yaml.Unmarshal([]byte(item), &one) == nil && len(one) == 1 && len(one[0]) == 1 && one[0]["claim"] != nil {
 			out = append(out, intent.Intention{Kind: "claim", Value: one[0]["claim"]})
@@ -717,17 +727,50 @@ func claimsRead(answer string) []intent.Intention {
 }
 
 // claimsOneByOne counts the items that read as claims, and returns the
-// others as claims with nothing to check, which the role drops.
-func claimsOneByOne(answer string) (int, []intent.Intention) {
+// others as claims with nothing to check, which the role drops, and what
+// was mended of those read (agent.Mend).
+func claimsOneByOne(answer string) (int, []intent.Intention, []string) {
 	read := len(claimsRead(answer))
 	var broken []intent.Intention
+	var mended []string
 	for _, item := range answerItems(answer) {
+		item, said := agent.Mend(item)
 		var one []map[string]any
 		if yaml.Unmarshal([]byte(item), &one) != nil || len(one) != 1 || len(one[0]) != 1 || one[0]["claim"] == nil {
 			broken = append(broken, intent.Intention{Kind: "claim", Value: map[string]any{"unreadable": strings.TrimSpace(item)}})
+			continue
 		}
+		mended = append(mended, said...)
 	}
-	return read, broken
+	return read, broken, mendedTogether(mended)
+}
+
+// mendedTogether sums what was mended item by item into one line per kind
+// of mending, as for a whole answer: "2 block(s) …" and "1 block(s) …"
+// make "3 block(s) …".
+func mendedTogether(said []string) []string {
+	var kinds []string
+	count := map[string]int{}
+	for _, s := range said {
+		var n int
+		kind := strings.TrimLeft(s, "0123456789")
+		if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+			n, kind = -1, s // no count to sum: said as it is
+		}
+		if _, ok := count[kind]; !ok {
+			kinds = append(kinds, kind)
+		}
+		count[kind] += n
+	}
+	var out []string
+	for _, k := range kinds {
+		if count[k] < 0 {
+			out = append(out, k)
+			continue
+		}
+		out = append(out, fmt.Sprint(count[k])+k)
+	}
+	return out
 }
 
 // callAgent asks the agent once and records the call: in the result, and
@@ -748,6 +791,15 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 			f.Write(append(data, '\n'))
 			f.Close()
 		}
+	}
+	// What the engine mended of the answer before reading it is said:
+	// the answer as it came stays in out/agent-answer.txt.
+	for _, m := range call.Mended {
+		where := ""
+		if task == "part" {
+			where = filepath.Base(req.RunDir)
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-mended", Where: where, Level: "warn", Message: m})
 	}
 	if n := agent.Notice(agent.Seen(), call); n != "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})
