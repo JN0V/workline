@@ -19,7 +19,8 @@ import (
 // Not yet tried live: OpenIssue.
 type github struct {
 	repo    string
-	writers map[string]bool // who may write to the repository, read once each
+	writers map[string]bool  // who may write to the repository, read once each
+	unread  map[string]error // whose rights the token could not read, asked once each
 }
 
 func (g *github) api(args ...string) ([]byte, error) {
@@ -416,6 +417,9 @@ func (g *github) Ticks(id int) ([]Tick, error) {
 	}
 	edits := v.Data.Repository.Issue.Edits
 	nodes := edits.Nodes
+	// Oldest first: GitHub gives them newest first, and two edits in the
+	// same second keep that order reversed.
+	slices.Reverse(nodes)
 	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].EditedAt < nodes[j].EditedAt })
 	var ticks []Tick
 	// Older versions not read, or one deleted from the history: the next
@@ -457,11 +461,18 @@ func (g *github) writer(login string) (bool, error) {
 	if w, ok := g.writers[login]; ok {
 		return w, nil
 	}
+	if err := g.unread[login]; err != nil {
+		return false, err
+	}
 	out, err := g.api("repos/{owner}/{repo}/collaborators/"+url.PathEscape(login)+"/permission", "--jq", ".permission")
 	if errors.Is(err, errNotFound) {
 		out, err = nil, nil
 	}
 	if err != nil {
+		if g.unread == nil {
+			g.unread = map[string]error{}
+		}
+		g.unread[login] = err
 		return false, err
 	}
 	p := strings.TrimSpace(string(out))

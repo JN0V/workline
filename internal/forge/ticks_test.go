@@ -83,6 +83,36 @@ esac
 	}
 }
 
+// Two edits in the same second are read oldest first, as GitHub gives
+// them newest first.
+func TestGitHubTicksSameSecond(t *testing.T) {
+	bin := t.TempDir()
+	script := `#!/bin/sh
+case "$*" in
+*graphql*) cat <<'EOF'
+{"data":{"repository":{"issue":{"userContentEdits":{"totalCount":2,"nodes":[
+{"editedAt":"2026-10-05T10:01:00Z","diff":"- [x] A <!-- workline:proposal=1/rename -->","editor":{"login":"dev","__typename":"User"}},
+{"editedAt":"2026-10-05T10:01:00Z","diff":"- [ ] A <!-- workline:proposal=1/rename -->","editor":{"login":"ann","__typename":"User"}}
+]}}}}}
+EOF
+;;
+*) echo write ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	ticks, err := (&github{repo: t.TempDir()}).Ticks(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Tick{{Item: "A <!-- workline:proposal=1/rename -->", Done: true, Note: Note{Author: "dev", Insider: true}}}
+	if !reflect.DeepEqual(ticks, want) {
+		t.Errorf("ticks = %+v\nwant %+v", ticks, want)
+	}
+}
+
 // GitLab writes a system note for each box ticked or unticked, the item's
 // markdown escaped and its hidden comment's text kept (as read live on
 // gitlab.com, 2026-10-05).
