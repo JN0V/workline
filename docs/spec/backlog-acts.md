@@ -350,14 +350,14 @@ state's `split` (`backlog.Parts`).
   at all when its text is the same (`Sticky` compares first). A table of
   its parts — open (ready or not), closed as completed with what closed it
   (`Closers`: GitHub's `ClosedEvent.closer`, a pull request or a commit;
-  GitLab's merged `closed_by` merge requests and "closed via commit"
-  notes; none: "by hand"), closed as not planned or as a duplicate, or
+  GitLab's state events, the last closing's `source_commit` or merge
+  request, found among `closed_by`'s; none: "by hand"), closed as not planned or as a duplicate, or
   gone from the forge: those three not delivered. GitLab and the local
   forge keep no reason: a closed part there is taken as done. Then each
   item of its Verification — each list item, or the section whole — proved
   when a part delivered quotes it, in its own Verification or in the text
   of what closed it, case, spaces, `` ` ``, `*`, `_` and the final
-  punctuation aside, said with where; "not proved" otherwise. A parent
+  punctuation aside, said with where; "not proved" otherwise ("not proved yet" while a part is open). A parent
   without a Verification is said to have none.
 - **All its parts closed**: the comment asks a person to accept the need
   by closing the parent, or to reopen a part or open one for what is

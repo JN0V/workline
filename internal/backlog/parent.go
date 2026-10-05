@@ -152,6 +152,8 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 		}
 		fmt.Fprintf(&b, "| #%d %s | %s | %s |\n", p.ID, cell(title), state, by)
 	}
+	ev.AllClosed = ev.Parts > 0 && ev.Closed == ev.Parts
+	notYet := map[bool]string{true: "**Not proved**", false: "**Not proved yet**"}[ev.AllClosed]
 	items := VerificationItems(parent.Body)
 	if len(items) == 0 {
 		b.WriteString("\nThis issue has no Verification of its own: nothing to prove its parts against; a person judges from the parts alone.\n")
@@ -163,10 +165,9 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 				continue
 			}
 			ev.Unproved = append(ev.Unproved, item)
-			fmt.Fprintf(&b, "- **Not proved**: \"%s\" — no part delivered quotes it.\n", item)
+			fmt.Fprintf(&b, "- %s: \"%s\" — no part delivered quotes it.\n", notYet, item)
 		}
 	}
-	ev.AllClosed = ev.Parts > 0 && ev.Closed == ev.Parts
 	if !ev.AllClosed {
 		fmt.Fprintf(&b, "\n**%d of %d parts closed.** Once all are, a person accepts this need by closing this issue.\n", ev.Closed, ev.Parts)
 	} else {
@@ -183,7 +184,7 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 		}
 		b.WriteString("\n")
 	}
-	ev.Body = b.String()
+	ev.Body = strings.TrimRight(b.String(), "\n")
 	return ev
 }
 
