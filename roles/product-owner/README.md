@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: 03a438c
+checked: c64eb35
 verified: agent:claude-code
 ---
 # Product owner
