@@ -1,8 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-product-owner/changed-import-lines-read-again
-product-owner/changed-need-flags-blocked-and-sharing
-product-owner/changed-need-reads-its-parts-again
-product-owner/changed-need-seen-by-a-tick
-product-owner/unchanged-need-flags-nothing
-product-owner/unready-ticked-moves-back

@@ -120,12 +120,6 @@ func Pre(runDir, repo string) int {
 	tracked := trackedFiles(repo)
 	var code []string // the files the issues name, given once each
 	var others []string
-	type due struct {
-		is       forge.Issue
-		st       *backlog.State
-		comments []string
-		notes    []forge.Note // the comments with their authors
-	}
 	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
 	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
 	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
@@ -404,31 +398,85 @@ func Pre(runDir, repo string) int {
 	} else if err := os.WriteFile(filepath.Join(runDir, "in", "waits.yaml"), data, 0o644); err != nil {
 		return fail(err)
 	}
-	// Those never read first, then those whose code changed since; an issue
+	// What open issues were built on that changed (ADR-0032), with no
+	// agent: a person's rewrite of an issue's Need or Scope, the lines of
+	// a file an issue was imported from. The parts of the issue changed,
+	// and the issue imported, are read first, with the change; the others
+	// it touches are listed in the report for a person.
+	found, front, rebase := changesFound(repo, open, report, slices.Concat(again, never, changed, rest))
+	var ahead []due
+	pick := func(list []due) []due {
+		var left []due
+		for _, d := range list {
+			if front[d.is.ID] != "" {
+				ahead = append(ahead, d)
+			} else {
+				left = append(left, d)
+			}
+		}
+		return left
+	}
+	again, never, changed, rest = pick(again), pick(never), pick(changed), pick(rest)
+	slices.SortFunc(ahead, func(a, b due) int { return a.is.ID - b.is.ID })
+	// Then those never read, then those whose code changed since; an issue
 	// whose code did not change is not read again (ADR-0018). Without an
 	// agent, nothing is read, and no issue is said to be.
-	toRead := append(append(again, never...), changed...)
+	toRead := slices.Concat(ahead, again, never, changed)
 	if os.Getenv("WORKLINE_AI") == "none" || paused {
 		toRead = nil
 	}
+	wasRead := map[int]bool{}
 	for i, d := range toRead {
 		if i >= s.IssuesPerRun {
 			rest = append(rest, d)
 			continue
 		}
 		judged++
+		wasRead[d.is.ID] = true
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen)
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, front[d.is.ID])
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
 			}
 		}
 		read := *d.st
-		read.Judged, read.Comments, read.Body = commit, backlog.PeopleComments(d.comments), backlog.BodyDigest(d.is.Body)
+		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
+		read.Keep(d.is.Body)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
+	}
+	// The issues read again with the change, said in the report; the
+	// sections of an issue not read kept now, so a change flags once — after
+	// the agent's answer when it was given an issue to read for it.
+	given := false
+	for i := range found {
+		for k, t := range found[i].Touch {
+			if (t.How == backlog.TouchPart || t.How == backlog.TouchImport) && wasRead[t.Issue] {
+				found[i].Touch[k].Read, given = true, true
+			}
+		}
+	}
+	for _, d := range rebase {
+		if wasRead[d.is.ID] {
+			continue
+		}
+		st := *d.st
+		st.Sections = backlog.Basis(d.is.Body)
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
+			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": given, "body": backlog.FormatState(st)}})
+	}
+	if len(found) > 0 {
+		if data, err := yaml.Marshal(found); err != nil {
+			return fail(err)
+		} else if err := os.WriteFile(filepath.Join(runDir, "in", "changes.yaml"), data, 0o644); err != nil {
+			return fail(err)
+		}
+		for _, c := range found {
+			findings = append(findings, verdict.Finding{Rule: "need-changed", Level: "info", Where: fmt.Sprintf("#%d", c.Issue),
+				Message: changeLine(c)})
+		}
 	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "issues-read"), []byte(strings.Join(readIDs, "\n")), 0o644); err != nil {
 		return fail(err)
@@ -441,7 +489,7 @@ func Pre(runDir, repo string) int {
 	if judged == 0 {
 		// No task.md: the agent is not asked; the state comments are written,
 		// the boxes ticked read, an act a person undid recorded (ADR-0026).
-		if len(fallback) > 0 || len(hand.Ticks) > 0 || len(hand.Demoted(open)) > len(hand.Record.Propose) {
+		if len(fallback) > 0 || len(found) > 0 || len(hand.Ticks) > 0 || len(hand.Demoted(open)) > len(hand.Record.Propose) {
 			return writeFindings(runDir, findings)
 		}
 		if opening(open, report, waits, hand, cfg, now) {
@@ -597,7 +645,7 @@ func readJudged(runDir string, id int) (backlog.Judged, bool) {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string, isOpen map[int]bool) {
+func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string, isOpen map[int]bool, change string) {
 	comments := forge.Bodies(notes)
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
@@ -679,6 +727,9 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	}
 	if !is.Insider && !backlog.Accepted(is) && backlog.OpenedBy(is.Body) == "" {
 		fmt.Fprintf(b, "Its reporter is outside the project: a `refine` is proposed to them in a comment, not written in the body; `why` says what you understood of the issue; a `split`, a `rename` or `ready` is proposed to the project in the report.\n")
+	}
+	if change != "" {
+		b.WriteString(change)
 	}
 	b.WriteString("\n")
 	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyMax))
