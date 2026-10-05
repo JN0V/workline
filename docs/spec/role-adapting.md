@@ -22,6 +22,21 @@ roles:
       body-max-lines: 8
 ```
 
+The project's settings are laid over the role's as Helm lays a chart's values
+over its defaults:
+
+- **A map is merged key by key, at every depth.** `acts: {refine: {mode:
+  propose}}` changes refine's mode only: refine keeps its `max`, and every
+  other kind of act keeps its defaults. `budgets: {doc-lines: 300}` keeps the
+  other budgets.
+- **A list or a scalar replaces the default whole.** `exempt: [wontfix]`
+  drops `pinned` and `security`; `types: [feat, fix]` is the whole list.
+  To add to a default list, write it out with the addition.
+- **`null` removes the key**, as if the role had no default: `acts: {ask:
+  null}`. The role then reads the setting as unset — a product owner's act
+  kind is proposed, a documentalist's budget says `setting-missing`. To turn
+  something off, prefer its own value (`mode: off`, `[]`) or `enforce: off`.
+
 If a setting a role depends on cannot be resolved, the role says so and blocks.
 A check that silently passes for lack of configuration is still believed in,
 which is worse than no check.

@@ -173,16 +173,35 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	return &c, nil
 }
 
-// MergedSettings returns the role's defaults overridden by the project's settings.
+// MergedSettings returns the role's defaults overridden by the project's
+// settings, as docs/spec/role-contract.md says: maps merged key by key, at
+// every depth; a list or a scalar replaced whole; a null removes the key.
 func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
-	out := map[string]any{}
-	for k, v := range r.Settings {
+	var project map[string]any
+	if rc, ok := c.Roles[r.Name]; ok {
+		project = rc.Settings
+	}
+	return MergeSettings(r.Settings, project)
+}
+
+// MergeSettings lays over on defaults, neither of them changed.
+func MergeSettings(defaults, over map[string]any) map[string]any {
+	out := make(map[string]any, len(defaults)+len(over))
+	for k, v := range defaults {
 		out[k] = v
 	}
-	if rc, ok := c.Roles[r.Name]; ok {
-		for k, v := range rc.Settings {
-			out[k] = v
+	for k, v := range over {
+		if v == nil {
+			delete(out, k)
+			continue
 		}
+		om, oIsMap := v.(map[string]any)
+		dm, dIsMap := out[k].(map[string]any)
+		if oIsMap && dIsMap {
+			out[k] = MergeSettings(dm, om)
+			continue
+		}
+		out[k] = v
 	}
 	return out
 }
