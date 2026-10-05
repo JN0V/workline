@@ -370,8 +370,17 @@ func Pre(runDir, repo string) int {
 	// duplicate's original is quoted (ADR-0018).
 	var related strings.Builder
 	shown := 0
-	// The rest in the backlog's order: nearest milestone, priority, number.
-	sort.SliceStable(rest, func(i, j int) bool { return backlog.Less(rest[i].is, rest[j].is) })
+	// The rest in the backlog's order: nearest milestone, priority, number,
+	// an issue after those it waits on (ADR-0028).
+	ordered := make([]forge.Issue, len(rest))
+	byID := map[int]due{}
+	for i, d := range rest {
+		ordered[i], byID[d.is.ID] = d.is, d
+	}
+	backlog.Order(ordered)
+	for i, is := range ordered {
+		rest[i] = byID[is.ID]
+	}
 	for _, d := range rest {
 		files := named(repo, d.is, d.st, d.comments, tracked)
 		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
