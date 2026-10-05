@@ -172,7 +172,7 @@ gardening ones), so a project's `routing:` reaches its CI too.
 
 ## Take only a part
 
-Any existing pipeline can call one role, a gate or `workline apply`, and leave the rest: [PARTS.md](PARTS.md).
+Any existing pipeline can call one role, a gate or `workline apply`, and leave the rest: [docs/parts.md](docs/parts.md).
 
 ## Develop
 
