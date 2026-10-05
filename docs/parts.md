@@ -1,6 +1,8 @@
-<!-- workline
+---
 sources: [cmd/workline, internal/agent/agent.go]
--->
+checked: d477467
+verified: agent:claude-code
+---
 # Take only a part
 
 workline is one binary with its roles inside, and needs nothing but git (and
@@ -21,7 +23,9 @@ workline gate release --json   # a gate declared in .workline/config.yaml: your 
 - `--no-apply` and `workline apply` fit a pipeline that keeps tokens apart.
 - A role is a folder (`role.yaml`, facets, `pre` and `post` in any language):
   a team can replace one facet (`.workline/roles/<role>/`), or run its own
-  roles with `--roles <dir>` ([role contract](docs/spec/role-contract.md)).
+  roles with `--roles <dir>` ([role contract](spec/role-contract.md)).
+
+The command for each event, from any trigger: [triggers.md](triggers.md).
 
 Not there yet: an agent other than Claude Code built in (`--ai cmd:<command>`
 runs any).

@@ -217,8 +217,8 @@ first; each run says the first ready issue that waits on nothing
 It orders the backlog: a priority label, `workline:priority/1` (the most
 pressing) to `/4`, on the issues it reads — one a person set is kept —
 and an issue whose milestone's release is tagged moved to the next open
-milestone. A run moves at most a fifth of the open issues
-(`moved-percent-max`); the report lists them as they were, to put back.
+milestone. A run moves at most `moved-percent-max` of the open issues —
+20% at `normal`, 10% `cautious`, 30% `enterprising`; the report lists them as they were, to put back.
 
 ## The weekly sample
 

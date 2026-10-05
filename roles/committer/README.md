@@ -5,7 +5,46 @@ verified: agent:claude-code
 ---
 # Committer
 
-What runs, for humans. The AI never reads this file.
+For people: what the role does and how to set it. The AI never reads this
+file. All roles: [docs/roles.md](../../docs/roles.md).
+
+**Does**: checks each commit message (format, length, internal codes), the
+secrets and forbidden terms a commit adds (gitleaks) and the author's
+identity; with an agent, rewrites a refused message in your words.
+**Does not**: split a commit, edit code, rewrite commits already made (on a
+merge request it lists them, for `git rebase -i`), or ask an agent about a
+message that passes.
+
+| Event | Fired by | Checks |
+|---|---|---|
+| `commit-msg` | the global git hook (`workline hooks install --global`) | the message being written, what the commit adds |
+| `pre-push` | the global hook, when `.workline/config.yaml` routes it | every commit pushed |
+| `merge-request` | CI (`workline route merge-request --input range=<base>..<head>`) | every commit of the range |
+
+## Settings
+
+Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
+([config reference](../../docs/config.md)); defaults from role.yaml:
+
+| Key | Default | |
+|---|---|---|
+| `subject-max` | `72` | characters in the subject |
+| `body-max-lines` | `12` | body lines, comments, blanks and trailers aside |
+| `types` | `feat fix docs test refactor perf build ci chore revert` | allowed types |
+| `internal-codes` | `\b[A-Z]{1,4}(-NEW)?-[0-9]+\b` | codes refused in the subject |
+| `internal-codes-maybe` | `\b[A-Za-z]{1,3}[0-9]{2,}\b` | codes with no dash, judged |
+| `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `CVE-…`, `v1`… | standard names that look like codes |
+| `allowed-identities` | `[]` | author addresses allowed, as patterns; empty with no user list: not checked |
+
+`enforce: {<rule>: warn}` (or `off`) beside `settings` softens one rule.
+
+**Outputs**: the verdict on the terminal or in the job's log; `--json`,
+`--sarif`, `--code-quality` in CI. It writes nothing to a forge.
+**Cost**: no call when the message passes; one call of a light model,
+effort low, per refused message, and one more of a stronger model if the
+rewrite is refused (`promote-after: 1`). No cap needed.
+**Status**: used daily on workline itself since 2026-09; tried with Claude
+below.
 
 ## Check (`pre`, no AI)
 
