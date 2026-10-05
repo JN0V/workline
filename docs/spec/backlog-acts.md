@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 8285eac
+checked: ee7e4a8
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -463,14 +463,14 @@ report's body and who ticked each (ADR-0025):
 
 | Forge | Who ticked it |
 |---|---|
-| GitHub | the editor of the body's version that ticked it (`userContentEdits`, the hundred newest); of the project when GitHub gives them write, maintain or admin — a token that may not read that: nobody known; a user of type Bot is a bot |
+| GitHub | the editor of the body's version that ticked it (`userContentEdits`, the hundred newest; after a gap — older versions, one deleted — the next version ticks nothing); of the project when GitHub gives them write, maintain or admin — a token that may not read that: nobody known; a user of type Bot is a bot |
 | GitLab | the author of the system note "marked the checklist item … as completed"; of the project from the Planner role (ADR-0023) |
 | local | a person of the project, unnamed: whoever works in the clone |
 | plugged | its `ticks` operation (docs/spec/forge-command.md); one it refuses: nobody known |
 
 | Ticked by | What the engine does |
 |---|---|
-| A person of the project, a proposal it can do | Done as the record holds it — never as an intention says (`not-ticked` otherwise) — whatever its kind's mode, a kind back to propose or a cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, the comment naming who ticked it: no announcement, no second judge. The report: "Ticked by @…" |
+| A person of the project, a proposal it can do | Done as the record holds it, never as an intention says (`not-ticked`), whatever its mode or cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, no announcement nor second judge, naming who ticked it |
 | A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
 | A person of the project, an issue to open, rounds spent, a slip with nowhere to go | Not done: the report says to do it by hand; the proposal leaves it |
 | Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
@@ -482,9 +482,9 @@ whose proposal the record no longer holds is nothing.
 proposal is ignored when, since the last run, no person of the project
 ticked a box or wrote on the report, no closing was undone and no
 proposal's issue was closed. After three in a row (`ignored: 3`), the
-report says **Paused**, with a box to resume, and the next runs ask no
-agent — nothing read, no second judge (`paused`) — until a person does
-one of those; the engine's own work goes on.
+report says **Paused**, with a box to resume; the next runs ask no
+agent (`paused`: nothing read, no second judge) until a person does
+one of those.
 
 ## Trust
 
