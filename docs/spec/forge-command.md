@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: a8d49b8
+checked: 810dd7d
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
