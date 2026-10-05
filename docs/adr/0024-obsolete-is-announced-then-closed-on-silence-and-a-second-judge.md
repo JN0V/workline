@@ -20,7 +20,9 @@ with exempt labels and a cap a run; none asks a second judge.
 
 ## Decision
 
-**Announced, on the issue.** In mode `act`, an agent's `close` as
+### Announced, on the issue
+
+In mode `act`, an agent's `close` as
 obsolete closes nothing: the engine checks it as any closing (the quote
 found again in the code, the state readable) and writes, on the issue, a
 comment naming its reporter — why it looks obsolete, the code quoted, the
@@ -29,7 +31,9 @@ open; and sets the label `workline:obsolete`. The comment ends with a
 block the engine reads back (the quote, the reason, the commit, the date,
 the model that proposed it).
 
-**Closed at a later run**, by the engine, when all hold:
+### Closed at a later run
+
+By the engine, when all hold:
 
 - `days` (7, `acts.close-obsolete.days`) have passed since the
   announcement — days, not runs, as stale bots count; 0 closes at the
@@ -54,7 +58,9 @@ the work, which is what `completed` says; `not_planned` is a person's no
 (ADR-0018), and every role's issue opening reads it as one — a subject
 found again on an issue the machine closed must still be said.
 
-**Cancelled for good, for that evidence.** A person's comment, the label
+### Cancelled for good, for that evidence
+
+A person's comment, the label
 taken off, an exempt label set, the judge saying no, or the code quoted
 gone: the engine keeps the issue open, takes the label off, records the
 evidence in the issue's state (`kept`), and says why on the issue when
@@ -63,14 +69,16 @@ announced again (`obsolete-kept`); another, from code changed since, may
 be. While announced, a second announcement is dropped (`announced`). A
 `keep` act lets the agent do the same, reading a reply.
 
-**Caps.** `acts.close-obsolete.max` (3) counts announcements and
+### Caps and trust
+
+`acts.close-obsolete.max` (3) counts announcements and
 closings together, the engine's closings first; a closing past it waits
 for the next run, an announcement past it is proposed in the report, as
 any act. A closing leaves the backlog rather than reordering it: not
 counted in the moved share. An outsider's issue is announced as any other,
 its reporter named.
 
-**Trust, as before**: a closing reopened is wrong, and puts
+Trust, as before: a closing reopened is wrong, and puts
 `close-obsolete` back to `propose` — the announcement then waits in the
 report for a person, and nothing more is announced. The mode's default
 becomes **`act`**: in act, nothing closes without a week where the
