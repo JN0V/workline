@@ -577,9 +577,10 @@ func (g *gitlab) Notes(t Target) ([]Note, error) {
 
 // mentioned reads GitLab's system notes naming an issue from elsewhere:
 // "mentioned in commit 1a2b3c4d", "mentioned in merge request !7", with
-// another project's path before the reference when it is another's:
-// "group/other@1a2b3c4d", "group/other!7".
-var mentioned = regexp.MustCompile(`^mentioned in (?:(commit) (?:\S*[/@])?([0-9a-f]{7,40})|(merge request) \S*?(![0-9]+))$`)
+// another project's path before the reference when it is another's —
+// "group/other@1a2b3c4d", "group/other!7" —, kept in the reference so it
+// is never taken for this project's.
+var mentioned = regexp.MustCompile(`^mentioned in (?:(commit) (\S*?[0-9a-f]{7,40})|(merge request) (\S*?![0-9]+))$`)
 
 // Trail reads when the issue last got the label, from its label events,
 // and what names it, from its system notes: two listings (ADR-0031).

@@ -13,7 +13,8 @@ import (
 
 // GitHub's timeline says when the label was last set and what names the
 // issue: a pull request linked or naming it, a commit naming it; another
-// label, and an issue naming it, are not read (ADR-0031). The answer is
+// label, and an issue naming it, are not read; another repository's pull
+// request is named with its repository (ADR-0031). The answer is
 // the one asked of JN0V/workline #79, 2026-10-05, a commit added.
 func TestGitHubTrail(t *testing.T) {
 	bin := t.TempDir()
@@ -24,6 +25,7 @@ func TestGitHubTrail(t *testing.T) {
 {"__typename":"LabeledEvent","createdAt":"2026-10-05T09:02:26Z","label":{"name":"workline:ready"}},
 {"__typename":"CrossReferencedEvent","createdAt":"2026-10-05T10:00:00Z","source":{"__typename":"Issue"}},
 {"__typename":"ConnectedEvent","createdAt":"2026-10-06T10:00:00Z","subject":{"__typename":"PullRequest","number":180}},
+{"__typename":"CrossReferencedEvent","createdAt":"2026-10-06T11:00:00Z","isCrossRepository":true,"source":{"__typename":"PullRequest","number":4,"repository":{"nameWithOwner":"JN0V/other"}}},
 {"__typename":"ReferencedEvent","createdAt":"2026-10-07T10:00:00Z","commit":{"abbreviatedOid":"1a2b3c4"}}
 ]}}}}}
 EOF
@@ -39,6 +41,7 @@ EOF
 	want := Trail{Labeled: "2026-10-05T09:02:26Z", Links: []Link{
 		{Kind: "pull-request", Ref: "#112", At: "2026-10-04T08:00:00Z"},
 		{Kind: "pull-request", Ref: "#180", At: "2026-10-06T10:00:00Z"},
+		{Kind: "pull-request", Ref: "JN0V/other#4", At: "2026-10-06T11:00:00Z"},
 		{Kind: "commit", Ref: "1a2b3c4", At: "2026-10-07T10:00:00Z"},
 	}}
 	if !reflect.DeepEqual(tr, want) {
@@ -47,8 +50,8 @@ EOF
 }
 
 // GitLab says when a label was added in its label events, and what names
-// an issue in its system notes; a person's note saying the same words is
-// not read.
+// an issue in its system notes, another project's named with its path; a
+// person's note saying the same words is not read.
 func TestGitLabTrail(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj") {
@@ -82,8 +85,8 @@ func TestGitLabTrail(t *testing.T) {
 	}
 	want := Trail{Labeled: "2026-09-03T10:00:00Z", Links: []Link{
 		{Kind: "pull-request", Ref: "!7", At: "2026-09-05T10:00:00Z"},
-		{Kind: "commit", Ref: "1a2b3c4d5e", At: "2026-09-06T10:00:00Z"},
-		{Kind: "pull-request", Ref: "!12", At: "2026-09-06T11:00:00Z"},
+		{Kind: "commit", Ref: "group/other@1a2b3c4d5e", At: "2026-09-06T10:00:00Z"},
+		{Kind: "pull-request", Ref: "group/other!12", At: "2026-09-06T11:00:00Z"},
 	}}
 	if !reflect.DeepEqual(tr, want) {
 		t.Errorf("trail = %+v\nwant %+v", tr, want)

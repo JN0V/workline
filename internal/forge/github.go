@@ -185,7 +185,7 @@ func (g *github) Closers(id int) ([]Closer, error) {
 // it: a pull request linked by hand (ConnectedEvent) or naming it
 // (CrossReferencedEvent), a commit naming it (ReferencedEvent), each with
 // when (docs/research/product-owner.md, "What is next, and what is stuck").
-const trailQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { timelineItems(itemTypes: [LABELED_EVENT, CONNECTED_EVENT, CROSS_REFERENCED_EVENT, REFERENCED_EVENT], last: 100) { nodes { __typename ... on LabeledEvent { createdAt label { name } } ... on ConnectedEvent { createdAt subject { __typename ... on PullRequest { number } } } ... on CrossReferencedEvent { createdAt source { __typename ... on PullRequest { number } } } ... on ReferencedEvent { createdAt commit { abbreviatedOid } } } } } } }`
+const trailQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { timelineItems(itemTypes: [LABELED_EVENT, CONNECTED_EVENT, CROSS_REFERENCED_EVENT, REFERENCED_EVENT], last: 100) { nodes { __typename ... on LabeledEvent { createdAt label { name } } ... on ConnectedEvent { createdAt subject { __typename ... on PullRequest { number } } } ... on CrossReferencedEvent { createdAt isCrossRepository source { __typename ... on PullRequest { number repository { nameWithOwner } } } } ... on ReferencedEvent { createdAt commit { abbreviatedOid } } } } } } }`
 
 // Trail reads an issue's last hundred timeline events of those kinds: one
 // GraphQL call (ADR-0031).
@@ -195,8 +195,11 @@ func (g *github) Trail(id int, label string) (Trail, error) {
 		return Trail{}, err
 	}
 	type pr struct {
-		Type   string `json:"__typename"`
-		Number int    `json:"number"`
+		Type       string `json:"__typename"`
+		Number     int    `json:"number"`
+		Repository struct {
+			Name string `json:"nameWithOwner"`
+		} `json:"repository"`
 	}
 	var v struct {
 		Data struct {
@@ -206,6 +209,7 @@ func (g *github) Trail(id int, label string) (Trail, error) {
 						Nodes []struct {
 							Type      string `json:"__typename"`
 							CreatedAt string `json:"createdAt"`
+							Cross     bool   `json:"isCrossRepository"`
 							Label     *struct {
 								Name string `json:"name"`
 							} `json:"label"`
@@ -231,7 +235,11 @@ func (g *github) Trail(id int, label string) (Trail, error) {
 		case n.Subject != nil && n.Subject.Type == "PullRequest":
 			t.Links = append(t.Links, Link{Kind: "pull-request", Ref: fmt.Sprintf("#%d", n.Subject.Number), At: n.CreatedAt})
 		case n.Source != nil && n.Source.Type == "PullRequest":
-			t.Links = append(t.Links, Link{Kind: "pull-request", Ref: fmt.Sprintf("#%d", n.Source.Number), At: n.CreatedAt})
+			ref := fmt.Sprintf("#%d", n.Source.Number)
+			if n.Cross {
+				ref = n.Source.Repository.Name + ref // another repository's, never taken for this one's
+			}
+			t.Links = append(t.Links, Link{Kind: "pull-request", Ref: ref, At: n.CreatedAt})
 		case n.Commit != nil:
 			t.Links = append(t.Links, Link{Kind: "commit", Ref: n.Commit.Oid, At: n.CreatedAt})
 		}
