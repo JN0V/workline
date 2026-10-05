@@ -11,4 +11,6 @@ expect:
     - {rule: part-asked-again, where: correctness, message: "cannot start any token"}
     - {rule: correctness, where: "calc/calc.go:11", message: "The divisor: one less than the count"}
   no-findings: [{rule: lens-failed}]
-  run-files: {out/review.json: {contains: '"complete": true'}}
+  run-files:
+    out/review.json: {contains: '"complete": true'}
+    parts/1-correctness/out/unread-answer.txt: {contains: "why: `Average` divides"}
