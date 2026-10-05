@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/JN0V/workline/compare/v0.10.0...v0.11.0) (2026-10-05)
+
+
+### Features
+
+* **forge:** the Forgejo sample answers all-issues ([#136](https://github.com/JN0V/workline/issues/136)) ([cf33ef6](https://github.com/JN0V/workline/commit/cf33ef6b8bb2f99887452f28f4078d0e111a9275))
+* **product-owner:** ask again after an answer, propose to outsiders ([#137](https://github.com/JN0V/workline/issues/137)) ([ab5a206](https://github.com/JN0V/workline/commit/ab5a206f1b8e08cb317ae4166cc289fa5f4fb655))
+* **product-owner:** GitLab's members, comment authors, a reply that agrees ([#146](https://github.com/JN0V/workline/issues/146)) ([b67e87f](https://github.com/JN0V/workline/commit/b67e87f4a35e7a5d86c08836541354b523e2c03c))
+* **product-owner:** split a need into sub-issues, rename an issue ([#139](https://github.com/JN0V/workline/issues/139)) ([e06e200](https://github.com/JN0V/workline/commit/e06e200e0365cb2de2b4bcf778c48808649366bd))
+
+
+### Bug Fixes
+
+* **reviewer:** ask a lens again once when its answer does not read ([#144](https://github.com/JN0V/workline/issues/144)) ([ae511b7](https://github.com/JN0V/workline/commit/ae511b7d900713e6dbde8c6bdbd7db844a04b4f8))
+
 ## [0.10.0](https://github.com/JN0V/workline/compare/v0.9.0...v0.10.0) (2026-10-05)
 
 
