@@ -16,6 +16,7 @@ func TestGitHubTicks(t *testing.T) {
 case "$*" in
 *graphql*) cat <<'EOF'
 {"data":{"repository":{"issue":{"userContentEdits":{"nodes":[
+{"editedAt":"2026-10-05T10:04:00Z","diff":"- [x] Rename #9 <!-- workline:proposal=9/rename -->\n- [x] Close #7 <!-- workline:proposal=7/close-obsolete -->\n- [x] Order #4 <!-- workline:proposal=4/order -->\n- [x] Split #3 <!-- workline:proposal=3/split -->","editor":null},
 {"editedAt":"2026-10-05T10:03:00Z","diff":"- [x] Rename #9 <!-- workline:proposal=9/rename -->\n- [x] Close #7 <!-- workline:proposal=7/close-obsolete -->\n- [x] Order #4 <!-- workline:proposal=4/order -->","editor":{"login":"ci","__typename":"Bot"}},
 {"editedAt":"2026-10-05T10:02:00Z","diff":"- [x] Rename #9 <!-- workline:proposal=9/rename -->\n- [x] Close #7 <!-- workline:proposal=7/close-obsolete -->\n- [ ] Order #4 <!-- workline:proposal=4/order -->","editor":{"login":"zed","__typename":"User"}},
 {"editedAt":"2026-10-05T10:01:00Z","diff":"- [x] Rename #9 <!-- workline:proposal=9/rename -->\n- [ ] Close #7 <!-- workline:proposal=7/close-obsolete -->\n- [ ] Order #4 <!-- workline:proposal=4/order -->","editor":{"login":"dev","__typename":"User"}},
@@ -25,6 +26,7 @@ EOF
 ;;
 *collaborators/dev/permission*) echo write ;;
 *collaborators/bot-user/permission*) echo admin ;;
+*collaborators/zed/permission*) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
 *) echo read ;;
 esac
 `
@@ -41,6 +43,7 @@ esac
 		{Item: "Rename #9 <!-- workline:proposal=9/rename -->", Done: true, Note: Note{Author: "dev", Insider: true}},
 		{Item: "Close #7 <!-- workline:proposal=7/close-obsolete -->", Done: true, Note: Note{Author: "zed"}},
 		{Item: "Order #4 <!-- workline:proposal=4/order -->", Done: true, Note: Note{Author: "ci", Bot: true}},
+		{Item: "Split #3 <!-- workline:proposal=3/split -->", Done: true}, // its editor deleted: nobody known
 	}
 	if !reflect.DeepEqual(ticks, want) {
 		t.Errorf("ticks = %+v\nwant %+v", ticks, want)
@@ -96,7 +99,8 @@ case "$*" in
 ]}}}}}
 EOF
 ;;
-*) echo write ;;
+*collaborators/dev/permission*) echo write ;;
+*) echo read ;;
 esac
 `
 	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
