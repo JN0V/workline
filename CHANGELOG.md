@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/JN0V/workline/compare/v0.11.0...v0.12.0) (2026-10-05)
+
+
+### Features
+
+* **product-owner:** announce an obsolete issue, close it on silence ([#150](https://github.com/JN0V/workline/issues/150)) ([8a67556](https://github.com/JN0V/workline/commit/8a675564af402f4770a44e27a2d9a219a6443686))
+* **product-owner:** do what a person ticks, pause when nobody answers ([#152](https://github.com/JN0V/workline/issues/152)) ([00c7973](https://github.com/JN0V/workline/commit/00c7973521feff37101cf8bf228699fe62cf7943))
+
 ## [0.11.0](https://github.com/JN0V/workline/compare/v0.10.0...v0.11.0) (2026-10-05)
 
 
