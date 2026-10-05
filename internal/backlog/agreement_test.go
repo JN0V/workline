@@ -39,6 +39,8 @@ func TestAgreement(t *testing.T) {
 		{"nor someone unnamed", []forge.Note{{Body: proposal}, {Body: "agreed"}}, ""},
 		{"an agreement before the proposal is not to it", []forge.Note{reporter("agreed"), {Body: proposal}}, ""},
 		{"a question is not agreed to", []forge.Note{{Body: proposal}, reporter("hm"), ask, reporter("agreed")}, ""},
+		{"one final dot aside", []forge.Note{{Body: proposal}, reporter("agreed.")}, "zed"},
+		{"case and one bang aside", []forge.Note{{Body: proposal}, reporter("AGREED!")}, "zed"},
 		{"one final mark aside, no more", []forge.Note{{Body: proposal}, reporter("agreed!!!")}, ""},
 		{"nor a spaced mark", []forge.Note{{Body: proposal}, reporter("agreed .")}, ""},
 		{"more than the word is an answer", []forge.Note{{Body: proposal}, reporter("Agreed, but not the scope")}, ""},

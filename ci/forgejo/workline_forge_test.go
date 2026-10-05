@@ -26,7 +26,7 @@ type mock struct {
 func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	m.mu.Lock()
-	m.calls = append(m.calls, strings.TrimSpace(r.Method+" "+r.URL.Path+" "+string(body)))
+	m.calls = append(m.calls, strings.TrimSpace(r.Method+" "+r.URL.EscapedPath()+" "+string(body)))
 	m.mu.Unlock()
 	const repo = "/api/v1/repos/owner/name"
 	switch {
@@ -127,7 +127,11 @@ func TestAllIssues(t *testing.T) {
 // comments answers each comment with its author, and whether they may
 // write to the repository.
 func TestComments(t *testing.T) {
-	out := run(t, &mock{}, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}})
+	m := &mock{}
+	out := run(t, m, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}})
+	if !slices.Contains(m.calls, "GET /api/v1/repos/owner/name/collaborators/ci%5Bbot%5D/permission") {
+		t.Errorf("a login not escaped in the URL; calls: %q", m.calls)
+	}
 	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false,"bot":false},` +
 		`{"body":"agreed","author":"dev","insider":true,"bot":false},` +
 		`{"body":"agreed","author":"forgejo-actions","insider":false,"bot":true},` +
