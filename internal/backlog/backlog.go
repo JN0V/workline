@@ -901,7 +901,7 @@ func ReadExchange(comments []string, role string) Exchange {
 		case strings.Contains(c, ask) || strings.Contains(c, proposal):
 			e.Rounds++
 			e.Answered = false
-			e.Asked = append(e.Asked, strings.TrimSpace(engineMarker.ReplaceAllString(c, "")))
+			e.Asked = append(e.Asked, askedIn(c))
 		case !strings.Contains(c, "<!-- workline:"):
 			e.Answered = true
 		}
@@ -910,6 +910,26 @@ func ReadExchange(comments []string, role string) Exchange {
 }
 
 var engineMarker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
+
+// The leads the engine writes before the questions: an ask's (Ask), and a
+// proposal's paragraph of what it still needs (ProposalComment).
+var askLead = regexp.MustCompile(`(?is)^.*?to refine this issue(?:, still)?: `)
+
+const needsLead = "**What it still needs:** "
+
+// askedIn is the questions an engine comment asked, its lead and marker
+// left out: in a proposal, only what it still needs.
+func askedIn(comment string) string {
+	c := strings.TrimSpace(engineMarker.ReplaceAllString(comment, ""))
+	if _, rest, ok := strings.Cut(c, needsLead); ok {
+		line, _, _ := strings.Cut(rest, "\n\n")
+		return line
+	}
+	if strings.Contains(comment, "/proposal=") {
+		return "" // a proposal that needed nothing asked nothing
+	}
+	return askLead.ReplaceAllString(c, "")
+}
 
 // conversation checks an ask, or a refine proposed to an outsider, against
 // the conversation so far: never twice without an answer, never the same
@@ -923,11 +943,9 @@ func conversation(role string, comments []string, c *Proposal) (rule, why string
 		return "already-proposed", "its reporter was proposed a text, or asked, and has not answered since: nothing more is written before an answer"
 	}
 	for _, q := range questions(c.Questions) {
-		// An earlier comment's question ends with it: its lead ("@ann, to
-		// refine this issue:") left aside.
-		if slices.ContainsFunc(e.Asked, func(a string) bool {
-			return slices.ContainsFunc(questions(a), func(x string) bool { return strings.HasSuffix(x, q) })
-		}) {
+		// The same question, whole: the leads the engine wrote are not in
+		// e.Asked (ReadExchange).
+		if slices.ContainsFunc(e.Asked, func(a string) bool { return slices.Contains(questions(a), q) }) {
 			return "asked-before", fmt.Sprintf("%q was asked before: a question is never asked twice", q)
 		}
 	}
@@ -972,6 +990,11 @@ func Ask(author, questions string, round int) string {
 // how to agree. Nothing is written in the body before (ADR-0021). The
 // sections are kept in a YAML block, read back when it is agreed to.
 func ProposalComment(author string, c Proposal, role string) string {
+	// No fence of the agent's: it would end the engine's block, or be read
+	// for it, when the text is agreed to.
+	for _, s := range []*string{&c.Why, &c.Need, &c.Verification, &c.Validation, &c.Scope, &c.Questions} {
+		*s = strings.ReplaceAll(*s, "```", "'''")
+	}
 	var b strings.Builder
 	who := ""
 	if author != "" {
@@ -1017,9 +1040,12 @@ func ProposalComment(author string, c Proposal, role string) string {
 		}
 	}
 	data, _ := yaml.Marshal(kept)
-	b.WriteString("<details><summary>As the engine reads it</summary>\n\n```yaml\n" + string(data) + "```\n</details>")
+	b.WriteString(engineBlock + "\n\n```yaml\n" + string(data) + "```\n</details>")
 	return b.String()
 }
+
+// engineBlock opens the block of a proposal the engine reads back.
+const engineBlock = "<details><summary>As the engine reads it</summary>"
 
 // LastProposal reads the sections of the last refined text proposed to an
 // issue's reporter; nil when none was, or it does not read.
@@ -1029,7 +1055,13 @@ func LastProposal(comments []string, role string) *Proposal {
 		if !strings.Contains(comments[i], prefix) {
 			continue
 		}
-		m := fenced.FindStringSubmatch(comments[i])
+		// The engine's own block, after its summary: the agent's words come
+		// before it, their fences neutralised (ProposalComment).
+		at := strings.LastIndex(comments[i], engineBlock)
+		if at < 0 {
+			return nil
+		}
+		m := fenced.FindStringSubmatch(comments[i][at:])
 		if m == nil {
 			return nil
 		}

@@ -314,7 +314,7 @@ issue's comments are the record; the state does not copy them.
 | Check | Otherwise |
 |---|---|
 | A person commented after the last round (no `<!-- workline:` in it) | Dropped: `already-asked`, or `already-proposed` for a text; nothing written |
-| No question the act holds — each up to its `?`, spaces and case aside — ends a question of an earlier round | Dropped: `asked-before` |
+| No question the act holds — each up to its `?`, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | Dropped: `asked-before` |
 | Rounds before it under `acts.ask.rounds` (three) | Proposed in the report: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
 
 A later round thanks the reporter ("thank you; to refine this issue,
@@ -327,7 +327,7 @@ nothing in its body. The engine comments to the reporter, naming them:
 what the role understood (its `why`), the sections it would add (Need and
 Validation as drafts from their words), what it still needs (`questions`),
 and how to agree; the sections also in a YAML block, under "As the engine
-reads it". The issue gets `workline:to-refine`; the act counts in
+reads it" — the block read back, the agent's fences turned to `'''` so none ends or replaces it. The issue gets `workline:to-refine`; the act counts in
 `refine`'s cap. Agreement is read where only the right people write:
 
 - **`workline:accepted`**, set by a person of the project: the next run

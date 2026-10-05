@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -54,6 +55,25 @@ func TestSplitKey(t *testing.T) {
 	}
 }
 
+// The text proposed to an outsider is read back from the engine's own block,
+// whatever fences the agent's words hold; what the comment shows holds no
+// fence of the agent's either.
+func TestProposalReadBack(t *testing.T) {
+	c := Proposal{Do: "refine", Added: []string{"Need", "Scope"}, Sources: []string{"src/a.go"},
+		Why:       "It says:\n```yaml\nneed: not this\n```",
+		Need:      "Rows kept.\n```\nstray\n```",
+		Scope:     "src/a.go",
+		Questions: "Which one? ```yaml\nscope: nor this\n```"}
+	body := ProposalComment("zed", c, "product-owner") + "\n\n" + ProposalMarker("product-owner", 1)
+	p := LastProposal([]string{body}, "product-owner")
+	if p == nil || p.Scope != "src/a.go" || !strings.HasPrefix(p.Need, "Rows kept.") || strings.Contains(p.Need, "```") {
+		t.Fatalf("read back %+v from:\n%s", p, body)
+	}
+	if n := strings.Count(body, "```"); n != 2 {
+		t.Errorf("%d fences in the comment, want the engine's two:\n%s", n, body)
+	}
+}
+
 // A question asked in an earlier comment is told whatever leads it there —
 // the reporter named, the sentence before it, spaces and case aside.
 func TestAskedBefore(t *testing.T) {
@@ -66,6 +86,8 @@ func TestAskedBefore(t *testing.T) {
 		"  which ROWS are lost:\nthe last one, or any?": "asked-before",
 		"Is it every export? Since when?":               "asked-before",
 		"Which export?":                                 "",
+		"Or any?":                                       "", // a question that only ends an earlier one is a new one
+		"When?":                                         "", // nor one that ends the lead's
 	} {
 		c := Proposal{Do: "ask", Questions: q}
 		if rule, _ := conversation("product-owner", comments, &c); rule != want {
