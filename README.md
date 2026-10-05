@@ -17,7 +17,7 @@ the mechanical work, and an AI is called only when a decision needs judgement.
 Everything keeps working without AI.
 
 Status (2026-09-24): used daily on its author's machine;
-<!-- workline:derive conformance-cases -->404<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->405<!-- workline:end --> conformance cases green in CI.
 
 | Works | Not yet |
 |---|---|
@@ -69,6 +69,9 @@ before each push, and, with an agent, proposes for each doc the code it
 describes, for you to review and commit: until a doc names its `sources`,
 nothing tells when it goes wrong. `--review` has the reviewer read each merge
 request's code too; `workline review` reads a branch's before you push it.
+It asks whether a person is the project's Product Owner: if so, the product
+owner role proposes what sets direction rather than doing it
+(`autonomy: cautious`, ADR-0026).
 
 ### Check every commit on this machine
 

@@ -158,3 +158,54 @@ func value(m *yaml.Node, key string) *yaml.Node {
 	}
 	return nil
 }
+
+// SetAutonomy sets the product owner's autonomy level in the project's
+// .workline/config.yaml (ADR-0026), unless the project set one already:
+// then it is the project's choice, returned as it is. It returns the level
+// in force afterwards, and whether the file changed.
+func SetAutonomy(repo, level string) (string, bool, error) {
+	file := filepath.Join(repo, ".workline", "config.yaml")
+	data, err := os.ReadFile(file)
+	if err != nil && !os.IsNotExist(err) {
+		return "", false, err
+	}
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return "", false, fmt.Errorf(".workline/config.yaml: %w", err)
+	}
+	if len(doc.Content) == 0 {
+		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
+	}
+	top := doc.Content[0]
+	if top.Kind != yaml.MappingNode {
+		return "", false, fmt.Errorf(".workline/config.yaml: not a mapping")
+	}
+	child := func(m *yaml.Node, key string) *yaml.Node {
+		if v := value(m, key); v != nil {
+			return v
+		}
+		v := &yaml.Node{Kind: yaml.MappingNode}
+		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
+		return v
+	}
+	settings := child(child(child(top, "roles"), "product-owner"), "settings")
+	if v := value(settings, "autonomy"); v != nil {
+		return v.Value, false, nil
+	}
+	settings.Content = append(settings.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "autonomy",
+		HeadComment: "How far the product owner goes alone (ADR-0026): cautious, normal or enterprising."},
+		&yaml.Node{Kind: yaml.ScalarNode, Value: level})
+	var out bytes.Buffer
+	enc := yaml.NewEncoder(&out)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return "", false, err
+	}
+	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+		return "", false, err
+	}
+	if err := os.WriteFile(file, out.Bytes(), 0o644); err != nil {
+		return "", false, err
+	}
+	return level, true, nil
+}

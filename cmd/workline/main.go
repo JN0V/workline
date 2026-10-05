@@ -16,7 +16,7 @@
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
 //	workline doctor [--repo <dir>] [--json]
 //	workline docs [--repo <dir>] [--ai ...]
-//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--json]
+//	workline init [--repo <dir>] [--ai ...] [--roles <dir>] [--review] [--human-po yes|no] [--json]
 //	workline hook <git-hook-name> [args]  (called by the installed hooks)
 //	workline builtin <role> pre|post      (called by the shipped roles' scripts)
 package main
@@ -117,7 +117,7 @@ func engineVersion() string {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline version\n       workline hooks install|uninstall --global|--repo\n       workline setup [--hooks yes|no] [--ai <agent>] [--install <tool,...>|none] [--yes]\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--json]")
+	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline version\n       workline hooks install|uninstall --global|--repo\n       workline setup [--hooks yes|no] [--ai <agent>] [--install <tool,...>|none] [--yes]\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--human-po yes|no] [--json]")
 	os.Exit(64)
 }
 
@@ -1238,6 +1238,7 @@ func initCmd(args []string) int {
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	review := fs.Bool("review", false, "also have the reviewer review each merge request (ADR-0020): added to the project's merge-request line")
+	humanPO := fs.String("human-po", "", "yes when a person is the project's Product Owner: the product owner role proposes what sets direction (autonomy: cautious, ADR-0026); asked on a terminal")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -1269,6 +1270,29 @@ func initCmd(args []string) int {
 		} else {
 			config += "; merge requests run " + strings.Join(steps, ", ") + ", the reviewer among them already"
 		}
+	}
+	if *humanPO == "" && !*asJSON && terminal(os.Stdin) {
+		fmt.Fprint(os.Stderr, "Is there a human Product Owner on this project? [no] ")
+		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		*humanPO = strings.TrimSpace(line)
+	}
+	switch strings.ToLower(*humanPO) {
+	case "", "no", "n", "false":
+	case "yes", "y", "true":
+		// A person sets the direction: the role proposes it (ADR-0026).
+		level, changed, err := routing.SetAutonomy(root, "cautious")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+		if changed {
+			config += "; the product owner proposes what sets direction, a person being the Product Owner (autonomy: cautious)"
+		} else {
+			config += "; the product owner's autonomy is " + level + ", as the project set it"
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "workline: --human-po %q: yes or no\n", *humanPO)
+		return 64
 	}
 	res := engine.Run(engine.Options{Repo: root, RolesDir: rolesDir, Role: "documentalist", Event: "init", AI: *ai, DefaultAI: userDefaultAI()})
 	if *asJSON {

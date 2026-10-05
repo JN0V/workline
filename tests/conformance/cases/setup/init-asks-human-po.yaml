@@ -1,0 +1,9 @@
+case: setup/init-asks-human-po
+about: Adopting a repository, `workline init` asks whether a person is the project's Product Owner — answered here with --human-po yes, as a run with no terminal answers — and sets the product owner to cautious.
+given:
+  repo: basic
+run: {init: true, init-options: [--human-po, "yes"], ai: none}
+expect:
+  status: pass
+  files:
+    .workline/config.yaml: {contains: "product-owner:\n    settings:\n      # How far the product owner goes alone (ADR-0026): cautious, normal or enterprising.\n      autonomy: cautious"}
