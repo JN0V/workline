@@ -5,6 +5,8 @@
 - **Builds on:** ADR-0018 (the product owner; "opens issues, and splits a
   need into technical tasks"; one way to open issues), docs/spec/routing.md
   (four sections, one Verification an issue), principles 1, 4, 6
+- **Extended by:** ADR-0029 — a parent's readiness, and its acceptance by a
+  person from what its parts delivered
 
 ## Context
 
@@ -90,4 +92,4 @@ left as it was, but for its task list.
   outsider's split or rename is proposed until a person sets
   `workline:accepted`.
 - Not built: a child moved to another parent, or a split undone by the
-  role; a parent's own readiness while its children are open.
+  role. A parent's readiness and acceptance: ADR-0029.
