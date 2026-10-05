@@ -14,7 +14,7 @@ stars and dates were checked against the GitHub API that day.
 | [model-selection.md](model-selection.md) | How to pick a model per role without naming one |
 | [install-and-adoption.md](install-and-adoption.md) | How other CLIs diagnose a machine, set it up and adopt a repository |
 | [push-approval.md](push-approval.md) | How a git hook asks a person with no terminal: an editor's button, an agent's shell |
-| [ci-and-forge.md](ci-and-forge.md) | Running the documentalist in CI on GitHub: models, protected main, a bot's commits, forks |
+| [ci-and-forge.md](ci-and-forge.md) | Running the documentalist in CI on GitHub: models, protected main, a bot's commits, forks; a bot writing GitLab issues: tokens, roles, who is of the project |
 | [release-manager.md](release-manager.md) | Focused: release PR vs tag vs direct, where versions live, what stays human |
 | [product-owner.md](product-owner.md) | Focused: what forges, bots and AI triage tools do for a backlog, and what a product owner role would add |
 | [self-evaluation.md](self-evaluation.md) | Focused: how automation and agents are judged in production, and how systems that improve their own agents keep people in control |

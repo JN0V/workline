@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go]
+sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go, internal/forge/gitlab.go]
 checked: 8a3da26
 judged: 9ad8c58
 verified: agent:claude-code
@@ -119,8 +119,25 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
 2. **The tokens**, Settings → CI/CD → Variables, both **masked** and **not
    protected** — GitLab gives a protected variable only to protected
    branches, never to a merge request's:
-   - `WORKLINE_GITLAB_TOKEN`: scopes `api` and `write_repository`. A project
-     access token (a bot user) where the plan allows it; else a personal one.
+   - `WORKLINE_GITLAB_TOKEN`: a project access token — a bot user of this
+     project only (ADR-0023) —, role Developer, scopes `api` and
+     `write_repository`. One command makes it and stores it, never shown
+     (glab, logged in as a Maintainer):
+
+     ```sh
+     glab token create workline --repo <group/project> --access-level developer \
+       --scope api --scope write_repository --duration 8760h \
+       | glab variable set WORKLINE_GITLAB_TOKEN --masked --repo <group/project>
+     ```
+
+     Or Settings → Access tokens → Add new token, the same role and
+     scopes, then the variable. It expires within a year: rotate it the
+     same way (`glab variable update`). Where project access tokens are not
+     offered (GitLab documents them as Premium on gitlab.com; one was made
+     on a Free user's project, 2026-10-05), a personal access token, `api`
+     and `write_repository`, of an account made for the line, added to the
+     project as Developer. The job's own token (`CI_JOB_TOKEN`) reaches
+     no issue: it is never enough.
    - `CLAUDE_CODE_OAUTH_TOKEN`: the Claude token.
 
    Anyone who may push a branch can read them from a pipeline they change:
@@ -159,7 +176,12 @@ roles:
 ```
 
 The GitHub template gives its jobs the issues they need (read when judging,
-write when applying); on GitLab, the apply token's `api` scope covers them.
+write when applying); on GitLab, `WORKLINE_GITLAB_TOKEN`'s `api` scope
+covers them — a project that runs only the product owner may give its
+token the Reporter role and `api` alone; not Planner, which may not give a
+split's child its parent. Who is of the project there is a member with the
+Planner role or above; a Guest's issue, or a stranger's, is its reporter's
+(ADR-0023).
 Its acts and proposals are listed in one issue, "Backlog — product owner".
 A roadmap or backlog file is moved to issues once, by hand:
 `workline issues import <file>`, then `--apply`.
@@ -169,7 +191,9 @@ labels them `workline:draft`. To accept the drafts, set the label
 `workline:accepted` — on an issue, or on many at once from the list of
 issues: the next run moves them to `ready`, with no agent. An outsider's
 issue gets the sections proposed to its reporter in a comment instead; the
-same label agrees for the project, and the next run writes them (ADR-0021).
+same label agrees for the project, and the next run writes them and moves
+it to ready; a reply `agreed`, by its reporter or a person of the project,
+has them written, ready still the label's (ADR-0021).
 It asks a reporter again only after an answer, three times at most, then
 lists the issue in the report. An issue form
 with the four sections, [ci/github/issue-form-need.yml](../ci/github/issue-form-need.yml),
