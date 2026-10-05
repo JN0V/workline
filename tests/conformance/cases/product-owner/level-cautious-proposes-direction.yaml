@@ -17,14 +17,14 @@ run: {role: product-owner, event: schedule, ai: fake:level-acts}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: "- split: propose (level)\n- rename: propose (level)\n"}
+    in/task.md: {contains: "- split: propose (level)\n- depend: propose (level)\n- rename: propose (level)\n"}
   forge:
     issues:
       - {id: 12, closed: false}
       - {id: 9, title: "bug", labels: []}
       - {id: 10, comment-lacks: "split:"}
       - {id: 11, comment-contains: "sources: [src/export/csv.go]"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "Autonomy: **cautious** — sources: act, 10 a run (level); close-duplicate: propose (level); close-obsolete: act, 3 a run (level); milestone: propose (level); order: propose (level); refine: act, 5 a run, Need and Validation drafts proposed (level); ready: act, 5 a run (level); ask: act, 2 a run (level); split: propose (level); rename: propose (level); open: act, 30 a run (level)."}
+      - {id: 13, title: "Backlog — product owner", body-contains: "Autonomy: **cautious** — sources: act, 10 a run (level); close-duplicate: propose (level); close-obsolete: act, 3 a run (level); milestone: propose (level); order: propose (level); refine: act, 5 a run, Need and Validation drafts proposed (level); ready: act, 5 a run (level); ask: act, 2 a run (level); split: propose (level); depend: propose (level); rename: propose (level); open: act, 30 a run (level)."}
       - {id: 13, body-contains: "- [ ] Close #12 as a duplicate of #7"}
       - {id: 13, body-contains: "- [ ] Rename #9 from \"bug\" to \"The CSV export drops the last row\""}
       - {id: 13, body-contains: "- [ ] Set #9's priority to 1"}

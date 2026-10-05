@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -307,7 +308,106 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		all = append(all, is)
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	if err != nil || state != "opened" {
+		return all, err
+	}
+	blocked, err := g.blockedBy()
+	for i := range all {
+		all[i].BlockedBy = blocked[all[i].ID]
+	}
 	return all, err
+}
+
+// blockedBy reads what each open issue waits on in GitLab's is_blocked_by
+// links, in one GraphQL query a page of a hundred: empty on Free, where the
+// links are not available (ADR-0028). A GitLab that answers the query
+// with errors — an instance without the field — has none: the bodies say
+// what an issue waits on.
+func (g *gitlab) blockedBy() (map[int][]int, error) {
+	out := map[int][]int{}
+	after := ""
+	for {
+		var v struct {
+			Project struct {
+				Issues struct {
+					Nodes []struct {
+						IID             string `json:"iid"`
+						BlockedByIssues struct {
+							Nodes []struct {
+								IID string `json:"iid"`
+							} `json:"nodes"`
+							PageInfo struct {
+								HasNextPage bool `json:"hasNextPage"`
+							} `json:"pageInfo"`
+						} `json:"blockedByIssues"`
+					} `json:"nodes"`
+					PageInfo struct {
+						HasNextPage bool   `json:"hasNextPage"`
+						EndCursor   string `json:"endCursor"`
+					} `json:"pageInfo"`
+				} `json:"issues"`
+			} `json:"project"`
+		}
+		vars := map[string]any{"p": g.projectPath()}
+		if after != "" {
+			vars["after"] = after
+		}
+		ok, err := g.graphql(`query($p: ID!, $after: String) { project(fullPath: $p) { issues(state: opened, first: 100, after: $after) { nodes { iid blockedByIssues(first: 100) { nodes { iid } pageInfo { hasNextPage } } } pageInfo { hasNextPage endCursor } } } }`, vars, &v)
+		if err != nil || !ok {
+			return out, err
+		}
+		for _, n := range v.Project.Issues.Nodes {
+			id, _ := strconv.Atoi(n.IID)
+			if n.BlockedByIssues.PageInfo.HasNextPage {
+				// Never an issue offered first for blockers left unread.
+				return out, fmt.Errorf("#%d waits on more than 100 issues: GitLab's blockers are read a hundred at most", id)
+			}
+			for _, b := range n.BlockedByIssues.Nodes {
+				if bid, err := strconv.Atoi(b.IID); err == nil {
+					out[id] = append(out[id], bid)
+				}
+			}
+		}
+		if !v.Project.Issues.PageInfo.HasNextPage {
+			return out, nil
+		}
+		after = v.Project.Issues.PageInfo.EndCursor
+	}
+}
+
+// AddBlocker links id to blocker as is_blocked_by, one already there left.
+// GitLab Free refuses the link type (403, "not available for current
+// license"), as an instance without links does (404): false, and the body
+// says it instead (ADR-0028).
+func (g *gitlab) AddBlocker(id, blocker int) (bool, error) {
+	out, err := g.api(path(Target{Kind: "issue", ID: id}) + "/links")
+	if errors.Is(err, errNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	var links []struct {
+		IID  int    `json:"iid"`
+		Type string `json:"link_type"`
+	}
+	if err := decode(out, &links); err != nil {
+		return false, err
+	}
+	for _, l := range links {
+		if l.IID == blocker && l.Type == "is_blocked_by" {
+			return true, nil
+		}
+	}
+	_, err = g.api("-X", "POST", path(Target{Kind: "issue", ID: id})+"/links", "-f", "target_project_id="+g.projectPath(),
+		"-f", "target_issue_iid="+strconv.Itoa(blocker), "-f", "link_type=is_blocked_by")
+	switch {
+	case errors.Is(err, errNotFound), errors.Is(err, errForbidden) && strings.Contains(err.Error(), "license"):
+		return false, nil
+	case err != nil:
+		return false, err
+	}
+	return true, nil
 }
 
 func (g *gitlab) Comments(t Target) ([]string, error) {

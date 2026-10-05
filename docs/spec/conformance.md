@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: b2407d4
+checked: d8e0419
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -120,7 +120,8 @@ a `PATH` without a tool, or with a fake one first.
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   and `comment-lacks` (a text some comment holds, or none does), `closed`
   and the `reason` it was closed for, its `milestone`, `branch`, `base`,
-  `title` and the `parent` it is a sub-issue of (0 for none), `body-contains` and `body-lacks` (a text its body holds, or does
+  `title` and the `parent` it is a sub-issue of (0 for none), `blocked-by`
+  the issues it waits on in the forge's relation, `body-contains` and `body-lacks` (a text its body holds, or does
   not); `absent: true` — no item with that id. `labels` there lists the
   labels the forge defines, their order as id, by `title`.
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
@@ -158,14 +159,17 @@ a `PATH` without a tool, or with a fake one first.
   small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
 - **Simulated forge.** A forge kept in a JSON file, holding issues, labels,
   comments, merge requests and milestones; with `sub-issues: true`, it
-  links sub-issues as GitHub does, without, it has none. It can be told to
+  links sub-issues as GitHub does, without, it has none; with
+  `dependencies: true`, it keeps what an issue waits on (`blocked-by`) as
+  GitHub does, without, it refuses the relation. It can be told to
   fail on the N-th write, to test recovery after a partial apply. A
   comment is its text, or `{body, author, insider, bot}`.
 - **Simulated GitLab.** `forge: gitlab` runs the engine's own GitLab forge
   against a mock of GitLab's REST API (tests/conformance/gitlab_test.go)
   over the same file: its `members` (`{username, access_level}`) are the
   project's, what the engine writes is the token user's, a note another
-  user wrote refuses an edit (403), and GraphQL refuses all.
+  user wrote refuses an edit (403), an `is_blocked_by` link is refused for
+  its license (403) as on GitLab Free, and GraphQL refuses all.
 
 ## Evaluation
 

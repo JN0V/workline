@@ -24,6 +24,7 @@ var contracts = map[string]string{
 	"ready":          `- ready: {issue: 12, why: "its four sections are there, Need and Validation a person's"}`,
 	"ask":            `- ask: {issue: 12, questions: "what its reporter should say", why: "why the issue cannot be refined without it"}`,
 	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", verification: "the tests that will prove it", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its four sections`,
+	"depend":         `- depend: {issue: 14, blocked-by: [13], why: "what #14 needs from #13 before it can start"}  # only what it cannot start without; a split's child says it with after: [1], the children it waits on by their place`,
 	"rename":         `- rename: {issue: 12, title: "about ten words: the problem, not the fix", why: "why the title it has does not say it"}`,
 	"handoff":        `- handoff: {role: "next role", reason: "why"}`,
 	"note":           `- note: "a message for a person"`,

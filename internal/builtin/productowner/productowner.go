@@ -300,6 +300,28 @@ func Pre(runDir, repo string) int {
 	if asked {
 		return 0 // the judge first: pre runs again with its answers
 	}
+	// What the order holds back (ADR-0028), with no agent: the first ready
+	// issue offered, those waiting on an open one, the cycles.
+	report, isOpen := 0, map[int]bool{}
+	for _, is := range open {
+		isOpen[is.ID] = true
+		if is.Title == backlog.ReportTitle(role) {
+			report = is.ID
+		}
+	}
+	bl := backlog.ReadBacklog(open, report)
+	for _, c := range bl.Cycles {
+		findings = append(findings, verdict.Finding{Rule: "dependency-cycle", Level: "warn", Where: fmt.Sprintf("#%d", c[0]),
+			Message: backlog.CycleText(c) + ": a cycle, reported and never followed; none of them is offered first until a person takes a link off"})
+	}
+	for _, id := range bl.Blocked {
+		findings = append(findings, verdict.Finding{Rule: "waiting", Level: "info", Where: fmt.Sprintf("#%d", id),
+			Message: fmt.Sprintf("waits on %s, open: ordered after it, never offered first", issueRefs(bl.Waiting[id]))})
+	}
+	if bl.Next != nil {
+		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", bl.Next.ID),
+			Message: "the first ready issue in the backlog's order, waiting on no open issue: the next to build"})
+	}
 	// Those never read first, then those whose code changed since; an issue
 	// whose code did not change is not read again (ADR-0018). Without an
 	// agent, nothing is read, and no issue is said to be.
@@ -315,7 +337,7 @@ func Pre(runDir, repo string) int {
 		judged++
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files)
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
@@ -348,8 +370,17 @@ func Pre(runDir, repo string) int {
 	// duplicate's original is quoted (ADR-0018).
 	var related strings.Builder
 	shown := 0
-	// The rest in the backlog's order: nearest milestone, priority, number.
-	sort.SliceStable(rest, func(i, j int) bool { return backlog.Less(rest[i].is, rest[j].is) })
+	// The rest in the backlog's order: nearest milestone, priority, number,
+	// an issue after those it waits on (ADR-0028).
+	ordered := make([]forge.Issue, len(rest))
+	byID := map[int]due{}
+	for i, d := range rest {
+		ordered[i], byID[d.is.ID] = d.is, d
+	}
+	backlog.Order(ordered)
+	for i, is := range ordered {
+		rest[i] = byID[is.ID]
+	}
 	for _, d := range rest {
 		files := named(repo, d.is, d.st, d.comments, tracked)
 		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
@@ -357,7 +388,7 @@ func Pre(runDir, repo string) int {
 			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
 			continue
 		}
-		others = append(others, fmt.Sprintf("- #%d %s%s", d.is.ID, d.is.Title, place(d.is)))
+		others = append(others, fmt.Sprintf("- #%d %s%s", d.is.ID, d.is.Title, place(d.is, isOpen)))
 	}
 	if shown > 0 {
 		fmt.Fprintf(&task, "# Other open issues on the same code\n\nNot to judge in this run: given whole, as the original a duplicate would be closed against.\n\n%s", related.String())
@@ -370,6 +401,15 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	return writeFindings(runDir, findings)
+}
+
+// issueRefs says issue numbers as references: "#12, #13".
+func issueRefs(ids []int) string {
+	var out []string
+	for _, n := range ids {
+		out = append(out, fmt.Sprintf("#%d", n))
+	}
+	return strings.Join(out, ", ")
 }
 
 // askJudge writes the question a second judge answers on an issue
@@ -416,7 +456,7 @@ func readJudged(runDir string, id int) (backlog.Judged, bool) {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string) {
+func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string, isOpen map[int]bool) {
 	comments := forge.Bodies(notes)
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
@@ -463,6 +503,19 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	}
 	if len(st.Kept) > 0 {
 		b.WriteString("Kept open after an announcement as obsolete: someone wrote, took the label off, or a judge disagreed — never announced again on the same quote; only on code changed since, if it truly solves it\n")
+	}
+	if blockers := backlog.Blockers(is); len(blockers) > 0 {
+		// What it waits on (ADR-0028): a person's link is kept; a closed
+		// blocker holds nothing back.
+		var said []string
+		for _, n := range blockers {
+			state := "closed"
+			if isOpen[n] {
+				state = "open"
+			}
+			said = append(said, fmt.Sprintf("#%d (%s)", n, state))
+		}
+		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing\n", strings.Join(said, ", "))
 	}
 	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
@@ -522,8 +575,15 @@ func author(n forge.Note, is forge.Issue) string {
 }
 
 // place says an issue's milestone and priority, when it has them.
-func place(is forge.Issue) string {
+func place(is forge.Issue, isOpen map[int]bool) string {
 	var out []string
+	if w := backlog.Waiting(is, isOpen); len(w) > 0 {
+		var ids []string
+		for _, n := range w {
+			ids = append(ids, fmt.Sprintf("#%d", n))
+		}
+		out = append(out, "waits on "+strings.Join(ids, ", "))
+	}
 	if is.Milestone != "" {
 		out = append(out, is.Milestone)
 	}

@@ -627,7 +627,8 @@ func readPending(t *testing.T) map[string]bool {
 // id, `comments` is a count, `labels` the exact set, `comment-contains` /
 // `comment-lacks` texts some comment holds, or none does, `branch`, `base`
 // `title`, the `reason` it was closed for, its `milestone` and the `parent`
-// it is a sub-issue of (0 for none) an item's, `closed` whether it
+// it is a sub-issue of (0 for none) an item's, `blocked-by` the issues it
+// waits on in the forge's own relation, `closed` whether it
 // is, `body-contains` a text its body holds, and
 // `absent: true` no item with that id.
 func compareForge(want map[string]any, file string) []string {
@@ -695,6 +696,12 @@ func compareForge(want map[string]any, file string) []string {
 			}
 			if t, ok := wm["comment-lacks"]; ok && held(fmt.Sprint(t)) {
 				p = append(p, fmt.Sprintf("forge: a comment on %s %v holds %q", kind, wm["id"], t))
+			}
+			if w, ok := wm["blocked-by"]; ok {
+				gb, _ := found["blocked-by"].([]any)
+				if fmt.Sprint(gb) != fmt.Sprint(w) {
+					p = append(p, fmt.Sprintf("forge: %s %v blocked-by = %v, want %v", kind, wm["id"], gb, w))
+				}
 			}
 			if l, ok := wm["labels"]; ok {
 				gl, _ := found["labels"].([]any)

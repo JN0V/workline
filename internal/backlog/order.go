@@ -129,8 +129,3 @@ func Less(a, b forge.Issue) bool {
 	}
 	return a.ID < b.ID
 }
-
-// Order sorts issues in the backlog's order.
-func Order(issues []forge.Issue) {
-	sort.SliceStable(issues, func(i, j int) bool { return Less(issues[i], issues[j]) })
-}

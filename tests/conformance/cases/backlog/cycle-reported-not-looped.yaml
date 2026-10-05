@@ -1,0 +1,17 @@
+case: backlog/cycle-reported-not-looped
+about: Two issues that wait on each other — one in the forge's relation, the other in its body — are a cycle, reported and never followed; the run ends, neither is offered first, and the next ready issue outside the cycle is (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", labels: [workline:ready, workline:priority/1], blocked-by: [13], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.\n\nBlocked by #12", labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready, workline:priority/4], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: dependency-cycle, where: "#12", message: "#12 waits on #13, #13 waits on #12: a cycle"}
+    - {rule: next-ready, where: "#14"}
+    - {rule: waiting, where: "#12"}
+    - {rule: waiting, where: "#13"}

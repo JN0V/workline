@@ -1,0 +1,16 @@
+case: product-owner/depend-cycle-dropped
+about: A `depend` that would close a cycle with what is there already is dropped and said, nothing written (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], blocked-by: [12], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:depend-one}
+expect:
+  findings:
+    - {rule: depend-cycle, where: "#12", message: "#13 waits on #12 already"}
+  forge:
+    issues:
+      - {id: 12, blocked-by: []}

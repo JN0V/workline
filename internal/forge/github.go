@@ -76,17 +76,28 @@ func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string) ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\")}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0)}")
 	if err != nil {
 		return nil, err
 	}
 	found, err := lines[struct {
 		Issue
 		Association string `json:"association"`
+		Blocked     int    `json:"blocked"`
 	}](out)
+	if err != nil {
+		return nil, err
+	}
 	var all []Issue
 	for _, f := range found {
 		f.Issue.Insider = insider(f.Association)
+		if f.Blocked > 0 && state == "open" {
+			// The listing says how many it waits on; only those are asked
+			// which (ADR-0028).
+			if f.Issue.BlockedBy, err = g.blockedBy(f.Issue.ID); err != nil {
+				return nil, err
+			}
+		}
 		all = append(all, f.Issue)
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
@@ -133,6 +144,45 @@ func (g *github) AddSubIssue(parent, child int) (bool, error) {
 		return false, err
 	}
 	_, err = g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/sub_issues", parent), "-F", "sub_issue_id="+strings.TrimSpace(string(out)))
+	return err == nil, err
+}
+
+// blockedBy lists the issues id waits on, open or closed, in GitHub's
+// issue dependencies.
+func (g *github) blockedBy(id int) ([]int, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/dependencies/blocked_by?per_page=100", id), "--jq", ".[].number")
+	if err != nil {
+		return nil, err
+	}
+	var ids []int
+	for _, f := range strings.Fields(string(out)) {
+		if n, err := strconv.Atoi(f); err == nil {
+			ids = append(ids, n)
+		}
+	}
+	return ids, nil
+}
+
+// AddBlocker records that id is blocked by blocker in GitHub's issue
+// dependencies, which take the blocker's id, not its number; one already
+// there is left. A GitHub without them (an older server) answers 404: the
+// body says it instead (ADR-0028).
+func (g *github) AddBlocker(id, blocker int) (bool, error) {
+	have, err := g.blockedBy(id)
+	if errors.Is(err, errNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if slices.Contains(have, blocker) {
+		return true, nil
+	}
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/issues/%d", blocker), "--jq", ".id")
+	if err != nil {
+		return false, err
+	}
+	_, err = g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/dependencies/blocked_by", id), "-F", "issue_id="+strings.TrimSpace(string(out)))
 	return err == nil, err
 }
 

@@ -1,0 +1,15 @@
+case: product-owner/task-lists-blocked-after-blocker
+about: The task lists the issues not read in the backlog's order — one that waits on an open issue after it, whatever its priority, and marked with what it waits on (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Say the export's format in the README", body: "The README does not say.", author: ann, insider: true, labels: [workline:priority/1], blocked-by: [15], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Choose the export's format", body: "CSV or JSON.", author: ann, insider: true, labels: [workline:priority/4], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:depend-one}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "- #15 Choose the export's format (priority 4)\n- #14 Say the export's format in the README (waits on #15, priority 1)"}

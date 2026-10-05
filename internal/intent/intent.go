@@ -34,6 +34,7 @@ var Catalogue = map[string]bool{
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
 	"split":          true, // a need split into issues of their own, linked to it (docs/spec/backlog-acts.md)
 	"rename":         true, // an issue's title set; a person's kept (docs/spec/backlog-acts.md)
+	"depend":         true, // what an issue waits on: the forge's relation, or a line in its body (ADR-0028)
 	"finding":        true, // a lens's answer (in/parts): a defect, its cause quoted; read by pre, never applied (ADR-0020)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 }
@@ -181,7 +182,7 @@ func Marshal(in []Intention) ([]byte, error) {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "refine": 9, "ready": 10, "ask": 11, "split": 12, "rename": 13, "issue": 14, "handoff": 15, "note": 16,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "refine": 9, "ready": 10, "ask": 11, "split": 12, "rename": 13, "depend": 13, "issue": 14, "handoff": 15, "note": 16,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.

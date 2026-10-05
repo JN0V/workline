@@ -166,6 +166,35 @@ every tier; grouping themes across projects, perhaps later, the product
 manager's. A rename sets the title alone, and a title a person set after
 the role's is kept.
 
+## What an issue waits on (2026-10-05)
+
+How forges and trackers hold "this cannot start before that is done", and
+how they order and show it — in their words: *issue dependencies*,
+*blocked by* / *blocking*, *linked items*, *issue links*, *topological
+order*.
+
+| Where | The relation | What a role can write, and read |
+|---|---|---|
+| GitHub | [Issue dependencies](https://github.blog/changelog/2025-08-21-dependencies-on-issues/), generally available since 2025-08: *blocked by* and *blocking*, up to 50 of each an issue; shown on the issue and in lists and projects (a "Blocked" mark), searched with `is:blocked`, `blocked-by:`. [REST](https://docs.github.com/en/rest/issues/issue-dependencies): `GET`/`POST /repos/{o}/{r}/issues/{n}/dependencies/blocked_by`, the blocker by its **id** (`issue_id`), not its number; `DELETE …/blocked_by/{issue_id}`. Every issue of the REST listing carries `issue_dependencies_summary` (`blocked_by` open, `total_blocked_by`): asked of JN0V/workline and JN0V/workline-sandbox (user repositories), 2026-10-05 | Both, with the issues token a role holds; one listing tells which issues to ask further |
+| GitLab | [Linked items](https://docs.gitlab.com/user/project/issues/related_issues/): `relates to` on every tier; `blocks` / `is blocked by` **Premium and Ultimate only**, an icon beside a blocked issue's title in lists and boards, gone when its blocker closes; closing a blocked issue asks to confirm. [Issue links API](https://docs.gitlab.com/api/issue_links/) `POST /projects/:id/issues/:iid/links` with `link_type`. Asked of gitlab.com, JN0V/workline-sandbox (Free), 2026-10-05: `is_blocked_by` answers **403 "Blocked issues not available for current license"**; GraphQL's `blockedByIssues` answers, empty, on Free | Premium: the link, and every open issue's blockers in one GraphQL query. Free: nothing native but `relates to`, which says no direction |
+| Jira | [Issue linking](https://confluence.atlassian.com/adminjiraserver/configuring-issue-linking-938847862.html): `blocks` / `is blocked by`, one of four default link types. Jira [does not enforce it](https://community.atlassian.com/forums/Jira-questions/Automatically-add-blocks-and-is-blocked-by-based-on-rank/qaq-p/1000810): a blocked issue can be ranked first or put in a sprint; teams write automation from the rank, and Advanced Roadmaps schedules from the links | — |
+| Text | "Blocked by #12" written in a body or a comment, by hand: both GitHub and GitLab render the reference with its title and state; nothing orders by it | A body, everywhere |
+
+**Ordering with dependencies** is a topological sort; Kahn's algorithm
+takes the next item whose prerequisites are placed, and a tie between
+those ready is broken by any other order — here, the backlog's. A cycle
+is a person's mistake to report, not to follow: GNU make says "Circular
+X <- Y dependency dropped." and goes on. None of the trackers above keeps
+a blocked issue out of first place by itself; the forges only show it.
+
+### Decision
+
+ADR-0028: the forge's own relation where it has one (GitHub's
+dependencies, GitLab's `is_blocked_by` on Premium), a marked line in the
+body elsewhere (`Blocked by #12.`), read back the same way, as a person's
+own "Blocked by" line; the backlog's order puts a blocked issue after its
+open blockers, reports a cycle and never follows it.
+
 ## Asking, and the answer (2026-10-05)
 
 How bots that ask a reporter for something carry the conversation on — in

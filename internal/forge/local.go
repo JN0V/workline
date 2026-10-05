@@ -453,6 +453,10 @@ func (l *Local) SetTitle(id int, title string) error {
 // its children.
 func (l *Local) AddSubIssue(parent, child int) (bool, error) { return false, nil }
 
+// AddBlocker: the local forge has no relation between issues; the body
+// says what an issue waits on (ADR-0028).
+func (l *Local) AddBlocker(id, blocker int) (bool, error) { return false, nil }
+
 func (l *Local) SetMilestone(id int, title string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Milestone = title })
 }

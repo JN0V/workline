@@ -512,3 +512,39 @@ tokens in and 5.0k out in all**; the undo runs, none.
   closed as not planned (conformance `undo-ready-demotes`,
   `split-child-closed-not-planned-demotes`); `ignored-runs-max` reached;
   the report's suggestion, which needs ten proposals settled at cautious.
+
+## 2026-10-05 — what an issue waits on, live on GitHub and GitLab, Sonnet
+
+The engine of feat/po-dependencies, built in its worktree; fresh clones of
+JN0V/workline-sandbox, a local `.workline/config.yaml` (`issues-per-run:
+3`), level normal. Three issues planted on each forge: "Read the token
+lifetime from the config file", "Let an admin set the session length per
+tenant" — its body saying the config-file lifetime must land first —, and
+"Session length: a config setting, then an admin page to edit it", two
+needs, the second only once the first exists. Each first given its state
+by a run with no agent. **Three agent calls, 41.4k tokens in and 4.6k
+out in all**; the runs with no agent, none.
+
+- **GitHub** (#25–#27, report #5). Run 2 (13.7k in, 1.7k out): #27
+  **split** into #28 and #29, the second with `after: [1]` → **#29
+  blocked by #28 in GitHub's own dependencies**, nothing in its body; #25
+  refined, ordered. #26 not read (the cap: #2 read again first). Run 3
+  (14.6k in, 1.5k out): **#26 blocked by #25** (`depend`, native); the
+  agent, reading "Waits on: #28 (open)" on #29, closed #28 as a duplicate
+  of #25 and proposed `depend` #29 on #25: #29 now waits on #25, #28's
+  closed link left as it was. Findings `waiting` #26 and #29, `next-ready`
+  #7. The report's "Waiting" still listed #28 as open, closed by that very
+  run: **fixed**, the run's closings left out.
+- **GitLab Free** (#22–#24, report #10). Run 2 (13.2k in, 1.4k out):
+  `depend` #23 on #22 and #24 on #22 — `is_blocked_by` refused for the
+  license (403), so **`Blocked by #22. <!-- workline:blocked-by -->`** in
+  each body, after its text, the state's digest moved; the agent did not
+  split #24, noting its part (1) is #22 itself. A run with no agent read
+  the lines back: `waiting` #23 and #24, the report's "Waiting" saying
+  both and **Next** #13. #22 closed by hand → the next run: no `waiting`,
+  both ordered by their labels again; #22 reopened after.
+- Not tried live: a GitLab Premium link; a cycle (conformance
+  `cycle-reported-not-looped`, `depend-cycle-dropped`); a link the role
+  set taken off by a person (`undo-depend-demotes`); `cautious`
+  proposing `depend` (`depend-mode-per-level`); a plugged forge's
+  `add-blocker`.

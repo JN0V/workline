@@ -1,0 +1,19 @@
+case: backlog/closed-blocker-unblocks
+about: Once its blocker is closed, an issue is ordered by its labels again — here its "Blocked by" line in the body, kept as it is — and offered first when it is ready (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.\n\nBlocked by #13.", labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", closed: true, reason: completed, labels: [workline:ready], comments: []}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: next-ready, where: "#12"}
+  no-findings:
+    - {rule: waiting, where: "#12"}
+  forge:
+    issues:
+      - {id: 12, body-contains: "Blocked by #13."}

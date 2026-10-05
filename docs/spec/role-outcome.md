@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: af04a2a
+checked: d8e0419
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -84,6 +84,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `ask` | ask an issue's reporter what is missing; again only after an answer, never the same question, three rounds then the report (ADR-0021) | forge |
 | `split` | break an issue too big to be one need into 2 to 6 issues, each with its four sections, opened through the one way and linked to it — a sub-issue, a GitLab task, or a task list in its body; never split twice (docs/spec/backlog-acts.md, "Splitting") | forge |
 | `rename` | set an issue's title; a title a person set after the role's is kept (docs/spec/backlog-acts.md, "Renaming") | forge |
+| `depend` | name the open issues an issue waits on (`blocked-by`): the forge's own relation, or a line in its body; never a cycle, a person's link kept (docs/spec/backlog-acts.md, "What an issue waits on"; ADR-0028) | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
 | `finding` | a lens's answer (role contract, "In parts"): `{severity, title, why, cause: {path, quote}, symptom, fix}`, `severity` `important` or `nit`; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |

@@ -264,6 +264,17 @@ func (c *command) AddSubIssue(parent, child int) (bool, error) {
 	return a.Native, err
 }
 
+// AddBlocker asks add-blocker: a forge without the relation answers
+// {"native": false}, and the body says it (ADR-0028); a refusal fails the
+// act, loud, as any other operation's.
+func (c *command) AddBlocker(id, blocker int) (bool, error) {
+	var a struct {
+		Native bool `json:"native"`
+	}
+	err := c.call("add-blocker", map[string]any{"id": id, "blocker": blocker}, &a)
+	return a.Native, err
+}
+
 // Ticks reads the answer to ticks: the boxes ticked in the issue's body,
 // each {item, done, author, insider, bot} (docs/spec/forge-command.md); a
 // forge that refuses the operation does not say who ticked: nil.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
 )
@@ -15,7 +16,7 @@ import (
 
 // undoable are the kinds of act, other than closings, the record keeps to
 // find undone.
-var undoable = []string{"rename", "order", "milestone", "ready", "split"}
+var undoable = []string{"rename", "order", "milestone", "ready", "split", "depend"}
 
 // doneMax bounds the acts the record keeps to find undone: the newest.
 const doneMax = 200
@@ -53,6 +54,14 @@ func (p *Plan) recordDone(c Proposal) {
 		d.Was, d.Set = strconv.Itoa(Priority(is)), strconv.Itoa(c.Priority)
 	case "milestone":
 		d.Was, d.Set = is.Milestone, c.Milestone
+	case "depend":
+		// Each depend on an issue kept: the blockers it added, together.
+		for _, o := range p.Record.Done {
+			if o.Issue == c.Issue && o.Act == "depend" && o.Set != "" {
+				d.Set = o.Set + ","
+			}
+		}
+		d.Set += joinIDs(c.BlockedBy)
 	}
 	p.Record.Done = slices.DeleteFunc(p.Record.Done, func(o Done) bool { return o.Issue == d.Issue && o.Act == d.Act })
 	p.Record.Done = append(p.Record.Done, d)
@@ -96,6 +105,21 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			case is.Milestone != d.Set:
 				gone = true
 			}
+		case "depend":
+			// A blocker the role added, still open, no longer one: a person
+			// took the link or the line off. All closed: nothing to watch.
+			now, left := Blockers(is), 0
+			for _, f := range strings.Split(d.Set, ",") {
+				b, err := strconv.Atoi(f)
+				if _, isOpen := open[b]; err != nil || !isOpen {
+					continue
+				}
+				left++
+				if !slices.Contains(now, b) && evidence == "" {
+					evidence = fmt.Sprintf("#%d no longer waits on #%d: a person took off the link the role set", d.Issue, b)
+				}
+			}
+			gone = left == 0
 		case "ready":
 			if !slices.Contains(is.Labels, LabelReady) {
 				evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)

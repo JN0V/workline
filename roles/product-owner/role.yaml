@@ -25,7 +25,7 @@ duties:
   writes: []        # never the code nor the docs: the forge's issues only
 
 # comment: the engine's state comment on each issue it takes (pre).
-intentions: [open, close, keep, sources, milestone, order, refine, ready, ask, split, rename, comment, note]
+intentions: [open, close, keep, sources, milestone, order, refine, ready, ask, split, rename, depend, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -61,6 +61,7 @@ settings:
     ask: {mode: act, max: 3, rounds: 3}  # the reporter asked what is missing; again only after an answer, three times, then a person
     split: {mode: act, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0022)
     rename: {mode: act, max: 5}       # an issue's title; a person's kept
+    depend: {mode: act, max: 5}       # what an issue waits on: the forge's relation, or a line in its body (ADR-0028)
 
 # What each autonomy level lays over the settings above, before the
 # project's own (docs/spec/backlog-acts.md, "Autonomy and caps"). normal is
@@ -79,6 +80,7 @@ levels:
         ask: {max: 2, rounds: 2}
         split: {mode: propose}
         rename: {mode: propose}
+        depend: {mode: propose}
     normal: {}
     enterprising:
       moved-percent-max: 30
@@ -91,3 +93,4 @@ levels:
         ask: {max: 5}
         split: {max: 4}
         rename: {max: 10}
+        depend: {max: 10}
