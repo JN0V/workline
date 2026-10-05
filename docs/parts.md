@@ -25,5 +25,7 @@ workline gate release --json   # a gate declared in .workline/config.yaml: your 
   a team can replace one facet (`.workline/roles/<role>/`), or run its own
   roles with `--roles <dir>` ([role contract](spec/role-contract.md)).
 
+The command for each event, from any trigger: [triggers.md](triggers.md).
+
 Not there yet: an agent other than Claude Code built in (`--ai cmd:<command>`
 runs any).

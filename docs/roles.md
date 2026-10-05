@@ -30,5 +30,6 @@ reviewer's finding, a closing as obsolete), from another context or model
 than the one judged; the **auditor** reads the weekly sample of the docs
 the documentalist vouched for (`workline sample`).
 
-What a role is, for those who write one:
+How to run each role from a hook, a script or a CI job:
+[triggers.md](triggers.md). What a role is, for those who write one:
 [the role contract](spec/role-contract.md).
