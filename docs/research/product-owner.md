@@ -324,6 +324,34 @@ file to the issue that holds it, or to a reason checked by the engine;
 as OpenFastTrace, what is left with neither listed, and the run not
 passing (`human`, exit 2) — never a silent pass.
 
+## What is next, and what is stuck (2026-10-05)
+
+In the ecosystem's words: *work item age*, *aging WIP*, *up next*,
+*needs info*, *awaiting response*, *no-response*, *linked pull request*,
+*development*.
+
+| Where | What it shows | Since when, and from what |
+|---|---|---|
+| Kanban ([Kanban Guide](https://prokanban.org/blog/what-the-heck-is-work-item-aging-and-why-is-it-so-important), [aging WIP chart](https://kanbanzone.com/2019/aging-work-in-progress/)) | *Work item age*: the time since an item started, for items not done; the items that age past the others, "stuck even if not formally blocked" | the day it entered the column: the board's own history |
+| [probot/no-response](https://github.com/probot/no-response) (archived; still configured in many `.github/no-response.yml`) | an issue labelled `needs more info` (`responseRequiredLabel`) with no answer from its author | `daysUntilClose` (14 to 21 days in the projects that set it) since the label; it closes, we only say |
+| [actions/stale](https://github.com/actions/stale) | any issue with no activity | `days-before-stale` (60) since its last update — inactivity, not a person's turn |
+| GitHub | an issue's *Development* links: the pull requests that close it (`closedByPullRequestsReferences`), and in its timeline `ConnectedEvent`, `CrossReferencedEvent` from a pull request, `ReferencedEvent` from a commit, each with `createdAt`; `LabeledEvent.createdAt` says when a label was set. Asked of JN0V/workline #79 and #163, 2026-10-05: #79, `workline:ready` since 2026-10-05, is cross-referenced by #112, a pull request older than its label that only moved the backlog | one GraphQL query an issue |
+| GitLab | `resource_label_events` (`action: add`, `created_at`); system notes "mentioned in commit …", "mentioned in merge request !…", each with `created_at` | two listings an issue |
+| Linear, Jira | "Up next" / a board's first column, ordered by rank: the next is the first of the order; Jira's "days in column" on a card | the tracker's own history |
+
+The next is everywhere the head of the order; nobody leaves out what
+waits on something open — workline's order already does (ADR-0028). What
+ages is measured from the day an item entered its state, and every tool
+reads that day from the tracker's own history, not from a copy it keeps.
+A link counts when it is newer than the state: #79 shows an older
+reference that started nothing.
+
+**Decision** (ADR-0031): the report opens with **Next** — the first N
+ready issues of the order, waiting on nothing — and **Stuck** — each
+issue waiting on a person past D days, with since when —, rebuilt from
+the forge's dates at each run, nothing stored but the day a proposal
+was first made.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was
