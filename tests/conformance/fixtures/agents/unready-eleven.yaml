@@ -1,0 +1,4 @@
+# An issue read again after its parent's Need changed: moved back to refine,
+# and another of its parts ordered — both proposed, never done (ADR-0032).
+- unready: {issue: 11, why: "#9 now asks for a JSON export: a CSV row count no longer proves it."}
+- order: {issue: 12, priority: 1, why: "the export everyone uses"}
