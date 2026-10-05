@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 05e8060
+checked: 4ed4197
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -29,6 +29,10 @@ priority: 2                              # the priority the role last set (Order
 title: The CSV export drops the last row  # the title the role last set (Renaming)
 split: [13, 14]                          # the children it was split into (Splitting)
 ```
+
+Two carrying the marker, the last is read: on GitLab only a note's author
+edits it, so one another token wrote is left, and the state is written
+anew after it (ADR-0023).
 
 An issue without that comment, or with one that does not read, is never
 acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is

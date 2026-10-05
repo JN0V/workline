@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: eb4f69b
+checked: 4ed4197
 verified: agent:claude-code
 ---
 # Conformance — v1 (draft)
@@ -95,7 +95,8 @@ a `PATH` without a tool, or with a fake one first.
 - `scope` — the run's scope, as a ready work item would give it;
 - `no-apply: true` — judge, and stop before applying;
 - `forge` — a forge spec given as `--forge` instead of the simulated forge
-  (`local`, `none`, `cmd:<command>`), the sample's `then: apply` included;
+  (`local`, `none`, `cmd:<command>`, `gitlab`), the sample's `then: apply`
+  included;
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
   every run a line judged and did not apply; `then: resume-elsewhere` — the
   same with another cache and the roles built into the engine, as CI's
@@ -156,7 +157,13 @@ a `PATH` without a tool, or with a fake one first.
 - **Simulated forge.** A forge kept in a JSON file, holding issues, labels,
   comments, merge requests and milestones; with `sub-issues: true`, it
   links sub-issues as GitHub does, without, it has none. It can be told to
-  fail on the N-th write, to test recovery after a partial apply.
+  fail on the N-th write, to test recovery after a partial apply. A
+  comment is its text, or `{body, author, insider, bot}`.
+- **Simulated GitLab.** `forge: gitlab` runs the engine's own GitLab forge
+  against a mock of GitLab's REST API (tests/conformance/gitlab_test.go)
+  over the same file: its `members` (`{username, access_level}`) are the
+  project's, what the engine writes is the token user's, a note another
+  user wrote refuses an edit (403), and GraphQL refuses all.
 
 ## Evaluation
 
