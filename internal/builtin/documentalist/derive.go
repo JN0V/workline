@@ -3,6 +3,7 @@ package documentalist
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -55,6 +56,19 @@ func Derive(repo string, docs map[string]string, commands map[string]string) ([]
 		}
 	}
 	return d.findings, fixed
+}
+
+// onBranch says whether the run sees a branch on its way to the default one —
+// a push, a merge request, a release tool's pull request — rather than the
+// default branch itself (gardening, adoption). A derived block is not
+// regenerated there (ADR-0027): what other merged work adds is not on a branch yet,
+// and a version the release branch quotes is not the default branch's (#97).
+func onBranch() bool {
+	switch os.Getenv("WORKLINE_EVENT") {
+	case "pre-push", "merge-request", "release":
+		return true
+	}
+	return false
 }
 
 type deriver struct {

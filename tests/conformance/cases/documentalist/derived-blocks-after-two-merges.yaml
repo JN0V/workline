@@ -1,0 +1,16 @@
+case: documentalist/derived-blocks-after-two-merges
+about: "Two branches each add to what a derived block counts, neither touching the block, and merge in turn without a conflict; gardening on the default branch then reports the block wrong and regenerates it from both (ADR-0027)."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
+  setup:
+    - "printf '\\nThe code holds <!-- workline:derive auth-files -->1<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"
+    - "git checkout -qb sessions && echo 'package auth' > src/auth/session.go && git add src/auth/session.go && git commit -qm 'feat(auth): add sessions' && git checkout -q main"
+    - "git checkout -qb roles && echo 'package auth' > src/auth/role.go && git add src/auth/role.go && git commit -qm 'feat(auth): add roles' && git checkout -q main"
+    - "git merge -q --no-ff --no-edit sessions && git merge -q --no-ff --no-edit roles"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  applied: [patch]
+  findings: [{rule: derived-stale, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "<!-- workline:derive auth-files -->3<!-- workline:end -->"}}

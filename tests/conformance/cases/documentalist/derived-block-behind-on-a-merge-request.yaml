@@ -1,0 +1,15 @@
+case: documentalist/derived-block-behind-on-a-merge-request
+about: "A branch adding to what a derived block counts passes with the block not updated: the lag is reported, nothing is written on the branch, so two branches adding to one count never conflict on its line (ADR-0027)."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
+  setup:
+    - "printf '\\nThe code holds <!-- workline:derive auth-files -->1<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"
+    - "echo 'package auth' > src/auth/session.go && git add src/auth/session.go && git commit -qm 'feat(auth): add sessions'"
+run: {role: documentalist, event: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  applied: []
+  findings: [{rule: derived-behind, where: docs/tech/auth.md, message: "default branch"}]
+  no-findings: [{rule: derived-stale}]
+  files: {"docs/tech/auth.md": {contains: "<!-- workline:derive auth-files -->1<!-- workline:end -->"}}
