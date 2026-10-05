@@ -1,7 +1,8 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go]
 checked: 11d697f
-verified: agent:claude-code
+judged: 9ad8c58
+verified: agent:documentalist
 ---
 # Setting up workline in CI
 
