@@ -265,16 +265,13 @@ func (c *command) AddSubIssue(parent, child int) (bool, error) {
 }
 
 // AddBlocker asks add-blocker: a forge without the relation answers
-// {"native": false}, or refuses an operation it does not know; the body
-// then says it (ADR-0028).
+// {"native": false}, and the body says it (ADR-0028); a refusal fails the
+// act, loud, as any other operation's.
 func (c *command) AddBlocker(id, blocker int) (bool, error) {
 	var a struct {
 		Native bool `json:"native"`
 	}
 	err := c.call("add-blocker", map[string]any{"id": id, "blocker": blocker}, &a)
-	if err != nil && !errors.Is(err, ErrUnreachable) {
-		return false, nil
-	}
 	return a.Native, err
 }
 

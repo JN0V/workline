@@ -336,6 +336,9 @@ func (g *gitlab) blockedBy() (map[int][]int, error) {
 							Nodes []struct {
 								IID string `json:"iid"`
 							} `json:"nodes"`
+							PageInfo struct {
+								HasNextPage bool `json:"hasNextPage"`
+							} `json:"pageInfo"`
 						} `json:"blockedByIssues"`
 					} `json:"nodes"`
 					PageInfo struct {
@@ -349,12 +352,16 @@ func (g *gitlab) blockedBy() (map[int][]int, error) {
 		if after != "" {
 			vars["after"] = after
 		}
-		ok, err := g.graphql(`query($p: ID!, $after: String) { project(fullPath: $p) { issues(state: opened, first: 100, after: $after) { nodes { iid blockedByIssues(first: 50) { nodes { iid } } } pageInfo { hasNextPage endCursor } } } }`, vars, &v)
+		ok, err := g.graphql(`query($p: ID!, $after: String) { project(fullPath: $p) { issues(state: opened, first: 100, after: $after) { nodes { iid blockedByIssues(first: 100) { nodes { iid } pageInfo { hasNextPage } } } pageInfo { hasNextPage endCursor } } } }`, vars, &v)
 		if err != nil || !ok {
 			return out, err
 		}
 		for _, n := range v.Project.Issues.Nodes {
 			id, _ := strconv.Atoi(n.IID)
+			if n.BlockedByIssues.PageInfo.HasNextPage {
+				// Never an issue offered first for blockers left unread.
+				return out, fmt.Errorf("#%d waits on more than 100 issues: GitLab's blockers are read a hundred at most", id)
+			}
 			for _, b := range n.BlockedByIssues.Nodes {
 				if bid, err := strconv.Atoi(b.IID); err == nil {
 					out[id] = append(out[id], bid)
