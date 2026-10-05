@@ -15,6 +15,7 @@ var contracts = map[string]string{
 	"label":          `- label: {add: [name], remove: [name]}`,
 	"issue":          `- issue: {title: "short title", body: "what is wrong, where, how it was noticed", at: {path: "src/file.go", text: "the line it is about, as it reads"}}  # at: when it is about code; an issue open or closed on that line already, it is not opened again`,
 	"close":          `- close: {issue: 12, reason: duplicate, duplicate-of: 7, quote: {issue: 7, text: "the words, as they read"}, why: "why"}  # or reason: obsolete, quote: {path: "src/file.go", text: "the code, as it reads"}`,
+	"keep":           `- keep: {issue: 12, why: "what shows it is not solved"}  # an issue the task says is announced obsolete, kept open: a reply or the code shows it is still true`,
 	"sources":        `- sources: {issue: 12, sources: ["src/file.go"], quote: {path: "src/file.go", text: "the code, as it reads"}, why: "why this is the code the issue is about"}`,
 	"open":           `- open: {title: "short title", quote: {path: "docs/ROADMAP.md", text: "the item's text, as the file has it"}}`,
 	"milestone":      `- milestone: {issue: 12, milestone: "v2.14.0", why: "why it belongs to that release"}`,

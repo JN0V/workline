@@ -110,9 +110,10 @@ func Ask(spec string, judgeRole *role.Role, question, material string) (Answer, 
 // raw, with its YAML around it.
 func Verdict(note string) (yes bool, why string, err error) {
 	s := strings.TrimSpace(note)
-	s = strings.TrimSpace(strings.TrimPrefix(s, "- note:"))
-	if len(s) > 1 && (s[0] == '"' || s[0] == '\'') && s[len(s)-1] == s[0] {
-		s = s[1 : len(s)-1] // the note quoted whole
+	s = strings.TrimSpace(strings.TrimPrefix(s, "-"))
+	s = strings.TrimSpace(strings.TrimPrefix(s, "note:")) // a note, as a list's item or not
+	if len(s) > 1 && (s[0] == '"' || s[0] == '\'') {
+		s = strings.TrimSuffix(s[1:], s[:1]) // the note quoted whole
 	}
 	v, reason, _ := strings.Cut(s, ":")
 	reason = strings.Join(strings.Fields(reason), " ")

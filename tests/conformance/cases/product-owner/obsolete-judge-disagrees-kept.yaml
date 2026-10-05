@@ -1,0 +1,22 @@
+case: product-owner/obsolete-judge-disagrees-kept
+about: An announced issue due for closing whose second judge says no is kept open — its label taken off, the judge's reason said on the issue, the evidence recorded so it is not announced again for it (ADR-0024).
+given:
+  repo: backlog
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
+  forge:
+    issues:
+      - id: 7
+        title: "Export drops the last row"
+        body: "Every CSV file: the export drops the last row."
+        author: zed
+        labels: [workline:obsolete]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@zed, this issue looks obsolete.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nquote: {path: src/export/csv.go, text: \"for i := 0; i < len(rows); i++ {\"}\nwhy: WriteRows now loops to the last row.\ncommit: d8c4dff\nannounced: \"2026-01-01\"\n```\n</details>\n\n<!-- workline:product-owner/obsolete -->"
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  calls: [{agent: fake, task: judge, model: judge-no}]
+  forge:
+    issues:
+      - {id: 7, closed: false, labels: [], comments: 3, comment-contains: "Kept open: a second judge did not agree — no:"}
+      - {id: 7, comment-contains: "kept: ['src/export/csv.go:b2a6ba892dee']"}

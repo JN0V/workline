@@ -1,6 +1,7 @@
 # ADR-0018: A product owner keeps the backlog, between the need and its acceptance
 
-- **Status:** proposed — the points under "Open" wait for the person
+- **Status:** proposed — the points under "Open" wait for the person;
+  closing as obsolete built by ADR-0024, its default `act`
 - **Date:** 2026-10-03
 - **Builds on:** ADR-0014 (`checked` earned by what was read), ADR-0015
   (the weekly sample), ADR-0016 (writes go to the project's forge),

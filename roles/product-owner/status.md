@@ -2,8 +2,9 @@
 
 **In one line:** it keeps a backlog on GitHub, and on GitLab as on GitHub
 (its members told from outsiders, a bot's token), for real — reads it a share a
-run, closes duplicates, proposes what the code made obsolete, names an
-issue's code, sets milestones, finds a closing a person undid, refines an
+run, closes duplicates, announces what the code made obsolete and closes
+it a week later on silence and a second judge's yes, names an issue's
+code, sets milestones, finds a closing a person undid, refines an
 issue to `ready` and talks with its reporter until it is, splits a need
 into sub-issues and renames a vague title, orders the backlog
 and moves what slipped, and keeps the one way every role opens an issue —
@@ -34,6 +35,8 @@ on the sandbox (tried.md).
 | Splitting and renaming: a need too big for one issue split into children with their four sections, opened through the one way, linked as sub-issues (GitHub) or tasks (GitLab); a vague title renamed; a rerun splitting and renaming nothing again; a person's title kept | JN0V/workline-sandbox on GitHub (#10 → #12, #13; #11) and on GitLab (#5 → tasks #7, #8, #9; #6), live (ADR-0022) |
 | GitLab as GitHub (ADR-0023): its members from the Planner role up are of the project, a Guest's issue proposed to its reporter; the project's bot writes with a project access token made and stored in one glab command; a state note another token wrote written anew; the job token alone refused, loud. A reply `agreed` by the reporter or a person of the project has the proposed text written (ADR-0021, amended); each comment given to the agent with who wrote it, on every forge | JN0V/workline-sandbox on GitLab, live and in GitLab CI (#13 renamed and refined in place, #15 a Guest's proposed, agreed by a reply, readied by the label; #16 split); conformance `forge/gitlab-*`, `product-owner/*-reply-*`, `comment-author-read` |
 
+| Obsolete announced, then closed (ADR-0024): a comment to the reporter quoting the code and the label `workline:obsolete`; at a run `days` later, nobody having written and the label still there, a second judge of another model asked apart, the issue closed as completed with its yes and level; a reply keeps it open for good on that quote | JN0V/workline-sandbox on GitHub (#14 closed, #4 kept) and on GitLab (#19 closed, #20 kept), live, the delay set to 0; label removal, exempt labels, a judge's no, the cap in conformance (`obsolete-*`) |
+
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried
 live. GitLab: refining, ordering, a split and a rename tried live on its
@@ -50,8 +53,9 @@ checked.
    too low reported as such, not only by the split's fallback
    (ADR-0023); the gardening template on GitLab run with a release
    holding this.
-2. **Obsolete closed, not only proposed**: announced first, closed at the
-   next run if nobody answered and a second judge agreed.
+2. **Obsolete, what is left** (ADR-0024): a real delay of days waited
+   for; the label taken off, an exempt label, a judge's no tried live; the
+   weekly sample over these closings; 7 days and 3 a run measured.
 3. **The person's hand**: a tick read with its author — a proposal
    accepted, an act set back to `act`; ignored runs pausing it.
 4. **The weekly sample over its acts**; a file the agent was not shown

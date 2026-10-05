@@ -199,6 +199,36 @@ answer, at most three times, then the report; an outsider's issue gets
 the refined text proposed in a comment, applied when an insider sets
 `workline:accepted`, or written by the reporter into their own body.
 
+## Closing on silence, announced first (2026-10-05)
+
+How bots close what they find dead, in their words: *stale*, *rotten*,
+*lifecycle*, *days-before-close*, *exempt*, *remove-stale-when-updated*,
+*objection*, *close reason*.
+
+| Tool | Announced by | Waits | Cancelled by | Closed as |
+|---|---|---|---|---|
+| [actions/stale](https://github.com/actions/stale) | the `Stale` label and a comment, after `days-before-stale` (60) of inactivity | `days-before-close` (7) | any update or comment (`remove-stale-when-updated`, on by default); `exempt-issue-labels`; `operations-per-run` (30) caps the API calls | `close-issue-reason`, `not_planned` by default, with `close-issue-message` |
+| Kubernetes' [triage robot](https://github.com/kubernetes/community/blob/master/contributors/guide/issue-triage.md) | `lifecycle/stale` after 90 days, `lifecycle/rotten` 30 days later | 30 more days | any activity resets the clock; `/remove-lifecycle stale`; `lifecycle/frozen` exempts | closed, `/reopen` to undo |
+| GitLab's [triage-ops](https://gitlab.com/gitlab-org/quality/triage-ops) | a policy's label and comment | the policy's dates | the policy's conditions | closed: GitLab keeps no reason |
+| Elastic's [stale-issues investigator](https://github.com/elastic/ai-github-actions/tree/main/gh-agent-workflows/stale-issues-investigator) and [remediator](https://github.com/elastic/ai-github-actions/tree/main/gh-agent-workflows/stale-issues-remediator) | an agent finds it **resolved** (a linked pull request, the code, the thread), labels it `stale`, one report | 30 days | an *objection* — a comment saying it is still relevant, read by an agent — takes the label off | closed with a comment |
+
+Shared: **an announcement a person sees** (a label, a comment) before any
+closing; **a delay in days**, not in runs; **any activity or the label
+taken off cancels**; **exempt labels**; a cap per run. GitHub's close
+reasons: `completed` (work was done), `not_planned` (none was: won't fix,
+stale, can't reproduce), `duplicate`; stale bots use `not_planned`,
+because nobody did anything. Only Elastic's closes because the work was
+*done*, and it asks an agent, not a check, whether a comment objects.
+None asks a second, independent judge before closing.
+
+**Decision** (ADR-0024): an issue the code solved is announced — a comment
+quoting the code, the label `workline:obsolete` — and closed after `days`
+(7) if nobody wrote and the label is still there, once a second judge of
+another model agrees; any person's comment or the label taken off cancels,
+for good for that evidence. Closed as `completed`, not `not_planned`: the
+code did the work, and `not_planned` is the person's no that every role's
+issue opening reads as such (ADR-0018).
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was

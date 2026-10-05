@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: db871eb
+checked: fa1d682
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -73,7 +73,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened); `issue: n` puts it on that issue instead | forge |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened); `{title, body, at: {path, text}}` opens one once, through the one way every role shares (docs/spec/backlog-acts.md, "Opening issues"): the engine keys it from the line `at` quotes (else its title), looks in the issues open and closed, opens none for a subject held, at most `issues-max` a run, labelled `needs-triage`, the role named, with the product owner's state comment naming the file and the commit (ADR-0018) | forge (`forge: local` keeps it in the clone); refused without one |
-| `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine (docs/spec/backlog-acts.md) | forge |
+| `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine — obsolete announced on the issue first, closed by the engine days later on silence and a second judge's yes (docs/spec/backlog-acts.md, ADR-0024) | forge |
+| `keep` | keep an issue announced obsolete open: its label off, its evidence recorded, never announced again on it (docs/spec/backlog-acts.md) | forge |
 | `open` | open an issue from a file's item, its text quoted, once (docs/spec/backlog-acts.md, "Importing a file") | forge |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |

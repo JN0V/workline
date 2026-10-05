@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 8a3a2b7
+checked: fa1d682
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -28,6 +28,7 @@ body: 3f9a1c0e2b7d                       # a digest of its body, when last read 
 priority: 2                              # the priority the role last set (Ordering)
 title: The CSV export drops the last row  # the title the role last set (Renaming)
 split: [13, 14]                          # the children it was split into (Splitting)
+kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, by their quote (Closing)
 ```
 
 Two carrying the marker, the last is read: on GitLab only a note's author
@@ -131,8 +132,43 @@ The file then stays as it is, for its history.
   body or one of its comments. A quote missing or not found drops the act
   (`no-quote`).
 - A duplicate is closed with the forge's own reason (GitHub's `duplicate`,
-  linking the original), an obsolete issue as completed; both with a
-  comment that quotes the evidence and says how to undo: reopen it.
+  linking the original), with a comment that quotes the evidence and says
+  how to undo: reopen it.
+
+### Obsolete: announced, then closed
+
+An obsolete issue is not closed by the agent's act (ADR-0024). In mode
+`act`, the act **announces** it — unless the issue bears an exempt label
+(`exempt`; `acts.close-obsolete.exempt`, `pinned` and `security` by
+default), is announced already (`announced`), or was kept open on the same
+quote (`obsolete-kept`, its file and a digest of its text, in the state's
+`kept`):
+
+- the label `workline:obsolete` (created when the project has none), then
+  a comment naming its reporter: why, the code quoted, the commit, the day
+  from which it may be closed (`days` later, 7 by default), and how to keep
+  it open; it ends with a block the engine reads back — the quote, why,
+  the commit, the day announced, the model that proposed it — and the
+  marker `<!-- workline:product-owner/obsolete -->`.
+
+At each later run, `pre` reads the last announcement of each issue not
+settled (its quote not in `kept`), with no agent:
+
+| Found | What the engine does |
+|---|---|
+| A comment after it, not the engine's nor a bot's — whoever wrote it | `keep`: the label off, the quote added to `kept`; nothing written to them |
+| The label taken off, or an exempt label set | `keep`, the same |
+| The code quoted no longer in the commit | `keep`, and the issue told why |
+| Its day not come | nothing |
+| Due | a second judge asked (`in/judge/obsolete-<n>/`), apart, at the best independence from the model that announced it (ADR-0005); yes: the engine's `close`, checked again — the announcement there, due, unanswered, the same quote, the judge's yes — then closed as completed (GitLab, the local forge: closed), the label off, a comment with the evidence, the day announced and the judge with its level; no: `keep`, the judge's reason said on the issue |
+| Due, no agent or a judge that did not answer | nothing: it waits (`judge-unavailable`) |
+
+Closing as completed, never as not planned: the code did the work, and
+not planned is a person's no, which every role's opening reads as such.
+`keep` is never held back by a mode nor a cap; the agent may propose it
+too, on an issue announced. In `propose`, the agent's act and the
+engine's closing are written in the report for a person, nothing is
+announced.
 
 ## Naming its sources
 
@@ -378,7 +414,7 @@ acts:
   milestone: {mode: act, max: 10}
   order: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off
-  close-obsolete:  {mode: propose, max: 3}
+  close-obsolete:  {mode: act, max: 3, days: 7, exempt: [pinned, security]}
 ```
 
 - `act`: done, up to `max` a run; past it, proposed.
@@ -391,15 +427,21 @@ least). Milestones — the engine's slips included — and priorities count
 together, an issue moved twice once; past the share, a move is proposed
 (`moved-cap`). Milestones are applied before priorities.
 
-Closing as obsolete starts at `propose` (ADR-0018: a quote proves the text
-is there, not that the issue is solved).
+Closing as obsolete is `act` by default since it announces first, and
+closes only on silence and a second judge's yes (ADR-0024; ADR-0018: a
+quote proves the text is there, not that the issue is solved). Its `max`
+counts announcements and closings together, the engine's closings first;
+a closing past it stays announced and is closed at a later run. Neither
+counts in the moved share: a closing takes an issue out of the backlog,
+it does not reorder it.
 
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
 lists what the last run did and what is proposed, each closing with its
 quote and how to undo it — a rename with the title it had, a split with
-its children's titles, to close. Under "Before this run", each issue the run
+its children's titles, to close; an announcement with the day it may close
+and how to keep it open; an issue kept open, and why. Under "Before this run", each issue the run
 moved is listed with its priority and milestone as they were, to put the
 order back. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to

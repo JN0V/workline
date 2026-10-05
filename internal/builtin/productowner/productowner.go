@@ -17,6 +17,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+
+	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
@@ -43,7 +46,18 @@ type Settings struct {
 		Ask struct {
 			Rounds int `json:"rounds"` // times an issue's reporter is written to, then a person
 		} `json:"ask"`
+		CloseObsolete struct {
+			Mode   string   `json:"mode"`
+			Days   *int     `json:"days"`   // an announcement waits this long (ADR-0024)
+			Exempt []string `json:"exempt"` // labels that keep an issue from it
+		} `json:"close-obsolete"`
 	} `json:"acts"`
+}
+
+// obsolete is close-obsolete's setting, as the engine reads it.
+func (s Settings) obsolete() backlog.Setting {
+	o := s.Acts.CloseObsolete
+	return backlog.Setting{Mode: o.Mode, Days: o.Days, Exempt: o.Exempt}
 }
 
 // rounds is how many times an issue's reporter is written to, as the
@@ -117,6 +131,9 @@ func Pre(runDir, repo string) int {
 	}
 	next := backlog.NextMilestone(repo, milestones) // where an issue that slipped goes
 	capped := backlog.CappedByRole(b, role, open)   // an act proposed only for the cap
+	now := time.Now()
+	judgedPass := os.Getenv("WORKLINE_JUDGED") == "answered" // the engine asked pre's questions to a judge
+	asked := false                                           // a question for the judge written: the judge first
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
@@ -186,6 +203,43 @@ func Pre(runDir, repo string) int {
 				Message: "its state comment does not read (" + err.Error() + "): the issue is not judged, nothing is written on it"})
 			continue
 		}
+		// An issue announced obsolete (ADR-0024): kept open when someone
+		// wrote or took the label off, closed once due if a second judge
+		// agrees — with no agent of the role's.
+		switch o := backlog.ReadObsolete(repo, is, notes, st, role, s.obsolete(), now); {
+		case o.Announcement == nil:
+		case o.Keep != "":
+			fallback = append(fallback, intent.Intention{Kind: "keep", Value: map[string]any{
+				"issue": is.ID, "why": o.Keep, "say": o.Say, "own": true}})
+		case !o.Due || s.obsolete().Mode == backlog.Off:
+		case judgedPass:
+			j, ok := readJudged(runDir, is.ID)
+			switch {
+			case !ok || j.Yes == nil:
+				why := "no agent to judge with"
+				if ok && j.Error != "" {
+					why = j.Error
+				}
+				findings = append(findings, verdict.Finding{Rule: "judge-unavailable", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+					Message: "announced obsolete, due, and nobody wrote: not closed without a second judge (" + why + "); it waits for the next run"})
+			case *j.Yes:
+				a := o.Announcement
+				fallback = append(fallback, intent.Intention{Kind: "close", Value: map[string]any{
+					"issue": is.ID, "reason": "obsolete", "why": a.Why, "announced": a.Announced, "own": true,
+					"quote": map[string]any{"path": a.Quote.Path, "issue": a.Quote.Issue, "text": a.Quote.Text}}})
+			default:
+				fallback = append(fallback, intent.Intention{Kind: "keep", Value: map[string]any{
+					"issue": is.ID, "why": "a second judge did not agree — " + j.Says(), "say": true, "own": true}})
+			}
+		case os.Getenv("WORKLINE_AI") == "none":
+			findings = append(findings, verdict.Finding{Rule: "judge-unavailable", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+				Message: "announced obsolete, due, and nobody wrote: not closed without a second judge (no agent); it waits for a run with one"})
+		default:
+			if err := askJudge(runDir, repo, is, *o.Announcement); err != nil {
+				return fail(err)
+			}
+			asked = true
+		}
 		if backlog.Released(repo, is.Milestone) {
 			// Its milestone's release is tagged: it slipped, and the engine
 			// moves it to the next, with no agent (or proposes, with none).
@@ -209,6 +263,9 @@ func Pre(runDir, repo string) int {
 		default:
 			rest = append(rest, due{is, st, comments, notes})
 		}
+	}
+	if asked {
+		return 0 // the judge first: pre runs again with its answers
 	}
 	// Those never read first, then those whose code changed since; an issue
 	// whose code did not change is not read again (ADR-0018). Without an
@@ -280,6 +337,48 @@ func Pre(runDir, repo string) int {
 	return writeFindings(runDir, findings)
 }
 
+// askJudge writes the question a second judge answers on an issue
+// announced obsolete and due (ADR-0024): the issue, the evidence, the code
+// quoted as it is now, around the quote; the model that proposed it named,
+// for the judge to stand apart from it.
+func askJudge(runDir, repo string, is forge.Issue, a backlog.Announcement) error {
+	dir := filepath.Join(runDir, "in", "judge", fmt.Sprintf("%s%d", backlog.JudgeKeyPrefix, is.ID))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	code := ""
+	if a.Quote.Path != "" {
+		if data, err := exec.Command("git", "-C", repo, "show", "HEAD:"+a.Quote.Path).Output(); err == nil {
+			lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+			from, to := 1, len(lines)
+			if f, t, _, ok := backlog.Locate(repo, a.Quote.Path, a.Quote.Text); ok {
+				from, to = max(1, f-judgeContext), min(len(lines), t+judgeContext)
+			}
+			for i := from; i <= to; i++ {
+				lines[i-1] = fmt.Sprintf("%4d  %s", i, lines[i-1])
+			}
+			code = strings.Join(lines[from-1:to], "\n")
+		}
+	}
+	data, _ := json.Marshal(map[string]string{"question": backlog.JudgeQuestion, "author": a.By,
+		"material": backlog.JudgeMaterial(repo, is, a, code)}) // JSON, which YAML reads: code may start a line with a tab
+	return os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644)
+}
+
+// judgeContext is the lines given around a quote to the judge.
+const judgeContext = 60
+
+// readJudged reads the judge's answer on an announced issue, as the engine
+// wrote it; false when there is none.
+func readJudged(runDir string, id int) (backlog.Judged, bool) {
+	var j backlog.Judged
+	data, err := os.ReadFile(filepath.Join(runDir, "in", "judge", fmt.Sprintf("%s%d", backlog.JudgeKeyPrefix, id), "answer.yaml"))
+	if err != nil || yaml.Unmarshal(data, &j) != nil {
+		return j, false
+	}
+	return j, true
+}
+
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
 func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string) {
@@ -323,6 +422,12 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 			ids = append(ids, fmt.Sprintf("#%d", id))
 		}
 		fmt.Fprintf(b, "Split into: %s (not split again)\n", strings.Join(ids, ", "))
+	}
+	if a, _ := backlog.LastAnnouncement(notes, role); a != nil && !slices.Contains(st.Kept, a.Key()) {
+		fmt.Fprintf(b, "Announced obsolete on %s (%s): closed by the engine once its delay passed, if nobody wrote and a second judge agrees — do not propose closing it again\n", a.Announced, a.Quote.Path)
+	}
+	if len(st.Kept) > 0 {
+		b.WriteString("Kept open after an announcement as obsolete: someone wrote, took the label off, or a judge disagreed — never announced again on the same quote; only on code changed since, if it truly solves it\n")
 	}
 	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)

@@ -1,0 +1,13 @@
+case: product-owner/obsolete-not-announced-twice
+about: An issue kept open after an announcement is not announced again on the same evidence — the code quoted, recorded in its state (ADR-0024).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: zed, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nkept: [src/export/csv.go:b2a6ba892dee]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete}
+expect:
+  findings: [{rule: obsolete-kept, where: "#7"}]
+  forge:
+    issues:
+      - {id: 7, closed: false, labels: [], comments: 1}

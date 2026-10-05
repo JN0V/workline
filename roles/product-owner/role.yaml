@@ -25,7 +25,7 @@ duties:
   writes: []        # never the code nor the docs: the forge's issues only
 
 # comment: the engine's state comment on each issue it takes (pre).
-intentions: [open, close, sources, milestone, order, refine, ready, ask, split, rename, comment, note]
+intentions: [open, close, keep, sources, milestone, order, refine, ready, ask, split, rename, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -36,8 +36,9 @@ settings:
   issues-per-run: 8
   code-lines-max: 1500     # lines of code given in one run, all files together
   # Each kind of act: act (done, up to max a run), propose (in the report,
-  # for a person), off (dropped). Closing as obsolete starts at propose
-  # until the evaluation has measured how often it is wrong (ADR-0018).
+  # for a person), off (dropped). Closing as obsolete, in act, is announced
+  # on the issue first and closed `days` later if nobody wrote, the label
+  # workline:obsolete is still there and a second judge agrees (ADR-0024).
   # A run moves at most this share of the open issues, in percent —
   # milestones and priorities counted together; past it, proposed (ADR-0018).
   moved-percent-max: 20
@@ -47,7 +48,7 @@ settings:
     milestone: {mode: act, max: 10}   # an issue put in a release's milestone; one that slipped moved by the engine
     order: {mode: act, max: 10}       # an issue's priority, workline:priority/1 to /4; a person's kept
     close-duplicate: {mode: act, max: 3}
-    close-obsolete: {mode: propose, max: 3}
+    close-obsolete: {mode: act, max: 3, days: 7, exempt: [pinned, security]}  # announcements and closings together
     refine: {mode: act, max: 5}       # the sections an issue lacks, Need and Validation as drafts
     ready: {mode: act, max: 5}        # checked by the engine; an outsider's issue is proposed
     ask: {mode: act, max: 3, rounds: 3}  # the reporter asked what is missing; again only after an answer, three times, then a person
