@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: 8285eac
+checked: b1a9fd3
 judged: fa1d682
 verified: agent:claude-code
 ---
@@ -171,6 +171,7 @@ roles:
   product-owner:
     settings:
       issues-per-run: 8        # issues read a night
+      # autonomy: cautious     # a person is the Product Owner: what sets direction is proposed (ADR-0026)
       acts:
         close-duplicate: {mode: propose}   # a person closes, until trust is earned
 ```

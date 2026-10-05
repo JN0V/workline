@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: fa1d682
+checked: b1a9fd3
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -77,7 +77,8 @@ a `PATH` without a tool, or with a fake one first.
 - `route: <event>` instead of `role` — run the event's whole line;
 - `gate: <name>` instead of `role` — run one gate;
 - `doctor: true` instead of `role` — run `workline doctor` on the repository;
-- `init: true` instead of `role` — run `workline init` on the repository;
+- `init: true` instead of `role` — run `workline init` on the repository,
+  with `init-options: [<option>...]` if given (`--human-po yes`);
 - `setup: [<option>...]` instead of `role` — run `workline setup` with these
   options, on a git config of the case's own;
 - `issues-import: [<argument>...]` instead of `role` — `workline issues

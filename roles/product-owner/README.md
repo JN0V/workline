@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 8285eac
+checked: b1a9fd3
 verified: agent:claude-code
 ---
 # Product owner
@@ -93,10 +93,13 @@ the forge says who ticked it: GitHub's edit history, GitLab's system
 notes — it is done at the next run, as the record keeps it, with no
 agent; ticked by an outsider, a bot or nobody the forge names, it is not,
 and the report says why (ADR-0025). A kind back to `propose` after a
-wrong closing gets a box too, to set it back to `act`. Three runs in a
-row read with an agent and nobody answering — no box ticked, no comment
-on the report, no closing undone, no proposal settled — pause the role:
-no agent asked until a person does one of those.
+person undid one of its acts — a closing reopened; a title, a priority or
+a milestone put back; `workline:ready` taken off; a split's part closed
+as not planned (ADR-0026) — gets a box too, to set it back to `act`.
+Three runs in a row (`ignored-runs-max`; 0 never pauses, said in every
+report) read with an agent and nobody answering — no box ticked, no
+comment on the report, no act undone, no proposal settled — pause the
+role: no agent asked until a person does one of those.
 
 Every role opens an issue through one way the engine keeps for the
 product owner (ADR-0018; docs/spec/backlog-acts.md, "Opening issues"): a
@@ -112,6 +115,8 @@ roles:
     settings:
       issues-per-run: 8
       code-lines-max: 1500
+      autonomy: normal                           # cautious | normal | enterprising
+      ignored-runs-max: 3                        # 1 to 20; 0 never pauses
       moved-percent-max: 20                      # milestones and priorities, together
       acts:
         open: {mode: act, max: 30}               # when importing
@@ -127,7 +132,17 @@ roles:
         rename: {mode: act, max: 5}
 ```
 
-A project with a human Product Owner sets its acts to `propose`, and
-ticks what it agrees to in the report.
+These are `normal`. `autonomy` changes them in one word (ADR-0026;
+role.yaml's `levels`, docs/spec/backlog-acts.md's table): `cautious`, for a
+project whose Product Owner is a person — `workline init` asks —, keeps
+the acts that check facts (sources, asking the reporter, announcing what
+is obsolete, Scope and Verification) and proposes those that set
+direction (Need and Validation drafts, splits, renames, milestones,
+priorities, duplicates), for a person to tick in the report;
+`enterprising` raises the caps. A kind set here wins over the level,
+field by field; a kind demoted stays proposed whatever the level. The
+task and the report say each kind's mode and where it comes from; the
+report may suggest another level from what people did with the
+proposals, and never changes it.
 
 Where the role stands: [status.md](status.md).
