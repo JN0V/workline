@@ -31,4 +31,4 @@ expect:
       - {id: 22, body-contains: "1. #20 Export in JSON — no milestone, priority 1"}
       - {id: 22, body-lacks: "- #20 Export in JSON — ready since"}
       - {id: 22, body-contains: "- #21 Rows lost — its reporter written to on 2026-01-02 ("}
-      - {id: 22, body-lacks: "#21 Rows lost — proposed here"}
+      - {id: 22, body-lacks: "#21 Rows lost — `rename` proposed here"}

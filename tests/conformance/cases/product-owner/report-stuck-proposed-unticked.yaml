@@ -16,6 +16,6 @@ expect:
   agent-calls: 0
   forge:
     issues:
-      - {id: 10, body-contains: "- #7 Export drops the last row — proposed here since 2026-01-01 (", comment-contains: "since: \"2026-01-01\""}
-      - {id: 10, body-lacks: "#9 Rows lost — proposed"}
+      - {id: 10, body-contains: "- #7 Export drops the last row — `close-obsolete` proposed here since 2026-01-01 (", comment-contains: "since: \"2026-01-01\""}
+      - {id: 10, body-lacks: "#9 Rows lost — `rename` proposed"}
       - {id: 10, body-contains: "- [ ] Rename #9 to Keep every row"}

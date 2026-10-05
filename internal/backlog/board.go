@@ -218,12 +218,12 @@ func (b Board) Text() string {
 	}
 	s.WriteString("\n## Stuck\n\n")
 	if len(b.Stuck) == 0 {
-		fmt.Fprintf(&s, "Nothing waits on a person for more than %d days (stuck-days).\n", b.StuckDays)
+		fmt.Fprintf(&s, "Nothing waits on a person for more than %s (stuck-days).\n", plural(b.StuckDays, "day"))
 		return s.String()
 	}
-	fmt.Fprintf(&s, "Waiting on a person for more than %d days (stuck-days), since the day given. An issue announced obsolete waits on a second judge from the day its delay ended.\n\n", b.StuckDays)
+	fmt.Fprintf(&s, "Waiting on a person for more than %s (stuck-days), since the day given. An issue announced obsolete waits on a second judge from the day its delay ended.\n\n", plural(b.StuckDays, "day"))
 	for _, w := range b.Stuck {
-		since := fmt.Sprintf("%s (%d days)", w.Since, Days(w.Since, b.now))
+		since := fmt.Sprintf("%s (%s)", w.Since, plural(Days(w.Since, b.now), "day"))
 		who := fmt.Sprintf("#%d %s", w.Issue, b.titles[w.Issue])
 		switch w.Waits {
 		case WaitsReady:
@@ -235,12 +235,20 @@ func (b Board) Text() string {
 				fmt.Fprintf(&s, "- %s — proposed here since %s; not ticked, not settled.\n", strings.TrimSuffix(w.Line, "."), since)
 				continue
 			}
-			fmt.Fprintf(&s, "- %s — proposed here since %s (%s); not ticked, not settled.\n", who, since, w.Act)
+			fmt.Fprintf(&s, "- %s — `%s` proposed here since %s; not ticked, not settled.\n", who, w.Act, since)
 		case WaitsObsolete:
 			fmt.Fprintf(&s, "- %s — announced obsolete, its delay past since %s; no second judge closed or kept it: close it, or take `%s` off.\n", who, since, LabelObsolete)
 		}
 	}
 	return s.String()
+}
+
+// plural says a count of a thing: "1 day", "14 days".
+func plural(n int, thing string) string {
+	if n == 1 {
+		return "1 " + thing
+	}
+	return fmt.Sprintf("%d %ss", n, thing)
 }
 
 // Place says an issue's milestone and priority: "milestone v1.0,
