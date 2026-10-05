@@ -236,7 +236,7 @@ func Pre(runDir, repo string) int {
 		}
 		// A parent (ADR-0029): what its parts delivered, kept in one
 		// comment, with no agent; a person accepts it once all are closed.
-		if parts := backlog.Parts(is, st); len(parts) > 0 {
+		if parts := backlog.Parts(is); len(parts) > 0 {
 			ev, err := evidence(b, is, parts, role, &all)
 			if errors.Is(err, forge.ErrUnreachable) {
 				fmt.Fprintln(os.Stderr, err)
@@ -247,6 +247,10 @@ func Pre(runDir, repo string) int {
 			}
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": backlog.EvidenceKey, "body": ev.Body}})
+			if len(ev.Unread) > 0 {
+				findings = append(findings, verdict.Finding{Rule: "closers-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+					Message: fmt.Sprintf("the forge did not say what closed %s: said on the parent as not read, never taken for closed by hand", issueRefs(ev.Unread))})
+			}
 			if ev.AllClosed {
 				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it — the role never does", ev.Parts)
 				if len(ev.Undone) > 0 || len(ev.Unproved) > 0 {
@@ -445,11 +449,14 @@ func evidence(b forge.Backlog, parent forge.Issue, ids []int, role string, all *
 			}
 		}
 		if p.Delivered() {
+			// What closed it is evidence beside the closing: a forge that
+			// refuses to say fails no run, and the part says it was not
+			// read — never "by hand"; one that does not answer stops it.
 			closers, err := b.Closers(id)
-			if err != nil {
+			if errors.Is(err, forge.ErrUnreachable) {
 				return backlog.Evidence{}, err
 			}
-			p.Closers = closers
+			p.Closers, p.Unread = closers, err
 		}
 		parts = append(parts, p)
 	}
@@ -543,7 +550,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	if st.Title != "" && st.Title != is.Title {
 		b.WriteString("Title: a person's, set after the role's (kept)\n")
 	}
-	if parts := backlog.Parts(is, st); len(parts) > 0 {
+	if parts := backlog.SplitInto(is, st); len(parts) > 0 {
 		// Split already (ADR-0022): its children are issues of their own;
 		// the parent is a person's to accept as they close (ADR-0029).
 		var ids []string

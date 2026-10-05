@@ -338,8 +338,10 @@ A parent is accepted by a person, from what its parts delivered
 (ADR-0029). Its parts are the forge's own relation (`Issue.Children`:
 GitHub's sub-issues of the same repository, listed for the parents its
 listing counts; GitLab's tasks, one GraphQL query), the task list under
-`## Sub-issues` in its body (`- [ ] #13`, a person's included) and its
-state's `split` (`backlog.Parts`).
+`## Sub-issues` in its body (`- [ ] #13`, a person's included) — one rule
+for the comment, the report and the order (`backlog.Parts`); a part a
+person unlinked is no longer one. An issue whose state lists a split
+(`backlog.SplitInto`) is still never closed by the role.
 
 - **Ready** means what it means on any issue; a parent is refined as any.
   It is never the first ready issue offered (`next-ready`): its parts are
@@ -351,7 +353,9 @@ state's `split` (`backlog.Parts`).
   its parts — open (ready or not), closed as completed with what closed it
   (`Closers`: GitHub's `ClosedEvent.closer`, a pull request or a commit;
   GitLab's state events, the last closing's `source_commit` or merge
-  request, found among `closed_by`'s; none: "by hand"), closed as not planned or as a duplicate, or
+  request, found among `closed_by`'s; none: "by hand"; a forge that
+  refuses to say: "not read", and a finding `closers-unread` (warn) —
+  one that does not answer stops the run), closed as not planned or as a duplicate, or
   gone from the forge: those three not delivered. GitLab and the local
   forge keep no reason: a closed part there is taken as done. Then each
   item of its Verification — each list item, or the section whole — proved

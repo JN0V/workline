@@ -1,7 +1,9 @@
 package backlog
 
 import (
+	"errors"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -9,10 +11,13 @@ import (
 
 func TestParts(t *testing.T) {
 	is := forge.Issue{ID: 9, Children: []int{12}, Body: "Text.\n\n- [ ] #30 not a part\n\n## Sub-issues\n\n- [x] #11\n- [ ] #12\n* [ ] #9"}
-	if got := Parts(is, &State{Split: []int{13, 11}}); !slices.Equal(got, []int{11, 12, 13}) {
-		t.Errorf("Parts = %v, want [11 12 13]: the relation, the Sub-issues list, the state; itself and other lists left out", got)
+	if got := Parts(is); !slices.Equal(got, []int{11, 12}) {
+		t.Errorf("Parts = %v, want [11 12]: the relation and the Sub-issues list; itself and other lists left out", got)
 	}
-	if got := Parts(forge.Issue{ID: 4, Body: "No parts."}, nil); len(got) != 0 {
+	if got := SplitInto(is, &State{Split: []int{13, 11}}); !slices.Equal(got, []int{11, 12, 13}) {
+		t.Errorf("SplitInto = %v, want [11 12 13]: the parts and the state's split", got)
+	}
+	if got := Parts(forge.Issue{ID: 4, Body: "No parts."}); len(got) != 0 {
 		t.Errorf("Parts = %v, want none", got)
 	}
 }
@@ -46,5 +51,16 @@ func TestProofIsAQuote(t *testing.T) {
 	refused.Issue.Reason = "not_planned"
 	if proof("A test writes three rows.", []Part{refused}) != "" {
 		t.Error("a part not delivered proves nothing")
+	}
+}
+
+func TestCloserNotReadIsSaid(t *testing.T) {
+	part := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Title: "Keep the last row"}, Unread: errors.New("the forge refused closers: unknown operation")}
+	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner")
+	if !strings.Contains(ev.Body, "| #11 Keep the last row | closed as completed | not read: the forge refused closers: unknown operation |") || strings.Contains(ev.Body, "by hand") {
+		t.Errorf("a closer the forge refused to say is said not read, never by hand:\n%s", ev.Body)
+	}
+	if !slices.Equal(ev.Unread, []int{11}) {
+		t.Errorf("Unread = %v, want [11]", ev.Unread)
 	}
 }

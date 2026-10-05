@@ -276,16 +276,13 @@ func (c *command) AddBlocker(id, blocker int) (bool, error) {
 }
 
 // Closers asks closers: what closed the issue, each {kind, ref, text}
-// (docs/spec/forge-command.md); a forge that refuses the operation does
-// not say: nil.
+// (docs/spec/forge-command.md); a refusal is returned, and the parent's
+// report says the closer was not read.
 func (c *command) Closers(id int) ([]Closer, error) {
 	var a struct {
 		Closers []Closer `json:"closers"`
 	}
 	err := c.call("closers", map[string]any{"id": id}, &a)
-	if err != nil && !errors.Is(err, ErrUnreachable) {
-		return nil, nil
-	}
 	return a.Closers, err
 }
 

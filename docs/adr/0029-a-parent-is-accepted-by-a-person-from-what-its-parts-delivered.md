@@ -36,12 +36,15 @@ Each run, with or without an agent, paused or not, the engine writes one
 comment on every open parent (`<!-- workline:sticky=<role>/parts -->`),
 edited in place, never written again when nothing changed:
 
-- **Its parts**: the forge's own relation (GitHub's sub-issues, GitLab's
-  tasks through GraphQL), the task list under `## Sub-issues` in its body,
-  and the parts its state records (`split`).
+- **Its parts**, one rule for the comment, the report and the order: the
+  forge's own relation (GitHub's sub-issues, GitLab's tasks through
+  GraphQL) and the task list under `## Sub-issues` in its body, where a
+  split links or lists its children. A part a person unlinked is no
+  longer one; an issue the role split is still never closed by it.
 - **Each part**: open (ready or not), closed as completed — and what
   closed it, from the forge (GitHub's `ClosedEvent.closer`, GitLab's
-  state events: the commit or merge request of its last closing) —, or closed
+  state events: the commit or merge request of its last closing; a forge
+  that refuses to say it, said "not read", never "by hand") —, or closed
   without delivering: not planned, a duplicate, gone from the forge.
 - **Each item of its Verification** (each list item, or the section
   whole): proved when a part delivered quotes it, in its own Verification

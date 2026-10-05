@@ -189,7 +189,7 @@ func CycleText(c []int) string {
 // parts are what is built, and a person accepts it (ADR-0029).
 func NextReady(ordered []forge.Issue, open map[int]bool) *forge.Issue {
 	for i, is := range ordered {
-		if slices.Contains(is.Labels, LabelReady) && len(Waiting(is, open)) == 0 && len(Parts(is, nil)) == 0 {
+		if slices.Contains(is.Labels, LabelReady) && len(Waiting(is, open)) == 0 && len(Parts(is)) == 0 {
 			return &ordered[i]
 		}
 	}

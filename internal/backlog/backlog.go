@@ -841,8 +841,8 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 	}
 	switch {
-	case c.Do == "close" && c.Ticked == "" && len(Parts(p.issues[c.Issue], st)) > 0:
-		return "parent-accepted-by-a-person", fmt.Sprintf("#%d is split into %s: the role never closes a parent; a person accepts it, from what its parts delivered (ADR-0029)", c.Issue, issueList(Parts(p.issues[c.Issue], st)))
+	case c.Do == "close" && c.Ticked == "" && len(SplitInto(p.issues[c.Issue], st)) > 0:
+		return "parent-accepted-by-a-person", fmt.Sprintf("#%d is split into %s: the role never closes a parent; a person accepts it, from what its parts delivered (ADR-0029)", c.Issue, issueList(SplitInto(p.issues[c.Issue], st)))
 	case c.Do == "split" && len(st.Split) > 0:
 		return "already-split", fmt.Sprintf("it was split already, into %s: an issue is split once", issueList(st.Split))
 	case c.Do == "rename" && st.Title != "" && st.Title != p.issues[c.Issue].Title:

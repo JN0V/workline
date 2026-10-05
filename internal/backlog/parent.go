@@ -23,11 +23,19 @@ const EvidenceKey = "parts"
 // taskRef is a task list's item naming one issue: "- [ ] #13".
 var taskRef = regexp.MustCompile(`(?m)^\s*[-*+] \[[ xX]\] #(\d+)\b`)
 
-// Parts are an issue's children: the forge's relation (GitHub's
-// sub-issues, GitLab's tasks), the task list under "## Sub-issues" in its
-// body, and those the role's split recorded in its state (st may be nil).
-func Parts(is forge.Issue, st *State) []int {
-	out := slices.Clone(is.Children)
+// Parts are an issue's children as the forge shows them, one rule for the
+// report, the order and the comment: its relation (GitHub's sub-issues,
+// GitLab's tasks) and the task list under "## Sub-issues" in its body —
+// where a split links its children, or lists them. A part a person
+// unlinked is no longer one.
+func Parts(is forge.Issue) []int {
+	return SplitInto(is, nil)
+}
+
+// SplitInto are its parts and the children the role's split recorded in
+// its state (st may be nil): never closed by the role, nor split again.
+func SplitInto(is forge.Issue, st *State) []int {
+	out := slices.DeleteFunc(slices.Clone(is.Children), func(n int) bool { return n == is.ID })
 	add := func(n int) {
 		if n != is.ID && !slices.Contains(out, n) {
 			out = append(out, n)
@@ -83,11 +91,13 @@ func plain(s string) string {
 }
 
 // Part is one child as the parent's report reads it: the issue, open or
-// closed, and what closed it; Gone when the forge no longer has it.
+// closed, and what closed it; Gone when the forge no longer has it;
+// Unread when the forge refused to say what closed it.
 type Part struct {
 	ID      int
 	Issue   forge.Issue
 	Closers []forge.Closer
+	Unread  error
 	Gone    bool
 }
 
@@ -105,6 +115,7 @@ type Evidence struct {
 	Closed    int      // the parts closed, or gone from the forge
 	Undone    []int    // the parts closed without delivering: not planned, a duplicate, gone
 	Unproved  []string // the Verification items no part delivered quotes
+	Unread    []int    // the parts whose closer the forge refused to say
 	AllClosed bool
 }
 
@@ -142,6 +153,10 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 		}
 		if p.Delivered() {
 			by = "by hand: no pull request nor commit linked"
+			if p.Unread != nil {
+				by = "not read: " + cell(p.Unread.Error())
+				ev.Unread = append(ev.Unread, p.ID)
+			}
 			if len(p.Closers) > 0 {
 				var refs []string
 				for _, c := range p.Closers {
@@ -236,7 +251,7 @@ func cell(s string) string {
 func (p *Plan) readToAccept() {
 	var ids []int
 	for _, id := range sortedIDs(p.issues) {
-		parts := Parts(p.issues[id], nil)
+		parts := Parts(p.issues[id])
 		if id != p.Report && len(parts) > 0 && !slices.ContainsFunc(parts, func(n int) bool { return p.open[n] }) {
 			ids = append(ids, id)
 		}
@@ -252,7 +267,7 @@ func (p *Plan) toAccept() string {
 	var lines []string
 	for _, id := range p.Record.ToAccept {
 		is := p.issues[id]
-		lines = append(lines, fmt.Sprintf("- #%d %s: its %d parts are closed; what each delivered, and what is not proved, is on the issue. Close it to accept the need, or reopen a part.", id, is.Title, len(Parts(is, nil))))
+		lines = append(lines, fmt.Sprintf("- #%d %s: its %d parts are closed; what each delivered, and what is not proved, is on the issue. Close it to accept the need, or reopen a part.", id, is.Title, len(Parts(is))))
 	}
 	if len(lines) == 0 {
 		return ""
