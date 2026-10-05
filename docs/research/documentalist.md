@@ -125,3 +125,29 @@ files into parts that fill a task, 393 calls, about 3.2 million tokens in,
 149 sources that are docs left out. Most go to a few docs naming whole
 libraries (`docs/index.md`: 168 files); at most 8 parts a doc, 22 docs in 81
 calls. Four docs are themselves too long to leave room for any source.
+
+## Generated sections and parallel branches (2026-10-05)
+
+A fact generated into a doc and required equal on every pull request makes
+two pull requests that both change it conflict on its line (#149). What
+others do:
+
+- **Merge drivers** (`merge=union`, a custom driver in `.gitattributes`):
+  GitHub, GitLab and Bitbucket do not run them when merging a pull request
+  ([gitlab#18830](https://gitlab.com/gitlab-org/gitlab/-/issues/18830)),
+  and `union` keeps both values of a count, so the line is wrong anyway.
+- **Nothing shared on a branch, compiled later**: towncrier's news
+  fragments and changesets' files are one per change, compiled into the
+  changelog at the release: "there cannot be merge conflicts on the
+  changelog because the changelog does not exist until you release"
+  ([pyinstaller](https://pyinstaller.org/en/stable/development/changelog-entries.html)).
+- **Written on the default branch by a bot**: the all-contributors bot
+  opens a pull request of its own for README's table; release-please writes
+  its `extra-files` only in its release pull request.
+- **Computed when read**: a dynamic badge (shields.io) keeps no value in
+  the file.
+- **Equal on every pull request** (mdox `--check`, Kubernetes'
+  `hack/verify-*` scripts): the conflicts and rebases are accepted.
+
+Taken (ADR-0027): a branch's derived block may lag; gardening regenerates
+it on the default branch, in a merge request of its own.

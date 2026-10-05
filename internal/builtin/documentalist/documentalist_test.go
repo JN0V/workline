@@ -155,7 +155,7 @@ func TestDeriveSkipsExamplesInCode(t *testing.T) {
 		"An example: `<!-- workline:derive name -->` and `<!-- workline:end -->`.\n\n" +
 		"```\n<!-- workline:derive other -->x<!-- workline:end -->\n```\n\n" +
 		"Block:\n<!-- workline:derive n -->\nold\n<!-- workline:end -->\n"
-	findings, fixed := Derive(t.TempDir(), map[string]string{"d.md": doc}, map[string]string{"n": "echo 3"})
+	findings, fixed := Derive(t.TempDir(), map[string]string{"d.md": doc}, map[string]string{"n": "echo 3"}, false)
 	if len(findings) != 1 || findings[0].Rule != "derived-stale" {
 		t.Fatalf("findings = %v: examples in code are not blocks", findings)
 	}

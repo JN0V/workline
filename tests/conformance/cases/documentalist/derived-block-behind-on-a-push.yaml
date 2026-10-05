@@ -1,0 +1,14 @@
+case: documentalist/derived-block-behind-on-a-push
+about: "On a push, a derived block behind the branch's code neither stops the push nor touches the working tree: it is regenerated on the default branch after the merge (ADR-0027)."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
+  setup:
+    - "printf '\\nThe code holds <!-- workline:derive auth-files -->1<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"
+    - "echo 'package auth' > src/auth/session.go && git add src/auth/session.go && git commit -qm 'feat(auth): add sessions'"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  applied: []
+  findings: [{rule: derived-behind, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "<!-- workline:derive auth-files -->1<!-- workline:end -->"}}

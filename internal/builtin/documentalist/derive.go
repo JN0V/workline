@@ -3,6 +3,7 @@ package documentalist
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -20,7 +21,9 @@ var derived = regexp.MustCompile(`(?s)<!-- workline:derive (\S+) -->(.*?)<!-- wo
 // which only people change, never in a doc: a doc names one. Markers shown in
 // code — a fenced block or a code span — are examples, not blocks. It returns
 // what it found, and the new content of each doc whose blocks were stale.
-func Derive(repo string, docs map[string]string, commands map[string]string) ([]verdict.Finding, map[string]string) {
+// On a branch (behind), a stale block is reported behind and left as it is:
+// written there, two branches adding to one count conflict on its line.
+func Derive(repo string, docs map[string]string, commands map[string]string, behind bool) ([]verdict.Finding, map[string]string) {
 	d := deriver{repo: repo, commands: commands, outputs: map[string]string{}, failed: map[string]error{}}
 	fixed := map[string]string{}
 	paths := make([]string, 0, len(docs))
@@ -48,13 +51,29 @@ func Derive(repo string, docs map[string]string, commands map[string]string) ([]
 			last = loc[1]
 		}
 		now.WriteString(content[last:])
-		if stale > 0 {
+		if stale > 0 && behind {
+			d.findings = append(d.findings, verdict.Finding{Rule: "derived-behind", Where: p,
+				Message: fmt.Sprintf("%d derived block(s) no longer match what their command gives on this branch; left as they are, regenerated on the default branch after the merge (gardening)", stale)})
+		} else if stale > 0 {
 			fixed[p] = now.String()
 			d.findings = append(d.findings, verdict.Finding{Rule: "derived-stale", Where: p,
 				Message: fmt.Sprintf("%d derived block(s) no longer match what their command gives; regenerated", stale)})
 		}
 	}
 	return d.findings, fixed
+}
+
+// onBranch says whether the run sees a branch on its way to the default one —
+// a push, a merge request, a release tool's pull request — rather than the
+// default branch itself (gardening, adoption). A derived block is not
+// regenerated there (ADR-0027): what other merged work adds is not on a branch yet,
+// and a version the release branch quotes is not the default branch's (#97).
+func onBranch() bool {
+	switch os.Getenv("WORKLINE_EVENT") {
+	case "pre-push", "merge-request", "release":
+		return true
+	}
+	return false
 }
 
 type deriver struct {

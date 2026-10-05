@@ -38,7 +38,8 @@ Suspicion follows the chain: code → technical doc → product doc.
 `index.md` listing its cards; nobody edits an index by hand.
 
 **Derived facts** — counts, versions, lists taken from the code — live between
-markers and are regenerated, never typed. A marker names a command the project
+markers and are regenerated on the default branch, never typed — not even on
+a branch whose change makes them behind. A marker names a command the project
 declares; the text between the markers is its output, inline or on lines of
 their own:
 
