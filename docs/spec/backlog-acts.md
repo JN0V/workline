@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: c592b51
+checked: 4f5460b
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -770,7 +770,7 @@ report's body and who ticked each (ADR-0025):
 |---|---|
 | A person of the project, a proposal it can do | Done as the record holds it, never as an intention says (`not-ticked`), whatever its mode or cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, no announcement nor second judge, naming who ticked it |
 | A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
-| A person of the project, the box of a changed need (`changed/<issue>`) | Checked: it leaves the report and the record, said under "Boxes ticked"; nothing done to its issues |
+| A person of the project, the box of a changed need (`changed/<issue>`; `changed-lines/<issue>` for the lines it was imported from, a change of its own) | Checked: it leaves the report and the record, said under "Boxes ticked"; nothing done to its issues |
 | A person of the project, an issue to open, rounds spent, a slip with nowhere to go | Not done: the report says to do it by hand; the proposal leaves it |
 | Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
 
