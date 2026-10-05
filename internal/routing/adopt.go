@@ -180,15 +180,27 @@ func SetAutonomy(repo, level string) (string, bool, error) {
 	if top.Kind != yaml.MappingNode {
 		return "", false, fmt.Errorf(".workline/config.yaml: not a mapping")
 	}
-	child := func(m *yaml.Node, key string) *yaml.Node {
-		if v := value(m, key); v != nil {
-			return v
+	// A key there with nothing under it (`roles:`, `roles: ~`) becomes a
+	// mapping; one holding a value of its own is the person's: refused.
+	child := func(m *yaml.Node, key, where string) (*yaml.Node, error) {
+		v := value(m, key)
+		switch {
+		case v == nil:
+			v = &yaml.Node{Kind: yaml.MappingNode}
+			m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
+		case v.Kind == yaml.ScalarNode && v.Tag == "!!null":
+			*v = yaml.Node{Kind: yaml.MappingNode, Line: v.Line, Column: v.Column}
+		case v.Kind != yaml.MappingNode:
+			return nil, fmt.Errorf(".workline/config.yaml: %s is not a mapping: autonomy not set", where+key)
 		}
-		v := &yaml.Node{Kind: yaml.MappingNode}
-		m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
-		return v
+		return v, nil
 	}
-	settings := child(child(child(top, "roles"), "product-owner"), "settings")
+	settings := top
+	for _, p := range []struct{ key, where string }{{"roles", ""}, {"product-owner", "roles."}, {"settings", "roles.product-owner."}} {
+		if settings, err = child(settings, p.key, p.where); err != nil {
+			return "", false, err
+		}
+	}
 	if v := value(settings, "autonomy"); v != nil {
 		return v.Value, false, nil
 	}
