@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
 	"github.com/JN0V/workline/internal/builtin/productowner"
@@ -1341,9 +1342,13 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 		out = os.Stderr // the text goes aside, the result alone on stdout
 	}
 	total := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
+	var coverage *backlog.Coverage // the map: each item of the file to its issue, or why none
 	finish := func(code int) int {
 		if asJSON {
-			data, _ := json.MarshalIndent(total, "", "  ")
+			data, _ := json.MarshalIndent(struct {
+				*engine.Result
+				Coverage *backlog.Coverage `json:"coverage,omitempty"`
+			}{total, coverage}, "", "  ")
 			fmt.Println(string(data))
 		} else {
 			fmt.Fprintln(out, total.Summary)
@@ -1369,7 +1374,31 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 	if !strings.HasSuffix(string(data), "\n") {
 		n++
 	}
+	// The forge's issues, open and closed, before and after: the map tells
+	// an issue this import opened from one that held the item already.
+	var backlogOf forge.Backlog
+	spec := forgeSpec
+	if spec == "" {
+		if cfg, err := role.LoadProjectConfig(root); err == nil {
+			spec = cfg.Forge
+		}
+	}
+	if f, err := forge.Open(spec, root); err == nil && f != nil {
+		backlogOf, _ = f.(forge.Backlog)
+	}
+	allIssues := func() ([]forge.Issue, error) {
+		if backlogOf == nil {
+			return nil, nil
+		}
+		return backlogOf.AllIssues()
+	}
+	before, err := allIssues()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: the forge's issues:", err)
+		return 3
+	}
 	opened, proposed := 0, 0
+	var shares []backlog.ImportShare
 	for from := 1; from <= n; {
 		to := min(from+share-1, n)
 		res := engine.Run(engine.Options{Repo: root, RolesDir: absRoles, Role: "product-owner", Event: "import",
@@ -1384,15 +1413,12 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 				opened++
 			}
 		}
-		if !apply && res.RunDir != "" {
-			ins, _ := intent.Read(filepath.Join(res.RunDir, "out", "intentions.yaml"))
-			for _, in := range ins {
-				if m, ok := in.Value.(map[string]any); ok && in.Kind == "open" {
-					proposed++
-					fmt.Fprintf(out, "  would open: %v\n", m["title"])
-				}
-			}
+		sh := importAnswer(res.RunDir)
+		sh.From, sh.To, sh.Own = from, to, n
+		if len(shares) > 0 {
+			shares[len(shares)-1].Own = from - 1
 		}
+		shares = append(shares, sh) // what would be opened is the map's, its quotes checked
 		fmt.Fprintf(out, "lines %d to %d: %s\n", from, to, res.Status)
 		if res.Status != verdict.Pass {
 			total.Status = res.Status
@@ -1404,10 +1430,81 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 		}
 		from = to - share/5 + 1 // a fifth read again: an item cut at the end is whole in the next share
 	}
+	after := before
+	if apply {
+		if after, err = allIssues(); err != nil {
+			fmt.Fprintln(os.Stderr, "workline: the forge's issues:", err)
+			return 3
+		}
+	}
+	var findings []verdict.Finding
+	coverage, findings = backlog.Cover(root, file, strings.Split(string(data), "\n"), shares, before, after, apply)
+	total.Findings = append(total.Findings, findings...)
+	fmt.Fprint(out, coverage.Text())
+	opened, proposed = 0, 0
+	for _, m := range coverage.Items {
+		switch m.State {
+		case backlog.ItemOpened:
+			opened++
+		case backlog.ItemWouldOpen:
+			proposed++
+		}
+	}
 	if apply {
 		total.Summary = fmt.Sprintf("%s read; %d issues opened", file, opened)
 	} else {
-		total.Summary = fmt.Sprintf("%s read; %d issues would be opened, before the engine checks their quotes — nothing written: --apply opens them", file, proposed)
+		total.Summary = fmt.Sprintf("%s read; %d issues would be opened — nothing written: --apply opens them", file, proposed)
+	}
+	if k := len(coverage.NotCovered); k > 0 {
+		// A requirement left with no issue and no reason is a person's to
+		// read: never passed silently.
+		total.Status = verdict.Human
+		total.Summary += fmt.Sprintf("; %d %s not covered — no issue, no reason: see Not covered", k, map[bool]string{true: "item", false: "items"}[k == 1])
+		return finish(exitFor(verdict.Human))
 	}
 	return finish(0)
+}
+
+// importAnswer reads what the agent answered on one share of an import —
+// the items to open, as the engine decided them, and the items skipped —
+// from the share's run folder.
+func importAnswer(runDir string) backlog.ImportShare {
+	var sh backlog.ImportShare
+	if runDir == "" {
+		return sh
+	}
+	var plan backlog.Plan
+	planned := false
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "acts.yaml")); err == nil {
+		planned = yaml.Unmarshal(data, &plan) == nil
+	}
+	recorded := backlog.RecordedOpenings(runDir)
+	ins, _ := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
+	for i, in := range ins {
+		if in.Kind != "open" {
+			continue
+		}
+		var c backlog.Proposal
+		if data, err := yaml.Marshal(in.Value); err != nil || yaml.Unmarshal(data, &c) != nil || c.Quote == nil {
+			continue
+		}
+		o := backlog.ImportOpen{Title: c.Title, Quote: *c.Quote}
+		if planned {
+			d := plan.Decision(i)
+			o.Dropped = d == nil || d.Mode == backlog.Off
+			o.Capped = d != nil && d.Mode == backlog.Propose
+		}
+		if r, ok := recorded[i]; ok {
+			o.Opening = &r
+		}
+		sh.Opens = append(sh.Opens, o)
+	}
+	skips, _ := intent.Read(filepath.Join(runDir, "out", "skips.yaml"))
+	for _, in := range skips {
+		var s backlog.Skip
+		if data, err := yaml.Marshal(in.Value); err == nil && yaml.Unmarshal(data, &s) == nil {
+			sh.Skips = append(sh.Skips, s)
+		}
+	}
+	return sh
 }

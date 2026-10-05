@@ -1,0 +1,45 @@
+case: backlog/import-maps-each-item
+about: An import's report maps each item of the file, by its lines and first words, to the issue that holds it — opened by this run, already open, closed already — or to why it has none — judged done, with the quote that says so; not an item, with why. An item the agent neither opened nor explained is listed under Not covered, the summary and the status say so, and its share is flagged.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      Where the project is going.
+
+      ## Next
+
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **A JSON export.** Done in 1.2.
+      3. **Sort the columns.** By name, then by type.
+
+      ## Later
+
+      - Empty rows become blank lines; skip them.
+      - Name the file after the table.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge:
+    issues:
+      - {id: 2, title: "Name the file", body: "- Name the file after the table.\n\nOpened from ROADMAP.md.\n\n<!-- workline:import=ROADMAP.md:20b754677e46 -->", closed: true, reason: completed, labels: [], comments: []}
+      - {id: 3, title: "Skip empty rows", body: "- Empty rows become blank lines; skip them.\n\nOpened from ROADMAP.md.\n\n<!-- workline:import=ROADMAP.md:7bbf8cf05601 -->", labels: [], comments: []}
+run: {issues-import: [ROADMAP.md, --apply], ai: fake:import-roadmap-mapped}
+expect:
+  status: human
+  summary: "1 item not covered"
+  findings: [{rule: items-omitted, where: "lines 1 to 15", message: "10"}]
+  coverage:
+    - {lines: "1-5", state: not-item, words: "# Roadmap", why: "the introduction"}
+    - {lines: "7-8", state: opened, issue: "4", words: "Keep the last row"}
+    - {lines: "9", state: done, why: "Done in 1.2."}
+    - {lines: "12", state: not-item, why: "a heading"}
+    - {lines: "14", state: already-open, issue: "3"}
+    - {lines: "15", state: closed, issue: "2"}
+  not-covered:
+    - {lines: "10", words: "3. **Sort the columns.**"}
+  forge:
+    issues:
+      - {id: 4, title: "Keep the last row"}

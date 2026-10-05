@@ -300,6 +300,30 @@ outsider's or an unknown author's is said and not done, stricter than
 Renovate since a run's token may tick what it wrote. Three runs nobody
 answered pause the agent, as Dependabot, resumed by a person's act.
 
+## An import's coverage (2026-10-05)
+
+In the ecosystem's words: *requirements traceability*, *traceability
+matrix*, *coverage*, *uncovered requirement*, *import report*, *skipped
+rows*.
+
+| Where | What it maps | What is left out, and how it says so |
+|---|---|---|
+| A requirements traceability matrix (systems engineering's practice; ISO/IEC/IEEE 29148 asks requirements be traceable) | each requirement, by its id, to what designs, implements and tests it | a row with an empty cell: read by a person |
+| [OpenFastTrace](https://github.com/itsallcode/openfasttrace) | specification items, tagged in any text file, to the items that cover them | each item not covered listed as a defect; the trace ends "not ok", a non-zero exit |
+| [Doorstop](https://github.com/doorstop-dev/doorstop) | requirements as files under git, each linked to its parent | `doorstop` validates the tree and warns on an item no child links to |
+| [sphinx-needs](https://github.com/useblocks/sphinx-needs) | needs in the docs, linked by id | a table filtered on needs with no link: a person writes the filter |
+| Trackers' CSV importers (Jira's, GitLab's) | one row a new issue | a row refused is in the import's log; a row the importer never read as one is not anywhere |
+
+All map **declared** items — an id, a tag, a row. A roadmap in prose has
+none: which lines are an item is the agent's judgement, so the
+partition comes from it, and the engine checks only what it can — every
+line answered, each reason's evidence there.
+
+**Decision** (ADR-0030): as a traceability matrix, every item of the
+file to the issue that holds it, or to a reason checked by the engine;
+as OpenFastTrace, what is left with neither listed, and the run not
+passing (`human`, exit 2) — never a silent pass.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was

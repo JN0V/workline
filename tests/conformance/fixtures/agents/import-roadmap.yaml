@@ -9,3 +9,6 @@
 - open:
     title: "Skip empty rows, again"
     quote: {path: ROADMAP.md, text: "- Empty rows become blank lines; skip them."}
+- skip: {lines: "1-5", reason: not-item, why: "the title, the introduction and a heading"}
+- skip: {lines: "9", reason: done, quote: {path: ROADMAP.md, text: "Done in 1.2."}}
+- skip: {lines: "11", reason: not-item, why: "a heading"}

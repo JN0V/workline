@@ -18,6 +18,7 @@ var contracts = map[string]string{
 	"keep":           `- keep: {issue: 12, why: "what shows it is not solved"}  # an issue the task says is announced obsolete, kept open: a reply or the code shows it is still true`,
 	"sources":        `- sources: {issue: 12, sources: ["src/file.go"], quote: {path: "src/file.go", text: "the code, as it reads"}, why: "why this is the code the issue is about"}`,
 	"open":           `- open: {title: "short title", quote: {path: "docs/ROADMAP.md", text: "the item's text, as the file has it"}}`,
+	"skip":           `- skip: {lines: "12-14", reason: done, quote: {path: "docs/ROADMAP.md", text: "the words that say it is done"}}  # importing only: or reason: held, issue: 7 (an issue holds it); or reason: not-item, why: "an introduction"`,
 	"milestone":      `- milestone: {issue: 12, milestone: "v2.14.0", why: "why it belongs to that release"}`,
 	"order":          `- order: {issue: 12, priority: 1, why: "why it comes before the others"}  # 1 the most pressing, to 4`,
 	"refine":         `- refine: {issue: 12, scope: "the part of the code", sources: ["src/file.go"], verification: "the tests that will prove it", need: "who needs what, and why (a draft)", validation: "who accepts it, looking at what (a draft)", why: "why", questions: "what is still missing (an outsider's issue only)"}  # only the sections it lacks`,

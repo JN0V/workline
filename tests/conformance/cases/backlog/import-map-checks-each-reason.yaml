@@ -1,0 +1,46 @@
+case: backlog/import-map-checks-each-reason
+about: An import's map says an item past the cap of `open` is past the cap, and an item the agent says an issue holds is that issue's; a reason the engine cannot check — a quote not in the file, an issue that is not there — leaves its item under Not covered, with a finding.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      Where the project is going.
+
+      ## Next
+
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **A JSON export.** Done in 1.2.
+      3. **Sort the columns.** By name, then by type.
+
+      ## Later
+
+      - Empty rows become blank lines; skip them.
+      - Name the file after the table.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {open: {mode: act, max: 1}}
+  forge:
+    issues:
+      - {id: 3, title: "Drop empty rows", body: "Empty rows end up as blank lines.", labels: [], comments: []}
+run: {issues-import: [ROADMAP.md, --apply], ai: fake:import-roadmap-capped}
+expect:
+  status: human
+  summary: "2 items not covered"
+  findings:
+    - {rule: no-quote, where: "ROADMAP.md:9"}
+    - {rule: skip-unread, where: "ROADMAP.md:15", message: "#9"}
+  coverage:
+    - {lines: "7-8", state: opened, issue: "4"}
+    - {lines: "10", state: past-cap}
+    - {lines: "14", state: already-open, issue: "3"}
+  not-covered:
+    - {lines: "9", words: "2. **A JSON export.**"}
+    - {lines: "15", words: "- Name the file"}

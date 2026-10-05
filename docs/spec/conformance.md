@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: d8e0419
+checked: d293323
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -128,6 +128,10 @@ a `PATH` without a tool, or with a fake one first.
   case's `origin`, or the message of that branch's tip.
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
+- `summary` — a text the result's summary holds.
+- `coverage` / `not-covered` — with `issues-import`, entries the import's
+  map must hold, each matched on the fields given (`lines`, `state`,
+  `issue`; `words` and `why` by a part of them).
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `sarif` / `code-quality` / `left-out` — with `reports`, results each report
   must hold, and the places neither may name.

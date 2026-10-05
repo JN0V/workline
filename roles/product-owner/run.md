@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 527a1a3
+checked: d293323
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -114,6 +114,11 @@ agent, otherwise, only the state comments are written. On `import`,
 share at a time — with the lines elsewhere in the file that name its
 items' ids, where a file often says what is done — and opens each item
 still to do as an issue quoting it, never twice (`open`); without `--apply`, it only says what it would open.
+The agent says why of every other line (`skip`: done, the words quoted;
+held by an issue; not an item); the engine checks each reason and maps
+every item of the file to its issue or its reason, the lines with
+neither listed as not covered, the share that left them out flagged,
+and the import ending for a person (exit 2).
 
 ## The report's boxes, and the pause
 

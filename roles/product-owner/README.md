@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: 527a1a3
+checked: d293323
 verified: agent:claude-code
 ---
 # Product owner
@@ -32,7 +32,7 @@ it proposes rather than does at `autonomy: cautious`.
 | Event | Fired by | Does |
 |---|---|---|
 | `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, acts and proposes |
-| `import` | `workline issues import <file>` (`--apply` to open) | opens each item still to do in a file as an issue |
+| `import` | `workline issues import <file>` (`--apply` to open) | opens each item still to do in a file as an issue; then maps every item to its issue or the reason it has none, and lists what is left with neither, for a person (exit 2) |
 
 ## Settings
 

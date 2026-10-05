@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: d477467
+checked: f6fee73
 verified: agent:claude-code
 ---
 # Using workline
@@ -20,7 +20,7 @@ settings and the variables, in [config.md](config.md).
 | `workline gate <name>` | runs a gate declared in `.workline/config.yaml` |
 | `workline item ready <id>` | moves a work item to `ready`, once its Need, Verification, Validation and Scope are written (`--forge` reads it from the forge) |
 | `workline issues` / `workline issues show <n>` / `show !<n>` | reads the local forge (`forge: local`, ADR-0016): lists the issues (`#<n>`) and merge requests (`!<n>`) kept in the clone, with their state and labels, or shows one whole, its comments after its body; writes nothing |
-| `workline issues import <file> [--apply]` | moves a roadmap or backlog file, whatever its form, to the forge's issues (docs/spec/backlog-acts.md, "Importing a file"): the product owner reads it a share at a time, each item still to do opened once, its text quoted from the file; without `--apply`, only says what it would open. `--ai`, `--forge`, `--lines` |
+| `workline issues import <file> [--apply]` | moves a roadmap or backlog file, whatever its form, to the forge's issues (docs/spec/backlog-acts.md, "Importing a file"): the product owner reads it a share at a time, each item still to do opened once, its text quoted from the file; without `--apply`, only says what it would open. Then a map: each item of the file, by its lines and first words, to its issue — opened, already open, closed — or why it has none — done, the words quoted; not an item, why; past the cap —, and the lines no answer holds under "Not covered", which exits 2 (`--json`: the result's `coverage`). `--ai`, `--forge`, `--lines` |
 | `workline hooks install --global` / `uninstall --global` | takes `core.hooksPath` for every repository, and gives it back as it was; the hooks run the `commit-msg` and `pre-push` lines, then hand over to the hooks that were there |
 | `workline hooks install --repo` | writes `.githooks/commit-msg` in this repository; remove that file to uninstall |
 | `workline setup` | sets up this machine, asking: the global hooks, your agent (`ai:` in your config), the tools the roles use, each installed with the command it shows; then prints `workline doctor`. Run again, it offers what is set up as the default. `--hooks yes\|no`, `--ai <agent>` and `--install <tool,...>\|all\|none` answer a question; `--yes` takes the defaults; without a terminal, every question must be answered so |

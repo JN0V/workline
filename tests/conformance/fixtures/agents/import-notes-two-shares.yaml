@@ -1,0 +1,5 @@
+calls:
+  - - skip: {lines: "1-14", reason: not-item, why: "an introduction"}
+    - open: {title: "Keep the last row", quote: {path: NOTES.md, text: "- Keep the last row."}}
+  - - skip: {lines: "17-24", reason: not-item, why: "a history"}
+    - skip: {lines: "26-30", reason: not-item, why: "a closing word"}
