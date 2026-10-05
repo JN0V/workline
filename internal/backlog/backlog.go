@@ -974,8 +974,9 @@ func conversation(role string, comments []string, c *Proposal) (rule, why string
 // sentenceEnd is where a sentence ends before a question.
 var sentenceEnd = regexp.MustCompile(`[.!] (?:[-*•] +|\d+[.)] +)?\p{Lu}`)
 
-// listItem starts a list's item on a line of its own.
-var listItem = regexp.MustCompile(`\n\s*(?:[-*•]|\d+[.)])\s`)
+// listItem starts a list's item on a line of its own, a sentence of its
+// own: an option of one question ("- the CLI or") starts in lower case.
+var listItem = regexp.MustCompile(`\n\s*(?:[-*•]|\d+[.)])\s+\p{Lu}`)
 
 // bullet is a list's bullet or number before a question.
 var bullet = regexp.MustCompile(`^\s*(?:[-*•]|\d+[.)])\s+`)
