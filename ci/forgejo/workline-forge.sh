@@ -93,21 +93,24 @@ comments)
 	got=$(all "/issues/$(arg .target.id)/comments")
 	perms='{}'
 	tmp=$(mktemp)
-	for u in $(printf '%s' "$got" | jq -r '[.[].user.login] | unique | .[]'); do
-		code=$(curl -sS -o "$tmp" -w '%{http_code}' -H "Authorization: token $FORGEJO_TOKEN" \
-			"$base/collaborators/$u/permission") || exit 1
+	# One login a line, read whole; put in the URL escaped, curl's globbing
+	# off: a login like `ci[bot]` is a name, not a range.
+	printf '%s' "$got" | jq -r '[.[].user.login] | unique | .[]' > "$tmp.logins"
+	while IFS= read -r u; do
+		code=$(curl -gsS -o "$tmp" -w '%{http_code}' -H "Authorization: token $FORGEJO_TOKEN" \
+			"$base/collaborators/$(jq -rn --arg u "$u" '$u | @uri')/permission") || exit 1
 		case "$code" in
 		200) p=$(jq -r '.permission // "none"' "$tmp") ;;
 		404) p=none ;;
 		*)
 			echo "the permission of $u could not be read (HTTP $code): the token's user must administer the repository" >&2
-			rm -f "$tmp"
+			rm -f "$tmp" "$tmp.logins"
 			exit 1
 			;;
 		esac
 		perms=$(printf '%s' "$perms" | jq -c --arg u "$u" --arg p "$p" '. + {($u): $p}')
-	done
-	rm -f "$tmp"
+	done < "$tmp.logins"
+	rm -f "$tmp" "$tmp.logins"
 	printf '%s' "$got" | jq -c --argjson perms "$perms" '{comments: [.[] | {body: (.body // ""), author: .user.login,
 		insider: ($perms[.user.login] | IN("write", "admin", "owner")),
 		bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$")))}]}'

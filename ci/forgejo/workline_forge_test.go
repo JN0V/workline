@@ -59,7 +59,7 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("page") == "1" {
 			fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"id": 7, "login": "zed"}}, {"body": "agreed", "user": {"id": 8, "login": "dev"}},
 				{"body": "agreed", "user": {"id": -2, "login": "forgejo-actions"}}, {"body": "agreed", "user": {"id": 9, "login": "renovate-bot"}},
-				{"body": "old", "user": {"id": 10, "login": "gone"}}]`)
+				{"body": "old", "user": {"id": 10, "login": "gone"}}, {"body": "built", "user": {"id": 11, "login": "ci[bot]"}}]`)
 		} else {
 			fmt.Fprint(w, `[]`)
 		}
@@ -68,7 +68,8 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/dev/permission":
 		fmt.Fprint(w, `{"permission": "write"}`)
 	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/zed/permission",
-		r.URL.Path == repo+"/collaborators/forgejo-actions/permission", r.URL.Path == repo+"/collaborators/renovate-bot/permission":
+		r.URL.Path == repo+"/collaborators/forgejo-actions/permission", r.URL.Path == repo+"/collaborators/renovate-bot/permission",
+		r.URL.Path == repo+"/collaborators/ci[bot]/permission":
 		fmt.Fprint(w, `{"permission": "read"}`)
 	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/gone/permission":
 		http.Error(w, `{"message": "user does not exist"}`, http.StatusNotFound)
@@ -131,7 +132,8 @@ func TestComments(t *testing.T) {
 		`{"body":"agreed","author":"dev","insider":true,"bot":false},` +
 		`{"body":"agreed","author":"forgejo-actions","insider":false,"bot":true},` +
 		`{"body":"agreed","author":"renovate-bot","insider":false,"bot":true},` +
-		`{"body":"old","author":"gone","insider":false,"bot":false}]}`
+		`{"body":"old","author":"gone","insider":false,"bot":false},` +
+		`{"body":"built","author":"ci[bot]","insider":false,"bot":true}]}`
 	if out != want {
 		t.Errorf("answer = %s\nwant     %s", out, want)
 	}
