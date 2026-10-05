@@ -1,0 +1,16 @@
+case: documentalist/settings-one-budget-keeps-the-others
+about: A project that sets one budget, and one bound of a card's, keeps the role's other budgets — settings merge key by key at every depth (role contract, "Settings"); none is reported missing.
+given:
+  repo: untidy
+  config:
+    roles:
+      documentalist:
+        settings:
+          budgets: {root-agent-file-lines: 5, card-words: {max: 1000}}   # replaces the fixture's config
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: agent-file-too-long, where: AGENTS.md}
+    - {rule: card-too-short, where: docs/cards/token.md}   # the role's min, 80 words, kept
+  no-findings: [{rule: setting-missing}, {rule: doc-too-long}]

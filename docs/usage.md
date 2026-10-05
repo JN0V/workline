@@ -178,8 +178,9 @@ release tool to use instead (ADR-0017). A commit written unquoted is a number
 to YAML when all digits (`after: 7515148`): a setting naming a commit reads it
 as written. One YAML reads otherwise than written — a leading zero
 (`0123456`, octal), an `e` between digits (`1234e56`, a float) — blocks,
-saying to quote it. A project's `settings` for a role
-replace the role's, key by key, one level deep.
+saying to quote it. A project's `settings` for a role are merged into the
+role's at every depth; a list replaces the default whole, a `null` removes
+it ([role-adapting.md](spec/role-adapting.md#settings)).
 
 ## Environment
 
