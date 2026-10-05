@@ -166,6 +166,39 @@ every tier; grouping themes across projects, perhaps later, the product
 manager's. A rename sets the title alone, and a title a person set after
 the role's is kept.
 
+## Asking, and the answer (2026-10-05)
+
+How bots that ask a reporter for something carry the conversation on — in
+their words: *needs more info*, *response required*, *waiting on author*,
+*pending*, *bump*.
+
+| Tool | Asking | The answer | Rounds, then |
+|---|---|---|---|
+| [no-response](https://github.com/lee-dohm/no-response) | A person sets `responseRequiredLabel` | Only a comment **by the issue's author** counts: the label goes, an issue it closed is reopened | One; `daysUntilClose` of silence, closed |
+| [label-actions](https://github.com/marketplace/actions/label-actions) | A label (`needs more info`) posts a canned comment naming `{issue-author}` | Not read: a person takes the label off | None |
+| Kubernetes `triage/needs-information` | A triager's label | A person reads it | The lifecycle robot on silence (above) |
+| Rust's triagebot `S-waiting-on-author` | Set on a review asking changes | The author says `@rustbot ready`: the labels swap back | As many as the review needs |
+| [Zendesk *pending*](https://support.zendesk.com/hc/en-us/articles/4408832749210) | The agent's reply sets the ticket waiting on the customer | Any customer reply sets it back to open | *Bump, bump, solve*: two reminders, then solved |
+| [Dependabot](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands), [Copilot coding agent](https://docs.github.com/en/copilot/responsible-use/copilot-coding-agent) | — | Comment commands obeyed **only from people with write access** | — |
+
+Three shared rules. **An answer is a comment after the question**, and it
+moves the item back to whoever acts next. **Who wrote it matters** when the
+answer is a decision: no-response counts only the author's, Dependabot
+and Copilot only a writer's. **Rounds are few** — one, or two reminders —
+and none of these closes on silence without a person having set it up.
+None asks a *narrower* question after an answer: the follow-up is a
+person's, or a canned text.
+
+On GitHub, [an issue's body can be edited only by its author, or by
+someone with write access](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/editing-an-issue);
+a label only by who may triage. Either is a change only the reporter or
+the project's people make — a comment is anyone's.
+
+**Decision** (ADR-0021): the product owner asks again only after an
+answer, at most three times, then the report; an outsider's issue gets
+the refined text proposed in a comment, applied when an insider sets
+`workline:accepted`, or written by the reporter into their own body.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was
