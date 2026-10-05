@@ -974,6 +974,9 @@ func conversation(role string, comments []string, c *Proposal) (rule, why string
 // sentenceEnd is where a sentence ends before a question.
 var sentenceEnd = regexp.MustCompile(`[.!] (?:[-*•] +|\d+[.)] +)?\p{Lu}`)
 
+// listItem starts a list's item on a line of its own.
+var listItem = regexp.MustCompile(`\n\s*(?:[-*•]|\d+[.)])\s`)
+
 // bullet is a list's bullet or number before a question.
 var bullet = regexp.MustCompile(`^\s*(?:[-*•]|\d+[.)])\s+`)
 
@@ -984,6 +987,10 @@ func questions(text string) []string {
 	for _, part := range strings.SplitAfter(text, "?") {
 		if !strings.HasSuffix(part, "?") {
 			continue
+		}
+		// A list's item on a line of its own is a question of its own.
+		if m := listItem.FindAllStringIndex(part, -1); len(m) > 0 {
+			part = part[m[len(m)-1][0]:]
 		}
 		part = squeeze(part)
 		// The question alone, not the sentence before it: a sentence ends

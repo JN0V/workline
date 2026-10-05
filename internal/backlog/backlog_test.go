@@ -101,6 +101,7 @@ func TestAskedBefore(t *testing.T) {
 		"Okay. - Since when?":                           "asked-before", // a bullet after a sentence cut
 		"E.g. which file?":                              "",             // "e.g." ends no sentence: not cut to "which file?"
 		"Okay. Which file?":                             "asked-before",
+		"- Do X\n- Since when?":                         "asked-before", // a list's item before it, on its own line
 	} {
 		c := Proposal{Do: "ask", Questions: q}
 		if rule, _ := conversation("product-owner", comments, &c); rule != want {
