@@ -5,10 +5,10 @@ run, closes duplicates, proposes what the code made obsolete, names an
 issue's code, sets milestones, finds a closing a person undid, refines an
 issue to `ready` and asks its reporter what is missing, orders the backlog
 and moves what slipped, and keeps the one way every role opens an issue —
-nightly in DomoticsCore's CI (v0.7.1 there, refining included, ordering
-not: its roadmap imported, 56 issues), refining tried live there and on
-JN0V/workline-sandbox, ordering on the sandbox and released in v0.8.0
-(tried.md).
+nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
+ordering included, the reviewer not enabled: its roadmap imported, 56
+issues), refining tried live there and on JN0V/workline-sandbox, ordering
+on the sandbox (tried.md).
 
 ## Built and tried with a real agent
 
@@ -34,21 +34,18 @@ GitLab's whole backlog, untried live.
 
 ## Missing, in the order to build it
 
-1. **Released with ordering**: DomoticsCore's nightly runs v0.7.1, with
-   refining; ordering came in v0.8.0, the one way to open issues after it.
-2. **Refining, what is left**: splitting a need into sub-issues;
+1. **Refining, what is left**: splitting a need into sub-issues;
    renaming; asking again after an answer; an outsider's issue proposed
    to its reporter rather than in the report; GitLab's write access.
-3. **Obsolete closed, not only proposed**: announced first, closed at the
+2. **Obsolete closed, not only proposed**: announced first, closed at the
    next run if nobody answered and a second judge agreed.
-4. **The person's hand**: a tick read with its author — a proposal
+3. **The person's hand**: a tick read with its author — a proposal
    accepted, an act set back to `act`; ignored runs pausing it.
-5. **The weekly sample over its acts**; a file the agent was not shown
+4. **The weekly sample over its acts**; a file the agent was not shown
    named as a source. The one way to open issues is built (ADR-0018,
    amended); left: its import's plan does not yet see a closed issue
-   (the engine leaves it closed, said), and a forge plugged by a command
-   must answer `all-issues`.
-6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
+   (the engine leaves it closed, said).
+5. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
    GitHub project's position), deferred (ADR-0018); milestones ranked by
    their due date, not only their title; the engine refusing a person's
    priority, tried in conformance only.

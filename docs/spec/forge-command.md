@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: eef5682
+checked: 11d697f
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -17,9 +17,11 @@ forge: 'cmd:sh ci/forgejo/workline-forge.sh'
 
 or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
-[ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It does
-not answer the backlog's operations yet (`issues`, `all-issues`, `comments`, `close`,
-`milestones`, `set-milestone`, `set-body`, `ensure-label`), nor a merge request's `base`.
+[ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
+`all-issues`, a closed issue without its reason (Forgejo and Gitea keep
+none), but not yet the backlog's other operations (`issues`, `comments`,
+`close`, `milestones`, `set-milestone`, `set-body`, `ensure-label`), nor a
+merge request's `base`.
 
 ## One request, one run
 
@@ -90,5 +92,6 @@ The conformance cases `forge/cmd-*` plug a fake script
 (tests/conformance/fixtures/forges/logged.sh) that records each request: a
 merge request's comment, a work item read and labelled, the
 weekly sample written, a forge failing (`blocked-external`) and refusing
-(`block`). The Forgejo sample was run against a mock of the API only, not
-yet on a live instance.
+(`block`). The Forgejo sample was run against a mock of the API only
+(ci/forgejo/workline_forge_test.go: its labels, and `all-issues` over two
+pages, a pull request left out), not yet on a live instance.
