@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -50,11 +51,14 @@ EOF
 	}
 	// What the answer is read from is asked: the canned answer above would
 	// pass whatever the query.
-	asked, _ := os.ReadFile(args)
-	// Whole tokens: REFERENCED_EVENT is in CROSS_REFERENCED_EVENT too, and
-	// each argument is a line of its own.
-	for _, w := range []string{"[LABELED_EVENT, ", " CONNECTED_EVENT,", " CROSS_REFERENCED_EVENT,", " REFERENCED_EVENT]", " isCrossRepository ", " nameWithOwner ", " abbreviatedOid ", "\nnumber=79\n"} {
-		if !strings.Contains(string(asked), w) {
+	asked, err := os.ReadFile(args)
+	if err != nil {
+		t.Fatalf("gh never ran: %v", err)
+	}
+	// Whole words, whatever the layout: REFERENCED_EVENT is in
+	// CROSS_REFERENCED_EVENT too, and 79 in 790.
+	for _, w := range []string{"LABELED_EVENT", "CONNECTED_EVENT", "CROSS_REFERENCED_EVENT", "REFERENCED_EVENT", "isCrossRepository", "nameWithOwner", "abbreviatedOid", "number=79"} {
+		if !regexp.MustCompile(`\b` + w + `\b`).Match(asked) {
 			t.Errorf("gh not asked for %q: %s", w, asked)
 		}
 	}
