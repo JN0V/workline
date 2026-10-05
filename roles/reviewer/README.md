@@ -1,17 +1,39 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 05e8060
-verified: agent:documentalist
-judged: 507e86b
+checked: d477467
+verified: agent:claude-code
 ---
 # Reviewer
 
-What runs, for humans. The AI never reads this file.
+For people: what the role does and how to set it. The AI never reads this
+file. All roles: [docs/roles.md](../../docs/roles.md).
 
-It reads the code a change brings before a person does, and says what the
-change breaks — each finding quoted, found again by the engine and checked
-by a judge. It never approves, never changes the code, never merges: the
-author fixes, the person merges (ADR-0020).
+**Does**: reads the code a change brings before a person does, and says
+what it breaks — each finding quoted, found again by the engine and checked
+by a judge; rules on the comments the change adds (a bug's story, an
+internal code), with no agent.
+**Does not**: approve, change the code, merge, or review docs and other
+files that are not code (`ignore`): the author fixes, the person merges
+(ADR-0020). A finding outside the change becomes an issue, never a comment
+on the merge request.
+
+| Event | Fired by | Reads |
+|---|---|---|
+| `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
+| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push |
+
+**Outputs**: on a machine, the findings and `out/review.json` for your
+agent to fix; on a merge request, one summary comment edited each run, the
+findings in `--sarif` / `--code-quality`, and an issue (`needs-triage`)
+for each verified finding outside the change.
+**Cost**: one call a lens (three on a machine, one a push on a merge
+request) and one judge call for each important finding; measured from 2k
+to 51k tokens in for a lens, 3k to 8k for a judge (tried.md). Caps:
+`diff-lines-max`, `code-lines-max`, `findings-max`, `issues-max`,
+`lenses-per-push`.
+**Without AI**: the rules alone; the change is left for a person
+(`not-reviewed`).
+**Status**: beta, released in v0.9.0; [status.md](status.md).
 
 ## A run
 
@@ -79,18 +101,22 @@ ci/github/workline.yml gives it.
 
 ## Settings
 
-```yaml
-roles:
-  reviewer:
-    settings:
-      base: main
-      lenses: [correctness, edge-cases, tests]
-      lenses-per-push: 1
-      findings-max: 10
-      issues-max: 3
-      ai-findings: warn        # block, once measured
-      judge-at-least: context  # model, provider
-      forge-writes: true       # false: the summary and the issues only in the verdict
-```
+Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
+([config reference](../../docs/config.md)); defaults from role.yaml:
 
-Where the role stands: [status.md](status.md).
+| Key | Default | |
+|---|---|---|
+| `base` | `main` | where `workline review` starts without `--base` |
+| `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
+| `lenses` | `[correctness, edge-cases, tests]` | in this order, in turn, on a merge request |
+| `lenses-per-push` | `1` | `--input lenses=all` asks every one |
+| `findings-max` | `10` | findings on the change a run; the rest counted |
+| `issues-max` | `3` | issues opened a run for what lies outside it |
+| `diff-lines-max` | `1500` | lines of the change a lens is given |
+| `code-lines-max` | `1200` | lines of the changed files a lens is given |
+| `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
+| `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
+| `ai-findings` | `warn` | `block`: a verified important finding blocks |
+| `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
+| `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
+| `finder-floor` | `true` | each lens looks for a number of candidates from the change's size |

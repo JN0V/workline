@@ -7,10 +7,11 @@ roles:
       internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, 'RFC-[0-9]+', 'CVE-[0-9]+', 'ADR-[0-9]+']
   documentalist:
     settings:
-      # The role READMEs, and the pages the documentalist's is split into,
-      # describe what the code does: they are docs too.
+      # The role READMEs, and the pages the documentalist's and the product
+      # owner's are split into, describe what the code does: they are docs too.
       docs: ["docs/**", "*.md", "roles/*/README.md", roles/documentalist/checks.md,
-        roles/documentalist/tasks.md, roles/documentalist/judge.md, roles/documentalist/push.md]
+        roles/documentalist/tasks.md, roles/documentalist/judge.md, roles/documentalist/push.md,
+        roles/product-owner/run.md]
       # Catching up its own docs, far behind: those whose sources do not fit
       # one call are judged in parts (ADR-0009), one doc a night (8 parts),
       # and a night spends at most 400k tokens.
