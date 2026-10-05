@@ -184,26 +184,41 @@ func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 	return MergeSettings(r.Settings, project)
 }
 
-// MergeSettings lays over on defaults, neither of them changed.
+// MergeSettings lays over on defaults into a new map that shares nothing
+// with either: changing the result changes neither of them.
 func MergeSettings(defaults, over map[string]any) map[string]any {
 	out := make(map[string]any, len(defaults)+len(over))
 	for k, v := range defaults {
-		out[k] = v
+		out[k] = cloneSetting(v)
 	}
 	for k, v := range over {
 		if v == nil {
 			delete(out, k)
 			continue
 		}
-		om, oIsMap := v.(map[string]any)
-		dm, dIsMap := out[k].(map[string]any)
-		if oIsMap && dIsMap {
+		if om, ok := v.(map[string]any); ok {
+			dm, _ := out[k].(map[string]any) // nil when the default is no map: nulls inside are dropped all the same
 			out[k] = MergeSettings(dm, om)
 			continue
 		}
-		out[k] = v
+		out[k] = cloneSetting(v)
 	}
 	return out
+}
+
+// cloneSetting copies a setting's maps and lists, at every depth.
+func cloneSetting(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		return MergeSettings(t, nil)
+	case []any:
+		out := make([]any, len(t))
+		for i, x := range t {
+			out[i] = cloneSetting(x)
+		}
+		return out
+	}
+	return v
 }
 
 // Enforcement returns how hard each rule bites for this role in this project.

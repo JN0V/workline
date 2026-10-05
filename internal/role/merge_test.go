@@ -98,6 +98,32 @@ types: [feat, fix]
 	}
 }
 
+func TestMergeSettingsNullInANewMap(t *testing.T) {
+	d := settings(t, `{acts: {refine: {mode: act}}, budgets: 3}`)
+	got := MergeSettings(d, settings(t, `{acts: {split: {mode: off, max: null}}, budgets: {doc-lines: 9, x: null}}`))
+	want := settings(t, `{acts: {refine: {mode: act}, split: {mode: off}}, budgets: {doc-lines: 9}}`)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got  %v\nwant %v", got, want)
+	}
+}
+
+func TestMergeSettingsSharesNothing(t *testing.T) {
+	d := settings(t, `{acts: {refine: {mode: act}}, types: [feat], budgets: {card-words: {min: 1}}}`)
+	o := settings(t, `{history: [x], derive: {a: b}}`)
+	got := MergeSettings(d, o)
+	got["acts"].(map[string]any)["refine"].(map[string]any)["mode"] = "off"
+	got["types"].([]any)[0] = "fix"
+	got["budgets"].(map[string]any)["card-words"].(map[string]any)["min"] = 2
+	got["history"].([]any)[0] = "y"
+	got["derive"].(map[string]any)["a"] = "c"
+	if !reflect.DeepEqual(d, settings(t, `{acts: {refine: {mode: act}}, types: [feat], budgets: {card-words: {min: 1}}}`)) {
+		t.Errorf("the defaults were changed: %v", d)
+	}
+	if !reflect.DeepEqual(o, settings(t, `{history: [x], derive: {a: b}}`)) {
+		t.Errorf("the project's settings were changed: %v", o)
+	}
+}
+
 func TestMergedSettingsWithoutProjectSettings(t *testing.T) {
 	r := &Role{Name: "committer", Settings: map[string]any{"subject-max": 72}}
 	got := r.MergedSettings(&ProjectConfig{})
