@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -35,6 +36,10 @@ type Role struct {
 	} `yaml:"context"`
 	WithoutAI string         `yaml:"without-ai"`
 	Settings  map[string]any `yaml:"settings"`
+	// Levels are named sets of settings a project picks with one setting
+	// (docs/spec/role-adapting.md, "Levels"): setting -> value -> the
+	// settings laid over the role's before the project's own.
+	Levels map[string]map[string]map[string]any `yaml:"levels"`
 
 	Dir string `yaml:"-"`
 }
@@ -173,15 +178,41 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	return &c, nil
 }
 
+// ByLevel is the setting a role with levels gets beside its own: its
+// settings as the level alone gives them, the project's left out — what a
+// project set is what differs from it.
+const ByLevel = "by-level"
+
 // MergedSettings returns the role's defaults overridden by the project's
 // settings, as docs/spec/role-contract.md says: maps merged key by key, at
 // every depth; a list or a scalar replaced whole; a null removes the key.
+// A level the project picks is laid over the defaults first.
 func (r *Role) MergedSettings(c *ProjectConfig) map[string]any {
 	var project map[string]any
 	if rc, ok := c.Roles[r.Name]; ok {
 		project = rc.Settings
 	}
-	return MergeSettings(r.Settings, project)
+	if len(r.Levels) == 0 {
+		return MergeSettings(r.Settings, project)
+	}
+	base := r.Settings
+	names := make([]string, 0, len(r.Levels))
+	for name := range r.Levels {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	for _, name := range names {
+		v, ok := project[name]
+		if !ok {
+			v = r.Settings[name]
+		}
+		if over, ok := r.Levels[name][fmt.Sprint(v)]; ok {
+			base = MergeSettings(base, over)
+		}
+	}
+	out := MergeSettings(base, project)
+	out[ByLevel] = MergeSettings(base, nil)
+	return out
 }
 
 // MergeSettings lays over on defaults into a new map that shares nothing

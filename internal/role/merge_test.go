@@ -131,3 +131,47 @@ func TestMergedSettingsWithoutProjectSettings(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 }
+
+func TestMergedSettingsLevel(t *testing.T) {
+	r := &Role{Name: "po", Settings: settings(t, `
+autonomy: normal
+acts:
+  rename: {mode: act, max: 5}
+  split: {mode: act, max: 2}
+`), Levels: map[string]map[string]map[string]any{"autonomy": {
+		"cautious": settings(t, `acts: {rename: {mode: propose}, split: {mode: propose}}`),
+	}}}
+	project := func(src string) *ProjectConfig {
+		var c ProjectConfig
+		if err := yaml.Unmarshal([]byte("roles: {po: {settings: "+src+"}}"), &c); err != nil {
+			t.Fatal(err)
+		}
+		return &c
+	}
+	for _, tc := range []struct{ name, over, want, level string }{
+		{"the default level lays nothing", `{}`,
+			`{autonomy: normal, acts: {rename: {mode: act, max: 5}, split: {mode: act, max: 2}}}`,
+			`{autonomy: normal, acts: {rename: {mode: act, max: 5}, split: {mode: act, max: 2}}}`},
+		{"a level is laid over the defaults", `{autonomy: cautious}`,
+			`{autonomy: cautious, acts: {rename: {mode: propose, max: 5}, split: {mode: propose, max: 2}}}`,
+			`{autonomy: normal, acts: {rename: {mode: propose, max: 5}, split: {mode: propose, max: 2}}}`},
+		{"the project's own setting over the level", `{autonomy: cautious, acts: {rename: {mode: act}}}`,
+			`{autonomy: cautious, acts: {rename: {mode: act, max: 5}, split: {mode: propose, max: 2}}}`,
+			`{autonomy: normal, acts: {rename: {mode: propose, max: 5}, split: {mode: propose, max: 2}}}`},
+		{"a level the role does not have lays nothing", `{autonomy: bold}`,
+			`{autonomy: bold, acts: {rename: {mode: act, max: 5}, split: {mode: act, max: 2}}}`,
+			`{autonomy: normal, acts: {rename: {mode: act, max: 5}, split: {mode: act, max: 2}}}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := r.MergedSettings(project(tc.over))
+			level := got[ByLevel]
+			delete(got, ByLevel)
+			if want := settings(t, tc.want); !reflect.DeepEqual(got, want) {
+				t.Errorf("got %v, want %v", got, want)
+			}
+			if want := settings(t, tc.level); !reflect.DeepEqual(level, want) {
+				t.Errorf("by level: got %v, want %v", level, want)
+			}
+		})
+	}
+}
