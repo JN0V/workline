@@ -128,6 +128,36 @@ are looked in; closed as not planned or duplicate, nothing; closed
 otherwise, said once on the issue, left closed; the line changed, a new
 subject.
 
+## Splitting and renaming (2026-10-05)
+
+How forges hold a need broken into parts, and how backlog practice decides
+to break one or to retitle it — in their words: *sub-issues*, *child
+items*, *task list*, *story splitting*, *summary*.
+
+| Where | Parent and children | What a role can write |
+|---|---|---|
+| GitHub | [Sub-issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/adding-sub-issues): up to 100 a parent, 8 levels, across repositories; one parent a child. [REST](https://docs.github.com/en/rest/issues/sub-issues): `POST /repos/{o}/{r}/issues/{n}/sub_issues` with `sub_issue_id` — the issue's **id**, not its number —, `GET …/sub_issues`, `GET …/parent`, `replace_parent` to move a child | Both, with the issues token a role already holds |
+| GitLab | [Tasks](https://docs.gitlab.com/user/tasks/), every tier: **an issue's children are tasks only**, another work item type, made through the work items GraphQL API; issues as children of an epic (Premium). [Issue links](https://docs.gitlab.com/api/issue_links/) (`relates_to` on Free) are not a hierarchy | Tasks, but a task is not an issue: the line's acts and reading are on issues |
+| Both | A **task list** in the body, `- [ ] #13`: both forges render the issue's title and state on the reference; GitHub's *tasklist blocks* that tracked them were retired for sub-issues | A body, everywhere, the local forge included |
+
+**When to split**, in backlog practice: INVEST's *Small* and *Testable*
+(Bill Wake, 2003) — an item a team can finish and prove in a short
+iteration; Mike Cohn's [SPIDR](https://www.mountaingoatsoftware.com/blog/five-simple-but-powerful-ways-to-split-user-stories)
+(spike, path, interface, data, rules) for where to cut; and, in workline's
+words, one Verification an issue (docs/spec/routing.md): a need whose
+proof is several checks that pass apart is several issues. The parent
+keeps the need it was written for; the children are its parts.
+
+**Titles**: Mozilla's [bug writing guidelines](https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html)
+— "approximately 10 words", "quickly and uniquely identify a bug report",
+"explain the problem, not your suggested solution". No forge records whose
+title an issue has but in its timeline (GitHub's `renamed` event).
+
+**Decision** (ADR-0021): split through sub-issues where the forge has
+them, a task list in the parent elsewhere; each child opened through the
+one way, with its four sections; a rename sets the title alone, and a
+title a person set after the role's is kept.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was
