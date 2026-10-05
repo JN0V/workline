@@ -60,7 +60,7 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		c.Level = s
 	}
 	if v, ok := settings["ignored-runs-max"]; ok && v != nil {
-		n, isNumber := number(v)
+		n, isNumber := whole(v)
 		if !isNumber || n < 0 || n > IgnoredRunsMax {
 			return c, fmt.Errorf("ignored-runs-max: %v is not a number from 0 (never pause) to %d", v, IgnoredRunsMax)
 		}
@@ -72,7 +72,7 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		to       *int
 	}{{"next-max", 0, NextMaxLimit, &c.NextMax}, {"stuck-days", 1, StuckDaysLimit, &c.StuckDays}} {
 		if v, ok := settings[b.name]; ok && v != nil {
-			n, isNumber := number(v)
+			n, isNumber := whole(v)
 			if !isNumber || n < b.min || n > b.max {
 				return c, fmt.Errorf("%s: %v is not a number from %d to %d", b.name, v, b.min, b.max)
 			}
@@ -88,6 +88,15 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		}
 	}
 	return c, nil
+}
+
+// whole reads a setting's whole number: 2.5, from JSON, is none —
+// never cut to 2.
+func whole(v any) (int, bool) {
+	if f, ok := v.(float64); ok && f != float64(int(f)) {
+		return 0, false
+	}
+	return number(v)
 }
 
 // same says whether two settings of a kind say the same.

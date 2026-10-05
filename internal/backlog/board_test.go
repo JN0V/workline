@@ -29,6 +29,19 @@ func TestWaitDays(t *testing.T) {
 	}
 }
 
+// A count of days or issues is a whole number: one cut from 0.5 to 0, or
+// 2.5 to 2, stops the run as any other out of range.
+func TestBoardSettingsWhole(t *testing.T) {
+	for _, v := range []any{0.5, 2.5, "5"} {
+		if _, err := ReadConfig(map[string]any{"stuck-days": v}); err == nil {
+			t.Errorf("stuck-days %v read", v)
+		}
+	}
+	if c, err := ReadConfig(map[string]any{"next-max": 3.0, "stuck-days": 7}); err != nil || c.NextMax != 3 || c.StuckDays != 7 {
+		t.Errorf("whole numbers: %+v %v", c, err)
+	}
+}
+
 // Stuck lists the oldest first in each kind of wait, a wait for an issue
 // closed or not past stuck-days left out, an announcement due listed
 // whatever its age.
