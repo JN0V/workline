@@ -1,0 +1,27 @@
+case: product-owner/tick-by-outsider-ignored
+about: A proposal's box ticked by someone outside the project is not their yes; nothing is done, the report says why, and the proposal stays, its box unticked.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [x] Rename #9 to \"The CSV export drops the last row\". <!-- workline:proposal=9/rename -->\n"
+        labels: []
+        ticks: [{item: "Rename #9 to \"The CSV export drops the last row\". <!-- workline:proposal=9/rename -->", done: true, author: zed, insider: false}]
+        comments: ["```yaml\nproposed:\n  - issue: 9\n    act: rename\n    line: 'Rename #9 to \"The CSV export drops the last row\".'\n    proposal: {do: rename, issue: 9, title: The CSV export drops the last row, why: '\"bug\" says nothing.'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: tick-ignored, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, title: "bug"}
+      - {id: 10, body-contains: "ticked by @zed, outside the project", comment-contains: "act: rename"}
+      - {id: 10, body-contains: "- [ ] Rename #9 to"}

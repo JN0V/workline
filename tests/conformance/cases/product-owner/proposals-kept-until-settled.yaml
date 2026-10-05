@@ -22,4 +22,4 @@ expect:
   forge:
     issues:
       - {id: 9, closed: false}
-      - {id: 10, body-contains: "- [ ] Close #7 as obsolete: the loop\n- [ ] Close #9 as obsolete", comment-lacks: "issue: 8"}
+      - {id: 10, body-contains: "- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n- [ ] Close #9 as obsolete", comment-lacks: "issue: 8"}

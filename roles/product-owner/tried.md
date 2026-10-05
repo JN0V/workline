@@ -417,3 +417,49 @@ Nine calls, about 79k tokens in and 5.2k out in all.
   no, the cap shared by announcements and closings, a closing reopened —
   conformance only (`product-owner/obsolete-*`); a delay of days waited
   for real.
+
+## 2026-10-05 — the person's hand, live on GitHub and GitLab, no agent
+
+The engine of feat/po-persons-hand, built in its worktree; fresh clones of
+both sandboxes, `.workline/config.yaml` setting `issues-per-run: 1` and
+`rename: {mode: propose}`. The report's record and lines **planted by
+hand** as the engine now writes them — a rename proposed with the act it
+stands for — then the box ticked through each forge's API by `JN0V`, the
+owner, in an edit of its own. No agent answered in any run: **0 tokens**.
+
+- **First, what the forges say** (docs/research/product-owner.md, "A tick
+  and who ticked it"). GitHub: the report's `userContentEdits` hold each
+  version of its body, whole, with its editor, newest first; `JN0V`'s
+  permission reads `admin`, a stranger's `read`. GitLab: an issue opened
+  for the probe and deleted after; a description changed through the API
+  wrote "marked the checklist item **…** as completed" by `JN0V`, the
+  item's markdown escaped and the hidden key's text kept without its
+  delimiters; a line added already ticked wrote none.
+- **GitHub, JN0V/workline-sandbox** (`--forge github`). Run 1, `--ai
+  claude`, the record saying `ignored: 3`, nothing done by a person
+  since: `paused`, **no agent asked** though issues waited to be read.
+  Then two boxes ticked by `JN0V` — the rename of #7 and "Set
+  close-duplicate back to act" (the kind back to propose since #3 was
+  reopened, 2026-10-03). Run 2, `--ai none`: **#7 renamed** to "Sign-in
+  is slow at times", "Ticked by @JN0V." in the report; **close-duplicate
+  back to act** (`back-to-act`), the record's `propose` emptied, `ignored`
+  gone; the proposal left the record. Seen there and **fixed**: the line
+  "#3 … was reopened" stayed alone once the kind was back to act; now
+  said only while the kind is back to propose.
+- **GitLab, JN0V/workline-sandbox** (`--forge gitlab`, glab's token).
+  The record planted in a note of `JN0V`'s, after the bot's (ADR-0023:
+  the last is read). Run 1, `--ai none`: **#14 renamed** to "Account
+  settings: change email and password, delete the account", read from the
+  system note, "Ticked by @JN0V." in the report.
+- Not tried live: a tick by an outsider or a bot (one account on each
+  sandbox; the project bot's token lives in GitLab CI only) — conformance
+  `tick-by-outsider-ignored`, `tick-by-a-bot-ignored`; an author the forge
+  does not say (`tick-author-unknown`); a proposal written by a real
+  agent's run, then ticked; the pause reached by three real runs rather
+  than planted; a closing as obsolete ticked (`tick-closes-obsolete-at-once`).
+- **Fixed after**, seen reading the API: GitHub lists `userContentEdits`
+  newest first, so `last: 100` read the oldest hundred; now `first: 100`,
+  and the oldest version read, when older ones are left, only a baseline.
+  Run 3 on GitHub, `--ai none`, the report then at 20 versions: a box of
+  an older proposal, recorded before its act was kept, ticked by `JN0V` —
+  said in the report as one to do by hand, and gone from it.

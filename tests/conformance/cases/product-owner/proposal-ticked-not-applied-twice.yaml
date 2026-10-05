@@ -1,0 +1,25 @@
+case: product-owner/proposal-ticked-not-applied-twice
+about: A box still ticked in the report whose proposal the record no longer holds — done at an earlier run, then undone by a person — is not done again.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\ntitle: The CSV export drops the last row\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [x] Rename #9 to \"The CSV export drops the last row\". <!-- workline:proposal=9/rename -->\n"
+        labels: []
+        ticks: [{item: "Rename #9 to \"The CSV export drops the last row\". <!-- workline:proposal=9/rename -->", done: true, author: dev, insider: true}]
+        comments: ["```yaml\nclosed: []\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: not-ticked}]
+  forge:
+    issues:
+      - {id: 9, title: "bug"}

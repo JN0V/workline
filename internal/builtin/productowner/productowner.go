@@ -121,6 +121,28 @@ func Pre(runDir, repo string) int {
 	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
 	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
 	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
+	// The person's hand (ADR-0025): a box a person of the project ticked
+	// in the report is done as the record holds it, with no agent; runs
+	// nobody answered pause the role, no agent asked, until a person does.
+	hand, err := backlog.ReadHand(b, role, open)
+	if errors.Is(err, forge.ErrUnreachable) {
+		fmt.Fprintln(os.Stderr, err)
+		return exitExternal
+	}
+	if err != nil {
+		return fail(err)
+	}
+	for _, q := range hand.Ticked() {
+		t, _ := hand.Tick(q.TickKey())
+		fallback = append(fallback, intent.Intention{Kind: q.Proposal.Do, Value: map[string]any{
+			"issue": q.Issue, "reason": q.Proposal.Reason, "ticked": t.Who(), "own": true,
+			"why": "ticked in the report by " + t.Who()}})
+	}
+	paused := hand.Paused()
+	if paused {
+		findings = append(findings, verdict.Finding{Rule: "paused", Level: "warn", Where: fmt.Sprintf("#%d", hand.Report),
+			Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered: no agent is asked until a person ticks a box, writes on the report or undoes a closing", hand.Record.Ignored)})
+	}
 	milestones, err := b.Milestones()
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
@@ -231,6 +253,9 @@ func Pre(runDir, repo string) int {
 				fallback = append(fallback, intent.Intention{Kind: "keep", Value: map[string]any{
 					"issue": is.ID, "why": "a second judge did not agree — " + j.Says(), "say": true, "own": true}})
 			}
+		case paused:
+			findings = append(findings, verdict.Finding{Rule: "judge-unavailable", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+				Message: "announced obsolete, due, and nobody wrote: not closed without a second judge, none asked while the role is paused; it waits"})
 		case os.Getenv("WORKLINE_AI") == "none":
 			findings = append(findings, verdict.Finding{Rule: "judge-unavailable", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
 				Message: "announced obsolete, due, and nobody wrote: not closed without a second judge (no agent); it waits for a run with one"})
@@ -271,7 +296,7 @@ func Pre(runDir, repo string) int {
 	// whose code did not change is not read again (ADR-0018). Without an
 	// agent, nothing is read, and no issue is said to be.
 	toRead := append(append(again, never...), changed...)
-	if os.Getenv("WORKLINE_AI") == "none" {
+	if os.Getenv("WORKLINE_AI") == "none" || paused {
 		toRead = nil
 	}
 	for i, d := range toRead {
@@ -302,7 +327,7 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	if judged == 0 {
-		if len(fallback) > 0 { // no task.md: the agent is not asked, the state comments are written
+		if len(fallback) > 0 || len(hand.Ticks) > 0 { // no task.md: the agent is not asked; the state comments are written, the boxes ticked read
 			return writeFindings(runDir, findings)
 		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})

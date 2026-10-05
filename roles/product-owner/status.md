@@ -4,7 +4,8 @@
 (its members told from outsiders, a bot's token), for real — reads it a share a
 run, closes duplicates, announces what the code made obsolete and closes
 it a week later on silence and a second judge's yes, names an issue's
-code, sets milestones, finds a closing a person undid, refines an
+code, sets milestones, finds a closing a person undid, does what a
+person of the project ticks in its report and pauses when nobody answers, refines an
 issue to `ready` and talks with its reporter until it is, splits a need
 into sub-issues and renames a vague title, orders the backlog
 and moves what slipped, and keeps the one way every role opens an issue —
@@ -36,6 +37,7 @@ on the sandbox (tried.md).
 | GitLab as GitHub (ADR-0023): its members from the Planner role up are of the project, a Guest's issue proposed to its reporter; the project's bot writes with a project access token made and stored in one glab command; a state note another token wrote written anew; the job token alone refused, loud. A reply `agreed` by the reporter or a person of the project has the proposed text written (ADR-0021, amended); each comment given to the agent with who wrote it, on every forge | JN0V/workline-sandbox on GitLab, live and in GitLab CI (#13 renamed and refined in place, #15 a Guest's proposed, agreed by a reply, readied by the label; #16 split); conformance `forge/gitlab-*`, `product-owner/*-reply-*`, `comment-author-read` |
 
 | Obsolete announced, then closed (ADR-0024): a comment to the reporter quoting the code and the label `workline:obsolete`; at a run `days` later, nobody having written and the label still there, a second judge of another model asked apart, the issue closed as completed with its yes and level; a reply keeps it open for good on that quote | JN0V/workline-sandbox on GitHub (#14 closed, #4 kept) and on GitLab (#19 closed, #20 kept), live, the delay set to 0; label removal, exempt labels, a judge's no, the cap in conformance (`obsolete-*`) |
+| The person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried
@@ -56,8 +58,10 @@ checked.
 2. **Obsolete, what is left** (ADR-0024): a real delay of days waited
    for; the label taken off, an exempt label, a judge's no tried live; the
    weekly sample over these closings; 7 days and 3 a run measured.
-3. **The person's hand**: a tick read with its author — a proposal
-   accepted, an act set back to `act`; ignored runs pausing it.
+3. **The person's hand, what is left** (ADR-0025): a tick by an
+   outsider or a bot tried live (one account on each sandbox); a
+   proposal of a real agent's run ticked, not one planted; the pause
+   reached by three real runs; a tick on a plugged forge.
 4. **The weekly sample over its acts**; a file the agent was not shown
    named as a source. The one way to open issues is built (ADR-0018,
    amended); left: its import's plan does not yet see a closed issue

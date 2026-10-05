@@ -88,6 +88,16 @@ share at a time — with the lines elsewhere in the file that name its
 items' ids, where a file often says what is done — and opens each item
 still to do as an issue quoting it, never twice (`open`); without `--apply`, it only says what it would open.
 
+Each proposal in the report is a box. Ticked by a person of the project —
+the forge says who ticked it: GitHub's edit history, GitLab's system
+notes — it is done at the next run, as the record keeps it, with no
+agent; ticked by an outsider, a bot or nobody the forge names, it is not,
+and the report says why (ADR-0025). A kind back to `propose` after a
+wrong closing gets a box too, to set it back to `act`. Three runs in a
+row read with an agent and nobody answering — no box ticked, no comment
+on the report, no closing undone, no proposal settled — pause the role:
+no agent asked until a person does one of those.
+
 Every role opens an issue through one way the engine keeps for the
 product owner (ADR-0018; docs/spec/backlog-acts.md, "Opening issues"): a
 key per subject, an issue open or closed holding it never opened again,
@@ -117,6 +127,7 @@ roles:
         rename: {mode: act, max: 5}
 ```
 
-A project with a human Product Owner sets its acts to `propose`.
+A project with a human Product Owner sets its acts to `propose`, and
+ticks what it agrees to in the report.
 
 Where the role stands: [status.md](status.md).

@@ -1,0 +1,21 @@
+case: product-owner/person-acts-resumes
+about: Paused, the role resumes in the run that finds a person's hand — here a comment of a person of the project on the report — asking its agent again, the count of runs nobody answered back to none.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n"
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\nignored: 3\n```\n\n<!-- workline:sticky=product-owner/acts -->", {author: dev, insider: true, body: "Looking at #7 this week."}]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: paused}]
+  forge:
+    issues:
+      - {id: 10, comment-lacks: "ignored:", body-lacks: "Paused"}
+      - {id: 10, comment-contains: "comments: 1"}

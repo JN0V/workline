@@ -440,7 +440,10 @@ func run(o Options, res *Result) error {
 	}
 	res.Status, res.Summary = v.Status, v.Summary
 	res.Findings = append(res.Findings, v.Findings...)
-	if res.Status != verdict.Pass || len(intents) == 0 {
+	// A role keeping a backlog reads its report on every run, acts or not:
+	// a closing undone, a box ticked, runs nobody answered (ADR-0025).
+	keeps := slices.ContainsFunc(r.Intentions, func(k string) bool { return slices.Contains(backlog.Kinds, k) })
+	if res.Status != verdict.Pass || (len(intents) == 0 && !keeps) {
 		return nil
 	}
 
