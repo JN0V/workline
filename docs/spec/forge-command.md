@@ -25,7 +25,7 @@ to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
 `-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
-`add-sub-issue`, `ensure-label`), nor a merge request's `base`.
+`add-sub-issue`, `add-blocker`, `ensure-label`), nor a merge request's `base`.
 
 ## One request, one run
 
@@ -59,7 +59,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `operation` | Arguments | Does | Answers |
 |---|---|---|---|
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
-| `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, author, insider}]}` — `insider` true when the author has write access to the project; left out, the author is taken for an outsider |
+| `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, author, insider, blocked-by}]}` — `insider` true when the author has write access to the project; left out, the author is taken for an outsider; `blocked-by` the issues it waits on in the forge's own relation, left out on a forge without one: a "Blocked by" line in the body says it (ADR-0028) |
 | `all-issues` | | lists the issues open and closed, merge requests left out: a subject a role found is looked for in both | `{issues: [{id, title, body, labels, closed, reason}]}` — `reason` why it was closed, when the forge keeps one: `completed`, `not_planned` or `duplicate`; a command that does not know it answers an error, and the issue is not opened |
 | `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021) |
 | `ticks` | `id` | the boxes ticked and unticked in the issue's body, oldest first, with who did each | `{ticks: [{item, done, author, insider, bot}]}` — `item` the box's text, its hidden markers' text in it; an error answered: nobody known, a box ticked there is not taken for a yes (ADR-0025) |
@@ -69,6 +69,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `set-body` | `id`, `body` | rewrites the issue's body | `{}` |
 | `set-title` | `id`, `title` | renames the issue | `{}` |
 | `add-sub-issue` | `parent`, `child` | makes `child` a sub-issue of `parent`, on a forge that has sub-issues; one already there changes nothing | `{native: true}`; `{native: false}` on a forge without them, and the engine lists the child in the parent's body (ADR-0022) |
+| `add-blocker` | `id`, `blocker` | records that `id` waits on `blocker` in the forge's own relation; one already there changes nothing | `{native: true}`; `{native: false}`, or an error answered, on a forge without one: the engine writes a line in the issue's body (ADR-0028) |
 | `ensure-label` | `name`, `color`, `description` | creates the label when the project has none of that name | `{}` |
 | `comment` | `target`, `body`, `marker` | posts `body` + a blank line + `marker` on the target, unless a comment there holds `marker` | `{}` |
 | `sticky` | `target`, `body`, `marker`, `create` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true | `{}` |

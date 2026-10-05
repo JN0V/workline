@@ -21,7 +21,8 @@ import (
 // gitlab` and is checked as any other. Its `members` give the project's
 // members and their access level, as GitLab's members/all does; what the
 // engine writes is written by "workline-bot", the token's user. GraphQL
-// refuses all: a split's children are listed in the parent's body.
+// refuses all: a split's children are listed in the parent's body. Its
+// issue links are GitLab Free's: is_blocked_by refused, for its license.
 type gitlabMock struct {
 	file string
 	mu   sync.Mutex
@@ -38,6 +39,7 @@ type gitlabState struct {
 var (
 	issuePath = regexp.MustCompile(`^/issues/(\d+)$`)
 	notesPath = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
+	linksPath = regexp.MustCompile(`^/issues/(\d+)/links$`)
 )
 
 const tokenUser = "workline-bot"
@@ -174,6 +176,11 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			it.Comments[i] = forge.FakeComment{Body: form.Get("body"), Author: tokenUser}
 			return map[string]any{"id": n}, 200
 		}
+	case linksPath.MatchString(p) && method == "GET":
+		return []any{}, 200
+	case linksPath.MatchString(p) && method == "POST":
+		// GitLab Free: no blocks nor is_blocked_by (ADR-0028).
+		return map[string]any{"message": "Blocked issues not available for current license"}, 403
 	case p == "/milestones" && method == "GET":
 		out := []map[string]any{}
 		for i, t := range s.Milestones {

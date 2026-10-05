@@ -29,6 +29,10 @@ type Issue struct {
 	Milestone string   `json:"milestone,omitempty"` // the title of the milestone it is in, if any
 	Author    string   `json:"author,omitempty"`    // who opened it
 	Insider   bool     `json:"insider,omitempty"`   // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
+	// BlockedBy are the issues it waits on in the forge's own relation
+	// (GitHub's dependencies, GitLab's is_blocked_by), open or closed, as
+	// Issues gives them; a line in its body says the rest (ADR-0028).
+	BlockedBy []int `json:"blocked-by,omitempty"`
 }
 
 // Note is a comment with who wrote it: what a reply decides counts only
@@ -86,7 +90,8 @@ type Forge interface {
 // Backlog is what a role acting on a project's issues needs from its forge
 // (docs/spec/backlog-acts.md). Every forge workline speaks has it.
 type Backlog interface {
-	// Issues lists the open issues, merge requests left out, by number.
+	// Issues lists the open issues, merge requests left out, by number,
+	// each with the issues it waits on in the forge's own relation.
 	Issues() ([]Issue, error)
 	// AllIssues lists the issues open and closed, merge requests left out,
 	// by number: a subject a role found is looked for in both (OpenOnce).
@@ -113,6 +118,11 @@ type Backlog interface {
 	// then listed in the parent's body by the caller. Adding one already
 	// there changes nothing.
 	AddSubIssue(parent, child int) (bool, error)
+	// AddBlocker records that id waits on blocker in the forge's own
+	// relation, and says so; false on a forge that has none — the caller
+	// then writes a line in the body (ADR-0028). Adding one already there
+	// changes nothing.
+	AddBlocker(id, blocker int) (bool, error)
 	// Ticks lists the boxes ticked and unticked in an issue's body, oldest
 	// first, with who did each; nil when the forge does not say.
 	Ticks(id int) ([]Tick, error)

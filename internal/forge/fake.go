@@ -20,6 +20,7 @@ type FakeState struct {
 	Milestones    []string   `json:"milestones,omitempty"`    // open milestones, by title
 	Labels        []FakeItem `json:"labels,omitempty"`        // labels defined, their name as id
 	SubIssues     bool       `json:"sub-issues,omitempty"`    // the forge has sub-issues, as GitHub
+	Dependencies  bool       `json:"dependencies,omitempty"`  // the forge has a blocked-by relation, as GitHub
 	FailOnWrite   int        `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes        int        `json:"writes"`
 }
@@ -39,8 +40,9 @@ type FakeItem struct {
 	Comments  []FakeComment `json:"comments"`
 	Author    string        `json:"author,omitempty"`
 	Insider   bool          `json:"insider,omitempty"`
-	Parent    int           `json:"parent,omitempty"` // the issue it is a sub-issue of
-	Ticks     []Tick        `json:"ticks,omitempty"`  // boxes ticked in its body, with who ticked them
+	Parent    int           `json:"parent,omitempty"`     // the issue it is a sub-issue of
+	BlockedBy []int         `json:"blocked-by,omitempty"` // the issues it waits on, in the forge's own relation
+	Ticks     []Tick        `json:"ticks,omitempty"`      // boxes ticked in its body, with who ticked them
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
@@ -126,7 +128,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 	var out []Issue
 	for _, it := range s.Issues {
 		if !it.Closed {
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -395,6 +397,24 @@ func (f *Fake) AddSubIssue(parent, child int) (bool, error) {
 			return err
 		}
 		it.Parent = parent
+		return nil
+	})
+}
+
+func (f *Fake) AddBlocker(id, blocker int) (bool, error) {
+	s, err := f.load()
+	if err != nil || !s.Dependencies {
+		return false, err
+	}
+	if it, err := s.item(Target{Kind: "issue", ID: id}); err == nil && slices.Contains(it.BlockedBy, blocker) {
+		return true, nil
+	}
+	return true, f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil {
+			return err
+		}
+		it.BlockedBy = append(it.BlockedBy, blocker)
 		return nil
 	})
 }
