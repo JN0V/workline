@@ -379,3 +379,41 @@ for CI. Three agent calls, 41.7k tokens in and 4.4k out in all.
   reporter's own `agreed`; a group access token; a self-managed
   instance; the gardening template itself with this engine (it pins a
   release).
+
+## 2026-10-05 — obsolete announced, then closed or kept, live on GitHub and GitLab, Sonnet
+
+The engine of feat/po-close-obsolete, built in its worktree; fresh clones
+of both sandboxes, a clone's `.workline/config.yaml` setting
+`issues-per-run: 2`, `close-obsolete: {mode: act, days: 0}` — the delay
+simulated by the setting, no clock moved: 0 makes an announcement due at
+the next run — and the other moves off. On each, an issue planted the
+code had already settled (the lifetime it asks for is the one
+`TokenTTL` holds), and one asking for a name the constant already has.
+Nine calls, about 79k tokens in and 5.2k out in all.
+
+- **GitHub, JN0V/workline-sandbox** (`--forge github`). Run 1 (11.6k in,
+  0.6k out) stopped before writing anything of the act, loud: GitHub
+  refused the label `workline:obsolete` (HTTP 422), its description over
+  100 characters. **Fixed**, shortened. Run 2 (11.9k in, 0.7k out): #14
+  and #4 announced — the label, a comment to `@JN0V` quoting `const
+  TokenTTL = 3600`, the commit, "closed at a run from 2026-10-05", how to
+  keep it open; the report listing both. #4 answered by hand ("not done
+  for me"). Run 3 (11.9k in, 1.0k out; the judge 2.9k in, 0.3k out): #4
+  kept open, its label off, `kept` in its state, nothing written to the
+  person; **#14 closed as completed** by the engine, the judge's yes and
+  "independence: model, claude-sonnet-5-5 → claude-opus-5-5" in the
+  closing comment. The agent, reading the reply on #4, proposed `keep`
+  as well: both applied, harmless; **fixed**, one `keep` an issue a run.
+- **GitLab, JN0V/workline-sandbox** (`--forge gitlab`, glab's token).
+  Run 1 (12.3k in, 0.6k out): states. Run 2 (11.2k in, 0.7k out): #19 and
+  #20 announced, labelled. #20 answered by hand. Run 3 (11.2k in, 0.8k
+  out): #20 kept open, its label off, `kept` in its state; #19's judge
+  (2.9k in, 0.3k out) answered `note: "yes: …"` without the list's dash,
+  which did not read: **not closed, said** (`judge-unavailable`, it
+  waits). **Fixed**: a note read with or without the dash. Run 4, no agent
+  of the role's (the judge 2.9k in, 0.3k out): #19 closed, the label off,
+  the judge and its level said.
+- Not tried live: the label taken off by hand, an exempt label, a judge's
+  no, the cap shared by announcements and closings, a closing reopened —
+  conformance only (`product-owner/obsolete-*`); a delay of days waited
+  for real.

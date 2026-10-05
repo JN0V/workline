@@ -824,6 +824,11 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
 		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings}
+	for _, c := range res.Calls {
+		if c.Task != "judge" && c.Model != "" {
+			ap.model = c.Model
+		}
+	}
 	plan, err := planActs(f, r, settings, st, runDir, intents)
 	if errors.Is(err, forge.ErrUnreachable) {
 		res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while reading the backlog; resume with: workline apply %s", runDir)
@@ -1651,6 +1656,7 @@ type applier struct {
 	opens        *backlog.Openings // the run's issues opened, made on the first
 	capped       int               // findings not opened as issues, past issues-max
 	findings     []verdict.Finding // what the applying says
+	model        string            // the model whose answer is applied, as an announcement records it
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -1750,10 +1756,30 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil // proposed in the report, or dropped with a finding
 		}
 		is := forge.Target{Kind: "issue", ID: d.Act.Issue}
+		switch {
+		case d.Act.Announce:
+			return a.announce(d.Act)
+		case d.Act.Announced != "":
+			// Closed after its announcement (ADR-0024): the label goes, so a
+			// reopening reads as the announcement kept open.
+			if err := a.forge.Comment(is, backlog.ClosingComment(d.Act, a.role), a.marker()); err != nil {
+				return err
+			}
+			if err := a.forge.(forge.Backlog).Close(d.Act.Issue, 0); err != nil {
+				return err
+			}
+			return a.forge.Label(is, nil, []string{backlog.LabelObsolete})
+		}
 		if err := a.forge.Comment(is, backlog.Comment(d.Act, a.role), a.marker()); err != nil {
 			return err
 		}
 		return a.forge.(forge.Backlog).Close(d.Act.Issue, d.Act.DuplicateOf)
+	case "keep":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return keepOpen(a.forge, a.role, d.Act)
 	case "open":
 		// An issue opened from a file's text, quoted as the file has it, and
 		// given its state: confirmed at this commit, no sources yet.
@@ -1834,6 +1860,63 @@ func (a *applier) apply(in intent.Intention) error {
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
 	}
 	return fmt.Errorf("not implemented yet in this engine")
+}
+
+// announce tells an issue it looks obsolete (ADR-0024): the label first —
+// a comment without it reads as kept open, never the other way round —,
+// then the comment to its reporter, with the block read back at the next
+// runs.
+func (a *applier) announce(c backlog.Proposal) error {
+	b := a.forge.(forge.Backlog)
+	is, err := a.forge.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	head, err := git(a.repo, nil, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	if err := b.EnsureLabel(backlog.LabelObsolete, "cfd3d7", "Announced obsolete: closed after a delay unless someone writes or takes this label off"); err != nil {
+		return err
+	}
+	if err := a.forge.Label(t, []string{backlog.LabelObsolete}, nil); err != nil {
+		return err
+	}
+	days := backlog.Settings(a.settings)["close-obsolete"].Delay()
+	ann := backlog.Announcement{Quote: *c.Quote, Why: c.Why, Commit: head,
+		Announced: time.Now().Format("2006-01-02"), By: a.model}
+	return a.forge.Comment(t, backlog.AnnouncementComment(is.Author, c, a.role, ann, days), backlog.AnnounceMarker(a.role))
+}
+
+// keepOpen settles an issue's announcement as obsolete: kept open, its
+// label taken off, its evidence recorded in the state so it is not
+// announced again for it, and the issue told why when no person kept it.
+func keepOpen(f forge.Forge, role string, c backlog.Proposal) error {
+	b := f.(forge.Backlog)
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	key := backlog.ObsoleteKey(*c.Quote)
+	if !slices.Contains(st.Kept, key) {
+		st.Kept = append(st.Kept, key)
+	}
+	if err := f.Label(t, nil, []string{backlog.LabelObsolete}); err != nil {
+		return err
+	}
+	if err := f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false); err != nil {
+		return err
+	}
+	if !c.Say {
+		return nil
+	}
+	return f.Comment(t, backlog.KeptComment(c.Why), backlog.KeptMarker(role))
 }
 
 // openings is the run's one way to open an issue (backlog.Openings), made
@@ -2430,13 +2513,22 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 	gone := ""
 	for _, file := range questions {
 		answer := map[string]any{}
-		var q struct{ Question, Material string }
+		var q struct{ Question, Material, Author string }
 		data, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}
 		if err := yaml.Unmarshal(data, &q); err != nil || q.Question == "" {
 			return fmt.Errorf("%s: a question is needed: %v", file, err)
+		}
+		// What an earlier run's agent proposed names its model (author):
+		// the judge stands apart from that one (an announced issue, ADR-0024).
+		spec, last, authorModels := spec, last, authorModels
+		if q.Author != "" {
+			last, authorModels = q.Author, []string{q.Author}
+			if os.Getenv("WORKLINE_JUDGE") == "" {
+				spec = judge.Pick(o.AI, last)
+			}
 		}
 		switch {
 		case gone != "":
@@ -2521,7 +2613,21 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			}
 		}
 	}
-	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes, read, backlog.MovedPercent(settings))
+	// The second judge's answers on the issues announced obsolete, as the
+	// engine wrote them beside pre's questions (ADR-0024).
+	judged := map[int]backlog.Judged{}
+	answers, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", backlog.JudgeKeyPrefix+"*", "answer.yaml"))
+	for _, file := range answers {
+		id, err := strconv.Atoi(strings.TrimPrefix(filepath.Base(filepath.Dir(file)), backlog.JudgeKeyPrefix))
+		if err != nil {
+			continue
+		}
+		var j backlog.Judged
+		if data, err := os.ReadFile(file); err == nil && yaml.Unmarshal(data, &j) == nil {
+			judged[id] = j
+		}
+	}
+	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes, read, backlog.MovedPercent(settings), judged)
 	if err != nil {
 		return nil, err
 	}

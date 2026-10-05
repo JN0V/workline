@@ -24,7 +24,11 @@ Propose a `close` for an issue only when the evidence settles it:
   words that show it is the same.
 - **obsolete** — the code it is about changed, and what it asks for or
   reports is now done or gone. Quote the code, as it reads now, that shows
-  it — its words only, without the line numbers the task shows.
+  it — its words only, without the line numbers the task shows. The engine
+  announces it on the issue first, and closes it later only if nobody
+  objects and a second judge agrees. An issue the task says is announced
+  or kept open is not proposed again on the same code; when someone's
+  answer shows an announced issue is still true, propose `keep`.
 
 The task gives the code the issues name, with the last commits that
 changed it.

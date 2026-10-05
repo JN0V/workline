@@ -28,6 +28,7 @@ var Catalogue = map[string]bool{
 	"order":          true, // an issue's priority set, one label of four (docs/spec/backlog-acts.md)
 	"sources":        true, // the code an issue is about, named, its evidence quoted (docs/spec/backlog-acts.md)
 	"close":          true, // an issue closed as a duplicate or obsolete, its evidence quoted (docs/spec/backlog-acts.md)
+	"keep":           true, // an issue announced obsolete kept open (docs/spec/backlog-acts.md, ADR-0024)
 	"refine":         true, // the sections an issue lacks written, Need and Validation as drafts (docs/spec/backlog-acts.md)
 	"ready":          true, // an issue moved to ready, once the engine finds it so (docs/spec/backlog-acts.md)
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
@@ -180,7 +181,7 @@ func Marshal(in []Intention) ([]byte, error) {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "milestone": 7, "order": 8, "refine": 9, "ready": 10, "ask": 11, "split": 12, "rename": 13, "issue": 14, "handoff": 15, "note": 16,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "keep": 6, "milestone": 7, "order": 8, "refine": 9, "ready": 10, "ask": 11, "split": 12, "rename": 13, "issue": 14, "handoff": 15, "note": 16,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.

@@ -1,0 +1,29 @@
+case: product-owner/obsolete-capped
+about: Announcements and closings as obsolete share one cap a run, the engine's closings first — past it, an announcement is proposed in the report; an issue announced already is not announced again (ADR-0024).
+given:
+  repo: backlog
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {close-obsolete: {mode: act, max: 1}}
+  forge:
+    issues:
+      - id: 7
+        title: "Export drops the last row"
+        body: "Every CSV file: the export drops the last row."
+        author: zed
+        labels: [workline:obsolete]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@zed, this issue looks obsolete.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nquote: {path: src/export/csv.go, text: \"for i := 0; i < len(rows); i++ {\"}\nwhy: WriteRows now loops to the last row.\ncommit: d8c4dff\nannounced: \"2026-01-01\"\n```\n</details>\n\n<!-- workline:product-owner/obsolete -->"
+      - {id: 9, title: "Last row missing", body: "The last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete-nine-and-seven}
+expect:
+  findings: [{rule: act-cap, where: "#9"}, {rule: announced, where: "#7"}]
+  forge:
+    issues:
+      - {id: 7, closed: true}
+      - {id: 9, closed: false, labels: [], comments: 1}
+      - {id: 10, title: "Backlog — product owner", body-contains: "- [ ] Close #9 as obsolete"}

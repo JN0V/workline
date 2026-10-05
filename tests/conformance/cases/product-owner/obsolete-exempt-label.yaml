@@ -1,0 +1,13 @@
+case: product-owner/obsolete-exempt-label
+about: An issue bearing an exempt label (pinned, security by default, as a stale bot's exempt-issue-labels) is never announced obsolete (ADR-0024).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: zed, labels: [pinned], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete}
+expect:
+  findings: [{rule: exempt, where: "#7"}]
+  forge:
+    issues:
+      - {id: 7, closed: false, labels: [pinned], comments: 1}

@@ -51,6 +51,17 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    The report says each moved issue's priority and milestone before the
    run, to put the order back.
 
+An issue the code made obsolete is announced, not closed (ADR-0024): a
+comment to its reporter, the code quoted and the day from which it may
+close, and the label `workline:obsolete`. At a run `days` later (7), if
+nobody wrote on it, the label is still there, no exempt label (`pinned`,
+`security`) was set and the code quoted is still there, a second judge of
+another model is asked apart; if it agrees, the engine closes the issue as
+completed, saying the judge and its level. Anyone's comment, the label
+taken off or the judge's no keeps it open for good on that evidence
+(`kept` in its state). Announcements and closings share
+`close-obsolete`'s cap.
+
 An issue in a milestone whose release is tagged slipped: the engine moves
 it to the nearest open milestone not released, with or without an agent,
 or proposes it in the report when there is none.
@@ -98,7 +109,7 @@ roles:
         milestone: {mode: act, max: 10}
         order: {mode: act, max: 10}
         close-duplicate: {mode: act, max: 3}     # act | propose | off
-        close-obsolete: {mode: propose, max: 3}
+        close-obsolete: {mode: act, max: 3, days: 7, exempt: [pinned, security]}  # announced, then closed
         refine: {mode: act, max: 5}
         ready: {mode: act, max: 5}
         ask: {mode: act, max: 3}

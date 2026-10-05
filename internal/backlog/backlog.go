@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
@@ -37,6 +38,7 @@ type State struct {
 	Priority  int      `yaml:"priority,omitempty"` // the priority the role last set: another on the issue is a person's
 	Title     string   `yaml:"title,omitempty"`    // the title the role last set: another on the issue is a person's
 	Split     []int    `yaml:"split,omitempty"`    // the children the role split it into: it is not split again
+	Kept      []string `yaml:"kept,omitempty"`     // the evidence an announcement as obsolete rested on, kept open: not announced again for it
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -93,7 +95,8 @@ func FormatState(s State) string {
 		Priority  int      `yaml:"priority,omitempty"`
 		Title     string   `yaml:"title,omitempty"`
 		Split     []int    `yaml:"split,flow,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split})
+		Kept      []string `yaml:"kept,flow,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -124,8 +127,8 @@ type Closing struct {
 
 // Quote is the evidence an act cites: a text in a file, or in an issue.
 type Quote struct {
-	Path  string `yaml:"path"`
-	Issue int    `yaml:"issue"`
+	Path  string `yaml:"path,omitempty"`
+	Issue int    `yaml:"issue,omitempty"`
 	Text  string `yaml:"text"`
 }
 
@@ -166,6 +169,16 @@ type Proposal struct {
 	Priority int    `yaml:"priority,omitempty"`
 	From     string `yaml:"from,omitempty"`
 	Before   string `yaml:"before,omitempty"`
+	// Obsolete (ADR-0024): Announced, on the engine's closing, the day of
+	// the announcement it follows; Announce and Until, the engine's, that
+	// this act announces rather than closes, and the day from which it may
+	// close; Judge, the engine's, the second judge's yes and its level;
+	// Say, on a keep, that the issue is told why.
+	Announced string `yaml:"announced,omitempty"`
+	Announce  bool   `yaml:"announce,omitempty"`
+	Until     string `yaml:"until,omitempty"`
+	Judge     string `yaml:"judge,omitempty"`
+	Say       bool   `yaml:"say,omitempty"`
 }
 
 // Child is one part of a split need: an issue of its own, with its four
@@ -206,7 +219,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "sources", "milestone", "order", "refine", "ready", "ask", "split", "rename"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "ask", "split", "rename"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -234,6 +247,8 @@ type Plan struct {
 	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found, proposals settled
 	open      map[int]bool      // the open issues, read once
 	issues    map[int]forge.Issue
+	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings  map[string]Setting
 	bodies    []string        // their bodies, to find an import again
 	seen      map[string]bool // the imports this run decided
 	read      []int           // the issues this run read
@@ -243,7 +258,9 @@ type Plan struct {
 type Setting struct {
 	Mode   string
 	Max    int
-	Rounds int // asking: the times an issue's reporter is written to, then a person (ask only)
+	Rounds int      // asking: the times an issue's reporter is written to, then a person (ask only)
+	Days   *int     // close-obsolete: the days an announcement waits; ObsoleteDays when nil
+	Exempt []string // close-obsolete: labels that keep an issue from it; DefaultExempt when nil
 }
 
 // Settings reads the role's `acts` setting.
@@ -256,15 +273,35 @@ func Settings(settings map[string]any) map[string]Setting {
 		if mode, ok := m["mode"].(string); ok {
 			s.Mode = mode
 		}
-		if n, ok := m["max"].(int); ok {
+		if n, ok := number(m["max"]); ok {
 			s.Max = n
 		}
-		if n, ok := m["rounds"].(int); ok {
+		if n, ok := number(m["rounds"]); ok {
 			s.Rounds = n
+		}
+		if n, ok := number(m["days"]); ok {
+			s.Days = &n
+		}
+		if l, ok := m["exempt"].([]any); ok {
+			s.Exempt = []string{}
+			for _, v := range l {
+				s.Exempt = append(s.Exempt, fmt.Sprint(v))
+			}
 		}
 		out[kind] = s
 	}
 	return out
+}
+
+// number reads a setting's number, from YAML or JSON.
+func number(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case float64:
+		return int(n), true
+	}
+	return 0, false
 }
 
 var closeReasons = []string{"duplicate", "obsolete"}
@@ -285,8 +322,10 @@ func MovedPercent(settings map[string]any) int {
 // read lists the issues the run read: a proposal made only for a cap is
 // dropped once its issue was read again, decided again or not. A run
 // moves at most movedPercent of the open issues (milestone and order).
-func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal, read []int, movedPercent int) (*Plan, error) {
-	p := &Plan{read: read}
+// judged holds the second judge's answers on the issues announced obsolete
+// (ADR-0024).
+func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal, read []int, movedPercent int, judged map[int]Judged) (*Plan, error) {
+	p := &Plan{read: read, judged: judged, settings: settings}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
@@ -310,7 +349,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
-		if (c.Do == "ready" || c.Do == "milestone" || c.Do == "order" || c.Do == "split" || c.Do == "rename") && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "split" || c.Do == "rename") && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -336,6 +375,9 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			if !ok {
 				s = Setting{Mode: Propose}
 			}
+			if c.Do == "keep" {
+				s = Setting{Mode: Act} // keeping an issue open is never held back
+			}
 			d.Mode = s.Mode
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
@@ -357,6 +399,15 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 				d.Act = c
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "asks-spent", Where: c.where(),
 					Message: fmt.Sprintf("its reporter was written to %d times (acts.ask.rounds): what is left is proposed to a person in the report", rounds)})
+			}
+			if d.Mode == Act && c.Announced != "" && s.Max > 0 && done[c.Kind()] >= s.Max {
+				// The engine's closing after an announcement: it stays
+				// announced, and is closed at a later run.
+				d.Mode = Off
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
+					Message: fmt.Sprintf("%s: at most %d a run; it stays announced, closed at a later run", c.Kind(), s.Max)})
+				p.Decisions = append(p.Decisions, d)
+				continue
 			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
 				d.Mode, d.Capped = Propose, c.From == ""
@@ -382,7 +433,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 					is.Body, _, _ = Refine(is.Body, c, role)
 					p.issues[c.Issue] = is
 				}
-				if c.Do == "close" {
+				if c.Do == "close" && !c.Announce {
 					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
 				}
 			}
@@ -586,6 +637,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	case c.Do == "rename" && st.Title != "" && st.Title != p.issues[c.Issue].Title:
 		return "title-kept", "its title was set by a person after the role's: it is kept"
 	}
+	if c.Do == "keep" {
+		return p.checkKeep(f, repo, role, st, c)
+	}
 	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
@@ -595,6 +649,76 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if !p.found(f, repo, *c.Quote) {
 		return "no-quote", fmt.Sprintf("the quote %q is not found where it says", c.Quote.Text)
 	}
+	if c.Reason == "obsolete" {
+		return p.checkObsolete(f, repo, role, st, c)
+	}
+	return "", ""
+}
+
+// obsoleteOn reads where an issue's announcement as obsolete stands, from
+// the forge as it is.
+func (p *Plan) obsoleteOn(f forge.Backlog, repo, role string, st *State, id int) (Obsolete, error) {
+	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return Obsolete{}, err
+	}
+	return ReadObsolete(repo, p.issues[id], notes, st, role, p.settings["close-obsolete"], time.Now()), nil
+}
+
+// checkObsolete checks a closing as obsolete (ADR-0024): the agent's is an
+// announcement, unless the issue is exempt, announced already, or kept
+// open on that evidence; the engine's (Announced) closes only an
+// announcement due, unanswered, that the second judge agreed to.
+func (p *Plan) checkObsolete(f forge.Backlog, repo, role string, st *State, c *Proposal) (rule, why string) {
+	o, err := p.obsoleteOn(f, repo, role, st, c.Issue)
+	if err != nil {
+		return "no-state", err.Error()
+	}
+	s := p.settings["close-obsolete"]
+	if c.Announced == "" {
+		switch {
+		case ExemptLabel(p.issues[c.Issue], s) != "":
+			return "exempt", fmt.Sprintf("it bears the label %s: never announced obsolete", ExemptLabel(p.issues[c.Issue], s))
+		case o.Announcement != nil:
+			return "announced", fmt.Sprintf("announced obsolete already, on %s: closed or kept open from there", o.Announcement.Announced)
+		case slices.Contains(st.Kept, ObsoleteKey(*c.Quote)):
+			return "obsolete-kept", "kept open after an announcement resting on this code: not announced again for it"
+		}
+		c.Announce, c.Until = true, time.Now().AddDate(0, 0, s.Delay()).Format(dateLayout)
+		return "", ""
+	}
+	a := o.Announcement
+	switch {
+	case a == nil || o.Keep != "":
+		return "not-due", "no announcement waiting on it: it is not closed"
+	case a.Announced != c.Announced || a.Key() != ObsoleteKey(*c.Quote):
+		return "not-due", "not the evidence it was announced with: it is not closed"
+	case !o.Due:
+		return "not-due", fmt.Sprintf("announced on %s: closed at a run from %s", a.Announced, o.From)
+	}
+	j, ok := p.judged[c.Issue]
+	if !ok || j.Yes == nil || !*j.Yes {
+		return "not-judged", "no second judge agreed: it is not closed"
+	}
+	c.Judge = j.Says()
+	return "", ""
+}
+
+// checkKeep checks keeping an announced issue open: an announcement must
+// be waiting on it.
+func (p *Plan) checkKeep(f forge.Backlog, repo, role string, st *State, c *Proposal) (rule, why string) {
+	o, err := p.obsoleteOn(f, repo, role, st, c.Issue)
+	if err != nil {
+		return "no-state", err.Error()
+	}
+	if o.Announcement == nil {
+		return "not-announced", "no announcement as obsolete waits on it"
+	}
+	if strings.TrimSpace(c.Why) == "" {
+		c.Why = o.Keep
+	}
+	q := o.Announcement.Quote
+	c.Quote, c.Announced = &q, o.Announcement.Announced
 	return "", ""
 }
 
@@ -1252,6 +1376,12 @@ func (p *Plan) ReportBody() string {
 				undo = " Rename it back to undo."
 			case "split":
 				undo = fmt.Sprintf(" Close the issues opened from #%d to undo: its own text was left as it was.", d.Act.Issue)
+			case "keep":
+				undo = ""
+			case "close":
+				if d.Act.Announce {
+					undo = fmt.Sprintf(" To keep it open, write on it or take the label %s off.", LabelObsolete)
+				}
 			}
 			did = append(did, "- "+describe(d.Act, "Closed")+undo)
 		}
@@ -1348,7 +1478,20 @@ func describe(c Proposal, verb string) string {
 		}
 		return fmt.Sprintf("%s the code #%d is about: %s. %s %s", v, c.Issue, strings.Join(c.Sources, ", "), cite(*c.Quote), strings.TrimSpace(c.Why))
 	}
+	if c.Do == "keep" {
+		return fmt.Sprintf("Kept #%d open, announced obsolete on %s: %s.", c.Issue, c.Announced, strings.TrimSuffix(strings.TrimSpace(c.Why), "."))
+	}
 	what := fmt.Sprintf("%s #%d as obsolete", verb, c.Issue)
+	switch {
+	case c.Announce && done:
+		return fmt.Sprintf("Announced #%d as obsolete, to be closed at a run from %s if nobody writes on it and a second judge agrees: %s %s", c.Issue, c.Until, cite(*c.Quote), strings.TrimSpace(c.Why))
+	case c.Announced != "":
+		judge := ""
+		if c.Judge != "" {
+			judge = " (" + c.Judge + ")"
+		}
+		what += fmt.Sprintf(", announced on %s: nobody wrote since, a second judge agreed%s", c.Announced, judge)
+	}
 	if c.Reason == "duplicate" {
 		what = fmt.Sprintf("%s #%d as a duplicate of #%d", verb, c.Issue, c.DuplicateOf)
 	}
