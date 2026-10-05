@@ -1,5 +1,5 @@
 case: product-owner/split-and-rename-once-a-run
-about: Two splits, or two renames, of one issue in a run — each checked against the state before either is applied — keep the first; the second is dropped and said.
+about: Two splits, or two renames, of one issue in a run — each checked against the state before either is applied — keep the first that passes its check (one with two children of one title, or the title it has, does not); the next is dropped and said.
 given:
   repo: backlog
   forge:
@@ -7,7 +7,7 @@ given:
       - {id: 9, title: "Export fixes", body: "Rows lost, commas split cells.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:split-twice}
 expect:
-  findings: [{rule: once-a-run, where: "#9"}]
+  findings: [{rule: split-title, where: "#9"}, {rule: title-same, where: "#9"}, {rule: once-a-run, where: "#9"}]
   forge:
     issues:
       - {id: 9, title: "Export fixes, rows and commas", comment-contains: "split: [10, 11]"}

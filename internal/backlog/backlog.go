@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"go.yaml.in/yaml/v3"
 
@@ -298,12 +299,18 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
 				// a second would split or rename it again.
-				dropped(c, "once-a-run", c.Do+": one an issue a run; the first proposed is kept")
+				dropped(c, "once-a-run", c.Do+": one an issue a run; the first that passed its check is kept")
 			}
 			continue
 		}
-		decided[c.key()] = true
+		once := c.Do == "split" || c.Do == "rename"
+		if !once {
+			decided[c.key()] = true
+		}
 		mode, why := p.check(f, repo, role, &c)
+		if once && why == "" {
+			decided[c.key()] = true // the first that passes its check is kept
+		}
 		d := Decision{Index: i, Mode: Off, Act: c}
 		switch {
 		case why != "":
@@ -628,13 +635,19 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 	if len(c.Into) < 2 || len(c.Into) > maxChildren {
 		return "split-size", fmt.Sprintf("a split makes 2 to %d issues", maxChildren)
 	}
+	keys := map[string]bool{}
 	for _, ch := range c.Into {
 		if !oneLine(strings.TrimSpace(ch.Title)) {
 			return "split-title", "each child's title is one line, 120 characters at most"
 		}
-		for name, text := range map[string]string{"need": ch.Need, "verification": ch.Verification, "validation": ch.Validation, "scope": ch.Scope} {
-			if strings.TrimSpace(text) == "" {
-				return "split-sections", fmt.Sprintf("%q has no %s: each child has its four sections", ch.Title, name)
+		if key := SplitKey(c.Issue, ch.Title); keys[key] {
+			return "split-title", fmt.Sprintf("%q: two children have this title; each is a need of its own", ch.Title)
+		} else {
+			keys[key] = true
+		}
+		for _, sec := range []struct{ name, text string }{{"need", ch.Need}, {"verification", ch.Verification}, {"validation", ch.Validation}, {"scope", ch.Scope}} {
+			if strings.TrimSpace(sec.text) == "" {
+				return "split-sections", fmt.Sprintf("%q has no %s: each child has its four sections", ch.Title, sec.name)
 			}
 		}
 		if len(ch.Sources) == 0 || len(ch.Sources) > maxSources {
@@ -642,15 +655,17 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		}
 		for _, s := range ch.Sources {
 			path, _, _ := strings.Cut(s, "#")
-			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
-				return "sources-unknown", fmt.Sprintf("%s is not in the commit the run is on", path)
+			if out, err := exec.Command("git", "-C", repo, "cat-file", "-t", "HEAD:"+path).Output(); path == "" || err != nil || strings.TrimSpace(string(out)) != "blob" {
+				return "sources-unknown", fmt.Sprintf("%q is not a file in the commit the run is on", path)
 			}
 		}
 	}
 	return "", ""
 }
 
-func oneLine(t string) bool { return t != "" && len(t) <= 120 && !strings.Contains(t, "\n") }
+func oneLine(t string) bool {
+	return t != "" && utf8.RuneCountInString(t) <= 120 && !strings.Contains(t, "\n")
+}
 
 func issueList(ids []int) string {
 	var out []string
