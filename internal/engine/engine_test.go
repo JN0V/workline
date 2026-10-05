@@ -26,3 +26,19 @@ func TestAskAgain(t *testing.T) {
 		}
 	}
 }
+
+// An answer broken in one claim is read claim by claim; a claim holding
+// code pasted with its tabs, or a text cut by ` #`, is mended as the whole
+// answer would be (agent.Mend), never counted as unreadable.
+func TestClaimsOneByOneMended(t *testing.T) {
+	answer := "- claim:\n    quote: |\n\tif ok {\n    why: covered by #20 too\n" +
+		"- claim: {quote: \"a\"\n"
+	read, broken := claimsOneByOne(answer)
+	if read != 1 || len(broken) != 1 {
+		t.Fatalf("read %d, broken %v", read, broken)
+	}
+	c := claimsRead(answer)[0].Value.(map[string]any)
+	if c["quote"] != "\tif ok {\n" || c["why"] != "covered by #20 too" {
+		t.Errorf("the claim was not read as written: %q", c)
+	}
+}

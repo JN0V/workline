@@ -15,14 +15,14 @@ func TestProposalsFromCodeInText(t *testing.T) {
 	plain := "- finding:\n    severity: nit\n    title: The agreed proposal is read from the first fence\n" +
 		"    why: `ProposalComment` writes the agent's text before the engine's block\n" +
 		"    cause: {path: internal/backlog/backlog.go, quote: \"if strings.HasPrefix(l, \\\"```\\\") {\"}\n"
-	if _, err := proposalsFrom(plain); err == nil || !strings.Contains(err.Error(), "cannot start any token") {
+	if _, _, err := proposalsFrom(plain); err == nil || !strings.Contains(err.Error(), "cannot start any token") {
 		t.Fatalf("a plain text starting with a backtick read: %v", err)
 	}
 	why := "`ProposalComment` writes the agent's `Why` first: if it holds a\n```yaml\nfence, # the engine reads that one\n"
 	quote := "if strings.HasPrefix(l, \"```\") {\n\tfirst = i // a fence: the answer's\n"
 	block := "- finding:\n    severity: nit\n    title: \"The agreed proposal: read from the first fence\"\n" +
 		"    why: |\n" + indent(why) + "    cause:\n      path: internal/backlog/backlog.go\n      quote: |\n" + indent(quote)
-	got, err := proposalsFrom(block)
+	got, _, err := proposalsFrom(block)
 	if err != nil {
 		t.Fatalf("a block scalar did not read: %v", err)
 	}
@@ -34,10 +34,10 @@ func TestProposalsFromCodeInText(t *testing.T) {
 	if f["why"] != why || f["cause"].(map[string]any)["quote"] != quote {
 		t.Errorf("the text did not read as written: %q, %q", f["why"], f["cause"])
 	}
-	// Its first line may not start with a tab: the reader takes it for
-	// indentation. The prompt asks for spaces there.
-	if _, err := proposalsFrom("- note: |\n    \tx\n"); err == nil || !strings.Contains(err.Error(), "tab character") {
-		t.Errorf("a block scalar starting with a tab read: %v", err)
+	// Its first line starting with a tab, the reader takes it for
+	// indentation: the engine says the block's indentation (Mend).
+	if got, _, err := proposalsFrom("- note: |\n    \tx\n"); err != nil || string(got) != "- note: |2\n    \tx\n" {
+		t.Errorf("a block scalar starting with a tab: %q, %v", got, err)
 	}
 }
 
@@ -60,15 +60,15 @@ func TestProposalsFrom(t *testing.T) {
 		{"a code block inside a patch", moved, "-run it"},
 		{"a fenced answer holding a code block", "```yaml\n" + moved + "```\n", "-run it"},
 	} {
-		got, err := proposalsFrom(c.answer)
+		got, _, err := proposalsFrom(c.answer)
 		if err != nil || !strings.Contains(string(got), c.want) {
 			t.Errorf("%s: %q, %v", c.name, got, err)
 		}
 	}
-	if got, err := proposalsFrom(" []\n"); err != nil || string(got) != "[]\n" {
+	if got, _, err := proposalsFrom(" []\n"); err != nil || string(got) != "[]\n" {
 		t.Errorf("an empty list is an answer proposing nothing: %q, %v", got, err)
 	}
-	if _, err := proposalsFrom("I could not decide."); err == nil {
+	if _, _, err := proposalsFrom("I could not decide."); err == nil {
 		t.Error("prose alone is not a proposal")
 	}
 }

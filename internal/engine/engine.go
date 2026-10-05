@@ -697,7 +697,7 @@ func answerItems(answer string) []string {
 		switch {
 		case strings.HasPrefix(l, "- "):
 			items = append(items, l+"\n")
-		case len(items) > 0 && (strings.HasPrefix(l, " ") || l == ""):
+		case len(items) > 0 && (strings.HasPrefix(l, " ") || strings.HasPrefix(l, "\t") || l == ""): // a tab: code pasted as it is, which Mend indents
 			items[len(items)-1] += l + "\n"
 		}
 	}
@@ -708,6 +708,7 @@ func answerItems(answer string) []string {
 func claimsRead(answer string) []intent.Intention {
 	var out []intent.Intention
 	for _, item := range answerItems(answer) {
+		item, _ = agent.Mend(item)
 		var one []map[string]any
 		if yaml.Unmarshal([]byte(item), &one) == nil && len(one) == 1 && len(one[0]) == 1 && one[0]["claim"] != nil {
 			out = append(out, intent.Intention{Kind: "claim", Value: one[0]["claim"]})
@@ -722,6 +723,7 @@ func claimsOneByOne(answer string) (int, []intent.Intention) {
 	read := len(claimsRead(answer))
 	var broken []intent.Intention
 	for _, item := range answerItems(answer) {
+		item, _ = agent.Mend(item)
 		var one []map[string]any
 		if yaml.Unmarshal([]byte(item), &one) != nil || len(one) != 1 || len(one[0]) != 1 || one[0]["claim"] == nil {
 			broken = append(broken, intent.Intention{Kind: "claim", Value: map[string]any{"unreadable": strings.TrimSpace(item)}})
@@ -748,6 +750,15 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 			f.Write(append(data, '\n'))
 			f.Close()
 		}
+	}
+	// What the engine mended of the answer before reading it is said:
+	// the answer as it came stays in out/agent-answer.txt.
+	for _, m := range call.Mended {
+		where := ""
+		if task == "part" {
+			where = filepath.Base(req.RunDir)
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-mended", Where: where, Level: "warn", Message: m})
 	}
 	if n := agent.Notice(agent.Seen(), call); n != "" {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "model-changed", Level: "warn", Message: n})

@@ -1,0 +1,15 @@
+case: reviewer/lens-quote-indented-with-tabs-read
+about: A lens quoting code with its tabs under a block scalar — its first line starting with a tab, a line pasted at the start of the line — is read without asking again, the code kept as written and found in the file, and what was mended is said (PR #157).
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/lens-quote-with-tabs.sh"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: answer-mended, where: 1-correctness, message: "indented with tabs"}
+    - {rule: correctness, message: "The divisor is one less than the count"}
+  no-findings: [{rule: part-asked-again}, {rule: lens-failed}, {rule: finding-unfounded}]
+  run-files:
+    out/review.json: {contains: '"complete": true'}
