@@ -418,15 +418,17 @@ func (g *github) Ticks(id int) ([]Tick, error) {
 	nodes := edits.Nodes
 	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].EditedAt < nodes[j].EditedAt })
 	var ticks []Tick
-	before := ""
-	for i, n := range nodes {
-		if n.Diff == nil { // a version deleted from the history
+	// Older versions not read, or one deleted from the history: the next
+	// version is only what the later ones are read against, its boxes
+	// nobody's — never a tick credited to whoever edited after the gap.
+	before, gap := "", edits.Total > len(nodes)
+	for _, n := range nodes {
+		if n.Diff == nil {
+			gap = true
 			continue
 		}
-		if i == 0 && edits.Total > len(nodes) {
-			// Older versions not read: this one is only what the next are
-			// read against, its boxes nobody's.
-			before = *n.Diff
+		if gap {
+			before, gap = *n.Diff, false
 			continue
 		}
 		who := Note{}
