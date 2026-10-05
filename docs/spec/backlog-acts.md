@@ -346,10 +346,13 @@ reads it" — the block read back, the agent's fences turned to `'''` so none en
 - **the reporter's own edit** of the body (only its author or a writer
   can edit it): read again as any body changed; moving it to ready stays
   proposed (`reporter-outside`) until a person accepts;
-- **a reply `agreed`** (ADR-0021, amended): the last person's comment
-  after the last round, that round a proposal, its first line `agreed`
-  (case, spaces, a final "." or "!" aside), by the reporter or a person of
-  the project, not a bot. The next run writes the sections of the last
+- **a reply `agreed`** (ADR-0021, amended): after the last round, that
+  round a proposal, the last comment of the reporter or of a person of
+  the project (not a bot, its author named) has `agreed` as its first line
+  (case, spaces, a final "." or "!" aside); a stranger's or a bot's
+  comment after it changes nothing, a later word of theirs replaces it.
+  With `workline:accepted` set too, the label's path applies at once: the
+  text written and the issue moved to ready. The next run writes the sections of the last
   proposal the body still lacks, with no agent, Need and Validation as
   drafts, and does not read the issue again for that reply; ready, a
   split, a rename stay the label's. The plan checks the agreement again

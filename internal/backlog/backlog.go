@@ -1124,10 +1124,10 @@ func LastProposal(comments []string, role string) *Proposal {
 const AgreeWord = "agreed"
 
 // Agreement is who agreed, in a reply, to the text last proposed to an
-// issue's reporter (ADR-0021): the last person's comment after the last
-// round, that round a proposal, its first line AgreeWord, written by the
-// reporter or by a person of the project — never a bot, nor someone the
-// forge does not name. "" when there is none.
+// issue's reporter (ADR-0021): after the last round, that round a
+// proposal, the last comment of the reporter or of a person of the
+// project — never a bot's, nor someone's the forge does not name — has
+// AgreeWord as its first line. "" when there is none.
 func Agreement(notes []forge.Note, is forge.Issue, role string) string {
 	last := -1
 	for i, n := range notes {
@@ -1141,17 +1141,19 @@ func Agreement(notes []forge.Note, is forge.Issue, role string) string {
 	if m, _ := EngineMarker(notes[last].Body); !strings.Contains(m, "/proposal=") {
 		return "" // the last round asked: a question is not agreed to
 	}
+	// The last word of those who may agree: a stranger's "+1" or a bot's
+	// note after it neither gives nor takes back an agreement; a later
+	// word of the reporter's or the project's does.
 	var reply *forge.Note
 	for i := last + 1; i < len(notes); i++ {
-		if _, engine := EngineMarker(notes[i].Body); !engine {
-			reply = &notes[i]
+		n := &notes[i]
+		if _, engine := EngineMarker(n.Body); engine || n.Bot || n.Author == "" || (n.Author != is.Author && !n.Insider) {
+			continue
 		}
+		reply = n
 	}
-	switch {
-	case reply == nil, reply.Bot, reply.Author == "":
+	if reply == nil {
 		return ""
-	case reply.Author != is.Author && !reply.Insider:
-		return "" // a stranger's word: an answer, never an agreement
 	}
 	first, _, _ := strings.Cut(strings.TrimSpace(reply.Body), "\n")
 	if strings.ToLower(strings.TrimRight(strings.TrimSpace(first), ".! ")) != AgreeWord {

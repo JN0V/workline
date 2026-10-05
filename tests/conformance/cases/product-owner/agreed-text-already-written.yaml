@@ -1,0 +1,13 @@
+case: product-owner/agreed-text-already-written
+about: A reply `agreed` to a text the body already holds — written by its reporter since — writes nothing again.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nEvery row, written by zed.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nZed opens a known day.\n\n## Scope\n\nWriteRows in src/export/csv.go.", author: zed, insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: zed, body: "Agreed!\n\nThanks."}]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  no-findings: [{rule: not-agreed}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "Every row, written by zed.", body-lacks: "Every row exported.", labels: [workline:to-refine]}

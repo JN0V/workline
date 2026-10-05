@@ -141,7 +141,8 @@ func Pre(runDir, repo string) int {
 			if len(adds) > 0 {
 				agreed = backlog.Agreement(notes, is, role)
 			}
-			if len(adds) == 0 || backlog.ReadExchange(comments, role).Answered {
+			// An answer may change it, unless it is the agreement itself.
+			if len(adds) == 0 || (backlog.ReadExchange(comments, role).Answered && agreed == "") {
 				p = nil
 			}
 		}
@@ -193,7 +194,7 @@ func Pre(runDir, repo string) int {
 				"why": fmt.Sprintf("slipped: %s is released (its tag exists).", is.Milestone)}})
 		}
 		switch {
-		case agreed != "" && !backlog.Accepted(is):
+		case agreed != "":
 			// Agreed to: written this run, not read again for that reply.
 			rest = append(rest, due{is, st, comments, notes})
 		case slices.Contains(capped, is.ID):

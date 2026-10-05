@@ -88,10 +88,14 @@ project (GitHub's author association; GitLab's members, Planner and
 above, ADR-0023; a plugged forge's answer). "A reply alone is not
 agreement" held because none was known. Now:
 
-- **A reply agrees** when it is the last person's comment after the last
-  round, that round a proposal, its first line `agreed` (case, spaces and a
-  final "." or "!" aside), written by the reporter or by a person of the
-  project — never a bot, nor an author the forge does not name. Words a
+- **A reply agrees** when, after the last round — that round a proposal —
+  the last comment of those who may agree has `agreed` as its first line
+  (case, spaces and a final "." or "!" aside). Those who may agree: the
+  reporter and the persons of the project — never a bot, nor an author
+  the forge does not name. Anyone else's comment after it, a stranger's
+  "+1", neither gives nor takes it back; a later word of the reporter's
+  or the project's does, whatever it says (no reading of a withdrawal: a
+  later `agreed` agrees again). Words a
   check reads, as triagebot's `@rustbot ready` or Dependabot's commands
   from writers: telling a "yes" in free text is not the engine's, and
   the agent's reading of one would let a reply write a body (principle 6).
