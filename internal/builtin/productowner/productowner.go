@@ -100,10 +100,18 @@ func Pre(runDir, repo string) int {
 	}
 	commit := strings.TrimSpace(string(head))
 	s := Settings{IssuesPerRun: 8, CodeLinesMax: 1500}
+	raw := map[string]any{}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json")); err == nil {
 		if err := json.Unmarshal(data, &s); err != nil {
 			return fail(fmt.Errorf("settings: %v", err))
 		}
+		_ = json.Unmarshal(data, &raw)
+	}
+	// How far the role goes (ADR-0026): a level or a number out of range
+	// stops the run, never read as a default.
+	cfg, err := backlog.ReadConfig(raw)
+	if err != nil {
+		return fail(fmt.Errorf("settings: %v", err))
 	}
 	var task strings.Builder
 	var fallback []intent.Intention
@@ -138,7 +146,7 @@ func Pre(runDir, repo string) int {
 			"issue": q.Issue, "reason": q.Proposal.Reason, "ticked": t.Who(), "own": true,
 			"why": "ticked in the report by " + t.Who()}})
 	}
-	paused := hand.Paused()
+	paused := hand.Paused(cfg.IgnoredMax)
 	if paused {
 		findings = append(findings, verdict.Finding{Rule: "paused", Level: "warn", Where: fmt.Sprintf("#%d", hand.Report),
 			Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered: no agent is asked until a person ticks a box, writes on the report or undoes a closing", hand.Record.Ignored)})
@@ -327,12 +335,14 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	if judged == 0 {
-		if len(fallback) > 0 || len(hand.Ticks) > 0 { // no task.md: the agent is not asked; the state comments are written, the boxes ticked read
+		// No task.md: the agent is not asked; the state comments are written,
+		// the boxes ticked read, an act a person undid recorded (ADR-0026).
+		if len(fallback) > 0 || len(hand.Ticks) > 0 || len(hand.Demoted(open)) > len(hand.Record.Propose) {
 			return writeFindings(runDir, findings)
 		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
-	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n", commit, judged, releases(repo, b))
+	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, hand.Demoted(open)))
 	// An issue not read in this run, on the same code as one read, is given
 	// whole: it may be the original a duplicate is closed against, and a
 	// duplicate's original is quoted (ADR-0018).
@@ -682,6 +692,19 @@ func writeCode(b *strings.Builder, repo string, files []string, budget int) {
 		log, _ := exec.Command("git", "-C", repo, "log", "-5", "--format=%h %as %s", "--", f).Output()
 		fmt.Fprintf(b, "## %s\n\nLast commits:\n%s\n```\n%s\n```%s\n\n", f, strings.TrimSpace(string(log)), strings.Join(lines, "\n"), more)
 	}
+}
+
+// modes tells the agent how far the role goes in this run (ADR-0026): each
+// kind of act's mode, and where it comes from — the level, the project's
+// setting, or a person's undoing — so it writes nothing that is dropped.
+func modes(cfg backlog.Config, demoted []string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "# What you may do in this run\n\nAutonomy: %s. Each kind of act, its mode and where it comes from (level; setting: the project's; demoted: a person undid one of its acts):\n\n", cfg.Level)
+	for _, m := range cfg.Modes(demoted) {
+		fmt.Fprintf(&b, "- %s: %s\n", m.Kind, m.Say())
+	}
+	b.WriteString("\n`act`: done by the engine once checked. `propose`: written in the report for a person to tick, never done by the role — propose only what you would do. `off`: dropped — do not write it.\n\n")
+	return b.String()
 }
 
 // releases says where the project stands: its last release, and the

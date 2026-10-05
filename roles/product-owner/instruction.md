@@ -15,7 +15,11 @@ starts with it. Nothing else is proposed when importing.
 
 **Gardening** (otherwise): `task.md` lists the issues, each with what the
 engine knows of it — the code it is about (`sources`) and the commit it
-was last found true at.
+was last found true at. It says first what you may do in this run: each
+kind of act's mode. An `off` kind is dropped: do not write it. A
+`propose` kind goes to the report for a person to tick: propose only
+what you would do. A refine whose Need and Validation drafts are
+proposed still writes Scope and Verification.
 
 Propose a `close` for an issue only when the evidence settles it:
 

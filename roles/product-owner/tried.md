@@ -463,3 +463,52 @@ owner, in an edit of its own. No agent answered in any run: **0 tokens**.
   Run 3 on GitHub, `--ai none`, the report then at 20 versions: a box of
   an older proposal, recorded before its act was kept, ticked by `JN0V` —
   said in the report as one to do by hand, and gone from it.
+
+## 2026-10-05 — autonomy levels, cautious then enterprising, live on GitHub, Sonnet
+
+The engine of feat/po-autonomy-levels, built in its worktree; a fresh
+clone of JN0V/workline-sandbox, `--forge github`, its
+`.workline/config.yaml` setting `issues-per-run: 4` and the level. The
+sandbox's eleven open issues set aside (closed as not planned, reopened
+after), so the agent read only the backlog planted: "bug" (signed out
+after an hour, `TokenTTL` 3600, eight hours wanted), "Signed out after
+one hour" (its duplicate), "Sessions: last a working day, and sign out on
+every device" (two needs), "Name the token lifetime's unit". The same
+four planted twice — #15 to #18 for cautious, #20 to #23 for
+enterprising, the first set and its report closed between — each first
+given its state by a run with no agent. **Three agent calls, 25.6k
+tokens in and 5.0k out in all**; the undo runs, none.
+
+- **cautious** (#15–#18, report #19; 8.5k in, 2.2k out): the acts that
+  check facts **done** — sources named on #16, #17, #18; #15 and #18
+  refined with **Verification and Scope only**, labelled to-refine, no
+  draft label (`drafts-proposed` said). The acts that set direction
+  **proposed**, eight boxes: #16 closed as a duplicate of #15, two
+  milestones, two priorities, the Need and Validation drafts of #15 and
+  #18, #17 split in two. Nothing closed, moved or split. The report's
+  `Autonomy: **cautious**` line gave each kind's mode, from the level.
+- **enterprising** (#20–#23, report #24; 8.1k in, 0.9k out): **#21 closed**
+  as a duplicate of #20, #20 put in v0.1.0 and given priority 2, refined
+  whole (drafts written, labelled draft). The agent named no sources and
+  proposed nothing on #22 and #23 this time: the same backlog, a
+  different reading — the level changes what is done with what is read,
+  not what the agent sees.
+- Neither run renamed "bug": the agent judged it, twice, worth no rename.
+- **Undone** (no agent, 0 tokens): #20's priority label taken off by hand
+  → the next run found it, `undone`: "#20's priority put back to none by
+  a person; the role had set 2", **order demoted** (`order: propose
+  (demoted)` at enterprising), a box to set it back. A third run with the
+  agent (9.0k in, 1.9k out; #20 read again for a comment) proposed its
+  priorities, now demoted, instead of setting them, and set a milestone.
+  The rename was **planted** in the record as the role writes it (`done:
+  {issue: 20, act: rename, was: bug, set: …}`), #20 given that title; a
+  run left it standing; #20 renamed back to "bug" by hand → `undone`,
+  **rename demoted**, the evidence in the report.
+- **Seen, not fixed here** (issue #156): an agent's unquoted `why` holding
+  " #20" lost all after it — YAML reads a comment —, three of seven acts'
+  reasons cut short in the report.
+- Not tried live: `workline init --human-po` on a terminal (conformance
+  `setup/init-asks-human-po`); `ready` taken off and a split's child
+  closed as not planned (conformance `undo-ready-demotes`,
+  `split-child-closed-not-planned-demotes`); `ignored-runs-max` reached;
+  the report's suggestion, which needs ten proposals settled at cautious.

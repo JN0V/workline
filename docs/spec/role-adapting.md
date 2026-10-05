@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
 verified: agent:claude-code
-checked: d07cdba
+checked: af04a2a
 status: draft
 judged-in-parts: fa1d682
 ---
@@ -36,6 +36,14 @@ over its defaults:
   null}`. The role then reads the setting as unset — a product owner's act
   kind is proposed, a documentalist's budget says `setting-missing`. To turn
   something off, prefer its own value (`mode: off`, `[]`) or `enforce: off`.
+
+**Levels.** A role may ship named sets of its settings, `levels` in its
+`role.yaml`, one setting picking one: the product owner's `autonomy`
+(`cautious`, `normal`, `enterprising`; ADR-0026). The level picked is laid
+over the role's defaults first, the same way, then the project's
+settings over both: a project picks a level in one word and still sets
+any field on its own. The role gets beside its settings `by-level`, what
+they are with the project's left out, to say which the project changed.
 
 If a setting a role depends on cannot be resolved, the role says so and blocks.
 A check that silently passes for lack of configuration is still believed in,

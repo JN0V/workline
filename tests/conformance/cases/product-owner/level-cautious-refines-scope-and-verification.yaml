@@ -1,0 +1,21 @@
+case: product-owner/level-cautious-refines-scope-and-verification
+about: At autonomy cautious, a refine writes what the code shows — Scope and Verification — and proposes the Need and Validation drafts in the report, a box to tick, never written in the issue.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "XML import", body: "Import XML.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  findings: [{rule: drafts-proposed, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "Some rows are lost.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [workline:to-refine], comment-contains: "sources: [src/export/csv.go]"}
+      - {id: 9, body-lacks: "## Need"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "Refined #9: Verification, Scope."}
+      - {id: 13, body-contains: "- [ ] Refine #9: Need (draft), Validation (draft). The issue says what is wrong, not how it will be proved. <!-- workline:proposal=9/refine -->"}

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: d07cdba
+checked: af04a2a
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -95,6 +95,10 @@ without-ai: block               # block | report | pass — see "No AI" (not rea
 
 settings:                       # defaults, overridable per project
   subject-max: 72
+
+levels: {}                      # named sets of settings a project picks with
+                                # one setting, laid over the defaults first
+                                # (role-adapting.md, "Levels")
 ```
 
 ## Facets
@@ -132,7 +136,9 @@ token), **apply** (trusted, no AI key).
 1. **Check.** The engine reads `role.yaml`, verifies `requires`, creates a run
    directory with `in/` and `out/` inside the repository's git directory
    (`.git/workline/runs/<id>/`, so a run never shows up as a change), and
-   writes the merged settings to `in/settings.json`.
+   writes the merged settings to `in/settings.json` — a level the project
+   picks laid over the defaults first, and `by-level` beside them
+   (role-adapting.md, "Levels").
 2. **Prepare — `pre`.** Gathers what the role needs into `in/`. If a decision
    needs judgement, it writes the question to `in/task.md`. No `task.md`, no AI
    call: the AI is paid for decisions, not for routine. It may also write

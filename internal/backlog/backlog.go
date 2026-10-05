@@ -102,15 +102,23 @@ func FormatState(s State) string {
 
 // Record is what the role did, kept on its report issue.
 type Record struct {
-	Closed   []Closing `yaml:"closed,omitempty"`
-	Wrong    []Closing `yaml:"wrong,omitempty"`        // closings found wrong: their issue open again
-	Propose  []string  `yaml:"propose,flow,omitempty"` // kinds of act back to propose, until the person says
-	Proposed []Pending `yaml:"proposed,omitempty"`     // acts proposed, kept until their issue is closed or proposed again
+	Closed  []Closing `yaml:"closed,omitempty"`
+	Wrong   []Closing `yaml:"wrong,omitempty"`        // closings found wrong: their issue open again
+	Propose []string  `yaml:"propose,flow,omitempty"` // kinds of act back to propose, until the person says
+	// Done are the role's own acts a person may undo, other than closings:
+	// a rename, a priority, a milestone, ready, a split (ADR-0026); Undone,
+	// those a person undid, with what shows it.
+	Done     []Done    `yaml:"done,omitempty"`
+	Undone   []Undo    `yaml:"undone,omitempty"`
+	Proposed []Pending `yaml:"proposed,omitempty"` // acts proposed, kept until their issue is closed or proposed again
 	// The person's hand (ADR-0025): the runs in a row whose report proposed
 	// something and that nobody answered, and the comments of people of the
 	// project on the report when last read.
 	Ignored  int `yaml:"ignored,omitempty"`
 	Comments int `yaml:"comments,omitempty"`
+	// Measure is what people did with the proposals at the level in force,
+	// for the report to suggest another (ADR-0026).
+	Measure *Measure `yaml:"measure,omitempty"`
 }
 
 // Pending is an act proposed to a person, as the report says it.
@@ -131,6 +139,7 @@ type Pending struct {
 type Closing struct {
 	Issue int    `yaml:"issue"`
 	Act   string `yaml:"act"`
+	Level string `yaml:"level,omitempty"` // the autonomy level it was done at
 }
 
 // Quote is the evidence an act cites: a text in a file, or in an issue.
@@ -261,6 +270,7 @@ type Plan struct {
 	issues    map[int]forge.Issue
 	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
 	settings  map[string]Setting
+	config    Config
 	bodies    []string        // their bodies, to find an import again
 	seen      map[string]bool // the imports this run decided
 	read      []int           // the issues this run read
@@ -276,6 +286,7 @@ type Setting struct {
 	Rounds int      // asking: the times an issue's reporter is written to, then a person (ask only)
 	Days   *int     // close-obsolete: the days an announcement waits; ObsoleteDays when nil
 	Exempt []string // close-obsolete: labels that keep an issue from it; DefaultExempt when nil
+	Drafts string   // refine: propose has Need and Validation drafts proposed, Scope and Verification written (ADR-0026)
 }
 
 // Settings reads the role's `acts` setting.
@@ -296,6 +307,9 @@ func Settings(settings map[string]any) map[string]Setting {
 		}
 		if n, ok := number(m["days"]); ok {
 			s.Days = &n
+		}
+		if d, ok := m["drafts"].(string); ok {
+			s.Drafts = d
 		}
 		if l, ok := m["exempt"].([]any); ok {
 			s.Exempt = []string{}
@@ -333,14 +347,15 @@ func MovedPercent(settings map[string]any) int {
 	return 20
 }
 
-// Decide plans the acts proposed, given at their place in the run.
-// read lists the issues the run read: a proposal made only for a cap is
-// dropped once its issue was read again, decided again or not. A run
-// moves at most movedPercent of the open issues (milestone and order).
-// judged holds the second judge's answers on the issues announced obsolete
-// (ADR-0024).
-func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, closes map[int]Proposal, read []int, movedPercent int, judged map[int]Judged) (*Plan, error) {
-	p := &Plan{read: read, judged: judged, settings: settings}
+// Decide plans the acts proposed, given at their place in the run, as far
+// as the config lets the role go (ADR-0026). read lists the issues the run
+// read: a proposal made only for a cap is dropped once its issue was read
+// again, decided again or not. A run moves at most cfg.MovedPercent of the
+// open issues (milestone and order). judged holds the second judge's
+// answers on the issues announced obsolete (ADR-0024).
+func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged) (*Plan, error) {
+	settings, movedPercent := cfg.Acts, cfg.MovedPercent
+	p := &Plan{read: read, judged: judged, settings: settings, config: cfg}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
@@ -395,6 +410,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			decided[c.key()] = true // a person's yes: the agent's act on it is not done again
 		}
 		d := Decision{Index: i, Mode: Off, Act: c}
+		var extra *Decision // a refine's drafts proposed beside what it writes
 		switch {
 		case why != "":
 			dropped(c, mode, why)
@@ -410,7 +426,7 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 				moved[c.Issue] = true
 			}
 			if c.Do == "close" {
-				p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
+				p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level})
 			}
 		default:
 			s, ok := settings[c.Kind()]
@@ -467,6 +483,20 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 					moved[c.Issue] = true
 				}
 			}
+			if d.Mode == Act && c.Do == "refine" && s.Drafts == Propose {
+				// Cautious (ADR-0026): what the code shows is written, the
+				// Need and Validation drafts proposed to a person.
+				if facts, drafts, ok := p.splitDrafts(c, role); ok {
+					if len(facts.Added) == 0 {
+						c, d.Mode = drafts, Propose
+					} else {
+						c, extra = facts, &Decision{Index: -1, Mode: Propose, Act: drafts}
+					}
+					d.Act = c
+					p.Findings = append(p.Findings, verdict.Finding{Rule: "drafts-proposed", Level: "info", Where: c.where(),
+						Message: "Need and Validation drafts proposed in the report, not written (acts.refine.drafts: propose)"})
+				}
+			}
 			if d.Mode == Act {
 				done[c.Kind()]++
 				if c.Do == "refine" && !c.ToReporter {
@@ -476,11 +506,15 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 					p.issues[c.Issue] = is
 				}
 				if c.Do == "close" && !c.Announce {
-					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
+					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level})
 				}
+				p.recordDone(c)
 			}
 		}
 		p.Decisions = append(p.Decisions, d)
+		if extra != nil {
+			p.Decisions = append(p.Decisions, *extra)
+		}
 	}
 	p.keepProposed()
 	p.pause()
@@ -548,18 +582,27 @@ func (p *Plan) pause() {
 	if r.Comments != p.hand.Comments {
 		r.Comments, p.Changed = p.hand.Comments, true
 	}
+	max := p.config.IgnoredMax
 	switch {
 	case len(p.hand.Signs) > 0:
 		if r.Ignored > 0 {
 			r.Ignored, p.Changed = 0, true
 		}
-	case len(p.hand.Record.Proposed) > 0 && len(p.read) > 0 && r.Ignored < PauseAfter:
-		r.Ignored++
+	case len(p.hand.Record.Proposed) > 0 && len(p.read) > 0 && (max == 0 || r.Ignored < max):
+		r.Ignored++ // counted when it never pauses too: the report says how many
 		p.Changed = true
-		if r.Ignored == PauseAfter {
+		if r.Ignored == max {
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "paused", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
-				Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered: no agent is asked from the next run until a person ticks a box, writes on the report or undoes a closing", PauseAfter)})
+				Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered (ignored-runs-max): no agent is asked from the next run until a person ticks a box, writes on the report or undoes an act", max)})
 		}
+	}
+	if max == 0 {
+		where := ""
+		if p.Report > 0 {
+			where = fmt.Sprintf("#%d", p.Report)
+		}
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "never-paused", Level: "warn", Where: where,
+			Message: fmt.Sprintf("ignored-runs-max is 0: the role never pauses, and asks its agent on every run though nobody answers (%d runs in a row so far)", r.Ignored)})
 	}
 }
 
@@ -574,6 +617,13 @@ func (p *Plan) keepProposed() {
 			decided[d.Act.key()] = true
 		}
 	}
+	// What people do with the proposals, measured at the level in force:
+	// the report suggests another level from it (ADR-0026).
+	m := p.Record.Measure
+	if m == nil || m.Level != p.config.Level {
+		m = &Measure{Level: p.config.Level} // written with the report, when there is one to write
+		p.Record.Measure = m
+	}
 	var kept []Pending
 	for _, q := range p.Record.Proposed {
 		key, settled := q.Key, false
@@ -583,11 +633,15 @@ func (p *Plan) keepProposed() {
 			marker := forge.Marker(key)
 			settled = slices.ContainsFunc(p.bodies, func(b string) bool { return strings.Contains(b, marker) })
 		}
-		if q.Capped && slices.Contains(p.read, q.Issue) {
-			settled = true // read again: the agent decided it anew, or not at all
-		}
-		if p.ticked[key] {
+		switch {
+		case p.ticked[key]:
 			settled = true // a person's tick, done or said why not
+			m.Ticked++
+		case q.Capped && slices.Contains(p.read, q.Issue):
+			settled = true // read again: the agent decided it anew, or not at all
+		case settled && !q.Capped:
+			m.Other++
+			p.Changed = true
 		}
 		if !settled && !decided[key] {
 			kept = append(kept, q)
@@ -659,6 +713,21 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 			Message: fmt.Sprintf("closed by the role (%s), open again: %s is back to propose until a person sets it to act", c.Act, c.Act)})
 	}
 	p.Record.Closed = kept
+	// Any other act of the role's a person undid: that kind back to
+	// propose, as a closing reopened (ADR-0026).
+	if len(p.hand.Standing) != len(p.Record.Done) {
+		p.Changed = true
+	}
+	p.Record.Done = slices.Clone(p.hand.Standing)
+	for _, u := range p.hand.Undone {
+		p.Changed = true
+		p.Record.Undone = append(p.Record.Undone, u)
+		if !slices.Contains(p.Record.Propose, u.Act) {
+			p.Record.Propose = append(p.Record.Propose, u.Act)
+		}
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "undone", Where: fmt.Sprintf("#%d", u.Issue),
+			Message: fmt.Sprintf("%s: %s is back to propose until a person sets it to act", u.Evidence, u.Act)})
+	}
 	p.readTicks()
 	return nil
 }
@@ -1523,22 +1592,48 @@ func (p *Plan) ReportBody() string {
 		}
 	}
 	var b strings.Builder
-	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. A closing undone (the issue reopened) puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
-	switch r := p.Record; {
-	case r.Ignored >= PauseAfter:
-		fmt.Fprintf(&b, "\n**Paused**: %d runs in a row proposed something and nobody ticked a box, wrote here or undid a closing. No agent is asked until a person does; tick this to resume:\n\n- [ ] Resume %s\n", r.Ignored, TickMarker(KeyResume))
+	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. An act undone — a closing reopened, a title, a priority or a milestone put back, `" + LabelReady + "` taken off, a split's part closed as not planned — puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
+	fmt.Fprintf(&b, "\nAutonomy: **%s** — %s.\n", p.config.Level, ModesLine(p.config.Modes(p.Record.Propose)))
+	if level, why := p.Record.Measure.Suggest(); level != "" {
+		fmt.Fprintf(&b, "\n**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)
+	}
+	switch r, max := p.Record, p.config.IgnoredMax; {
+	case max == 0:
+		fmt.Fprintf(&b, "\n**Never paused** (ignored-runs-max: 0): the agent is asked on every run, though nobody answered the last %d.\n", r.Ignored)
+	case r.Ignored >= max:
+		fmt.Fprintf(&b, "\n**Paused**: %d runs in a row proposed something and nobody ticked a box, wrote here or undid an act. No agent is asked until a person does; tick this to resume:\n\n- [ ] Resume %s\n", r.Ignored, TickMarker(KeyResume))
 	case r.Ignored > 0:
-		fmt.Fprintf(&b, "\nRuns since a person last answered: %d; at %d, the role pauses.\n", r.Ignored, PauseAfter)
+		fmt.Fprintf(&b, "\nRuns since a person last answered: %d; at %d, the role pauses.\n", r.Ignored, max)
 	}
 	if len(p.Record.Propose) > 0 {
-		fmt.Fprintf(&b, "\nBack to propose after a wrong closing: %s.\n", strings.Join(p.Record.Propose, ", "))
+		fmt.Fprintf(&b, "\nBack to propose after a wrong closing or an act undone: %s.\n", strings.Join(p.Record.Propose, ", "))
 	}
 	for _, w := range p.Record.Wrong {
 		if slices.Contains(p.Record.Propose, w.Act) {
 			fmt.Fprintf(&b, "- #%d, closed as %s, was reopened.\n", w.Issue, w.Act)
 		}
 	}
+	for _, u := range p.Record.Undone {
+		if slices.Contains(p.Record.Propose, u.Act) {
+			fmt.Fprintf(&b, "- %s.\n", u.Evidence)
+		}
+	}
 	for _, kind := range p.Record.Propose {
+		if !strings.HasPrefix(kind, "close-") {
+			standing, undone := 0, 0
+			for _, d := range p.Record.Done {
+				if d.Act == kind {
+					standing++
+				}
+			}
+			for _, u := range p.Record.Undone {
+				if u.Act == kind {
+					undone++
+				}
+			}
+			fmt.Fprintf(&b, "- [ ] Set %s back to act: %d of its acts still standing, %d undone. %s\n", kind, standing, undone, TickMarker(KeyAct+kind))
+			continue
+		}
 		kept, wrong := 0, 0
 		for _, c := range p.Record.Closed {
 			if c.Act == kind {

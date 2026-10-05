@@ -6,6 +6,8 @@
   with write access"; "only the person sets it to act again"; "after
   three, it pauses and says so"), ADR-0021 and ADR-0023 (who is of the
   project, on each forge); principles 1, 4, 6, 12, 14
+- **Amended by:** ADR-0026 — the three is a setting, `ignored-runs-max`;
+  undoing any act of the role, not only a closing, demotes its kind
 
 ## Context
 
@@ -80,7 +82,8 @@ in a row (ADR-0018's number), the role **pauses**: no agent is asked —
 nothing read, no second judge — until a person does one of those; the
 report says so, with a box to resume. The engine's own work goes on: a
 state comment, a slip, a reply's agreement or a label's acceptance, a box
-ticked. A run with no agent never counts: it costs nothing.
+ticked. A run with no agent never counts: it costs nothing. (The three
+is a setting since ADR-0026: `ignored-runs-max`.)
 
 ## Consequences
 

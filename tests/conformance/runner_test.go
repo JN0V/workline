@@ -85,6 +85,7 @@ type caseFile struct {
 		Gate    string            `yaml:"gate"`
 		Doctor  bool              `yaml:"doctor"`
 		Init    bool              `yaml:"init"`
+		InitOpt []string          `yaml:"init-options"`  // workline init, with these options
 		Setup   []string          `yaml:"setup"`         // workline setup, with these options
 		Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
 		Review  []string          `yaml:"review"`        // workline review, with these options
@@ -231,7 +232,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	case c.Run.Doctor:
 		args = []string{"doctor", "--repo", repo, "--json"}
 	case c.Run.Init:
-		args = []string{"init", "--repo", repo, "--roles", roles, "--json"}
+		args = append([]string{"init", "--repo", repo, "--roles", roles, "--json"}, c.Run.InitOpt...)
 	case c.Run.Setup != nil:
 		args = append(append([]string{"setup"}, c.Run.Setup...), "--json")
 	case c.Run.Review != nil:

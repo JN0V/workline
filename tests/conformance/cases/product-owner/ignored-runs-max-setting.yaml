@@ -1,0 +1,24 @@
+case: product-owner/ignored-runs-max-setting
+about: The runs nobody answered before the role pauses are a setting, ignored-runs-max, not a fixed three — at 5, a fourth run ignored still asks the agent, and the report says when it will pause.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {ignored-runs-max: 5}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n"
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\nignored: 3\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: paused}]
+  forge:
+    issues:
+      - {id: 10, body-contains: "Runs since a person last answered: 4; at 5, the role pauses.", comment-contains: "ignored: 4"}

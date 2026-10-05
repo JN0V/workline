@@ -35,6 +35,13 @@ settings:
   # since; one whose code did not change is not read again.
   issues-per-run: 8
   code-lines-max: 1500     # lines of code given in one run, all files together
+  # How far the role goes (ADR-0026): cautious, normal or enterprising —
+  # the acts below are normal; `levels`, at the end, what the others change.
+  # A kind set here wins over the level, field by field.
+  autonomy: normal
+  # Runs in a row nobody answered before the role pauses (ADR-0025): 1 to
+  # 20; 0 never pauses, said in every report.
+  ignored-runs-max: 3
   # Each kind of act: act (done, up to max a run), propose (in the report,
   # for a person), off (dropped). Closing as obsolete, in act, is announced
   # on the issue first and closed `days` later if nobody wrote, the label
@@ -54,3 +61,33 @@ settings:
     ask: {mode: act, max: 3, rounds: 3}  # the reporter asked what is missing; again only after an answer, three times, then a person
     split: {mode: act, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0022)
     rename: {mode: act, max: 5}       # an issue's title; a person's kept
+
+# What each autonomy level lays over the settings above, before the
+# project's own (docs/spec/backlog-acts.md, "Autonomy and caps"). normal is
+# the settings as they are. cautious keeps the acts that check facts and
+# proposes those that set direction; enterprising raises the caps.
+levels:
+  autonomy:
+    cautious:
+      moved-percent-max: 10
+      acts:
+        milestone: {mode: propose}
+        order: {mode: propose}
+        close-duplicate: {mode: propose}
+        close-obsolete: {days: 14}
+        refine: {drafts: propose}     # Scope and Verification written; Need and Validation drafts proposed
+        ask: {max: 2, rounds: 2}
+        split: {mode: propose}
+        rename: {mode: propose}
+    normal: {}
+    enterprising:
+      moved-percent-max: 30
+      acts:
+        order: {max: 15}
+        close-duplicate: {max: 5}
+        close-obsolete: {max: 5}
+        refine: {max: 10}
+        ready: {max: 10}
+        ask: {max: 5}
+        split: {max: 4}
+        rename: {max: 10}

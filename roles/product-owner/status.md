@@ -5,7 +5,9 @@
 run, closes duplicates, announces what the code made obsolete and closes
 it a week later on silence and a second judge's yes, names an issue's
 code, sets milestones, finds a closing a person undid, does what a
-person of the project ticks in its report and pauses when nobody answers, refines an
+person of the project ticks in its report and pauses when nobody answers, goes as far
+as its autonomy level says — cautious, normal or enterprising — and
+demotes a kind of act a person undid, refines an
 issue to `ready` and talks with its reporter until it is, splits a need
 into sub-issues and renames a vague title, orders the backlog
 and moves what slipped, and keeps the one way every role opens an issue —
@@ -37,6 +39,7 @@ on the sandbox (tried.md).
 | GitLab as GitHub (ADR-0023): its members from the Planner role up are of the project, a Guest's issue proposed to its reporter; the project's bot writes with a project access token made and stored in one glab command; a state note another token wrote written anew; the job token alone refused, loud. A reply `agreed` by the reporter or a person of the project has the proposed text written (ADR-0021, amended); each comment given to the agent with who wrote it, on every forge | JN0V/workline-sandbox on GitLab, live and in GitLab CI (#13 renamed and refined in place, #15 a Guest's proposed, agreed by a reply, readied by the label; #16 split); conformance `forge/gitlab-*`, `product-owner/*-reply-*`, `comment-author-read` |
 
 | Obsolete announced, then closed (ADR-0024): a comment to the reporter quoting the code and the label `workline:obsolete`; at a run `days` later, nobody having written and the label still there, a second judge of another model asked apart, the issue closed as completed with its yes and level; a reply keeps it open for good on that quote | JN0V/workline-sandbox on GitHub (#14 closed, #4 kept) and on GitLab (#19 closed, #20 kept), live, the delay set to 0; label removal, exempt labels, a judge's no, the cap in conformance (`obsolete-*`) |
+| Autonomy levels (ADR-0026): `cautious` doing what checks facts — sources, Scope and Verification — and proposing what sets direction — a duplicate, milestones, priorities, Need and Validation drafts, a split —; `enterprising` closing, moving and refining whole; each kind's mode and where it comes from in the task and the report. An act a person undid found at the next run with no agent — a priority put back, a title renamed back — and its kind demoted whatever the level | JN0V/workline-sandbox on GitHub, live (#15–#19 cautious, #20–#24 enterprising; the rename planted); `ready` taken off, a split's child closed as not planned, `ignored-runs-max`, init's question in conformance |
 | The person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
@@ -62,11 +65,18 @@ checked.
    outsider or a bot tried live (one account on each sandbox); a
    proposal of a real agent's run ticked, not one planted; the pause
    reached by three real runs; a tick on a plugged forge.
-4. **The weekly sample over its acts**; a file the agent was not shown
+4. **Autonomy, what is left** (ADR-0026): the weekly sample over its
+   acts recording the level, and its suggestions from it (only the
+   report's, from the proposals settled at cautious, is built); a
+   suggestion for enterprising from its acts undone; a rename by a real
+   agent undone, `ready` taken off and a split's child closed live;
+   `workline init`'s question on a terminal; an undone split on GitLab,
+   which keeps no reason for a closing.
+5. **The weekly sample over its acts**; a file the agent was not shown
    named as a source. The one way to open issues is built (ADR-0018,
    amended); left: its import's plan does not yet see a closed issue
    (the engine leaves it closed, said).
-5. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
+6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
    GitHub project's position), deferred (ADR-0018); milestones ranked by
    their due date, not only their title; the engine refusing a person's
    priority, tried in conformance only.

@@ -17,4 +17,4 @@ expect:
   findings: [{rule: wrong-closing, where: "#9"}]
   forge:
     issues:
-      - {id: 13, body-contains: "Back to propose after a wrong closing: close-duplicate", comment-contains: "propose: [close-duplicate]"}
+      - {id: 13, body-contains: "Back to propose after a wrong closing or an act undone: close-duplicate", comment-contains: "propose: [close-duplicate]"}

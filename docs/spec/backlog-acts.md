@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: d07cdba
+checked: 71620e9
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -400,9 +400,13 @@ reporter, of the project, outside it, a bot.
 
 ## Autonomy and caps
 
-Each kind of act has a mode and a cap per run, set in the role's settings:
+How far the role goes is one setting, `autonomy` (ADR-0026): `cautious`,
+`normal` (the default) or `enterprising`, a preset of each kind's mode and
+cap. `normal` is the role's defaults:
 
 ```yaml
+autonomy: normal
+ignored-runs-max: 3                         # runs nobody answered, then a pause; 0 never
 acts:
   open: {mode: act, max: 30}
   sources: {mode: act, max: 10}
@@ -435,6 +439,43 @@ a closing past it stays announced and is closed at a later run. Neither
 counts in the moved share: a closing takes an issue out of the backlog,
 it does not reorder it.
 
+### The levels
+
+The other levels change these (role.yaml, `levels`):
+
+| Setting | cautious | normal | enterprising |
+|---|---|---|---|
+| sources | act 10 | act 10 | act 10 |
+| close-duplicate | propose | act 3 | act 5 |
+| close-obsolete (announced first) | act 3, 14 days | act 3, 7 days | act 5, 7 days |
+| milestone | propose | act 10 | act 10 |
+| order | propose | act 10 | act 15 |
+| moved-percent-max | 10 | 20 | 30 |
+| refine | act 5, Need and Validation drafts proposed (`drafts: propose`) | act 5 | act 10 |
+| ready (the engine's check, never a draft) | act 5 | act 5 | act 10 |
+| ask | act 2, 2 rounds | act 3, 3 rounds | act 5, 3 rounds |
+| split | propose | act 2 | act 4 |
+| rename | propose | act 5 | act 10 |
+| open (import) | act 30 | act 30 | act 30 |
+
+`cautious` is for a project whose Product Owner is a person (`workline
+init` asks): the acts that check facts are done, those that set direction
+proposed. A refine there writes Scope and Verification and proposes the
+Need and Validation drafts in the report (`drafts-proposed`) — unless a
+person's already: agreed to in a reply, accepted by the label, or
+proposed to an outsider in a comment. The level sets what is done with
+what is read, not how much is read: `issues-per-run`, `code-lines-max`
+and other roles' `issues-max` are their own.
+
+**Precedence**: the level, then a kind the project sets, field by field
+(`acts: {rename: {mode: act}}` at `cautious` keeps the level's cap); then
+a kind demoted ("Trust"), proposed whatever the level until a person's
+tick; then a person's tick on one act ("The person's hand"). The task
+given to the agent lists each kind's mode and where it comes from —
+`level`, `setting` (differs from the level's) or `demoted` —, and so does
+the report, on its `Autonomy:` line. A level the role does not have, or
+`ignored-runs-max` outside 0 to 20, stops the run.
+
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
@@ -451,8 +492,15 @@ import run again opens it. Its own engine
 comment (`<!-- workline:sticky=product-owner/acts -->`) records the
 closings done, the kinds dropped back to `propose`, the proposals — each
 with its line and the act as decided (`proposal`) —, the runs nobody
-answered (`ignored`) and the comments of people of the project on the
-report (`comments`).
+answered (`ignored`), the comments of people of the project on the
+report (`comments`), the role's own acts a person may undo (`done`, each
+with the value before and the one set, and the level it was done at;
+closings in `closed`, with their level) and those undone (`undone`, with
+their evidence), and what people did with the proposals at the level in
+force (`measure`: ticked, settled otherwise). From it the report may
+suggest another level — at `cautious`, more than 80% of 10 proposals
+settled or more ticked as proposed suggests `normal` —; it never changes
+the setting.
 
 ## The person's hand
 
@@ -481,10 +529,12 @@ whose proposal the record no longer holds is nothing.
 **Paused.** A run that read issues with an agent while the report held a
 proposal is ignored when, since the last run, no person of the project
 ticked a box or wrote on the report, no closing was undone and no
-proposal's issue was closed. After three in a row (`ignored: 3`), the
-report says **Paused**, with a box to resume; the next runs ask no
-agent (`paused`: nothing read, no second judge) until a person does
-one of those.
+proposal's issue was closed. After `ignored-runs-max` in a row (3 by
+default, 1 to 20), the report says **Paused**, with a box to resume; the
+next runs ask no agent (`paused`: nothing read, no second judge) until a
+person does one of those. At 0 the role never pauses: every run's
+findings (`never-paused`) and the report say so, with the runs nobody
+answered.
 
 ## Trust
 
@@ -495,3 +545,24 @@ finding `wrong-closing`, and is read again; the report says so, with a
 box to set it back to `act`, its closings still closed and those reopened
 beside it. Only a person of the project's tick sets it back ("The
 person's hand").
+
+Any other act of the role's a person undoes demotes its kind the same
+way (ADR-0026), found at the next run — with or without an agent — from
+the record's `done` and the forge, the evidence in the finding `undone`
+and in the report:
+
+| Act | Undone when |
+|---|---|
+| rename | the issue's title is the one it had before |
+| order | its priority is the one it had before (none included) |
+| milestone | its milestone is the one it had before (none included) |
+| ready | `workline:ready` is no longer on the open issue |
+| split | a child listed in the parent's state is closed as not planned (GitHub; GitLab keeps no reason) |
+
+A title, priority or milestone a person set to a third value is theirs:
+the act is no longer watched, and demotes nothing. An act whose issue is
+closed is no longer watched; a split, once each child is closed or gone
+from the forge (deleted, moved). A move
+the engine made itself (a slip) and an act a person ticked are not the
+role's choice, and are not watched. The record keeps the newest 200.
+Changing the level never lifts a demotion.

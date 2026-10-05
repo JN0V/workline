@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"go.yaml.in/yaml/v3"
 )
 
 func TestRoutePrePush(t *testing.T) {
@@ -82,6 +84,70 @@ func TestAddReviewer(t *testing.T) {
 				t.Errorf("the line reads %q, want %q", got, c.steps)
 			}
 			data, _ := os.ReadFile(file)
+			if !strings.Contains(string(data), c.keeps) {
+				t.Errorf("lost %q:\n%s", c.keeps, data)
+			}
+		})
+	}
+}
+
+func TestSetAutonomy(t *testing.T) {
+	for _, c := range []struct {
+		name, before string
+		changed      bool
+		level        string
+		fails        bool
+		keeps        string
+	}{
+		{name: "no file", changed: true, level: "cautious"},
+		{name: "roles empty", before: "roles:\n", changed: true, level: "cautious"},
+		{name: "roles null", before: "roles: ~\nai: claude\n", changed: true, level: "cautious", keeps: "ai: claude"},
+		{name: "the role empty", before: "roles:\n  product-owner:\n", changed: true, level: "cautious"},
+		{name: "its settings null", before: "roles:\n  product-owner: {settings: null}\n", changed: true, level: "cautious"},
+		{name: "other settings kept", before: "roles:\n  product-owner:\n    settings: {issues-per-run: 4}\n", changed: true, level: "cautious", keeps: "issues-per-run: 4"},
+		{name: "a level set already", before: "roles:\n  product-owner:\n    settings: {autonomy: enterprising}\n", level: "enterprising"},
+		{name: "roles a scalar", before: "roles: all\n", fails: true, keeps: "roles: all"},
+		{name: "autonomy empty", before: "roles:\n  product-owner:\n    settings:\n      autonomy:\n", changed: true, level: "cautious"},
+		{name: "autonomy a list", before: "roles:\n  product-owner:\n    settings:\n      autonomy: [cautious]\n", fails: true},
+		{name: "comments only", before: "# the project's config\n", changed: true, level: "cautious", keeps: "# the project's config"},
+		{name: "a null's comment kept", before: "roles: ~ # set later\n", changed: true, level: "cautious", keeps: "# set later"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			repo := t.TempDir()
+			file := filepath.Join(repo, ".workline", "config.yaml")
+			if c.before != "" {
+				os.MkdirAll(filepath.Dir(file), 0o755)
+				os.WriteFile(file, []byte(c.before), 0o644)
+			}
+			level, changed, err := SetAutonomy(repo, "cautious")
+			data, _ := os.ReadFile(file)
+			if c.fails {
+				if err == nil {
+					t.Errorf("no error; the file:\n%s", data)
+				}
+				if string(data) != c.before {
+					t.Errorf("the file was changed:\n%s", data)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if changed != c.changed || level != c.level {
+				t.Errorf("got %q %v, want %q %v", level, changed, c.level, c.changed)
+			}
+			var doc struct {
+				AI    string `yaml:"ai"`
+				Roles map[string]struct {
+					Settings map[string]any `yaml:"settings"`
+				} `yaml:"roles"`
+			}
+			if err := yaml.Unmarshal(data, &doc); err != nil {
+				t.Fatalf("the file no longer reads: %v\n%s", err, data)
+			}
+			if got := doc.Roles["product-owner"].Settings["autonomy"]; got != c.level {
+				t.Errorf("autonomy reads %v, want %s:\n%s", got, c.level, data)
+			}
 			if !strings.Contains(string(data), c.keeps) {
 				t.Errorf("lost %q:\n%s", c.keeps, data)
 			}

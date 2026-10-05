@@ -1,0 +1,26 @@
+case: product-owner/level-normal-is-todays-defaults
+about: With no autonomy set, the level is normal and the acts are the role's defaults as they were — a duplicate closed, a title renamed, a priority set, a need split, sources named — the report saying the level and each kind's mode, from the level.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", body: "WriteRows loses rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:level-acts}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 12, closed: true, reason: duplicate}
+      - {id: 9, title: "The CSV export drops the last row", labels: [workline:priority/1]}
+      - {id: 10, comment-contains: "split: [13, 14]"}
+      - {id: 11, comment-contains: "sources: [src/export/csv.go]"}
+      - {id: 15, title: "Backlog — product owner", body-contains: "Autonomy: **normal** — sources: act, 10 a run (level); close-duplicate: act, 3 a run (level); close-obsolete: act, 3 a run (level); milestone: act, 10 a run (level); order: act, 10 a run (level); refine: act, 5 a run (level); ready: act, 5 a run (level); ask: act, 3 a run (level); split: act, 2 a run (level); rename: act, 5 a run (level); open: act, 30 a run (level)."}
+      - {id: 15, body-lacks: "## Proposed"}
