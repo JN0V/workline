@@ -33,9 +33,9 @@ func TestAskAgain(t *testing.T) {
 func TestClaimsOneByOneMended(t *testing.T) {
 	answer := "- claim:\n    quote: |\n\tif ok {\n    why: covered by #20 too\n" +
 		"- claim: {quote: \"a\"\n"
-	read, broken := claimsOneByOne(answer)
-	if read != 1 || len(broken) != 1 {
-		t.Fatalf("read %d, broken %v", read, broken)
+	read, broken, mended := claimsOneByOne(answer)
+	if read != 1 || len(broken) != 1 || len(mended) != 2 {
+		t.Fatalf("read %d, broken %v, mended %q", read, broken, mended)
 	}
 	c := claimsRead(answer)[0].Value.(map[string]any)
 	if c["quote"] != "\tif ok {\n" || c["why"] != "covered by #20 too" {

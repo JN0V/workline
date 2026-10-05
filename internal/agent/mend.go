@@ -10,26 +10,13 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Mend fixes, before any YAML reader takes an answer, the two slips that
-// made agents' answers unreadable or cut, whatever the role
-// (docs/spec/role-contract.md, "One run", step 3), and says what it mended:
-//
-//   - code quoted with its tabs under a block scalar (`|`), its first line
-//     starting with a tab or its lines not indented under the key: the
-//     reader takes the tab for indentation and refuses the whole answer
-//     (#157). Only when the answer does not read for that reason, the block
-//     is given its indentation in spaces — an explicit indentation
-//     indicator, `|2`, when its first line starts with a tab — and the text
-//     of the block is kept as written, tabs included.
-//   - a text written plain holding ` #`: the reader takes the rest of the
-//     line for a comment and drops it without a word (#156). A plain value
-//     followed on its line by ` #…` is read whole, as written, when it is
-//     free text: several words, or a `#` stuck to what follows (`#20`). A
-//     single word followed by `# a note` stays a comment: a closed value
-//     (a severity, a path) the agent annotated.
-//
-// An answer that still does not read is returned as it came, nothing said:
-// the reader's own error is what the agent is told when asked again.
+// Mend fixes the two slips that leave agents' answers unreadable or cut,
+// before any YAML reader takes them, and says what it mended: code quoted
+// with its tabs under a block scalar, when the answer fails on a tab (#157),
+// and a plain free text cut by ` #`, read whole (#156). The block's text and
+// the line's are kept exactly as written; an answer that still does not read
+// comes back as it came. Why and the rules: docs/spec/role-contract.md,
+// "One run", step 3.
 func Mend(answer string) (string, []string) {
 	var said []string
 	var probe any

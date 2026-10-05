@@ -612,13 +612,16 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			// reader: the items are read one by one, the broken ones kept
 			// as unreadable claims, which the role counts as dropped.
 			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-			read, broken := claimsOneByOne(string(raw))
+			read, broken, mended := claimsOneByOne(string(raw))
 			if read == 0 {
 				unanswered("invalid", err.Error())
 				continue
 			}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "part-partly-read", Where: name, Level: "warn",
 				Message: fmt.Sprintf("the answer to this part was not valid as a whole: %d claims read one by one, %d that could not be read counted as dropped", read, len(broken))})
+			for _, m := range mended {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "answer-mended", Where: name, Level: "warn", Message: m})
+			}
 			if err := intent.Write(filepath.Join(dir, "out", "intentions.yaml"), append(claimsRead(string(raw)), broken...)); err != nil {
 				return err
 			}
@@ -668,7 +671,7 @@ func partUnread(err error, dir string, claims bool) string {
 	if errors.Is(err, agent.ErrInvalidOutput) {
 		if claims {
 			raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-			if read, _ := claimsOneByOne(string(raw)); read > 0 {
+			if read, _, _ := claimsOneByOne(string(raw)); read > 0 {
 				return ""
 			}
 		}
@@ -718,18 +721,22 @@ func claimsRead(answer string) []intent.Intention {
 }
 
 // claimsOneByOne counts the items that read as claims, and returns the
-// others as claims with nothing to check, which the role drops.
-func claimsOneByOne(answer string) (int, []intent.Intention) {
+// others as claims with nothing to check, which the role drops, and what
+// was mended of those read (agent.Mend).
+func claimsOneByOne(answer string) (int, []intent.Intention, []string) {
 	read := len(claimsRead(answer))
 	var broken []intent.Intention
+	var mended []string
 	for _, item := range answerItems(answer) {
-		item, _ = agent.Mend(item)
+		item, said := agent.Mend(item)
 		var one []map[string]any
 		if yaml.Unmarshal([]byte(item), &one) != nil || len(one) != 1 || len(one[0]) != 1 || one[0]["claim"] == nil {
 			broken = append(broken, intent.Intention{Kind: "claim", Value: map[string]any{"unreadable": strings.TrimSpace(item)}})
+			continue
 		}
+		mended = append(mended, said...)
 	}
-	return read, broken
+	return read, broken, mended
 }
 
 // callAgent asks the agent once and records the call: in the result, and
