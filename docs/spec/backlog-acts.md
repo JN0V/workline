@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: fa1d682
+checked: d09fdf3
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -438,7 +438,8 @@ it does not reorder it.
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-lists what the last run did and what is proposed, each closing with its
+lists what the last run did and what is proposed, each proposal a box a
+person of the project ticks to have it done ("The person's hand"), each closing with its
 quote and how to undo it — a rename with the title it had, a split with
 its children's titles, to close; an announcement with the day it may close
 and how to keep it open; an issue kept open, and why. Under "Before this run", each issue the run
@@ -448,12 +449,49 @@ settles it — its issue closed — or a run decides it again. An issue to
 open past the cap stays there until an open issue holds its text: an
 import run again opens it. Its own engine
 comment (`<!-- workline:sticky=product-owner/acts -->`) records the
-closings done, the kinds dropped back to `propose`, and the proposals.
+closings done, the kinds dropped back to `propose`, the proposals — each
+with its line and the act as decided (`proposal`) —, the runs nobody
+answered (`ignored`) and the comments of people of the project on the
+report (`comments`).
+
+## The person's hand
+
+Each proposal is a box, its line ending with a hidden key,
+`<!-- workline:proposal=<issue>/<kind> -->` (an issue to open: its text's
+key). At each run, acts or not, the engine reads the boxes ticked in the
+report's body and who ticked each (ADR-0025):
+
+| Forge | Who ticked it |
+|---|---|
+| GitHub | the editor of the body's version that ticked it (`userContentEdits`, the hundred newest; after a gap — older versions, one deleted — the next version ticks nothing); of the project when GitHub gives them write, maintain or admin — a token that may not read that: nobody known; a user of type Bot is a bot |
+| GitLab | the author of the system note "marked the checklist item … as completed"; of the project from the Planner role (ADR-0023) |
+| local | a person of the project, unnamed: whoever works in the clone |
+| plugged | its `ticks` operation (docs/spec/forge-command.md); one it refuses: nobody known |
+
+| Ticked by | What the engine does |
+|---|---|
+| A person of the project, a proposal it can do | Done as the record holds it, never as an intention says (`not-ticked`), whatever its mode or cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, no announcement nor second judge, naming who ticked it |
+| A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
+| A person of the project, an issue to open, rounds spent, a slip with nowhere to go | Not done: the report says to do it by hand; the proposal leaves it |
+| Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
+
+A proposal ticked, done or dropped, leaves the record: a box still ticked
+whose proposal the record no longer holds is nothing.
+
+**Paused.** A run that read issues with an agent while the report held a
+proposal is ignored when, since the last run, no person of the project
+ticked a box or wrote on the report, no closing was undone and no
+proposal's issue was closed. After three in a row (`ignored: 3`), the
+report says **Paused**, with a box to resume; the next runs ask no
+agent (`paused`: nothing read, no second judge) until a person does
+one of those.
 
 ## Trust
 
 A closing is wrong when its issue is open again. At the next run of the
 role, acts or not, the engine reads the issues it closed; one open again
 puts that kind of act back to `propose`, whatever the settings say, with a
-finding `wrong-closing`, and is read again; the report says so. Only the person sets it to `act` again. *Not built yet:
-how the person does so, reading a tick with its author.*
+finding `wrong-closing`, and is read again; the report says so, with a
+box to set it back to `act`, its closings still closed and those reopened
+beside it. Only a person of the project's tick sets it back ("The
+person's hand").

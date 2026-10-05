@@ -1,0 +1,25 @@
+case: product-owner/tick-author-unknown
+about: A proposal's box ticked where the forge does not say who ticked it is not taken for a yes — nothing is done, the report says the forge does not say, and the proposal stays for a person to do or tick again.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [x] Rename #9 to \"The CSV export drops the last row\". <!-- workline:proposal=9/rename -->\n"
+        labels: []
+        comments: ["```yaml\nproposed:\n  - issue: 9\n    act: rename\n    line: 'Rename #9 to \"The CSV export drops the last row\".'\n    proposal: {do: rename, issue: 9, title: The CSV export drops the last row, why: '\"bug\" says nothing.'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: tick-ignored, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, title: "bug"}
+      - {id: 10, body-contains: "the forge does not say who ticked it", comment-contains: "act: rename"}

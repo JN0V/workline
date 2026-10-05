@@ -106,6 +106,11 @@ type Record struct {
 	Wrong    []Closing `yaml:"wrong,omitempty"`        // closings found wrong: their issue open again
 	Propose  []string  `yaml:"propose,flow,omitempty"` // kinds of act back to propose, until the person says
 	Proposed []Pending `yaml:"proposed,omitempty"`     // acts proposed, kept until their issue is closed or proposed again
+	// The person's hand (ADR-0025): the runs in a row whose report proposed
+	// something and that nobody answered, and the comments of people of the
+	// project on the report when last read.
+	Ignored  int `yaml:"ignored,omitempty"`
+	Comments int `yaml:"comments,omitempty"`
 }
 
 // Pending is an act proposed to a person, as the report says it.
@@ -117,6 +122,9 @@ type Pending struct {
 	// Capped: proposed only because the run's cap was reached, not left to
 	// a person by its mode: its issue is read again at the next run.
 	Capped bool `yaml:"capped,omitempty"`
+	// Proposal is what the engine would do, as decided: done as it says
+	// when a person of the project ticks its box (ADR-0025).
+	Proposal *Proposal `yaml:"proposal,omitempty"`
 }
 
 // Closing is one issue the role closed.
@@ -179,6 +187,10 @@ type Proposal struct {
 	Until     string `yaml:"until,omitempty"`
 	Judge     string `yaml:"judge,omitempty"`
 	Say       bool   `yaml:"say,omitempty"`
+	// Ticked, the engine's: who ticked this proposal's box in the report, a
+	// person of the project — checked again on the forge, the act done as
+	// the record says, never as the intention does (ADR-0025).
+	Ticked string `yaml:"ticked,omitempty"`
 }
 
 // Child is one part of a split need: an issue of its own, with its four
@@ -252,6 +264,9 @@ type Plan struct {
 	bodies    []string        // their bodies, to find an import again
 	seen      map[string]bool // the imports this run decided
 	read      []int           // the issues this run read
+	hand      *Hand           // what people did on the report since the last run
+	ticked    map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
+	said      []string        // what the report says of the boxes ticked
 }
 
 // Setting is a kind of act's mode and cap.
@@ -349,7 +364,17 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
-		if (c.Do == "ready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "split" || c.Do == "rename") && decided[c.key()] {
+		if c.Ticked != "" {
+			// A box a person of the project ticked: the act as the record
+			// holds it, checked again against the forge's tick.
+			var why string
+			if c, why = p.tickedAct(c); why != "" {
+				dropped(c, "not-ticked", why)
+				p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c})
+				continue
+			}
+		}
+		if (c.Do == "ready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -366,10 +391,27 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		if once && why == "" {
 			decided[c.key()] = true // the first that passes its check is kept
 		}
+		if c.Ticked != "" {
+			decided[c.key()] = true // a person's yes: the agent's act on it is not done again
+		}
 		d := Decision{Index: i, Mode: Off, Act: c}
 		switch {
 		case why != "":
 			dropped(c, mode, why)
+			if c.Ticked != "" {
+				p.said = append(p.said, fmt.Sprintf("- %s's box, ticked by %s, not done: %s.", c.where(), c.Ticked, why))
+			}
+		case c.Ticked != "":
+			// Their yes: done, whatever its mode, a kind back to propose or a
+			// cap — a person decided it, not the role.
+			d.Mode = Act
+			done[c.Kind()]++
+			if slices.Contains(moves, c.Do) {
+				moved[c.Issue] = true
+			}
+			if c.Do == "close" {
+				p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
+			}
 		default:
 			s, ok := settings[c.Kind()]
 			if !ok {
@@ -441,7 +483,84 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 		p.Decisions = append(p.Decisions, d)
 	}
 	p.keepProposed()
+	p.pause()
 	return p, nil
+}
+
+// tickedAct is the act a ticked intention stands for: the proposal the
+// record holds under its key, which a person of the project ticked, as the
+// forge says; or why it is not done.
+func (p *Plan) tickedAct(c Proposal) (Proposal, string) {
+	key := c.key()
+	t, ok := p.hand.Tick(key)
+	if !ok || !t.Person() || t.Who() != c.Ticked {
+		return c, "not ticked by a person of the project in the report, as the forge says"
+	}
+	for _, q := range p.hand.Record.Proposed {
+		if q.TickKey() == key && q.Doable() {
+			act := *q.Proposal
+			act.Ticked = c.Ticked
+			p.ticked[key] = true
+			return act, ""
+		}
+	}
+	return c, "no such proposal in the report's record"
+}
+
+// readTicks reads the boxes ticked in the report that are not a proposal
+// to do: a kind set back to act by a person of the project; a tick that is
+// not a person of the project's, or that the engine cannot do, said.
+func (p *Plan) readTicks() {
+	for _, t := range p.hand.Ticks {
+		var q *Pending
+		for k := range p.hand.Record.Proposed {
+			if p.hand.Record.Proposed[k].TickKey() == t.Key {
+				q = &p.hand.Record.Proposed[k]
+			}
+		}
+		kind, toAct := strings.CutPrefix(t.Key, KeyAct)
+		switch {
+		case !t.Person():
+			p.Changed = true // the report rewritten: the box unticked, the reason said
+			p.said = append(p.said, fmt.Sprintf("- A box (%s) not done: %s; only a person of the project's tick is a yes.", t.Key, t.why()))
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "tick-ignored", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
+				Message: fmt.Sprintf("the box %s: %s; not done", t.Key, t.why())})
+		case toAct && slices.Contains(p.Record.Propose, kind):
+			p.Changed = true
+			p.Record.Propose = slices.DeleteFunc(p.Record.Propose, func(k string) bool { return k == kind })
+			p.said = append(p.said, fmt.Sprintf("- %s set back to act by %s.", kind, t.Who()))
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "back-to-act", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
+				Message: fmt.Sprintf("%s set back to act by %s's tick in the report", kind, t.Who())})
+		case q != nil && !q.Doable():
+			p.Changed, p.ticked[t.Key] = true, true
+			p.said = append(p.said, fmt.Sprintf("- Ticked by %s, not something the engine does — do it by hand: %s", t.Who(), q.Line))
+		}
+	}
+}
+
+// pause counts the runs nobody answered: one that read issues with an
+// agent, its report holding a proposal,
+// and since which no person ticked a box, wrote on the report, undid a
+// closing or settled a proposal. After PauseAfter, the role pauses — no
+// agent asked — until a person does (ADR-0025).
+func (p *Plan) pause() {
+	r := &p.Record
+	if r.Comments != p.hand.Comments {
+		r.Comments, p.Changed = p.hand.Comments, true
+	}
+	switch {
+	case len(p.hand.Signs) > 0:
+		if r.Ignored > 0 {
+			r.Ignored, p.Changed = 0, true
+		}
+	case len(p.hand.Record.Proposed) > 0 && len(p.read) > 0 && r.Ignored < PauseAfter:
+		r.Ignored++
+		p.Changed = true
+		if r.Ignored == PauseAfter {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "paused", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
+				Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered: no agent is asked from the next run until a person ticks a box, writes on the report or undoes a closing", PauseAfter)})
+		}
+	}
 }
 
 // keepProposed carries over the acts proposed by earlier runs whose issue
@@ -467,13 +586,17 @@ func (p *Plan) keepProposed() {
 		if q.Capped && slices.Contains(p.read, q.Issue) {
 			settled = true // read again: the agent decided it anew, or not at all
 		}
+		if p.ticked[key] {
+			settled = true // a person's tick, done or said why not
+		}
 		if !settled && !decided[key] {
 			kept = append(kept, q)
 		}
 	}
 	for _, d := range p.Decisions {
 		if d.Mode == Propose {
-			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close"), Capped: d.Capped}
+			act := d.Act
+			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close"), Capped: d.Capped, Proposal: &act}
 			if d.Act.Do == "open" {
 				q.Key = d.Act.key()
 			}
@@ -494,7 +617,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
-	p.open, p.seen, p.issues = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}
+	p.open, p.seen, p.issues, p.ticked = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is
@@ -503,20 +626,23 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 			p.Report = is.ID
 		}
 	}
+	if p.hand, err = ReadHand(f, role, open); err != nil {
+		return err
+	}
 	if p.Report == 0 {
 		return nil
 	}
-	comments, err := f.Comments(forge.Target{Kind: "issue", ID: p.Report})
-	if err != nil {
-		return err
-	}
-	if _, err := readBlock(comments, RecordMarker(role), &p.Record); err != nil {
+	if err := p.hand.Broken; err != nil {
 		// What it did cannot be read: nothing is done, everything proposed.
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "record-broken", Where: fmt.Sprintf("#%d", p.Report),
 			Message: "the record of what the role did does not read (" + err.Error() + "); every act is proposed until it is repaired"})
 		p.Record = Record{Propose: []string{"close-duplicate", "close-obsolete"}}
+		p.hand = &Hand{Report: p.Report}
 		return nil
 	}
+	p.Record = p.hand.Record
+	p.Record.Proposed = slices.Clone(p.hand.Record.Proposed)
+	p.Record.Propose = slices.Clone(p.hand.Record.Propose)
 	isOpen := p.open
 	var kept []Closing
 	for _, c := range p.Record.Closed {
@@ -533,6 +659,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 			Message: fmt.Sprintf("closed by the role (%s), open again: %s is back to propose until a person sets it to act", c.Act, c.Act)})
 	}
 	p.Record.Closed = kept
+	p.readTicks()
 	return nil
 }
 
@@ -675,6 +802,12 @@ func (p *Plan) checkObsolete(f forge.Backlog, repo, role string, st *State, c *P
 		return "no-state", err.Error()
 	}
 	s := p.settings["close-obsolete"]
+	if c.Ticked != "" {
+		// A person of the project ticked it in the report: their yes is the
+		// judge, it is closed now, not announced (ADR-0025).
+		c.Announce, c.Until, c.Announced = false, "", ""
+		return "", ""
+	}
 	if c.Announced == "" {
 		switch {
 		case ExemptLabel(p.issues[c.Issue], s) != "":
@@ -1352,7 +1485,7 @@ func squeeze(s string) string { return strings.Join(strings.Fields(s), " ") }
 func (p *Plan) ReportBody() string {
 	var did, proposed []string
 	for _, q := range p.Record.Proposed {
-		proposed = append(proposed, "- [ ] "+q.Line)
+		proposed = append(proposed, "- [ ] "+q.Line+" "+TickMarker(q.TickKey()))
 	}
 	for _, d := range p.Decisions {
 		switch d.Mode {
@@ -1383,16 +1516,44 @@ func (p *Plan) ReportBody() string {
 					undo = fmt.Sprintf(" To keep it open, write on it or take the label %s off.", LabelObsolete)
 				}
 			}
+			if d.Act.Ticked != "" {
+				undo += " Ticked by " + d.Act.Ticked + "."
+			}
 			did = append(did, "- "+describe(d.Act, "Closed")+undo)
 		}
 	}
 	var b strings.Builder
-	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. A closing undone (the issue reopened) puts that kind of act back to a person.\n")
+	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. A closing undone (the issue reopened) puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
+	switch r := p.Record; {
+	case r.Ignored >= PauseAfter:
+		fmt.Fprintf(&b, "\n**Paused**: %d runs in a row proposed something and nobody ticked a box, wrote here or undid a closing. No agent is asked until a person does; tick this to resume:\n\n- [ ] Resume %s\n", r.Ignored, TickMarker(KeyResume))
+	case r.Ignored > 0:
+		fmt.Fprintf(&b, "\nRuns since a person last answered: %d; at %d, the role pauses.\n", r.Ignored, PauseAfter)
+	}
 	if len(p.Record.Propose) > 0 {
 		fmt.Fprintf(&b, "\nBack to propose after a wrong closing: %s.\n", strings.Join(p.Record.Propose, ", "))
 	}
 	for _, w := range p.Record.Wrong {
-		fmt.Fprintf(&b, "- #%d, closed as %s, was reopened.\n", w.Issue, w.Act)
+		if slices.Contains(p.Record.Propose, w.Act) {
+			fmt.Fprintf(&b, "- #%d, closed as %s, was reopened.\n", w.Issue, w.Act)
+		}
+	}
+	for _, kind := range p.Record.Propose {
+		kept, wrong := 0, 0
+		for _, c := range p.Record.Closed {
+			if c.Act == kind {
+				kept++
+			}
+		}
+		for _, c := range p.Record.Wrong {
+			if c.Act == kind {
+				wrong++
+			}
+		}
+		fmt.Fprintf(&b, "- [ ] Set %s back to act: %d of its closings still closed, %d reopened. %s\n", kind, kept, wrong, TickMarker(KeyAct+kind))
+	}
+	if len(p.said) > 0 {
+		b.WriteString("\n## Boxes ticked\n\n" + strings.Join(p.said, "\n") + "\n")
 	}
 	if len(did) > 0 {
 		b.WriteString("\n## Done\n\n" + strings.Join(did, "\n") + "\n")
@@ -1409,7 +1570,7 @@ func (p *Plan) ReportBody() string {
 		b.WriteString("\n## Before this run\n\nThe issues this run moved, as they were: to put the order back, set their priority label and milestone to these.\n\n" + strings.Join(before, "\n") + "\n")
 	}
 	if len(proposed) > 0 {
-		b.WriteString("\n## Proposed\n\nFor a person: do what a line says if you agree — close the issue, write the section, set the label; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
+		b.WriteString("\n## Proposed\n\nFor a person: tick a box if you agree, and the engine does it at its next run, as written — or do it yourself; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
 	return b.String()
 }
@@ -1512,8 +1673,12 @@ func Comment(c Proposal, role string) string {
 	if c.Reason == "duplicate" {
 		head = fmt.Sprintf("Duplicate of #%d", c.DuplicateOf)
 	}
-	return fmt.Sprintf("%s\n\n%s %s\n\nClosed by the %s role. Reopen it to undo: a closing undone puts this kind of act back to a person.",
-		head, cite(*c.Quote), strings.TrimSpace(c.Why), role)
+	by := "Closed by the " + role + " role"
+	if c.Ticked != "" {
+		by += ", " + c.Ticked + " having ticked it in the report"
+	}
+	return fmt.Sprintf("%s\n\n%s %s\n\n%s. Reopen it to undo: a closing undone puts this kind of act back to a person.",
+		head, cite(*c.Quote), strings.TrimSpace(c.Why), by)
 }
 
 // FormatRecord is the body of the report's record comment.

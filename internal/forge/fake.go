@@ -40,6 +40,7 @@ type FakeItem struct {
 	Author    string        `json:"author,omitempty"`
 	Insider   bool          `json:"insider,omitempty"`
 	Parent    int           `json:"parent,omitempty"` // the issue it is a sub-issue of
+	Ticks     []Tick        `json:"ticks,omitempty"`  // boxes ticked in its body, with who ticked them
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
@@ -396,4 +397,16 @@ func (f *Fake) AddSubIssue(parent, child int) (bool, error) {
 		it.Parent = parent
 		return nil
 	})
+}
+
+func (f *Fake) Ticks(id int) ([]Tick, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil {
+		return nil, err
+	}
+	return it.Ticks, nil
 }

@@ -229,6 +229,25 @@ for good for that evidence. Closed as `completed`, not `not_planned`: the
 code did the work, and `not_planned` is the person's no that every role's
 issue opening reads as such (ADR-0018).
 
+## A tick and who ticked it; a bot nobody answers (2026-10-05)
+
+In the ecosystem's words: *dependency dashboard*, *checkbox*, *task list*,
+*approval*, *edit history*, *auto-pause*, *inactive repository*.
+
+| Where | A tick read | Who ticked it | Nobody answering |
+|---|---|---|---|
+| [Renovate's dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) | at its next run, the box applied (`dependencyDashboardApproval`) | not checked: its docs say nothing of who may tick; the forge's edit rights are the only guard | — |
+| GitHub | no event for a task box; each version of a body kept with its editor (GraphQL `userContentEdits`, the whole body each, newest first — read live on JN0V/workline-sandbox) | the editor; only the author and [write access and above](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization) edit another's issue; `collaborators/<login>/permission` says which | — |
+| GitLab | a system note per box, "marked the checklist item **…** as completed" (or "incomplete"), written for a tick on the page and for a description changed through the API alike, the item's markdown escaped (`\#`, `\=`) and a hidden comment's text kept without its `<!--`/`-->` — read live on gitlab.com; a box added already ticked writes none | the note's author | — |
+| [Dependabot](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/troubleshoot-dependency-security/dependabot-updates-stopped) | — | — | pauses a repository where a pull request of its stayed open 90 days and no person merged or closed one, changed its config or ran it; no pull request opened while paused; any of those resumes it |
+
+**Decision** (ADR-0025): a box in the report carries a hidden key; a
+person of the project's tick — by the forge's own record of who ticked it
+— is done at the next run, as the record keeps the act; a bot's, an
+outsider's or an unknown author's is said and not done, stricter than
+Renovate since a run's token may tick what it wrote. Three runs nobody
+answered pause the agent, as Dependabot, resumed by a person's act.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was

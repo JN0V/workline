@@ -263,3 +263,17 @@ func (c *command) AddSubIssue(parent, child int) (bool, error) {
 	err := c.call("add-sub-issue", map[string]any{"parent": parent, "child": child}, &a)
 	return a.Native, err
 }
+
+// Ticks reads the answer to ticks: the boxes ticked in the issue's body,
+// each {item, done, author, insider, bot} (docs/spec/forge-command.md); a
+// forge that refuses the operation does not say who ticked: nil.
+func (c *command) Ticks(id int) ([]Tick, error) {
+	var a struct {
+		Ticks []Tick `json:"ticks"`
+	}
+	err := c.call("ticks", map[string]any{"id": id}, &a)
+	if err != nil && !errors.Is(err, ErrUnreachable) {
+		return nil, nil
+	}
+	return a.Ticks, err
+}

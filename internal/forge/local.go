@@ -456,3 +456,13 @@ func (l *Local) AddSubIssue(parent, child int) (bool, error) { return false, nil
 func (l *Local) SetMilestone(id int, title string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Milestone = title })
 }
+
+// Ticks: the local forge keeps no history; a box ticked in the clone is a
+// person of the project's, as its comments are.
+func (l *Local) Ticks(id int) ([]Tick, error) {
+	it, err := l.Item("issue", id)
+	if err != nil {
+		return nil, err
+	}
+	return TicksBetween("", it.Body, Note{Insider: true}), nil
+}

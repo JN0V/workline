@@ -723,3 +723,46 @@ func (g *gitlab) SetMilestone(id int, title string) error {
 	_, err = g.api("-X", "PUT", path(Target{Kind: "issue", ID: id}), "-f", fmt.Sprintf("milestone_id=%d", n))
 	return err
 }
+
+// taskNote is GitLab's system note for a box ticked or unticked in a
+// description — "marked the checklist item **…** as completed" (formerly
+// "the task"), written whether the box was ticked on the page or the
+// description edited through the API; the item's markdown escaped, its
+// hidden comments' text kept.
+var taskNote = regexp.MustCompile(`(?s)^marked the (?:checklist item|task) \*\*(.*)\*\* as (completed|incomplete)$`)
+
+// escaped is a character GitLab's note escaped: `\#`, `\=`, `\-`.
+var escaped = regexp.MustCompile(`\\(.)`)
+
+// Ticks reads the boxes ticked from the issue's system notes, each with
+// its author, of the project by their access level.
+func (g *gitlab) Ticks(id int) ([]Tick, error) {
+	out, err := g.api("--paginate", path(Target{Kind: "issue", ID: id})+"/notes?sort=asc&order_by=created_at&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	found, err := pages[struct {
+		Body   string `json:"body"`
+		System bool   `json:"system"`
+		Author struct {
+			Username string `json:"username"`
+		} `json:"author"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	var ticks []Tick
+	for _, n := range found {
+		m := taskNote.FindStringSubmatch(strings.TrimSpace(n.Body))
+		if !n.System || m == nil {
+			continue
+		}
+		in, err := g.insider(n.Author.Username)
+		if err != nil {
+			return nil, err
+		}
+		ticks = append(ticks, Tick{Item: escaped.ReplaceAllString(m[1], "$1"), Done: m[2] == "completed",
+			Note: Note{Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username)}})
+	}
+	return ticks, nil
+}
