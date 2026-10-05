@@ -314,7 +314,7 @@ issue's comments are the record; the state does not copy them.
 | Check | Otherwise |
 |---|---|
 | A person commented after the last round (a comment not ending with an engine marker: one quoting the engine's is a person's) | Dropped: `already-asked`, or `already-proposed` for a text; nothing written |
-| No question the act holds — each from the sentence before it (". ", "! ") to its `?`, a list's bullet, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | Dropped: `asked-before` |
+| No question the act holds — each from the sentence before it (". " or "! " then a capital, not "e.g.") to its `?`, a list's bullet, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | Dropped: `asked-before` |
 | Rounds before it under `acts.ask.rounds` (three) | Proposed in the report: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
 
 A later round thanks the reporter ("thank you; to refine this issue,

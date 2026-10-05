@@ -971,10 +971,14 @@ func conversation(role string, comments []string, c *Proposal) (rule, why string
 	return "", ""
 }
 
-// questions cuts a text into its questions, each squeezed and lowercased,
-// to tell one asked before.
+// sentenceEnd is where a sentence ends before a question.
+var sentenceEnd = regexp.MustCompile(`[.!] (?:[-*•] +|\d+[.)] +)?\p{Lu}`)
+
+// bullet is a list's bullet or number before a question.
 var bullet = regexp.MustCompile(`^\s*(?:[-*•]|\d+[.)])\s+`)
 
+// questions cuts a text into its questions, each squeezed and lowercased,
+// to tell one asked before.
 func questions(text string) []string {
 	var out []string
 	for _, part := range strings.SplitAfter(text, "?") {
@@ -983,9 +987,10 @@ func questions(text string) []string {
 		}
 		part = squeeze(part)
 		// The question alone, not the sentence before it: a sentence ends
-		// at a "." or "!" before a space, not at a file's or a version's dot.
-		if i := max(strings.LastIndex(part, ". "), strings.LastIndex(part, "! ")); i >= 0 {
-			part = part[i+2:]
+		// at a "." or "!", a space, then a capital — perhaps after a bullet —,
+		// not at a file's or a version's dot, nor at "e.g.".
+		if m := sentenceEnd.FindAllStringIndex(part, -1); len(m) > 0 {
+			part = part[m[len(m)-1][0]+2:]
 		}
 		part = bullet.ReplaceAllString(part, "") // a list's bullet or number aside
 		if q := strings.ToLower(strings.Trim(part, " *")); len(q) > 3 {
