@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 9d89dcd
+checked: 05e8060
 verified: agent:documentalist
 judged: 507e86b
 ---

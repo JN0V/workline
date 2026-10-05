@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 2615706
+checked: 05e8060
 verified: agent:claude-code
 ---
 # Model grid — v1 (draft)
