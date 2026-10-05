@@ -49,7 +49,8 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    what an issue waits on written in the forge's own relation (GitHub's
    dependencies, GitLab's `is_blocked_by` on Premium), else a line
    `Blocked by #12.` in its body, never a cycle, a person's link kept,
-   at most a fifth of the open issues moved a run — and does it,
+   at most `moved-percent-max` of the open issues moved a run (20% at
+   `normal`, 10% `cautious`, 30% `enterprising`) — and does it,
    proposes it, or drops it, by the kind's mode and cap (`acts`). One
    report issue lists what was done and proposed. A closing undone, the
    issue reopened, puts that kind back to `propose` (`wrong-closing`).
@@ -140,7 +141,7 @@ roles:
         close-obsolete: {mode: act, max: 3, days: 7, exempt: [pinned, security]}  # announced, then closed
         refine: {mode: act, max: 5}
         ready: {mode: act, max: 5}
-        ask: {mode: act, max: 3}
+        ask: {mode: act, max: 3, rounds: 3}    # rounds: times a reporter is asked
         split: {mode: act, max: 2}
         rename: {mode: act, max: 5}
         depend: {mode: act, max: 5}              # propose at cautious, 10 at enterprising
