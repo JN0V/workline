@@ -147,7 +147,13 @@ type Proposal struct {
 	Need         string   `yaml:"need,omitempty"`
 	Validation   string   `yaml:"validation,omitempty"`
 	Added        []string `yaml:"added,omitempty"`
-	Questions    string   `yaml:"questions,omitempty"` // asking the reporter
+	Questions    string   `yaml:"questions,omitempty"` // asking the reporter; for an outsider's refine, what it still needs
+	// The engine's, for the conversation with the reporter: the round this
+	// comment would be, and whether a refine is proposed to the reporter in
+	// a comment rather than written in the body (an outsider's issue).
+	Round      int  `yaml:"round,omitempty"`
+	ToReporter bool `yaml:"to-reporter,omitempty"`
+	Spent      bool `yaml:"spent,omitempty"` // the rounds spent: proposed to a person
 	// Ordering: the priority set (1 to 4); a milestone left because it is
 	// released (From, the engine's); and, the engine's, the issue's
 	// priority and milestone before the run, written in the report.
@@ -229,8 +235,9 @@ type Plan struct {
 
 // Setting is a kind of act's mode and cap.
 type Setting struct {
-	Mode string
-	Max  int
+	Mode   string
+	Max    int
+	Rounds int // asking: the times an issue's reporter is written to, then a person (ask only)
 }
 
 // Settings reads the role's `acts` setting.
@@ -245,6 +252,9 @@ func Settings(settings map[string]any) map[string]Setting {
 		}
 		if n, ok := m["max"].(int); ok {
 			s.Max = n
+		}
+		if n, ok := m["rounds"].(int); ok {
+			s.Rounds = n
 		}
 		out[kind] = s
 	}
@@ -334,6 +344,14 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			if c.Do == "milestone" && c.Milestone == "" {
 				d.Mode = Propose // slipped, no open milestone to move it to: a person's to place
 			}
+			if rounds := RoundsMax(settings); d.Mode == Act && c.Round > rounds {
+				// Its reporter written to as many times as allowed: a person
+				// takes it from here, in the report.
+				d.Mode, c.Spent = Propose, true
+				d.Act = c
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "asks-spent", Where: c.where(),
+					Message: fmt.Sprintf("its reporter was written to %d times (acts.ask.rounds): what is left is proposed to a person in the report", rounds)})
+			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
 				d.Mode, d.Capped = Propose, c.From == ""
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
@@ -352,6 +370,12 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			}
 			if d.Mode == Act {
 				done[c.Kind()]++
+				if c.Do == "refine" && !c.ToReporter {
+					// A ready later in the run reads the body as this leaves it.
+					is := p.issues[c.Issue]
+					is.Body, _, _ = Refine(is.Body, c, role)
+					p.issues[c.Issue] = is
+				}
 				if c.Do == "close" {
 					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind()})
 				}
@@ -542,8 +566,10 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return "priority-same", fmt.Sprintf("it has priority %d already", c.Priority)
 		}
 	}
-	if c.Do == "ask" && slices.ContainsFunc(comments, func(s string) bool { return strings.Contains(s, AskMarker(role)) }) {
-		return "already-asked", "its reporter was asked already: an issue is asked once"
+	if c.Do == "ask" || c.ToReporter {
+		if rule, why := conversation(role, comments, c); rule != "" {
+			return rule, why
+		}
 	}
 	switch {
 	case c.Do == "split" && len(st.Split) > 0:
@@ -587,6 +613,10 @@ func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) 
 				}
 			}
 		}
+		// An outsider's issue is theirs (ADR-0021): the refined text is
+		// proposed to its reporter in a comment until they, or a person of
+		// the project, agree. A role's finding is the line's own draft.
+		c.ToReporter = !is.Insider && !Accepted(is) && OpenedBy(is.Body) == ""
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
 		if len(added) == 0 {
@@ -829,15 +859,187 @@ func BodyDigest(body string) string {
 	return fmt.Sprintf("%x", sum[:6])
 }
 
-// AskMarker marks the comment asking an issue's reporter, once.
-func AskMarker(role string) string { return forge.Marker(role + "/ask") }
-
-// Ask is the comment asking the reporter what is missing.
-func Ask(author, questions string) string {
-	if author == "" {
-		return "To refine this issue: " + strings.TrimSpace(questions)
+// AskMarker marks the comment asking an issue's reporter: the first round's
+// as it always was, a later one's with its round.
+func AskMarker(role string, round int) string {
+	if round <= 1 {
+		return forge.Marker(role + "/ask")
 	}
-	return fmt.Sprintf("@%s, to refine this issue: %s", author, strings.TrimSpace(questions))
+	return forge.Marker(fmt.Sprintf("%s/ask=%d", role, round))
+}
+
+// ProposalMarker marks the comment proposing an outsider's issue refined.
+func ProposalMarker(role string, round int) string {
+	return forge.Marker(fmt.Sprintf("%s/proposal=%d", role, round))
+}
+
+// RoundsMax is how many times an issue's reporter is written to — asked, or
+// proposed a refined text — before a person takes it: acts.ask.rounds,
+// three when it is not set (ADR-0021).
+func RoundsMax(settings map[string]Setting) int {
+	if n := settings["ask"].Rounds; n > 0 {
+		return n
+	}
+	return 3
+}
+
+// Exchange is the conversation with an issue's reporter, read from its
+// comments: the engine's asks and proposals, in order, and whether a
+// person wrote after the last one.
+type Exchange struct {
+	Rounds   int      // the engine's comments to the reporter
+	Answered bool     // a person's comment after the last of them
+	Asked    []string // each one's text, its marker left out
+}
+
+// ReadExchange reads the conversation with an issue's reporter.
+func ReadExchange(comments []string, role string) Exchange {
+	var e Exchange
+	ask, proposal := "<!-- workline:"+role+"/ask", "<!-- workline:"+role+"/proposal="
+	for _, c := range comments {
+		switch {
+		case strings.Contains(c, ask) || strings.Contains(c, proposal):
+			e.Rounds++
+			e.Answered = false
+			e.Asked = append(e.Asked, strings.TrimSpace(engineMarker.ReplaceAllString(c, "")))
+		case !strings.Contains(c, "<!-- workline:"):
+			e.Answered = true
+		}
+	}
+	return e
+}
+
+var engineMarker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
+
+// conversation checks an ask, or a refine proposed to an outsider, against
+// the conversation so far: never twice without an answer, never the same
+// question twice; it sets the round the comment would be.
+func conversation(role string, comments []string, c *Proposal) (rule, why string) {
+	e := ReadExchange(comments, role)
+	if e.Rounds > 0 && !e.Answered {
+		if c.Do == "ask" {
+			return "already-asked", "its reporter was asked and has not answered since: an issue is asked again only after an answer"
+		}
+		return "already-proposed", "its reporter was proposed a text, or asked, and has not answered since: nothing more is written before an answer"
+	}
+	for _, q := range questions(c.Questions) {
+		// An earlier comment's question ends with it: its lead ("@ann, to
+		// refine this issue:") left aside.
+		if slices.ContainsFunc(e.Asked, func(a string) bool {
+			return slices.ContainsFunc(questions(a), func(x string) bool { return strings.HasSuffix(x, q) })
+		}) {
+			return "asked-before", fmt.Sprintf("%q was asked before: a question is never asked twice", q)
+		}
+	}
+	c.Round = e.Rounds + 1
+	return "", ""
+}
+
+// questions cuts a text into its questions, each squeezed and lowercased,
+// to tell one asked before.
+func questions(text string) []string {
+	var out []string
+	for _, part := range strings.SplitAfter(text, "?") {
+		if !strings.HasSuffix(part, "?") {
+			continue
+		}
+		part = squeeze(part)
+		if i := strings.LastIndexAny(part, ".!\n"); i >= 0 {
+			part = part[i+1:] // the question alone, not the sentence before it
+		}
+		if q := strings.ToLower(strings.Trim(part, " *")); len(q) > 3 {
+			out = append(out, q)
+		}
+	}
+	return out
+}
+
+// Ask is the comment asking the reporter what is missing; a later round
+// says it follows their answer.
+func Ask(author, questions string, round int) string {
+	lead := "to refine this issue"
+	if round > 1 {
+		lead = "thank you; to refine this issue, still"
+	}
+	if author == "" {
+		return strings.ToUpper(lead[:1]) + lead[1:] + ": " + strings.TrimSpace(questions)
+	}
+	return fmt.Sprintf("@%s, %s: %s", author, lead, strings.TrimSpace(questions))
+}
+
+// ProposalComment is the comment proposing an outsider's issue refined: what the
+// role understood, its sections as it would write them, what it needs, and
+// how to agree. Nothing is written in the body before (ADR-0021). The
+// sections are kept in a YAML block, read back when it is agreed to.
+func ProposalComment(author string, c Proposal, role string) string {
+	var b strings.Builder
+	who := ""
+	if author != "" {
+		who = "@" + author + ", "
+	}
+	name := strings.ReplaceAll(role, "-", " ")
+	fmt.Fprintf(&b, "%sthe %s read this issue and would refine it as below. Nothing is changed in your issue until you agree.\n\n", who, name)
+	if w := strings.TrimSpace(c.Why); w != "" {
+		fmt.Fprintf(&b, "**What it understood:** %s\n\n", w)
+	}
+	given := map[string]string{"Need": c.Need, "Verification": c.Verification, "Validation": c.Validation, "Scope": c.Scope}
+	for _, name := range Sections {
+		if !slices.Contains(c.Added, name) {
+			continue
+		}
+		draft := ""
+		if slices.Contains(drafted, name) {
+			draft = " (yours to state: a draft from your words)"
+		}
+		fmt.Fprintf(&b, "**%s**%s\n\n%s\n\n", name, draft, strings.TrimSpace(given[name]))
+	}
+	if q := strings.TrimSpace(c.Questions); q != "" {
+		fmt.Fprintf(&b, "**What it still needs:** %s\n\n", q)
+	}
+	fmt.Fprintf(&b, "To agree, copy these sections into your issue (edit it), changing what is wrong; or reply, and it reads your answer at its next run. A maintainer may agree for the project with the label `%s`: the sections are then written in the issue.\n\n", LabelAccepted)
+	kept := struct {
+		Need         string   `yaml:"need,omitempty"`
+		Verification string   `yaml:"verification,omitempty"`
+		Validation   string   `yaml:"validation,omitempty"`
+		Scope        string   `yaml:"scope,omitempty"`
+		Sources      []string `yaml:"sources,flow,omitempty"`
+	}{}
+	for _, name := range c.Added {
+		switch name {
+		case "Need":
+			kept.Need = c.Need
+		case "Verification":
+			kept.Verification = c.Verification
+		case "Validation":
+			kept.Validation = c.Validation
+		case "Scope":
+			kept.Scope, kept.Sources = c.Scope, c.Sources
+		}
+	}
+	data, _ := yaml.Marshal(kept)
+	b.WriteString("<details><summary>As the engine reads it</summary>\n\n```yaml\n" + string(data) + "```\n</details>")
+	return b.String()
+}
+
+// LastProposal reads the sections of the last refined text proposed to an
+// issue's reporter; nil when none was, or it does not read.
+func LastProposal(comments []string, role string) *Proposal {
+	prefix := "<!-- workline:" + role + "/proposal="
+	for i := len(comments) - 1; i >= 0; i-- {
+		if !strings.Contains(comments[i], prefix) {
+			continue
+		}
+		m := fenced.FindStringSubmatch(comments[i])
+		if m == nil {
+			return nil
+		}
+		var p Proposal
+		if yaml.Unmarshal([]byte(m[1]), &p) != nil {
+			return nil
+		}
+		return &p
+	}
+	return nil
 }
 
 // found says whether a quote is there, as written but for spaces: in a file
@@ -891,6 +1093,9 @@ func (p *Plan) ReportBody() string {
 				undo = " Put it back as it was before this run (below) to undo."
 			case "refine":
 				undo = " Edit its body to undo."
+				if d.Act.ToReporter {
+					undo = ""
+				}
 			case "ready":
 				undo = " Remove the label workline:ready to undo."
 			case "ask":
@@ -950,6 +1155,14 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("Set #%d's priority to %d (was: %s): %s", c.Issue, c.Priority, c.Before, strings.TrimSpace(c.Why))
 	}
 	done := verb != "Close"
+	if !done && c.Spent {
+		// The rounds spent: a person's to settle, with the reporter.
+		what := "would ask: " + strings.TrimSpace(c.Questions)
+		if c.Do == "refine" {
+			what = "would propose its refined text again. " + strings.TrimSpace(c.Why)
+		}
+		return fmt.Sprintf("Settle #%d with its reporter, written to %d times already: answer them, refine it, or close it. The product owner %s", c.Issue, c.Round-1, what)
+	}
 	switch c.Do {
 	case "rename":
 		return fmt.Sprintf("%s #%d from %q to %q: %s", map[bool]string{true: "Renamed", false: "Rename"}[done], c.Issue, c.Before, strings.TrimSpace(c.Title), strings.TrimSpace(c.Why))
@@ -960,6 +1173,9 @@ func describe(c Proposal, verb string) string {
 		}
 		return fmt.Sprintf("Split #%d into %d issues: %s. %s", c.Issue, len(c.Into), strings.Join(titles, ", "), strings.TrimSpace(c.Why))
 	case "refine":
+		if c.ToReporter {
+			return fmt.Sprintf("%s #%d's reporter (an outsider) the sections %s, in a comment: nothing written in the issue until they or a maintainer agree. %s", map[bool]string{true: "Proposed to", false: "Propose to"}[done], c.Issue, strings.Join(c.Added, ", "), strings.TrimSpace(c.Why))
+		}
 		var names []string
 		for _, n := range c.Added {
 			if slices.Contains(drafted, n) {
@@ -971,7 +1187,11 @@ func describe(c Proposal, verb string) string {
 	case "ready":
 		return fmt.Sprintf("%s #%d to ready: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, strings.TrimSpace(c.Why))
 	case "ask":
-		return fmt.Sprintf("%s #%d's reporter: %s", map[bool]string{true: "Asked", false: "Ask"}[done], c.Issue, strings.TrimSpace(c.Questions))
+		again := ""
+		if c.Round > 1 {
+			again = fmt.Sprintf(" again, after their answer (round %d)", c.Round)
+		}
+		return fmt.Sprintf("%s #%d's reporter%s: %s", map[bool]string{true: "Asked", false: "Ask"}[done], c.Issue, again, strings.TrimSpace(c.Questions))
 	}
 	if c.Do == "sources" {
 		v := "Named"

@@ -53,3 +53,26 @@ func TestSplitKey(t *testing.T) {
 		t.Error("another title, or another parent, gives the same key")
 	}
 }
+
+// A question asked in an earlier comment is told whatever leads it there —
+// the reporter named, the sentence before it, spaces and case aside.
+func TestAskedBefore(t *testing.T) {
+	comments := []string{
+		"@ann, to refine this issue: Which rows are lost: the last one, or any? Since when?\n\n" + AskMarker("product-owner", 1),
+		"Not sure.",
+	}
+	for q, want := range map[string]string{
+		"Which rows are lost: the last one, or any?":    "asked-before",
+		"  which ROWS are lost:\nthe last one, or any?": "asked-before",
+		"Is it every export? Since when?":               "asked-before",
+		"Which export?":                                 "",
+	} {
+		c := Proposal{Do: "ask", Questions: q}
+		if rule, _ := conversation("product-owner", comments, &c); rule != want {
+			t.Errorf("%q: rule %q, want %q", q, rule, want)
+		}
+	}
+	if e := ReadExchange(append(comments, "@ann, still: Which export?\n\n"+AskMarker("product-owner", 2)), "product-owner"); e.Rounds != 2 || e.Answered {
+		t.Errorf("exchange = %+v, want two rounds, the last not answered", e)
+	}
+}

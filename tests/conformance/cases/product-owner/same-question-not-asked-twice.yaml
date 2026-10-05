@@ -1,0 +1,13 @@
+case: product-owner/same-question-not-asked-twice
+about: A question asked in an earlier round is not asked again, though its reporter answered since — the ask is dropped, nothing written.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: Which rows are lost: the last one, or any?\n\n<!-- workline:product-owner/ask -->", "Not sure."]}
+run: {role: product-owner, event: schedule, ai: fake:ask-the-same-again}
+expect:
+  findings: [{rule: asked-before, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, comments: 3}
