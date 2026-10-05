@@ -6,6 +6,7 @@ package forge
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -37,6 +38,14 @@ type Note struct {
 	Author  string `json:"author,omitempty"`  // who wrote it; "" when the forge does not say
 	Insider bool   `json:"insider,omitempty"` // its author is a person of the project, as Issue.Insider
 	Bot     bool   `json:"bot,omitempty"`     // its author is a bot: a token's user, an app
+}
+
+// Tick is a box of a task list ticked, or unticked, in an issue's body,
+// with who did it: a person's yes in a report (ADR-0025).
+type Tick struct {
+	Item string `json:"item"`           // the item's text, as the forge gives it: its hidden markers' text in it
+	Done bool   `json:"done,omitempty"` // ticked; false: unticked
+	Note        // its author: Author, Insider, Bot; no author and not Insider when the forge does not say
 }
 
 // Bodies is the text of each note, in order.
@@ -104,6 +113,9 @@ type Backlog interface {
 	// then listed in the parent's body by the caller. Adding one already
 	// there changes nothing.
 	AddSubIssue(parent, child int) (bool, error)
+	// Ticks lists the boxes ticked and unticked in an issue's body, oldest
+	// first, with who did each; nil when the forge does not say.
+	Ticks(id int) ([]Tick, error)
 	// EnsureLabel creates a label when the project has none of that name,
 	// so a person finds it in the forge's list to set.
 	EnsureLabel(name, color, description string) error
@@ -160,3 +172,29 @@ func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
 // Every forge workline speaks keeps a backlog.
 var _ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
+
+// taskLine is a task list's item in a body: `- [ ] text`, `* [x] text`.
+var taskLine = regexp.MustCompile(`(?m)^\s*[-*+] \[([ xX])\] (.*?)\s*$`)
+
+// TaskItems maps each task list item of a body to whether it is ticked.
+func TaskItems(body string) map[string]bool {
+	out := map[string]bool{}
+	for _, m := range taskLine.FindAllStringSubmatch(body, -1) {
+		out[m[2]] = m[1] != " "
+	}
+	return out
+}
+
+// TicksBetween are the boxes a version of a body ticked or unticked from
+// the one before ("" for none), each given to who wrote that version.
+func TicksBetween(before, after string, who Note) []Tick {
+	was := TaskItems(before)
+	var out []Tick
+	for _, m := range taskLine.FindAllStringSubmatch(after, -1) {
+		item, done := m[2], m[1] != " "
+		if prev, ok := was[item]; (ok && prev != done) || (!ok && done) {
+			out = append(out, Tick{Item: item, Done: done, Note: who})
+		}
+	}
+	return out
+}

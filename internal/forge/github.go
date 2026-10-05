@@ -17,7 +17,10 @@ import (
 // endpoints. Tried live on 2026-09-24: comment, label added (GitHub creates a
 // missing label), label removed, and every write replayed without duplicates.
 // Not yet tried live: OpenIssue.
-type github struct{ repo string }
+type github struct {
+	repo    string
+	writers map[string]bool // who may write to the repository, read once each
+}
 
 func (g *github) api(args ...string) ([]byte, error) {
 	return run(g.repo, "gh", append([]string{"api"}, args...)...)
@@ -370,4 +373,94 @@ func (g *github) SetMilestone(id int, title string) error {
 	}
 	_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-F", fmt.Sprintf("milestone=%d", n))
 	return err
+}
+
+// ticksQuery reads an issue body's versions, each with who wrote it: GitHub
+// keeps no event for a box ticked, its edit history does (userContentEdits,
+// each node the whole body as that edit left it, newest first: `first`
+// is the newest, `last` the oldest).
+const ticksQuery = `query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) { issue(number: $number) {
+    userContentEdits(first: 100) { totalCount nodes { editedAt diff editor { login __typename } } } } } }`
+
+// Ticks reads the boxes ticked from the body's edit history: each version
+// against the one before, given to its editor. Only who has write access
+// edits a body they did not write (GitHub's roles); the editor is a person
+// of the project when GitHub gives them write, maintain or admin.
+func (g *github) Ticks(id int) ([]Tick, error) {
+	out, err := g.api("graphql", "-f", "query="+ticksQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
+	if err != nil {
+		return nil, err
+	}
+	var v struct {
+		Data struct {
+			Repository struct {
+				Issue struct {
+					Edits struct {
+						Total int `json:"totalCount"`
+						Nodes []struct {
+							EditedAt string  `json:"editedAt"`
+							Diff     *string `json:"diff"`
+							Editor   *struct {
+								Login string `json:"login"`
+								Type  string `json:"__typename"`
+							} `json:"editor"`
+						} `json:"nodes"`
+					} `json:"userContentEdits"`
+				} `json:"issue"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := decode(out, &v); err != nil {
+		return nil, err
+	}
+	edits := v.Data.Repository.Issue.Edits
+	nodes := edits.Nodes
+	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].EditedAt < nodes[j].EditedAt })
+	var ticks []Tick
+	before := ""
+	for i, n := range nodes {
+		if n.Diff == nil { // a version deleted from the history
+			continue
+		}
+		if i == 0 && edits.Total > len(nodes) {
+			// Older versions not read: this one is only what the next are
+			// read against, its boxes nobody's.
+			before = *n.Diff
+			continue
+		}
+		who := Note{}
+		if n.Editor != nil {
+			who.Author, who.Bot = n.Editor.Login, n.Editor.Type == "Bot"
+			if !who.Bot {
+				if who.Insider, err = g.writer(who.Author); err != nil {
+					return nil, err
+				}
+			}
+		}
+		ticks = append(ticks, TicksBetween(before, *n.Diff, who)...)
+		before = *n.Diff
+	}
+	return ticks, nil
+}
+
+// writer says whether login may write to the repository: a person of the
+// project, as an author association of owner, member or collaborator.
+func (g *github) writer(login string) (bool, error) {
+	if g.writers == nil {
+		g.writers = map[string]bool{}
+	}
+	if w, ok := g.writers[login]; ok {
+		return w, nil
+	}
+	out, err := g.api("repos/{owner}/{repo}/collaborators/"+url.PathEscape(login)+"/permission", "--jq", ".permission")
+	if errors.Is(err, errNotFound) {
+		out, err = nil, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	p := strings.TrimSpace(string(out))
+	g.writers[login] = p == "admin" || p == "maintain" || p == "write"
+	return g.writers[login], nil
 }
