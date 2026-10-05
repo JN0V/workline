@@ -683,7 +683,7 @@ func partUnread(err error, dir string, claims bool) string {
 // unreadFeedback is what the agent is told when nothing of its answer read.
 func unreadFeedback(why string) string {
 	return "- agent-invalid-output: " + why + "\n\nNothing of that answer could be read: send it again as valid YAML. " +
-		agent.BlockScalars + " A short text holding a double quote may instead go between single quotes.\n"
+		agent.BlockScalars + "\n"
 }
 
 // answerItems cuts an answer into its top-level list items: each starts
