@@ -47,6 +47,8 @@ under the project's own settings, which win field by field:
 | `issues-per-run` | `8` | | |
 | `code-lines-max` | `1500` | | |
 | `ignored-runs-max` | `3` (1 to 20; 0 never pauses) | | |
+| `next-max` | `5` (0 to 20; 0 lists none) | | |
+| `stuck-days` | `14` (1 to 365) | | |
 | `moved-percent-max` | `20` | `10` | `30` |
 | `acts.open` | act, max 30 | | |
 | `acts.sources` | act, max 10 | | |
@@ -76,10 +78,16 @@ roles:
 
 ## Outputs
 
-- One report issue, "Backlog — product owner": what was done, what is
-  proposed (a box a person of the project ticks; done at the next run),
-  what waits, the first ready issue that waits on nothing — never a split
-  need —, and the split needs whose parts are all closed, to accept.
+- One report issue, "Backlog — product owner". It opens with **Next** —
+  the first `next-max` ready issues in the backlog's order that wait on
+  nothing, never a split need, each with its milestone and priority —
+  and **Stuck** — each issue waiting on a person for more than
+  `stuck-days`, with since when: ready with no pull request nor commit
+  naming it since, its reporter not answering, a proposal of the report
+  unticked, an announcement as obsolete past its delay with no second
+  judge. Then what was done, what is proposed (a box a person of the
+  project ticks; done at the next run), what waits on an open issue, and
+  the split needs whose parts are all closed, to accept.
 - On each issue it reads: a state comment; labels (`workline:priority/N`,
   `workline:draft`, `workline:obsolete`, `workline:ready`); milestones;
   sections written; a comment to an outsider reporter; sub-issues or tasks;
@@ -109,7 +117,8 @@ a box, writes on the report or undoes an act.
 Nothing is judged: each issue taken gets its state comment; accepted drafts
 (`workline:accepted`), ticked boxes and an `agreed` reply are still done;
 an issue whose milestone was released moves to the next; the backlog's
-order and what waits are still said, and a split need's parts reported.
+order and what waits are still said, the report's Next and Stuck
+rebuilt, and a split need's parts reported.
 
 **Status**: beta, nightly in DomoticsCore's CI and on workline's own
 issues; [status.md](status.md), each try in [tried.md](tried.md).

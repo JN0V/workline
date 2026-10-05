@@ -473,13 +473,15 @@ the order ends — never followed. `ready` is allowed on a blocked issue,
 its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
 `workline:ready` that waits on no open issue and has no parts
-(`backlog.NextReady`) — to whoever builds next, person or developer role
-(#117).
+(`backlog.Offered`, `backlog.NextReady`) — to whoever builds next, person
+or developer role (#117); the report lists the first `next-max` of them
+under "Next" ("The report").
 
 Every run, with or without an agent, says it in its findings:
 `next-ready` (info) the issue offered first, `waiting` (info) each issue
 waiting on an open one, `dependency-cycle` (warn) each cycle, "#12 waits
-on #14, #14 waits on #12". The report says it too, under "Waiting".
+on #14, #14 waits on #12". The report says the issues waiting and the
+cycles too, under "Waiting".
 
 Split and rename on an issue opened by someone without write access are
 proposed, not done (`reporter-outside`), as moving it to ready — to the
@@ -547,6 +549,8 @@ cap. `normal` is the role's defaults:
 ```yaml
 autonomy: normal
 ignored-runs-max: 3                         # runs nobody answered, then a pause; 0 never
+next-max: 5                                 # the ready issues the report opens with, 0 to 20; 0 none
+stuck-days: 14                              # an issue waiting on a person longer is said stuck, 1 to 365
 acts:
   open: {mode: act, max: 30}
   sources: {mode: act, max: 10}
@@ -616,18 +620,19 @@ tick; then a person's tick on one act ("The person's hand"). The task
 given to the agent lists each kind's mode and where it comes from —
 `level`, `setting` (differs from the level's) or `demoted` —, and so does
 the report, on its `Autonomy:` line. A level the role does not have, or
-`ignored-runs-max` outside 0 to 20, stops the run.
+`ignored-runs-max` outside 0 to 20, `next-max` outside 0 to 20 or
+`stuck-days` outside 1 to 365, stops the run.
 
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-lists what the last run did and what is proposed, each proposal a box a
+opens with what is next and what is stuck ("What is next, what is
+stuck", below), then lists what the last run did and what is proposed, each proposal a box a
 person of the project ticks to have it done ("The person's hand"), each closing with its
 quote and how to undo it — a rename with the title it had, a split with
 its children's titles, to close; an announcement with the day it may close
-and how to keep it open; an issue kept open, and why. Under "Waiting", the
-first ready issue offered, each issue waiting on an open one, and each
-cycle. Under "To accept", each open parent whose parts are all closed,
+and how to keep it open; an issue kept open, and why. Under "Waiting",
+each issue waiting on an open one, and each cycle. Under "To accept", each open parent whose parts are all closed,
 recorded (`to-accept`) so the report is rewritten when that list
 changes ("A parent and its parts"). Under "Before this run", each issue the run
 moved is listed with its priority and milestone as they were, to put the
@@ -637,7 +642,8 @@ open past the cap stays there until an open issue holds its text: an
 import run again opens it. Its own engine
 comment (`<!-- workline:sticky=product-owner/acts -->`) records the
 closings done, the kinds dropped back to `propose`, the proposals — each
-with its line and the act as decided (`proposal`) —, the runs nobody
+with its line, the act as decided (`proposal`) and the day it was first
+proposed (`since`) —, the runs nobody
 answered (`ignored`), the comments of people of the project on the
 report (`comments`), the role's own acts a person may undo (`done`, each
 with the value before and the one set, and the level it was done at;
@@ -647,6 +653,43 @@ force (`measure`: ticked, settled otherwise). From it the report may
 suggest another level — at `cautious`, more than 80% of 10 proposals
 settled or more ticked as proposed suggests `normal` —; it never changes
 the setting.
+
+### What is next, what is stuck
+
+The report opens with two lists (ADR-0031), computed by the engine at
+every run, with or without an agent, from the forge as it is — nothing of
+them stored:
+
+- **Next**: the first `next-max` (5) issues of the order
+  (`backlog.Order`) the first ready issue offered would be taken from
+  (`backlog.Next`): bearing `workline:ready`, waiting on no open issue, no
+  parts; each with its milestone and priority, "#14 Export in JSON —
+  milestone v1.0, priority 2". At 0, no Next.
+- **Stuck**: each issue waiting on a person for more than `stuck-days`
+  (14) days, with the day it started and how long, "ready since
+  2026-09-01 (34 days)":
+
+| Waits on | Since | Read from |
+|---|---|---|
+| someone to start it: `workline:ready`, no pull or merge request nor commit naming it since | the day it last got the label | the forge's `Trail`: GitHub's timeline (`LabeledEvent`; `ConnectedEvent`, `CrossReferencedEvent` from a pull request, `ReferencedEvent`), GitLab's `resource_label_events` and system notes "mentioned in commit / merge request"; a plugged forge's `trail` |
+| its reporter: the last round written to them, no person's comment after it ("The conversation with the reporter") | that round's day | the comment's `created`, as the forge gives it |
+| a person's tick: a proposal of this report, unticked, unsettled | the day first proposed | the record's `since`: kept while it stays, carried to the same act decided again; a proposal recorded before has the day the engine first reads it |
+| a second judge: announced obsolete, due, neither closed nor kept | the day its delay ended | the announcement's `announced` and `close-obsolete.days` — listed once due, whatever `stuck-days` |
+
+A link older than the label started nothing. An issue appears once, in
+its first list: one in Next is not stuck; one waiting for two reasons is
+said for the first in the table's order. Only ready issues waiting on no open
+issue, without parts, are asked their trail, those in Next aside: one
+call each a run. An issue whose day the forge does not say — the local
+forge keeps none, a plugged one may refuse `trail`, a comment without
+its day — is not said stuck, and the run says so (`stuck-unknown`, info;
+warn when the forge failed to answer).
+
+A run that writes nothing else still rewrites the report when its
+opening no longer reads as the report's body says, a proposal has no day
+yet, or, with no report open, when Next or Stuck lists an issue; how long
+an issue has waited changes with the day, so while one is stuck the
+report is rewritten once a run.
 
 ## The person's hand
 

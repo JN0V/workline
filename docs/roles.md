@@ -15,7 +15,7 @@ and where it stands.
 | Committer | checks each commit's message, secrets and author; rewrites a refused message | `commit-msg` (the git hook), `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
 | Reviewer | reads the code a change brings and says what it breaks; never approves | `review` (`workline review`), `merge-request` (opt-in) | [reviewer](../roles/reviewer/README.md) |
-| Product owner | keeps the backlog — the open issues — true to the code and in order; says on a split need what its parts delivered, for a person to accept | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
+| Product owner | keeps the backlog — the open issues — true to the code and in order; opens its report with what is next and what is stuck; says on a split need what its parts delivered, for a person to accept | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 
 Which role runs on which event is the routing: `routing.default.yaml` as
 shipped, changed in `.workline/config.yaml` ([config](config.md)). By
