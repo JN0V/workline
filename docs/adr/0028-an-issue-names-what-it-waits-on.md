@@ -23,7 +23,9 @@ issue out of first place by itself.
 
 ## Decision
 
-**Where it is kept.** The forge's own relation where it has one: GitHub's
+### Where it is kept
+
+The forge's own relation where it has one: GitHub's
 dependencies, GitLab's `is_blocked_by` link. Elsewhere — GitLab Free, the
 local forge, a plugged forge that answers `{native: false}` — a line in the
 issue's body, `Blocked by #12, #13.`, ending with the hidden marker
@@ -32,7 +34,9 @@ blocker. Every forge reads back both: its relation with the open issues,
 and any line of a body that starts with "Blocked by" followed by issue
 references — a person's own line counts, as a person's link does.
 
-**Who sets it.** A new kind of act, `depend` (`{issue, blocked-by: [n],
+### Who sets it
+
+A new kind of act, `depend` (`{issue, blocked-by: [n],
 why}`), proposed by the product owner when it reads an issue, and a
 split's child naming the siblings it waits on (`after: [1]`, by their
 place in the split). It is a kind of its own, not part of `refine`: it
@@ -49,12 +53,14 @@ another set, a person's above all, is never removed; one the role set and
 a person took off, its blocker still open, is undone, and demotes the kind
 (ADR-0026).
 
-**The order.** `backlog.Order` is Kahn's: the next issue is the first, in
+### The order
+
+`backlog.Order` is Kahn's: the next issue is the first, in
 `Less`'s order, whose open blockers are all placed. A blocker closed, or
 not in the list, holds nothing back: once it closes, the issue is ordered
 by its labels again. When none can be placed, the issues left hold a
 cycle: it is reported (`dependency-cycle`, the task, the report) and the
-first left by `Less` is placed, so the order ends; a cycle is never
+first of the cycle by `Less` is placed — never an issue that only waits on it —, so the order ends; a cycle is never
 followed. `ready` is allowed while blocked — the four sections say the
 issue is understood, not that it can start — but the first ready issue
 offered (`next-ready`, the report's **Next**, #117's developer role) is

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 84f47eb
+checked: 472daca
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -381,11 +381,13 @@ An issue that cannot start before another is done names it (ADR-0028):
   line — is read and kept, never removed; one the role set and a person
   took off, its blocker still open, is an act undone ("Trust").
 
-**The order** (`backlog.Order`) is Kahn's: the next issue is the first,
+### The order, and what waits
+
+`backlog.Order` is Kahn's: the next issue is the first,
 by `Less`, whose blockers among those ordered are all placed; a blocker
 closed, or not an open issue, holds nothing back, so a blocker closed
 puts the issue back where its labels say. When none can be placed, those
-left hold a cycle: it is reported, its first issue by `Less` placed, and
+left hold a cycle: it is reported, the cycle's first issue by `Less` placed — never one that only waits on it —, and
 the order ends — never followed. `ready` is allowed on a blocked issue,
 its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
