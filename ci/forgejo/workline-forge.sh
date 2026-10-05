@@ -82,7 +82,7 @@ all-issues)
 		| {id: .number, title, body: (.body // ""), labels: [(.labels // [])[].name], closed: (.state == "closed")}]}'
 	;;
 comments)
-	# Oldest first, each with its author; `insider` when the author may
+	# Oldest first, each with its author and its day; `insider` when the author may
 	# write to the repository (Forgejo's permission: write, admin or owner),
 	# asked once an author — which needs the token's user to administer the
 	# repository: a lookup refused fails the operation, loud, rather than
@@ -113,7 +113,7 @@ comments)
 	rm -f "$tmp" "$tmp.logins"
 	printf '%s' "$got" | jq -c --argjson perms "$perms" '{comments: [.[] | {body: (.body // ""), author: .user.login,
 		insider: ($perms[.user.login] | IN("write", "admin", "owner")),
-		bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$")))}]}'
+		bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$")))} + (if .created_at then {created: .created_at} else {} end)]}'
 	;;
 comment | sticky)
 	n=$(arg .target.id)

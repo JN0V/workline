@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: f6fee73
+checked: 03a438c
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -68,6 +68,9 @@ gardening proposes again when fewer wait.
 - A kind of act stays `propose` after a person undid one; the report offers
   a box to set it back to `act`.
 - `autonomy: cautious` proposes what sets direction: see the report.
+- The report's Stuck is empty though issues wait: `stuck-unknown` says
+  which issues the forge gives no day for — the local forge keeps none, a
+  plugged forge may refuse `trail` or give comments without `created`.
 
 ## Token caps and the agent
 

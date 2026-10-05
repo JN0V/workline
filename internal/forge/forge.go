@@ -55,6 +55,22 @@ type Note struct {
 	Author  string `json:"author,omitempty"`  // who wrote it; "" when the forge does not say
 	Insider bool   `json:"insider,omitempty"` // its author is a person of the project, as Issue.Insider
 	Bot     bool   `json:"bot,omitempty"`     // its author is a bot: a token's user, an app
+	Created string `json:"created,omitempty"` // when it was written, RFC 3339 or YYYY-MM-DD; "" when the forge does not say
+}
+
+// Trail is what a forge says of an open issue since it got a label: when
+// it last got it, and the pull or merge requests and commits that name
+// the issue, each with when — what started it, or nothing (ADR-0031).
+type Trail struct {
+	Labeled string `json:"labeled,omitempty"` // when it last got the label, RFC 3339 or YYYY-MM-DD; "" when the forge does not say
+	Links   []Link `json:"links,omitempty"`
+}
+
+// Link is a pull or merge request, or a commit, naming an issue.
+type Link struct {
+	Kind string `json:"kind"`         // pull-request (a GitHub pull request, a GitLab merge request) or commit
+	Ref  string `json:"ref"`          // how the forge names it: "#20", "!7", a short commit
+	At   string `json:"at,omitempty"` // when it named the issue, RFC 3339 or YYYY-MM-DD
 }
 
 // Tick is a box of a task list ticked, or unticked, in an issue's body,
@@ -142,6 +158,10 @@ type Backlog interface {
 	// Ticks lists the boxes ticked and unticked in an issue's body, oldest
 	// first, with who did each; nil when the forge does not say.
 	Ticks(id int) ([]Tick, error)
+	// Trail says when an open issue last got a label, and what pull or
+	// merge requests and commits name it; an empty Labeled when the
+	// forge does not say (ADR-0031).
+	Trail(id int, label string) (Trail, error)
 	// EnsureLabel creates a label when the project has none of that name,
 	// so a person finds it in the forge's list to set.
 	EnsureLabel(name, color, description string) error

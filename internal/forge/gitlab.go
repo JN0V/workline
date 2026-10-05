@@ -551,9 +551,10 @@ func (g *gitlab) Notes(t Target) ([]Note, error) {
 		return nil, err
 	}
 	found, err := pages[struct {
-		Body   string `json:"body"`
-		System bool   `json:"system"`
-		Author struct {
+		Body    string `json:"body"`
+		System  bool   `json:"system"`
+		Created string `json:"created_at"`
+		Author  struct {
 			Username string `json:"username"`
 		} `json:"author"`
 	}](out)
@@ -569,9 +570,66 @@ func (g *gitlab) Notes(t Target) ([]Note, error) {
 		if err != nil {
 			return nil, err
 		}
-		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username)})
+		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username), Created: n.Created})
 	}
 	return all, nil
+}
+
+// mentioned reads GitLab's system notes naming an issue from elsewhere:
+// "mentioned in commit 1a2b3c4d", "mentioned in merge request !7", with
+// another project's path before the reference when it is another's —
+// "group/other@1a2b3c4d", "group/other!7" —, kept in the reference so it
+// is never taken for this project's.
+var mentioned = regexp.MustCompile(`^mentioned in (?:(commit) (\S*?[0-9a-f]{7,40})|(merge request) (\S*?![0-9]+))$`)
+
+// Trail reads when the issue last got the label, from its label events,
+// and what names it, from its system notes: two listings (ADR-0031).
+func (g *gitlab) Trail(id int, label string) (Trail, error) {
+	t := Target{Kind: "issue", ID: id}
+	out, err := g.api("--paginate", path(t)+"/resource_label_events?per_page=100")
+	if err != nil {
+		return Trail{}, err
+	}
+	events, err := pages[struct {
+		Action  string `json:"action"`
+		Created string `json:"created_at"`
+		Label   *struct {
+			Name string `json:"name"`
+		} `json:"label"`
+	}](out)
+	if err != nil {
+		return Trail{}, err
+	}
+	var tr Trail
+	for _, e := range events {
+		if e.Action == "add" && e.Label != nil && e.Label.Name == label {
+			tr.Labeled = e.Created
+		}
+	}
+	out, err = g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
+	if err != nil {
+		return Trail{}, err
+	}
+	notes, err := pages[struct {
+		Body    string `json:"body"`
+		System  bool   `json:"system"`
+		Created string `json:"created_at"`
+	}](out)
+	if err != nil {
+		return Trail{}, err
+	}
+	for _, n := range notes {
+		m := mentioned.FindStringSubmatch(strings.TrimSpace(n.Body))
+		if !n.System || m == nil {
+			continue
+		}
+		l := Link{Kind: "commit", Ref: m[2], At: n.Created}
+		if m[3] != "" {
+			l.Kind, l.Ref = "pull-request", m[4]
+		}
+		tr.Links = append(tr.Links, l)
+	}
+	return tr, nil
 }
 
 // Close closes an issue; a duplicate through GitLab's own quick action,

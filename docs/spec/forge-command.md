@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 810dd7d
+checked: 03a438c
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -19,13 +19,13 @@ or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
-none), and `comments`, each with its author, of the project when they may
+none), and `comments`, each with its author and its day, of the project when they may
 write to the repository — asked of Forgejo, which needs the token's user
 to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
 `-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
-`add-sub-issue`, `add-blocker`, `closers`, `ensure-label`), nor a merge request's `base`.
+`add-sub-issue`, `add-blocker`, `closers`, `trail`, `ensure-label`), nor a merge request's `base`.
 
 ## One request, one run
 
@@ -61,7 +61,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
 | `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, author, insider, blocked-by, children}]}` — `insider` true when the author has write access to the project; left out, the author is taken for an outsider; `blocked-by` the issues it waits on in the forge's own relation, left out on a forge without one: a "Blocked by" line in the body says it (ADR-0028); `children` its sub-issues, open or closed, left out on a forge without them: the task list under `## Sub-issues` in the body says them (ADR-0029) |
 | `all-issues` | | lists the issues open and closed, merge requests left out: a subject a role found is looked for in both | `{issues: [{id, title, body, labels, closed, reason}]}` — `reason` why it was closed, when the forge keeps one: `completed`, `not_planned` or `duplicate`; a command that does not know it answers an error, and the issue is not opened |
-| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021) |
+| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot, created}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user, `created` when it was written (RFC 3339 or `YYYY-MM-DD`), left out when the forge does not say: a question to a reporter is then never said stuck (ADR-0031); a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021) |
 | `ticks` | `id` | the boxes ticked and unticked in the issue's body, oldest first, with who did each | `{ticks: [{item, done, author, insider, bot}]}` — `item` the box's text, its hidden markers' text in it; an error answered: nobody known, a box ticked there is not taken for a yes (ADR-0025) |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
 | `milestones` | | lists the titles of the open milestones | `{milestones: [titles]}` |
@@ -71,6 +71,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `add-sub-issue` | `parent`, `child` | makes `child` a sub-issue of `parent`, on a forge that has sub-issues; one already there changes nothing | `{native: true}`; `{native: false}` on a forge without them, and the engine lists the child in the parent's body (ADR-0022) |
 | `add-blocker` | `id`, `blocker` | records that `id` waits on `blocker` in the forge's own relation; one already there changes nothing | `{native: true}`; `{native: false}` on a forge without one, and the engine writes a line in the issue's body (ADR-0028); an error answered fails the act |
 | `closers` | `id` | what closed the issue, as the forge links it | `{closers: [{kind, ref, text}]}` — `kind` `pull-request` (a pull or merge request) or `commit`, `ref` as the forge names it (`#20`, `!7`, a short commit), `text` its title and description or the commit's message; an error answered: the closer said "not read" on the parent, never "by hand" (ADR-0029) |
+| `trail` | `id`, `label` | when the open issue last got the label, and the pull or merge requests and commits that name it | `{labeled, links: [{kind, ref, at}]}` — `labeled` and `at` RFC 3339 or `YYYY-MM-DD`, `kind` and `ref` as for `closers`; `labeled` left out, or an error answered: the forge does not say, and the issue is never said stuck for it (ADR-0031) |
 | `ensure-label` | `name`, `color`, `description` | creates the label when the project has none of that name | `{}` |
 | `comment` | `target`, `body`, `marker` | posts `body` + a blank line + `marker` on the target, unless a comment there holds `marker` | `{}` |
 | `sticky` | `target`, `body`, `marker`, `create` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true | `{}` |

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: d293323
+checked: c64eb35
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -74,6 +74,19 @@ with or without an agent, says the first ready issue waiting on nothing
 (`next-ready`) — the one offered to whoever builds next —, each issue
 waiting (`waiting`) and each cycle (`dependency-cycle`); the report too,
 under "Waiting". A split need is never the one offered: its parts are.
+
+The report opens with **Next** and **Stuck** (ADR-0031), rebuilt at every
+run with or without an agent, nothing of them stored: the first
+`next-max` (5) ready issues of the order waiting on nothing, with their
+milestone and priority; then each issue waiting on a person for more
+than `stuck-days` (14), with the day it started — ready since the forge
+says it got the label, no pull request nor commit naming it since; its
+reporter last written to, no answer since; a proposal of the report
+unticked, since the record says it was first proposed; an announcement
+as obsolete past its delay, no second judge yet. An issue appears once,
+in its first list. A day the forge does not say is said
+(`stuck-unknown`), never read as nothing stuck. A run with nothing else
+to write rewrites the report when its opening changed.
 
 A split need — a parent — gets one comment, with or without an agent,
 edited in place as its parts move (ADR-0029): each part open, closed as

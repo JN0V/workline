@@ -42,14 +42,16 @@ type Config struct {
 	Origins      map[string]string  // each kind's: level or setting
 	MovedPercent int                // the share of the open issues a run moves
 	IgnoredMax   int                // runs nobody answered before the role pauses; 0 never
+	NextMax      int                // the ready issues the report lists first; 0 none (ADR-0031)
+	StuckDays    int                // the days an issue waits on a person before the report says it stuck
 }
 
 // ReadConfig reads the role's settings: the level, the acts, the moved
-// share and the runs before a pause. A level or a number out of range is an
+// share, the runs before a pause, and what the report lists first. A level or a number out of range is an
 // error, never read as a default (principle 12).
 func ReadConfig(settings map[string]any) (Config, error) {
 	c := Config{Level: Normal, Acts: Settings(settings), Origins: map[string]string{},
-		MovedPercent: MovedPercent(settings), IgnoredMax: 3}
+		MovedPercent: MovedPercent(settings), IgnoredMax: 3, NextMax: NextMax, StuckDays: StuckDays}
 	if v, ok := settings["autonomy"]; ok && v != nil {
 		s, _ := v.(string)
 		if !slices.Contains(AutonomyLevels, s) {
@@ -58,11 +60,24 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		c.Level = s
 	}
 	if v, ok := settings["ignored-runs-max"]; ok && v != nil {
-		n, isNumber := number(v)
+		n, isNumber := whole(v)
 		if !isNumber || n < 0 || n > IgnoredRunsMax {
 			return c, fmt.Errorf("ignored-runs-max: %v is not a number from 0 (never pause) to %d", v, IgnoredRunsMax)
 		}
 		c.IgnoredMax = n
+	}
+	for _, b := range []struct {
+		name     string
+		min, max int
+		to       *int
+	}{{"next-max", 0, NextMaxLimit, &c.NextMax}, {"stuck-days", 1, StuckDaysLimit, &c.StuckDays}} {
+		if v, ok := settings[b.name]; ok && v != nil {
+			n, isNumber := whole(v)
+			if !isNumber || n < b.min || n > b.max {
+				return c, fmt.Errorf("%s: %v is not a number from %d to %d", b.name, v, b.min, b.max)
+			}
+			*b.to = n
+		}
 	}
 	level, _ := settings[byLevel].(map[string]any)
 	preset := Settings(level)
@@ -73,6 +88,15 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		}
 	}
 	return c, nil
+}
+
+// whole reads a setting's whole number: 2.5, from JSON, is none —
+// never cut to 2.
+func whole(v any) (int, bool) {
+	if f, ok := v.(float64); ok && f != float64(int(f)) {
+		return 0, false
+	}
+	return number(v)
 }
 
 // same says whether two settings of a kind say the same.

@@ -57,7 +57,7 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "GET" && r.URL.Path == repo+"/issues/3/comments":
 		if r.URL.Query().Get("page") == "1" {
-			fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"id": 7, "login": "zed"}}, {"body": "agreed", "user": {"id": 8, "login": "dev"}},
+			fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"id": 7, "login": "zed"}, "created_at": "2026-10-01T09:00:00+02:00"}, {"body": "agreed", "user": {"id": 8, "login": "dev"}},
 				{"body": "agreed", "user": {"id": -2, "login": "forgejo-actions"}}, {"body": "agreed", "user": {"id": 9, "login": "renovate-bot"}},
 				{"body": "old", "user": {"id": 10, "login": "gone"}}, {"body": "built", "user": {"id": 11, "login": "ci[bot]"}}]`)
 		} else {
@@ -124,15 +124,15 @@ func TestAllIssues(t *testing.T) {
 	}
 }
 
-// comments answers each comment with its author, and whether they may
-// write to the repository.
+// comments answers each comment with its author, whether they may write
+// to the repository, and when it was written, when Forgejo says.
 func TestComments(t *testing.T) {
 	m := &mock{}
 	out := run(t, m, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}})
 	if !slices.Contains(m.calls, "GET /api/v1/repos/owner/name/collaborators/ci%5Bbot%5D/permission") {
 		t.Errorf("a login not escaped in the URL; calls: %q", m.calls)
 	}
-	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false,"bot":false},` +
+	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false,"bot":false,"created":"2026-10-01T09:00:00+02:00"},` +
 		`{"body":"agreed","author":"dev","insider":true,"bot":false},` +
 		`{"body":"agreed","author":"forgejo-actions","insider":false,"bot":true},` +
 		`{"body":"agreed","author":"renovate-bot","insider":false,"bot":true},` +

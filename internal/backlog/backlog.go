@@ -136,6 +136,9 @@ type Pending struct {
 	// Proposal is what the engine would do, as decided: done as it says
 	// when a person of the project ticks its box (ADR-0025).
 	Proposal *Proposal `yaml:"proposal,omitempty"`
+	// Since is the day it was first proposed, YYYY-MM-DD: the report says
+	// it stuck past stuck-days (ADR-0031).
+	Since string `yaml:"since,omitempty"`
 }
 
 // Closing is one issue the role closed.
@@ -271,18 +274,22 @@ type Plan struct {
 	Record    Record            `yaml:"record"`
 	Report    int               `yaml:"report"`  // the report issue, 0 when none is open yet
 	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found, proposals settled
-	open      map[int]bool      // the open issues, read once
-	issues    map[int]forge.Issue
-	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
-	settings  map[string]Setting
-	config    Config
-	bodies    []string        // their bodies, to find an import again
-	seen      map[string]bool // the imports this run decided
-	read      []int           // the issues this run read
-	hand      *Hand           // what people did on the report since the last run
-	ticked    map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
-	said      []string        // what the report says of the boxes ticked
-	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
+	// Opening is what the report opens with, what is next and what is
+	// stuck, as this run reads it (ADR-0031): kept with the plan so a
+	// resumed run writes the same, never in the record.
+	Opening  string       `yaml:"opening,omitempty"`
+	open     map[int]bool // the open issues, read once
+	issues   map[int]forge.Issue
+	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings map[string]Setting
+	config   Config
+	bodies   []string        // their bodies, to find an import again
+	seen     map[string]bool // the imports this run decided
+	read     []int           // the issues this run read
+	hand     *Hand           // what people did on the report since the last run
+	ticked   map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
+	said     []string        // what the report says of the boxes ticked
+	added    map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
 }
 
 // Setting is a kind of act's mode and cap.
@@ -358,8 +365,9 @@ func MovedPercent(settings map[string]any) int {
 // read: a proposal made only for a cap is dropped once its issue was read
 // again, decided again or not. A run moves at most cfg.MovedPercent of the
 // open issues (milestone and order). judged holds the second judge's
-// answers on the issues announced obsolete (ADR-0024).
-func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged) (*Plan, error) {
+// answers on the issues announced obsolete (ADR-0024); waits, the issues
+// pre found waiting on a person, for the report's opening (ADR-0031).
+func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged, waits []Wait) (*Plan, error) {
 	settings, movedPercent := cfg.Acts, cfg.MovedPercent
 	p := &Plan{read: read, judged: judged, settings: settings, config: cfg}
 	if err := p.readRecord(f, role); err != nil {
@@ -528,7 +536,51 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	}
 	p.keepProposed()
 	p.pause()
+	p.opening(waits)
 	return p, nil
+}
+
+// opening reads the report's opening as this run leaves the backlog — its
+// closings out, its ready acts in, an issue kept open no longer waiting on
+// a judge — and has the report rewritten when it no longer says it, or,
+// with no report yet, when it lists an issue (ADR-0031).
+func (p *Plan) opening(waits []Wait) {
+	closed := p.closedInRun()
+	kept, readied := map[int]bool{}, map[int]bool{}
+	for _, d := range p.Decisions {
+		switch {
+		case d.Mode == Act && d.Act.Do == "keep":
+			kept[d.Act.Issue] = true
+		case d.Mode == Act && d.Act.Do == "ready":
+			readied[d.Act.Issue] = true
+		}
+	}
+	var open []forge.Issue
+	for _, id := range sortedIDs(p.issues) {
+		is := p.issues[id]
+		if closed[id] {
+			continue
+		}
+		if readied[id] && !slices.Contains(is.Labels, LabelReady) {
+			is.Labels = append(slices.Clone(is.Labels), LabelReady)
+		}
+		is.BlockedBy = append(slices.Clone(is.BlockedBy), p.added[id]...) // this run's, done
+		open = append(open, is)
+	}
+	var left []Wait
+	for _, w := range waits {
+		if !(w.Waits == WaitsObsolete && kept[w.Issue]) && !(w.Waits == WaitsReady && readied[w.Issue]) {
+			left = append(left, w)
+		}
+	}
+	b := MakeBoard(open, p.Report, left, p.Record.Proposed, p.config, time.Now())
+	p.Opening = b.Text()
+	switch {
+	case p.Report != 0 && !strings.Contains(p.issues[p.Report].Body, p.Opening):
+		p.Changed = true
+	case p.Report == 0 && !b.Empty():
+		p.Changed = true
+	}
 }
 
 // tickedAct is the act a ticked intention stands for: the proposal the
@@ -634,8 +686,18 @@ func (p *Plan) keepProposed() {
 		m = &Measure{Level: p.config.Level} // written with the report, when there is one to write
 		p.Record.Measure = m
 	}
+	// The day each was first proposed: kept while it stays, carried to the
+	// same act decided again; one the record has none for gets today's.
+	today := time.Now().UTC().Format(dateLayout)
+	since := map[string]string{}
+	for _, q := range p.Record.Proposed {
+		since[q.TickKey()] = q.Since
+	}
 	var kept []Pending
 	for _, q := range p.Record.Proposed {
+		if q.Since == "" {
+			q.Since, p.Changed = today, true
+		}
 		key, settled := q.Key, false
 		if key == "" {
 			key, settled = fmt.Sprintf("%d/%s", q.Issue, q.Act), !p.open[q.Issue]
@@ -663,6 +725,9 @@ func (p *Plan) keepProposed() {
 			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close"), Capped: d.Capped, Proposal: &act}
 			if d.Act.Do == "open" {
 				q.Key = d.Act.key()
+			}
+			if q.Since = since[q.TickKey()]; q.Since == "" {
+				q.Since = today
 			}
 			kept = append(kept, q)
 		}
@@ -1626,6 +1691,7 @@ func (p *Plan) ReportBody() string {
 	}
 	var b strings.Builder
 	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. An act undone — a closing reopened, a title, a priority or a milestone put back, `" + LabelReady + "` taken off, a split's part closed as not planned, a link it set between issues taken off — puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
+	b.WriteString(p.Opening)
 	fmt.Fprintf(&b, "\nAutonomy: **%s** — %s.\n", p.config.Level, ModesLine(p.config.Modes(p.Record.Propose)))
 	if level, why := p.Record.Measure.Suggest(); level != "" {
 		fmt.Fprintf(&b, "\n**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)

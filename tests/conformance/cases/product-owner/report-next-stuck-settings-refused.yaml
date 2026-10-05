@@ -1,0 +1,19 @@
+case: product-owner/report-next-stuck-settings-refused
+about: "next-max is 0 to 20 and stuck-days 1 to 365: a value out of range stops the run, never read as the default (ADR-0031, principle 12)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {next-max: 50, stuck-days: 0}
+  forge:
+    issues:
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "pre exited with code 1"}]
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 14, absent: true}

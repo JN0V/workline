@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: d293323
+checked: 82c365e
 judged: fa1d682
 verified: agent:claude-code
 ---
@@ -183,7 +183,10 @@ token the Reporter role and `api` alone; not Planner, which may not give a
 split's child its parent. Who is of the project there is a member with the
 Planner role or above; a Guest's issue, or a stranger's, is its reporter's
 (ADR-0023).
-Its acts and proposals are listed in one issue, "Backlog — product owner".
+Its acts and proposals are listed in one issue, "Backlog — product owner",
+which opens with what is next — the first ready issues of the order — and
+what is stuck — each issue waiting on a person past `stuck-days` (14),
+with since when (ADR-0031).
 A roadmap or backlog file is moved to issues once, by hand:
 `workline issues import <file>`, then `--apply`.
 

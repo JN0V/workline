@@ -613,3 +613,35 @@ answer planted (`--ai fake:`), or none (`--ai none`).
   `skip` a line, and whether the agent answers for every line — and the
   maintainer reading DomoticsCore's map against its 56 issues (#163's
   Validation).
+
+## 2026-10-05 — Next and Stuck, live on GitHub and GitLab, no agent
+
+The report's opening (ADR-0031), the engine built from the branch, on a
+clone of JN0V/workline-sandbox and a clone of JN0V/workline; every run
+`--ai none`: no token spent.
+
+- **GitHub, the sandbox** (report #5). Run 1, defaults: the report
+  rewritten though the run did nothing else, opening with "Next" — "1. #7
+  Sign-in is slow at times — no milestone, priority 1", "2. #6 … priority
+  3" — and "Stuck: Nothing waits on a person for more than 14 days"; #26
+  and #29 left in "Waiting". Run 2, `next-max: 1`, `stuck-days: 1`: #6
+  out of Next, so its trail asked: `workline:ready` since 2026-10-04 read
+  from the timeline, nothing naming it — one day, not past one: not
+  stuck. The first build said "1 days"; **fixed**.
+- **GitLab, the sandbox** (report #10), `next-max: 0`, `stuck-days: 1`:
+  the label days of #6, #13 and #15 read from `resource_label_events`,
+  #15's last question to its reporter from its note's `created_at`, all
+  2026-10-05: none stuck yet; "## Stuck" written.
+- **workline itself**, `--no-apply` (nothing written): Next is #79 alone,
+  the only ready issue; #65, #91 and #92 wait on their reporters since
+  2026-10-05; the record's proposals have no day yet (recorded before),
+  so the first run will date them. Rendered as on 2026-10-21, the report
+  would say #65, #91, #92 "its reporter written to on 2026-10-05 (16
+  days); no answer since" and #83, #85, #87 "`refine` proposed here
+  since 2026-10-05". #79's timeline holds a reference by pull request
+  #112, older than its label (the backlog's move to issues): not taken
+  for work started.
+- Not tried: an issue past 14 days on a real forge — every day on both
+  sandboxes is this week's; an announcement due with no judge, live; a
+  plugged forge's `trail`; workline's #110 rewritten (that is the
+  nightly run's, after the merge).
