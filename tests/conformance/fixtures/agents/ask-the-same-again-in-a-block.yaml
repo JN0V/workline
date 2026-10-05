@@ -1,0 +1,7 @@
+# The question asked before, written again as a block scalar (#138).
+- ask:
+    issue: 9
+    questions: |
+      Which rows are lost: the last one, or any?
+    why: |
+      The answer did not say.
