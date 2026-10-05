@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 5f4b761
+checked: b34c3f6
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
