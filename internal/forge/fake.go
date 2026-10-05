@@ -44,14 +44,18 @@ type FakeItem struct {
 	BlockedBy []int         `json:"blocked-by,omitempty"` // the issues it waits on, in the forge's own relation
 	Ticks     []Tick        `json:"ticks,omitempty"`      // boxes ticked in its body, with who ticked them
 	ClosedBy  []Closer      `json:"closed-by,omitempty"`  // what closed it: a pull request, a commit
+	// Labeled says when it last got each label; Links, what names it
+	// (Trail, ADR-0031).
+	Labeled map[string]string `json:"labeled,omitempty"`
+	Links   []Link            `json:"links,omitempty"`
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
-// author as {body, author, insider, bot}.
+// author as {body, author, insider, bot, created}.
 type FakeComment Note
 
 func (c FakeComment) MarshalJSON() ([]byte, error) {
-	if c.Author == "" && !c.Insider && !c.Bot {
+	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" {
 		return json.Marshal(c.Body)
 	}
 	return json.Marshal(Note(c))
@@ -438,6 +442,18 @@ func (f *Fake) Closers(id int) ([]Closer, error) {
 		return nil, err
 	}
 	return it.ClosedBy, nil
+}
+
+func (f *Fake) Trail(id int, label string) (Trail, error) {
+	s, err := f.load()
+	if err != nil {
+		return Trail{}, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil {
+		return Trail{}, err
+	}
+	return Trail{Labeled: it.Labeled[label], Links: it.Links}, nil
 }
 
 func (f *Fake) Ticks(id int) ([]Tick, error) {

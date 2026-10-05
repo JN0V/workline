@@ -181,6 +181,64 @@ func (g *github) Closers(id int) ([]Closer, error) {
 	return all, nil
 }
 
+// trailQuery asks an issue's timeline for its labels set and what names
+// it: a pull request linked by hand (ConnectedEvent) or naming it
+// (CrossReferencedEvent), a commit naming it (ReferencedEvent), each with
+// when (docs/research/product-owner.md, "What is next, and what is stuck").
+const trailQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { timelineItems(itemTypes: [LABELED_EVENT, CONNECTED_EVENT, CROSS_REFERENCED_EVENT, REFERENCED_EVENT], last: 100) { nodes { __typename ... on LabeledEvent { createdAt label { name } } ... on ConnectedEvent { createdAt subject { __typename ... on PullRequest { number } } } ... on CrossReferencedEvent { createdAt source { __typename ... on PullRequest { number } } } ... on ReferencedEvent { createdAt commit { abbreviatedOid } } } } } } }`
+
+// Trail reads an issue's last hundred timeline events of those kinds: one
+// GraphQL call (ADR-0031).
+func (g *github) Trail(id int, label string) (Trail, error) {
+	out, err := g.api("graphql", "-f", "query="+trailQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
+	if err != nil {
+		return Trail{}, err
+	}
+	type pr struct {
+		Type   string `json:"__typename"`
+		Number int    `json:"number"`
+	}
+	var v struct {
+		Data struct {
+			Repository struct {
+				Issue struct {
+					Timeline struct {
+						Nodes []struct {
+							Type      string `json:"__typename"`
+							CreatedAt string `json:"createdAt"`
+							Label     *struct {
+								Name string `json:"name"`
+							} `json:"label"`
+							Subject *pr `json:"subject"`
+							Source  *pr `json:"source"`
+							Commit  *struct {
+								Oid string `json:"abbreviatedOid"`
+							} `json:"commit"`
+						} `json:"nodes"`
+					} `json:"timelineItems"`
+				} `json:"issue"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := decode(out, &v); err != nil {
+		return Trail{}, err
+	}
+	var t Trail
+	for _, n := range v.Data.Repository.Issue.Timeline.Nodes {
+		switch {
+		case n.Type == "LabeledEvent" && n.Label != nil && n.Label.Name == label:
+			t.Labeled = n.CreatedAt
+		case n.Subject != nil && n.Subject.Type == "PullRequest":
+			t.Links = append(t.Links, Link{Kind: "pull-request", Ref: fmt.Sprintf("#%d", n.Subject.Number), At: n.CreatedAt})
+		case n.Source != nil && n.Source.Type == "PullRequest":
+			t.Links = append(t.Links, Link{Kind: "pull-request", Ref: fmt.Sprintf("#%d", n.Source.Number), At: n.CreatedAt})
+		case n.Commit != nil:
+			t.Links = append(t.Links, Link{Kind: "commit", Ref: n.Commit.Oid, At: n.CreatedAt})
+		}
+	}
+	return t, nil
+}
+
 // insider says whether GitHub's author_association gives write access:
 // the owner, a member of the organisation, a collaborator.
 func insider(association string) bool {
@@ -272,7 +330,7 @@ func (g *github) Comments(t Target) ([]string, error) {
 // issue's; an app's comment (a user of type Bot) is a bot's.
 func (g *github) Notes(t Target) ([]Note, error) {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID),
-		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\")}")
+		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at}")
 	if err != nil {
 		return nil, err
 	}

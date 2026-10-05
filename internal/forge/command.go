@@ -138,7 +138,7 @@ func (c *command) Comments(t Target) ([]string, error) {
 }
 
 // Notes reads the answer to comments: each comment its body alone, or
-// {body, author, insider, bot} (docs/spec/forge-command.md).
+// {body, author, insider, bot, created} (docs/spec/forge-command.md).
 func (c *command) Notes(t Target) ([]Note, error) {
 	var a struct {
 		Comments []json.RawMessage `json:"comments"`
@@ -151,7 +151,7 @@ func (c *command) Notes(t Target) ([]Note, error) {
 		var n Note
 		if err := json.Unmarshal(raw, &n.Body); err != nil {
 			if err := json.Unmarshal(raw, &n); err != nil {
-				return nil, fmt.Errorf("%w: comments: a comment is a text or {body, author, insider, bot}: %v", ErrUnreachable, err)
+				return nil, fmt.Errorf("%w: comments: a comment is a text or {body, author, insider, bot, created}: %v", ErrUnreachable, err)
 			}
 		}
 		notes = append(notes, n)
@@ -284,6 +284,18 @@ func (c *command) Closers(id int) ([]Closer, error) {
 	}
 	err := c.call("closers", map[string]any{"id": id}, &a)
 	return a.Closers, err
+}
+
+// Trail asks trail: when the issue last got the label, and what names
+// it, {labeled, links: [{kind, ref, at}]} (docs/spec/forge-command.md); a
+// forge that refuses the operation does not say: an empty trail.
+func (c *command) Trail(id int, label string) (Trail, error) {
+	var a Trail
+	err := c.call("trail", map[string]any{"id": id, "label": label}, &a)
+	if err != nil && !errors.Is(err, ErrUnreachable) {
+		return Trail{}, nil
+	}
+	return a, err
 }
 
 // Ticks reads the answer to ticks: the boxes ticked in the issue's body,
