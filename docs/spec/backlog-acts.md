@@ -463,7 +463,7 @@ report's body and who ticked each (ADR-0025):
 
 | Forge | Who ticked it |
 |---|---|
-| GitHub | the editor of the body's version that ticked it (`userContentEdits`); of the project when GitHub gives them write, maintain or admin; a user of type Bot is a bot |
+| GitHub | the editor of the body's version that ticked it (`userContentEdits`, the hundred newest); of the project when GitHub gives them write, maintain or admin — a token that may not read that: nobody known; a user of type Bot is a bot |
 | GitLab | the author of the system note "marked the checklist item … as completed"; of the project from the Planner role (ADR-0023) |
 | local | a person of the project, unnamed: whoever works in the clone |
 | plugged | its `ticks` operation (docs/spec/forge-command.md); one it refuses: nobody known |

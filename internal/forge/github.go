@@ -434,7 +434,9 @@ func (g *github) Ticks(id int) ([]Tick, error) {
 			who.Author, who.Bot = n.Editor.Login, n.Editor.Type == "Bot"
 			if !who.Bot {
 				if who.Insider, err = g.writer(who.Author); err != nil {
-					return nil, err
+					// A token that may not read permissions: who ticked is
+					// not known, and the tick is no yes — said, not failed.
+					who = Note{}
 				}
 			}
 		}
