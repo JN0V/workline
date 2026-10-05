@@ -29,11 +29,11 @@ record: the questions are there, verbatim, where the reporter sees them; the
 state comment does not copy them.
 
 - **Again only after an answer**: a person's comment after the last round.
-  Without one, nothing more is written (`already-asked`,
+  Without one, nothing is written (`already-asked`,
   `already-proposed`): no reminders, no ping storm.
 - **The answer is read**: the issue is read again (a person commented), its
   conversation given to the agent in order, with the rounds spent. It
-  refines, proposes ready, or asks what is still missing.
+  refines, proposes ready, or asks what is missing.
 - **Never the same question twice**, as a check: a question an earlier
   round holds, spaces and case aside, drops the ask (`asked-before`).
   Telling a paraphrase is the agent's, told so.
