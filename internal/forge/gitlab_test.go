@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -74,7 +75,7 @@ func TestGitLabAPI(t *testing.T) {
 // cannot be edited (403): the sticky one is written anew after it.
 func TestGitLabWho(t *testing.T) {
 	var got []string
-	members := true
+	members, written := true, false // written: the bot wrote its own state note since
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
 		author := func(u string) map[string]any { return map[string]any{"username": u} }
@@ -92,14 +93,24 @@ func TestGitLabWho(t *testing.T) {
 		case r.Method == "GET" && p == "/issues/3":
 			json.NewEncoder(w).Encode(map[string]any{"iid": 3, "title": "t", "author": author("guest"), "state": "opened"})
 		case r.Method == "GET" && p == "/issues/3/notes":
-			json.NewEncoder(w).Encode([]map[string]any{
+			notes := []map[string]any{
 				{"id": 1, "body": "state <!-- workline:k -->", "author": author("owner")},
 				{"id": 2, "body": "changed the description", "system": true, "author": author("plan")},
 				{"id": 3, "body": "agreed", "author": author("guest")},
 				{"id": 4, "body": "ok", "author": author("plan")},
 				{"id": 5, "body": "done", "author": author("project_1_bot_0a1b")},
 				{"id": 6, "body": "me too", "author": author("gone")},
-			})
+			}
+			if written {
+				notes = append(notes, map[string]any{"id": 7, "body": "new <!-- workline:k -->", "author": author("project_1_bot_0a1b")})
+			}
+			if r.URL.Query().Get("sort") != "asc" { // GitLab's default: the newest first
+				slices.Reverse(notes)
+			}
+			json.NewEncoder(w).Encode(notes)
+		case r.Method == "PUT" && p == "/issues/3/notes/7":
+			got = append(got, "PUT "+p)
+			w.Write([]byte(`{"id": 7}`))
 		case r.Method == "PUT" && p == "/issues/3/notes/1":
 			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
 		case r.Method == "POST":
@@ -141,6 +152,14 @@ func TestGitLabWho(t *testing.T) {
 	}
 	if len(got) != 1 || got[0] != "POST /issues/3/notes new\n\n<!-- workline:k -->" {
 		t.Fatalf("a sticky note another user wrote: %q", got)
+	}
+	// Written anew, the bot's own is the one edited from then on.
+	written, got = true, nil
+	if err := g.Sticky(Target{Kind: "issue", ID: 3}, "newer", "<!-- workline:k -->", false); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != "PUT /issues/3/notes/7" {
+		t.Fatalf("the bot's own state note: %q", got)
 	}
 	// Members not readable: said, never every reporter taken for an outsider.
 	members = false

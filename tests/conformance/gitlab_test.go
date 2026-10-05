@@ -155,6 +155,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			for i, c := range it.Comments {
 				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
 			}
+			if q.Get("sort") != "asc" { // GitLab's default: the newest first
+				slices.Reverse(out)
+			}
 			return out, 200
 		case method == "POST":
 			it.Comments = append(it.Comments, forge.FakeComment{Body: form.Get("body"), Author: tokenUser})

@@ -371,7 +371,8 @@ func (g *gitlab) Comment(t Target, body, marker string) error {
 }
 
 func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
-	out, err := g.api("--paginate", path(t)+"/notes?per_page=100")
+	// Oldest first: GitLab lists the newest first unless asked.
+	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
 	if err != nil {
 		return err
 	}
