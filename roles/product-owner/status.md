@@ -10,7 +10,8 @@ as its autonomy level says — cautious, normal or enterprising — and
 demotes a kind of act a person undid, refines an
 issue to `ready` and talks with its reporter until it is, splits a need
 into sub-issues and renames a vague title, orders the backlog
-and moves what slipped, and keeps the one way every role opens an issue —
+— an issue that waits on another after it, never offered first — and
+moves what slipped, and keeps the one way every role opens an issue —
 nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
 ordering included, the reviewer not enabled: its roadmap imported, 56
 issues), refining tried live there and on JN0V/workline-sandbox, ordering
@@ -41,6 +42,8 @@ on the sandbox (tried.md).
 | Obsolete announced, then closed (ADR-0024): a comment to the reporter quoting the code and the label `workline:obsolete`; at a run `days` later, nobody having written and the label still there, a second judge of another model asked apart, the issue closed as completed with its yes and level; a reply keeps it open for good on that quote | JN0V/workline-sandbox on GitHub (#14 closed, #4 kept) and on GitLab (#19 closed, #20 kept), live, the delay set to 0; label removal, exempt labels, a judge's no, the cap in conformance (`obsolete-*`) |
 | Autonomy levels (ADR-0026): `cautious` doing what checks facts — sources, Scope and Verification — and proposing what sets direction — a duplicate, milestones, priorities, Need and Validation drafts, a split —; `enterprising` closing, moving and refining whole; each kind's mode and where it comes from in the task and the report. An act a person undid found at the next run with no agent — a priority put back, a title renamed back — and its kind demoted whatever the level | JN0V/workline-sandbox on GitHub, live (#15–#19 cautious, #20–#24 enterprising; the rename planted); `ready` taken off, a split's child closed as not planned, `ignored-runs-max`, init's question in conformance |
 | The person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
+
+| What an issue waits on (ADR-0028): `depend` and a split's child's `after` written in GitHub's dependencies, or a marked `Blocked by #n.` line in the body on GitLab Free; read back with a person's links and lines; a blocked issue ordered after its open blockers, never `next-ready`; a closed blocker unblocking; the report's "Waiting" | JN0V/workline-sandbox on GitHub (#29 after #28 by a split, #26 and #29 on #25) and on GitLab (#23, #24 on #22, a body line; #22 closed then reopened), live; cycles, a person's link kept, the level, an undo in conformance (`depend-*`, `backlog/*blocker*`, `cycle-*`, `undo-depend-demotes`) |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried
@@ -80,3 +83,7 @@ checked.
    GitHub project's position), deferred (ADR-0018); milestones ranked by
    their due date, not only their title; the engine refusing a person's
    priority, tried in conformance only.
+7. **What an issue waits on, what is left** (ADR-0028): a GitLab Premium
+   link tried live; a relation across projects; removing a link the role
+   set once its reason is gone; the Forgejo sample's `add-blocker`; the
+   developer role taking the `next-ready` issue (#117).

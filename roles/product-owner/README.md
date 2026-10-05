@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 71620e9
+checked: d8e0419
 verified: agent:claude-code
 ---
 # Product owner
@@ -34,7 +34,9 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    code, Need and Validation as drafts a person makes theirs), the move to
    `ready` (`ready`), or a question to its reporter (`ask`); an issue too
    big to be one need split into 2 to 6, each with its four sections
-   (`split`); a title that says nothing renamed (`rename`). The task
+   (`split`), a child naming the siblings it waits on (`after`); a title
+   that says nothing renamed (`rename`); what an issue waits on
+   (`depend`, ADR-0028). The task
    shows what was asked or proposed to the reporter and what they
    answered, and the rounds spent.
 3. The engine checks each one when it applies it — never as not planned,
@@ -44,6 +46,9 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    set kept, an issue split once, its children opened through the one way
    and linked to it — a sub-issue, a GitLab task, else a task list in its
    body —,
+   what an issue waits on written in the forge's own relation (GitHub's
+   dependencies, GitLab's `is_blocked_by` on Premium), else a line
+   `Blocked by #12.` in its body, never a cycle, a person's link kept,
    at most a fifth of the open issues moved a run — and does it,
    proposes it, or drops it, by the kind's mode and cap (`acts`). One
    report issue lists what was done and proposed. A closing undone, the
@@ -61,6 +66,13 @@ completed, saying the judge and its level. Anyone's comment, the label
 taken off or the judge's no keeps it open for good on that evidence
 (`kept` in its state). Announcements and closings share
 `close-obsolete`'s cap.
+
+The backlog's order puts an issue that waits on an open issue after it,
+whatever its priority; a cycle is reported, never followed. Every run,
+with or without an agent, says the first ready issue waiting on nothing
+(`next-ready`) — the one offered to whoever builds next —, each issue
+waiting (`waiting`) and each cycle (`dependency-cycle`); the report too,
+under "Waiting".
 
 An issue in a milestone whose release is tagged slipped: the engine moves
 it to the nearest open milestone not released, with or without an agent,
@@ -95,7 +107,8 @@ agent; ticked by an outsider, a bot or nobody the forge names, it is not,
 and the report says why (ADR-0025). A kind back to `propose` after a
 person undid one of its acts — a closing reopened; a title, a priority or
 a milestone put back; `workline:ready` taken off; a split's part closed
-as not planned (ADR-0026) — gets a box too, to set it back to `act`.
+as not planned (ADR-0026); a link it set between issues taken off —
+gets a box too, to set it back to `act`.
 Three runs in a row (`ignored-runs-max`; 0 never pauses, said in every
 report) read with an agent and nobody answering — no box ticked, no
 comment on the report, no act undone, no proposal settled — pause the
@@ -130,6 +143,7 @@ roles:
         ask: {mode: act, max: 3}
         split: {mode: act, max: 2}
         rename: {mode: act, max: 5}
+        depend: {mode: act, max: 5}              # propose at cautious, 10 at enterprising
 ```
 
 These are `normal`. `autonomy` changes them in one word (ADR-0026;
@@ -138,7 +152,7 @@ project whose Product Owner is a person — `workline init` asks —, keeps
 the acts that check facts (sources, asking the reporter, announcing what
 is obsolete, Scope and Verification) and proposes those that set
 direction (Need and Validation drafts, splits, renames, milestones,
-priorities, duplicates), for a person to tick in the report;
+priorities, duplicates, what an issue waits on), for a person to tick in the report;
 `enterprising` raises the caps. A kind set here wins over the level,
 field by field; a kind demoted stays proposed whatever the level. The
 task and the report say each kind's mode and where it comes from; the
