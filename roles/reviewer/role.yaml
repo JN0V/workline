@@ -16,6 +16,7 @@ model:
   capability: reasoning
   tier: standard
   effort: medium
+  promote-after: 1   # a lens's answer that does not read is asked for again once
 
 context:
   budget: 40000      # a lens: the change (diff-lines-max) and the files it changes (code-lines-max)
