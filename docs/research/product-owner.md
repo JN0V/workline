@@ -128,6 +128,44 @@ are looked in; closed as not planned or duplicate, nothing; closed
 otherwise, said once on the issue, left closed; the line changed, a new
 subject.
 
+## Splitting and renaming (2026-10-05)
+
+How forges hold a need broken into parts, and how backlog practice decides
+to break one or to retitle it — in their words: *sub-issues*, *child
+items*, *task list*, *story splitting*, *summary*.
+
+| Where | Parent and children | What a role can write |
+|---|---|---|
+| GitHub | [Sub-issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/adding-sub-issues): up to 100 a parent, 8 levels, across repositories; one parent a child. [REST](https://docs.github.com/en/rest/issues/sub-issues): `POST /repos/{o}/{r}/issues/{n}/sub_issues` with `sub_issue_id` — the issue's **id**, not its number —, `GET …/sub_issues`, `GET …/parent`, `replace_parent` to move a child | Both, with the issues token a role already holds |
+| GitLab | [Tasks](https://docs.gitlab.com/user/tasks/), every tier: **an issue's children are tasks only** — asked of gitlab.com's GraphQL for JN0V/workline-sandbox (a user namespace, Free), the type Issue allows the children `[Task]` and the parents `[]`. The hierarchy is in the work items **GraphQL API only** (`workItemConvert`, `workItemUpdate` with `hierarchyWidget.parentId`); REST's `issue_type=task` on an existing issue is refused. But the REST issues API **lists a task** (`issue_type: task`), and comments, labels and renames it as an issue: tried by hand, 2026-10-05. [Issue links](https://docs.gitlab.com/api/issue_links/) (`relates_to` on Free) are not a hierarchy. [Epics](https://docs.gitlab.com/user/group/epics/) are a group's, Premium and up, absent from a user namespace on Free: a portfolio of needs across projects, a roadmap's theme — closer to a milestone than to the parts of one need | A task: opened as an issue, converted, given its parent, two GraphQL calls; then read and acted on by REST as any issue |
+| Both | A **task list** in the body, `- [ ] #13`: both forges render the issue's title and state on the reference; GitHub's *tasklist blocks* that tracked them were retired for sub-issues | A body, everywhere, the local forge included |
+
+### When to split, and titles
+
+**When to split**, in backlog practice: INVEST's *Small* and *Testable*
+(Bill Wake, 2003) — an item a team can finish and prove in a short
+iteration; Mike Cohn's [SPIDR](https://www.mountaingoatsoftware.com/blog/five-simple-but-powerful-ways-to-split-user-stories)
+(spike, path, interface, data, rules) for where to cut; and, in workline's
+words, one Verification an issue (docs/spec/routing.md): a need whose
+proof is several checks that pass apart is several issues. The parent
+keeps the need it was written for; the children are its parts.
+
+**Titles**: Mozilla's [bug writing guidelines](https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html)
+— "approximately 10 words", "quickly and uniquely identify a bug report",
+"explain the problem, not your suggested solution". Who set a title is kept
+only in a forge's history (GitHub's `renamed` timeline event, a GitLab system note).
+
+### Decision
+
+(ADR-0022): split through the forge's own children —
+GitHub's sub-issues, GitLab's tasks — and a task list in the parent where
+there are none (the local forge, an instance without work items); each
+child opened through the one way, with its four sections. Epics are not
+used to split: a need's parts are not a portfolio, and they are not on
+every tier; grouping themes across projects, perhaps later, the product
+manager's. A rename sets the title alone, and a title a person set after
+the role's is kept.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was

@@ -26,3 +26,30 @@ func TestLocate(t *testing.T) {
 		t.Fatalf("Locate = %d, %d, %q, %v", from, to, got, ok)
 	}
 }
+
+// A parent's task list is added once, after its text, and rewritten in
+// place when a resumed split lists its children again.
+func TestListChildren(t *testing.T) {
+	body := ListChildren("Two needs.\n\n## Scope\n\nsrc.", []int{10})
+	want := "Two needs.\n\n## Scope\n\nsrc.\n\n## Sub-issues\n\n- [ ] #10"
+	if body != want {
+		t.Fatalf("first list = %q", body)
+	}
+	if again := ListChildren(body, []int{10, 11}); again != want+"\n- [ ] #11" {
+		t.Fatalf("list rewritten = %q", again)
+	}
+}
+
+// Two children are one when their titles differ only in case or spaces;
+// distinct titles, or one title under two parents, are not.
+func TestSplitKey(t *testing.T) {
+	same := SplitKey(9, "Keep the last row")
+	for _, title := range []string{"Keep the last row", "keep the LAST row", "  Keep  the last\trow "} {
+		if SplitKey(9, title) != same {
+			t.Errorf("SplitKey(9, %q) differs from %q's", title, "Keep the last row")
+		}
+	}
+	if SplitKey(9, "Quote commas") == same || SplitKey(10, "Keep the last row") == same {
+		t.Error("another title, or another parent, gives the same key")
+	}
+}

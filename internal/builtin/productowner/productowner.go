@@ -257,6 +257,17 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 		}
 		fmt.Fprintf(b, "Opened by: %s%s\n", is.Author, outside)
 	}
+	if st.Title != "" && st.Title != is.Title {
+		b.WriteString("Title: a person's, set after the role's (kept)\n")
+	}
+	if len(st.Split) > 0 {
+		// Split already (ADR-0022): its children are issues of their own.
+		var ids []string
+		for _, id := range st.Split {
+			ids = append(ids, fmt.Sprintf("#%d", id))
+		}
+		fmt.Fprintf(b, "Split into: %s (not split again)\n", strings.Join(ids, ", "))
+	}
 	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {

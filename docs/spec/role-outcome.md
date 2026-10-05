@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 01bf620
+checked: f459021
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -81,6 +81,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
 | `ask` | ask an issue's reporter what is missing, once | forge |
+| `split` | break an issue too big to be one need into 2 to 6 issues, each with its four sections, opened through the one way and linked to it — a sub-issue, a GitLab task, or a task list in its body; never split twice (docs/spec/backlog-acts.md, "Splitting") | forge |
+| `rename` | set an issue's title; a title a person set after the role's is kept (docs/spec/backlog-acts.md, "Renaming") | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
 | `finding` | a lens's answer (role contract, "In parts"): `{severity, title, why, cause: {path, quote}, symptom, fix}`, `severity` `important` or `nit`; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |

@@ -1,0 +1,21 @@
+- split:
+    issue: 9
+    into:
+      - {title: "Rows", need: "Every row.", verification: "A test counts rows.", validation: "The maintainer.", scope: "WriteRows.", sources: [src/export/csv.go]}
+      - {title: "rows", need: "Again.", verification: "A test.", validation: "The maintainer.", scope: "WriteRows.", sources: [src/export/csv.go]}
+    why: "Two children of one title: refused."
+- split:
+    issue: 9
+    into:
+      - {title: "Keep the last row", need: "Every row.", verification: "A test counts rows.", validation: "The maintainer.", scope: "WriteRows.", sources: [src/export/csv.go]}
+      - {title: "Quote commas", need: "Whole cells.", verification: "A test with a comma.", validation: "The maintainer.", scope: "WriteRows.", sources: [src/export/csv.go]}
+    why: "Two needs."
+- split:
+    issue: 9
+    into:
+      - {title: "Export as JSON", need: "JSON.", verification: "A test reads JSON.", validation: "The maintainer.", scope: "src/export.", sources: [src/export/csv.go]}
+      - {title: "Export as XML", need: "XML.", verification: "A test reads XML.", validation: "The maintainer.", scope: "src/export.", sources: [src/export/csv.go]}
+    why: "Another cut."
+- rename: {issue: 9, title: "Export fixes", why: "The title it has: refused."}
+- rename: {issue: 9, title: "Export fixes, rows and commas", why: "First that passes."}
+- rename: {issue: 9, title: "Something else", why: "Second."}

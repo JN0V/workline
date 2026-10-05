@@ -249,3 +249,45 @@ again, then by one closed as completed said once on it. The product
 owner's side — a role's issue read first as its draft to refine — is in
 conformance only (`role-finding-read-as-draft`): no product owner run
 followed.
+
+## 2026-10-05 — splitting and renaming, live on GitHub and GitLab, Sonnet
+
+The engine of this branch, built on this machine; the sandboxes'
+fresh clones. Two issues planted on each: "Session handling", three needs
+in one (a two-hour lifetime, a silent refresh, signing out everywhere),
+and "pls fix", a `TokenTTL` that should be a `time.Duration`.
+
+- **GitHub, JN0V/workline-sandbox** (`--forge github`). Run 1 (9.3k
+  tokens in, 1.3k out): the two issues got their state. Run 2 (8.9k in,
+  2.4k out): #10 split into #12 "Refresh an expired token silently" and
+  #13 "Sign out on every device" — the agent left the two-hour lifetime
+  out, "already #2" —, each with its four sections, Need and Validation
+  drafts, `Part of #10.`, linked as **native sub-issues**; #10's state
+  `split: [12, 13]`. #10 renamed "Sign-in sessions: silent token refresh
+  and sign out on every device", #11 "Make TokenTTL a time.Duration
+  instead of a bare number of seconds". Run 3 (two calls, 23.6k in, 1k
+  out): only the children read — refined, ordered —, nothing split or
+  renamed again. Run 4, #11 renamed by hand and both commented on to have
+  them read again (12k in, 1k out): the task said "Split into: #12, #13
+  (not split again)" and "Title: a person's (kept)"; the agent proposed
+  neither, and said so in its note.
+- **GitLab, JN0V/workline-sandbox** (`--forge gitlab`, glab's token).
+  GitLab takes every reporter for an outsider, so both issues were opened
+  with `workline:accepted`, as a person of the project accepts. Run 1, no
+  agent: states. Run 2 (15.3k in, 2.7k out): #5 split into three —
+  opened as issues, converted to **tasks** and given #5 as parent through
+  GraphQL, read back under #5 as its children; #6 renamed "TokenTTL is a
+  bare number of seconds instead of a time.Duration"; the report saying
+  each, and how to undo it. Run 3, #5 commented on (18.4k in, 1.3k out):
+  the tasks read and ordered as any issue, through REST; #5 not split
+  again ("#5 was split into #7, #8 and #9 and is not split again").
+- About 88k tokens in and 10k out in all, eight calls.
+- Seen: the agent refined a parent in the run it split it, writing the
+  whole need's four sections — allowed, the parent keeps the need. The
+  other product owner branch ran on the GitHub sandbox at the same time
+  and rewrote its report issue (#5) after run 2: the report of a split
+  was seen on GitLab's (#10), not on GitHub's.
+- Not tried live: a split stopped half-way and resumed (conformance:
+  children keyed, state written last); the task list fallback (local
+  forge, conformance only); an outsider's split proposed; a forge plugged
+  by a command answering `add-sub-issue`.

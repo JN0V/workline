@@ -434,6 +434,14 @@ func (l *Local) SetBody(id int, body string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Body = body })
 }
 
+func (l *Local) SetTitle(id int, title string) error {
+	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Title = title })
+}
+
+// AddSubIssue: the local forge has no sub-issues; the parent's body lists
+// its children.
+func (l *Local) AddSubIssue(parent, child int) (bool, error) { return false, nil }
+
 func (l *Local) SetMilestone(id int, title string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Milestone = title })
 }

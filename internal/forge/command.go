@@ -230,3 +230,17 @@ func (c *command) SetBody(id int, body string) error {
 func (c *command) SetMilestone(id int, title string) error {
 	return c.call("set-milestone", map[string]any{"id": id, "milestone": title}, nil)
 }
+
+func (c *command) SetTitle(id int, title string) error {
+	return c.call("set-title", map[string]any{"id": id, "title": title}, nil)
+}
+
+// AddSubIssue asks add-sub-issue: a forge without sub-issues answers
+// {"native": false}, and the parent's body lists the child.
+func (c *command) AddSubIssue(parent, child int) (bool, error) {
+	var a struct {
+		Native bool `json:"native"`
+	}
+	err := c.call("add-sub-issue", map[string]any{"parent": parent, "child": child}, &a)
+	return a.Native, err
+}

@@ -76,6 +76,13 @@ type Backlog interface {
 	SetMilestone(id int, title string) error
 	// SetBody rewrites an issue's body.
 	SetBody(id int, body string) error
+	// SetTitle renames an issue.
+	SetTitle(id int, title string) error
+	// AddSubIssue makes child a sub-issue of parent where the forge has
+	// sub-issues, and says so; false on a forge that has none, the child
+	// then listed in the parent's body by the caller. Adding one already
+	// there changes nothing.
+	AddSubIssue(parent, child int) (bool, error)
 	// EnsureLabel creates a label when the project has none of that name,
 	// so a person finds it in the forge's list to set.
 	EnsureLabel(name, color, description string) error

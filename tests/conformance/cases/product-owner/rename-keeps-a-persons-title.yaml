@@ -1,0 +1,15 @@
+case: product-owner/rename-keeps-a-persons-title
+about: A title other than the one the role set — a person renamed it after — is a person's; the rename is dropped and the title kept. A rename to the title it has is dropped too.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export, mine", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\ntitle: The export loses rows\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:rename-two}
+expect:
+  findings: [{rule: title-kept, where: "#9"}, {rule: title-same, where: "#10"}]
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost on export, mine", comment-lacks: "The CSV export"}
+      - {id: 11, absent: true}

@@ -1,0 +1,2 @@
+- rename: {issue: 9, title: "The CSV export drops the last row", why: "Vague."}
+- rename: {issue: 10, title: "Slow export", why: "Already so."}

@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 11d697f
+checked: eb4f69b
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -20,8 +20,8 @@ Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
 none), but not yet the backlog's other operations (`issues`, `comments`,
-`close`, `milestones`, `set-milestone`, `set-body`, `ensure-label`), nor a
-merge request's `base`.
+`close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
+`add-sub-issue`, `ensure-label`), nor a merge request's `base`.
 
 ## One request, one run
 
@@ -62,6 +62,8 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `milestones` | | lists the titles of the open milestones | `{milestones: [titles]}` |
 | `set-milestone` | `id`, `milestone` | puts the issue in the open milestone with this title, creating it when there is none | `{}` |
 | `set-body` | `id`, `body` | rewrites the issue's body | `{}` |
+| `set-title` | `id`, `title` | renames the issue | `{}` |
+| `add-sub-issue` | `parent`, `child` | makes `child` a sub-issue of `parent`, on a forge that has sub-issues; one already there changes nothing | `{native: true}`; `{native: false}` on a forge without them, and the engine lists the child in the parent's body (ADR-0022) |
 | `ensure-label` | `name`, `color`, `description` | creates the label when the project has none of that name | `{}` |
 | `comment` | `target`, `body`, `marker` | posts `body` + a blank line + `marker` on the target, unless a comment there holds `marker` | `{}` |
 | `sticky` | `target`, `body`, `marker`, `create` | edits the comment holding `marker` to `body` + `marker`; with none, posts it when `create` is true | `{}` |

@@ -22,6 +22,8 @@ var contracts = map[string]string{
 	"refine":         `- refine: {issue: 12, scope: "the part of the code", sources: ["src/file.go"], verification: "the tests that will prove it", need: "who needs what, and why (a draft)", validation: "who accepts it, looking at what (a draft)", why: "why"}  # only the sections it lacks`,
 	"ready":          `- ready: {issue: 12, why: "its four sections are there, Need and Validation a person's"}`,
 	"ask":            `- ask: {issue: 12, questions: "what its reporter should say", why: "why the issue cannot be refined without it"}`,
+	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", verification: "the tests that will prove it", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its four sections`,
+	"rename":         `- rename: {issue: 12, title: "about ten words: the problem, not the fix", why: "why the title it has does not say it"}`,
 	"handoff":        `- handoff: {role: "next role", reason: "why"}`,
 	"note":           `- note: "a message for a person"`,
 	"finding":        `- finding: {severity: important, title: "what is wrong, in a few words", why: "how it fails, and when", cause: {path: "src/file.go", quote: "the line that causes it, as it reads"}, symptom: {path: "src/other.go", quote: "where it shows, as it reads"}, fix: "what would fix it, in a sentence"}  # severity: important or nit; symptom only when elsewhere`,
