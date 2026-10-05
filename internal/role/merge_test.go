@@ -139,7 +139,8 @@ acts:
   rename: {mode: act, max: 5}
   split: {mode: act, max: 2}
 `), Levels: map[string]map[string]map[string]any{"autonomy": {
-		"cautious": settings(t, `acts: {rename: {mode: propose}, split: {mode: propose}}`),
+		"cautious":     settings(t, `acts: {rename: {mode: propose}, split: {mode: propose}}`),
+		"enterprising": settings(t, `acts: {rename: {max: 10}}`),
 	}}}
 	project := func(src string) *ProjectConfig {
 		var c ProjectConfig
@@ -158,6 +159,9 @@ acts:
 		{"the project's own setting over the level", `{autonomy: cautious, acts: {rename: {mode: act}}}`,
 			`{autonomy: cautious, acts: {rename: {mode: act, max: 5}, split: {mode: propose, max: 2}}}`,
 			`{autonomy: normal, acts: {rename: {mode: propose, max: 5}, split: {mode: propose, max: 2}}}`},
+		{"enterprising", `{autonomy: enterprising}`,
+			`{autonomy: enterprising, acts: {rename: {mode: act, max: 10}, split: {mode: act, max: 2}}}`,
+			`{autonomy: normal, acts: {rename: {mode: act, max: 10}, split: {mode: act, max: 2}}}`},
 		{"a level the role does not have lays nothing", `{autonomy: bold}`,
 			`{autonomy: bold, acts: {rename: {mode: act, max: 5}, split: {mode: act, max: 2}}}`,
 			`{autonomy: normal, acts: {rename: {mode: act, max: 5}, split: {mode: act, max: 2}}}`},
@@ -173,5 +177,24 @@ acts:
 				t.Errorf("by level: got %v, want %v", level, want)
 			}
 		})
+	}
+}
+
+// Two settings picking levels that set the same field: laid in the order
+// of the settings' names, the same on every run.
+func TestMergedSettingsTwoLevelsInOrder(t *testing.T) {
+	r := &Role{Name: "po", Settings: settings(t, `{autonomy: normal, pace: slow, max: 1}`),
+		Levels: map[string]map[string]map[string]any{
+			"autonomy": {"enterprising": settings(t, `{max: 5}`)},
+			"pace":     {"fast": settings(t, `{max: 9}`)},
+		}}
+	var c ProjectConfig
+	if err := yaml.Unmarshal([]byte("roles: {po: {settings: {autonomy: enterprising, pace: fast}}}"), &c); err != nil {
+		t.Fatal(err)
+	}
+	for range 20 { // a map's order changes from run to run: the result does not
+		if got := r.MergedSettings(&c)["max"]; got != 9 {
+			t.Fatalf("max %v, want 9: pace laid after autonomy", got)
+		}
 	}
 }
