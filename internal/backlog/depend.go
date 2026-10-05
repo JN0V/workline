@@ -100,7 +100,7 @@ func Waiting(is forge.Issue, open map[int]bool) []int {
 // Order sorts issues in the backlog's order (docs/spec/backlog-acts.md,
 // "Ordering"): Kahn's, the next the first by Less whose blockers among
 // them are all placed. When none can be, those left hold a cycle: it is
-// returned, its first issue by Less placed, and the order goes on — a
+// returned, the cycle's first by Less placed, and the order goes on — a
 // cycle is reported, never followed (ADR-0028).
 func Order(issues []forge.Issue) (cycles [][]int) {
 	sort.SliceStable(issues, func(i, j int) bool { return Less(issues[i], issues[j]) })
@@ -122,10 +122,13 @@ func Order(issues []forge.Issue) (cycles [][]int) {
 	for len(left) > 0 {
 		i := slices.IndexFunc(left, free)
 		if i < 0 {
-			if c := cycleFrom(left[0], left, placed); len(c) > 0 && !slices.ContainsFunc(cycles, func(o []int) bool { return sameCycle(o, c) }) {
+			// The first left may only wait on a cycle: the cycle's first
+			// member by Less is placed, never an issue outside it.
+			c := cycleFrom(left[0], left, placed)
+			if len(c) > 0 && !slices.ContainsFunc(cycles, func(o []int) bool { return sameCycle(o, c) }) {
 				cycles = append(cycles, c)
 			}
-			i = 0
+			i = max(0, slices.IndexFunc(left, func(is forge.Issue) bool { return slices.Contains(c, is.ID) }))
 		}
 		placed[left[i].ID] = true
 		out = append(out, left[i])
@@ -207,12 +210,13 @@ func (p *Plan) checkDepend(c *Proposal) (rule, why string) {
 		return "depend-issue", fmt.Sprintf("an issue waits on 1 to %d issues (blocked-by)", maxBlockers)
 	}
 	have := append(Blockers(is), p.added[c.Issue]...)
+	closing := p.closedInRun()
 	var add []int
 	for _, b := range c.BlockedBy {
 		switch {
 		case b == c.Issue:
 			return "depend-issue", "an issue does not wait on itself"
-		case !p.open[b] || b == p.Report:
+		case !p.open[b] || b == p.Report || closing[b]:
 			return "depend-issue", fmt.Sprintf("#%d is not an open issue: a closed one holds nothing back", b)
 		case !slices.Contains(have, b) && !slices.Contains(add, b):
 			add = append(add, b)
@@ -269,12 +273,7 @@ func ReadBacklog(open []forge.Issue, report int) Backlog {
 // waiting is the report's part on what the order holds back: the first
 // ready issue offered, the issues waiting, the cycles.
 func (p *Plan) waiting() string {
-	closed := map[int]bool{} // closed by this run: no longer open
-	for _, d := range p.Decisions {
-		if d.Mode == Act && d.Act.Do == "close" && !d.Act.Announce {
-			closed[d.Act.Issue] = true
-		}
-	}
+	closed := p.closedInRun()
 	var open []forge.Issue
 	for _, is := range p.issues {
 		if closed[is.ID] {
@@ -299,6 +298,18 @@ func (p *Plan) waiting() string {
 		fmt.Fprintf(&b, "- **Cycle**: %s. None of them is offered first until a person takes a link off.\n", CycleText(c))
 	}
 	return b.String()
+}
+
+// closedInRun are the issues this run closes, as decided so far: no longer
+// open.
+func (p *Plan) closedInRun() map[int]bool {
+	closed := map[int]bool{}
+	for _, d := range p.Decisions {
+		if d.Mode == Act && d.Act.Do == "close" && !d.Act.Announce {
+			closed[d.Act.Issue] = true
+		}
+	}
+	return closed
 }
 
 // joinIDs writes issue numbers as a record keeps them: "12,13".

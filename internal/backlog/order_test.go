@@ -66,6 +66,11 @@ func TestOrderCycle(t *testing.T) {
 	if CycleText(cycles[0]) != "#1 waits on #2, #2 waits on #1" {
 		t.Fatal(CycleText(cycles[0]))
 	}
+	// An issue that only waits on a cycle is never placed to break it.
+	issues = []forge.Issue{{ID: 1, BlockedBy: []int{2}}, {ID: 2, BlockedBy: []int{3}}, {ID: 3, BlockedBy: []int{2}}}
+	if cycles := Order(issues); fmt.Sprint(cycles) != "[[2 3 2]]" || ids(issues) != "[2 1 3]" {
+		t.Fatalf("order = %s, cycles %v", ids(issues), cycles)
+	}
 }
 
 // The report's waiting part reads the backlog as the run leaves it: an

@@ -1010,7 +1010,7 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		return "split-size", fmt.Sprintf("a split makes 2 to %d issues", maxChildren)
 	}
 	keys := map[string]bool{}
-	for _, ch := range c.Into {
+	for i, ch := range c.Into {
 		if !oneLine(strings.TrimSpace(ch.Title)) {
 			return "split-title", "each child's title is one line, 120 characters at most"
 		}
@@ -1028,7 +1028,7 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 			return "sources-unknown", fmt.Sprintf("%q: a scope names 1 to %d files (sources)", ch.Title, maxSources)
 		}
 		for _, k := range ch.After {
-			if k < 1 || k > len(c.Into) || c.Into[k-1].Title == ch.Title {
+			if k < 1 || k > len(c.Into) || k == i+1 {
 				return "split-after", fmt.Sprintf("%q: `after` names the other children it waits on, by their place in the split, 1 to %d", ch.Title, len(c.Into))
 			}
 		}
