@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: eef5682
+checked: 01bf620
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -45,13 +45,13 @@ with no AI:
 
 | Step | What the engine does |
 |---|---|
-| Key | A finding on code quotes its line (`at: {path, text}`); found again in the file, the key is the file and that line, spaces aside (`issue=<path>#<8 hex>`). Otherwise its title (`issue=title#<8 hex>`). A text a backlog file is imported from keys its own (`import=<path>:<hex>`). Hidden in the body. |
+| Key | A finding on code quotes its line (`at: {path, text}`); found again in the file, the key is the file and that line, spaces aside (`issue=<path>#<8 hex>`). Otherwise, or the line not found (`issue-quote-not-found`, said), its title (`issue=title#<8 hex>`). A text a backlog file is imported from keys its own (`import=<path>:<hex>`). Hidden in the body. |
 | Looked for | In every issue, open and closed, read once a run (`AllIssues`); the key a role wrote before the way was shared (`issue=<role>/<key>`) counts too. |
 | Open, holding it | Left as it is: nothing written, whichever role opened it. |
 | Closed as not planned or duplicate | A person's no: nothing written (`issue-closed`, said in the run). |
 | Closed otherwise | Done, or no reason kept (GitLab, the local forge): one comment, once, "found again" with the commit; left closed (`issue-closed`). |
 | New, past `issues-max` | Not opened, counted (`issues-capped`); found again, opened at a later run. Three by default; the product owner's import has its own cap (`open`). |
-| New | Opened: the role named in a line; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state. |
+| New | Opened: the role named in a line; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state, written last — a run stopped before it, resumed, finds the issue open and writes what it lacks. |
 
 ## Reading
 
