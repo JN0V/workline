@@ -51,7 +51,9 @@ EOF
 	// What the answer is read from is asked: the canned answer above would
 	// pass whatever the query.
 	asked, _ := os.ReadFile(args)
-	for _, w := range []string{"LABELED_EVENT", "CONNECTED_EVENT", "CROSS_REFERENCED_EVENT", "REFERENCED_EVENT", "isCrossRepository", "nameWithOwner", "abbreviatedOid", "number=79"} {
+	// Whole tokens: REFERENCED_EVENT is in CROSS_REFERENCED_EVENT too, and
+	// each argument is a line of its own.
+	for _, w := range []string{"[LABELED_EVENT, ", " CONNECTED_EVENT,", " CROSS_REFERENCED_EVENT,", " REFERENCED_EVENT]", " isCrossRepository ", " nameWithOwner ", " abbreviatedOid ", "\nnumber=79\n"} {
 		if !strings.Contains(string(asked), w) {
 			t.Errorf("gh not asked for %q: %s", w, asked)
 		}
