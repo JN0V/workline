@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/JN0V/workline/compare/v0.13.0...v0.14.0) (2026-10-05)
+
+
+### Features
+
+* **product-owner:** a parent checked against its goal as parts close ([#177](https://github.com/JN0V/workline/issues/177)) ([38fb1ba](https://github.com/JN0V/workline/commit/38fb1baa994c07591128145afef1aef5485a12df))
+* **product-owner:** an issue names what it waits on ([#170](https://github.com/JN0V/workline/issues/170)) ([d477467](https://github.com/JN0V/workline/commit/d47746770912f6f003414302caca731f690da44b))
+
+
+### Bug Fixes
+
+* **documentalist:** leave a branch's derived blocks to gardening ([#166](https://github.com/JN0V/workline/issues/166)) ([ca2ce64](https://github.com/JN0V/workline/commit/ca2ce64c85a19cf8e15244be16de5a1461559dc8))
+
 ## [0.13.0](https://github.com/JN0V/workline/compare/v0.12.0...v0.13.0) (2026-10-05)
 
 
