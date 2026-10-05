@@ -250,11 +250,17 @@ func follow(hs []hunk, from, to int) (nfrom, nto int, changed bool) {
 // LinesChange says whether a commit between base and head changed lines
 // [from, to] of path as they were at opened — the commit the issue was
 // opened at, its lines then — with the text at base and at head, and where
-// the lines are now; an empty now when they are gone.
-func LinesChange(repo, path string, from, to int, opened, base, head string) (was, now string, nfrom, nto int, changed bool) {
+// the lines are now; an empty now when they are gone. A commit git cannot
+// read — gone after a force-push, beyond a shallow clone — is an error,
+// never read as no change.
+func LinesChange(repo, path string, from, to int, opened, base, head string) (was, now string, nfrom, nto int, changed bool, err error) {
 	diff := func(a, b string) []hunk {
-		out, err := exec.Command("git", "-C", repo, "diff", "--no-ext-diff", "-U0", a, b, "--", path).Output()
 		if err != nil {
+			return nil
+		}
+		out, e := exec.Command("git", "-C", repo, "diff", "--no-ext-diff", "-U0", a, b, "--", path).Output()
+		if e != nil {
+			err = fmt.Errorf("git diff %s %s -- %s: %v", a, b, path, e)
 			return nil
 		}
 		return hunks(string(out))
@@ -274,10 +280,10 @@ func LinesChange(repo, path string, from, to int, opened, base, head string) (wa
 		from, to, _ = follow(diff(opened, base), from, to)
 	}
 	nfrom, nto, changed = follow(diff(base, head), from, to)
-	if !changed {
-		return "", "", nfrom, nto, false
+	if err != nil || !changed {
+		return "", "", nfrom, nto, false, err
 	}
-	return show(base, from, to), show(head, nfrom, nto), nfrom, nto, true
+	return show(base, from, to), show(head, nfrom, nto), nfrom, nto, true, nil
 }
 
 // readChanges settles the changes the record holds — ticked seen by a
@@ -303,8 +309,8 @@ func (p *Plan) readChanges(found []Change) {
 	for _, c := range found {
 		c.Was, c.Now = "", ""
 		for _, t := range c.Touch {
-			if t.Read {
-				p.changedFor[t.Issue] = c
+			if _, ok := p.changedFor[t.Issue]; t.Read && !ok {
+				p.changedFor[t.Issue] = c // read with each change; the first names them
 			}
 		}
 		i := slices.IndexFunc(kept, func(k Change) bool { return k.Key() == c.Key() })

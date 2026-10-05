@@ -7,6 +7,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // due is an open issue pre may read, with what it knows of it.
@@ -23,7 +24,9 @@ type due struct {
 // changed by a commit since it was last read. front holds, for each issue
 // to read first, the change it is read with; rebase, the issues whose
 // state is to keep their sections now — rewritten, or never kept.
-func changesFound(repo string, open []forge.Issue, report int, all []due) (found []backlog.Change, front map[int]string, rebase []due) {
+// unread are the imported issues whose lines git could not follow, said
+// in the run's findings, never read as unchanged.
+func changesFound(repo string, open []forge.Issue, report int, all []due) (found []backlog.Change, front map[int]string, rebase []due, unread []verdict.Finding) {
 	front = map[int]string{}
 	slices.SortFunc(all, func(a, b due) int { return a.is.ID - b.is.ID })
 	sources := map[int][]string{}
@@ -54,8 +57,8 @@ func changesFound(repo string, open []forge.Issue, report int, all []due) (found
 			}
 			found = append(found, c)
 			for _, t := range c.Touch {
-				if t.How == backlog.TouchPart && front[t.Issue] == "" {
-					front[t.Issue] = changeBlock(fmt.Sprintf("#%d, which it is a part of, had its %s rewritten by a person", d.is.ID, strings.Join(what, " and ")), c)
+				if t.How == backlog.TouchPart {
+					front[t.Issue] += changeBlock(fmt.Sprintf("#%d, which it is a part of, had its %s rewritten by a person", d.is.ID, strings.Join(what, " and ")), c)
 				}
 			}
 		case d.st.Sections == nil && backlog.Basis(d.is.Body) != nil:
@@ -69,7 +72,12 @@ func changesFound(repo string, open []forge.Issue, report int, all []due) (found
 		if base == "" {
 			base = d.st.Confirmed
 		}
-		was, now, nfrom, nto, changed := backlog.LinesChange(repo, path, from, to, d.st.Confirmed, base, "HEAD")
+		was, now, nfrom, nto, changed, err := backlog.LinesChange(repo, path, from, to, d.st.Confirmed, base, "HEAD")
+		if err != nil {
+			unread = append(unread, verdict.Finding{Rule: "lines-unread", Level: "warn", Where: fmt.Sprintf("#%d", d.is.ID),
+				Message: fmt.Sprintf("whether the lines of %s it was imported from changed could not be read (%v): not said unchanged; a full clone reads them", path, err)})
+			continue
+		}
 		if !changed {
 			continue
 		}
@@ -80,9 +88,9 @@ func changesFound(repo string, open []forge.Issue, report int, all []due) (found
 		c := backlog.Change{Issue: d.is.ID, Path: path, Lines: lines,
 			Touch: []backlog.Touch{{Issue: d.is.ID, How: backlog.TouchImport}}, Was: was, Now: now}
 		found = append(found, c)
-		front[d.is.ID] = changeBlock(fmt.Sprintf("the lines of `%s` it was opened from changed (now: %s)", path, lines), c)
+		front[d.is.ID] += changeBlock(fmt.Sprintf("the lines of `%s` it was opened from changed (now: %s)", path, lines), c)
 	}
-	return found, front, rebase
+	return found, front, rebase, unread
 }
 
 // changeBlock is what an issue read again for a change is given with it:
