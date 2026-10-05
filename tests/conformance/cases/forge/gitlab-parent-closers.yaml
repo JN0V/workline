@@ -1,0 +1,20 @@
+case: forge/gitlab-parent-closers
+about: "On GitLab, a parent's report names what closed each part: a merge request merged (closed_by) and a commit (GitLab's \"closed via commit\" note), and a Verification item quoted in the commit's message is proved (ADR-0029)."
+given:
+  repo: backlog
+  forge:
+    members:
+      - {username: owner, access_level: 50}
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row.\n\n## Verification\n\n- A comma in a cell stays in its cell.\n\n## Sub-issues\n\n- [ ] #11\n- [ ] #12", author: owner, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", author: owner, labels: [], closed: true, closed-by: [{kind: pull-request, ref: "!7", text: "Write the last row\n\nCloses #11."}]}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", author: owner, labels: [], closed: true, closed-by: [{kind: commit, ref: "1a2b3c4d", text: "fix(export): quote commas\n\nA comma in a cell stays in its cell. Closes #12."}]}
+run: {role: product-owner, event: schedule, ai: none, forge: gitlab}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, closed: false, comment-contains: "| #11 Keep the last row in the CSV export | closed | merge request !7 |"}
+      - {id: 9, comment-contains: "| #12 Quote commas in exported cells | closed | commit 1a2b3c4d |"}
+      - {id: 9, comment-contains: "- Proved: \"A comma in a cell stays in its cell.\" — quoted by commit 1a2b3c4d, which closed #12."}
+      - {id: 9, comment-contains: "**All 2 parts are closed: for a person to accept.**"}

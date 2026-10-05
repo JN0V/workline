@@ -1,0 +1,18 @@
+case: product-owner/parent-without-ai-still-reported
+about: On a forge without sub-issues, a parent's parts are read from the task list under "## Sub-issues" in its body — a person's own list included, no split recorded — and its comment written with no agent (ADR-0029).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.\n\n## Sub-issues\n\n- [x] #11\n- [ ] #12", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], closed: true}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, comments: 2, comment-contains: "| #11 Keep the last row in the CSV export | closed | by hand: no pull request nor commit linked |"}
+      - {id: 9, comment-contains: "This issue has no Verification of its own"}
+      - {id: 9, comment-contains: "**1 of 2 parts closed.**"}

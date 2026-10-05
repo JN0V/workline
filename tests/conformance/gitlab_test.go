@@ -40,6 +40,8 @@ var (
 	issuePath = regexp.MustCompile(`^/issues/(\d+)$`)
 	notesPath = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
 	linksPath = regexp.MustCompile(`^/issues/(\d+)/links$`)
+	closedBy  = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
+	commit    = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
 )
 
 const tokenUser = "workline-bot"
@@ -157,6 +159,11 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			for i, c := range it.Comments {
 				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
 			}
+			for i, c := range it.ClosedBy { // GitLab's own note for a commit that closed it
+				if c.Kind == "commit" {
+					out = append(out, map[string]any{"id": id*1000 + 900 + i, "body": "closed via commit " + c.Ref, "system": true, "author": user("owner")})
+				}
+			}
 			if q.Get("sort") != "asc" { // GitLab's default: the newest first
 				slices.Reverse(out)
 			}
@@ -176,6 +183,31 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			it.Comments[i] = forge.FakeComment{Body: form.Get("body"), Author: tokenUser}
 			return map[string]any{"id": n}, 200
 		}
+	case closedBy.MatchString(p):
+		// The merge requests that closed it, merged; refs "!7".
+		id, _ := strconv.Atoi(closedBy.FindStringSubmatch(p)[1])
+		it := issue(id)
+		if it == nil {
+			return notFound, 404
+		}
+		out := []map[string]any{}
+		for _, c := range it.ClosedBy {
+			if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
+				title, desc, _ := strings.Cut(c.Text, "\n\n")
+				out = append(out, map[string]any{"iid": n, "title": title, "description": desc, "state": "merged"})
+			}
+		}
+		return out, 200
+	case commit.MatchString(p):
+		sha := commit.FindStringSubmatch(p)[1]
+		for _, it := range s.Issues {
+			for _, c := range it.ClosedBy {
+				if c.Kind == "commit" && c.Ref == sha {
+					return map[string]any{"id": sha, "message": c.Text}, 200
+				}
+			}
+		}
+		return notFound, 404
 	case linksPath.MatchString(p) && method == "GET":
 		return []any{}, 200
 	case linksPath.MatchString(p) && method == "POST":

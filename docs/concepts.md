@@ -89,4 +89,8 @@ best available, said in the verdict (ADR-0005).
 
 People state the need and accept the result; workline never merges, never
 approves. What a role cannot settle is written where a person looks — an
-issue, a comment, the report — with what to do.
+issue, a comment, the report — with what to do. A **parent** — a need the
+product owner split into parts, each an issue — is never closed by a
+role: as its parts close, a comment on it says what each delivered and
+which items of its Verification are proved, and a person accepts the need
+by closing it (ADR-0029).

@@ -16,13 +16,16 @@ closes a duplicate, its original quoted; announces what the code made
 obsolete and closes it a week later on silence and a second judge's yes;
 names an issue's code; sets milestones and priorities; refines an issue to
 `ready` (Need and Validation as drafts for a person) and asks its reporter
-what is missing; splits a need too big for one issue; renames a vague
-title; says what an issue waits on. It also imports a roadmap file as
+what is missing; splits a need too big for one issue and, as its parts
+close, says on it what each delivered and which items of its
+Verification are proved, for a person to accept (ADR-0029); renames a
+vague title; says what an issue waits on. It also imports a roadmap file as
 issues, and keeps the one way every role opens an issue.
 
 **Does not**: write code or docs (`writes: []`: the forge's issues only),
 write the Need or Validation of a person's issue as final, close as "not
-planned", undo a person's priority, title or link, or move an
+planned", close a split need — a person accepts it —, undo a person's
+priority, title or link, or move an
 issue to `ready` while a section is missing or a draft. What sets direction
 it proposes rather than does at `autonomy: cautious`.
 
@@ -75,12 +78,17 @@ roles:
 
 - One report issue, "Backlog — product owner": what was done, what is
   proposed (a box a person of the project ticks; done at the next run),
-  what waits, the first ready issue that waits on nothing.
+  what waits, the first ready issue that waits on nothing — never a split
+  need —, and the split needs whose parts are all closed, to accept.
 - On each issue it reads: a state comment; labels (`workline:priority/N`,
   `workline:draft`, `workline:obsolete`, `workline:ready`); milestones;
   sections written; a comment to an outsider reporter; sub-issues or tasks;
   GitHub's dependencies or GitLab's `is_blocked_by` links (Premium), else a
   line `Blocked by #12.` in the body.
+- On a split need: one comment, edited in place, listing its parts — open,
+  closed as completed with the pull request or commit that closed it, or
+  not delivered — and each item of its Verification, proved where a part
+  delivered quotes it, or not proved. Accept the need by closing it.
 - `--json`, `--sarif`, `--code-quality` like any role.
 
 A person accepts drafts with the label `workline:accepted`, on one issue or
@@ -91,7 +99,8 @@ many: the next run moves them to `ready`, with no agent.
 One call a run (standard tier, context budget 40k tokens): 45k to 62k tokens
 in for four issues on a real backlog, most of it the agent's own prompt;
 `issues-per-run` and `code-lines-max` size it. A closing as obsolete asks a
-second judge of another model. Three runs in a row with nobody answering
+second judge of another model. A split need's report costs no tokens:
+one or two forge calls a part closed. Three runs in a row with nobody answering
 (`ignored-runs-max`) pause the role: no agent is asked until a person ticks
 a box, writes on the report or undoes an act.
 
@@ -100,7 +109,7 @@ a box, writes on the report or undoes an act.
 Nothing is judged: each issue taken gets its state comment; accepted drafts
 (`workline:accepted`), ticked boxes and an `agreed` reply are still done;
 an issue whose milestone was released moves to the next; the backlog's
-order and what waits are still said.
+order and what waits are still said, and a split need's parts reported.
 
 **Status**: beta, nightly in DomoticsCore's CI and on workline's own
 issues; [status.md](status.md), each try in [tried.md](tried.md).

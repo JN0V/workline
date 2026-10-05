@@ -1,0 +1,20 @@
+case: product-owner/parent-unproved-verification-listed
+about: Each item of a parent's Verification is said proved when a part delivered quotes it — in its own Verification, or in the pull request that closed it, case and final punctuation aside — and named "not proved" otherwise, listed before a person accepts (ADR-0029).
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.\n\n## Verification\n\n- A test writes three rows and reads three lines back.\n- A cell holding a comma is read back whole;\n- The export of a known day opens in a spreadsheet.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.\n\n## Verification\n\nA test writes three rows and reads three lines back", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#20", text: "fix(export): write the last row"}]}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.\n\n## Verification\n\nA test of quoting.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#21", text: "fix(export): quote commas\n\nProves: a cell holding a comma is read back whole."}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: parent-to-accept, where: "#9", message: "not proved: 1 Verification item(s)"}]
+  forge:
+    issues:
+      - {id: 9, closed: false, comment-contains: "- Proved: \"A test writes three rows and reads three lines back.\" — quoted in #11's Verification, closed by pull request #20."}
+      - {id: 9, comment-contains: "- Proved: \"A cell holding a comma is read back whole;\" — quoted by pull request #21, which closed #12."}
+      - {id: 9, comment-contains: "- **Not proved**: \"The export of a known day opens in a spreadsheet.\" — no part delivered quotes it."}
+      - {id: 9, comment-contains: "Before accepting: 1 item(s) of its Verification not proved."}

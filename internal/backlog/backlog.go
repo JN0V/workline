@@ -119,6 +119,9 @@ type Record struct {
 	// Measure is what people did with the proposals at the level in force,
 	// for the report to suggest another (ADR-0026).
 	Measure *Measure `yaml:"measure,omitempty"`
+	// ToAccept are the open parents whose parts are all closed, as the
+	// report lists them for a person to accept (ADR-0029).
+	ToAccept []int `yaml:"to-accept,flow,omitempty"`
 }
 
 // Pending is an act proposed to a person, as the report says it.
@@ -362,6 +365,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
+	p.readToAccept()
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
@@ -837,6 +841,8 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 	}
 	switch {
+	case c.Do == "close" && c.Ticked == "" && len(Parts(p.issues[c.Issue], st)) > 0:
+		return "parent-accepted-by-a-person", fmt.Sprintf("#%d is split into %s: the role never closes a parent; a person accepts it, from what its parts delivered (ADR-0029)", c.Issue, issueList(Parts(p.issues[c.Issue], st)))
 	case c.Do == "split" && len(st.Split) > 0:
 		return "already-split", fmt.Sprintf("it was split already, into %s: an issue is split once", issueList(st.Split))
 	case c.Do == "rename" && st.Title != "" && st.Title != p.issues[c.Issue].Title:
@@ -1692,6 +1698,7 @@ func (p *Plan) ReportBody() string {
 		b.WriteString("\n## Before this run\n\nThe issues this run moved, as they were: to put the order back, set their priority label and milestone to these.\n\n" + strings.Join(before, "\n") + "\n")
 	}
 	b.WriteString(p.waiting())
+	b.WriteString(p.toAccept())
 	if len(proposed) > 0 {
 		b.WriteString("\n## Proposed\n\nFor a person: tick a box if you agree, and the engine does it at its next run, as written — or do it yourself; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}

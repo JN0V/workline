@@ -1,0 +1,20 @@
+case: product-owner/parent-child-not-planned-shown
+about: A part closed as not planned or as a duplicate is listed as such, its part of the need flagged as not delivered, and named before a person accepts the parent; it proves nothing, even quoting an item (ADR-0029).
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.\n\n## Verification\n\n- A cell holding a comma is read back whole.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12, 13]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.\n\n## Verification\n\nA cell holding a comma is read back whole.", labels: [], parent: 9, closed: true, reason: not_planned}
+      - {id: 13, title: "Commas in cells", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: duplicate}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, closed: false, comment-contains: "| #12 Quote commas in exported cells | closed as not planned: its part of the need not delivered | — |"}
+      - {id: 9, comment-contains: "| #13 Commas in cells | closed as a duplicate: its part not delivered here | — |"}
+      - {id: 9, comment-contains: "- **Not proved**: \"A cell holding a comma is read back whole.\""}
+      - {id: 9, comment-contains: "Before accepting: the part of #12, #13 not delivered; 1 item(s) of its Verification not proved."}
