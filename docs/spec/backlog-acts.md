@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 4f5460b
+checked: 92b2518
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -103,7 +103,9 @@ at every run:
   opened at (`confirmed`) to the one it was last read at (`judged`),
   then through the commits since (`backlog.LinesChange`): lines changed,
   removed, or added between two of them are a change; lines that only
-  moved are not.
+  moved are not. A commit that cannot be read — gone after a force-push,
+  beyond a shallow clone — is said (`lines-unread`, warn), never read
+  as no change.
 
 What a change touches (`backlog.Touched`), none twice, in this order:
 
