@@ -364,7 +364,7 @@ for CI. Three agent calls, 41.7k tokens in and 4.4k out in all.
   older issues were refused to the bot (403) and written anew after them,
   as designed — but GitLab lists notes newest first unless asked, so the
   engine took the oldest for the last and wrote a new one at each write
-  (#9 got three, #15 two in the CI run). Fixed (f4855eb), with a test
+  (#9 got three, #15 two in the CI run). Fixed (f4855eb, 759a951 once rebased on main), with a test
   that serves notes newest first.
 - **GitLab CI.** A branch of the sandbox ran the engine of this branch
   (`go install …@<commit>`, golang:1.27), no agent. The job's own token
