@@ -150,10 +150,10 @@ keeps the need it was written for; the children are its parts.
 
 **Titles**: Mozilla's [bug writing guidelines](https://bugzilla.mozilla.org/page.cgi?id=bug-writing.html)
 — "approximately 10 words", "quickly and uniquely identify a bug report",
-"explain the problem, not your suggested solution". No forge records whose
-title an issue has but in its timeline (GitHub's `renamed` event).
+"explain the problem, not your suggested solution". Who set a title is kept
+only in a forge's history (GitHub's `renamed` timeline event, a GitLab system note).
 
-**Decision** (ADR-0021): split through the forge's own children —
+**Decision** (ADR-0022): split through the forge's own children —
 GitHub's sub-issues, GitLab's tasks — and a task list in the parent where
 there are none (the local forge, an instance without work items); each
 child opened through the one way, with its four sections. Epics are not

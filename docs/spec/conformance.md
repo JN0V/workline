@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 8bdd941
+checked: eb4f69b
 verified: agent:claude-code
 ---
 # Conformance — v1 (draft)
@@ -116,8 +116,8 @@ a `PATH` without a tool, or with a fake one first.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   and `comment-lacks` (a text some comment holds, or none does), `closed`
-  and the `reason` it was closed for, its `milestone`, `branch`, `base` and
-  `title`, `body-contains` and `body-lacks` (a text its body holds, or does
+  and the `reason` it was closed for, its `milestone`, `branch`, `base`,
+  `title` and the `parent` it is a sub-issue of (0 for none), `body-contains` and `body-lacks` (a text its body holds, or does
   not); `absent: true` — no item with that id. `labels` there lists the
   labels the forge defines, their order as id, by `title`.
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
@@ -154,8 +154,9 @@ a `PATH` without a tool, or with a fake one first.
   to `.git/forge-requests.jsonl`, for `files` to check, and answers as a
   small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
 - **Simulated forge.** A forge kept in a JSON file, holding issues, labels,
-  comments, merge requests and milestones. It can be told to fail on the
-  N-th write, to test recovery after a partial apply.
+  comments, merge requests and milestones; with `sub-issues: true`, it
+  links sub-issues as GitHub does, without, it has none. It can be told to
+  fail on the N-th write, to test recovery after a partial apply.
 
 ## Evaluation
 

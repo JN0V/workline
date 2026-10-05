@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 01bf620
+checked: eb4f69b
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -12,7 +12,7 @@ its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
 it. This page is the contract; the acts built are closing, naming an
 issue's sources, putting it in a milestone, ordering it, opening one from
-a file, and refining one to ready.
+a file, refining one to ready, splitting one and renaming it.
 
 ## The issue's state
 
@@ -26,6 +26,8 @@ judged: 1a8e5a4                          # the commit the role last read it at
 comments: 2                              # people's comments when it was read
 body: 3f9a1c0e2b7d                       # a digest of its body, when last read or written
 priority: 2                              # the priority the role last set (Ordering)
+title: The CSV export drops the last row  # the title the role last set (Renaming)
+split: [13, 14]                          # the children it was split into (Splitting)
 ```
 
 An issue without that comment, or with one that does not read, is never
@@ -236,9 +238,67 @@ what it can and asks for the rest:
   accepted, a section written — is read again (its state's `body`, a
   digest of the body when it was last read or written by the engine).
 
-Not built yet: splitting a need into sub-issues; renaming; asking again
-after an answer; the reporter asked, rather than the report, for an
-outsider's issue.
+Not built yet: asking again after an answer; the reporter asked, rather
+than the report, for an outsider's issue.
+
+## Splitting
+
+```yaml
+- split:
+    issue: 12
+    into:                                   # 2 to 6 children
+      - title: "Keep the last row in the CSV export"
+        need: "Every row exported, so a report counts what was sold."   # a draft
+        verification: "A test writes three rows and reads three lines back."
+        validation: "The maintainer opens an export of a known day."    # a draft
+        scope: "WriteRows in src/export/csv.go."
+        sources: [src/export/csv.go]
+      - title: "Quote commas in exported cells"
+        ...
+    why: "Two needs, each proved by its own test."
+```
+
+An issue too big to be one need is broken into its parts (ADR-0022):
+
+- **Checked**: 2 to 6 children (`split-size`), each a title of one line,
+  120 characters at most (`split-title`), its four sections written
+  (`split-sections`), its Scope's files 1 to 5 in the commit
+  (`sources-unknown`); the issue's state must read. One whose state lists
+  children already is never split again (`already-split`).
+- **Each child** is opened through the one way ("Opening issues"), keyed by
+  the parent and its title (`split=<parent>/<8 hex>`): a line `Part of
+  #12.`, its four sections — Need and Validation as drafts, as `refine`
+  writes them —, "Opened from #12 by the product-owner role."; the labels
+  `workline:to-refine` and `workline:draft`; its own state, its sources,
+  confirmed at the commit. Not `needs-triage`, not counted in
+  `issues-max`. A child closed already is left closed (`issue-closed`).
+- **Linked to its parent** (`AddSubIssue`): a sub-issue on GitHub; on
+  GitLab a task — converted and given its parent through GraphQL, read
+  and acted on by REST afterwards as any issue; elsewhere, or when the
+  forge refuses, a task list in the parent's body, under `## Sub-issues`
+  (`- [ ] #13`), after its text, which stays.
+- **The parent** keeps its need, milestone and priority; its state gets
+  the children (`split`), last — a run stopped half-way, resumed, finds the
+  children it opened — and the digest of its body when the engine listed
+  them there, so it is not read again for its own change. A split moves
+  nothing: it is not counted in the moved share; the children, never read
+  yet, are read and ordered at the next run.
+
+## Renaming
+
+```yaml
+- rename: {issue: 12, title: "The CSV export drops the last row", why: "\"bug\" says nothing of the problem."}
+```
+
+Sets the title alone, one line, 120 characters at most (`rename-title`);
+the title it has already is dropped (`title-same`). The issue's state
+records the title set. The title an issue was opened with is its
+reporter's and may be renamed; after the role's, a title other than the
+one recorded is a person's: the act is dropped (`title-kept`), the task
+shows it as a person's. No quote; the state must read.
+
+Split and rename on an issue opened by someone without write access are
+proposed, not done (`reporter-outside`), as moving it to ready.
 
 ## Autonomy and caps
 
@@ -251,6 +311,8 @@ acts:
   refine: {mode: act, max: 5}
   ready: {mode: act, max: 5}
   ask: {mode: act, max: 3}
+  split: {mode: act, max: 2}
+  rename: {mode: act, max: 5}
   milestone: {mode: act, max: 10}
   order: {mode: act, max: 10}
   close-duplicate: {mode: act, max: 3}      # act | propose | off
@@ -274,7 +336,8 @@ is there, not that the issue is solved).
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
 lists what the last run did and what is proposed, each closing with its
-quote and how to undo it. Under "Before this run", each issue the run
+quote and how to undo it — a rename with the title it had, a split with
+its children's titles, to close. Under "Before this run", each issue the run
 moved is listed with its priority and milestone as they were, to put the
 order back. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 01bf620
+checked: eb4f69b
 verified: agent:claude-code
 ---
 # Product owner
@@ -32,11 +32,16 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    to 4, a label `workline:priority/N`); refining toward `ready` —
    the sections an issue lacks (`refine`: Scope and Verification from the
    code, Need and Validation as drafts a person makes theirs), the move to
-   `ready` (`ready`), or a question to its reporter (`ask`).
+   `ready` (`ready`), or a question to its reporter (`ask`); an issue too
+   big to be one need split into 2 to 6, each with its four sections
+   (`split`); a title that says nothing renamed (`rename`).
 3. The engine checks each one when it applies it — never as not planned,
    the quote found again, the issue's state readable, no section a person
    wrote rewritten, `ready` only when the four sections are there and none
-   a draft, an outsider's issue proposed, a priority a person set kept,
+   a draft, an outsider's issue proposed, a priority or a title a person
+   set kept, an issue split once, its children opened through the one way
+   and linked to it — a sub-issue, a GitLab task, else a task list in its
+   body —,
    at most a fifth of the open issues moved a run — and does it,
    proposes it, or drops it, by the kind's mode and cap (`acts`). One
    report issue lists what was done and proposed. A closing undone, the
@@ -82,6 +87,8 @@ roles:
         refine: {mode: act, max: 5}
         ready: {mode: act, max: 5}
         ask: {mode: act, max: 3}
+        split: {mode: act, max: 2}
+        rename: {mode: act, max: 5}
 ```
 
 A project with a human Product Owner sets its acts to `propose`.
