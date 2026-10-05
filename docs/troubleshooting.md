@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: c592b51
+checked: 92b2518
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -71,6 +71,9 @@ gardening proposes again when fewer wait.
 - The report's Stuck is empty though issues wait: `stuck-unknown` says
   which issues the forge gives no day for — the local forge keeps none, a
   plugged forge may refuse `trail` or give comments without `created`.
+- `lines-unread`: an issue imported from a file, whose lines cannot be
+  followed — the commit it was opened at gone after a force-push, or
+  beyond a shallow clone: fetch the whole history (`fetch-depth: 0`).
 
 ## Token caps and the agent
 
