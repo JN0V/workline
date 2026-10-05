@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/JN0V/workline/compare/v0.9.0...v0.10.0) (2026-10-05)
+
+
+### Features
+
+* one way for every role to open an issue ([#133](https://github.com/JN0V/workline/issues/133)) ([58c7367](https://github.com/JN0V/workline/commit/58c7367af8f949f2b5c25a0d6de53fa92d9561fc))
+
 ## [0.9.0](https://github.com/JN0V/workline/compare/v0.8.0...v0.9.0) (2026-10-04)
 
 
