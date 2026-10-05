@@ -12,10 +12,6 @@ import (
 // the project is their yes, applied by the engine at the next run; runs
 // nobody answers pause the role.
 
-// PauseAfter is the runs in a row whose report proposed something and that
-// no person answered, after which the role pauses (ADR-0018).
-const PauseAfter = 3
-
 // KeyResume is the box that resumes a paused role; KeyAct, followed by a
 // kind of act, the box that sets that kind back to act.
 const (
@@ -70,12 +66,39 @@ type Hand struct {
 	Broken   error    // the record does not read
 	Ticks    []TickBy // the boxes ticked in the report's body now
 	Comments int      // comments of people of the project on the report
-	Signs    []string // what a person did since the last run: a tick, a comment, a closing undone, a proposal settled
+	Signs    []string // what a person did since the last run: a tick, a comment, a closing or an act undone, a proposal settled
+	// Undone are the role's acts a person undid since the last run, other
+	// than closings; Standing, those still watched (ADR-0026).
+	Undone   []Undo
+	Standing []Done
 }
 
-// Paused says whether the role pauses: runs in a row nobody answered, and
-// no person's hand since.
-func (h *Hand) Paused() bool { return h.Record.Ignored >= PauseAfter && len(h.Signs) == 0 }
+// Paused says whether the role pauses: max runs in a row nobody answered
+// (ignored-runs-max; 0 never pauses), and no person's hand since.
+func (h *Hand) Paused(max int) bool {
+	return max > 0 && h.Record.Ignored >= max && len(h.Signs) == 0
+}
+
+// Demoted are the kinds of act back to propose: those the record holds, and
+// those a person undid since the last run, a closing reopened or another act.
+func (h *Hand) Demoted(open []forge.Issue) []string {
+	out := slices.Clone(h.Record.Propose)
+	isOpen := map[int]bool{}
+	for _, is := range open {
+		isOpen[is.ID] = true
+	}
+	for _, c := range h.Record.Closed {
+		if isOpen[c.Issue] && !slices.Contains(out, c.Act) {
+			out = append(out, c.Act)
+		}
+	}
+	for _, u := range h.Undone {
+		if !slices.Contains(out, u.Act) {
+			out = append(out, u.Act)
+		}
+	}
+	return out
+}
 
 // Tick is the box ticked with that key, if any.
 func (h *Hand) Tick(key string) (TickBy, bool) {
@@ -120,9 +143,11 @@ func (q Pending) Doable() bool {
 func ReadHand(f forge.Backlog, role string, open []forge.Issue) (*Hand, error) {
 	h := &Hand{}
 	isOpen := map[int]bool{}
+	byID := map[int]forge.Issue{}
 	body := ""
 	for _, is := range open {
 		isOpen[is.ID] = true
+		byID[is.ID] = is
 		if is.Title == ReportTitle(role) {
 			h.Report, body = is.ID, is.Body
 		}
@@ -171,6 +196,14 @@ func ReadHand(f forge.Backlog, role string, open []forge.Issue) (*Hand, error) {
 		if isOpen[c.Issue] {
 			h.Signs = append(h.Signs, fmt.Sprintf("#%d reopened", c.Issue))
 		}
+	}
+	if h.Broken == nil {
+		if h.Standing, h.Undone, err = findUndone(f, role, byID, h.Record.Done); err != nil {
+			return nil, err
+		}
+	}
+	for _, u := range h.Undone {
+		h.Signs = append(h.Signs, fmt.Sprintf("#%d: %s undone", u.Issue, u.Act))
 	}
 	for _, q := range h.Record.Proposed {
 		if q.Key == "" && !q.Capped && q.Issue > 0 && !isOpen[q.Issue] {

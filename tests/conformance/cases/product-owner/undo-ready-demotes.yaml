@@ -1,0 +1,25 @@
+case: product-owner/undo-ready-demotes
+about: An issue the role moved to ready, whose workline:ready label a person took off, is an act undone — found at the next run, with no agent — and puts ready back to propose, whatever the level; the evidence is in the report.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: enterprising}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\ndone:\n  - {issue: 9, act: ready, level: enterprising}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: undone, where: "#9", message: "#9's label workline:ready taken off by a person"}]
+  forge:
+    issues:
+      - {id: 10, body-contains: "ready: propose (demoted)"}
+      - {id: 10, body-contains: "- [ ] Set ready back to act: 0 of its acts still standing, 1 undone."}
+      - {id: 10, comment-contains: "propose: [ready]"}

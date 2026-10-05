@@ -1,0 +1,22 @@
+case: product-owner/undo-rename-demotes
+about: A title the role set, renamed back by a person to the one it had, is an act undone — found at the next run from the record, with no agent — and puts renaming back to propose, the evidence in the report with a box to set it back to act; a priority the role set and nobody touched still stands.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\ntitle: The CSV export drops the last row\npriority: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\ndone:\n  - {issue: 9, act: rename, was: bug, set: The CSV export drops the last row, level: normal}\n  - {issue: 9, act: order, was: \"0\", set: \"1\", level: normal}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: undone, where: "#9", message: "#9 renamed back to \"bug\" by a person; the role had set \"The CSV export drops the last row\""}]
+  forge:
+    issues:
+      - {id: 10, body-contains: "rename: propose (demoted)"}
+      - {id: 10, body-contains: "- #9 renamed back to \"bug\" by a person; the role had set \"The CSV export drops the last row\".\n- [ ] Set rename back to act: 0 of its acts still standing, 1 undone. <!-- workline:proposal=act/rename -->"}
+      - {id: 10, comment-contains: "propose: [rename]"}
+      - {id: 10, comment-contains: "act: order\n      was: \"0\"\n      set: \"1\""}

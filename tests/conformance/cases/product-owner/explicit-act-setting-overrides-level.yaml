@@ -1,0 +1,25 @@
+case: product-owner/explicit-act-setting-overrides-level
+about: A kind the project sets wins over the level, field by field — at cautious, rename set to act is done, its cap still the level's — and the others keep the level's mode; the report says which comes from the setting.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious, acts: {rename: {mode: act}}}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", body: "WriteRows loses rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:level-acts}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 9, title: "The CSV export drops the last row", labels: []}
+      - {id: 10, comment-lacks: "split:"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "split: propose (level); rename: act, 5 a run (setting); open"}
+      - {id: 13, body-contains: "Renamed #9 from \"bug\""}
+      - {id: 13, body-contains: "- [ ] Split #10 into 2 issues"}

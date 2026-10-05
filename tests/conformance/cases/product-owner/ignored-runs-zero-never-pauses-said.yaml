@@ -1,0 +1,25 @@
+case: product-owner/ignored-runs-zero-never-pauses-said
+about: ignored-runs-max 0 never pauses the role — the agent is asked though nobody answered seven runs — and says so loudly, in the run's findings and in the report.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {ignored-runs-max: 0}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n"
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\nignored: 7\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  findings: [{rule: never-paused, where: "#10"}]
+  no-findings: [{rule: paused}]
+  forge:
+    issues:
+      - {id: 10, body-contains: "**Never paused** (ignored-runs-max: 0): the agent is asked on every run, though nobody answered the last 8.", comment-contains: "ignored: 8"}

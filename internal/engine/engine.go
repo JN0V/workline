@@ -2682,7 +2682,11 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			judged[id] = j
 		}
 	}
-	p, err := backlog.Decide(b, st.Repo, role, backlog.Settings(settings), closes, read, backlog.MovedPercent(settings), judged)
+	cfg, err := backlog.ReadConfig(settings)
+	if err != nil {
+		return nil, err
+	}
+	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged)
 	if err != nil {
 		return nil, err
 	}
