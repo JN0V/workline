@@ -21,10 +21,10 @@ Status (2026-09-24): used daily on its author's machine;
 
 | Works | Not yet |
 |---|---|
-| **Committer**: checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages; secrets and forbidden terms in changes and messages (gitleaks), author identity | |
-| **Documentalist**: finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository and, when gardening, to other sites (lychee), identifiers gone from the code; docs citing a superseded decision; docs not confirmed for too long; derived blocks, regenerated on the default branch so parallel branches never conflict on them (ADR-0027); Claude judges suspect and stale docs, opens an issue when the code disagrees with a spec, brings product docs up to date at the release, which waits for them, merges a repeated passage and a card too short, condenses a doc over budget, splits a card holding several concepts (checked by a second model), and its patches are checked | style |
-| **Product owner** (beta): reads the open issues against the code; closes a duplicate, its original quoted, up to a cap a run; announces on the issue what the code made obsolete, and closes it a week later if nobody wrote and a second judge agrees (ADR-0024); names an issue's code, sets milestones; refines an issue to `ready` (Need and Validation drafted for a person) and asks its reporter what is missing; splits a need too big for one issue into sub-issues and renames a vague title (ADR-0022); orders the backlog, an issue that waits on another after it and never offered first, the link in the forge's own relation or a line in the body (ADR-0028); imports a roadmap file as issues; keeps the one way every role opens an issue, a subject open or closed never opened twice; a closing undone puts that act back to a person (ADR-0018). Nightly in DomoticsCore's CI | asking again after an answer |
-| **Reviewer** (beta): reviews a branch before the push (`workline review`) and, opt-in, each merge request; rules on the comments a change adds (a bug's story, an internal code), then lenses (correctness, edge cases, tests) whose quotes the engine finds again; a finding whose cause lies in the change goes to its author, one outside it to an issue; each important one checked by a judge, the independence said; never approves nor patches (ADR-0020) | specs, the developer's loop, inline comments |
+| [**Committer**](roles/committer/README.md): checks every commit (global git hook) and every commit of a merge request; Claude rewrites refused messages; secrets and forbidden terms in changes and messages (gitleaks), author identity | |
+| [**Documentalist**](roles/documentalist/README.md): finds docs whose sources changed (code, sections, other repositories); cuts cascades; size budgets, duplicates, dead links inside the repository and, when gardening, to other sites (lychee), identifiers gone from the code; docs citing a superseded decision; docs not confirmed for too long; derived blocks, regenerated on the default branch so parallel branches never conflict on them (ADR-0027); Claude judges suspect and stale docs, opens an issue when the code disagrees with a spec, brings product docs up to date at the release, which waits for them, merges a repeated passage and a card too short, condenses a doc over budget, splits a card holding several concepts (checked by a second model), and its patches are checked | style |
+| [**Product owner**](roles/product-owner/README.md) (beta): reads the open issues against the code; closes a duplicate, its original quoted, up to a cap a run; announces on the issue what the code made obsolete, and closes it a week later if nobody wrote and a second judge agrees (ADR-0024); names an issue's code, sets milestones; refines an issue to `ready` (Need and Validation drafted for a person) and asks its reporter what is missing; splits a need too big for one issue into sub-issues and renames a vague title (ADR-0022); orders the backlog, an issue that waits on another after it and never offered first, the link in the forge's own relation or a line in the body (ADR-0028); imports a roadmap file as issues; keeps the one way every role opens an issue, a subject open or closed never opened twice; a closing undone puts that act back to a person (ADR-0018). Nightly in DomoticsCore's CI | asking again after an answer |
+| [**Reviewer**](roles/reviewer/README.md) (beta): reviews a branch before the push (`workline review`) and, opt-in, each merge request; rules on the comments a change adds (a bug's story, an internal code), then lenses (correctness, edge cases, tests) whose quotes the engine finds again; a finding whose cause lies in the change goes to its author, one outside it to an issue; each important one checked by a judge, the independence said; never approves nor patches (ADR-0020) | specs, the developer's loop, inline comments |
 | **Gates**, **routing** and handoffs, on a machine or judged on a forge and applied later | |
 | **Work items** (local files or forge issues): the check that moves one to `ready` | the rest of the item's life |
 | **Forges**: GitHub (comments, a comment edited in place, labels and issues tried live), simulated; GitLab tried on gitlab.com (a project access token, its members told from outsiders); none, kept in the clone (`forge: local`, `workline issues`); any other plugged by a command (`cmd:`, a Forgejo and Gitea sample) — ADR-0016; findings as SARIF in code scanning (this repository's, from CI) and as GitLab's Code Quality report | a fork's merge request on GitLab CI; the Forgejo sample untried on a live instance |
@@ -170,28 +170,12 @@ another applies without an AI key (`--no-apply`, then `workline apply`).
 The CI templates run `workline route` (`merge-request`; `schedule` for the
 gardening ones), so a project's `routing:` reaches its CI too.
 
-## Take only a part
+## Documentation
 
-Any existing pipeline can call one role, a gate or `workline apply`, and leave the rest: [docs/parts.md](docs/parts.md).
-
-## Develop
-
-```sh
-git clone https://github.com/JN0V/workline && cd workline
-go build -o ~/.local/bin/workline ./cmd/workline   # or anywhere on your PATH
-go test -count=1 ./...    # unit tests and the conformance suite
-```
-
-`-count=1` matters: the conformance suite builds the engine itself, which Go's
-test cache does not see. The evaluation grades the roles with a real agent on
-real cases, and costs tokens, so it runs only when asked:
-`WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/`
-(docs/spec/conformance.md, "Evaluation").
-
-## Read next
-
-- [Usage](docs/usage.md) — commands, options, exit codes, files, variables
-- [CI](docs/ci.md) — setting it up on GitHub, gitlab.com, a self-managed GitLab
-- [Principles](docs/PRINCIPLES.md) — the rules every choice is checked against
-- [Role contract](docs/spec/role-contract.md) — what a role is
-- [Decisions](docs/adr/) · [Research](docs/research/) · [Backlog](https://github.com/JN0V/workline/issues)
+| Start here | Use it | Go further |
+|---|---|---|
+| [Quickstart](docs/quickstart.md) — ten minutes, on your machine | [Roles](docs/roles.md) — what each does and not, its settings | [Principles](docs/PRINCIPLES.md) |
+| [Concepts](docs/concepts.md) — the words used everywhere | [Usage](docs/usage.md) — commands, options, exit codes | [Role contract](docs/spec/role-contract.md) — what a role is |
+| [Troubleshooting](docs/troubleshooting.md) | [Configuration](docs/config.md) — settings, files, variables | [Decisions](docs/adr/) · [Research](docs/research/) |
+| [Contributing](CONTRIBUTING.md) — build, test, commits | [CI](docs/ci.md) — GitHub, GitLab, other forges, none | [Backlog](https://github.com/JN0V/workline/issues) |
+| | [Any trigger](docs/triggers.md) · [GitLab, started by a tool](docs/gitlab-trigger.md) · [Only a part](docs/parts.md) | |
