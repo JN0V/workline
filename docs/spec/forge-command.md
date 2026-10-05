@@ -20,7 +20,10 @@ Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
 none), and `comments`, each with its author, of the project when they may
-write to the repository; not yet the backlog's other operations (`issues`,
+write to the repository — asked of Forgejo, which needs the token's user
+to administer the repository: a refusal fails the operation —, a bot when
+its id is negative (the ghost, the actions user) or its login ends in
+`-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
 `add-sub-issue`, `ensure-label`), nor a merge request's `base`.
 

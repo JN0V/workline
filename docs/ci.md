@@ -278,7 +278,8 @@ forge: 'cmd:sh ci/forgejo/workline-forge.sh'
 ```
 
 It needs `curl` and `jq`, and `FORGEJO_URL`, `FORGEJO_TOKEN` (issues and
-pull requests, write) and, unless `origin` names it, `FORGEJO_REPO`
+pull requests, write; its user an administrator of the repository for the
+product owner, which asks who of a comment's authors may write) and, unless `origin` names it, `FORGEJO_REPO`
 (`owner/name`). The engine pushes the branches itself, with the job's git
 credentials; the script does the rest. Forgejo Actions reads, largely, GitHub's
 workflow syntax: the GitHub templates are a start, `--forge github`
