@@ -291,3 +291,42 @@ and "pls fix", a `TokenTTL` that should be a `time.Duration`.
   children keyed, state written last); the task list fallback (local
   forge, conformance only); an outsider's split proposed; a forge plugged
   by a command answering `add-sub-issue`.
+
+## 2026-10-05 — asked again after an answer; an outsider's issue proposed, Sonnet
+
+The engine built from this branch, on a fresh clone of
+JN0V/workline-sandbox. Five agent calls, 41.6k tokens in and 7.1k out in
+all; two of them thrown away (below).
+
+- **An answer read, live on GitHub.** #3 had been asked once (2026-10-04)
+  which need it held. Answered twice by hand: an idle session ending after
+  two hours, any request pushing the end back. The run (9.4k in, 2.8k out)
+  read #3 again, the task showing "Written to its reporter: 1 of 3 times;
+  answered since", the question it asked among the comments; the agent
+  drafted Need and Validation from the answer, Scope and Verification
+  from the code, saying #2 and #6 are something else. Applied: #3 refined,
+  its drafts marked, the report saying so.
+- **Scoped by hand.** Another agent ran the product owner on the same
+  sandbox at the same time (#10, #11 opened, a run of theirs consumed the
+  first answer). The run was judged with `--no-apply`, its intentions cut
+  to #3's — its state and its refine — then applied: the other issues left
+  to that agent's try. A first run used a binary the other agent had
+  overwritten in a shared folder: thrown away, as was a run whose answer
+  the other agent's run had already read.
+- **An outsider's issue: a real agent, a simulated forge.** No account
+  without write access to the sandbox exists, so its author cannot be
+  outside on GitHub. The sandbox's code with `--forge fake:`, one issue
+  by `zed`, without write access, in a user's words ("logged out while
+  typing a long message"). Run 1 (6.1k in, 0.4k out): a comment to
+  `@zed` — what it understood, Verification and Scope as it would write
+  them, three questions; the body untouched. Zed's reply added by hand;
+  run 2 (7.5k in, 0.5k out): a second proposal (`proposal=2`), Need and
+  Validation now drafted from the reply, "nothing more is needed". The
+  label `workline:accepted` added by hand; run 3, no agent: the four
+  sections written in the body, the drafts accepted, `workline:ready`.
+- Not tried live: the proposal comment on GitHub itself (the same comment
+  call as an ask, tried live); a real outsider read as one (GitHub's
+  author association); a follow-up question (`ask=2`), the rounds spent,
+  a question refused as asked before, a proposal not repeated without an
+  answer — conformance only; the reporter agreeing by editing their own
+  body; GitLab.

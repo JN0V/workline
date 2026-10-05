@@ -232,14 +232,11 @@ what it can and asks for the rest:
   unless a person of the project accepted it with the label. A forge that does not say who has write access
   (GitLab, for now) counts every reporter as outside.
 - **`ask`** comments on the issue, naming its reporter, with the agent's
-  questions — once an issue (`already-asked`). The answer is a person's
-  comment: the issue is read again at the next run.
+  questions. The answer is a person's comment: the issue is read again at
+  the next run.
 - An issue whose body a person changed since it was read — a draft
   accepted, a section written — is read again (its state's `body`, a
   digest of the body when it was last read or written by the engine).
-
-Not built yet: asking again after an answer; the reporter asked, rather
-than the report, for an outsider's issue.
 
 ## Splitting
 
@@ -301,7 +298,50 @@ one recorded is a person's: the act is dropped (`title-kept`), the task
 shows it as a person's. No quote; the state must read.
 
 Split and rename on an issue opened by someone without write access are
-proposed, not done (`reporter-outside`), as moving it to ready.
+proposed, not done (`reporter-outside`), as moving it to ready — to the
+project, in the report: the text of a need is the reporter's to agree to
+("The conversation with the reporter"), how the backlog cuts and names it
+the project's. The label `workline:accepted` lifts all three.
+
+## The conversation with the reporter
+
+Each comment the engine writes to a reporter is a round (ADR-0021): an
+`ask`, or a `refine` proposed to an outsider. Its marker holds its round —
+`<!-- workline:product-owner/ask -->` for the first question,
+`ask=2`, `ask=3` after; `proposal=1`, `proposal=2` for a text proposed. The
+issue's comments are the record; the state does not copy them.
+
+| Check | Otherwise |
+|---|---|
+| A person commented after the last round (no `<!-- workline:` in it) | Dropped: `already-asked`, or `already-proposed` for a text; nothing written |
+| No question the act holds — each up to its `?`, spaces and case aside — ends a question of an earlier round | Dropped: `asked-before` |
+| Rounds before it under `acts.ask.rounds` (three) | Proposed in the report: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
+
+A later round thanks the reporter ("thank you; to refine this issue,
+still: …"). The agent is given the conversation in order — the engine's
+rounds among the people's comments — and the rounds spent.
+
+**An outsider's issue** — its reporter without write access, not opened by
+a role, not bearing `workline:accepted` — is theirs: a `refine` writes
+nothing in its body. The engine comments to the reporter, naming them:
+what the role understood (its `why`), the sections it would add (Need and
+Validation as drafts from their words), what it still needs (`questions`),
+and how to agree; the sections also in a YAML block, under "As the engine
+reads it". The issue gets `workline:to-refine`; the act counts in
+`refine`'s cap. Agreement is read where only the right people write:
+
+- **`workline:accepted`**, set by a person of the project: the next run
+  writes the sections of the last proposal the body still lacks, with no
+  agent, then moves the issue to ready in the same run, the drafts
+  accepted with it;
+- **the reporter's own edit** of the body (only its author or a writer
+  can edit it): read again as any body changed; moving it to ready stays
+  proposed (`reporter-outside`) until a person accepts.
+
+A reply alone is read as an answer — the agent may propose a revised text,
+a round — never as agreement: comments come without their author.
+
+Not built yet: a reply's author read, so a reporter's "yes" agrees.
 
 ## Autonomy and caps
 
@@ -313,7 +353,7 @@ acts:
   sources: {mode: act, max: 10}
   refine: {mode: act, max: 5}
   ready: {mode: act, max: 5}
-  ask: {mode: act, max: 3}
+  ask: {mode: act, max: 3, rounds: 3}       # rounds: written to a reporter, then a person
   split: {mode: act, max: 2}
   rename: {mode: act, max: 5}
   milestone: {mode: act, max: 10}
