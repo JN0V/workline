@@ -135,10 +135,30 @@ func Pre(runDir, repo string) int {
 		// may change it, the agent reads it first — and only while the body
 		// still lacks what it adds.
 		p := backlog.LastProposal(comments, role)
+		agreed := ""
 		if p != nil {
-			if _, adds, _ := backlog.Refine(is.Body, *p, role); len(adds) == 0 || backlog.ReadExchange(comments, role).Answered {
+			_, adds, _ := backlog.Refine(is.Body, *p, role)
+			if len(adds) > 0 {
+				agreed = backlog.Agreement(notes, is, role)
+			}
+			if len(adds) == 0 || backlog.ReadExchange(comments, role).Answered {
 				p = nil
 			}
+		}
+		if found && err == nil && agreed != "" && !backlog.Accepted(is) {
+			// Its reporter, or a person of the project, replied `agreed` to
+			// the text last proposed: the engine writes what the body still
+			// lacks, with no agent; ready, a split or a rename stay the
+			// project's, by the label (ADR-0021).
+			whose := "its reporter"
+			if agreed != is.Author {
+				whose = "a person of the project"
+			}
+			lp := backlog.LastProposal(comments, role)
+			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
+				"issue": is.ID, "need": lp.Need, "verification": lp.Verification, "validation": lp.Validation,
+				"scope": lp.Scope, "sources": lp.Sources, "own": true, "agreed": agreed,
+				"why": fmt.Sprintf("the text proposed to its reporter, agreed to by @%s (%s) in a reply.", agreed, whose)}})
 		}
 		if found && err == nil && backlog.Accepted(is) && p != nil {
 			// A refined text proposed to an outsider, agreed to by a person
@@ -173,6 +193,9 @@ func Pre(runDir, repo string) int {
 				"why": fmt.Sprintf("slipped: %s is released (its tag exists).", is.Milestone)}})
 		}
 		switch {
+		case agreed != "" && !backlog.Accepted(is):
+			// Agreed to: written this run, not read again for that reply.
+			rest = append(rest, due{is, st, comments, notes})
 		case slices.Contains(capped, is.ID):
 			again = append(again, due{is, st, comments, notes})
 		case st.Judged == "":

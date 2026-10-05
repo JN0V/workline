@@ -1,6 +1,6 @@
 # ADR-0021: The product owner talks with the reporter, a few rounds, then a person
 
-- **Status:** proposed
+- **Status:** proposed; amended 2026-10-05 (a reply that agrees)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0018 (the product owner; "an issue opened by someone
   outside the project is theirs"), principles 1, 4, 6, 7, 14
@@ -62,7 +62,8 @@ It shares the rounds and the cap of `refine`.
 
 A reply alone is not agreement: the forge interface gives no comment's
 author, and on a public project anyone can comment. It is read as an
-answer: the agent may propose a revised text, a round.
+answer: the agent may propose a revised text, a round. (Amended below:
+`agreed`, replied by the reporter or a person of the project.)
 
 ## Consequences
 
@@ -73,7 +74,40 @@ answer: the agent may propose a revised text, a round.
   ready stay proposed to the project, in the report (ADR-0022): how the
   backlog cuts and names a need is the project's, its text the reporter's;
   `workline:accepted` lifts all.
-- GitLab says nothing of write access: every reporter there counts as
-  outside, so every refine there is proposed in a comment.
-- Left: comments read with their author, so a reporter's "yes" agrees and
-  a writer's answer is told from a stranger's.
+- GitLab says nothing of write access in an issue: every reporter there
+  counted as outside, so every refine there was proposed in a comment —
+  until its members were read (ADR-0023).
+- Left, then built (amendment below): comments read with their author, so
+  a reporter's `agreed` agrees and a writer's answer is told from a
+  stranger's.
+
+## Amendment (2026-10-05): a reply that agrees, read with its author
+
+Every forge now gives a comment's author, and whether they are of the
+project (GitHub's author association; GitLab's members, Planner and
+above, ADR-0023; a plugged forge's answer). "A reply alone is not
+agreement" held because none was known. Now:
+
+- **A reply agrees** when it is the last person's comment after the last
+  round, that round a proposal, its first line `agreed` (case, spaces and a
+  final "." or "!" aside), written by the reporter or by a person of the
+  project — never a bot, nor an author the forge does not name. Words a
+  check reads, as triagebot's `@rustbot ready` or Dependabot's commands
+  from writers: telling a "yes" in free text is not the engine's, and
+  the agent's reading of one would let a reply write a body (principle 6).
+  The proposal says so: "reply `agreed` alone".
+- **What it agrees to is the text, not the project's acceptance**: the
+  next run writes the sections of the last proposal the body still lacks,
+  with no agent, Need and Validation as drafts — as the reporter's own
+  edit of their body would. Moving it to ready, splitting and renaming
+  stay the label's, `workline:accepted`, an act the forge records with
+  who set it, by someone who may triage. Conservative on purpose: an
+  insider's reply is a word in a comment where the label is a decision
+  in the project's own tool; taking a reply for the label is left to a
+  later decision, with what live use shows.
+- **Checked again when applied**: the refine carries who agreed; the plan
+  reads the comments again and writes nothing unless the agreement is
+  there, by that person, and the sections are those last proposed
+  (`not-agreed`) — never taken from the agent's answer.
+- **The agent is told who wrote each comment**: its reporter, of the
+  project, outside it, a bot. A stranger's word is still an answer to read.

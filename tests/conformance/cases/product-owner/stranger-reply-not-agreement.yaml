@@ -1,0 +1,17 @@
+case: product-owner/stranger-reply-not-agreement
+about: A reply `agreed` by someone neither the reporter nor of the project, or by a bot, is an answer, never an agreement — nothing is written in the body; the issue is read again, the reply shown with who wrote it.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: helper, body: "Agreed."}]}
+      - {id: 11, title: "Header lost", body: "The header is lost.", author: kim, insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@kim, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: The header exported.\nverification: A test reads the header back.\nvalidation: Kim opens an export.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: project_1_bot_0a1b, insider: true, bot: true, body: "agreed"}]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: "Comment by @helper, outside the project:\n> Agreed."}
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Need"}
+      - {id: 11, body-lacks: "## Need"}

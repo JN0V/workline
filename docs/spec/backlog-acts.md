@@ -229,8 +229,12 @@ what it can and asks for the rest:
   does, and loses `workline:draft` and `workline:accepted`. An issue opened
   by someone without write access to the project is theirs: moving it to
   ready is proposed in the report, never done (`reporter-outside`) —
-  unless a person of the project accepted it with the label. A forge that does not say who has write access
-  (GitLab, for now) counts every reporter as outside.
+  unless a person of the project accepted it with the label. Who is of the
+  project: on GitHub, the issue's author association (owner, member,
+  collaborator); on GitLab, a member with the Planner role or above, read
+  from the project's members (ADR-0023) — a token that may not list them
+  fails the run, loud; on a plugged forge, its `insider`. One the forge
+  does not say is outside.
 - **`ask`** comments on the issue, naming its reporter, with the agent's
   questions. The answer is a person's comment: the issue is read again at
   the next run.
@@ -337,12 +341,19 @@ reads it" — the block read back, the agent's fences turned to `'''` so none en
   reads the answer first, and refines it itself, the issue accepted;
 - **the reporter's own edit** of the body (only its author or a writer
   can edit it): read again as any body changed; moving it to ready stays
-  proposed (`reporter-outside`) until a person accepts.
+  proposed (`reporter-outside`) until a person accepts;
+- **a reply `agreed`** (ADR-0021, amended): the last person's comment
+  after the last round, that round a proposal, its first line `agreed`
+  (case, spaces, a final "." or "!" aside), by the reporter or a person of
+  the project, not a bot. The next run writes the sections of the last
+  proposal the body still lacks, with no agent, Need and Validation as
+  drafts, and does not read the issue again for that reply; ready, a
+  split, a rename stay the label's. The plan checks the agreement again
+  on the forge, and that the sections are those proposed (`not-agreed`).
 
-A reply alone is read as an answer — the agent may propose a revised text,
-a round — never as agreement: comments come without their author.
-
-Not built yet: a reply's author read, so a reporter's "yes" agrees.
+Any other reply is read as an answer — the agent may propose a revised
+text, a round. Each comment is given to the agent with who wrote it: the
+reporter, of the project, outside it, a bot.
 
 ## Autonomy and caps
 
