@@ -1156,7 +1156,8 @@ func Agreement(notes []forge.Note, is forge.Issue, role string) string {
 		return ""
 	}
 	first, _, _ := strings.Cut(strings.TrimSpace(reply.Body), "\n")
-	if strings.ToLower(strings.TrimRight(strings.TrimSpace(first), ".! ")) != AgreeWord {
+	first = strings.ToLower(strings.TrimSpace(first))
+	if first != AgreeWord && first != AgreeWord+"." && first != AgreeWord+"!" {
 		return ""
 	}
 	return reply.Author
