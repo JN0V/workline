@@ -312,10 +312,134 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		return all, err
 	}
 	blocked, err := g.blockedBy()
+	if err != nil {
+		return all, err
+	}
+	children, err := g.children()
 	for i := range all {
 		all[i].BlockedBy = blocked[all[i].ID]
+		all[i].Children = children[all[i].ID]
 	}
 	return all, err
+}
+
+// children reads each open issue's tasks, open or closed, in the work
+// items' hierarchy, in one GraphQL query a page of a hundred (ADR-0029).
+// A GitLab that answers it with errors — an instance without work items —
+// has none: a parent's body lists its children.
+func (g *gitlab) children() (map[int][]int, error) {
+	out := map[int][]int{}
+	after := ""
+	for {
+		var v struct {
+			Project struct {
+				WorkItems struct {
+					Nodes []struct {
+						IID     string `json:"iid"`
+						Widgets []struct {
+							Children *struct {
+								Nodes []struct {
+									IID string `json:"iid"`
+								} `json:"nodes"`
+								PageInfo struct {
+									HasNextPage bool `json:"hasNextPage"`
+								} `json:"pageInfo"`
+							} `json:"children"`
+						} `json:"widgets"`
+					} `json:"nodes"`
+					PageInfo struct {
+						HasNextPage bool   `json:"hasNextPage"`
+						EndCursor   string `json:"endCursor"`
+					} `json:"pageInfo"`
+				} `json:"workItems"`
+			} `json:"project"`
+		}
+		vars := map[string]any{"p": g.projectPath()}
+		if after != "" {
+			vars["after"] = after
+		}
+		ok, err := g.graphql(`query($p: ID!, $after: String) { project(fullPath: $p) { workItems(state: opened, first: 100, after: $after) { nodes { iid widgets { ... on WorkItemWidgetHierarchy { children(first: 100) { nodes { iid } pageInfo { hasNextPage } } } } } pageInfo { hasNextPage endCursor } } } }`, vars, &v)
+		if err != nil || !ok {
+			return out, err
+		}
+		for _, n := range v.Project.WorkItems.Nodes {
+			id, _ := strconv.Atoi(n.IID)
+			for _, w := range n.Widgets {
+				if w.Children == nil {
+					continue
+				}
+				if w.Children.PageInfo.HasNextPage {
+					return out, fmt.Errorf("#%d has more than 100 tasks: GitLab's children are read a hundred at most", id)
+				}
+				for _, c := range w.Children.Nodes {
+					if cid, err := strconv.Atoi(c.IID); err == nil {
+						out[id] = append(out[id], cid)
+					}
+				}
+			}
+		}
+		if !v.Project.WorkItems.PageInfo.HasNextPage {
+			return out, nil
+		}
+		after = v.Project.WorkItems.PageInfo.EndCursor
+	}
+}
+
+// closedViaCommit is GitLab's system note for an issue closed by a commit
+// pushed with a closing pattern: "closed via commit 1a2b3c4d".
+var closedViaCommit = regexp.MustCompile(`^closed via commit ([0-9a-f]{7,40})`)
+
+// Closers reads the merge requests that close the issue (closed_by) and
+// the commits its system notes say closed it, each with its text.
+func (g *gitlab) Closers(id int) ([]Closer, error) {
+	t := Target{Kind: "issue", ID: id}
+	out, err := g.api(path(t) + "/closed_by")
+	if err != nil {
+		return nil, err
+	}
+	var mrs []struct {
+		IID         int    `json:"iid"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		State       string `json:"state"`
+	}
+	if err := decode(out, &mrs); err != nil {
+		return nil, err
+	}
+	var all []Closer
+	for _, m := range mrs {
+		if m.State == "merged" {
+			all = append(all, Closer{Kind: "pull-request", Ref: fmt.Sprintf("!%d", m.IID), Text: strings.TrimSpace(m.Title + "\n\n" + m.Description)})
+		}
+	}
+	out, err = g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	notes, err := pages[struct {
+		Body   string `json:"body"`
+		System bool   `json:"system"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	for _, n := range notes {
+		m := closedViaCommit.FindStringSubmatch(strings.TrimSpace(n.Body))
+		if !n.System || m == nil {
+			continue
+		}
+		c := Closer{Kind: "commit", Ref: m[1][:min(8, len(m[1]))]}
+		if out, err := g.api("projects/:id/repository/commits/" + m[1]); err == nil {
+			var v struct {
+				Message string `json:"message"`
+			}
+			if decode(out, &v) == nil {
+				c.Text = v.Message
+			}
+		}
+		all = append(all, c)
+	}
+	return all, nil
 }
 
 // blockedBy reads what each open issue waits on in GitLab's is_blocked_by
@@ -490,6 +614,9 @@ func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
 	for i := len(notes) - 1; i >= 0; i-- {
 		if !strings.Contains(notes[i].Body, marker) {
 			continue
+		}
+		if notes[i].Body == body+"\n\n"+marker {
+			return nil // as it is already: not edited again
 		}
 		_, err = g.api("-X", "PUT", fmt.Sprintf("%s/notes/%d", path(t), notes[i].ID), "-f", "body="+body+"\n\n"+marker)
 		if !errors.Is(err, errForbidden) {

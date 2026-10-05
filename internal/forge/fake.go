@@ -43,6 +43,7 @@ type FakeItem struct {
 	Parent    int           `json:"parent,omitempty"`     // the issue it is a sub-issue of
 	BlockedBy []int         `json:"blocked-by,omitempty"` // the issues it waits on, in the forge's own relation
 	Ticks     []Tick        `json:"ticks,omitempty"`      // boxes ticked in its body, with who ticked them
+	ClosedBy  []Closer      `json:"closed-by,omitempty"`  // what closed it: a pull request, a commit
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
@@ -128,7 +129,13 @@ func (f *Fake) Issues() ([]Issue, error) {
 	var out []Issue
 	for _, it := range s.Issues {
 		if !it.Closed {
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy})
+			var children []int
+			for _, c := range s.Issues {
+				if c.Parent == it.ID {
+					children = append(children, c.ID)
+				}
+			}
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -207,7 +214,9 @@ func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
 		}
 		for i := len(it.Comments) - 1; i >= 0; i-- { // the last, as a forge's
 			if strings.Contains(it.Comments[i].Body, marker) {
-				it.Comments[i] = FakeComment{Body: body + "\n\n" + marker}
+				if it.Comments[i].Body != body+"\n\n"+marker {
+					it.Comments[i] = FakeComment{Body: body + "\n\n" + marker}
+				}
 				return nil
 			}
 		}
@@ -417,6 +426,18 @@ func (f *Fake) AddBlocker(id, blocker int) (bool, error) {
 		it.BlockedBy = append(it.BlockedBy, blocker)
 		return nil
 	})
+}
+
+func (f *Fake) Closers(id int) ([]Closer, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil {
+		return nil, err
+	}
+	return it.ClosedBy, nil
 }
 
 func (f *Fake) Ticks(id int) ([]Tick, error) {

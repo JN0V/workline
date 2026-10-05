@@ -33,6 +33,19 @@ type Issue struct {
 	// (GitHub's dependencies, GitLab's is_blocked_by), open or closed, as
 	// Issues gives them; a line in its body says the rest (ADR-0028).
 	BlockedBy []int `json:"blocked-by,omitempty"`
+	// Children are its sub-issues in the forge's own relation (GitHub's
+	// sub-issues, GitLab's tasks), open or closed, as Issues gives them; a
+	// task list under "## Sub-issues" in its body says the rest (ADR-0029).
+	Children []int `json:"children,omitempty"`
+}
+
+// Closer is what closed an issue, as the forge links it: a pull or merge
+// request merged, or a commit, with its text — the evidence a parent's
+// report quotes (ADR-0029).
+type Closer struct {
+	Kind string `json:"kind"`           // pull-request (a GitHub pull request, a GitLab merge request) or commit
+	Ref  string `json:"ref"`            // how the forge names it: "#20", "!7", a short commit
+	Text string `json:"text,omitempty"` // its title and description, or the commit's message
 }
 
 // Note is a comment with who wrote it: what a reply decides counts only
@@ -123,6 +136,9 @@ type Backlog interface {
 	// then writes a line in the body (ADR-0028). Adding one already there
 	// changes nothing.
 	AddBlocker(id, blocker int) (bool, error)
+	// Closers lists what closed an issue, as the forge links it: the pull
+	// or merge request, or the commit; nil when the forge does not say.
+	Closers(id int) ([]Closer, error)
 	// Ticks lists the boxes ticked and unticked in an issue's body, oldest
 	// first, with who did each; nil when the forge does not say.
 	Ticks(id int) ([]Tick, error)

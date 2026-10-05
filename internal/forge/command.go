@@ -275,6 +275,20 @@ func (c *command) AddBlocker(id, blocker int) (bool, error) {
 	return a.Native, err
 }
 
+// Closers asks closers: what closed the issue, each {kind, ref, text}
+// (docs/spec/forge-command.md); a forge that refuses the operation does
+// not say: nil.
+func (c *command) Closers(id int) ([]Closer, error) {
+	var a struct {
+		Closers []Closer `json:"closers"`
+	}
+	err := c.call("closers", map[string]any{"id": id}, &a)
+	if err != nil && !errors.Is(err, ErrUnreachable) {
+		return nil, nil
+	}
+	return a.Closers, err
+}
+
 // Ticks reads the answer to ticks: the boxes ticked in the issue's body,
 // each {item, done, author, insider, bot} (docs/spec/forge-command.md); a
 // forge that refuses the operation does not say who ticked: nil.
