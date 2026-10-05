@@ -54,6 +54,16 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			fmt.Fprint(w, `[]`)
 		}
+	case r.Method == "GET" && r.URL.Path == repo+"/issues/3/comments":
+		if r.URL.Query().Get("page") == "1" {
+			fmt.Fprint(w, `[{"body": "Rows lost.", "user": {"login": "zed"}}, {"body": "agreed", "user": {"login": "dev"}}]`)
+		} else {
+			fmt.Fprint(w, `[]`)
+		}
+	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/dev/permission":
+		fmt.Fprint(w, `{"permission": "write"}`)
+	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/zed/permission":
+		http.Error(w, `{"message": "not a collaborator"}`, http.StatusForbidden)
 	default:
 		http.Error(w, "not mocked", http.StatusNotFound)
 	}
@@ -95,6 +105,16 @@ func TestAllIssues(t *testing.T) {
 		`{"body":"","closed":false,"id":2,"labels":[],"title":"Open"}]`
 	if b, _ := json.Marshal(got.Issues); string(b) != want {
 		t.Errorf("issues = %s\nwant     %s", b, want)
+	}
+}
+
+// comments answers each comment with its author, and whether they may
+// write to the repository.
+func TestComments(t *testing.T) {
+	out := run(t, &mock{}, "comments", map[string]any{"target": map[string]any{"kind": "issue", "id": 3}})
+	want := `{"comments":[{"body":"Rows lost.","author":"zed","insider":false},{"body":"agreed","author":"dev","insider":true}]}`
+	if out != want {
+		t.Errorf("answer = %s\nwant     %s", out, want)
 	}
 }
 

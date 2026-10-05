@@ -27,7 +27,25 @@ type Issue struct {
 	Reason    string   `json:"reason,omitempty"`    // why it was closed, when the forge says: completed, not_planned, duplicate
 	Milestone string   `json:"milestone,omitempty"` // the title of the milestone it is in, if any
 	Author    string   `json:"author,omitempty"`    // who opened it
-	Insider   bool     `json:"insider,omitempty"`   // its author has write access to the project; false when the forge does not say
+	Insider   bool     `json:"insider,omitempty"`   // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
+}
+
+// Note is a comment with who wrote it: what a reply decides counts only
+// from the right people (ADR-0021).
+type Note struct {
+	Body    string `json:"body"`
+	Author  string `json:"author,omitempty"`  // who wrote it; "" when the forge does not say
+	Insider bool   `json:"insider,omitempty"` // its author is a person of the project, as Issue.Insider
+	Bot     bool   `json:"bot,omitempty"`     // its author is a bot: a token's user, an app
+}
+
+// Bodies is the text of each note, in order.
+func Bodies(notes []Note) []string {
+	out := make([]string, 0, len(notes))
+	for _, n := range notes {
+		out = append(out, n.Body)
+	}
+	return out
 }
 
 // Forge is what the engine needs from one.
@@ -66,6 +84,9 @@ type Backlog interface {
 	AllIssues() ([]Issue, error)
 	// Comments lists the comments on t, oldest first.
 	Comments(t Target) ([]string, error)
+	// Notes lists the comments on t with their authors, oldest first, as
+	// Comments does.
+	Notes(t Target) ([]Note, error)
 	// Close closes an issue: as a duplicate of dup when dup > 0, else as
 	// completed. Closing one already closed changes nothing.
 	Close(id, dup int) error

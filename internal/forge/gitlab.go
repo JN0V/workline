@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -22,6 +23,45 @@ type gitlab struct {
 	repo                  string
 	base, project, header string // the API's root, the project's id, how the token goes
 	token                 string
+	members               map[string]int // the project's members, direct and inherited, and their access level; read once
+}
+
+// planner is GitLab's access level from which a member counts as a person
+// of the project (Issue.Insider): Planner (15), Reporter, Developer,
+// Maintainer, Owner — who may set a label, so accept a draft with
+// workline:accepted, as GitHub's owner, member or collaborator. A Guest
+// (10) or a Minimal Access member (5) is outside, as anyone not a member.
+const planner = 15
+
+// botName matches the users of project and group access tokens:
+// project_<id>_bot_<random>, group_<id>_bot_<random> (GitLab's naming).
+var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
+
+// insider says whether username is a person of the project. The members
+// are read once a run: a token that may not list them fails loud rather
+// than taking every reporter for an outsider.
+func (g *gitlab) insider(username string) (bool, error) {
+	if g.members == nil {
+		out, err := g.api("--paginate", "projects/:id/members/all?per_page=100")
+		if err != nil {
+			return false, fmt.Errorf("reading the project's members, to tell who is of the project: %w", err)
+		}
+		all, err := pages[struct {
+			Username string `json:"username"`
+			Level    int    `json:"access_level"`
+			State    string `json:"state"`
+		}](out)
+		if err != nil {
+			return false, err
+		}
+		g.members = map[string]int{}
+		for _, m := range all {
+			if m.State == "" || m.State == "active" {
+				g.members[m.Username] = max(g.members[m.Username], m.Level)
+			}
+		}
+	}
+	return username != "" && g.members[username] >= planner, nil
 }
 
 // connect finds the instance, the project and the token: what CI gives
@@ -123,6 +163,8 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 		switch {
 		case resp.StatusCode == http.StatusNotFound:
 			return nil, fmt.Errorf("%w: %s %s", errNotFound, method, path)
+		case resp.StatusCode == http.StatusForbidden:
+			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s (the token's role or scope does not allow it)", errForbidden, method, path, resp.Status, strings.TrimSpace(string(data)))
 		case resp.StatusCode >= 300:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", ErrUnreachable, method, path, resp.Status, strings.TrimSpace(string(data)))
 		}
@@ -196,6 +238,9 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 		Description string   `json:"description"`
 		Labels      []string `json:"labels"`
 		State       string   `json:"state"`
+		Author      struct {
+			Username string `json:"username"`
+		} `json:"author"`
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
@@ -203,7 +248,9 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 	if v.Labels == nil {
 		v.Labels = []string{}
 	}
-	return &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels, Closed: v.State == "closed"}, nil
+	in, err := g.insider(v.Author.Username)
+	return &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels, Closed: v.State == "closed",
+		Author: v.Author.Username, Insider: in}, err
 }
 
 // pages decodes the arrays a paginated call prints, one a page.
@@ -247,9 +294,13 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		if f.Labels == nil {
 			f.Labels = []string{}
 		}
-		// Who has write access is not in the issue: every reporter is taken
-		// for an outsider (docs/spec/backlog-acts.md, "Refining to ready").
-		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Closed: f.State == "closed"}
+		// Who is of the project is not in the issue: its author's access
+		// level, from the project's members.
+		in, err := g.insider(f.Author.Username)
+		if err != nil {
+			return nil, err
+		}
+		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Insider: in, Closed: f.State == "closed"}
 		if f.Milestone != nil {
 			is.Milestone = f.Milestone.Title
 		}
@@ -260,21 +311,39 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 }
 
 func (g *gitlab) Comments(t Target) ([]string, error) {
-	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&per_page=100")
+	notes, err := g.Notes(t)
+	return Bodies(notes), err
+}
+
+// Notes reads each note's author, of the project by their access level; a
+// project or group access token's user is a bot.
+func (g *gitlab) Notes(t Target) ([]Note, error) {
+	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
 	if err != nil {
 		return nil, err
 	}
-	notes, err := pages[struct {
+	found, err := pages[struct {
 		Body   string `json:"body"`
 		System bool   `json:"system"`
+		Author struct {
+			Username string `json:"username"`
+		} `json:"author"`
 	}](out)
-	var all []string
-	for _, n := range notes {
-		if !n.System { // GitLab's own notes: "changed the description", …
-			all = append(all, n.Body)
-		}
+	if err != nil {
+		return nil, err
 	}
-	return all, err
+	var all []Note
+	for _, n := range found {
+		if n.System { // GitLab's own notes: "changed the description", …
+			continue
+		}
+		in, err := g.insider(n.Author.Username)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username)})
+	}
+	return all, nil
 }
 
 // Close closes an issue; a duplicate through GitLab's own quick action,
@@ -306,23 +375,27 @@ func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
 	if err != nil {
 		return err
 	}
-	type note struct {
+	notes, err := pages[struct {
 		ID   int    `json:"id"`
 		Body string `json:"body"`
+	}](out)
+	if err != nil {
+		return err
 	}
-	var notes []note
-	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
-		var page []note
-		if err := dec.Decode(&page); err != nil {
-			return fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+	// The last carrying the marker, the one read (backlog's readBlock).
+	// GitLab lets only its author, or a Maintainer, edit a note: one
+	// another token wrote — a person's, before the project's bot took over
+	// — is left, and a new one, this token's, carries the marker after it.
+	for i := len(notes) - 1; i >= 0; i-- {
+		if !strings.Contains(notes[i].Body, marker) {
+			continue
 		}
-		notes = append(notes, page...)
-	}
-	for _, n := range notes {
-		if strings.Contains(n.Body, marker) {
-			_, err = g.api("-X", "PUT", fmt.Sprintf("%s/notes/%d", path(t), n.ID), "-f", "body="+body+"\n\n"+marker)
+		_, err = g.api("-X", "PUT", fmt.Sprintf("%s/notes/%d", path(t), notes[i].ID), "-f", "body="+body+"\n\n"+marker)
+		if !errors.Is(err, errForbidden) {
 			return err
 		}
+		create = true
+		break
 	}
 	if !create {
 		return nil

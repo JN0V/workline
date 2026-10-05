@@ -26,20 +26,38 @@ type FakeState struct {
 
 // FakeItem is an issue or a merge request.
 type FakeItem struct {
-	ID        int      `json:"id"`
-	Branch    string   `json:"branch,omitempty"` // a merge request's source branch
-	Base      string   `json:"base,omitempty"`
-	Closed    bool     `json:"closed,omitempty"`
-	Reason    string   `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
-	Milestone string   `json:"milestone,omitempty"`
-	Fork      bool     `json:"fork,omitempty"` // a merge request from a fork
-	Title     string   `json:"title,omitempty"`
-	Body      string   `json:"body,omitempty"`
-	Labels    []string `json:"labels"`
-	Comments  []string `json:"comments"`
-	Author    string   `json:"author,omitempty"`
-	Insider   bool     `json:"insider,omitempty"`
-	Parent    int      `json:"parent,omitempty"` // the issue it is a sub-issue of
+	ID        int           `json:"id"`
+	Branch    string        `json:"branch,omitempty"` // a merge request's source branch
+	Base      string        `json:"base,omitempty"`
+	Closed    bool          `json:"closed,omitempty"`
+	Reason    string        `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
+	Milestone string        `json:"milestone,omitempty"`
+	Fork      bool          `json:"fork,omitempty"` // a merge request from a fork
+	Title     string        `json:"title,omitempty"`
+	Body      string        `json:"body,omitempty"`
+	Labels    []string      `json:"labels"`
+	Comments  []FakeComment `json:"comments"`
+	Author    string        `json:"author,omitempty"`
+	Insider   bool          `json:"insider,omitempty"`
+	Parent    int           `json:"parent,omitempty"` // the issue it is a sub-issue of
+}
+
+// FakeComment is a comment: in the file, its body alone, or with its
+// author as {body, author, insider, bot}.
+type FakeComment Note
+
+func (c FakeComment) MarshalJSON() ([]byte, error) {
+	if c.Author == "" && !c.Insider && !c.Bot {
+		return json.Marshal(c.Body)
+	}
+	return json.Marshal(Note(c))
+}
+
+func (c *FakeComment) UnmarshalJSON(data []byte) error {
+	if json.Unmarshal(data, &c.Body) == nil {
+		return nil
+	}
+	return json.Unmarshal(data, (*Note)(c))
 }
 
 func (f *Fake) load() (*FakeState, error) {
@@ -128,6 +146,11 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 }
 
 func (f *Fake) Comments(t Target) ([]string, error) {
+	notes, err := f.Notes(t)
+	return Bodies(notes), err
+}
+
+func (f *Fake) Notes(t Target) ([]Note, error) {
 	s, err := f.load()
 	if err != nil {
 		return nil, err
@@ -136,7 +159,11 @@ func (f *Fake) Comments(t Target) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return it.Comments, nil
+	notes := make([]Note, 0, len(it.Comments))
+	for _, c := range it.Comments {
+		notes = append(notes, Note(c))
+	}
+	return notes, nil
 }
 
 func (f *Fake) Close(id, dup int) error {
@@ -160,11 +187,11 @@ func (f *Fake) Comment(t Target, body, marker string) error {
 			return err
 		}
 		for _, c := range it.Comments {
-			if strings.Contains(c, marker) {
+			if strings.Contains(c.Body, marker) {
 				return nil
 			}
 		}
-		it.Comments = append(it.Comments, body+"\n\n"+marker)
+		it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker})
 		return nil
 	})
 }
@@ -175,14 +202,14 @@ func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
 		if err != nil {
 			return err
 		}
-		for i, c := range it.Comments {
-			if strings.Contains(c, marker) {
-				it.Comments[i] = body + "\n\n" + marker
+		for i := len(it.Comments) - 1; i >= 0; i-- { // the last, as a forge's
+			if strings.Contains(it.Comments[i].Body, marker) {
+				it.Comments[i] = FakeComment{Body: body + "\n\n" + marker}
 				return nil
 			}
 		}
 		if create {
-			it.Comments = append(it.Comments, body+"\n\n"+marker)
+			it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker})
 		}
 		return nil
 	})
@@ -214,11 +241,11 @@ func (f *Fake) OpenIssue(title, body, marker string) (int, error) {
 			if s.Issues[i].Title == title {
 				id = s.Issues[i].ID
 				for _, c := range s.Issues[i].Comments {
-					if strings.Contains(c, marker) {
+					if strings.Contains(c.Body, marker) {
 						return nil
 					}
 				}
-				s.Issues[i].Comments = append(s.Issues[i].Comments, body+"\n\n"+marker)
+				s.Issues[i].Comments = append(s.Issues[i].Comments, FakeComment{Body: body + "\n\n" + marker})
 				return nil
 			}
 		}
@@ -226,7 +253,7 @@ func (f *Fake) OpenIssue(title, body, marker string) (int, error) {
 		for _, it := range s.Issues {
 			id = max(id, it.ID+1)
 		}
-		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body + "\n\n" + marker, Labels: []string{}, Comments: []string{}})
+		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body + "\n\n" + marker, Labels: []string{}, Comments: []FakeComment{}})
 		return nil
 	})
 	return id, err
@@ -245,7 +272,7 @@ func (f *Fake) OpenMergeRequest(branch, base, title, body string) (int, error) {
 			id = max(id, m.ID)
 		}
 		id++
-		s.MergeRequests = append(s.MergeRequests, FakeItem{ID: id, Branch: branch, Base: base, Title: title, Body: body, Labels: []string{}, Comments: []string{}})
+		s.MergeRequests = append(s.MergeRequests, FakeItem{ID: id, Branch: branch, Base: base, Title: title, Body: body, Labels: []string{}, Comments: []FakeComment{}})
 		return nil
 	})
 	return id, err
@@ -294,7 +321,7 @@ func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
 		for _, it := range s.Issues {
 			id = max(id, it.ID+1)
 		}
-		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body, Labels: []string{}, Comments: []string{}})
+		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body, Labels: []string{}, Comments: []FakeComment{}})
 		return nil
 	})
 	return id, err

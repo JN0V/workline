@@ -133,11 +133,28 @@ func (g *github) AddSubIssue(parent, child int) (bool, error) {
 }
 
 func (g *github) Comments(t Target) ([]string, error) {
-	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID), "--jq", ".[].body | tojson")
+	notes, err := g.Notes(t)
+	return Bodies(notes), err
+}
+
+// Notes reads each comment's author and their author_association, as an
+// issue's; an app's comment (a user of type Bot) is a bot's.
+func (g *github) Notes(t Target) ([]Note, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID),
+		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\")}")
 	if err != nil {
 		return nil, err
 	}
-	return lines[string](out)
+	found, err := lines[struct {
+		Note
+		Association string `json:"association"`
+	}](out)
+	notes := make([]Note, 0, len(found))
+	for _, f := range found {
+		f.Note.Insider = insider(f.Association)
+		notes = append(notes, f.Note)
+	}
+	return notes, err
 }
 
 // Close closes with GitHub's own reason; a duplicate's original is named by

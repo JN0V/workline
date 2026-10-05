@@ -2,6 +2,7 @@ package forge
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -65,6 +66,86 @@ func TestGitLabAPI(t *testing.T) {
 	t.Setenv("GITLAB_TOKEN", "wrong")
 	if _, err := (&gitlab{repo: t.TempDir()}).Issue(1); err == nil || !strings.Contains(err.Error(), ErrUnreachable.Error()) {
 		t.Fatalf("a refused token: %v", err)
+	}
+}
+
+// Who is of the project comes from its members' access level: Planner and
+// above; a project access token's user is a bot. A note another user wrote
+// cannot be edited (403): the sticky one is written anew after it.
+func TestGitLabWho(t *testing.T) {
+	var got []string
+	members := true
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		author := func(u string) map[string]any { return map[string]any{"username": u} }
+		switch {
+		case p == "/members/all" && !members:
+			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
+		case p == "/members/all":
+			json.NewEncoder(w).Encode([]map[string]any{
+				{"username": "owner", "access_level": 50, "state": "active"},
+				{"username": "plan", "access_level": 15, "state": "active"},
+				{"username": "guest", "access_level": 10, "state": "active"},
+				{"username": "gone", "access_level": 30, "state": "blocked"},
+				{"username": "project_1_bot_0a1b", "access_level": 15, "state": "active"},
+			})
+		case r.Method == "GET" && p == "/issues/3":
+			json.NewEncoder(w).Encode(map[string]any{"iid": 3, "title": "t", "author": author("guest"), "state": "opened"})
+		case r.Method == "GET" && p == "/issues/3/notes":
+			json.NewEncoder(w).Encode([]map[string]any{
+				{"id": 1, "body": "state <!-- workline:k -->", "author": author("owner")},
+				{"id": 2, "body": "changed the description", "system": true, "author": author("plan")},
+				{"id": 3, "body": "agreed", "author": author("guest")},
+				{"id": 4, "body": "ok", "author": author("plan")},
+				{"id": 5, "body": "done", "author": author("project_1_bot_0a1b")},
+				{"id": 6, "body": "me too", "author": author("gone")},
+			})
+		case r.Method == "PUT" && p == "/issues/3/notes/1":
+			http.Error(w, `{"message":"403 Forbidden"}`, http.StatusForbidden)
+		case r.Method == "POST":
+			body, _ := io.ReadAll(r.Body)
+			form, _ := url.ParseQuery(string(body))
+			got = append(got, r.Method+" "+p+" "+form.Get("body"))
+			w.Write([]byte(`{"id": 7}`))
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "secret")
+	g := &gitlab{repo: t.TempDir()}
+
+	is, err := g.Issue(3)
+	if err != nil || is.Author != "guest" || is.Insider {
+		t.Fatalf("a guest's issue: %+v %v", is, err)
+	}
+	notes, err := g.Notes(Target{Kind: "issue", ID: 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Note{
+		{Body: "state <!-- workline:k -->", Author: "owner", Insider: true},
+		{Body: "agreed", Author: "guest"},
+		{Body: "ok", Author: "plan", Insider: true},
+		{Body: "done", Author: "project_1_bot_0a1b", Insider: true, Bot: true},
+		{Body: "me too", Author: "gone"},
+	}
+	if fmt.Sprint(notes) != fmt.Sprint(want) {
+		t.Fatalf("notes:\n%+v\nwant\n%+v", notes, want)
+	}
+	if err := g.Sticky(Target{Kind: "issue", ID: 3}, "new", "<!-- workline:k -->", false); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != "POST /issues/3/notes new\n\n<!-- workline:k -->" {
+		t.Fatalf("a sticky note another user wrote: %q", got)
+	}
+	// Members not readable: said, never every reporter taken for an outsider.
+	members = false
+	if _, err := (&gitlab{repo: t.TempDir()}).Issue(3); err == nil || !strings.Contains(err.Error(), "members") {
+		t.Fatalf("members refused: %v", err)
 	}
 }
 

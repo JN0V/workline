@@ -80,6 +80,19 @@ all-issues)
 	all "/issues?state=all&type=issues" | jq -c '{issues: [.[] | select(.pull_request == null)
 		| {id: .number, title, body: (.body // ""), labels: [(.labels // [])[].name], closed: (.state == "closed")}]}'
 	;;
+comments)
+	# Oldest first, each with its author; `insider` when the author may
+	# write to the repository (Forgejo's permission: write, admin or owner),
+	# asked once an author.
+	got=$(all "/issues/$(arg .target.id)/comments")
+	perms='{}'
+	for u in $(printf '%s' "$got" | jq -r '[.[].user.login] | unique | .[]'); do
+		p=$(api GET "/collaborators/$u/permission" 2>/dev/null | jq -r '.permission // "none"' || echo none)
+		perms=$(printf '%s' "$perms" | jq -c --arg u "$u" --arg p "$p" '. + {($u): $p}')
+	done
+	printf '%s' "$got" | jq -c --argjson perms "$perms" '{comments: [.[] | {body: (.body // ""), author: .user.login,
+		insider: ($perms[.user.login] | IN("write", "admin", "owner"))}]}'
+	;;
 comment | sticky)
 	n=$(arg .target.id)
 	marker=$(arg .marker)

@@ -51,10 +51,12 @@ func ReportTitle(role string) string { return "Backlog — " + strings.ReplaceAl
 var fenced = regexp.MustCompile("(?s)```yaml\n(.*?)```")
 
 // readBlock decodes the fenced YAML block of the comment carrying marker
-// into v. found is false when no comment carries it; err when it does not
-// read.
+// into v: the last, when another user's left behind could not be edited
+// (GitLab: a note is its author's). found is false when no comment carries
+// it; err when it does not read.
 func readBlock(comments []string, marker string, v any) (found bool, err error) {
-	for _, c := range comments {
+	for i := len(comments) - 1; i >= 0; i-- {
+		c := comments[i]
 		if !strings.Contains(c, marker) {
 			continue
 		}
