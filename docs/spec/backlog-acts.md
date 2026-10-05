@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: eb4f69b
+checked: f459021
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -264,14 +264,16 @@ An issue too big to be one need is broken into its parts (ADR-0022):
   120 characters at most (`split-title`), its four sections written
   (`split-sections`), its Scope's files 1 to 5 in the commit
   (`sources-unknown`); the issue's state must read. One whose state lists
-  children already is never split again (`already-split`).
+  children already is never split again (`already-split`); nor twice in one
+  run, nor renamed twice: the first proposed is kept (`once-a-run`).
 - **Each child** is opened through the one way ("Opening issues"), keyed by
   the parent and its title (`split=<parent>/<8 hex>`): a line `Part of
   #12.`, its four sections — Need and Validation as drafts, as `refine`
   writes them —, "Opened from #12 by the product-owner role."; the labels
   `workline:to-refine` and `workline:draft`; its own state, its sources,
   confirmed at the commit. Not `needs-triage`, not counted in
-  `issues-max`. A child closed already is left closed (`issue-closed`).
+  `issues-max`. A child closed already is left closed (`issue-closed`),
+  and still counted among the parent's children.
 - **Linked to its parent** (`AddSubIssue`): a sub-issue on GitHub; on
   GitLab a task — converted and given its parent through GraphQL, read
   and acted on by REST afterwards as any issue; elsewhere, or when the
