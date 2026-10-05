@@ -1852,7 +1852,11 @@ func Locate(repo, path, text string) (from, to int, original string, ok bool) {
 	if err != nil {
 		return 0, 0, "", false
 	}
-	lines := strings.Split(string(out), "\n")
+	return LocateIn(strings.Split(string(out), "\n"), text)
+}
+
+// LocateIn finds a quote in a file's lines, as Locate does.
+func LocateIn(lines []string, text string) (from, to int, original string, ok bool) {
 	want := squeeze(text)
 	if want == "" {
 		return 0, 0, "", false

@@ -9,9 +9,17 @@ numbers; the issue's body is that quote, nothing else. An item the file
 says is done, or an open issue already holds, is not opened — the file
 may say so far from the item: the task gives the lines of the rest of
 the file that name the share's items, read them first. Text that is
-not an item — an introduction, a history, a table of what shipped — is
-not either. An item cut by the end of the share is left: the next share
-starts with it. Nothing else is proposed when importing.
+not an item — an introduction, a history, a table of what shipped, a
+heading — is not either. An item cut by the end of the share is left:
+the next share starts with it.
+
+Every other line of the share that is not blank is answered by a
+`skip`, its lines as the task numbers them (`"12"` or `"12-14"`), and
+why: `done`, quoting the words that say so; `held`, the issue that
+holds it; `not-item`, saying what it is. The engine maps each item of
+the file to its issue or to this reason, and lists for a person every
+line not blank that no `open` nor `skip` holds: a line left out is a
+requirement maybe lost. Nothing else is proposed when importing.
 
 **Gardening** (otherwise): `task.md` lists the issues, each with what the
 engine knows of it — the code it is about (`sources`) and the commit it

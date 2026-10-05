@@ -24,6 +24,7 @@ var Catalogue = map[string]bool{
 	"handoff":        true,
 	"note":           true,
 	"open":           true, // an issue opened from a file's text, quoted (docs/spec/backlog-acts.md)
+	"skip":           true, // an item of a file an import does not open, and why; read by the import's map, never applied (docs/spec/backlog-acts.md)
 	"milestone":      true, // an issue put in a release's milestone (docs/spec/backlog-acts.md)
 	"order":          true, // an issue's priority set, one label of four (docs/spec/backlog-acts.md)
 	"sources":        true, // the code an issue is about, named, its evidence quoted (docs/spec/backlog-acts.md)

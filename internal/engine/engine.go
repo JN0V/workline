@@ -476,7 +476,20 @@ func run(o Options, res *Result) error {
 			return err
 		}
 	}
-	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" })
+	// A skip says why an item of a file an import reads is not opened:
+	// judged, never applied, kept apart for the import's map.
+	var skips []intent.Intention
+	for _, i := range intents {
+		if i.Kind == "skip" {
+			skips = append(skips, i)
+		}
+	}
+	if len(skips) > 0 {
+		if err := intent.Write(filepath.Join(runDir, "out", "skips.yaml"), skips); err != nil {
+			return err
+		}
+	}
+	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" || i.Kind == "skip" })
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
