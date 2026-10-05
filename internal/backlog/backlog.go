@@ -293,8 +293,13 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 	decided := map[string]bool{}
 	for _, i := range indexes {
 		c := closes[i]
-		if (c.Do == "ready" || c.Do == "milestone" || c.Do == "order") && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "milestone" || c.Do == "order" || c.Do == "split" || c.Do == "rename") && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
+			if c.Do == "split" || c.Do == "rename" {
+				// Both checked against the state before either is applied:
+				// a second would split or rename it again.
+				dropped(c, "once-a-run", c.Do+": one an issue a run; the first proposed is kept")
+			}
 			continue
 		}
 		decided[c.key()] = true

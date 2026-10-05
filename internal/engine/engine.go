@@ -1940,6 +1940,7 @@ func (a *applier) split(c backlog.Proposal) error {
 		if outcome == backlog.Settled {
 			a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
 				Message: fmt.Sprintf("%q, a part of #%d: #%d, closed, holds it; not opened again", ch.Title, c.Issue, id)})
+			ids = append(ids, id) // still one of its children: the issue is not split again
 			continue
 		}
 		ids = append(ids, id)
