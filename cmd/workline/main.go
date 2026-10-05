@@ -1483,6 +1483,7 @@ func importAnswer(runDir string) backlog.ImportShare {
 	if data, err := os.ReadFile(filepath.Join(runDir, "out", "acts.yaml")); err == nil {
 		planned = yaml.Unmarshal(data, &plan) == nil
 	}
+	recorded := backlog.RecordedOpenings(runDir)
 	ins, _ := intent.Read(filepath.Join(runDir, "out", "intentions.yaml"))
 	for i, in := range ins {
 		if in.Kind != "open" {
@@ -1497,6 +1498,9 @@ func importAnswer(runDir string) backlog.ImportShare {
 			d := plan.Decision(i)
 			o.Dropped = d == nil || d.Mode == backlog.Off
 			o.Capped = d != nil && d.Mode == backlog.Propose
+		}
+		if r, ok := recorded[i]; ok {
+			o.Opening = &r
 		}
 		sh.Opens = append(sh.Opens, o)
 	}

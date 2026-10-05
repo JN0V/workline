@@ -1870,11 +1870,16 @@ func (a *applier) apply(in intent.Intention) error {
 		}
 		// Through the one way: a text closed as an issue is not opened again.
 		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.ImportKey(q), Title: d.Act.Title, Body: body, From: " from " + where, Commit: head})
-		if err == nil && outcome == backlog.Settled {
+		if err != nil {
+			return err
+		}
+		if outcome == backlog.Settled {
 			a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
 				Message: fmt.Sprintf("%q: #%d, closed, holds this text; not opened again", d.Act.Title, id)})
 		}
-		return err
+		// The import's map reads which issue holds it from here: a forge's
+		// list may not show an issue opened a moment ago.
+		return backlog.RecordOpening(a.runDir, a.index, outcome, id)
 	case "milestone":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {

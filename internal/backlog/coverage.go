@@ -2,9 +2,13 @@ package backlog
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
@@ -40,6 +44,48 @@ type ImportOpen struct {
 	Quote   Quote
 	Capped  bool // proposed in the report, past the cap of open
 	Dropped bool // refused by the engine, a finding saying why
+	// Opening is what opening it did, as the run recorded it: the issue
+	// that holds it, and whether it was opened then.
+	Opening *Recorded
+}
+
+// Recorded is what one opening of a run did (RecordOpening).
+type Recorded struct {
+	Index   int    `yaml:"index"` // the intention's place in the run
+	Outcome string `yaml:"outcome"`
+	Issue   int    `yaml:"issue"`
+}
+
+// openingsFile keeps, in a run folder, what each opening did.
+const openingsFile = "openings.yaml"
+
+// RecordOpening adds what opening the intention at index did to the run
+// folder: a forge's list may not show an issue opened a moment ago, and an
+// import's map reads it from here.
+func RecordOpening(runDir string, index int, outcome string, issue int) error {
+	f, err := os.OpenFile(filepath.Join(runDir, "out", openingsFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = fmt.Fprintf(f, "- {index: %d, outcome: %s, issue: %d}\n", index, outcome, issue)
+	return err
+}
+
+// RecordedOpenings reads what the openings of a run did, by intention index.
+func RecordedOpenings(runDir string) map[int]Recorded {
+	out := map[int]Recorded{}
+	data, err := os.ReadFile(filepath.Join(runDir, "out", openingsFile))
+	if err != nil {
+		return out
+	}
+	var all []Recorded
+	if yaml.Unmarshal(data, &all) == nil {
+		for _, r := range all {
+			out[r.Index] = r
+		}
+	}
+	return out
 }
 
 // ImportShare is one share of the file an import read, and the agent's
@@ -133,6 +179,15 @@ func Cover(repo, file string, lines []string, shares []ImportShare, before, afte
 			}
 			m := Mapped{Lines: span(from, to), From: from, To: to}
 			switch is := holder(ImportKey(o.Quote)); {
+			case o.Opening != nil && o.Opening.Issue > 0:
+				// As the run recorded it: a forge's list may lag behind.
+				m.Issue, m.State = o.Opening.Issue, ItemAlreadyOpen
+				switch {
+				case o.Opening.Outcome == Settled || o.Opening.Outcome == FoundAgain:
+					m.State = ItemClosed
+				case !existed[o.Opening.Issue]:
+					m.State = ItemOpened // by this run, or an earlier share of it
+				}
 			case is != nil:
 				held(&m, *is) // dropped as already open, or opened
 			case o.Dropped:
