@@ -261,7 +261,7 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 		b.WriteString("Title: a person's, set after the role's (kept)\n")
 	}
 	if len(st.Split) > 0 {
-		// Split already (ADR-0021): its children are issues of their own.
+		// Split already (ADR-0022): its children are issues of their own.
 		var ids []string
 		for _, id := range st.Split {
 			ids = append(ids, fmt.Sprintf("#%d", id))

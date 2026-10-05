@@ -51,5 +51,5 @@ settings:
     refine: {mode: act, max: 5}       # the sections an issue lacks, Need and Validation as drafts
     ready: {mode: act, max: 5}        # checked by the engine; an outsider's issue is proposed
     ask: {mode: act, max: 3}          # the reporter asked what is missing, once an issue
-    split: {mode: act, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0021)
+    split: {mode: act, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0022)
     rename: {mode: act, max: 5}       # an issue's title; a person's kept

@@ -527,7 +527,7 @@ func (g *gitlab) SetTitle(id int, title string) error {
 
 // AddSubIssue makes child a task of parent: an issue's children on GitLab
 // are tasks, a work item type the REST API still lists, labels and
-// comments as an issue (ADR-0021). The hierarchy is the work items'
+// comments as an issue (ADR-0022). The hierarchy is the work items'
 // GraphQL API's only: the child is converted to a task, then given its
 // parent. A GitLab that refuses either — an instance without work items —
 // answers false, and the parent's body lists the child instead.

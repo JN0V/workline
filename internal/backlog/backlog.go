@@ -156,7 +156,7 @@ type Proposal struct {
 }
 
 // Child is one part of a split need: an issue of its own, with its four
-// sections (ADR-0021).
+// sections (ADR-0022).
 type Child struct {
 	Title        string   `yaml:"title"`
 	Need         string   `yaml:"need"`
@@ -600,7 +600,7 @@ func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) 
 const maxChildren = 6
 
 // checkSplitRename checks a split or a rename against the issue as it is
-// (ADR-0021): a title of one line, a child with its four sections and the
+// (ADR-0022): a title of one line, a child with its four sections and the
 // files its scope names.
 func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 	if c.Do != "split" && c.Do != "rename" {

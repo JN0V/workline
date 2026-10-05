@@ -1,4 +1,4 @@
-# ADR-0021: A split keeps the need in its parent; a rename keeps a person's title
+# ADR-0022: A split keeps the need in its parent; a rename keeps a person's title
 
 - **Status:** accepted
 - **Date:** 2026-10-05
@@ -20,7 +20,9 @@ not *Small* or *Testable* (INVEST, SPIDR).
 
 ## Decision
 
-**Split** (`split`): an issue too big to be one need — several things,
+### Split
+
+A split (`split`): an issue too big to be one need — several things,
 each proved by its own Verification — is broken into 2 to 6 children.
 
 - **The parent keeps the need** it was written for: its body is not
@@ -52,18 +54,22 @@ each proved by its own Verification — is broken into 2 to 6 children.
   children are new issues, never read yet, read and ordered at the next
   run within its moved share. A split is not counted in that share.
 
-**Rename** (`rename`): the title alone, one line, 120 characters at most —
+### Rename
+
+A rename (`rename`) sets the title alone, one line, 120 characters at most —
 Mozilla's rule of thumb: about ten words that tell this issue from any
 other, the problem, not the fix. The body is never touched.
 
 - **A person's title is kept**: the state records the title the role set
   (`title`). The title an issue was opened with is its reporter's words
-  and may be renamed once; after the role's, a title other than the one
+  and may be renamed; after the role's, a title other than the one
   recorded is a person's, and the act is dropped (`title-kept`), as
   `priority-kept` and `section-kept` do. The forge's history of renames is
-  not read: no forge but GitHub keeps one.
+  not read: not every forge keeps one (the local forge does not).
 
-**For both**, as for the other acts: a mode and a cap per run
+### For both
+
+As for the other acts: a mode and a cap per run
 (`split: {mode: act, max: 2}`, `rename: {mode: act, max: 5}`); the issue's
 state must read; no quote — they say nothing of an issue's truth. An
 issue opened by someone without write access is theirs: its split or

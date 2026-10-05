@@ -1893,7 +1893,7 @@ func order(f forge.Forge, role string, c backlog.Proposal) error {
 }
 
 // rename sets an issue's title and records it in its state: a title other
-// than the one recorded is a person's (ADR-0021).
+// than the one recorded is a person's (ADR-0022).
 func rename(f forge.Forge, role string, c backlog.Proposal) error {
 	b := f.(forge.Backlog)
 	title := strings.TrimSpace(c.Title)
@@ -1916,7 +1916,7 @@ func rename(f forge.Forge, role string, c backlog.Proposal) error {
 // split opens a need's children through the one way, each with its four
 // sections, links them to it — a sub-issue where the forge has them, a task
 // list in its body elsewhere — and records them in its state, last: a run
-// stopped half-way, resumed, finds the children it opened (ADR-0021).
+// stopped half-way, resumed, finds the children it opened (ADR-0022).
 func (a *applier) split(c backlog.Proposal) error {
 	b := a.forge.(forge.Backlog)
 	o, err := a.openings()
