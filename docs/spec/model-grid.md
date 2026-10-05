@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 8a3da26
+checked: db871eb
 verified: agent:claude-code
 ---
 # Model grid — v1 (draft)
@@ -123,7 +123,7 @@ model:
 The ladder stops at `frontier`. The number of attempts is capped at
 `promote-after` + 1: the last one is the only one a tier up.
 An answer that could not be read at all is asked once more on the same tier,
-besides, when `promote-after` is above 0.
+besides, when `promote-after` is above 0 — a part's too, a reviewer's lens.
 
 ## Independent judgement
 

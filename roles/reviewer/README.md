@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: eef5682
+checked: 05e8060
 verified: agent:documentalist
 judged: 507e86b
 ---
@@ -53,7 +53,9 @@ author fixes, the person merges (ADR-0020).
    outside it, the rest is counted. One summary comment on a merge
    request, edited each run (`forge-writes`).
 
-A lens that fails is said (`lens-failed`), the commits left unrecorded. An
+A lens whose answer does not read is asked again once, with what the YAML
+reader said (`promote-after`). A lens that fails is said (`lens-failed`),
+the commits left unrecorded. An
 agent unreachable: `blocked-external`. No agent: the rules alone, the change
 left for a person (`not-reviewed`).
 

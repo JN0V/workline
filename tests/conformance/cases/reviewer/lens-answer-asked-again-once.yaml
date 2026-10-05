@@ -1,0 +1,16 @@
+case: reviewer/lens-answer-asked-again-once
+about: A lens whose answer does not read — a text starting with a backtick, written plain — is asked for again once, with what the reader said and how to write code; the answer that then reads is reviewed, and the change reviewed whole.
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/lens-code-in-plain-text.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings:
+    - {rule: part-asked-again, where: correctness, message: "cannot start any token"}
+    - {rule: correctness, where: "calc/calc.go:11", message: "The divisor: one less than the count"}
+  no-findings: [{rule: lens-failed}]
+  run-files:
+    out/review.json: {contains: '"complete": true'}
+    parts/1-correctness/out/unread-answer.txt: {contains: "why: `Average` divides"}

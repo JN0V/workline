@@ -159,3 +159,23 @@ was opened by v0.9.0, its key in the older form (`issue=reviewer/…`).
 #9 reopened after, as it was. Tokens: about 26k in, 2.1k out in all.
 Not tried live: closed as not planned (conformance only), two roles on one
 line, the cap.
+
+## 2026-10-05 — code in a lens's answer, and a lens asked again (#138)
+
+A clone of workline at this fix, `workline review` on one commit adding
+`firstFence`: a comment holding a ```` ```yaml ```` fence, backticks, `: `,
+`#`, `@` and `%`; two planted defects (the last fence wins; `lines[-1]`
+with no fence).
+
+- **Sonnet, all lenses.** The three answers read the first time: 26 block
+  scalars, `why` texts starting with a backtick among them. Both defects
+  found, judged by Opus. Tokens: lenses 14.2k in, 2.9k out; four judges
+  16.1k in, 1.3k out.
+- **Asked again, for real.** A `cmd:` agent answering first the shape PR
+  #137 saw (a plain `why` starting with a backtick), then handing the
+  prompt to Sonnet: `part-asked-again` said the reader's error, Sonnet's
+  second answer read (block scalars), the lens reviewed whole. Tokens:
+  Sonnet 4.7k in, 0.7k out (and a 2.6k Haiku side call); judges, Sonnet,
+  8.1k in, 0.6k out.
+
+Not tried: a real agent's own answer failing twice; in CI.

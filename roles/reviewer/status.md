@@ -15,7 +15,7 @@ released in v0.9.0.
 | Only code reviewed; commits reviewed whole not asked again | `docs-only-asks-nobody`, `reviewed-commits-not-asked-again` |
 | A push changing no code asks nobody, its commits recorded; a lens gets only what the new commits change | `push-without-code-asks-nobody`, `lens-given-new-commits-files` |
 | On workline's own pull requests in CI, forge writes on: the summary comment edited in place, the record, the lenses in turn (tried.md) | workline#132 |
-| Lenses as parts, answering findings only; a patch refused | `never-approves-nor-patches`, `lens-failed-not-clean` |
+| Lenses as parts, answering findings only; a patch refused; an answer that does not read asked again once (#138) | `never-approves-nor-patches`, `lens-failed-not-clean`, `lens-answer-asked-again-once` |
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
 | A judge for each important finding, the level said; a no drops it | `judged-no-not-reported`, `independence-level-in-verdict` |
 | Warn until measured; caps; an agent unreachable | `new-ai-rules-warn`, `findings-capped-rest-counted`, `agent-unreachable-is-blocked-external` |

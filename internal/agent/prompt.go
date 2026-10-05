@@ -30,6 +30,12 @@ var contracts = map[string]string{
 	"claim":          `- claim: {lines: "12-14", status: contradicted, quote: "the doc's words, as they read", source: {path: "src/file.go", lines: "40-41", quote: "the source's words, as they read"}, why: "why they disagree"}`,
 }
 
+// BlockScalars is how a text holding code is written so that it reads: a
+// plain text starting with a backtick, or holding `: ` or ` #`, does not
+// (#138), and a block scalar takes code as it is, with no escaping. Said in
+// the prompt, and again when an answer did not read.
+const BlockScalars = "An item may be written over several lines, one key a line. A text holding code, a quote, a backtick, `: ` or ` #`, or several lines is written as a block scalar: the key, then `|`, then the text on the lines below, indented under the key with spaces (its first line never starting with a tab)."
+
 // facet finds a facet file: the project's copy first, then the user's, then
 // the role's own (docs/spec/role-contract.md, "Facets").
 func facet(req Request, name string) (string, bool) {
@@ -80,7 +86,7 @@ func Prompt(req Request) (system, user string, err error) {
 	for _, k := range req.Role.Intentions {
 		b.WriteString(contracts[k] + "\n")
 	}
-	b.WriteString("\nYou cannot act, only propose; anything else is refused.\n\n")
+	b.WriteString("\n" + BlockScalars + "\n\nYou cannot act, only propose; anything else is refused.\n\n")
 	if policy, ok := facet(req, "policy.md"); ok {
 		b.WriteString("# Rules\n\n" + policy)
 	}

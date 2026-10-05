@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: 8a3da26
+checked: db871eb
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -158,7 +158,11 @@ token), **apply** (trusted, no AI key).
    (`part-unanswered`), never read as an answer, and why is written beside
    its task, `in/parts/<name>/unanswered`, its first word the kind of
    failure (`unavailable`, `spent`, `invalid`, `refused`); a lens proposing
-   anything but findings is refused besides (`intention-refused`). One
+   anything but findings is refused besides (`intention-refused`). An answer
+   that reads not at all is asked for again once, as the main question's
+   (step 3), when the role asks again at all (`promote-after`): the call
+   counted like any other, said (`part-asked-again`), the answer not read
+   kept as `out/unread-answer.txt`; still unreadable, the part fails. One
    broken in places is read claim by claim (`part-partly-read`); without an
    agent, no part is asked, and `pre` runs again with none answered.
 
@@ -189,6 +193,10 @@ token), **apply** (trusted, no AI key).
    slip, not a refusal. The documentalist's `post` passed with no proposal,
    and such a doc was judged again, whole, the next night (DomoticsCore,
    ADR-0014 step 4). The answer not read is kept as `out/unread-answer.txt`.
+   The output contract asks for text holding code, quotes, a backtick, `: `
+   or ` #` as a YAML block scalar (`|`), which takes code as it is; the
+   request again repeats it (#138). YAML, not JSON: code wrapped in JSON
+   comes out worse (docs/research/portability.md).
    *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
    read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
