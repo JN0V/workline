@@ -65,7 +65,8 @@ write and what it still needs.
 A person accepts the drafts with one label, `workline:accepted`, on one
 issue or many from the list of issues: the next run takes the draft lines
 out and moves each to `ready`, with or without an agent; on an outsider's
-issue, it first writes the sections last proposed to its reporter. Without an
+issue, it first writes the sections last proposed to its reporter, unless
+they answered since: the agent reads the answer first. Without an
 agent, otherwise, only the state comments are written. On `import`,
 `workline issues import <file>` has the agent read a committed file a
 share at a time — with the lines elsewhere in the file that name its
