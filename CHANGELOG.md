@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0](https://github.com/JN0V/workline/compare/v0.12.0...v0.13.0) (2026-10-05)
+
+
+### Features
+
+* **product-owner:** autonomy levels, ignored runs as a setting ([#157](https://github.com/JN0V/workline/issues/157)) ([a488496](https://github.com/JN0V/workline/commit/a488496ae40316ffb399e20de0db6d93b1c00ced))
+
+
+### Bug Fixes
+
+* **agent:** mend tabbed code and texts cut by # in agents' answers ([#158](https://github.com/JN0V/workline/issues/158)) ([74db0e4](https://github.com/JN0V/workline/commit/74db0e48def0441468840ee2422fbaa552efd26e))
+* **engine:** merge a project's settings into a role's at every depth ([#153](https://github.com/JN0V/workline/issues/153)) ([22b8da7](https://github.com/JN0V/workline/commit/22b8da7d6c301bb1f7ac166b7729432bd99cd53c))
+
 ## [0.12.0](https://github.com/JN0V/workline/compare/v0.11.0...v0.12.0) (2026-10-05)
 
 
