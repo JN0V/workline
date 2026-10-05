@@ -9,7 +9,9 @@ person of the project ticks in its report and pauses when nobody answers, goes a
 as its autonomy level says — cautious, normal or enterprising — and
 demotes a kind of act a person undid, refines an
 issue to `ready` and talks with its reporter until it is, splits a need
-into sub-issues and renames a vague title, orders the backlog
+into sub-issues — then says on the parent, as they close, what each
+delivered and which of its Verification is proved, for a person to
+accept — and renames a vague title, orders the backlog
 — an issue that waits on another after it, never offered first — and
 moves what slipped, and keeps the one way every role opens an issue —
 nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
@@ -43,6 +45,8 @@ on the sandbox (tried.md).
 | Autonomy levels (ADR-0026): `cautious` doing what checks facts — sources, Scope and Verification — and proposing what sets direction — a duplicate, milestones, priorities, Need and Validation drafts, a split —; `enterprising` closing, moving and refining whole; each kind's mode and where it comes from in the task and the report. An act a person undid found at the next run with no agent — a priority put back, a title renamed back — and its kind demoted whatever the level | JN0V/workline-sandbox on GitHub, live (#15–#19 cautious, #20–#24 enterprising; the rename planted); `ready` taken off, a split's child closed as not planned, `ignored-runs-max`, init's question in conformance |
 | The person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
 
+| A parent and its parts (ADR-0029): one comment on the parent, with no agent, edited in place and not at all when unchanged — each part open, closed as completed with the commit, pull or merge request that closed it, or not delivered; each Verification item proved by a quote or "not proved"; all closed, a person asked to accept by closing it, the report's "To accept"; the role never closes a parent; a parent never offered first | JN0V/workline-sandbox on GitHub (#30: a commit, a part not planned, a real agent's run; #10, #27) and on GitLab (#25: a commit, merge request !4; #5, #16), live; conformance `parent-*`, `forge/gitlab-parent-closers` |
+
 | What an issue waits on (ADR-0028): `depend` and a split's child's `after` written in GitHub's dependencies, or a marked `Blocked by #n.` line in the body on GitLab Free; read back with a person's links and lines; a blocked issue ordered after its open blockers, never `next-ready`; a closed blocker unblocking; the report's "Waiting" | JN0V/workline-sandbox on GitHub (#29 after #28 by a split, #26 and #29 on #25) and on GitLab (#23, #24 on #22, a body line; #22 closed then reopened), live; cycles, a person's link kept, the level, an undo in conformance (`depend-*`, `backlog/*blocker*`, `cycle-*`, `undo-depend-demotes`) |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
@@ -54,8 +58,7 @@ checked.
 
 ## Missing, in the order to build it
 
-1. **Refining, what is left**: a parent's own readiness while its
-   children are open (ADR-0022); a real outsider's issue tried live, and
+1. **Refining, what is left**: a real outsider's issue tried live, and
    a reporter's own `agreed`; a person of the project's reply taken for
    the label, if live use asks for it (ADR-0021, amended); a GitLab role
    too low reported as such, not only by the split's fallback
@@ -83,7 +86,11 @@ checked.
    GitHub project's position), deferred (ADR-0018); milestones ranked by
    their due date, not only their title; the engine refusing a person's
    priority, tried in conformance only.
-7. **What an issue waits on, what is left** (ADR-0028): a GitLab Premium
+7. **A parent, what is left** (ADR-0029): an agent drafting which
+   Verification items look proved in other words, if live use asks; a
+   test named as proof, read from the code; a part of another repository;
+   a plugged forge's `closers` tried.
+8. **What an issue waits on, what is left** (ADR-0028): a GitLab Premium
    link tried live; a relation across projects; removing a link the role
    set once its reason is gone; the Forgejo sample's `add-blocker`; the
    developer role taking the `next-ready` issue (#117).

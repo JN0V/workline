@@ -195,6 +195,29 @@ body elsewhere (`Blocked by #12.`), read back the same way, as a person's
 own "Blocked by" line; the backlog's order puts a blocked issue after its
 open blockers, reports a cycle and never follows it.
 
+## A parent and its parts (2026-10-05)
+
+What happens to a need split into parts once they close — in the
+ecosystem's words: *sub-issues*, *child items*, *tasks*, *closing
+keywords*, *closed by*, *epic done*.
+
+| Where | What a parent shows | What closed a part |
+|---|---|---|
+| GitHub | A progress bar from its sub-issues; the REST listing carries `sub_issues_summary` (`total`, `completed`), so one listing tells which issues are parents; `GET …/issues/{n}/sub_issues` lists them, open or closed, a sub-issue of another repository included (`repository_url`). Never closed by GitHub when its sub-issues are | GraphQL's `ClosedEvent.closer`, a `PullRequest` (merged with "Closes #n") or a `Commit` (pushed with one), and `closedByPullRequestsReferences`. Asked of JN0V/workline #161 (closed by pull request #170) and JN0V/workline-sandbox #10, 2026-10-05 |
+| GitLab | Tasks under an issue, a progress count; the work items' GraphQL `workItems { widgets { … on WorkItemWidgetHierarchy { children } } }` lists each open item's children, one query a page — asked of gitlab.com JN0V/workline-sandbox (Free), 2026-10-05 | `GET /projects/:id/issues/:iid/resource_state_events`: each closing with its `source_commit` or `source_merge_request_id` (a global id, found among `closed_by`'s merge requests); no note is written for either. Asked of JN0V/workline-sandbox #26 (a commit) and #27 (merge request !4), 2026-10-05 |
+| Jira | An epic's children and a progress bar; its automation's common rule moves the parent to Done once every child is | — |
+
+Nobody checks the parent's own acceptance criteria against what its
+parts delivered: the forges count, Jira's rule closes on the count — the
+part of a need lost between children is what principle 1 leaves to a
+person.
+
+### Decision
+
+ADR-0029: the engine writes on the parent, with no agent, what each part
+became and what closed it, and which items of its Verification a part
+delivered quotes; a person accepts it by closing it; the role never does.
+
 ## Asking, and the answer (2026-10-05)
 
 How bots that ask a reporter for something carry the conversation on — in

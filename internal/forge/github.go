@@ -76,7 +76,7 @@ func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string) ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0)}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url}")
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +84,8 @@ func (g *github) issues(state string) ([]Issue, error) {
 		Issue
 		Association string `json:"association"`
 		Blocked     int    `json:"blocked"`
+		Subs        int    `json:"subs"`
+		Repo        string `json:"repo"`
 	}](out)
 	if err != nil {
 		return nil, err
@@ -98,10 +100,85 @@ func (g *github) issues(state string) ([]Issue, error) {
 				return nil, err
 			}
 		}
+		if f.Subs > 0 && state == "open" {
+			// The listing says how many sub-issues it has; only those
+			// parents are asked which (ADR-0029).
+			if f.Issue.Children, err = g.subIssues(f.Issue.ID, f.Repo); err != nil {
+				return nil, err
+			}
+		}
 		all = append(all, f.Issue)
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
 	return all, err
+}
+
+// subIssues lists a parent's sub-issues, open or closed, by number; with
+// repo (its repository_url), only those of the same repository — GitHub
+// allows a sub-issue from another, whose number means another issue here.
+func (g *github) subIssues(parent int, repo string) ([]int, error) {
+	filter := ".[].number"
+	if repo != "" {
+		filter = fmt.Sprintf(".[] | select(.repository_url == %q) | .number", repo)
+	}
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/sub_issues?per_page=100", parent), "--jq", filter)
+	if err != nil {
+		return nil, err
+	}
+	var ids []int
+	for _, f := range strings.Fields(string(out)) {
+		if n, err := strconv.Atoi(f); err == nil {
+			ids = append(ids, n)
+		}
+	}
+	return ids, nil
+}
+
+// closersQuery asks what closed an issue last: GitHub's ClosedEvent names
+// its closer, the pull request merged or the commit pushed.
+const closersQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { timelineItems(itemTypes: [CLOSED_EVENT], last: 1) { nodes { ... on ClosedEvent { closer { __typename ... on PullRequest { number title body } ... on Commit { abbreviatedOid message } } } } } } } }`
+
+// Closers reads the closer of the issue's last closing: one GraphQL call.
+// An issue closed by hand has none.
+func (g *github) Closers(id int) ([]Closer, error) {
+	out, err := g.api("graphql", "-f", "query="+closersQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
+	if err != nil {
+		return nil, err
+	}
+	var v struct {
+		Data struct {
+			Repository struct {
+				Issue struct {
+					Timeline struct {
+						Nodes []struct {
+							Closer *struct {
+								Type    string `json:"__typename"`
+								Number  int    `json:"number"`
+								Title   string `json:"title"`
+								Body    string `json:"body"`
+								Oid     string `json:"abbreviatedOid"`
+								Message string `json:"message"`
+							} `json:"closer"`
+						} `json:"nodes"`
+					} `json:"timelineItems"`
+				} `json:"issue"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := decode(out, &v); err != nil {
+		return nil, err
+	}
+	var all []Closer
+	for _, n := range v.Data.Repository.Issue.Timeline.Nodes {
+		switch c := n.Closer; {
+		case c == nil:
+		case c.Type == "PullRequest":
+			all = append(all, Closer{Kind: "pull-request", Ref: fmt.Sprintf("#%d", c.Number), Text: strings.TrimSpace(c.Title + "\n\n" + c.Body)})
+		case c.Type == "Commit":
+			all = append(all, Closer{Kind: "commit", Ref: c.Oid, Text: c.Message})
+		}
+	}
+	return all, nil
 }
 
 // insider says whether GitHub's author_association gives write access:
@@ -132,14 +209,14 @@ func (g *github) SetTitle(id int, title string) error {
 // AddSubIssue links child under parent with GitHub's sub-issues, which
 // take the child's id, not its number; one already linked is left.
 func (g *github) AddSubIssue(parent, child int) (bool, error) {
-	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/sub_issues?per_page=100", parent), "--jq", ".[].number")
+	have, err := g.subIssues(parent, "")
 	if err != nil {
 		return false, err
 	}
-	if slices.Contains(strings.Fields(string(out)), strconv.Itoa(child)) {
+	if slices.Contains(have, child) {
 		return true, nil
 	}
-	out, err = g.api(fmt.Sprintf("repos/{owner}/{repo}/issues/%d", child), "--jq", ".id")
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/issues/%d", child), "--jq", ".id")
 	if err != nil {
 		return false, err
 	}
@@ -240,12 +317,22 @@ func (g *github) Comment(t Target, body, marker string) error {
 
 func (g *github) Sticky(t Target, body, marker string, create bool) error {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID),
-		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | .id", marker))
+		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | {id, body}", marker))
 	if err != nil {
 		return err
 	}
-	if id := strings.Fields(string(out)); len(id) > 0 {
-		_, err = g.api("-X", "PATCH", "repos/{owner}/{repo}/issues/comments/"+id[0], "-f", "body="+body+"\n\n"+marker)
+	found, err := lines[struct {
+		ID   int64  `json:"id"`
+		Body string `json:"body"`
+	}](out)
+	if err != nil {
+		return err
+	}
+	if len(found) > 0 {
+		if found[0].Body == body+"\n\n"+marker {
+			return nil // as it is already: not edited again
+		}
+		_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", found[0].ID), "-f", "body="+body+"\n\n"+marker)
 		return err
 	}
 	if !create {

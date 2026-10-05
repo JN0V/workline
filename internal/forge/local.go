@@ -461,6 +461,9 @@ func (l *Local) SetMilestone(id int, title string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Milestone = title })
 }
 
+// Closers: the local forge does not link what closed an issue.
+func (l *Local) Closers(id int) ([]Closer, error) { return nil, nil }
+
 // Ticks: the local forge keeps no history; a box ticked in the clone is a
 // person of the project's, as its comments are.
 func (l *Local) Ticks(id int) ([]Tick, error) {

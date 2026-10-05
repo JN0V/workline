@@ -1,0 +1,18 @@
+case: product-owner/parent-unlinked-part-not-counted
+about: "A part a person unlinked — gone from the forge's relation and from the body's list, though the state still records the split — is no longer one: no comment on parts, nothing to accept, one rule for the comment, the report and the order (ADR-0029)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Backlog — product owner", body: "What the product owner did.", labels: [], comments: []}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], closed: true, reason: completed}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: parent-to-accept}]
+  forge:
+    issues:
+      - {id: 9, comments: 1, comment-lacks: "workline:sticky=product-owner/parts"}
+      - {id: 10, body-lacks: "To accept"}

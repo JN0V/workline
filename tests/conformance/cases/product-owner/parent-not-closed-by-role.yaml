@@ -1,0 +1,15 @@
+case: product-owner/parent-not-closed-by-role
+about: "The role never closes a parent, even with every part closed and the code quoted: its closing is dropped, nothing announced, no label set — accepting the need is a person's (ADR-0029)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 7, title: "Export fixes", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nsplit: [11]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #7.", labels: [], parent: 7, closed: true, reason: completed}
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete}
+expect:
+  findings: [{rule: parent-accepted-by-a-person, where: "#7"}]
+  forge:
+    issues:
+      - {id: 7, closed: false, labels: [], comment-lacks: "looks obsolete"}

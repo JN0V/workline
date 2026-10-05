@@ -37,9 +37,12 @@ type gitlabState struct {
 }
 
 var (
-	issuePath = regexp.MustCompile(`^/issues/(\d+)$`)
-	notesPath = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
-	linksPath = regexp.MustCompile(`^/issues/(\d+)/links$`)
+	issuePath   = regexp.MustCompile(`^/issues/(\d+)$`)
+	notesPath   = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
+	linksPath   = regexp.MustCompile(`^/issues/(\d+)/links$`)
+	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
+	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
+	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
 )
 
 const tokenUser = "workline-bot"
@@ -176,6 +179,52 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			it.Comments[i] = forge.FakeComment{Body: form.Get("body"), Author: tokenUser}
 			return map[string]any{"id": n}, 200
 		}
+	case closedBy.MatchString(p):
+		// The merge requests that closed it, merged; refs "!7", id 5000+7.
+		id, _ := strconv.Atoi(closedBy.FindStringSubmatch(p)[1])
+		it := issue(id)
+		if it == nil {
+			return notFound, 404
+		}
+		out := []map[string]any{}
+		for _, c := range it.ClosedBy {
+			if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
+				title, desc, _ := strings.Cut(c.Text, "\n\n")
+				out = append(out, map[string]any{"id": 5000 + n, "iid": n, "title": title, "description": desc, "state": "merged"})
+			}
+		}
+		return out, 200
+	case stateEvents.MatchString(p):
+		// Its closings, the last naming what closed it, as GitLab's state
+		// events do; a closed issue with no closer was closed by hand.
+		id, _ := strconv.Atoi(stateEvents.FindStringSubmatch(p)[1])
+		it := issue(id)
+		if it == nil {
+			return notFound, 404
+		}
+		out := []map[string]any{}
+		if it.Closed {
+			e := map[string]any{"state": "closed", "source_commit": nil, "source_merge_request_id": nil}
+			for _, c := range it.ClosedBy {
+				if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
+					e["source_merge_request_id"] = 5000 + n
+				} else if c.Kind == "commit" {
+					e["source_commit"] = c.Ref
+				}
+			}
+			out = append(out, e)
+		}
+		return out, 200
+	case commit.MatchString(p):
+		sha := commit.FindStringSubmatch(p)[1]
+		for _, it := range s.Issues {
+			for _, c := range it.ClosedBy {
+				if c.Kind == "commit" && c.Ref == sha {
+					return map[string]any{"id": sha, "message": c.Text}, 200
+				}
+			}
+		}
+		return notFound, 404
 	case linksPath.MatchString(p) && method == "GET":
 		return []any{}, 200
 	case linksPath.MatchString(p) && method == "POST":

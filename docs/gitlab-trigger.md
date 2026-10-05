@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: d477467
+checked: a8d49b8
 verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts

@@ -162,7 +162,8 @@ a `PATH` without a tool, or with a fake one first.
   links sub-issues as GitHub does, without, it has none; with
   `dependencies: true`, it keeps what an issue waits on (`blocked-by`) as
   GitHub does, without, it refuses the relation. It can be told to
-  fail on the N-th write, to test recovery after a partial apply. A
+  fail on the N-th write, to test recovery after a partial apply. An
+  issue's `closed-by` lists what closed it, `{kind, ref, text}`. A
   comment is its text, or `{body, author, insider, bot}`.
 - **Simulated GitLab.** `forge: gitlab` runs the engine's own GitLab forge
   against a mock of GitLab's REST API (tests/conformance/gitlab_test.go)

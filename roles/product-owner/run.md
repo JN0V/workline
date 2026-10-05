@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: d477467
+checked: 527a1a3
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -73,7 +73,17 @@ whatever its priority; a cycle is reported, never followed. Every run,
 with or without an agent, says the first ready issue waiting on nothing
 (`next-ready`) — the one offered to whoever builds next —, each issue
 waiting (`waiting`) and each cycle (`dependency-cycle`); the report too,
-under "Waiting".
+under "Waiting". A split need is never the one offered: its parts are.
+
+A split need — a parent — gets one comment, with or without an agent,
+edited in place as its parts move (ADR-0029): each part open, closed as
+completed with the pull request or commit that closed it, or closed
+without delivering (not planned, a duplicate, gone); each item of its
+Verification proved where a part delivered quotes it, in its own
+Verification or in what closed it, or "not proved". Once all its parts
+are closed, the comment, a finding (`parent-to-accept`) and the report's
+"To accept" ask a person to accept it by closing it; the role never
+does, and an agent's closing of a parent is dropped.
 
 An issue in a milestone whose release is tagged slipped: the engine moves
 it to the nearest open milestone not released, with or without an agent,

@@ -64,8 +64,11 @@ each proved by its own Verification, that a change could finish one at a
 time: propose `split` with 2 to 6 children, each a short title and its
 four sections, as `refine` writes them (`need` and `validation` drafts
 from the issue's words, `scope` and `sources` and `verification` from the
-code). The issue keeps its need and lists its children; one the task says
-is split already is not split again. Split only what is truly several
+code). When the issue has a Verification, each child's `verification`
+quotes, word for word, the items of it that child proves: the engine
+checks the parent against them as the children close. The issue keeps
+its need and lists its children; one the task says is split already is
+not split again, nor closed — a person accepts it. Split only what is truly several
 needs, not a need with steps. A child that cannot start before another
 of the split is done says so with `after`: the places of the children it
 waits on, from 1.

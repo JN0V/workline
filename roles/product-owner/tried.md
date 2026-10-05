@@ -548,3 +548,44 @@ out in all**; the runs with no agent, none.
   set taken off by a person (`undo-depend-demotes`); `cautious`
   proposing `depend` (`depend-mode-per-level`); a plugged forge's
   `add-blocker`.
+
+## 2026-10-05 — a parent's parts as they close, live on GitHub and GitLab
+
+The engine of feat/po-parent-goal, built in its worktree; fresh clones of
+JN0V/workline-sandbox, `issues-per-run: 3`, level normal. On each forge a
+parent planted, "Session limits: an idle timeout and a cap on sessions
+per user", its Verification two items, and two parts linked natively —
+GitHub sub-issues, GitLab tasks (converted and parented through
+GraphQL) —, the first part's Verification quoting the parent's first
+item word for word. **One agent call, 16.0k tokens in and 1.4k out**
+(GitHub, Sonnet); every other run with no agent.
+
+- **GitHub** (#30, parts #31, #32; report #5). With no agent: the comment
+  written on #30 ("0 of 2 parts closed", both items "Not proved yet"),
+  and on the older parents #10 and #27 (#28 shown closed as a duplicate,
+  its part not delivered). #31 closed by a commit pushed with "Closes
+  #31": the next run edited the same comment — "closed as completed |
+  commit efee34d", the first item proved, "quoted in #31's Verification".
+  #32 closed as not planned by hand; the run with the agent: "All 2 parts
+  are closed: for a person to accept", "Before accepting: the part of #32
+  not delivered; 1 item(s) of its Verification not proved", the finding
+  `parent-to-accept`, and the report's "To accept" listing #30. The
+  agent's task said "Split into: #31 (closed), #32 (closed) — … never
+  closed by the role"; it proposed `sources` on #30 and nothing else
+  there; #30 left open, no label. A run more with nothing changed left
+  the comment unedited (its `updated_at` the same). #30 then closed by
+  hand, as a person accepting it: the next run's report has no "To
+  accept" left.
+- **GitLab** (#25, tasks #26, #27; report #10). The tasks read through the
+  work items' GraphQL; #5's and #16's parts reported too. #26 closed by a
+  commit pushed with "Closes #26": shown **closed by hand** — GitLab
+  writes no "closed via commit" note, which the first build read. **Fixed**:
+  what closed it is read from `resource_state_events` (`source_commit`,
+  `source_merge_request_id`); after it, "commit 557866f5". #27 closed by
+  merging merge request !4, its description quoting the second item:
+  "merge request !4", the item "quoted by merge request !4, which closed
+  #27"; all closed, the ask written, the same note edited in place, the
+  report's "To accept" listing #25.
+- Not tried live: a part gone from the forge; a part of another
+  repository (GitHub); the local forge and a plugged forge's `closers`
+  (conformance only).

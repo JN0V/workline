@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 472daca
+checked: 527a1a3
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -12,8 +12,8 @@ its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
 it. This page is the contract; the acts built are closing, naming an
 issue's sources, putting it in a milestone, ordering it, opening one from
-a file, refining one to ready, splitting one, renaming it and naming
-what it waits on.
+a file, refining one to ready, splitting one — and reporting on a
+parent as its parts close —, renaming it and naming what it waits on.
 
 ## The issue's state
 
@@ -332,6 +332,46 @@ An issue too big to be one need is broken into its parts (ADR-0022):
   nothing: it is not counted in the moved share; the children, never read
   yet, are read and ordered at the next run.
 
+### A parent and its parts
+
+A parent is accepted by a person, from what its parts delivered
+(ADR-0029). Its parts are the forge's own relation (`Issue.Children`:
+GitHub's sub-issues of the same repository, listed for the parents its
+listing counts; GitLab's tasks, one GraphQL query), the task list under
+`## Sub-issues` in its body (`- [ ] #13`, a person's included) — one rule
+for the comment, the report and the order (`backlog.Parts`); a part a
+person unlinked is no longer one. An issue whose state lists a split
+(`backlog.SplitInto`) is still never closed by the role.
+
+- **Ready** means what it means on any issue; a parent is refined as any.
+  It is never the first ready issue offered (`next-ready`): its parts are
+  what is built.
+- **Its comment**, at every run, with or without an agent, paused or not,
+  on every open parent whose state reads: one comment marked
+  `<!-- workline:sticky=<role>/parts -->`, edited in place, and not edited
+  at all when its text is the same (`Sticky` compares first). A table of
+  its parts — open (ready or not), closed as completed with what closed it
+  (`Closers`: GitHub's `ClosedEvent.closer`, a pull request or a commit;
+  GitLab's state events, the last closing's `source_commit` or merge
+  request, found among `closed_by`'s; none: "by hand"; a forge that
+  refuses to say: "not read", and a finding `closers-unread` (warn) —
+  one that does not answer stops the run), closed as not planned or as a duplicate, or
+  gone from the forge: those three not delivered. GitLab and the local
+  forge keep no reason: a closed part there is taken as done. Then each
+  item of its Verification — each list item, or the section whole — proved
+  when a part delivered quotes it, in its own Verification or in the text
+  of what closed it, case, spaces, `` ` ``, `*`, `_` and the final
+  punctuation aside, said with where; "not proved" otherwise ("not proved yet" while a part is open). A parent
+  without a Verification is said to have none.
+- **All its parts closed**: the comment asks a person to accept the need
+  by closing the parent, or to reopen a part or open one for what is
+  missing, naming first the parts not delivered and the items not proved;
+  a finding `parent-to-accept` (info) says it, and the report lists it
+  under "To accept". The role never closes a parent nor labels it: a
+  `close` on one, a duplicate or an announcement as obsolete, is dropped
+  (`parent-accepted-by-a-person`) unless a person ticked it. The agent's
+  task marks a parent's parts, open or closed.
+
 ## Renaming
 
 ```yaml
@@ -391,8 +431,9 @@ left hold a cycle: it is reported, the cycle's first issue by `Less` placed — 
 the order ends — never followed. `ready` is allowed on a blocked issue,
 its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
-`workline:ready` that waits on no open issue (`backlog.NextReady`) — to
-whoever builds next, person or developer role (#117).
+`workline:ready` that waits on no open issue and has no parts
+(`backlog.NextReady`) — to whoever builds next, person or developer role
+(#117).
 
 Every run, with or without an agent, says it in its findings:
 `next-ready` (info) the issue offered first, `waiting` (info) each issue
@@ -545,7 +586,9 @@ quote and how to undo it — a rename with the title it had, a split with
 its children's titles, to close; an announcement with the day it may close
 and how to keep it open; an issue kept open, and why. Under "Waiting", the
 first ready issue offered, each issue waiting on an open one, and each
-cycle. Under "Before this run", each issue the run
+cycle. Under "To accept", each open parent whose parts are all closed,
+recorded (`to-accept`) so the report is rewritten when that list
+changes ("A parent and its parts"). Under "Before this run", each issue the run
 moved is listed with its priority and milestone as they were, to put the
 order back. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to

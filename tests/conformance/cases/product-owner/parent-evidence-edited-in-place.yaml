@@ -1,0 +1,19 @@
+case: product-owner/parent-evidence-edited-in-place
+about: A parent's comment on its parts is one comment, edited in place when a part closes, reopens or is added — never a second one (ADR-0029).
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->", "**The parts of this need**, as they close.\n\n**0 of 2 parts closed.**\n\n<!-- workline:sticky=product-owner/parts -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [], parent: 9, comments: []}
+      - {id: 13, title: "Say the rows lost", body: "Part of #9, added by a person.", labels: [], parent: 9, comments: []}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, comments: 2, comment-contains: "**1 of 3 parts closed.**", comment-lacks: "0 of 2"}
+      - {id: 9, comment-contains: "| #11 Keep the last row in the CSV export | closed as completed | by hand: no pull request nor commit linked |"}
+      - {id: 9, comment-contains: "| #13 Say the rows lost | open | — |"}

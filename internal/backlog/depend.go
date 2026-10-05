@@ -185,10 +185,11 @@ func CycleText(c []int) string {
 
 // NextReady is the first issue of an ordered list bearing workline:ready
 // that waits on no open issue: the one offered to whoever builds next
-// (ADR-0028); nil when there is none.
+// (ADR-0028); nil when there is none. A parent is never offered: its
+// parts are what is built, and a person accepts it (ADR-0029).
 func NextReady(ordered []forge.Issue, open map[int]bool) *forge.Issue {
 	for i, is := range ordered {
-		if slices.Contains(is.Labels, LabelReady) && len(Waiting(is, open)) == 0 {
+		if slices.Contains(is.Labels, LabelReady) && len(Waiting(is, open)) == 0 && len(Parts(is)) == 0 {
 			return &ordered[i]
 		}
 	}

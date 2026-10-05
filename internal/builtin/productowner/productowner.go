@@ -162,6 +162,7 @@ func Pre(runDir, repo string) int {
 	next := backlog.NextMilestone(repo, milestones) // where an issue that slipped goes
 	capped := backlog.CappedByRole(b, role, open)   // an act proposed only for the cap
 	now := time.Now()
+	var all []forge.Issue                                    // every issue, open and closed, read once when a parent needs its parts
 	judgedPass := os.Getenv("WORKLINE_JUDGED") == "answered" // the engine asked pre's questions to a judge
 	asked := false                                           // a question for the judge written: the judge first
 	for _, is := range open {
@@ -232,6 +233,31 @@ func Pre(runDir, repo string) int {
 			findings = append(findings, verdict.Finding{Rule: "state-broken", Where: fmt.Sprintf("#%d", is.ID),
 				Message: "its state comment does not read (" + err.Error() + "): the issue is not judged, nothing is written on it"})
 			continue
+		}
+		// A parent (ADR-0029): what its parts delivered, kept in one
+		// comment, with no agent; a person accepts it once all are closed.
+		if parts := backlog.Parts(is); len(parts) > 0 {
+			ev, err := evidence(b, is, parts, role, &all)
+			if errors.Is(err, forge.ErrUnreachable) {
+				fmt.Fprintln(os.Stderr, err)
+				return exitExternal
+			}
+			if err != nil {
+				return fail(err)
+			}
+			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
+				"issue": is.ID, "sticky": backlog.EvidenceKey, "body": ev.Body}})
+			for _, p := range ev.Unread {
+				findings = append(findings, verdict.Finding{Rule: "closers-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+					Message: fmt.Sprintf("the forge did not say what closed #%d (%v): said on the parent as not read, never taken for closed by hand", p.ID, p.Unread)})
+			}
+			if ev.AllClosed {
+				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it — the role never does", ev.Parts)
+				if len(ev.Undone) > 0 || len(ev.Unproved) > 0 {
+					msg += fmt.Sprintf("; not delivered: %d part(s), not proved: %d Verification item(s)", len(ev.Undone), len(ev.Unproved))
+				}
+				findings = append(findings, verdict.Finding{Rule: "parent-to-accept", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: msg})
+			}
 		}
 		// An issue announced obsolete (ADR-0024): kept open when someone
 		// wrote or took the label off, closed once due if a second judge
@@ -403,6 +429,40 @@ func Pre(runDir, repo string) int {
 	return writeFindings(runDir, findings)
 }
 
+// evidence reads a parent's parts — every issue listed once a run, into
+// all — and what closed each part delivered, and writes its report
+// (ADR-0029).
+func evidence(b forge.Backlog, parent forge.Issue, ids []int, role string, all *[]forge.Issue) (backlog.Evidence, error) {
+	if *all == nil {
+		list, err := b.AllIssues()
+		if err != nil {
+			return backlog.Evidence{}, err
+		}
+		*all = append([]forge.Issue{}, list...)
+	}
+	var parts []backlog.Part
+	for _, id := range ids {
+		p := backlog.Part{ID: id, Gone: true}
+		for _, is := range *all {
+			if is.ID == id {
+				p.Issue, p.Gone = is, false
+			}
+		}
+		if p.Delivered() {
+			// What closed it is evidence beside the closing: a forge that
+			// refuses to say fails no run, and the part says it was not
+			// read — never "by hand"; one that does not answer stops it.
+			closers, err := b.Closers(id)
+			if errors.Is(err, forge.ErrUnreachable) {
+				return backlog.Evidence{}, err
+			}
+			p.Closers, p.Unread = closers, err
+		}
+		parts = append(parts, p)
+	}
+	return backlog.ReadEvidence(parent, parts, role), nil
+}
+
 // issueRefs says issue numbers as references: "#12, #13".
 func issueRefs(ids []int) string {
 	var out []string
@@ -490,13 +550,18 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	if st.Title != "" && st.Title != is.Title {
 		b.WriteString("Title: a person's, set after the role's (kept)\n")
 	}
-	if len(st.Split) > 0 {
-		// Split already (ADR-0022): its children are issues of their own.
+	if parts := backlog.SplitInto(is, st); len(parts) > 0 {
+		// Split already (ADR-0022): its children are issues of their own;
+		// the parent is a person's to accept as they close (ADR-0029).
 		var ids []string
-		for _, id := range st.Split {
-			ids = append(ids, fmt.Sprintf("#%d", id))
+		for _, id := range parts {
+			state := "closed"
+			if isOpen[id] {
+				state = "open"
+			}
+			ids = append(ids, fmt.Sprintf("#%d (%s)", id, state))
 		}
-		fmt.Fprintf(b, "Split into: %s (not split again)\n", strings.Join(ids, ", "))
+		fmt.Fprintf(b, "Split into: %s — not split again, never closed by the role: a person accepts it once its parts are closed\n", strings.Join(ids, ", "))
 	}
 	if a, _ := backlog.LastAnnouncement(notes, role); a != nil && !slices.Contains(st.Kept, a.Key()) {
 		fmt.Fprintf(b, "Announced obsolete on %s (%s): closed by the engine once its delay passed, if nobody wrote and a second judge agrees — do not propose closing it again\n", a.Announced, a.Quote.Path)

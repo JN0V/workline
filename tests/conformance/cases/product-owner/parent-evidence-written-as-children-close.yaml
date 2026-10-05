@@ -1,0 +1,20 @@
+case: product-owner/parent-evidence-written-as-children-close
+about: A parent whose parts are closing gets one comment, with no agent, listing each part, how it closed and the pull request that closed it, and how many are closed; nothing asks a person to accept while a part is open (ADR-0029).
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#20", text: "fix(export): write the last row"}]}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [workline:ready], parent: 9, comments: []}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: parent-to-accept}]
+  forge:
+    issues:
+      - {id: 9, closed: false, comments: 2, comment-contains: "| #11 Keep the last row in the CSV export | closed as completed | pull request #20 |"}
+      - {id: 9, comment-contains: "| #12 Quote commas in exported cells | open, ready | — |"}
+      - {id: 9, comment-contains: "**1 of 2 parts closed.**"}
+      - {id: 9, comment-contains: "<!-- workline:sticky=product-owner/parts -->", comment-lacks: "for a person to accept"}

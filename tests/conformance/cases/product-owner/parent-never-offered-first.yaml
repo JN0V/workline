@@ -1,0 +1,14 @@
+case: product-owner/parent-never-offered-first
+about: "A parent may bear workline:ready — its need understood, as any issue — but is never the first ready issue offered to whoever builds next: its parts are what is built (ADR-0029)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [workline:ready], parent: 9, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: next-ready, where: "#11"}]
+  no-findings: [{rule: next-ready, where: "#9"}]
