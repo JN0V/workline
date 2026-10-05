@@ -247,9 +247,9 @@ func Pre(runDir, repo string) int {
 			}
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": backlog.EvidenceKey, "body": ev.Body}})
-			if len(ev.Unread) > 0 {
+			for _, p := range ev.Unread {
 				findings = append(findings, verdict.Finding{Rule: "closers-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
-					Message: fmt.Sprintf("the forge did not say what closed %s: said on the parent as not read, never taken for closed by hand", issueRefs(ev.Unread))})
+					Message: fmt.Sprintf("the forge did not say what closed #%d (%v): said on the parent as not read, never taken for closed by hand", p.ID, p.Unread)})
 			}
 			if ev.AllClosed {
 				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it — the role never does", ev.Parts)

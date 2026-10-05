@@ -35,11 +35,14 @@ func Parts(is forge.Issue) []int {
 // SplitInto are its parts and the children the role's split recorded in
 // its state (st may be nil): never closed by the role, nor split again.
 func SplitInto(is forge.Issue, st *State) []int {
-	out := slices.DeleteFunc(slices.Clone(is.Children), func(n int) bool { return n == is.ID })
+	var out []int
 	add := func(n int) {
 		if n != is.ID && !slices.Contains(out, n) {
 			out = append(out, n)
 		}
+	}
+	for _, n := range is.Children {
+		add(n)
 	}
 	for _, m := range taskRef.FindAllStringSubmatch(work.Sections(is.Body)["Sub-issues"], -1) {
 		if n, err := strconv.Atoi(m[1]); err == nil {
@@ -115,7 +118,7 @@ type Evidence struct {
 	Closed    int      // the parts closed, or gone from the forge
 	Undone    []int    // the parts closed without delivering: not planned, a duplicate, gone
 	Unproved  []string // the Verification items no part delivered quotes
-	Unread    []int    // the parts whose closer the forge refused to say
+	Unread    []Part   // the parts whose closer the forge refused to say, with why
 	AllClosed bool
 }
 
@@ -154,8 +157,8 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 		if p.Delivered() {
 			by = "by hand: no pull request nor commit linked"
 			if p.Unread != nil {
-				by = "not read: " + cell(p.Unread.Error())
-				ev.Unread = append(ev.Unread, p.ID)
+				by = "not read: the forge did not say"
+				ev.Unread = append(ev.Unread, p)
 			}
 			if len(p.Closers) > 0 {
 				var refs []string

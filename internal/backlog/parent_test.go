@@ -10,7 +10,7 @@ import (
 )
 
 func TestParts(t *testing.T) {
-	is := forge.Issue{ID: 9, Children: []int{12}, Body: "Text.\n\n- [ ] #30 not a part\n\n## Sub-issues\n\n- [x] #11\n- [ ] #12\n* [ ] #9"}
+	is := forge.Issue{ID: 9, Children: []int{12, 12, 9}, Body: "Text.\n\n- [ ] #30 not a part\n\n## Sub-issues\n\n- [x] #11\n- [ ] #12\n* [ ] #9"}
 	if got := Parts(is); !slices.Equal(got, []int{11, 12}) {
 		t.Errorf("Parts = %v, want [11 12]: the relation and the Sub-issues list; itself and other lists left out", got)
 	}
@@ -57,10 +57,10 @@ func TestProofIsAQuote(t *testing.T) {
 func TestCloserNotReadIsSaid(t *testing.T) {
 	part := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Title: "Keep the last row"}, Unread: errors.New("the forge refused closers: unknown operation")}
 	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner")
-	if !strings.Contains(ev.Body, "| #11 Keep the last row | closed as completed | not read: the forge refused closers: unknown operation |") || strings.Contains(ev.Body, "by hand") {
+	if !strings.Contains(ev.Body, "| #11 Keep the last row | closed as completed | not read: the forge did not say |") || strings.Contains(ev.Body, "by hand") {
 		t.Errorf("a closer the forge refused to say is said not read, never by hand:\n%s", ev.Body)
 	}
-	if !slices.Equal(ev.Unread, []int{11}) {
-		t.Errorf("Unread = %v, want [11]", ev.Unread)
+	if len(ev.Unread) != 1 || ev.Unread[0].ID != 11 {
+		t.Errorf("Unread = %v, want #11", ev.Unread)
 	}
 }
