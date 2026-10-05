@@ -69,6 +69,9 @@ func TestCloserNotReadIsSaid(t *testing.T) {
 	if strings.Contains(ev.Body, "unknown operation") {
 		t.Errorf("the forge's error stays out of the comment, in the finding:\n%s", ev.Body)
 	}
+	if strings.Contains(ev.Body, "unknown operation") {
+		t.Errorf("the forge's error stays out of the comment, in the finding:\n%s", ev.Body)
+	}
 	if len(ev.Unread) != 1 || ev.Unread[0].ID != 11 {
 		t.Errorf("Unread = %v, want #11", ev.Unread)
 	}
