@@ -385,51 +385,36 @@ func (g *gitlab) children() (map[int][]int, error) {
 	}
 }
 
-// closedViaCommit is GitLab's system note for an issue closed by a commit
-// pushed with a closing pattern: "closed via commit 1a2b3c4d".
-var closedViaCommit = regexp.MustCompile(`^closed via commit ([0-9a-f]{7,40})`)
-
-// Closers reads the merge requests that close the issue (closed_by) and
-// the commits its system notes say closed it, each with its text.
+// Closers reads what closed the issue last, from its state events: a
+// commit pushed with a closing pattern (`source_commit`, its message read)
+// or a merge request merged (`source_merge_request_id`, found among the
+// merge requests closed_by lists, with its title and description). An
+// issue closed by hand has none. GitLab writes no note for either: tried
+// on gitlab.com, 2026-10-05.
 func (g *gitlab) Closers(id int) ([]Closer, error) {
 	t := Target{Kind: "issue", ID: id}
-	out, err := g.api(path(t) + "/closed_by")
+	out, err := g.api("--paginate", path(t)+"/resource_state_events?per_page=100")
 	if err != nil {
 		return nil, err
 	}
-	var mrs []struct {
-		IID         int    `json:"iid"`
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		State       string `json:"state"`
-	}
-	if err := decode(out, &mrs); err != nil {
-		return nil, err
-	}
-	var all []Closer
-	for _, m := range mrs {
-		if m.State == "merged" {
-			all = append(all, Closer{Kind: "pull-request", Ref: fmt.Sprintf("!%d", m.IID), Text: strings.TrimSpace(m.Title + "\n\n" + m.Description)})
-		}
-	}
-	out, err = g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
-	if err != nil {
-		return nil, err
-	}
-	notes, err := pages[struct {
-		Body   string `json:"body"`
-		System bool   `json:"system"`
+	events, err := pages[struct {
+		State  string `json:"state"`
+		Commit string `json:"source_commit"`
+		MR     int    `json:"source_merge_request_id"`
 	}](out)
 	if err != nil {
 		return nil, err
 	}
-	for _, n := range notes {
-		m := closedViaCommit.FindStringSubmatch(strings.TrimSpace(n.Body))
-		if !n.System || m == nil {
-			continue
+	commit, mr := "", 0 // the last closing's
+	for _, e := range events {
+		if e.State == "closed" {
+			commit, mr = e.Commit, e.MR
 		}
-		c := Closer{Kind: "commit", Ref: m[1][:min(8, len(m[1]))]}
-		if out, err := g.api("projects/:id/repository/commits/" + m[1]); err == nil {
+	}
+	switch {
+	case commit != "":
+		c := Closer{Kind: "commit", Ref: commit[:min(8, len(commit))]}
+		if out, err := g.api("projects/:id/repository/commits/" + commit); err == nil {
 			var v struct {
 				Message string `json:"message"`
 			}
@@ -437,9 +422,28 @@ func (g *gitlab) Closers(id int) ([]Closer, error) {
 				c.Text = v.Message
 			}
 		}
-		all = append(all, c)
+		return []Closer{c}, nil
+	case mr != 0:
+		out, err := g.api(path(t) + "/closed_by")
+		if err != nil {
+			return nil, err
+		}
+		var mrs []struct {
+			ID          int    `json:"id"`
+			IID         int    `json:"iid"`
+			Title       string `json:"title"`
+			Description string `json:"description"`
+		}
+		if err := decode(out, &mrs); err != nil {
+			return nil, err
+		}
+		for _, m := range mrs {
+			if m.ID == mr {
+				return []Closer{{Kind: "pull-request", Ref: fmt.Sprintf("!%d", m.IID), Text: strings.TrimSpace(m.Title + "\n\n" + m.Description)}}, nil
+			}
+		}
 	}
-	return all, nil
+	return nil, nil
 }
 
 // blockedBy reads what each open issue waits on in GitLab's is_blocked_by

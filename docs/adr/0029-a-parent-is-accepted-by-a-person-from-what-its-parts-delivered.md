@@ -41,7 +41,7 @@ edited in place, never written again when nothing changed:
   and the parts its state records (`split`).
 - **Each part**: open (ready or not), closed as completed — and what
   closed it, from the forge (GitHub's `ClosedEvent.closer`, GitLab's
-  `closed_by` merge requests and "closed via commit" notes) —, or closed
+  state events: the commit or merge request of its last closing) —, or closed
   without delivering: not planned, a duplicate, gone from the forge.
 - **Each item of its Verification** (each list item, or the section
   whole): proved when a part delivered quotes it, in its own Verification

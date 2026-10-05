@@ -1,5 +1,5 @@
 case: forge/gitlab-parent-closers
-about: "On GitLab, a parent's report names what closed each part: a merge request merged (closed_by) and a commit (GitLab's \"closed via commit\" note), and a Verification item quoted in the commit's message is proved (ADR-0029)."
+about: "On GitLab, a parent's report names what closed each part: a merge request merged and a commit, read from its state events, and a Verification item quoted in the commit's message is proved (ADR-0029)."
 given:
   repo: backlog
   forge:

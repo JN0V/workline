@@ -37,11 +37,12 @@ type gitlabState struct {
 }
 
 var (
-	issuePath = regexp.MustCompile(`^/issues/(\d+)$`)
-	notesPath = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
-	linksPath = regexp.MustCompile(`^/issues/(\d+)/links$`)
-	closedBy  = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
-	commit    = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
+	issuePath   = regexp.MustCompile(`^/issues/(\d+)$`)
+	notesPath   = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
+	linksPath   = regexp.MustCompile(`^/issues/(\d+)/links$`)
+	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
+	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
+	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
 )
 
 const tokenUser = "workline-bot"
@@ -159,11 +160,6 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			for i, c := range it.Comments {
 				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
 			}
-			for i, c := range it.ClosedBy { // GitLab's own note for a commit that closed it
-				if c.Kind == "commit" {
-					out = append(out, map[string]any{"id": id*1000 + 900 + i, "body": "closed via commit " + c.Ref, "system": true, "author": user("owner")})
-				}
-			}
 			if q.Get("sort") != "asc" { // GitLab's default: the newest first
 				slices.Reverse(out)
 			}
@@ -184,7 +180,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			return map[string]any{"id": n}, 200
 		}
 	case closedBy.MatchString(p):
-		// The merge requests that closed it, merged; refs "!7".
+		// The merge requests that closed it, merged; refs "!7", id 5000+7.
 		id, _ := strconv.Atoi(closedBy.FindStringSubmatch(p)[1])
 		it := issue(id)
 		if it == nil {
@@ -194,8 +190,29 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		for _, c := range it.ClosedBy {
 			if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
 				title, desc, _ := strings.Cut(c.Text, "\n\n")
-				out = append(out, map[string]any{"iid": n, "title": title, "description": desc, "state": "merged"})
+				out = append(out, map[string]any{"id": 5000 + n, "iid": n, "title": title, "description": desc, "state": "merged"})
 			}
+		}
+		return out, 200
+	case stateEvents.MatchString(p):
+		// Its closings, the last naming what closed it, as GitLab's state
+		// events do; a closed issue with no closer was closed by hand.
+		id, _ := strconv.Atoi(stateEvents.FindStringSubmatch(p)[1])
+		it := issue(id)
+		if it == nil {
+			return notFound, 404
+		}
+		out := []map[string]any{}
+		if it.Closed {
+			e := map[string]any{"state": "closed", "source_commit": nil, "source_merge_request_id": nil}
+			for _, c := range it.ClosedBy {
+				if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
+					e["source_merge_request_id"] = 5000 + n
+				} else if c.Kind == "commit" {
+					e["source_commit"] = c.Ref
+				}
+			}
+			out = append(out, e)
 		}
 		return out, 200
 	case commit.MatchString(p):
