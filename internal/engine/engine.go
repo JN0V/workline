@@ -2768,7 +2768,15 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if err != nil {
 		return nil, err
 	}
-	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged)
+	// The issues pre found waiting on a person, for the report's opening
+	// (ADR-0031).
+	var waits []backlog.Wait
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "waits.yaml")); err == nil {
+		if err := yaml.Unmarshal(data, &waits); err != nil {
+			return nil, fmt.Errorf("in/waits.yaml: %v", err)
+		}
+	}
+	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, waits)
 	if err != nil {
 		return nil, err
 	}

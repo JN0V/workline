@@ -165,6 +165,8 @@ func Pre(runDir, repo string) int {
 	var all []forge.Issue                                    // every issue, open and closed, read once when a parent needs its parts
 	judgedPass := os.Getenv("WORKLINE_JUDGED") == "answered" // the engine asked pre's questions to a judge
 	asked := false                                           // a question for the judge written: the judge first
+	notesOf := map[int][]forge.Note{}                        // each issue's comments, for what waits on a person
+	var waits []backlog.Wait                                 // the issues waiting on a person, for the report (ADR-0031)
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
@@ -178,6 +180,7 @@ func Pre(runDir, repo string) int {
 		if err != nil {
 			return fail(err)
 		}
+		notesOf[is.ID] = notes
 		st, found, err := backlog.ReadState(comments, role)
 		// Only the text as last proposed, not answered since — an answer
 		// may change it, the agent reads it first — and only while the body
@@ -262,7 +265,11 @@ func Pre(runDir, repo string) int {
 		// An issue announced obsolete (ADR-0024): kept open when someone
 		// wrote or took the label off, closed once due if a second judge
 		// agrees — with no agent of the role's.
-		switch o := backlog.ReadObsolete(repo, is, notes, st, role, s.obsolete(), now); {
+		o := backlog.ReadObsolete(repo, is, notes, st, role, s.obsolete(), now)
+		if w := backlog.ObsoleteWait(is.ID, o); w != nil && s.obsolete().Mode != backlog.Off {
+			waits = append(waits, *w) // due, a judge's: said stuck until closed or kept
+		}
+		switch {
 		case o.Announcement == nil:
 		case o.Keep != "":
 			fallback = append(fallback, intent.Intention{Kind: "keep", Value: map[string]any{
@@ -348,6 +355,55 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", bl.Next.ID),
 			Message: "the first ready issue in the backlog's order, waiting on no open issue: the next to build"})
 	}
+	// What waits on a person (ADR-0031), with no agent: a reporter's
+	// answer, from the day of the last round; a ready issue nothing
+	// started, from the day the forge says it got the label — those in
+	// Next aside, listed there. A day the forge does not say is said.
+	first := map[int]bool{}
+	for _, is := range backlog.Next(open, report, cfg.NextMax) {
+		first[is.ID] = true
+	}
+	unknown := func(id int, what string) {
+		findings = append(findings, verdict.Finding{Rule: "stuck-unknown", Level: "info", Where: fmt.Sprintf("#%d", id),
+			Message: "the forge does not say " + what + ": not said stuck, whatever it waits"})
+	}
+	for _, is := range open {
+		if is.ID == report {
+			continue
+		}
+		if notes, ok := notesOf[is.ID]; ok {
+			switch w, known := backlog.AskedWait(is.ID, notes, role); {
+			case !known:
+				unknown(is.ID, "when its reporter was last written to")
+			case w != nil:
+				waits = append(waits, *w)
+			}
+		}
+		if first[is.ID] || !backlog.Offered(is, isOpen) {
+			continue
+		}
+		t, err := b.Trail(is.ID, backlog.LabelReady)
+		if errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		}
+		if err != nil {
+			findings = append(findings, verdict.Finding{Rule: "stuck-unknown", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+				Message: "when it got " + backlog.LabelReady + " and what names it could not be read (" + err.Error() + "): not said stuck"})
+			continue
+		}
+		switch w, known := backlog.ReadyWait(is.ID, t); {
+		case !known:
+			unknown(is.ID, "when it got "+backlog.LabelReady)
+		case w != nil:
+			waits = append(waits, *w)
+		}
+	}
+	if data, err := yaml.Marshal(waits); err != nil {
+		return fail(err)
+	} else if err := os.WriteFile(filepath.Join(runDir, "in", "waits.yaml"), data, 0o644); err != nil {
+		return fail(err)
+	}
 	// Those never read first, then those whose code changed since; an issue
 	// whose code did not change is not read again (ADR-0018). Without an
 	// agent, nothing is read, and no issue is said to be.
@@ -388,6 +444,11 @@ func Pre(runDir, repo string) int {
 		if len(fallback) > 0 || len(hand.Ticks) > 0 || len(hand.Demoted(open)) > len(hand.Record.Propose) {
 			return writeFindings(runDir, findings)
 		}
+		if opening(open, report, waits, hand, cfg, now) {
+			// Nothing else to write, but the report's opening is out of
+			// date: the engine rewrites it, with no agent (ADR-0031).
+			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge; the report's next and stuck rewritten", Findings: findings})
+		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
 	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, hand.Demoted(open)))
@@ -427,6 +488,26 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	return writeFindings(runDir, findings)
+}
+
+// opening says whether the report is to be rewritten for its opening
+// alone: what is next and what is stuck no longer reads as its body says,
+// a proposal has no day yet, or there is no report and the opening lists
+// an issue (ADR-0031). As the engine reads it when nothing else is done.
+func opening(open []forge.Issue, report int, waits []backlog.Wait, hand *backlog.Hand, cfg backlog.Config, now time.Time) bool {
+	if slices.ContainsFunc(hand.Record.Proposed, func(q backlog.Pending) bool { return q.Since == "" }) {
+		return true
+	}
+	b := backlog.MakeBoard(open, report, waits, hand.Record.Proposed, cfg, now)
+	if report == 0 {
+		return !b.Empty()
+	}
+	for _, is := range open {
+		if is.ID == report {
+			return !strings.Contains(is.Body, b.Text())
+		}
+	}
+	return false
 }
 
 // evidence reads a parent's parts — every issue listed once a run, into

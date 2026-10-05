@@ -11,7 +11,8 @@ given:
       - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: none}
 expect:
-  status: error
+  status: block
+  findings: [{rule: engine-error, message: "pre exited with code 1"}]
   agent-calls: 0
   forge:
     issues:

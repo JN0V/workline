@@ -43,6 +43,13 @@ settings:
   # Runs in a row nobody answered before the role pauses (ADR-0025): 1 to
   # 20; 0 never pauses, said in every report.
   ignored-runs-max: 3
+  # What the report opens with (ADR-0031): the first ready issues of the
+  # order, at most next-max (0 to 20; 0 lists none); then each issue
+  # waiting on a person for more than stuck-days (1 to 365) — ready with
+  # nothing started, its reporter not answering, a proposal unticked —
+  # and an announcement past its delay, each with since when.
+  next-max: 5
+  stuck-days: 14
   # Each kind of act: act (done, up to max a run), propose (in the report,
   # for a person), off (dropped). Closing as obsolete, in act, is announced
   # on the issue first and closed `days` later if nobody wrote, the label

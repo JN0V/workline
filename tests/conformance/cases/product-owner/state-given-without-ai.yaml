@@ -1,5 +1,5 @@
 case: product-owner/state-given-without-ai
-about: Without an agent, an issue with no state comment gets one, at the commit the run is on; one that has it is left as it is, and the report issue is not judged.
+about: Without an agent, an issue with no state comment gets one, at the commit the run is on; one that has it is left as it is, and the report issue is not judged — only rewritten with what is next and what is stuck (ADR-0031).
 given:
   repo: backlog
   forge:
@@ -15,4 +15,4 @@ expect:
     issues:
       - {id: 7, comments: 1, comment-contains: "confirmed: "}
       - {id: 12, comments: 1, comment-contains: "confirmed: 0000000", comment-lacks: "judged:"}
-      - {id: 13, comments: 0}
+      - {id: 13, comment-lacks: "sticky=product-owner/state", body-contains: "## Stuck"}

@@ -189,7 +189,7 @@ func CycleText(c []int) string {
 // parts are what is built, and a person accepts it (ADR-0029).
 func NextReady(ordered []forge.Issue, open map[int]bool) *forge.Issue {
 	for i, is := range ordered {
-		if slices.Contains(is.Labels, LabelReady) && len(Waiting(is, open)) == 0 && len(Parts(is)) == 0 {
+		if Offered(is, open) {
 			return &ordered[i]
 		}
 	}
@@ -271,8 +271,8 @@ func ReadBacklog(open []forge.Issue, report int) Backlog {
 	return bl
 }
 
-// waiting is the report's part on what the order holds back: the first
-// ready issue offered, the issues waiting, the cycles.
+// waiting is the report's part on what the order holds back: the issues
+// waiting, the cycles; the first ready issues are under Next (ADR-0031).
 func (p *Plan) waiting() string {
 	closed := p.closedInRun()
 	var open []forge.Issue
@@ -289,9 +289,6 @@ func (p *Plan) waiting() string {
 	}
 	var b strings.Builder
 	b.WriteString("\n## Waiting\n\nIssues that wait on an open issue: ordered after it, never offered first to whoever builds next.\n\n")
-	if bl.Next != nil {
-		fmt.Fprintf(&b, "**Next** ready, waiting on nothing: #%d %s\n\n", bl.Next.ID, bl.Next.Title)
-	}
 	for _, id := range bl.Blocked {
 		fmt.Fprintf(&b, "- #%d %s waits on %s.\n", id, p.issues[id].Title, issueList(bl.Waiting[id]))
 	}

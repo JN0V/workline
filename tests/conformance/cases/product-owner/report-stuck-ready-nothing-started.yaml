@@ -16,7 +16,7 @@ expect:
   agent-calls: 0
   forge:
     issues:
-      - {id: 23, title: "Backlog — product owner", body-contains: "## Stuck\n\nWaiting on a person for more than 14 days (stuck-days), since the day given.\n\n"}
+      - {id: 23, title: "Backlog — product owner", body-contains: "## Stuck\n\nWaiting on a person for more than 14 days (stuck-days), since the day given."}
       - {id: 23, body-contains: "- #20 Export in JSON — ready since 2026-01-01 ("}
       - {id: 23, body-contains: "- #22 Export in YAML — ready since 2026-03-01 ("}
       - {id: 23, body-lacks: "#21 Export in XML"}
