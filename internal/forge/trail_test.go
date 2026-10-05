@@ -63,6 +63,7 @@ func TestGitLabTrail(t *testing.T) {
 			json.NewEncoder(w).Encode([]map[string]any{
 				{"body": "mentioned in merge request !7", "system": true, "created_at": "2026-09-05T10:00:00Z"},
 				{"body": "mentioned in commit group/other@1a2b3c4d5e", "system": true, "created_at": "2026-09-06T10:00:00Z"},
+				{"body": "mentioned in merge request group/other!12", "system": true, "created_at": "2026-09-06T11:00:00Z"},
 				{"body": "mentioned in commit 1a2b3c4d", "system": false, "created_at": "2026-09-07T10:00:00Z"},
 				{"body": "changed the description", "system": true, "created_at": "2026-09-08T10:00:00Z"},
 			})
@@ -82,6 +83,7 @@ func TestGitLabTrail(t *testing.T) {
 	want := Trail{Labeled: "2026-09-03T10:00:00Z", Links: []Link{
 		{Kind: "pull-request", Ref: "!7", At: "2026-09-05T10:00:00Z"},
 		{Kind: "commit", Ref: "1a2b3c4d5e", At: "2026-09-06T10:00:00Z"},
+		{Kind: "pull-request", Ref: "!12", At: "2026-09-06T11:00:00Z"},
 	}}
 	if !reflect.DeepEqual(tr, want) {
 		t.Errorf("trail = %+v\nwant %+v", tr, want)
