@@ -694,8 +694,9 @@ func unreadFeedback(why string) string {
 
 // answerItems cuts an answer into its top-level list items: each starts
 // with "- " at the start of a line and runs to the next, or to a fence.
-// Every line in between is the item's, one at the start of the line too
-// (code pasted as it is): an item never reads from text cut short.
+// Every other line in between is the item's, one at the start of the line
+// too (code pasted as it is), so an item never reads from text cut short;
+// a line starting with "- " starts the next.
 func answerItems(answer string) []string {
 	var items []string
 	open := false
@@ -752,10 +753,10 @@ func mendedTogether(said []string) []string {
 	count := map[string]int{}
 	for _, s := range said {
 		var n int
-		if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
-			n = 1
-		}
 		kind := strings.TrimLeft(s, "0123456789")
+		if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+			n, kind = -1, s // no count to sum: said as it is
+		}
 		if _, ok := count[kind]; !ok {
 			kinds = append(kinds, kind)
 		}
@@ -763,6 +764,10 @@ func mendedTogether(said []string) []string {
 	}
 	var out []string
 	for _, k := range kinds {
+		if count[k] < 0 {
+			out = append(out, k)
+			continue
+		}
 		out = append(out, fmt.Sprint(count[k])+k)
 	}
 	return out

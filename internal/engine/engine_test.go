@@ -39,8 +39,19 @@ func TestClaimsOneByOneMended(t *testing.T) {
 	if read != 2 || len(broken) != 2 || len(mended) != 2 || mended[1][0] != '2' {
 		t.Fatalf("read %d, broken %v, mended %q", read, broken, mended)
 	}
-	c := claimsRead(answer)[0].Value.(map[string]any)
+	claims := claimsRead(answer)
+	c := claims[0].Value.(map[string]any)
 	if c["quote"] != "\tif ok {\n" || c["why"] != "covered by #20 too" {
 		t.Errorf("the claim was not read as written: %q", c)
+	}
+	if c := claims[1].Value.(map[string]any); c["why"] != "see #3 below" {
+		t.Errorf("the claim before the fence was not read as written: %q", c)
+	}
+	if b := broken[1].Value.(map[string]any)["unreadable"]; b != "- claim:\n    quote: |\n        x\n}" {
+		t.Errorf("the broken claim is not kept whole: %q", b)
+	}
+	// A line saying no count is said as it is.
+	if got := mendedTogether([]string{"2 blocks", "a block", "1 text", "1 blocks", "a block"}); len(got) != 3 || got[0] != "3 blocks" || got[1] != "a block" {
+		t.Errorf("mended together: %q", got)
 	}
 }
