@@ -93,6 +93,9 @@ func TestAskedBefore(t *testing.T) {
 		"Thanks! Since when?":                           "asked-before", // a sentence ends at "! "
 		"Is it v1.2?":                                   "",             // a version's dot cuts nothing
 		"Is it v1.3?":                                   "asked-before",
+		"- Since when?\n- Does a.go fail?":              "asked-before", // a list's bullets aside
+		"1. Since when?":                                "asked-before",
+		"E.g. when?":                                    "", // "e.g." ends no sentence: not cut to "when?"
 	} {
 		c := Proposal{Do: "ask", Questions: q}
 		if rule, _ := conversation("product-owner", comments, &c); rule != want {
@@ -101,5 +104,11 @@ func TestAskedBefore(t *testing.T) {
 	}
 	if e := ReadExchange(append(comments, "@ann, still: Which export?\n\n"+AskMarker("product-owner", 2)), "product-owner"); e.Rounds != 2 || e.Answered {
 		t.Errorf("exchange = %+v, want two rounds, the last not answered", e)
+	}
+	// A person quoting the engine's comment, its marker inside, answers it;
+	// it is not a round of the engine's.
+	quoted := "> " + strings.ReplaceAll(comments[0], "\n", "\n> ") + "\n\nSince Monday."
+	if e := ReadExchange([]string{comments[0], quoted}, "product-owner"); e.Rounds != 1 || !e.Answered {
+		t.Errorf("exchange with a quoted ask = %+v, want one round, answered", e)
 	}
 }

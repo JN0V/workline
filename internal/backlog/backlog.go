@@ -895,14 +895,14 @@ type Exchange struct {
 // ReadExchange reads the conversation with an issue's reporter.
 func ReadExchange(comments []string, role string) Exchange {
 	var e Exchange
-	ask, proposal := "<!-- workline:"+role+"/ask", "<!-- workline:"+role+"/proposal="
 	for _, c := range comments {
+		_, engine := EngineMarker(c)
 		switch {
-		case strings.Contains(c, ask) || strings.Contains(c, proposal):
+		case Round(c, role):
 			e.Rounds++
 			e.Answered = false
 			e.Asked = append(e.Asked, askedIn(c))
-		case !strings.Contains(c, "<!-- workline:"):
+		case !engine:
 			e.Answered = true
 		}
 	}
@@ -910,6 +910,24 @@ func ReadExchange(comments []string, role string) Exchange {
 }
 
 var engineMarker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
+
+// EngineMarker says whether the engine wrote a comment, and its marker:
+// the engine ends each of its comments with one; a person quoting one
+// holds it inside, and is a person's all the same.
+func EngineMarker(comment string) (string, bool) {
+	last := strings.TrimSpace(comment)
+	if i := strings.LastIndex(last, "\n"); i >= 0 {
+		last = strings.TrimSpace(last[i+1:])
+	}
+	return last, engineMarker.FindString(last) == last
+}
+
+// Round says whether a comment is one of the engine's rounds with an
+// issue's reporter: an ask or a proposal.
+func Round(comment, role string) bool {
+	last, engine := EngineMarker(comment)
+	return engine && (strings.HasPrefix(last, "<!-- workline:"+role+"/ask") || strings.HasPrefix(last, "<!-- workline:"+role+"/proposal="))
+}
 
 // The leads the engine writes before the questions: an ask's (Ask), and a
 // proposal's paragraph of what it still needs (ProposalComment).
@@ -955,6 +973,8 @@ func conversation(role string, comments []string, c *Proposal) (rule, why string
 
 // questions cuts a text into its questions, each squeezed and lowercased,
 // to tell one asked before.
+var bullet = regexp.MustCompile(`^\s*(?:[-*•]|\d+[.)])\s+`)
+
 func questions(text string) []string {
 	var out []string
 	for _, part := range strings.SplitAfter(text, "?") {
@@ -967,6 +987,7 @@ func questions(text string) []string {
 		if i := max(strings.LastIndex(part, ". "), strings.LastIndex(part, "! ")); i >= 0 {
 			part = part[i+2:]
 		}
+		part = bullet.ReplaceAllString(part, "") // a list's bullet or number aside
 		if q := strings.ToLower(strings.Trim(part, " *")); len(q) > 3 {
 			out = append(out, q)
 		}
@@ -1054,7 +1075,7 @@ const engineBlock = "<details><summary>As the engine reads it</summary>"
 func LastProposal(comments []string, role string) *Proposal {
 	prefix := "<!-- workline:" + role + "/proposal="
 	for i := len(comments) - 1; i >= 0; i-- {
-		if !strings.Contains(comments[i], prefix) {
+		if last, _ := EngineMarker(comments[i]); !Round(comments[i], role) || !strings.HasPrefix(last, prefix) {
 			continue
 		}
 		// The engine's own block, after its summary: the agent's words come

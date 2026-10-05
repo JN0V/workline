@@ -319,10 +319,12 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	var kept []string
 	for _, c := range comments {
 		switch {
-		case !strings.Contains(c, "<!-- workline:"):
-			kept = append(kept, c)
-		case strings.Contains(c, "<!-- workline:"+role+"/ask"), strings.Contains(c, "<!-- workline:"+role+"/proposal="):
+		case backlog.Round(c, role):
 			kept = append(kept, "(The product owner wrote:) "+marker.ReplaceAllString(c, ""))
+		default:
+			if _, engine := backlog.EngineMarker(c); !engine {
+				kept = append(kept, marker.ReplaceAllString(c, "")) // a person's, quoting the engine's maybe
+			}
 		}
 	}
 	if len(kept) > commentsMax {
