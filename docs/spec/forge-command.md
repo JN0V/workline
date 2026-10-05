@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: eb4f69b
+checked: 8a3a2b7
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -19,7 +19,11 @@ or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
-none), but not yet the backlog's other operations (`issues`, `comments`,
+none), and `comments`, each with its author, of the project when they may
+write to the repository — asked of Forgejo, which needs the token's user
+to administer the repository: a refusal fails the operation —, a bot when
+its id is negative (the ghost, the actions user) or its login ends in
+`-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
 `add-sub-issue`, `ensure-label`), nor a merge request's `base`.
 
@@ -57,7 +61,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
 | `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, author, insider}]}` — `insider` true when the author has write access to the project; left out, the author is taken for an outsider |
 | `all-issues` | | lists the issues open and closed, merge requests left out: a subject a role found is looked for in both | `{issues: [{id, title, body, labels, closed, reason}]}` — `reason` why it was closed, when the forge keeps one: `completed`, `not_planned` or `duplicate`; a command that does not know it answers an error, and the issue is not opened |
-| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [bodies]}` |
+| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021) |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
 | `milestones` | | lists the titles of the open milestones | `{milestones: [titles]}` |
 | `set-milestone` | `id`, `milestone` | puts the issue in the open milestone with this title, creating it when there is none | `{}` |
@@ -95,5 +99,6 @@ The conformance cases `forge/cmd-*` plug a fake script
 merge request's comment, a work item read and labelled, the
 weekly sample written, a forge failing (`blocked-external`) and refusing
 (`block`). The Forgejo sample was run against a mock of the API only
-(ci/forgejo/workline_forge_test.go: its labels, and `all-issues` over two
-pages, a pull request left out), not yet on a live instance.
+(ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
+pages, a pull request left out, and `comments` with their authors), not
+yet on a live instance.

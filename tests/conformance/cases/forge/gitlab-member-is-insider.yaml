@@ -1,0 +1,17 @@
+case: forge/gitlab-member-is-insider
+about: On GitLab, an issue opened by a member of the project with the Planner role or above is a person of the project's — refined in its body, not proposed to its reporter; who is of the project is read from the project's members and their access level.
+given:
+  repo: backlog
+  forge:
+    members:
+      - {username: owner, access_level: 50}
+      - {username: plan, access_level: 15}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: plan, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-an-outsider, forge: gitlab}
+expect:
+  no-findings: [{rule: reporter-outside}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "## Need", comment-lacks: "proposal=1"}
+      - {id: 9, labels: [workline:to-refine, workline:draft]}

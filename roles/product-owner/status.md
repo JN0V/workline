@@ -1,6 +1,7 @@
 # Product owner — where it stands (2026-10-05)
 
-**In one line:** it keeps a backlog on GitHub for real — reads it a share a
+**In one line:** it keeps a backlog on GitHub, and on GitLab as on GitHub
+(its members told from outsiders, a bot's token), for real — reads it a share a
 run, closes duplicates, proposes what the code made obsolete, names an
 issue's code, sets milestones, finds a closing a person undid, refines an
 issue to `ready` and talks with its reporter until it is, splits a need
@@ -31,20 +32,24 @@ on the sandbox (tried.md).
 | The conversation with the reporter (ADR-0021): asked again only after an answer, the conversation shown to the agent, never the same question twice, three rounds then the report; an outsider's issue proposed to its reporter in a comment, written in the body once a person sets `workline:accepted` | JN0V/workline-sandbox, live (#3: the answer read, refined from it); an outsider's issue with a real agent on a simulated forge (two proposals, then agreed, ready); the rest in conformance |
 
 | Splitting and renaming: a need too big for one issue split into children with their four sections, opened through the one way, linked as sub-issues (GitHub) or tasks (GitLab); a vague title renamed; a rerun splitting and renaming nothing again; a person's title kept | JN0V/workline-sandbox on GitHub (#10 → #12, #13; #11) and on GitLab (#5 → tasks #7, #8, #9; #6), live (ADR-0022) |
+| GitLab as GitHub (ADR-0023): its members from the Planner role up are of the project, a Guest's issue proposed to its reporter; the project's bot writes with a project access token made and stored in one glab command; a state note another token wrote written anew; the job token alone refused, loud. A reply `agreed` by the reporter or a person of the project has the proposed text written (ADR-0021, amended); each comment given to the agent with who wrote it, on every forge | JN0V/workline-sandbox on GitLab, live and in GitLab CI (#13 renamed and refined in place, #15 a Guest's proposed, agreed by a reply, readied by the label; #16 split); conformance `forge/gitlab-*`, `product-owner/*-reply-*`, `comment-author-read` |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried
 live. GitLab: refining, ordering, a split and a rename tried live on its
-sandbox, three runs (tried.md); its milestones there not checked.
+sandbox, three runs, then members, a bot's token and a reply's
+agreement, four runs and GitLab CI (tried.md); its milestones there not
+checked.
 
 ## Missing, in the order to build it
 
-1. **Refining, what is left**: GitLab's write access (until then a split
-   or a rename there is proposed, and a refine proposed to the reporter,
-   unless `workline:accepted`); a parent's own readiness while its
-   children are open (ADR-0022); a reply read with its author, so a
-   reporter's "yes" agrees to a proposal (ADR-0021); a real outsider's
-   issue tried live.
+1. **Refining, what is left**: a parent's own readiness while its
+   children are open (ADR-0022); a real outsider's issue tried live, and
+   a reporter's own `agreed`; a person of the project's reply taken for
+   the label, if live use asks for it (ADR-0021, amended); a GitLab role
+   too low reported as such, not only by the split's fallback
+   (ADR-0023); the gardening template on GitLab run with a release
+   holding this.
 2. **Obsolete closed, not only proposed**: announced first, closed at the
    next run if nobody answered and a second judge agreed.
 3. **The person's hand**: a tick read with its author — a proposal

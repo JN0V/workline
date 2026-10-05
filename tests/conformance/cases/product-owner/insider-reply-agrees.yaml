@@ -1,0 +1,14 @@
+case: product-owner/insider-reply-agrees
+about: A person of the project replies `agreed` to the text proposed to an outsider — the engine writes the sections in the body, with no agent; ready stays the label's.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: dev, insider: true, body: "agreed"}]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, body-contains: "## Need", labels: [workline:to-refine, workline:draft]}
+      - {id: 10, title: "Backlog — product owner", body-contains: "agreed to by @dev (a person of the project) in a reply"}

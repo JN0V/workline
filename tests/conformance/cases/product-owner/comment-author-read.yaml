@@ -1,0 +1,12 @@
+case: product-owner/comment-author-read
+about: Each person's comment is given to the agent with who wrote it — the issue's reporter, a person of the project, someone outside it, a bot — so a writer's answer is told from a stranger's (ADR-0021).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", author: zed, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", {author: zed, body: "Still happens with 1.2."}, {author: dev, insider: true, body: "Only the CSV export."}, {author: mia, body: "Me too."}, {author: ci-app, bot: true, body: "Linked to a build."}, "No author said."]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: "Comment by @zed, its reporter:\n> Still happens with 1.2.\n\nComment by @dev, of the project:\n> Only the CSV export.\n\nComment by @mia, outside the project:\n> Me too.\n\nComment by @ci-app, a bot:\n> Linked to a build.\n\nComment:\n> No author said."}

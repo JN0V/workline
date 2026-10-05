@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 5afde5c
+checked: 8a3a2b7
 verified: agent:claude-code
 ---
 # Product owner
@@ -58,9 +58,13 @@ or proposes it in the report when there is none.
 The reporter is written to again only after they answered, never the same
 question twice, three times at most (`acts.ask.rounds`); then the report
 asks a person to settle it with them (ADR-0021). An outsider's issue — its
-reporter without write access — gets no section in its body: the engine
-comments to the reporter what the role understood, the sections it would
-write and what it still needs.
+reporter not of the project: on GitHub without write access, on GitLab
+not a member from the Planner role up (ADR-0023) — gets no section in its
+body: the engine comments to the reporter what the role understood, the
+sections it would write and what it still needs. A reply `agreed` from
+the reporter or a person of the project has those sections written at the
+next run, with no agent; ready stays the label's. The agent is told who
+wrote each comment.
 
 A person accepts the drafts with one label, `workline:accepted`, on one
 issue or many from the list of issues: the next run takes the draft lines

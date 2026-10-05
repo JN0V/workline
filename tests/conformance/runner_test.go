@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -212,6 +213,15 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Run.Forge != "" {
 		forgeSpec = c.Run.Forge
+	}
+	if c.Run.Forge == "gitlab" {
+		// GitLab's REST API, simulated over the same file (gitlab_test.go).
+		if forgeFile == "" {
+			return []string{"run.forge gitlab needs given.forge"}
+		}
+		srv := httptest.NewServer(&gitlabMock{file: forgeFile})
+		defer srv.Close()
+		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
 	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}

@@ -277,6 +277,17 @@ func (l *Local) Comments(t Target) ([]string, error) {
 	return it.Comments, nil
 }
 
+// Notes: the local forge keeps no author; whoever writes in the clone is
+// of the project, as its issues' authors are.
+func (l *Local) Notes(t Target) ([]Note, error) {
+	comments, err := l.Comments(t)
+	notes := make([]Note, 0, len(comments))
+	for _, c := range comments {
+		notes = append(notes, Note{Body: c, Insider: true})
+	}
+	return notes, err
+}
+
 // Close closes an issue; the local forge keeps no reason, the engine's
 // comment says it.
 func (l *Local) Close(id, dup int) error {

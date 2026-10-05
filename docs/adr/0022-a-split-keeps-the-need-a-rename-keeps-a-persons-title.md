@@ -85,8 +85,9 @@ left as it was, but for its task list.
   forge counts sub-issues.
 - On GitLab the children are tasks: GitLab shows them under the parent
   with its progress; a task cannot hold children of its own, so a child
-  split again there lists its parts in its body. GitLab does not say who
-  has write access yet, so every reporter is an outsider there: a split
-  or a rename is proposed until a person sets `workline:accepted`.
+  split again there lists its parts in its body. A reporter of the
+  project there is a member with the Planner role or above (ADR-0023); an
+  outsider's split or rename is proposed until a person sets
+  `workline:accepted`.
 - Not built: a child moved to another parent, or a split undone by the
   role; a parent's own readiness while its children are open.
