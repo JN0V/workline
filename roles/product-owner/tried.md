@@ -330,3 +330,52 @@ all; two of them thrown away (below).
   a question refused as asked before, a proposal not repeated without an
   answer — conformance only; the reporter agreeing by editing their own
   body; GitLab.
+
+## 2026-10-05 — GitLab's members, a bot's token, a reply `agreed`, Sonnet
+
+The engine of feat/po-gitlab on JN0V/workline-sandbox (gitlab.com, a Free
+user's project), a fresh clone, with project access tokens made on it
+(ADR-0023), never printed: a Planner bot for the local runs, a Guest bot
+to stand for an outsider, a Developer bot (`api`, `write_repository`)
+stored by the one glab command of docs/ci.md as `WORKLINE_GITLAB_TOKEN`
+for CI. Three agent calls, 41.7k tokens in and 4.4k out in all.
+
+- **Insider and outsider told apart.** Planted: #13 "bug" and #14, #16
+  by the owner; #15 "Logged out while typing" by the Guest bot. Run 1, no
+  agent: the states, written by the Planner bot. Run 2 (18.8k in, 2.0k
+  out): #13 — the owner's — **renamed in place** ("Intermittent logout on
+  page reload in Firefox") and asked which page; #15 — a Guest's — got
+  the **proposal** to its reporter, its body untouched. #14's split was
+  dropped (`sources-unknown`: the sandbox holds no account code).
+- **A reply agrees.** The owner answered #13, and replied "Agreed." to
+  #15's proposal. Run 3 (10.6k in, 0.7k out): #15's Need and Validation
+  written with no agent, the report saying "agreed to by @JN0V (a person
+  of the project) in a reply"; #13 refined in its body from the answer,
+  Need and Validation drafts. Ready stayed the label's.
+- **A split, and the Planner role's limit.** #16 "Token rules", three
+  needs. Run 4 (12.3k in, 1.8k out): split into #17 "Revoke a token by
+  its id" and #18 "Sign tokens with a key rotated every month" (the
+  two-hour lifetime left out, "already #7"), opened by the bot — but
+  listed in #16's body, not linked as tasks: GitLab refused the Planner
+  token the parent ("it's not allowed to add this type of parent item"),
+  where a Reporter token and the owner's succeed (both tried by hand on
+  #17, #18). Hence Reporter, not Planner, in ADR-0023.
+- **The state edits, and a bug found.** The owner's state notes on the
+  older issues were refused to the bot (403) and written anew after them,
+  as designed — but GitLab lists notes newest first unless asked, so the
+  engine took the oldest for the last and wrote a new one at each write
+  (#9 got three, #15 two in the CI run). Fixed (f4855eb), with a test
+  that serves notes newest first.
+- **GitLab CI.** A branch of the sandbox ran the engine of this branch
+  (`go install …@<commit>`, golang:1.27), no agent. The job's own token
+  alone: exit 3, "reading the project's members… 401 Unauthorized" —
+  loud. With the Developer bot: #15, the label `workline:accepted` set
+  by the owner, got the last proposal's Verification and Scope written
+  and `workline:ready`. Again with the fix (f4855eb), #13 accepted by the
+  label: its drafts' lines out, `workline:ready`, its state — the
+  Planner bot's — written anew once by the Developer bot, no more.
+- Not tried live: a real person outside the project (the Guest is a
+  bot: its own `agreed` would not count, so the owner agreed instead); a
+  reporter's own `agreed`; a group access token; a self-managed
+  instance; the gardening template itself with this engine (it pins a
+  release).
