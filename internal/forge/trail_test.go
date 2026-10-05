@@ -16,12 +16,15 @@ import (
 // issue: a pull request linked or naming it, a commit naming it; another
 // label, and an issue naming it, are not read; another repository's pull
 // request is named with its repository (ADR-0031). The answer is
-// the one asked of JN0V/workline #79, 2026-10-05, a commit added.
+// the one asked of JN0V/workline #79, 2026-10-05, a commit added, and the
+// label set, taken off and set again: the last setting is read.
 func TestGitHubTrail(t *testing.T) {
 	bin := t.TempDir()
 	args := filepath.Join(bin, "args")
 	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + args + "\n" + `cat <<'EOF'
 {"data":{"repository":{"issue":{"timelineItems":{"nodes":[
+{"__typename":"LabeledEvent","createdAt":"2026-10-01T08:00:00Z","label":{"name":"workline:ready"}},
+{"__typename":"UnlabeledEvent","createdAt":"2026-10-02T08:00:00Z","label":{"name":"workline:ready"}},
 {"__typename":"CrossReferencedEvent","createdAt":"2026-10-04T08:00:00Z","source":{"__typename":"PullRequest","number":112}},
 {"__typename":"LabeledEvent","createdAt":"2026-10-05T09:01:54Z","label":{"name":"workline:priority/3"}},
 {"__typename":"LabeledEvent","createdAt":"2026-10-05T09:02:26Z","label":{"name":"workline:ready"}},
