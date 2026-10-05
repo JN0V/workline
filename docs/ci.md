@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: b2407d4
+checked: d8e0419
 judged: fa1d682
 verified: agent:claude-code
 ---
@@ -205,6 +205,14 @@ It splits an issue too big to be one need into issues of their own,
 linked to it — sub-issues on GitHub, tasks on GitLab, a task list in its
 body elsewhere — and renames a title that says nothing; a title a person
 set after its own is kept (ADR-0022).
+
+It says what an issue waits on — a split's second part on its first, an
+issue that builds on another's code — in GitHub's issue dependencies, or,
+on GitLab Free, which keeps `blocks` links for Premium, a line `Blocked by
+#12.` in the issue's body; a link or a line a person set is read and kept.
+An issue waiting on an open one is ordered after it and never offered
+first; each run says the first ready issue that waits on nothing
+(ADR-0028).
 
 It orders the backlog: a priority label, `workline:priority/1` (the most
 pressing) to `/4`, on the issues it reads — one a person set is kept —
