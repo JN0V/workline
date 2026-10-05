@@ -268,8 +268,8 @@ An issue too big to be one need is broken into its parts (ADR-0022):
   run, nor renamed twice: the first that passes its check is kept
   (`once-a-run`).
 - **Each child** is opened through the one way ("Opening issues"), keyed by
-  the parent and its title (`split=<parent>/<8 hex>`): a line `Part of
-  #12.`, its four sections — Need and Validation as drafts, as `refine`
+  the parent and its title, case and spaces aside
+  (`split=<parent>/<8 hex>`): a line `Part of #12.`, its four sections — Need and Validation as drafts, as `refine`
   writes them —, "Opened from #12 by the product-owner role."; the labels
   `workline:to-refine` and `workline:draft`; its own state, its sources,
   confirmed at the commit. Not `needs-triage`, not counted in
