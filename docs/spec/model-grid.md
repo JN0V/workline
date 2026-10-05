@@ -1,7 +1,8 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: db871eb
+checked: fa1d682
 verified: agent:claude-code
+judged-in-parts: fa1d682
 ---
 # Model grid — v1 (draft)
 

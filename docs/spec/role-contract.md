@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: db871eb
+checked: fa1d682
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -168,14 +168,16 @@ token), **apply** (trusted, no AI key).
 
    **Questions for a judge** (ADR-0020). `pre` may then write questions
    only a judge answers, one each: `in/judge/<key>/question.yaml`,
-   `{question, material}`. The engine asks each apart, at the best
-   independence available from the agents that answered the run (as in
-   step 4), writes its answer beside it — `answer.yaml`, `{yes, why, model,
+   `{question, material}`, and `author`, the model whose work is judged
+   when an earlier run's agent did it (an issue announced obsolete,
+   ADR-0024). The engine asks each apart, at the best independence
+   available from that author, else from the agents that answered the run
+   (as in step 4), writes its answer beside it — `answer.yaml`, `{yes, why, model,
    judge, author, level}`, or `{error}`; the call kept with the run's,
    `out/calls.jsonl` — and runs `pre` again with
    `WORKLINE_JUDGED=answered`, to read them. A no refuses nothing there:
    `pre` reads the answers one by one (the reviewer drops a finding judged
-   no). Without an agent, or once `ai-max-tokens` is spent, none is asked;
+   no; the product owner keeps an announced issue open). Without an agent, or once `ai-max-tokens` is spent, none is asked;
    the agent unreachable, the rest are not either.
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
