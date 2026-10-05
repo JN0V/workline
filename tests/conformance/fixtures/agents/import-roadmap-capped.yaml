@@ -1,0 +1,13 @@
+- skip: {lines: "1-5", reason: not-item, why: "the title, the introduction and a heading"}
+- open:
+    title: "Keep the last row"
+    quote:
+      path: ROADMAP.md
+      text: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export."
+- skip: {lines: "9", reason: done, quote: {path: ROADMAP.md, text: "Shipped in 1.2."}}
+- open:
+    title: "Sort the columns"
+    quote: {path: ROADMAP.md, text: "3. **Sort the columns.** By name, then by type."}
+- skip: {lines: "12", reason: not-item, why: "a heading"}
+- skip: {lines: "14", reason: held, issue: 3}
+- skip: {lines: "15", reason: held, issue: 9}

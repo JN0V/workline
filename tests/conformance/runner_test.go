@@ -115,6 +115,9 @@ type caseFile struct {
 		RunFiles    map[string]map[string]string `yaml:"run-files"`     // a file of the run folder -> a text it holds
 		Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
 		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
+		Summary     string                       `yaml:"summary"`       // a text the result's summary holds
+		Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
+		NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
 	} `yaml:"expect"`
 }
 
@@ -130,9 +133,14 @@ type result struct {
 	RunDir     string           `json:"run-dir"`
 	Pending    []string         `json:"pending"` // runs a line judged and did not apply
 	Notes      []string         `json:"notes"`
-	Applied    []string         `json:"applied"`
-	Refused    []string         `json:"refused"`
-	Steps      []struct {
+	Summary    string           `json:"summary"`
+	Coverage   struct {
+		Items      []map[string]any `json:"items"`
+		NotCovered []map[string]any `json:"not-covered"`
+	} `json:"coverage"`
+	Applied []string `json:"applied"`
+	Refused []string `json:"refused"`
+	Steps   []struct {
 		Name string `json:"name"`
 	} `json:"steps"`
 }
@@ -508,6 +516,11 @@ func compare(c *caseFile, r *result, repo string) []string {
 			}
 		}
 	}
+	if e.Summary != "" && !strings.Contains(r.Summary, e.Summary) {
+		p = append(p, fmt.Sprintf("summary %q does not hold %q", r.Summary, e.Summary))
+	}
+	p = append(p, mapped("coverage", e.Coverage, r.Coverage.Items)...)
+	p = append(p, mapped("not-covered", e.NotCovered, r.Coverage.NotCovered)...)
 	for _, text := range e.Notes {
 		if !strings.Contains(strings.Join(r.Notes, "\n"), text) {
 			p = append(p, fmt.Sprintf("no note holds %q (notes: %q)", text, r.Notes))
@@ -804,6 +817,31 @@ func compareReports(c *caseFile, sarifFile, cqFile string) []string {
 	for _, w := range c.Expect.LeftOut {
 		if uris[w] {
 			p = append(p, fmt.Sprintf("%s is in a report, and should be left out", w))
+		}
+	}
+	return p
+}
+
+// mapped says which wanted entries of an import's map no entry matches:
+// each key equal, but words and why, which an entry need only hold.
+func mapped(name string, want []map[string]string, got []map[string]any) []string {
+	var p []string
+	for _, w := range want {
+		found := false
+		for _, g := range got {
+			ok := true
+			for k, v := range w {
+				have := fmt.Sprint(g[k])
+				if k == "words" || k == "why" {
+					ok = ok && strings.Contains(have, v)
+				} else {
+					ok = ok && have == v
+				}
+			}
+			found = found || ok
+		}
+		if !found {
+			p = append(p, fmt.Sprintf("%s: no entry %v (got %v)", name, w, got))
 		}
 	}
 	return p

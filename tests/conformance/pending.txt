@@ -1,2 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+backlog/import-maps-each-item
+backlog/import-map-checks-each-reason
+backlog/import-flags-a-share-that-omits-items
+backlog/import-without-apply-writes-nothing

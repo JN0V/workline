@@ -25,6 +25,10 @@ run: {issues-import: [ROADMAP.md], ai: fake:import-roadmap}
 expect:
   status: pass
   agent-calls: 1
+  coverage:
+    - {lines: "7-8", state: would-open}
+    - {lines: "13", state: would-open}
+    - {lines: "9", state: done, why: "Done in 1.2."}
   forge:
     issues:
       - {id: 1, absent: true}

@@ -1,0 +1,51 @@
+case: backlog/import-flags-a-share-that-omits-items
+about: The map is the engine's, from the shares and the agent's answers. A share whose answer leaves out lines it was the one to read is flagged, those lines listed under Not covered; lines at the end of a share, read again by the next, are the next share's to answer.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > NOTES.md <<'MD'
+      # Notes
+      The export writes rows.
+      It writes them one by one.
+      Each row is a line.
+      A line ends with a newline.
+      The header comes first.
+      Then the rows.
+      Then nothing.
+      The file is UTF-8.
+      Columns are separated by commas.
+      A comma in a value is quoted.
+      A quote in a value is doubled.
+      Empty values stay empty.
+      That is all of it.
+      - Keep the last row.
+
+      In 1.0 the export was a script.
+      In 1.1 it moved to Go.
+      In 1.2 it got a JSON twin.
+      Nobody uses the JSON twin.
+      It stays, for now.
+      The script is gone.
+      Its tests are gone too.
+      History ends here.
+      - Sort the columns.
+      That is the plan.
+      It is short.
+      It is enough.
+      It may grow.
+      Ask before adding.
+      MD
+      git add NOTES.md && git commit -qm 'docs: notes'
+  forge: {issues: []}
+run: {issues-import: [NOTES.md, --apply, --lines, "20"], ai: fake:import-notes-two-shares}
+expect:
+  status: human
+  agent-calls: 2
+  summary: "1 item not covered"
+  findings: [{rule: items-omitted, where: "lines 17 to 30", message: "25"}]
+  no-findings: [{rule: items-omitted, where: "lines 1 to 20"}]
+  coverage:
+    - {lines: "15", state: opened, issue: "1"}
+  not-covered:
+    - {lines: "25", words: "- Sort the columns."}
