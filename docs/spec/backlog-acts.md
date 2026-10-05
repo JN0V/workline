@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: d293323
+checked: 03a438c
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -663,24 +663,21 @@ them stored:
 - **Next**: the first `next-max` (5) issues of the order
   (`backlog.Order`) the first ready issue offered would be taken from
   (`backlog.Next`): bearing `workline:ready`, waiting on no open issue, no
-  parts; each with its milestone and priority, "#14 Export in JSON —
-  milestone v1.0, priority 2". At 0, no Next.
+  parts; each with its milestone and priority. At 0, no Next.
 - **Stuck**: each issue waiting on a person for more than `stuck-days`
-  (14) days, with the day it started and how long, "ready since
-  2026-09-01 (34 days)":
+  (14) days, with the day it started and how long:
 
 | Waits on | Since | Read from |
 |---|---|---|
-| someone to start it: `workline:ready`, no pull or merge request nor commit naming it since | the day it last got the label | the forge's `Trail`: GitHub's timeline (`LabeledEvent`; `ConnectedEvent`, `CrossReferencedEvent` from a pull request, `ReferencedEvent`), GitLab's `resource_label_events` and system notes "mentioned in commit / merge request"; a plugged forge's `trail` |
+| someone to start it: `workline:ready`, no pull or merge request nor commit naming it since | the day it last got the label | the forge's `Trail`: GitHub's timeline, GitLab's label events and "mentioned in" notes, a plugged forge's `trail` |
 | its reporter: the last round written to them, no person's comment after it ("The conversation with the reporter") | that round's day | the comment's `created`, as the forge gives it |
-| a person's tick: a proposal of this report, unticked, unsettled | the day first proposed | the record's `since`: kept while it stays, carried to the same act decided again; a proposal recorded before has the day the engine first reads it |
+| a person's tick: a proposal of this report, unticked, unsettled | the day first proposed | the record's `since`, carried to the same act decided again; one recorded before, the day first read |
 | a second judge: announced obsolete, due, neither closed nor kept | the day its delay ended | the announcement's `announced` and `close-obsolete.days` — listed once due, whatever `stuck-days` |
 
 A link older than the label started nothing. An issue appears once, in
 its first list: one in Next is not stuck; one waiting for two reasons is
-said for the first in the table's order. Only ready issues waiting on no open
-issue, without parts, are asked their trail, those in Next aside: one
-call each a run. An issue whose day the forge does not say — the local
+said for the first in the table's order. Only the ready issues offered,
+those in Next aside, are asked their trail. An issue whose day the forge does not say — the local
 forge keeps none, a plugged one may refuse `trail`, a comment without
 its day — is not said stuck, and the run says so (`stuck-unknown`, info;
 warn when the forge failed to answer).
