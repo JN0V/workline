@@ -69,7 +69,10 @@ answer: the agent may propose a revised text, a round.
 - A vague issue is refined in a few exchanges, without a person relaying
   questions; three unanswered-to-the-end rounds land in the report.
 - An outsider sees what the project would make of their issue before
-  anything of theirs is changed.
+  anything of theirs is changed. Splitting, renaming and moving it to
+  ready stay proposed to the project, in the report (ADR-0022): how the
+  backlog cuts and names a need is the project's, its text the reporter's;
+  `workline:accepted` lifts all.
 - GitLab says nothing of write access: every reporter there counts as
   outside, so every refine there is proposed in a comment.
 - Left: comments read with their author, so a reporter's "yes" agrees and

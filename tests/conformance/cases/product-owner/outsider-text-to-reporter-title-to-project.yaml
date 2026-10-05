@@ -1,0 +1,16 @@
+case: product-owner/outsider-text-to-reporter-title-to-project
+about: On an outsider's issue, the refined text is proposed to its reporter in a comment (ADR-0021), while a rename — how the backlog names it — is proposed to the project in the report (ADR-0022); neither is done, the reporter written to once.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: zed, insider: false, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-and-rename-an-outsider}
+expect:
+  findings: [{rule: reporter-outside, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, title: "bug", body-lacks: "## Need", comments: 2}
+      - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=1 -->", comment-lacks: "The CSV export drops the last row\""}
+      - {id: 10, title: "Backlog — product owner", body-contains: "Proposed to #9's reporter (an outsider)"}
+      - {id: 10, body-contains: "Rename #9 from \"bug\" to \"The CSV export drops the last row\""}

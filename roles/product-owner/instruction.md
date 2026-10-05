@@ -74,7 +74,7 @@ yet: write nothing more to them. **An outsider's issue** (the task says
 its reporter is outside the project): a `refine` is proposed to them in a
 comment, not written in the body; its `why` says what you understood of
 the issue, in a sentence, and its `questions` what you still need, if
-anything.
+anything; a `split` or a `rename` of it goes to the project's report.
 
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;

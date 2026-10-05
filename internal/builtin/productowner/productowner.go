@@ -312,7 +312,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		fmt.Fprintf(b, "Written to its reporter: %d of %d times; %s.\n", e.Rounds, rounds, answer)
 	}
 	if !is.Insider && !backlog.Accepted(is) && backlog.OpenedBy(is.Body) == "" {
-		fmt.Fprintf(b, "Its reporter is outside the project: a `refine` is proposed to them in a comment, not written in the body; `why` says what you understood of the issue.\n")
+		fmt.Fprintf(b, "Its reporter is outside the project: a `refine` is proposed to them in a comment, not written in the body; `why` says what you understood of the issue; a `split`, a `rename` or `ready` is proposed to the project in the report.\n")
 	}
 	b.WriteString("\n")
 	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyMax))
