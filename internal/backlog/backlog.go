@@ -962,8 +962,10 @@ func questions(text string) []string {
 			continue
 		}
 		part = squeeze(part)
-		if i := strings.LastIndexAny(part, ".!\n"); i >= 0 {
-			part = part[i+1:] // the question alone, not the sentence before it
+		// The question alone, not the sentence before it: a sentence ends
+		// at a "." or "!" before a space, not at a file's or a version's dot.
+		if i := max(strings.LastIndex(part, ". "), strings.LastIndex(part, "! ")); i >= 0 {
+			part = part[i+2:]
 		}
 		if q := strings.ToLower(strings.Trim(part, " *")); len(q) > 3 {
 			out = append(out, q)

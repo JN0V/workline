@@ -78,7 +78,7 @@ func TestProposalReadBack(t *testing.T) {
 // the reporter named, the sentence before it, spaces and case aside.
 func TestAskedBefore(t *testing.T) {
 	comments := []string{
-		"@ann, to refine this issue: Which rows are lost: the last one, or any? Since when?\n\n" + AskMarker("product-owner", 1),
+		"@ann, to refine this issue: Which rows are lost: the last one, or any? Since when? Does a.go fail?\n\n" + AskMarker("product-owner", 1),
 		"Not sure.",
 	}
 	for q, want := range map[string]string{
@@ -88,6 +88,8 @@ func TestAskedBefore(t *testing.T) {
 		"Which export?":                                 "",
 		"Or any?":                                       "", // a question that only ends an earlier one is a new one
 		"When?":                                         "", // nor one that ends the lead's
+		"Does b.go fail?":                               "", // a dot in a name is no sentence's end
+		"Does a.go fail?":                               "asked-before",
 	} {
 		c := Proposal{Do: "ask", Questions: q}
 		if rule, _ := conversation("product-owner", comments, &c); rule != want {

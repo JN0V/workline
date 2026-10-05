@@ -129,7 +129,16 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 		st, found, err := backlog.ReadState(comments, role)
-		if p := backlog.LastProposal(comments, role); found && err == nil && backlog.Accepted(is) && p != nil {
+		// Only the text as last proposed, not answered since — an answer
+		// may change it, the agent reads it first — and only while the body
+		// still lacks what it adds.
+		p := backlog.LastProposal(comments, role)
+		if p != nil {
+			if _, adds, _ := backlog.Refine(is.Body, *p, role); len(adds) == 0 || backlog.ReadExchange(comments, role).Answered {
+				p = nil
+			}
+		}
+		if found && err == nil && backlog.Accepted(is) && p != nil {
 			// A refined text proposed to an outsider, agreed to by a person
 			// of the project with the label: the engine writes what the body
 			// still lacks, with no agent (ADR-0021).

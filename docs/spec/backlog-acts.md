@@ -333,7 +333,8 @@ reads it" — the block read back, the agent's fences turned to `'''` so none en
 - **`workline:accepted`**, set by a person of the project: the next run
   writes the sections of the last proposal the body still lacks, with no
   agent, then moves the issue to ready in the same run, the drafts
-  accepted with it;
+  accepted with it — unless the reporter answered it since: the agent
+  reads the answer first, and refines it itself, the issue accepted;
 - **the reporter's own edit** of the body (only its author or a writer
   can edit it): read again as any body changed; moving it to ready stays
   proposed (`reporter-outside`) until a person accepts.
