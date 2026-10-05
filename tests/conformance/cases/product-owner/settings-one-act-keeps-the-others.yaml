@@ -1,0 +1,19 @@
+case: product-owner/settings-one-act-keeps-the-others
+about: A project that sets one kind of act keeps the role's defaults for the others — settings merge key by key at every depth (role contract, "Settings"); refine proposed, a duplicate still closed.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {refine: {mode: propose}}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-duplicate}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 12, closed: true, reason: duplicate}

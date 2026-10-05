@@ -1,0 +1,25 @@
+case: product-owner/settings-mode-keeps-the-max
+about: A kind of act given a mode and no max keeps the role's max (close-duplicate, 3), rather than going uncapped — settings merge key by key at every depth (role contract, "Settings").
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {close-duplicate: {mode: act}}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-five-duplicates}
+expect:
+  findings: [{rule: act-cap, message: "close-duplicate: at most 3 a run"}]
+  forge:
+    issues:
+      - {id: 10, closed: true}
+      - {id: 11, closed: false}
+      - {id: 12, closed: false}
