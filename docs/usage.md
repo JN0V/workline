@@ -1,12 +1,13 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: d8e0419
+checked: d477467
 verified: agent:claude-code
 ---
 # Using workline
 
-The commands, the files and the variables, as the engine reads them today.
-What a role does is in its own README (`roles/<name>/README.md`).
+The commands, their options and exit codes, as the engine reads them today.
+What a role does is on its page ([roles.md](roles.md)); the files, the
+settings and the variables, in [config.md](config.md).
 
 ## Commands
 
@@ -116,89 +117,3 @@ is and only counted: gardening regenerates it on the default branch after the
 merge (ADR-0027), so never edit one by hand. Sizes and links the line reports
 on every run are only counted. `git push
 --no-verify` skips the hook.
-
-## Files
-
-| File | Holds |
-|---|---|
-| `.workline/config.yaml` | the project's settings, below |
-| `.workline/roles/<role>/<facet>` | a facet replacing the shipped one (`policy.md`, `instruction.md`…) |
-| `.workline/work/<id>.md` | a work item, without a forge |
-| `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels, milestone in its front matter, then its body and comments — never committed; `workline issues` reads them. With no forge (`none`), an issue a role opens is refused, as every write that needs a forge; in CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes |
-| `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
-| `.workline/off` | empty: the global hook skips this repository |
-| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push (ADR-0011); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
-| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
-| `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
-| `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
-
-Runs are kept in `.git/workline/runs/` (the last
-<!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
-agent call with what it cost in `out/calls.jsonl` (a judge's too, when
-`pre` asked it), the agent's last answer
-as it came in `out/agent-answer.txt`, each refused answer in
-`out/refused-<n>.yaml` (as it came: `out/refused-<n>-answer.txt`), and the
-claims an accepted answer gave, judged and never applied, in
-`out/claims.yaml`.
-
-## `.workline/config.yaml`
-
-```yaml
-ai: claude                  # the project's agent; none by default
-forge: github               # github | gitlab | local | cmd:<command> | none (default)
-roles:
-  committer:
-    settings: {subject-max: 60}          # a role's settings, see its role.yaml
-    enforce: {internal-code: warn}       # block (default) | warn | off, per rule
-  documentalist:
-    settings:
-      derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
-      history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
-      whole-chars: 40000                           # sources judged whole up to this; more docs vouched, more tokens
-      versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
-      language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
-      sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
-routing:                    # replaces the shipped line, event by event
-  events: {merge-request: [committer, documentalist, gate:merge]}
-  handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
-  max-handoffs: 3
-gates:                      # docs/spec/gates.md
-  merge:
-    checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]
-repos:                      # other repositories docs may depend on (docs/spec/multi-repo.md)
-  api: {url: "https://github.com/acme/api.git", branch: main}
-release:                    # how the project's release tool works (ADR-0017)
-  branches: ["release/*"]   # its pull requests' branches; default: release-please's, releaser-pleaser's, release-plz's, changesets'
-  tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
-```
-
-A key the engine does not know blocks, with its line: an ignored setting is one
-someone believes in and nothing applies. So does a role retired, named in
-`roles:` or `routing:`: the release manager is gone, and the message names the
-release tool to use instead (ADR-0017). A commit written unquoted is a number
-to YAML when all digits (`after: 7515148`): a setting naming a commit reads it
-as written. One YAML reads otherwise than written — a leading zero
-(`0123456`, octal), an `e` between digits (`1234e56`, a float) — blocks,
-saying to quote it. A project's `settings` for a role are merged into the
-role's at every depth; a list replaces the default whole, a `null` removes
-it ([role-adapting.md](spec/role-adapting.md#settings)).
-
-## Environment
-
-| Variable | |
-|---|---|
-| `WORKLINE_AI` | the agent the git hook uses |
-| `WORKLINE_ROLES` | a folder of roles, as `--roles` |
-| `WORKLINE_MODELS_SEEN` | the file keeping the last model that answered each model asked (default: `models-seen.yaml` in your cache folder, `~/.cache/workline/` on Linux) |
-| `WORKLINE_JUDGE` | the agent reading the weekly sample (`workline sample`), before the `sample.judge` setting; the judge of a role's run (a reviewer's findings, a documentalist's split); and the evaluation's judge |
-| `WORKLINE_RUNS_DIR` | where runs are kept, e.g. a folder a CI artifact carries to the job that applies |
-
-A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
-`WORKLINE_AI`, `WORKLINE_ROLE`, `WORKLINE_BIN` and `WORKLINE_ROLES_DIR`
-(the folder of roles), `WORKLINE_FORGE` when a
-forge is given, `WORKLINE_TARGET` (`merge-request:12`) with a target too, and
-`WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
-`WORKLINE_PROPOSED_TASKS` with `--open-merge-request`. On a release tool's
-merge request, a role that runs on `release` gets `WORKLINE_EVENT=release`
-and `WORKLINE_RELEASE_BRANCH`, the branch (ADR-0017). A role run by a handoff
-receives the inputs `handoff-from` and `handoff-reason`.
