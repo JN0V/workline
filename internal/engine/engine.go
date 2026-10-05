@@ -1999,7 +1999,20 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 	t := forge.Target{Kind: "issue", ID: c.Issue}
 	switch c.Do {
 	case "ask":
-		return f.Comment(t, backlog.Ask(is.Author, c.Questions), backlog.AskMarker(role))
+		return f.Comment(t, backlog.Ask(is.Author, c.Questions, c.Round), backlog.AskMarker(role, c.Round))
+	case "refine":
+		if !c.ToReporter {
+			break
+		}
+		// An outsider's issue: the text proposed to its reporter, nothing
+		// written in the body until they or a person of the project agree.
+		if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+			return err
+		}
+		if err := f.Label(t, []string{backlog.LabelToRefine}, nil); err != nil {
+			return err
+		}
+		return f.Comment(t, backlog.ProposalComment(is.Author, c, role), backlog.ProposalMarker(role, c.Round))
 	case "ready":
 		accepted := backlog.Accepted(*is)
 		if missing := backlog.NotReady(is.Body, accepted); len(missing) > 0 {

@@ -3,8 +3,8 @@
 **In one line:** it keeps a backlog on GitHub for real — reads it a share a
 run, closes duplicates, proposes what the code made obsolete, names an
 issue's code, sets milestones, finds a closing a person undid, refines an
-issue to `ready` and asks its reporter what is missing, splits a need into
-sub-issues and renames a vague title, orders the backlog
+issue to `ready` and talks with its reporter until it is, splits a need
+into sub-issues and renames a vague title, orders the backlog
 and moves what slipped, and keeps the one way every role opens an issue —
 nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
 ordering included, the reviewer not enabled: its roadmap imported, 56
@@ -28,6 +28,7 @@ on the sandbox (tried.md).
 
 | Ordering: one priority label of four set, a person's kept; an issue whose milestone is released moved to the next by the engine, no agent; a fifth of the backlog moved a run, the rest proposed; the order before the run in the report | JN0V/workline-sandbox, live (#2, #4, #6, #7) |
 | One way for every role to open an issue: a key per subject made by the engine, looked for in the issues open and closed — open, left; closed as not planned or duplicate, left; closed as done, said once — the role named, `needs-triage`, a cap a run; a role's issue read as its draft to refine | JN0V/workline-sandbox, live with the reviewer (#9 found again open, then closed: said once); cases in tests/conformance/cases/backlog (`issue-*`) and product-owner |
+| The conversation with the reporter (ADR-0021): asked again only after an answer, the conversation shown to the agent, never the same question twice, three rounds then the report; an outsider's issue proposed to its reporter in a comment, written in the body once a person sets `workline:accepted` | JN0V/workline-sandbox, live (#3: the answer read, refined from it); an outsider's issue with a real agent on a simulated forge (two proposals, then agreed, ready); the rest in conformance |
 
 | Splitting and renaming: a need too big for one issue split into children with their four sections, opened through the one way, linked as sub-issues (GitHub) or tasks (GitLab); a vague title renamed; a rerun splitting and renaming nothing again; a person's title kept | JN0V/workline-sandbox on GitHub (#10 → #12, #13; #11) and on GitLab (#5 → tasks #7, #8, #9; #6), live (ADR-0022) |
 
@@ -38,11 +39,12 @@ sandbox, three runs (tried.md); its milestones there not checked.
 
 ## Missing, in the order to build it
 
-1. **Refining, what is left**: asking again after an answer; an
-   outsider's issue proposed to its reporter rather than in the report;
-   GitLab's write access (until then a split or a rename there is
-   proposed unless `workline:accepted`); a parent's own readiness while
-   its children are open (ADR-0022).
+1. **Refining, what is left**: GitLab's write access (until then a split
+   or a rename there is proposed, and a refine proposed to the reporter,
+   unless `workline:accepted`); a parent's own readiness while its
+   children are open (ADR-0022); a reply read with its author, so a
+   reporter's "yes" agrees to a proposal (ADR-0021); a real outsider's
+   issue tried live.
 2. **Obsolete closed, not only proposed**: announced first, closed at the
    next run if nobody answered and a second judge agreed.
 3. **The person's hand**: a tick read with its author — a proposal

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 52f6643
+checked: 5afde5c
 verified: agent:claude-code
 ---
 # Product owner
@@ -34,7 +34,9 @@ contract of its acts is [docs/spec/backlog-acts.md](../../docs/spec/backlog-acts
    code, Need and Validation as drafts a person makes theirs), the move to
    `ready` (`ready`), or a question to its reporter (`ask`); an issue too
    big to be one need split into 2 to 6, each with its four sections
-   (`split`); a title that says nothing renamed (`rename`).
+   (`split`); a title that says nothing renamed (`rename`). The task
+   shows what was asked or proposed to the reporter and what they
+   answered, and the rounds spent.
 3. The engine checks each one when it applies it — never as not planned,
    the quote found again, the issue's state readable, no section a person
    wrote rewritten, `ready` only when the four sections are there and none
@@ -53,9 +55,18 @@ An issue in a milestone whose release is tagged slipped: the engine moves
 it to the nearest open milestone not released, with or without an agent,
 or proposes it in the report when there is none.
 
+The reporter is written to again only after they answered, never the same
+question twice, three times at most (`acts.ask.rounds`); then the report
+asks a person to settle it with them (ADR-0021). An outsider's issue — its
+reporter without write access — gets no section in its body: the engine
+comments to the reporter what the role understood, the sections it would
+write and what it still needs.
+
 A person accepts the drafts with one label, `workline:accepted`, on one
 issue or many from the list of issues: the next run takes the draft lines
-out and moves each to `ready`, with or without an agent. Without an
+out and moves each to `ready`, with or without an agent; on an outsider's
+issue, it first writes the sections last proposed to its reporter, unless
+they answered since: the agent reads the answer first. Without an
 agent, otherwise, only the state comments are written. On `import`,
 `workline issues import <file>` has the agent read a committed file a
 share at a time — with the lines elsewhere in the file that name its

@@ -39,6 +39,17 @@ const (
 type Settings struct {
 	IssuesPerRun int `json:"issues-per-run"` // issues read in one run
 	CodeLinesMax int `json:"code-lines-max"` // lines of code given in one run, all files together
+	Acts         struct {
+		Ask struct {
+			Rounds int `json:"rounds"` // times an issue's reporter is written to, then a person
+		} `json:"ask"`
+	} `json:"acts"`
+}
+
+// rounds is how many times an issue's reporter is written to, as the
+// engine counts them (backlog.RoundsMax).
+func (s Settings) rounds() int {
+	return backlog.RoundsMax(map[string]backlog.Setting{"ask": {Rounds: s.Acts.Ask.Rounds}})
 }
 
 // Pre lists the open issues in in/task.md. An issue without a state comment
@@ -118,6 +129,24 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 		st, found, err := backlog.ReadState(comments, role)
+		// Only the text as last proposed, not answered since — an answer
+		// may change it, the agent reads it first — and only while the body
+		// still lacks what it adds.
+		p := backlog.LastProposal(comments, role)
+		if p != nil {
+			if _, adds, _ := backlog.Refine(is.Body, *p, role); len(adds) == 0 || backlog.ReadExchange(comments, role).Answered {
+				p = nil
+			}
+		}
+		if found && err == nil && backlog.Accepted(is) && p != nil {
+			// A refined text proposed to an outsider, agreed to by a person
+			// of the project with the label: the engine writes what the body
+			// still lacks, with no agent (ADR-0021).
+			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
+				"issue": is.ID, "need": p.Need, "verification": p.Verification, "validation": p.Validation,
+				"scope": p.Scope, "sources": p.Sources, "own": true,
+				"why": "the text proposed to its reporter, agreed to by a person (" + backlog.LabelAccepted + ")"}})
+		}
 		if found && err == nil && backlog.Accepted(is) {
 			// A person accepted its drafts, with the label: the engine moves
 			// it to ready if its sections are there, with no agent.
@@ -170,7 +199,7 @@ func Pre(runDir, repo string) int {
 		judged++
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
-		writeIssue(&task, d.is, d.st, d.comments, files)
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.comments, files)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
@@ -227,7 +256,7 @@ func Pre(runDir, repo string) int {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments []string, files []string) {
+func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, comments []string, files []string) {
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
 		fmt.Fprintf(b, "Labels: %s\n", strings.Join(is.Labels, ", "))
@@ -273,12 +302,29 @@ func writeIssue(b *strings.Builder, is forge.Issue, st *backlog.State, comments 
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
 	}
+	if e := backlog.ReadExchange(comments, role); e.Rounds > 0 {
+		// The conversation with its reporter so far: what was asked or
+		// proposed is shown below, among the comments (ADR-0021).
+		answer := "not answered since: nothing more is written to them before an answer"
+		if e.Answered {
+			answer = "answered since: read the answer — refine, mark ready, or ask what is still missing, never a question asked before"
+		}
+		fmt.Fprintf(b, "Written to its reporter: %d of %d times; %s.\n", e.Rounds, rounds, answer)
+	}
+	if !is.Insider && !backlog.Accepted(is) && backlog.OpenedBy(is.Body) == "" {
+		fmt.Fprintf(b, "Its reporter is outside the project: a `refine` is proposed to them in a comment, not written in the body; `why` says what you understood of the issue; a `split`, a `rename` or `ready` is proposed to the project in the report.\n")
+	}
 	b.WriteString("\n")
 	fmt.Fprintf(b, "%s\n\n", clip(is.Body, bodyMax))
 	var kept []string
 	for _, c := range comments {
-		if !strings.Contains(c, "<!-- workline:") {
-			kept = append(kept, c)
+		switch {
+		case backlog.Round(c, role):
+			kept = append(kept, "(The product owner wrote:) "+marker.ReplaceAllString(c, ""))
+		default:
+			if _, engine := backlog.EngineMarker(c); !engine {
+				kept = append(kept, marker.ReplaceAllString(c, "")) // a person's, quoting the engine's maybe
+			}
 		}
 	}
 	if len(kept) > commentsMax {

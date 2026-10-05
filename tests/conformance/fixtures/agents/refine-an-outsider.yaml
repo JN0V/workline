@@ -1,0 +1,9 @@
+- refine:
+    issue: 9
+    scope: "WriteRows in src/export/csv.go, and its test."
+    sources: [src/export/csv.go]
+    verification: "A test writes three rows and reads three lines back."
+    need: "Every row exported, so a report counts what was sold."
+    validation: "The reporter opens an export of a known day."
+    questions: "Is it every export, or only a long one?"
+    why: "The CSV export drops its last row."

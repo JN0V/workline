@@ -1,0 +1,17 @@
+case: product-owner/outsider-proposal-commented-to-reporter
+about: An issue opened by someone without write access is theirs — refining it, the role proposes to its reporter in a comment what it understood, the sections as it would write them, and what it still needs; nothing is written in the body.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-an-outsider}
+expect:
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Need", labels: [workline:to-refine]}
+      - {id: 9, comment-contains: "@zed, the product owner read this issue and would refine it as below. Nothing is changed in your issue until you agree."}
+      - {id: 9, comment-contains: "**What it understood:** The CSV export drops its last row."}
+      - {id: 9, comment-contains: "**What it still needs:** Is it every export, or only a long one?"}
+      - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=1 -->"}
+      - {id: 10, title: "Backlog — product owner", body-contains: "Proposed to #9's reporter (an outsider)"}

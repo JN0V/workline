@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: f459021
+checked: 8a3da26
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -78,9 +78,9 @@ refuses. The catalogue is closed and belongs to the engine:
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
-| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there (docs/spec/backlog-acts.md, "Refining to ready") | forge |
+| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there; on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
-| `ask` | ask an issue's reporter what is missing, once | forge |
+| `ask` | ask an issue's reporter what is missing; again only after an answer, never the same question, three rounds then the report (ADR-0021) | forge |
 | `split` | break an issue too big to be one need into 2 to 6 issues, each with its four sections, opened through the one way and linked to it — a sub-issue, a GitLab task, or a task list in its body; never split twice (docs/spec/backlog-acts.md, "Splitting") | forge |
 | `rename` | set an issue's title; a title a person set after the role's is kept (docs/spec/backlog-acts.md, "Renaming") | forge |
 | `handoff` | name the next role and why | engine |

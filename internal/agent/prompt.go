@@ -19,7 +19,7 @@ var contracts = map[string]string{
 	"open":           `- open: {title: "short title", quote: {path: "docs/ROADMAP.md", text: "the item's text, as the file has it"}}`,
 	"milestone":      `- milestone: {issue: 12, milestone: "v2.14.0", why: "why it belongs to that release"}`,
 	"order":          `- order: {issue: 12, priority: 1, why: "why it comes before the others"}  # 1 the most pressing, to 4`,
-	"refine":         `- refine: {issue: 12, scope: "the part of the code", sources: ["src/file.go"], verification: "the tests that will prove it", need: "who needs what, and why (a draft)", validation: "who accepts it, looking at what (a draft)", why: "why"}  # only the sections it lacks`,
+	"refine":         `- refine: {issue: 12, scope: "the part of the code", sources: ["src/file.go"], verification: "the tests that will prove it", need: "who needs what, and why (a draft)", validation: "who accepts it, looking at what (a draft)", why: "why", questions: "what is still missing (an outsider's issue only)"}  # only the sections it lacks`,
 	"ready":          `- ready: {issue: 12, why: "its four sections are there, Need and Validation a person's"}`,
 	"ask":            `- ask: {issue: 12, questions: "what its reporter should say", why: "why the issue cannot be refined without it"}`,
 	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", verification: "the tests that will prove it", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its four sections`,

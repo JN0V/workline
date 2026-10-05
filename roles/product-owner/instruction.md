@@ -64,6 +64,18 @@ needs, not a need with steps.
 `rename` with about ten words that tell it from any other — the problem,
 not the fix. A title the task says is a person's is kept.
 
+**The reporter's answer.** The task shows what was asked or proposed and
+what was answered, and how many times the reporter was written to. Once
+answered, read the answer: refine, propose `ready`, or ask only what is
+still missing — narrower, never a question asked before, nor one the
+answer already settles. What a reply decides — the scope, a wording,
+that it is not wanted — is the person's: take it as given. Not answered
+yet: write nothing more to them. **An outsider's issue** (the task says
+its reporter is outside the project): a `refine` is proposed to them in a
+comment, not written in the body; its `why` says what you understood of
+the issue, in a sentence, and its `questions` what you still need, if
+anything; a `split` or a `rename` of it goes to the project's report.
+
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;
 one whose code you were not given waits for its sources: the task says the last release

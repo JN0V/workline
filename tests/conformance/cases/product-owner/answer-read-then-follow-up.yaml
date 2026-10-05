@@ -1,0 +1,16 @@
+case: product-owner/answer-read-then-follow-up
+about: Its reporter answered, not enough to refine the issue; the role asks a narrower question, a second round, thanking them — the engine numbers the round in its marker.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: When are rows lost?\n\n<!-- workline:product-owner/ask -->", "Every time I export."]}
+run: {role: product-owner, event: schedule, ai: fake:ask-after-answer}
+expect:
+  run-files:
+    in/task.md: {contains: "(The product owner wrote:) @ann, to refine this issue: When are rows lost?"}
+  forge:
+    issues:
+      - {id: 9, comments: 4}
+      - {id: 9, comment-contains: "@ann, thank you; to refine this issue, still: Which export loses them: CSV or JSON?"}
+      - {id: 9, comment-contains: "<!-- workline:product-owner/ask=2 -->"}

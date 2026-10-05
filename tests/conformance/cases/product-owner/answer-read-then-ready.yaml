@@ -1,0 +1,14 @@
+case: product-owner/answer-read-then-ready
+about: An issue whose reporter was asked, then answered and wrote the missing sections, is read again with the conversation shown — the question asked and the answer — and moved to ready.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: Who needs every row, and who checks it?\n\n<!-- workline:product-owner/ask -->", "The monthly report; I check it. I wrote the sections in the issue."]}
+run: {role: product-owner, event: schedule, ai: fake:ready-after-answer}
+expect:
+  run-files:
+    in/task.md: {contains: "Written to its reporter: 1 of 3 times; answered since", not-contains: "<!-- workline:product-owner/ask"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
