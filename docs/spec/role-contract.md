@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent]
-checked: fa1d682
+checked: 8285eac
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -229,6 +229,9 @@ token), **apply** (trusted, no AI key).
    intentions are applied in the catalogue's order — files first, then what
    depends on them, then what only informs — whatever order the agent used,
    and each one is recorded in `out/run.yaml` (`applied:`) as it succeeds.
+   A role that keeps a backlog comes here with no intention too, when its
+   `pre` did not end the run: its report is read — a box ticked, a closing
+   undone (docs/spec/backlog-acts.md).
 6. **Again.** If `pre` took less than there was to do, it writes `in/more`:
    the findings it defers, one `<rule> <where>` a line. When the run passed
    and applied something other than a note, the engine then runs the role
