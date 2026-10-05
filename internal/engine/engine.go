@@ -693,14 +693,19 @@ func unreadFeedback(why string) string {
 }
 
 // answerItems cuts an answer into its top-level list items: each starts
-// with "- " at the start of a line and runs to the next.
+// with "- " at the start of a line and runs to the next, or to a fence.
+// Every line in between is the item's, one at the start of the line too
+// (code pasted as it is): an item never reads from text cut short.
 func answerItems(answer string) []string {
 	var items []string
+	open := false
 	for _, l := range strings.Split(answer, "\n") {
 		switch {
 		case strings.HasPrefix(l, "- "):
-			items = append(items, l+"\n")
-		case len(items) > 0 && (strings.HasPrefix(l, " ") || strings.HasPrefix(l, "\t") || l == ""): // a tab: code pasted as it is, which Mend indents
+			items, open = append(items, l+"\n"), true
+		case strings.HasPrefix(l, "```"):
+			open = false
+		case open:
 			items[len(items)-1] += l + "\n"
 		}
 	}
@@ -736,7 +741,31 @@ func claimsOneByOne(answer string) (int, []intent.Intention, []string) {
 		}
 		mended = append(mended, said...)
 	}
-	return read, broken, mended
+	return read, broken, mendedTogether(mended)
+}
+
+// mendedTogether sums what was mended item by item into one line per kind
+// of mending, as for a whole answer: "2 block(s) …" and "1 block(s) …"
+// make "3 block(s) …".
+func mendedTogether(said []string) []string {
+	var kinds []string
+	count := map[string]int{}
+	for _, s := range said {
+		var n int
+		if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+			n = 1
+		}
+		kind := strings.TrimLeft(s, "0123456789")
+		if _, ok := count[kind]; !ok {
+			kinds = append(kinds, kind)
+		}
+		count[kind] += n
+	}
+	var out []string
+	for _, k := range kinds {
+		out = append(out, fmt.Sprint(count[k])+k)
+	}
+	return out
 }
 
 // callAgent asks the agent once and records the call: in the result, and

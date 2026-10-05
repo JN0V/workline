@@ -32,9 +32,11 @@ func TestAskAgain(t *testing.T) {
 // answer would be (agent.Mend), never counted as unreadable.
 func TestClaimsOneByOneMended(t *testing.T) {
 	answer := "- claim:\n    quote: |\n\tif ok {\n    why: covered by #20 too\n" +
-		"- claim: {quote: \"a\"\n"
+		"- claim: {quote: \"a\"\n" +
+		"- claim:\n    quote: |\n        x\n}\n" + // a line at the start of the line: the item broken, not cut
+		"- claim:\n    why: see #3 below\n```\nThat is all.\n"
 	read, broken, mended := claimsOneByOne(answer)
-	if read != 1 || len(broken) != 1 || len(mended) != 2 {
+	if read != 2 || len(broken) != 2 || len(mended) != 2 || mended[1][0] != '2' {
 		t.Fatalf("read %d, broken %v, mended %q", read, broken, mended)
 	}
 	c := claimsRead(answer)[0].Value.(map[string]any)
