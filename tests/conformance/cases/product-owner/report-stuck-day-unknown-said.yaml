@@ -1,0 +1,24 @@
+case: product-owner/report-stuck-day-unknown-said
+about: "An issue whose day the forge does not say — when it got workline:ready, when its reporter was written to — is not said stuck, and the run says it could not tell (stuck-unknown), never read as nothing stuck (ADR-0031, principle 12)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {next-max: 0}
+  forge:
+    issues:
+      - {id: 20, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 21
+        title: "Rows lost"
+        body: "Some rows are lost."
+        author: ann
+        insider: true
+        labels: []
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@ann, to refine this issue: which rows are lost?\n\n<!-- workline:product-owner/ask -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: stuck-unknown, where: "#20"}, {rule: stuck-unknown, where: "#21"}]

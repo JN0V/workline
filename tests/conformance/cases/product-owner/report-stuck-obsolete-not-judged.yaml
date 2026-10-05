@@ -1,0 +1,22 @@
+case: product-owner/report-stuck-obsolete-not-judged
+about: "Stuck lists an issue announced obsolete whose delay has passed and that no second judge closed nor kept — here no agent ran —, from the day its delay ended (ADR-0031)."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 7
+        title: "Export drops the last row"
+        body: "Every CSV file: the export drops the last row."
+        author: zed
+        labels: [workline:obsolete]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@zed, this issue looks obsolete.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nquote: {path: src/export/csv.go, text: \"for i := 0; i < len(rows); i++ {\"}\nwhy: WriteRows now loops to the last row.\ncommit: d8c4dff\nannounced: \"2026-01-01\"\n```\n</details>\n\n<!-- workline:product-owner/obsolete -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: judge-unavailable, where: "#7"}]
+  forge:
+    issues:
+      - {id: 7, closed: false}
+      - {id: 8, title: "Backlog — product owner", body-contains: "- #7 Export drops the last row — announced obsolete, its delay past since 2026-01-08 ("}

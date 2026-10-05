@@ -1,2 +1,11 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+product-owner/report-next-first-ready-in-order
+product-owner/report-stuck-ready-nothing-started
+product-owner/report-stuck-asked-no-answer
+product-owner/report-stuck-proposed-unticked
+product-owner/report-stuck-obsolete-not-judged
+product-owner/report-issue-listed-once
+product-owner/report-next-stuck-rebuilt-each-run
+product-owner/report-next-stuck-settings-refused
+product-owner/report-stuck-day-unknown-said

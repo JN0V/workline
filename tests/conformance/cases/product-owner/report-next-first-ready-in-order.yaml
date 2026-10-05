@@ -1,0 +1,24 @@
+case: product-owner/report-next-first-ready-in-order
+about: "The report opens with Next: the first next-max ready issues in the backlog's order, each with its milestone and priority; an issue waiting on an open one is left out, as one past next-max — with no agent (ADR-0031)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {next-max: 2}
+  forge:
+    milestones: [v1.0]
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", labels: [workline:ready, workline:priority/1], blocked-by: [13], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", milestone: v1.0, labels: [workline:ready, workline:priority/2], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Export in XML", body: "Add an XML export.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 16, title: "Slow export", body: "The export is slow.", labels: [workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 17, title: "Backlog — product owner", body-contains: "## Next\n\nThe first ready issues in the backlog's order, waiting on no open issue, at most 2 (next-max): where to start.\n\n1. #14 Export in JSON — milestone v1.0, priority 2\n2. #13 Keep the last row in the CSV export — no milestone, priority 3\n"}
+      - {id: 17, body-lacks: "#15 Export in XML — no milestone"}
+      - {id: 17, body-lacks: "#12 Quote commas in exported cells — "}
