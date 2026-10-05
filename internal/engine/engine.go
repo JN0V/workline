@@ -1775,6 +1775,18 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return refining(a.forge, a.role, d.Act)
+	case "rename":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return rename(a.forge, a.role, d.Act)
+	case "split":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.split(d.Act)
 	case "handoff":
 		a.handoffs = append(a.handoffs, in.Value)
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
@@ -1878,6 +1890,97 @@ func order(f forge.Forge, role string, c backlog.Proposal) error {
 	}
 	st.Priority = c.Priority
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+}
+
+// rename sets an issue's title and records it in its state: a title other
+// than the one recorded is a person's (ADR-0021).
+func rename(f forge.Forge, role string, c backlog.Proposal) error {
+	b := f.(forge.Backlog)
+	title := strings.TrimSpace(c.Title)
+	if err := b.SetTitle(c.Issue, title); err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Title = title
+	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
+}
+
+// split opens a need's children through the one way, each with its four
+// sections, links them to it — a sub-issue where the forge has them, a task
+// list in its body elsewhere — and records them in its state, last: a run
+// stopped half-way, resumed, finds the children it opened (ADR-0021).
+func (a *applier) split(c backlog.Proposal) error {
+	b := a.forge.(forge.Backlog)
+	o, err := a.openings()
+	if err != nil {
+		return err
+	}
+	head, err := git(a.repo, nil, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		return err
+	}
+	if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+		return err
+	}
+	var ids, listed []int
+	for _, ch := range c.Into {
+		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.SplitKey(c.Issue, ch.Title), Title: strings.TrimSpace(ch.Title),
+			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head})
+		if err != nil {
+			return err
+		}
+		if outcome == backlog.Settled {
+			a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
+				Message: fmt.Sprintf("%q, a part of #%d: #%d, closed, holds it; not opened again", ch.Title, c.Issue, id)})
+			continue
+		}
+		ids = append(ids, id)
+		t := forge.Target{Kind: "issue", ID: id}
+		if err := a.forge.Label(t, []string{backlog.LabelToRefine, backlog.LabelDraft}, nil); err != nil {
+			return err
+		}
+		native, err := b.AddSubIssue(c.Issue, id)
+		if err != nil {
+			return err
+		}
+		if !native {
+			listed = append(listed, id)
+		}
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	body := ""
+	if len(listed) > 0 {
+		is, err := a.forge.Issue(c.Issue)
+		if err != nil {
+			return err
+		}
+		if body = backlog.ListChildren(is.Body, listed); body != is.Body {
+			if err := b.SetBody(c.Issue, body); err != nil {
+				return err
+			}
+		}
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	st.Split = ids
+	if body != "" {
+		st.Body = backlog.BodyDigest(body) // the engine's own change: not read again for it
+	}
+	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
 // priorityColors are the priority labels' colours, the most pressing the

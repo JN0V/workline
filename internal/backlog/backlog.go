@@ -34,6 +34,8 @@ type State struct {
 	Comments  int      `yaml:"comments,omitempty"` // people's comments when it was last read
 	Body      string   `yaml:"body,omitempty"`     // a digest of its body, when the role last read or wrote it
 	Priority  int      `yaml:"priority,omitempty"` // the priority the role last set: another on the issue is a person's
+	Title     string   `yaml:"title,omitempty"`    // the title the role last set: another on the issue is a person's
+	Split     []int    `yaml:"split,omitempty"`    // the children the role split it into: it is not split again
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -86,7 +88,9 @@ func FormatState(s State) string {
 		Comments  int      `yaml:"comments,omitempty"`
 		Body      string   `yaml:"body,omitempty"`
 		Priority  int      `yaml:"priority,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority})
+		Title     string   `yaml:"title,omitempty"`
+		Split     []int    `yaml:"split,flow,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -131,7 +135,8 @@ type Proposal struct {
 	DuplicateOf int      `yaml:"duplicate-of,omitempty"`
 	Sources     []string `yaml:"sources,omitempty"`
 	Milestone   string   `yaml:"milestone,omitempty"`
-	Title       string   `yaml:"title,omitempty"` // an issue to open
+	Title       string   `yaml:"title,omitempty"` // an issue to open, or an issue's new title (rename)
+	Into        []Child  `yaml:"into,omitempty"`  // the children of a split
 	Quote       *Quote   `yaml:"quote"`
 	Why         string   `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts; Added,
@@ -148,6 +153,17 @@ type Proposal struct {
 	Priority int    `yaml:"priority,omitempty"`
 	From     string `yaml:"from,omitempty"`
 	Before   string `yaml:"before,omitempty"`
+}
+
+// Child is one part of a split need: an issue of its own, with its four
+// sections (ADR-0021).
+type Child struct {
+	Title        string   `yaml:"title"`
+	Need         string   `yaml:"need"`
+	Verification string   `yaml:"verification"`
+	Validation   string   `yaml:"validation"`
+	Scope        string   `yaml:"scope"`
+	Sources      []string `yaml:"sources,omitempty"`
 }
 
 // Kind is the kind of act, as settings name it.
@@ -177,7 +193,11 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "sources", "milestone", "order", "refine", "ready", "ask"}
+var Kinds = []string{"open", "close", "sources", "milestone", "order", "refine", "ready", "ask", "split", "rename"}
+
+// theirs are the acts an outsider's issue is proposed for, not done: it is
+// theirs (ADR-0018).
+var theirs = map[string]string{"ready": "moving it to ready", "split": "splitting it", "rename": "renaming it"}
 
 // moves are the acts that move an issue in the backlog's order: capped
 // together, at a share of the open issues a run (ADR-0018).
@@ -292,12 +312,12 @@ func Decide(f forge.Backlog, repo, role string, settings map[string]Setting, clo
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
 			}
-			if d.Mode == Act && c.Do == "ready" && !p.issues[c.Issue].Insider && !Accepted(p.issues[c.Issue]) {
+			if what, ok := theirs[c.Do]; ok && d.Mode == Act && !p.issues[c.Issue].Insider && !Accepted(p.issues[c.Issue]) {
 				// The reporter has no write access: the issue is theirs
-				// (ADR-0018), moving it is for a person to decide.
+				// (ADR-0018), the act is for a person to decide.
 				d.Mode = Propose
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "reporter-outside", Where: c.where(),
-					Message: "opened by someone without write access to the project: moving it to ready is proposed, not done"})
+					Message: "opened by someone without write access to the project: " + what + " is proposed, not done"})
 			}
 			if c.Do == "milestone" && c.Milestone == "" {
 				d.Mode = Propose // slipped, no open milestone to move it to: a person's to place
@@ -448,6 +468,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkRefining(repo, role, c); rule != "" {
 		return rule, why
 	}
+	if rule, why := p.checkSplitRename(repo, c); rule != "" {
+		return rule, why
+	}
 	if c.Do == "milestone" || c.Do == "order" {
 		// Ordering says nothing of an issue's truth: no quote, its state
 		// readable all the same.
@@ -510,7 +533,13 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "ask" && slices.ContainsFunc(comments, func(s string) bool { return strings.Contains(s, AskMarker(role)) }) {
 		return "already-asked", "its reporter was asked already: an issue is asked once"
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" {
+	switch {
+	case c.Do == "split" && len(st.Split) > 0:
+		return "already-split", fmt.Sprintf("it was split already, into %s: an issue is split once", issueList(st.Split))
+	case c.Do == "rename" && st.Title != "" && st.Title != p.issues[c.Issue].Title:
+		return "title-kept", "its title was set by a person after the role's: it is kept"
+	}
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -565,6 +594,97 @@ func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) 
 		}
 	}
 	return "", ""
+}
+
+// maxChildren bounds the children of one split.
+const maxChildren = 6
+
+// checkSplitRename checks a split or a rename against the issue as it is
+// (ADR-0021): a title of one line, a child with its four sections and the
+// files its scope names.
+func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
+	if c.Do != "split" && c.Do != "rename" {
+		return "", ""
+	}
+	is, ok := p.issues[c.Issue]
+	if !ok {
+		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
+	}
+	if c.Do == "rename" {
+		c.Before = is.Title
+		switch t := strings.TrimSpace(c.Title); {
+		case !oneLine(t):
+			return "rename-title", "a title is one line, 120 characters at most"
+		case t == strings.TrimSpace(is.Title):
+			return "title-same", "it has this title already"
+		}
+		return "", ""
+	}
+	if len(c.Into) < 2 || len(c.Into) > maxChildren {
+		return "split-size", fmt.Sprintf("a split makes 2 to %d issues", maxChildren)
+	}
+	for _, ch := range c.Into {
+		if !oneLine(strings.TrimSpace(ch.Title)) {
+			return "split-title", "each child's title is one line, 120 characters at most"
+		}
+		for name, text := range map[string]string{"need": ch.Need, "verification": ch.Verification, "validation": ch.Validation, "scope": ch.Scope} {
+			if strings.TrimSpace(text) == "" {
+				return "split-sections", fmt.Sprintf("%q has no %s: each child has its four sections", ch.Title, name)
+			}
+		}
+		if len(ch.Sources) == 0 || len(ch.Sources) > maxSources {
+			return "sources-unknown", fmt.Sprintf("%q: a scope names 1 to %d files (sources)", ch.Title, maxSources)
+		}
+		for _, s := range ch.Sources {
+			path, _, _ := strings.Cut(s, "#")
+			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
+				return "sources-unknown", fmt.Sprintf("%s is not in the commit the run is on", path)
+			}
+		}
+	}
+	return "", ""
+}
+
+func oneLine(t string) bool { return t != "" && len(t) <= 120 && !strings.Contains(t, "\n") }
+
+func issueList(ids []int) string {
+	var out []string
+	for _, id := range ids {
+		out = append(out, fmt.Sprintf("#%d", id))
+	}
+	return strings.Join(out, ", ")
+}
+
+// SplitKey is the marker key of a split's child: its parent and its
+// title, so a split run again finds the children it opened.
+func SplitKey(parent int, title string) string {
+	return fmt.Sprintf("split=%d/%s", parent, strings.TrimPrefix(TitleKey(title), "issue=title#"))
+}
+
+// ChildBody is a split's child's body: a line naming its parent, then its
+// four sections, Need and Validation as drafts.
+func ChildBody(parent int, ch Child, role string) string {
+	body, _, _ := Refine(fmt.Sprintf("Part of #%d.", parent), Proposal{Need: ch.Need, Verification: ch.Verification, Validation: ch.Validation, Scope: ch.Scope}, role)
+	return body
+}
+
+// SubIssuesHeading heads the task list of a parent's children, on a forge
+// without sub-issues.
+const SubIssuesHeading = "## Sub-issues"
+
+// ListChildren is a parent's body with its children as a task list under
+// SubIssuesHeading: added after its text, or the list already there
+// rewritten.
+func ListChildren(body string, ids []int) string {
+	var list []string
+	for _, id := range ids {
+		list = append(list, fmt.Sprintf("- [ ] #%d", id))
+	}
+	text := strings.Join(list, "\n")
+	if _, ok := work.Sections(body)["Sub-issues"]; ok {
+		return fill(body, "Sub-issues", text)
+	}
+	return strings.TrimRight(body, " \r\n") + "\n\n" + SubIssuesHeading + "\n\n" + text
 }
 
 // Sections are an issue's, in the order they are written.
@@ -755,6 +875,10 @@ func (p *Plan) ReportBody() string {
 				undo = " Remove the label workline:ready to undo."
 			case "ask":
 				undo = ""
+			case "rename":
+				undo = " Rename it back to undo."
+			case "split":
+				undo = fmt.Sprintf(" Close the issues opened from #%d to undo: its own text was left as it was.", d.Act.Issue)
 			}
 			did = append(did, "- "+describe(d.Act, "Closed")+undo)
 		}
@@ -807,6 +931,14 @@ func describe(c Proposal, verb string) string {
 	}
 	done := verb != "Close"
 	switch c.Do {
+	case "rename":
+		return fmt.Sprintf("%s #%d from %q to %q: %s", map[bool]string{true: "Renamed", false: "Rename"}[done], c.Issue, c.Before, strings.TrimSpace(c.Title), strings.TrimSpace(c.Why))
+	case "split":
+		var titles []string
+		for _, ch := range c.Into {
+			titles = append(titles, fmt.Sprintf("%q", strings.TrimSpace(ch.Title)))
+		}
+		return fmt.Sprintf("Split #%d into %d issues: %s. %s", c.Issue, len(c.Into), strings.Join(titles, ", "), strings.TrimSpace(c.Why))
 	case "refine":
 		var names []string
 		for _, n := range c.Added {

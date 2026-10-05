@@ -51,6 +51,19 @@ enough to draft its need, propose `ask` instead: `questions`, short, for
 its reporter. When the four sections are there and neither Need nor
 Validation is a draft, propose `ready`: the engine checks it.
 
+**Split** an issue too big to be one need — it asks for several things,
+each proved by its own Verification, that a change could finish one at a
+time: propose `split` with 2 to 6 children, each a short title and its
+four sections, as `refine` writes them (`need` and `validation` drafts
+from the issue's words, `scope` and `sources` and `verification` from the
+code). The issue keeps its need and lists its children; one the task says
+is split already is not split again. Split only what is truly several
+needs, not a need with steps.
+
+**Rename** an issue whose title does not say what it is about: propose
+`rename` with about ten words that tell it from any other — the problem,
+not the fix. A title the task says is a person's is kept.
+
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;
 one whose code you were not given waits for its sources: the task says the last release

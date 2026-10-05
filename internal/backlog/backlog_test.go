@@ -26,3 +26,16 @@ func TestLocate(t *testing.T) {
 		t.Fatalf("Locate = %d, %d, %q, %v", from, to, got, ok)
 	}
 }
+
+// A parent's task list is added once, after its text, and rewritten in
+// place when a resumed split lists its children again.
+func TestListChildren(t *testing.T) {
+	body := ListChildren("Two needs.\n\n## Scope\n\nsrc.", []int{10})
+	want := "Two needs.\n\n## Scope\n\nsrc.\n\n## Sub-issues\n\n- [ ] #10"
+	if body != want {
+		t.Fatalf("first list = %q", body)
+	}
+	if again := ListChildren(body, []int{10, 11}); again != want+"\n- [ ] #11" {
+		t.Fatalf("list rewritten = %q", again)
+	}
+}

@@ -25,7 +25,7 @@ duties:
   writes: []        # never the code nor the docs: the forge's issues only
 
 # comment: the engine's state comment on each issue it takes (pre).
-intentions: [open, close, sources, milestone, order, refine, ready, ask, comment, note]
+intentions: [open, close, sources, milestone, order, refine, ready, ask, split, rename, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass
@@ -51,3 +51,5 @@ settings:
     refine: {mode: act, max: 5}       # the sections an issue lacks, Need and Validation as drafts
     ready: {mode: act, max: 5}        # checked by the engine; an outsider's issue is proposed
     ask: {mode: act, max: 3}          # the reporter asked what is missing, once an issue
+    split: {mode: act, max: 2}        # a need too big for one issue split into 2 to 6, linked to it (ADR-0021)
+    rename: {mode: act, max: 5}       # an issue's title; a person's kept

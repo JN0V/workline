@@ -31,6 +31,8 @@ var Catalogue = map[string]bool{
 	"refine":         true, // the sections an issue lacks written, Need and Validation as drafts (docs/spec/backlog-acts.md)
 	"ready":          true, // an issue moved to ready, once the engine finds it so (docs/spec/backlog-acts.md)
 	"ask":            true, // the reporter asked what is missing (docs/spec/backlog-acts.md)
+	"split":          true, // a need split into issues of their own, linked to it (docs/spec/backlog-acts.md)
+	"rename":         true, // an issue's title set; a person's kept (docs/spec/backlog-acts.md)
 	"finding":        true, // a lens's answer (in/parts): a defect, its cause quoted; read by pre, never applied (ADR-0020)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
 }
@@ -178,7 +180,7 @@ func Marshal(in []Intention) ([]byte, error) {
 // applyOrder is the order intentions are applied in, whatever order they were
 // proposed in: files first, then what depends on them, then what only informs.
 var applyOrder = map[string]int{
-	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "milestone": 7, "order": 8, "refine": 9, "ready": 10, "ask": 11, "issue": 12, "handoff": 13, "note": 14,
+	"commit-message": 0, "patch": 1, "label": 2, "comment": 3, "open": 4, "sources": 5, "close": 6, "milestone": 7, "order": 8, "refine": 9, "ready": 10, "ask": 11, "split": 12, "rename": 13, "issue": 14, "handoff": 15, "note": 16,
 }
 
 // SortForApply puts intentions in apply order, keeping the proposed order within a kind.
