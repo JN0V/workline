@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -105,6 +107,29 @@ func (g *github) EnsureLabel(name, color, description string) error {
 func (g *github) SetBody(id int, body string) error {
 	_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "body="+body)
 	return err
+}
+
+func (g *github) SetTitle(id int, title string) error {
+	_, err := g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/%d", id), "-f", "title="+title)
+	return err
+}
+
+// AddSubIssue links child under parent with GitHub's sub-issues, which
+// take the child's id, not its number; one already linked is left.
+func (g *github) AddSubIssue(parent, child int) (bool, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/sub_issues?per_page=100", parent), "--jq", ".[].number")
+	if err != nil {
+		return false, err
+	}
+	if slices.Contains(strings.Fields(string(out)), strconv.Itoa(child)) {
+		return true, nil
+	}
+	out, err = g.api(fmt.Sprintf("repos/{owner}/{repo}/issues/%d", child), "--jq", ".id")
+	if err != nil {
+		return false, err
+	}
+	_, err = g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/sub_issues", parent), "-F", "sub_issue_id="+strings.TrimSpace(string(out)))
+	return err == nil, err
 }
 
 func (g *github) Comments(t Target) ([]string, error) {

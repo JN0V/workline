@@ -520,6 +520,15 @@ func (g *gitlab) SetBody(id int, body string) error {
 	return err
 }
 
+func (g *gitlab) SetTitle(id int, title string) error {
+	_, err := g.api("-X", "PUT", path(Target{Kind: "issue", ID: id}), "-f", "title="+title)
+	return err
+}
+
+// AddSubIssue: an issue's children on GitLab are tasks, another work item
+// type the line does not read (ADR-0021); the parent's body lists them.
+func (g *gitlab) AddSubIssue(parent, child int) (bool, error) { return false, nil }
+
 func (g *gitlab) SetMilestone(id int, title string) error {
 	m, err := g.milestoneIDs()
 	if err != nil {

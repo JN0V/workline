@@ -19,6 +19,7 @@ type FakeState struct {
 	MergeRequests []FakeItem `json:"merge-requests"`
 	Milestones    []string   `json:"milestones,omitempty"`    // open milestones, by title
 	Labels        []FakeItem `json:"labels,omitempty"`        // labels defined, their name as id
+	SubIssues     bool       `json:"sub-issues,omitempty"`    // the forge has sub-issues, as GitHub
 	FailOnWrite   int        `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes        int        `json:"writes"`
 }
@@ -38,6 +39,7 @@ type FakeItem struct {
 	Comments  []string `json:"comments"`
 	Author    string   `json:"author,omitempty"`
 	Insider   bool     `json:"insider,omitempty"`
+	Parent    int      `json:"parent,omitempty"` // the issue it is a sub-issue of
 }
 
 func (f *Fake) load() (*FakeState, error) {
@@ -339,6 +341,32 @@ func (f *Fake) SetMilestone(id int, title string) error {
 			s.Milestones = append(s.Milestones, title)
 		}
 		it.Milestone = title
+		return nil
+	})
+}
+
+func (f *Fake) SetTitle(id int, title string) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil {
+			return err
+		}
+		it.Title = title
+		return nil
+	})
+}
+
+func (f *Fake) AddSubIssue(parent, child int) (bool, error) {
+	s, err := f.load()
+	if err != nil || !s.SubIssues {
+		return false, err
+	}
+	return true, f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: child})
+		if err != nil {
+			return err
+		}
+		it.Parent = parent
 		return nil
 	})
 }
