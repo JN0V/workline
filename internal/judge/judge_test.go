@@ -28,6 +28,8 @@ func TestVerdict(t *testing.T) {
 		`yes: same meaning`:            "",
 		`- note: no: 'judged' is gone`: "'judged' is gone",
 		`- note: "No: it narrows it."`: "it narrows it.",
+		`note: "no: as it reads now"`:  "as it reads now", // not a list's item: seen live
+		`note: "yes: it is the value`:  "",
 	} {
 		yes, why, err := Verdict(note)
 		if err != nil || (want == "") != yes || (!yes && why != want) {
