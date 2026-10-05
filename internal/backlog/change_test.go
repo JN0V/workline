@@ -61,6 +61,17 @@ func TestImportedReadsItsFileAndLines(t *testing.T) {
 	}
 }
 
+func TestSectionsAndLinesOfOneIssueAreTwoChanges(t *testing.T) {
+	p := &Plan{hand: &Hand{}, open: map[int]bool{4: true, 5: true}}
+	p.readChanges([]Change{
+		{Issue: 4, What: []string{"Need"}, Touch: []Touch{{Issue: 5, How: TouchPart}}},
+		{Issue: 4, Path: "ROADMAP.md", Lines: "7 to 9", Touch: []Touch{{Issue: 4, How: TouchImport}}},
+	})
+	if len(p.Record.Changes) != 2 {
+		t.Errorf("changes kept = %v, want both: one does not replace the other", p.Record.Changes)
+	}
+}
+
 func TestTouchedPartsFirstThenWaitingThenSharing(t *testing.T) {
 	open := []forge.Issue{
 		{ID: 9, Children: []int{11}},

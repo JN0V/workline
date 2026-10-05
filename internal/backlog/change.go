@@ -99,8 +99,15 @@ type Touch struct {
 	Read  bool   `yaml:"read,omitempty"`  // read again by the run that found it, with the change
 }
 
-// Key is the change's box in the report.
-func (c Change) Key() string { return fmt.Sprintf("changed/%d", c.Issue) }
+// Key is the change's box in the report: an issue's sections and the
+// lines it was imported from are two changes, which one run may find
+// together.
+func (c Change) Key() string {
+	if c.Path != "" {
+		return fmt.Sprintf("changed-lines/%d", c.Issue)
+	}
+	return fmt.Sprintf("changed/%d", c.Issue)
+}
 
 // said names the change in a line.
 func (c Change) said() string {
