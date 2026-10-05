@@ -1,0 +1,18 @@
+case: product-owner/depend-act-sets-native-link
+about: A `depend` act, checked, is written in the forge's own relation where it has one (GitHub's issue dependencies), nothing in the body; the report says it, how to undo it, and what now waits (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:depend-one}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 12, blocked-by: [13], body-lacks: "Blocked by"}
+      - {id: 13, blocked-by: []}
+      - {id: 14, title: "Backlog — product owner", body-contains: "- Marked #12 as waiting on #13: The CSV export's tests need #13's fixed row count first. Remove the link, or the line in its body, to undo."}
+      - {id: 14, body-contains: "- #12 Quote commas in exported cells waits on #13."}

@@ -12,7 +12,8 @@ its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
 it. This page is the contract; the acts built are closing, naming an
 issue's sources, putting it in a milestone, ordering it, opening one from
-a file, refining one to ready, splitting one and renaming it.
+a file, refining one to ready, splitting one, renaming it and naming
+what it waits on.
 
 ## The issue's state
 
@@ -222,7 +223,10 @@ must read, as for any act.
 **The backlog's order** is derived, never stored: the nearest milestone
 first (titles in version order; an issue in none after every one in
 one), then the priority (an issue with none after 4), then the lowest
-number (`backlog.Less`). The task lists the issues not read in that order.
+number (`backlog.Less`) — and an issue that waits on an open issue after
+it, whatever its labels ("What an issue waits on", below;
+`backlog.Order`). The task lists the issues not read in that order, each
+marked with the open issues it waits on.
 
 ## Refining to ready
 
@@ -341,6 +345,58 @@ reporter's and may be renamed; after the role's, a title other than the
 one recorded is a person's: the act is dropped (`title-kept`), the task
 shows it as a person's. No quote; the state must read.
 
+## What an issue waits on
+
+```yaml
+- depend: {issue: 14, blocked-by: [13], why: "its test needs #13's fixed row count"}
+```
+
+An issue that cannot start before another is done names it (ADR-0028):
+
+- **Kept** in the forge's own relation where it has one — GitHub's issue
+  dependencies, GitLab's `is_blocked_by` link (Premium and up) — through
+  `AddBlocker`; elsewhere — GitLab Free, which refuses the link for its
+  license, the local forge, a plugged forge answering `{native: false}` —
+  a line in the body, after its text: `Blocked by #13, #15.
+  <!-- workline:blocked-by -->`, the one line the engine rewrites as it
+  adds a blocker; the issue's state gets the body's digest, so the
+  engine's own line is not read as a person's change.
+- **Read** from both, on every forge: the relation, as the open issues are
+  listed (`Issue.BlockedBy`; GitHub asks only the issues its listing says
+  are blocked, GitLab one GraphQL query — an instance that answers it with
+  errors has none), and every line of a body starting with "Blocked by"
+  (case aside, a colon allowed) followed by issue references, a person's
+  own line included (`backlog.Blockers`).
+- **Checked**: the issue and each blocker open, not the report, not the
+  issue itself, 1 to 5 (`depend-issue`); only the blockers not there
+  already are written, none left drops it (`depend-same`); one that would
+  close a cycle with the relations there and those this run set is
+  dropped (`depend-cycle`); its state must read; no quote. It does not
+  count in the moved share.
+- **A split's child** names the siblings it waits on by their place in
+  the split, from 1 (`after: [1]`); checked with the split (`split-after`:
+  a place out of range, itself, or a cycle among them), written once the
+  children are opened, as `depend` writes it.
+- **The role only adds.** A relation a person set — a link, their own
+  line — is read and kept, never removed; one the role set and a person
+  took off, its blocker still open, is an act undone ("Trust").
+
+**The order** (`backlog.Order`) is Kahn's: the next issue is the first,
+by `Less`, whose blockers among those ordered are all placed; a blocker
+closed, or not an open issue, holds nothing back, so a blocker closed
+puts the issue back where its labels say. When none can be placed, those
+left hold a cycle: it is reported, its first issue by `Less` placed, and
+the order ends — never followed. `ready` is allowed on a blocked issue,
+its sections say it is understood, not that it can start; but **the
+first ready issue offered** is the first in the order bearing
+`workline:ready` that waits on no open issue (`backlog.NextReady`) — to
+whoever builds next, person or developer role (#117).
+
+Every run, with or without an agent, says it in its findings:
+`next-ready` (info) the issue offered first, `waiting` (info) each issue
+waiting on an open one, `dependency-cycle` (warn) each cycle, "#12 waits
+on #14, #14 waits on #12". The report says it too, under "Waiting".
+
 Split and rename on an issue opened by someone without write access are
 proposed, not done (`reporter-outside`), as moving it to ready — to the
 project, in the report: the text of a need is the reporter's to agree to
@@ -414,6 +470,7 @@ acts:
   ready: {mode: act, max: 5}
   ask: {mode: act, max: 3, rounds: 3}       # rounds: written to a reporter, then a person
   split: {mode: act, max: 2}
+  depend: {mode: act, max: 5}
   rename: {mode: act, max: 5}
   milestone: {mode: act, max: 10}
   order: {mode: act, max: 10}
@@ -455,6 +512,7 @@ The other levels change these (role.yaml, `levels`):
 | ready (the engine's check, never a draft) | act 5 | act 5 | act 10 |
 | ask | act 2, 2 rounds | act 3, 3 rounds | act 5, 3 rounds |
 | split | propose | act 2 | act 4 |
+| depend | propose | act 5 | act 10 |
 | rename | propose | act 5 | act 10 |
 | open (import) | act 30 | act 30 | act 30 |
 
@@ -483,7 +541,9 @@ lists what the last run did and what is proposed, each proposal a box a
 person of the project ticks to have it done ("The person's hand"), each closing with its
 quote and how to undo it — a rename with the title it had, a split with
 its children's titles, to close; an announcement with the day it may close
-and how to keep it open; an issue kept open, and why. Under "Before this run", each issue the run
+and how to keep it open; an issue kept open, and why. Under "Waiting", the
+first ready issue offered, each issue waiting on an open one, and each
+cycle. Under "Before this run", each issue the run
 moved is listed with its priority and milestone as they were, to put the
 order back. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to
@@ -558,11 +618,12 @@ and in the report:
 | milestone | its milestone is the one it had before (none included) |
 | ready | `workline:ready` is no longer on the open issue |
 | split | a child listed in the parent's state is closed as not planned (GitHub; GitLab keeps no reason) |
+| depend | a blocker it added, still open, is no longer among the issue's blockers: the link or the line taken off |
 
 A title, priority or milestone a person set to a third value is theirs:
 the act is no longer watched, and demotes nothing. An act whose issue is
 closed is no longer watched; a split, once each child is closed or gone
-from the forge (deleted, moved). A move
+from the forge (deleted, moved); a depend, once each blocker it added is closed. A move
 the engine made itself (a slip) and an act a person ticked are not the
 role's choice, and are not watched. The record keeps the newest 200.
 Changing the level never lifts a demotion.

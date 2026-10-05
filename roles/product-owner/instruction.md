@@ -66,7 +66,19 @@ four sections, as `refine` writes them (`need` and `validation` drafts
 from the issue's words, `scope` and `sources` and `verification` from the
 code). The issue keeps its need and lists its children; one the task says
 is split already is not split again. Split only what is truly several
-needs, not a need with steps.
+needs, not a need with steps. A child that cannot start before another
+of the split is done says so with `after`: the places of the children it
+waits on, from 1.
+
+**What an issue waits on**: when an issue you read cannot start before
+another open issue is done — it builds on code that issue adds, or its
+test needs that issue's fix — propose `depend` with `blocked-by`, the
+issues it waits on, and why. Only what it truly cannot start without, not
+what would merely be nicer first; never two issues that wait on each
+other. The task says what each issue waits on already, a person's link
+included: propose only what is missing. A blocked issue is ordered after
+its blockers whatever its priority, and is never offered first to whoever
+builds next.
 
 **Rename** an issue whose title does not say what it is about: propose
 `rename` with about ten words that tell it from any other — the problem,

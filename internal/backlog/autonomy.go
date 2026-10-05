@@ -119,7 +119,7 @@ func (c Config) Modes(demoted []string) []KindMode {
 
 // ActKinds are the kinds of act as the settings name them, in the order the
 // task and the report list them.
-var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "refine", "ready", "ask", "split", "rename", "open"}
+var ActKinds = []string{"sources", "close-duplicate", "close-obsolete", "milestone", "order", "refine", "ready", "ask", "split", "depend", "rename", "open"}
 
 // Say says one kind's mode in a few words: "act, 5 a run (level)".
 func (m KindMode) Say() string {

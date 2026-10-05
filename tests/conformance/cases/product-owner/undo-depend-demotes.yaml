@@ -1,0 +1,25 @@
+case: product-owner/undo-depend-demotes
+about: A link the role set between issues, taken off by a person while its blocker is still open, is an act undone — found at the next run from the record, with no agent — and puts `depend` back to propose; one whose blocker is closed is no longer watched (ADR-0028, ADR-0026).
+given:
+  repo: backlog
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Name the columns", body: "A header row.", closed: true, labels: [], comments: []}
+      - id: 20
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\ndone:\n  - {issue: 12, act: depend, set: \"13\", level: normal}\n  - {issue: 14, act: depend, set: \"15\", level: normal}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: undone, where: "#12", message: "#12 no longer waits on #13: a person took off the link the role set"}]
+  forge:
+    issues:
+      - {id: 20, body-contains: "depend: propose (demoted)"}
+      - {id: 20, comment-contains: "propose: [depend]"}
+      - {id: 20, comment-lacks: "issue: 14"}

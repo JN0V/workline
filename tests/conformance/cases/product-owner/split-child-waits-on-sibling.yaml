@@ -1,0 +1,15 @@
+case: product-owner/split-child-waits-on-sibling
+about: A split's child that names a sibling in `after` waits on it — the forge's relation where it has one, a line in its body elsewhere (here the latter) — so the second part is never offered before the first (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:split-two-after}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 9, comment-contains: "split: [10, 11]"}
+      - {id: 10, body-lacks: "Blocked by"}
+      - {id: 11, body-contains: "Blocked by #10. <!-- workline:blocked-by -->"}

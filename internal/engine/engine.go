@@ -1910,6 +1910,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.split(d.Act)
+	case "depend":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.depend(d.Act.Issue, d.Act.BlockedBy, true)
 	case "handoff":
 		a.handoffs = append(a.handoffs, in.Value)
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
@@ -2111,6 +2117,7 @@ func (a *applier) split(c backlog.Proposal) error {
 		return err
 	}
 	var ids, listed []int
+	closed := map[int]bool{} // children closed already: left as they are
 	for _, ch := range c.Into {
 		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.SplitKey(c.Issue, ch.Title), Title: strings.TrimSpace(ch.Title),
 			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head})
@@ -2121,6 +2128,7 @@ func (a *applier) split(c backlog.Proposal) error {
 			a.findings = append(a.findings, verdict.Finding{Rule: "issue-closed", Level: "warn", Where: fmt.Sprintf("#%d", id),
 				Message: fmt.Sprintf("%q, a part of #%d: #%d, closed, holds it; not opened again", ch.Title, c.Issue, id)})
 			ids = append(ids, id) // still one of its children: the issue is not split again
+			closed[id] = true
 			continue
 		}
 		ids = append(ids, id)
@@ -2134,6 +2142,19 @@ func (a *applier) split(c backlog.Proposal) error {
 		}
 		if !native {
 			listed = append(listed, id)
+		}
+	}
+	// What a child waits on among its siblings (ADR-0028): opened, never
+	// read yet, so its state's digest is left.
+	for i, ch := range c.Into {
+		var blockers []int
+		for _, k := range ch.After {
+			blockers = append(blockers, ids[k-1])
+		}
+		if len(blockers) > 0 && !closed[ids[i]] {
+			if err := a.depend(ids[i], blockers, false); err != nil {
+				return err
+			}
 		}
 	}
 	t := forge.Target{Kind: "issue", ID: c.Issue}
@@ -2161,6 +2182,49 @@ func (a *applier) split(c backlog.Proposal) error {
 	if body != "" {
 		st.Body = backlog.BodyDigest(body) // the engine's own change: not read again for it
 	}
+	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
+// depend records what an issue waits on (ADR-0028): the forge's own
+// relation where it has one, else the engine's line in its body, rewritten
+// with them; with digest, the issue's state gets the body's digest, so the
+// engine's own change is not read as a person's.
+func (a *applier) depend(id int, blockers []int, digest bool) error {
+	b := a.forge.(forge.Backlog)
+	var inBody []int
+	for _, bl := range blockers {
+		native, err := b.AddBlocker(id, bl)
+		if err != nil {
+			return err
+		}
+		if !native {
+			inBody = append(inBody, bl)
+		}
+	}
+	if len(inBody) == 0 {
+		return nil
+	}
+	is, err := a.forge.Issue(id)
+	if err != nil {
+		return err
+	}
+	body := backlog.WithBlockers(is.Body, inBody)
+	if body == is.Body {
+		return nil
+	}
+	if err := b.SetBody(id, body); err != nil || !digest {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: id}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, _, err := backlog.ReadState(comments, a.role)
+	if err != nil {
+		return fmt.Errorf("#%d: its state comment: %w", id, err)
+	}
+	st.Body = backlog.BodyDigest(body)
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 

@@ -1,0 +1,19 @@
+case: product-owner/persons-link-kept
+about: What a person set an issue to wait on — a link on the forge, a "Blocked by" line of their own in the body — is read and kept; the role only adds what is missing, and the agent is told what the issue waits on already (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.\n\nBlocked by #15", author: ann, insider: true, labels: [], blocked-by: [14], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Name the export's columns", body: "A header row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:depend-one}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "Waits on: #14 (open), #15 (open)"}
+  forge:
+    issues:
+      - {id: 12, blocked-by: [14, 13], body-contains: "A comma splits a cell.\n\nBlocked by #15"}

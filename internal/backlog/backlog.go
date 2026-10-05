@@ -158,8 +158,9 @@ type Proposal struct {
 	DuplicateOf int      `yaml:"duplicate-of,omitempty"`
 	Sources     []string `yaml:"sources,omitempty"`
 	Milestone   string   `yaml:"milestone,omitempty"`
-	Title       string   `yaml:"title,omitempty"` // an issue to open, or an issue's new title (rename)
-	Into        []Child  `yaml:"into,omitempty"`  // the children of a split
+	Title       string   `yaml:"title,omitempty"`           // an issue to open, or an issue's new title (rename)
+	Into        []Child  `yaml:"into,omitempty"`            // the children of a split
+	BlockedBy   []int    `yaml:"blocked-by,flow,omitempty"` // depend: the issues it waits on (ADR-0028)
 	Quote       *Quote   `yaml:"quote"`
 	Why         string   `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts; Added,
@@ -211,6 +212,7 @@ type Child struct {
 	Validation   string   `yaml:"validation"`
 	Scope        string   `yaml:"scope"`
 	Sources      []string `yaml:"sources,omitempty"`
+	After        []int    `yaml:"after,flow,omitempty"` // the children it waits on, by their place in the split, from 1 (ADR-0028)
 }
 
 // Kind is the kind of act, as settings name it.
@@ -240,7 +242,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "ask", "split", "rename"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "ask", "split", "rename", "depend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -277,6 +279,7 @@ type Plan struct {
 	hand      *Hand           // what people did on the report since the last run
 	ticked    map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
 	said      []string        // what the report says of the boxes ticked
+	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
 }
 
 // Setting is a kind of act's mode and cap.
@@ -508,6 +511,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "close" && !c.Announce {
 					p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level})
 				}
+				if c.Do == "depend" {
+					p.added[c.Issue] = append(p.added[c.Issue], c.BlockedBy...)
+				}
 				p.recordDone(c)
 			}
 		}
@@ -671,7 +677,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
-	p.open, p.seen, p.issues, p.ticked = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}
+	p.open, p.seen, p.issues, p.ticked, p.added = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is
@@ -763,6 +769,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkSplitRename(repo, c); rule != "" {
 		return rule, why
 	}
+	if rule, why := p.checkDepend(c); rule != "" {
+		return rule, why
+	}
 	if c.Do == "milestone" || c.Do == "order" {
 		// Ordering says nothing of an issue's truth: no quote, its state
 		// readable all the same.
@@ -836,7 +845,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -1018,10 +1027,26 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		if len(ch.Sources) == 0 || len(ch.Sources) > maxSources {
 			return "sources-unknown", fmt.Sprintf("%q: a scope names 1 to %d files (sources)", ch.Title, maxSources)
 		}
+		for _, k := range ch.After {
+			if k < 1 || k > len(c.Into) || c.Into[k-1].Title == ch.Title {
+				return "split-after", fmt.Sprintf("%q: `after` names the other children it waits on, by their place in the split, 1 to %d", ch.Title, len(c.Into))
+			}
+		}
 		for _, s := range ch.Sources {
 			path, _, _ := strings.Cut(s, "#")
 			if out, err := exec.Command("git", "-C", repo, "cat-file", "-t", "HEAD:"+path).Output(); path == "" || err != nil || strings.TrimSpace(string(out)) != "blob" {
 				return "sources-unknown", fmt.Sprintf("%q is not a file in the commit the run is on", path)
+			}
+		}
+	}
+	edges := map[int][]int{}
+	for i, ch := range c.Into {
+		edges[i+1] = ch.After
+	}
+	for i := range c.Into {
+		for _, k := range c.Into[i].After {
+			if reaches(edges, k, i+1) {
+				return "split-after", fmt.Sprintf("%q and %q wait on each other: a cycle", c.Into[i].Title, c.Into[k-1].Title)
 			}
 		}
 	}
@@ -1578,6 +1603,8 @@ func (p *Plan) ReportBody() string {
 				undo = " Rename it back to undo."
 			case "split":
 				undo = fmt.Sprintf(" Close the issues opened from #%d to undo: its own text was left as it was.", d.Act.Issue)
+			case "depend":
+				undo = " Remove the link, or the line in its body, to undo."
 			case "keep":
 				undo = ""
 			case "close":
@@ -1592,7 +1619,7 @@ func (p *Plan) ReportBody() string {
 		}
 	}
 	var b strings.Builder
-	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. An act undone — a closing reopened, a title, a priority or a milestone put back, `" + LabelReady + "` taken off, a split's part closed as not planned — puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
+	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. An act undone — a closing reopened, a title, a priority or a milestone put back, `" + LabelReady + "` taken off, a split's part closed as not planned, a link it set between issues taken off — puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
 	fmt.Fprintf(&b, "\nAutonomy: **%s** — %s.\n", p.config.Level, ModesLine(p.config.Modes(p.Record.Propose)))
 	if level, why := p.Record.Measure.Suggest(); level != "" {
 		fmt.Fprintf(&b, "\n**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)
@@ -1664,6 +1691,7 @@ func (p *Plan) ReportBody() string {
 	if len(before) > 0 {
 		b.WriteString("\n## Before this run\n\nThe issues this run moved, as they were: to put the order back, set their priority label and milestone to these.\n\n" + strings.Join(before, "\n") + "\n")
 	}
+	b.WriteString(p.waiting())
 	if len(proposed) > 0 {
 		b.WriteString("\n## Proposed\n\nFor a person: tick a box if you agree, and the engine does it at its next run, as written — or do it yourself; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
@@ -1720,6 +1748,8 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("%s #%d: %s. %s", map[bool]string{true: "Refined", false: "Refine"}[done], c.Issue, strings.Join(names, ", "), strings.TrimSpace(c.Why))
 	case "ready":
 		return fmt.Sprintf("%s #%d to ready: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, strings.TrimSpace(c.Why))
+	case "depend":
+		return fmt.Sprintf("%s #%d as waiting on %s: %s", map[bool]string{true: "Marked", false: "Mark"}[done], c.Issue, issueList(c.BlockedBy), strings.TrimSpace(c.Why))
 	case "ask":
 		again := ""
 		if c.Round > 1 {

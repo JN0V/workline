@@ -1,0 +1,22 @@
+case: product-owner/depend-mode-per-level
+about: At autonomy cautious, `depend` sets direction and is proposed in the report, a box to tick, nothing written on the forge; the task says its mode, from the level (ADR-0028, ADR-0026).
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:depend-one}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "- depend: propose (level)\n"}
+  forge:
+    issues:
+      - {id: 12, blocked-by: [], body-lacks: "Blocked by"}
+      - {id: 14, title: "Backlog — product owner", body-contains: "- [ ] Mark #12 as waiting on #13: "}

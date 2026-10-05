@@ -27,7 +27,7 @@ expect:
     issues:
       - {id: 9, title: "bug", labels: [workline:priority/1]}
       - {id: 12, closed: true}
-      - {id: 13, body-contains: "split: act, 4 a run (level); rename: propose (demoted); open"}
+      - {id: 13, body-contains: "split: act, 4 a run (level); depend: act, 10 a run (level); rename: propose (demoted); open"}
       - {id: 13, body-contains: "- [ ] Rename #9 from \"bug\""}
       - {id: 13, body-contains: "- [ ] Set rename back to act"}
       - {id: 13, comment-contains: "propose: [rename]"}
