@@ -41,6 +41,22 @@ Claude Code reads only `.claude/skills/`. A symlink or a generator is needed.
 | coder/agentapi | Archived 2026-09-13 — avoid |
 | jenkinsci/ai-agent-plugin | One step over 8 agent CLIs, a handler per agent: the adapter pattern |
 
+## Structured answers that read (2026-10-05)
+
+A lens's YAML did not read twice on one pull request (#138): a text starting
+with a backtick, written plain. What others do:
+
+- **Ask again with the parser's error, bounded.** Instructor's validation
+  retries feed the error back, `max_retries` counted after the first try
+  ([retrying](https://python.useinstructor.com/concepts/retrying/)); the
+  same as LangChain's retry parsers. workline: once, counted in the token
+  budget, the part failed after.
+- **Keep code out of JSON.** Aider measured models writing worse code when
+  it is wrapped in JSON than in plain text
+  ([code in JSON](https://aider.chat/2024/08/14/code-in-json.html)).
+  workline stays on YAML and asks for block scalars (`|`), which take code
+  with no escaping; a block's first line may not start with a tab.
+
 ## Ideas to take
 
 - `DUTIES.md` per role: what it may and may not touch (OpenGAP).
