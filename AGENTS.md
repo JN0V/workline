@@ -22,7 +22,9 @@ against it. Then only what the task needs:
   with the commit it was `checked` against. When the documentalist reports it
   `suspect`, check it against the change, fix what is wrong, and move `checked`.
 - **Conformance first**: a behaviour starts as a case in tests/conformance/cases/;
-  `pending.txt` lists what does not pass yet and must never lie.
+  `pending.txt` lists what does not pass yet and must never lie. README's
+  case count is a derived block: leave it as it is, gardening regenerates
+  it on `main` after the merge (ADR-0027).
 - **Try it for real** before calling it done (a copy of a real repository, a real
   agent call), and record what was tried and what was not.
 - **Commits**: conventional, atomic, each one builds; workline's own hook checks

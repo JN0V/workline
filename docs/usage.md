@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: b2407d4
+checked: a43fff5
 verified: agent:claude-code
 ---
 # Using workline
@@ -111,9 +111,10 @@ routing:
 A step that blocks stops the push. The docs suspect are only counted, in one
 line — those these commits made so, those before — never listed nor asked
 about: they are judged on the merge request, by gardening, or when you run
-`workline docs` (ADR-0010). A derived block the documentalist regenerated stops the
-push too: it is in the working tree, to review, commit, and push again. Sizes
-and links the line reports on every run are only counted. `git push
+`workline docs` (ADR-0010). A derived block behind the code is left as it
+is and only counted: gardening regenerates it on the default branch after the
+merge (ADR-0027), so never edit one by hand. Sizes and links the line reports
+on every run are only counted. `git push
 --no-verify` skips the hook.
 
 ## Files
