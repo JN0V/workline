@@ -173,7 +173,9 @@ func SetAutonomy(repo, level string) (string, bool, error) {
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return "", false, fmt.Errorf(".workline/config.yaml: %w", err)
 	}
+	var kept []byte // a file of comments alone, which the parser drops: kept above
 	if len(doc.Content) == 0 {
+		kept = bytes.TrimRight(data, " \n") // `---` or comments
 		doc = yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{{Kind: yaml.MappingNode}}}
 	}
 	top := doc.Content[0]
@@ -189,6 +191,14 @@ func SetAutonomy(repo, level string) (string, bool, error) {
 			v = &yaml.Node{Kind: yaml.MappingNode}
 			m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, v)
 		case v.Kind == yaml.ScalarNode && v.Tag == "!!null":
+			// Its comments go to its key: a block mapping holds no line comment.
+			for i := 0; i+1 < len(m.Content); i += 2 {
+				if k := m.Content[i]; m.Content[i+1] == v {
+					k.LineComment = strings.TrimSpace(k.LineComment + " " + v.LineComment)
+					k.HeadComment = strings.TrimSpace(k.HeadComment + "\n" + v.HeadComment)
+					k.FootComment = strings.TrimSpace(k.FootComment + "\n" + v.FootComment)
+				}
+			}
 			*v = yaml.Node{Kind: yaml.MappingNode, Line: v.Line, Column: v.Column}
 		case v.Kind != yaml.MappingNode:
 			return nil, fmt.Errorf(".workline/config.yaml: %s is not a mapping: autonomy not set", where+key)
@@ -201,13 +211,22 @@ func SetAutonomy(repo, level string) (string, bool, error) {
 			return "", false, err
 		}
 	}
-	if v := value(settings, "autonomy"); v != nil {
-		return v.Value, false, nil
+	switch v := value(settings, "autonomy"); {
+	case v == nil:
+		settings.Content = append(settings.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "autonomy",
+			HeadComment: "How far the product owner goes alone (ADR-0026): cautious, normal or enterprising."},
+			&yaml.Node{Kind: yaml.ScalarNode, Value: level})
+	case v.Kind == yaml.ScalarNode && v.Tag == "!!null":
+		v.Tag, v.Value, v.Style = "", level, 0 // `autonomy:` with nothing set: set now
+	case v.Kind != yaml.ScalarNode:
+		return "", false, fmt.Errorf(".workline/config.yaml: roles.product-owner.settings.autonomy is not a level: autonomy not set")
+	default:
+		return v.Value, false, nil // the project's choice
 	}
-	settings.Content = append(settings.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: "autonomy",
-		HeadComment: "How far the product owner goes alone (ADR-0026): cautious, normal or enterprising."},
-		&yaml.Node{Kind: yaml.ScalarNode, Value: level})
 	var out bytes.Buffer
+	if len(kept) > 0 && !bytes.Equal(kept, []byte("---")) {
+		out.Write(append(kept, '\n'))
+	}
 	enc := yaml.NewEncoder(&out)
 	enc.SetIndent(2)
 	if err := enc.Encode(&doc); err != nil {

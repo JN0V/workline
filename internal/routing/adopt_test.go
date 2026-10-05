@@ -107,6 +107,10 @@ func TestSetAutonomy(t *testing.T) {
 		{name: "other settings kept", before: "roles:\n  product-owner:\n    settings: {issues-per-run: 4}\n", changed: true, level: "cautious", keeps: "issues-per-run: 4"},
 		{name: "a level set already", before: "roles:\n  product-owner:\n    settings: {autonomy: enterprising}\n", level: "enterprising"},
 		{name: "roles a scalar", before: "roles: all\n", fails: true, keeps: "roles: all"},
+		{name: "autonomy empty", before: "roles:\n  product-owner:\n    settings:\n      autonomy:\n", changed: true, level: "cautious"},
+		{name: "autonomy a list", before: "roles:\n  product-owner:\n    settings:\n      autonomy: [cautious]\n", fails: true},
+		{name: "comments only", before: "# the project's config\n", changed: true, level: "cautious", keeps: "# the project's config"},
+		{name: "a null's comment kept", before: "roles: ~ # set later\n", changed: true, level: "cautious", keeps: "# set later"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			repo := t.TempDir()
