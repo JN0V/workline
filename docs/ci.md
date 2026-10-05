@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: 472daca
+checked: a8d49b8
 judged: fa1d682
 verified: agent:claude-code
 ---
@@ -204,7 +204,9 @@ with what they know already written.
 It splits an issue too big to be one need into issues of their own,
 linked to it — sub-issues on GitHub, tasks on GitLab, a task list in its
 body elsewhere — and renames a title that says nothing; a title a person
-set after its own is kept (ADR-0022).
+set after its own is kept (ADR-0022). As the parts close, it says on the
+parent, with no agent, what each delivered and which items of its
+Verification are proved; a person accepts it by closing it (ADR-0029).
 
 It says what an issue waits on — a split's second part on its first, an
 issue that builds on another's code — in GitHub's issue dependencies, or,
