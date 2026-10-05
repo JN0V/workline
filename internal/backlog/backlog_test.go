@@ -74,6 +74,21 @@ func TestProposalReadBack(t *testing.T) {
 	}
 }
 
+// A text is cut into its questions: a list's items each one, the options
+// of one question kept together, a sentence before it left out.
+func TestQuestions(t *testing.T) {
+	for text, want := range map[string]string{
+		"- Do X\n- Since when?":                        "since when?",
+		"Which do you mean:\n- the CLI or\n- the API?": "which do you mean: - the cli or - the api?",
+		"Thanks. Is it\n1) fast or\n2) slow?":          "is it 1) fast or 2) slow?",
+		"E.g. which file? Does a.go fail?":             "e.g. which file?|does a.go fail?",
+	} {
+		if got := strings.Join(questions(text), "|"); got != want {
+			t.Errorf("questions(%q) = %q, want %q", text, got, want)
+		}
+	}
+}
+
 // A question asked in an earlier comment is told whatever leads it there —
 // the reporter named, the sentence before it, spaces and case aside.
 func TestAskedBefore(t *testing.T) {
