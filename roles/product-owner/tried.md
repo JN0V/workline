@@ -589,3 +589,27 @@ item word for word. **One agent call, 16.0k tokens in and 1.4k out**
 - Not tried live: a part gone from the forge; a part of another
   repository (GitHub); the local forge and a plugged forge's `closers`
   (conformance only).
+
+## 2026-10-05 — the import's map, live on GitHub, no agent
+
+`workline issues import` with its map (ADR-0030), on a local copy of
+JN0V/workline-sandbox, writing to its GitHub issues. No agent called: the
+answer planted (`--ai fake:`), or none (`--ai none`).
+
+- **A planted answer**, a 13-line file (`IMPORT-163.md`, not pushed): two
+  `open`s, a `done` with its words, two `not-item`s, one item left out.
+  First run: #33 opened, the item left out under "Not covered" with the
+  last one — #34, opened too, but missing from the map. **Fixed**: GitHub's
+  list of issues, read just after, did not show #34 yet; which issue an
+  opening produced is now read from the run folder (`out/openings.yaml`).
+  Second run, the left-out item answered: #35 opened, #33 and #34 "already
+  open", exit 0. #34 then closed by hand as completed: third run, "#34,
+  closed", nothing written to it.
+- **DomoticsCore's roadmap** (`docs/CODE-ROADMAP.md`, 7,587 lines), on the
+  same clone, `--ai none`, without `--apply`: 32 shares in two minutes, the
+  forge read each share; 560 paragraphs "Not covered", the summary saying
+  so, exit 2. As it should: without an agent nothing is judged.
+- Not tried: a real agent's answer with `skip`s — the token cost of a
+  `skip` a line, and whether the agent answers for every line — and the
+  maintainer reading DomoticsCore's map against its 56 issues (#163's
+  Validation).

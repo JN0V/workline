@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 527a1a3
+checked: d293323
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -107,10 +107,51 @@ judgement: the product owner reads the file, not a parser (principle 4).
   the text in a marker), so an import stopped half-way is run again. Each
   issue gets its state, confirmed at the commit, no sources: gardening
   names them (`sources`).
-- Without `--apply`, it says what it would open, the quotes not checked
-  yet, and writes nothing. `open` is capped per share (`acts.open.max`):
-  past it, an item is proposed in the report, and the import run again
-  opens it.
+- Without `--apply`, it says what it would open and writes nothing.
+  `open` is capped per share (`acts.open.max`): past it, an item is
+  proposed in the report, and the import run again opens it.
+
+### The map: every item to its issue, or why not
+
+A requirement the agent skipped — judged done, taken for an
+introduction, lost at a share's edge, or missed — must leave a trace
+(ADR-0030). The agent answers for every line of its share that is not
+blank, an item cut by the share's end left to the next share: an `open`,
+or a `skip` that says why the item is not opened — never applied, kept
+in the run folder (`out/skips.yaml`):
+
+```yaml
+- skip: {lines: "9", reason: done, quote: {path: ROADMAP.md, text: "Done in 1.2."}}
+- skip: {lines: "14", reason: held, issue: 3}
+- skip: {lines: "1-5", reason: not-item, why: "the title, the introduction and a heading"}
+```
+
+The engine builds the map from the shares it cut and these answers, and
+checks each reason: a `done` quote found in the file (or the file it
+names), as written but for spaces; a `held` issue that is on the forge;
+a `not-item` that says why. Each item, by its lines and first words,
+goes to:
+
+| Entry | When |
+|---|---|
+| `#n, opened` | opened by this import — read from the run folder (`out/openings.yaml`), a forge's list lagging behind a new issue |
+| `#n, already open` | an open issue held its text before the import (its marker), or the agent named it (`held`) |
+| `#n, closed` | a closed issue holds its text: not opened again |
+| would be opened | without `--apply` |
+| past the cap | proposed in the report; the import run again opens it |
+| done | the words that say so, quoted |
+| not an item | why |
+
+Every line not blank that no entry holds is listed under **Not
+covered**, a paragraph an entry: a quote not found, a reason that does
+not check (`no-quote`, `skip-unread`), or lines the answer left out —
+the share that was to answer for them flagged (`items-omitted`), each
+share answering for its lines up to where the next one starts. Then the
+summary says how many, and the import ends `human` (exit 2): a person
+reads them, then runs the import again or opens them by hand. Without
+an agent (`--ai none`), every line is Not covered. With `--json`, the
+map is the result's `coverage`: `items` and `not-covered`, each with
+`lines`, `words`, `state`, `issue`, `why`.
 
 The file then stays as it is, for its history.
 

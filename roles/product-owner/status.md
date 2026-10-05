@@ -31,6 +31,7 @@ on the sandbox (tried.md).
 | The code an issue is about named (`sources`) | the sandbox (#3); DomoticsCore (BUG-5) |
 | Issues put in the next releases' milestones | a copy of DomoticsCore |
 | A backlog file, whatever its form, opened as issues (`workline issues import`) | workline's BACKLOG.md, 30 issues, one call |
+| The import's map (ADR-0030): each item to its issue — opened, already open, closed — or its reason checked — done, the words quoted; not an item; past the cap —, what is left listed as not covered, its share flagged, the import ending for a person (exit 2) | JN0V/workline-sandbox, live on GitHub, the agent's answer planted (#33 to #35: opened, then already open, then #34 closed); DomoticsCore's roadmap without an agent, 32 shares, 560 paragraphs not covered; conformance `import-map*`, `import-flags-*`. Not with a real agent's answer yet |
 | A true issue on the code a fix touched left alone; a look-alike left open | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
 | Refining: Scope and Verification from the code, Need and Validation drafted; the drafts accepted by a person, the issue moved to `ready` by the engine's check; a vague issue's reporter asked, the answer read, the issue refined | JN0V/workline-sandbox, live (#6, #7); DomoticsCore, live (#163, #167, #168, #171, #172) |
 
@@ -81,7 +82,11 @@ checked.
 5. **The weekly sample over its acts**; a file the agent was not shown
    named as a source. The one way to open issues is built (ADR-0018,
    amended); left: its import's plan does not yet see a closed issue
-   (the engine leaves it closed, said).
+   (the engine leaves it closed, said, and the import's map names it).
+   **The import's map, what is left** (ADR-0030): a real agent's import
+   answered with `skip`s — DomoticsCore's roadmap again, the map read by
+   the maintainer against its 56 issues, each reason agreed with, none
+   missing; the tokens a `skip` a line costs, measured.
 6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
    GitHub project's position), deferred (ADR-0018); milestones ranked by
    their due date, not only their title; the engine refusing a person's

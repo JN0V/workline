@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: d8e0419
+checked: d293323
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -76,6 +76,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine — obsolete announced on the issue first, closed by the engine days later on silence and a second judge's yes (docs/spec/backlog-acts.md, ADR-0024) | forge |
 | `keep` | keep an issue announced obsolete open: its label off, its evidence recorded, never announced again on it (docs/spec/backlog-acts.md) | forge |
 | `open` | open an issue from a file's item, its text quoted, once (docs/spec/backlog-acts.md, "Importing a file") | forge |
+| `skip` | when importing, an item of the file not opened, by its lines, and why: `done` (the words that say so quoted), `held` (the issue that holds it) or `not-item` (why); the engine checks the reason and puts it in the import's map (docs/spec/backlog-acts.md, "The map"; ADR-0030) | never: kept in `out/skips.yaml`, read by the import |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
