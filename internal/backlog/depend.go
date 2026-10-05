@@ -269,8 +269,17 @@ func ReadBacklog(open []forge.Issue, report int) Backlog {
 // waiting is the report's part on what the order holds back: the first
 // ready issue offered, the issues waiting, the cycles.
 func (p *Plan) waiting() string {
+	closed := map[int]bool{} // closed by this run: no longer open
+	for _, d := range p.Decisions {
+		if d.Mode == Act && d.Act.Do == "close" && !d.Act.Announce {
+			closed[d.Act.Issue] = true
+		}
+	}
 	var open []forge.Issue
 	for _, is := range p.issues {
+		if closed[is.ID] {
+			continue
+		}
 		is.BlockedBy = append(slices.Clone(is.BlockedBy), p.added[is.ID]...) // this run's, done
 		open = append(open, is)
 	}
