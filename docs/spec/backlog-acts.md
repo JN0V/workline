@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: f459021
+checked: e124f68
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -261,11 +261,12 @@ than the report, for an outsider's issue.
 An issue too big to be one need is broken into its parts (ADR-0022):
 
 - **Checked**: 2 to 6 children (`split-size`), each a title of one line,
-  120 characters at most (`split-title`), its four sections written
-  (`split-sections`), its Scope's files 1 to 5 in the commit
-  (`sources-unknown`); the issue's state must read. One whose state lists
+  120 characters at most, no two alike (`split-title`), its four sections
+  written (`split-sections`), its Scope's files 1 to 5, files of the
+  commit (`sources-unknown`); the issue's state must read. One whose state lists
   children already is never split again (`already-split`); nor twice in one
-  run, nor renamed twice: the first proposed is kept (`once-a-run`).
+  run, nor renamed twice: the first that passes its check is kept
+  (`once-a-run`).
 - **Each child** is opened through the one way ("Opening issues"), keyed by
   the parent and its title (`split=<parent>/<8 hex>`): a line `Part of
   #12.`, its four sections — Need and Validation as drafts, as `refine`
