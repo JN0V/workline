@@ -525,9 +525,107 @@ func (g *gitlab) SetTitle(id int, title string) error {
 	return err
 }
 
-// AddSubIssue: an issue's children on GitLab are tasks, another work item
-// type the line does not read (ADR-0021); the parent's body lists them.
-func (g *gitlab) AddSubIssue(parent, child int) (bool, error) { return false, nil }
+// AddSubIssue makes child a task of parent: an issue's children on GitLab
+// are tasks, a work item type the REST API still lists, labels and
+// comments as an issue (ADR-0021). The hierarchy is the work items'
+// GraphQL API's only: the child is converted to a task, then given its
+// parent. A GitLab that refuses either — an instance without work items —
+// answers false, and the parent's body lists the child instead.
+func (g *gitlab) AddSubIssue(parent, child int) (bool, error) {
+	ids := map[int]string{}
+	for _, iid := range []int{parent, child} {
+		out, err := g.api(path(Target{Kind: "issue", ID: iid}))
+		if err != nil {
+			return false, err
+		}
+		var v struct {
+			ID   int    `json:"id"`
+			Type string `json:"issue_type"`
+		}
+		if err := decode(out, &v); err != nil {
+			return false, err
+		}
+		ids[iid] = fmt.Sprintf("gid://gitlab/WorkItem/%d", v.ID)
+		if iid == child && v.Type != "task" {
+			// The project's Task type, then the conversion.
+			var types struct {
+				Project struct {
+					WorkItemTypes struct {
+						Nodes []struct{ ID, Name string }
+					}
+				}
+			}
+			ok, err := g.graphql(`query($p: ID!) { project(fullPath: $p) { workItemTypes(name: TASK) { nodes { id name } } } }`,
+				map[string]any{"p": g.projectPath()}, &types)
+			if err != nil || !ok || len(types.Project.WorkItemTypes.Nodes) == 0 {
+				return false, err
+			}
+			var conv struct {
+				WorkItemConvert struct{ Errors []string }
+			}
+			ok, err = g.graphql(`mutation($id: WorkItemID!, $t: WorkItemsTypeID!) { workItemConvert(input: {id: $id, workItemTypeId: $t}) { errors } }`,
+				map[string]any{"id": ids[iid], "t": types.Project.WorkItemTypes.Nodes[0].ID}, &conv)
+			if err != nil || !ok || len(conv.WorkItemConvert.Errors) > 0 {
+				return false, err
+			}
+		}
+	}
+	var up struct {
+		WorkItemUpdate struct{ Errors []string }
+	}
+	ok, err := g.graphql(`mutation($id: WorkItemID!, $p: WorkItemID!) { workItemUpdate(input: {id: $id, hierarchyWidget: {parentId: $p}}) { errors } }`,
+		map[string]any{"id": ids[child], "p": ids[parent]}, &up)
+	return err == nil && ok && len(up.WorkItemUpdate.Errors) == 0, err
+}
+
+// projectPath is the project's full path, for GraphQL, which takes no
+// numeric id.
+func (g *gitlab) projectPath() string {
+	if p := os.Getenv("CI_PROJECT_PATH"); p != "" {
+		return p
+	}
+	p, _ := url.PathUnescape(g.project)
+	return p
+}
+
+// graphql runs one query on GitLab's GraphQL API and decodes its data into
+// v; ok is false when GitLab answered with errors — a refusal, said by the
+// caller's fallback — and err when it could not be reached.
+func (g *gitlab) graphql(query string, vars map[string]any, v any) (bool, error) {
+	if err := g.connect(); err != nil {
+		return false, err
+	}
+	payload, _ := json.Marshal(map[string]any{"query": query, "variables": vars})
+	req, err := http.NewRequest("POST", strings.TrimSuffix(g.base, "/v4")+"/graphql", bytes.NewReader(payload))
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set(g.header, g.token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("%w: %v", ErrUnreachable, err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("%w: %v", ErrUnreachable, err)
+	}
+	if resp.StatusCode >= 300 {
+		return false, fmt.Errorf("%w: GitLab GraphQL: %s %s", ErrUnreachable, resp.Status, strings.TrimSpace(string(data)))
+	}
+	var answer struct {
+		Data   json.RawMessage `json:"data"`
+		Errors []any           `json:"errors"`
+	}
+	if err := decode(data, &answer); err != nil {
+		return false, err
+	}
+	if len(answer.Errors) > 0 || len(answer.Data) == 0 || string(answer.Data) == "null" {
+		return false, nil
+	}
+	return true, decode(answer.Data, v)
+}
 
 func (g *gitlab) SetMilestone(id int, title string) error {
 	m, err := g.milestoneIDs()
