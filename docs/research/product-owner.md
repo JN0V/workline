@@ -352,6 +352,33 @@ issue waiting on a person past D days, with since when —, rebuilt from
 the forge's dates at each run, nothing stored but the day a proposal
 was first made.
 
+## A changed need (2026-10-05)
+
+In the ecosystem's words: *suspect link*, *suspect trace relationship*,
+*impact analysis*, *change propagation*, *fingerprint*, *clear suspect*.
+
+| Where | What makes a link suspect | Who clears it |
+|---|---|---|
+| [Doorstop](https://github.com/doorstop-dev/doorstop) (`docs/cli/validation.md`) | each link stores the parent's *fingerprint*; a parent whose fingerprint differs makes the link suspect, a warning at validation | a person, `doorstop clear <item> [<parents>]`, after reading it |
+| [Jama Connect](https://help.jamasoftware.com/en/manage-content/coverage-and-traceability/relationships/clear-suspect-links.html) | an upstream item changed: the downstream item "might no longer be correct or complete"; only the fields an admin chose trigger it | a person, Clear or Clear All, once checked or changed |
+| [PTC Windchill RV&S (Integrity)](https://support.ptc.com/help/windchillrvs/r13.0.0.0/en/IntegrityHelp/client_docs_managing_suspect_trace_relationships.html) | a trace relationship flagged suspect when the item it traces to changes | a person, clearing the flag |
+| [coherence](https://github.com/fireharp/coherence) | a normalized hash: a typo or spacing fix is not a change | — |
+| throughline (docs/research/documentalist.md) | suspicion cascades across the graph; items an AI made stay `proposed` until a person ratifies them | a person |
+
+All of them **flag** the items downstream, never rewrite them; the
+fields that count are chosen, not the whole item; and a person clears
+the flag. None reads a change in a free-text roadmap: a line a file's
+item came from is ours to follow, through git.
+
+**Decision** (ADR-0032): the issue's state keeps its Need and Scope as
+the fingerprint, spaces and the engine's own lines aside; a change flags
+its parts — read again, every act proposed — and the issues waiting on
+it — listed —, or on the same code when its Scope changed, the fields
+that count chosen as Jama's admin chooses them; a box in the report
+clears it. An
+imported issue's lines are followed through the commits since it was
+read.
+
 ## Gaps no tool covers
 
 1. **An issue re-checked because the code it names changed** since it was
