@@ -25,6 +25,9 @@ func spent(runDir string, st state, c candidates) []Spent {
 	judged := map[string]Finding{} // a judge's question, by its key
 	for _, a := range c.Asked {
 		i := strings.LastIndex(a, "\x00")
+		if i < 0 {
+			continue
+		}
 		parts := strings.Split(a[:i], "\x00") // JudgeKey: where, lens, …
 		if len(parts) >= 2 {
 			judged[a[i+1:]] = Finding{Where: parts[0], Lens: parts[1]}

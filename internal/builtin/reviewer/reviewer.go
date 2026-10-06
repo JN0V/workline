@@ -368,8 +368,8 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		// One call, the change given once: the lenses' questions differ,
 		// what they read does not (#147).
 		var b strings.Builder
-		fmt.Fprintf(&b, "# Lenses: %s\n\nEach lens below is a question of its own: ask each in turn, of the whole change, and name in each finding the lens that found it (`lens: %s`).\n",
-			strings.Join(st.Lenses, ", "), st.Lenses[0])
+		fmt.Fprintf(&b, "# Lenses: %s\n\nEach lens below is a question of its own: ask each in turn, of the whole change, and name in each finding the lens that found it: `lens:` one of %s.\n",
+			strings.Join(st.Lenses, ", "), strings.Join(st.Lenses, ", "))
 		for _, lens := range st.Lenses {
 			l, err := readLens(repo, lens)
 			if err != nil {
