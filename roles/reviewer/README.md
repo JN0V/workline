@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 5f21056
+checked: 1621cf7
 verified: agent:claude-code
 ---
 # Reviewer
@@ -86,6 +86,15 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
    merge request. A nit there is left, counted.
 7. **The judge**, apart, for each important finding, at the best
    independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
+   It reads the finding, the code around its cause and symptom, and what
+   the change did to the cause's file. Its question is the lens's (the
+   front matter of `lenses/<lens>.md`), else whether the quoted code fails:
+   - correctness, edge cases: whether the code quoted fails as the finding says;
+   - tests (#223): whether a test exercises the behaviour and would fail
+     were it wrong, the judge shown the test files (`tests`) in the cause's
+     folder and those naming its file, whole up to `code-lines-max`, the
+     rest named; a no names the test.
+   - Two findings on one line are judged once, by the leading lens's question.
 8. **The verdict.** The rules block (the long comment warns); what the
    lenses find warns (`ai-findings: warn`) until the evaluation has
    measured it (#90), lens by lens (Settings). Past `findings-max` on the
@@ -147,3 +156,4 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates from the change's size |
+| `tests` | `**/*_test.*`, `**/test_*`, `**/*.spec.*`, `**/tests/**`, … | the test files a tests-lens judge is shown |
