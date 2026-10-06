@@ -167,6 +167,17 @@ func TestEvaluation(t *testing.T) {
 				for _, n := range r.res.Notes {
 					t.Logf("  note: %.600s", n)
 				}
+				// A part whose answer did not read: the answers as they came,
+				// since the run folder goes with the test (#126, tried.md).
+				unread, _ := filepath.Glob(filepath.Join(r.res.RunDir, "in", "parts", "*", "unanswered"))
+				for _, u := range unread {
+					name := filepath.Base(filepath.Dir(u))
+					for _, a := range []string{"unread-answer.txt", "agent-answer.txt"} {
+						if data, err := os.ReadFile(filepath.Join(r.res.RunDir, "parts", name, "out", a)); err == nil {
+							t.Logf("  %s, %s:\n%.3000s", name, a, data)
+						}
+					}
+				}
 				for _, f := range r.res.Findings {
 					if f.Rule != "links-not-checked" {
 						t.Logf("  %s %s: %.300s", f.Rule, f.Where, f.Message)
