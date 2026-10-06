@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
-checked: 515d48f
+checked: d109d62
 verified: agent:claude-code
 ---
 # Documentalist — the checks
@@ -21,7 +21,10 @@ are cut. Part of [the documentalist](README.md).
    squashed or rebased — stands for the commit that brought it there, as
    does a `judged` or `judged-in-parts` (ADR-0013); with
    none, the doc is suspect and read against its sources as they are now,
-   never blocking. Follow the
+   never blocking. In a shallow clone, the commit at its edge holds every
+   file as if it brought them: when that is the only one bringing the
+   name, the clone lacks the commit, and `shallow-clone` says so — the doc
+   neither suspect nor passed. Follow the
    chain: a suspect technical section makes the product docs depending on it
    suspect too.
 2. **Budgets.** Lines per doc (its body: the header records who checked it,
@@ -123,7 +126,7 @@ Not built yet: style (vale).
 | `suspect`, `pending`, `unchecked`, budgets, `duplicate`, `dead-link`, `external-link-broken`, `identifier-gone`, `count-off`, `value-left` (after a fix, the judge), `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`, `no-sources` and `sources-by-name` (on `init`), `undocumented`, `source-gone`, `docs-not-read`, `gardening-paused`, and for a doc judged in parts `sources-too-wide`, `uncovered`, `claims-dropped` | reported; the run passes |
 | `derived-stale` (gardening, `init`) | reported, and the block regenerated |
 | `derived-behind` (push, merge request, release) | reported; the block left for gardening |
-| `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated); on `release`, a `suspect` doc (below) and `shallow-clone` | blocks |
+| `due` (on `release`, a doc due then and not brought up to date), `unknown` (a source that could not be read), `setting-missing` (a budget or threshold not set, so a check did not run), `derive-unknown` and `derive-failed` (a derived block that could not be regenerated); on `release`, a `suspect` doc (below); `shallow-clone`, unless only docs the commits in range did not touch lack their `checked` (then reported) | blocks |
 | a source repository that cannot be reached | `blocked-external` |
 
 Findings are reported rather than blocking while they are new (warn before

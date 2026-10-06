@@ -735,3 +735,20 @@ agent also opened an issue on the stale comment in token.go, rightly. One
 defect, fixed: #2's body said "when gardening". Not tried: on GitHub, a
 pull request release-please opened with the App, the hold clearing once
 the fix is merged and release-please rewrote its branch.
+
+On 2026-10-06, a clone too shallow for the docs' `checked` (issue #176), no
+agent. On gitlab.com JN0V/workline-sandbox, a branch with 25 commits after
+its docs' `checked` and two probe jobs in one pipeline (#29), the image
+v0.15.0: with the project's default depth (20 commits), the clone was
+shallow and the documentalist said "docs are up to date"; with the
+template's `GIT_DEPTH: 0`, 40 commits and docs/tech/auth.md suspect, as a
+whole clone finds it. Not suspect docs, then, as the issue guessed, but a
+silent pass: the commit at the clone's edge holds every file as if it
+brought them, so it stood for the `checked` the clone lacked, and nothing
+had changed since. The engine of this branch, on the same branch cloned at
+depth 20 and whole, and on a copy of the `documented` fixture at depth 2:
+`shallow-clone`, blocking, naming both docs and the fix; whole, auth.md
+suspect. `workline doctor` warned in the shallow clones. On workline
+itself at depth 5, gardening named about twenty docs under
+`shallow-clone` and none suspect; whole, it found six suspect. Not tried: the new engine
+in a GitLab pipeline (it needs a release), a merge request there.

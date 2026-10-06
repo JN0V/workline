@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 92b2518
+checked: d109d62
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -47,10 +47,14 @@ commit you read them at. A doc that names no `sources` is never suspect:
 `workline init` proposes them.
 
 On a release, a doc made suspect since the last release holds it (`due`,
-`suspect`) until judged. In CI, a shallow clone holds the release
-(`shallow-clone`), and a doc whose `checked` commit lies beyond the
-clone's history is found suspect though nothing changed: fetch the whole
-history (GitHub's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`).
+`suspect`) until judged.
+
+`shallow-clone`: the clone lacks history the documentalist needs — the
+last release, or the commit a doc's `checked` names, so whether its
+sources changed cannot be told. It holds the release, and any run whose
+task is such a doc; `workline doctor` warns too. Fetch the whole history:
+`git fetch --unshallow`; in CI, GitHub's `fetch-depth: 0`, GitLab's
+`GIT_DEPTH: 0` (workline's templates set both).
 
 ## Gardening paused
 
