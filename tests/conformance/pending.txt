@@ -5,3 +5,4 @@ reviewer/review-says-the-tokens-of-each-call
 reviewer/budget-spent-findings-not-judged
 reviewer/tests-judge-reads-tests-up-to-a-cap
 reviewer/judge-shown-the-change-near-the-cause
+reviewer/lens-given-each-file-once
