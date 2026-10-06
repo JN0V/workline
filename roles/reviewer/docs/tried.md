@@ -395,6 +395,35 @@ to 8.9k.
 - **Spent**: 78.4k of the 200k allowed. A second run with the fix was not
   made: one run was allowed.
 
-Not tried: the judges on this branch with a real agent; the run with the
-fix; five runs (ADR-0014); the evaluation's cases with the lenses
+**The judged validation run**, one, with the fix (`lens` in the shape),
+`ai-max-tokens: 175000`, Sonnet finding, Opus judging (`model`):
+
+| Call | Tokens in | Out |
+|---|---|---|
+| the lenses, together | 73.7k | 6.6k |
+| judge, edge cases, backlog.go:1147 | 6.2k | 0.2k |
+| judge, correctness, workline-forge.sh:94 | 5.4k | 0.4k |
+| judge, edge cases, workline-forge.sh:90 | 5.5k | 0.8k |
+| judge, correctness, workline-forge.sh:74 | 5.3k | 0.5k |
+| **total**, 5 calls | **96.1k** | **8.6k** |
+
+- **Cost**: 104.7k in and out, against 430k in and 20k out; the
+  commits recorded, every lens having answered and every finding judged.
+- **The three true findings**: the Forgejo lookup failing silently
+  (`|| echo none`) and a later comment cancelling an agreement, both
+  verified; the Forgejo comments never flagging bots, raised by
+  correctness and refused by the judge: "the code that would make this a
+  defect … is not shown" — Agreement lies in backlog.go, outside the
+  thirty lines it reads (status.md, item 7, #127). Two of three shown.
+- **Lost by asking the lenses together**: none dropped; every finding
+  named its lens: correctness 2, edge cases 4, tests 4 (the 430k run: 2, 4,
+  10, three past `findings-max`). The tests lens raised fewer, its four
+  the gaps the 430k run showed.
+- **Also**: a second correctness finding refused for the same reason
+  (Forgejo issues with no author); the local forge never honouring
+  `agreed` (nit, raised again); a GitLab sticky creating a note on a 403
+  when only an update was asked (nit, new).
+- **Spent on the validation**: 78.4k (the first run) and 104.7k, 183.1k.
+
+Not tried: five runs (ADR-0014); the evaluation's cases with the lenses
 together (it asks them apart, as it measured them).
