@@ -105,6 +105,8 @@ CodeRabbit's incremental review among the caps and caches (ci-and-forge.md,
 | Lenses as finders, each in a context of its own; commit messages are claims to contest | BMAD-METHOD |
 | A verification step for every important candidate, at another model when one is there | Claude Code Review; ADR-0005 |
 | A finding floor on candidates only, its value to be measured (#90) | BMAD-METHOD's formula |
+| An intent lens: the change against the issue it closes, what it asks and what its Scope leaves out (#126) | the intent finder above; Qodo's ticket compliance |
+| The commit messages and the pull request's body given as claims, each contradicted one a finding quoting the claim and the line (#126) | the author's account as claims to contest, above |
 | Important and Nit, pre-existing apart | Claude Code Review |
 | Skip what is not code, and what was reviewed already | the plugin; CodeRabbit's incremental review |
 | Never drop silently: each finding dropped is said, with why | BMAD-METHOD's triage, verified at each finding's line |
@@ -131,3 +133,6 @@ CodeRabbit's incremental review among the caps and caches (ci-and-forge.md,
 - Sending what was there before to the backlog, once, rather than to the
   pull request's author.
 - Re-finding the finder's quote before anything is shown.
+- Re-finding the author's claim, and the issue's words a finding quotes,
+  before it is judged: Qodo grades a whole pull request against its
+  ticket, with no quote to check (#126).

@@ -49,7 +49,8 @@ before the push; and on the merge request, a safety net.
    one question (ADR-0009), in a context of its own, answering `finding`s
    only: a new intention, `{severity, title, why, cause, symptom, fix}`,
    whose quotes the engine finds again. The commit messages are given as
-   claims to check against the code, not as proof. A lens may be asked to
+   claims to check against the code, not as proof (amended: the claims
+   lens contests them, #126). A lens may be asked to
    look for a number of candidates first, from the change's size (a floor
    on candidates only, never on what is shown; its worth measured by #90);
    finding nothing is not a failure, and nothing requires a finding to be
@@ -240,3 +241,37 @@ merge-request line; on in workline's own repository.
   estimating a call before making it (the cap is checked against what was
   spent, docs/spec/role-contract.md); characters / 4 as the estimate (1.2
   characters a token on this code).
+
+## Amendment (2026-10-06, #126)
+
+- **Intent.** A change saying it closes an issue (`Closes #4`, `fixes`,
+  `resolves`, `implements`; in a commit or the merge request) has the
+  issue read from the forge: its Need, Verification and Scope, up to
+  `issue-lines-max` (80) lines, given to the lenses. The `intent` lens
+  says what the issue asks and the change does not do or prove, its
+  cause quoted from the issue (`path: "#4"`), found again there and the
+  change's; and what the change does past the Scope, its cause the code.
+  Its judge is shown the issue, and for a cause in the issue the whole
+  change up to `code-lines-max`.
+- **No issue, no intent lens**: a lens with `needs: issue` is not asked
+  of a change closing none, said in the summary; one it cannot read is
+  said (`issue-unread`), never a silent pass (principle 12).
+- **The author's claims contested.** The commit messages are given whole
+  (trailers left), with the merge request's title and body, as testimony,
+  up to `testimony-lines-max` (80) lines. The `claims` lens
+  (`cites: claim`) quotes each claim the change contradicts, found again
+  in what the author said or dropped, its cause the contradicting line;
+  its judge asks whether that line contradicts that claim.
+- **The floor on finders only**: `finder-floor` stays on candidates; a
+  case pins that a lens under it answering nothing leaves the review
+  clean, nothing judged, the commits recorded. Its worth: #90.
+- **Same call**: both are lenses, asked in the lenses' one call
+  (`lenses-together`), each with its own judge question in its front
+  matter (#223); on a merge request, in turn with the others.
+- **Cost**, offline on #146's review: the lenses' prompt 0.7% larger,
+  3.0% with an issue closed (about 2k tokens); a judge call for each
+  important intent or claims finding.
+- **Rejected**: the issue in every lens's call (paid on each push of a
+  merge request whatever the lens); a claim checked by the model's word
+  (the engine finds the quote again, as for a cause); an intent finding
+  with no quote (the issue's words are the cause).
