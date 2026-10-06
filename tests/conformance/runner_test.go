@@ -98,6 +98,7 @@ type caseFile struct {
 		Status      string                       `yaml:"status"`
 		Findings    []map[string]string          `yaml:"findings"`
 		NoFindings  []map[string]string          `yaml:"no-findings"` // findings that must not be there
+		Checks      []map[string]string          `yaml:"checks"`      // the doctor's checks, ok ones too, by rule, where, level, message, fix
 		AgentCalls  *int                         `yaml:"agent-calls"`
 		Applied     []string                     `yaml:"applied"`
 		Refused     []string                     `yaml:"refused"`
@@ -130,7 +131,15 @@ type result struct {
 		Rule    string `json:"rule"`
 		Where   string `json:"where"`
 		Message string `json:"message"`
+		Fix     string `json:"fix"`
 	} `json:"findings"`
+	Checks []struct {
+		Rule    string `json:"rule"`
+		Where   string `json:"where"`
+		Level   string `json:"level"`
+		Message string `json:"message"`
+		Fix     string `json:"fix"`
+	} `json:"checks"`
 	AgentCalls int              `json:"agent-calls"`
 	Calls      []map[string]any `json:"calls"`
 	RunDir     string           `json:"run-dir"`
@@ -420,12 +429,24 @@ func compare(c *caseFile, r *result, repo string) []string {
 	for _, want := range e.Findings {
 		found := false
 		for _, f := range r.Findings {
-			if f.Rule == want["rule"] && strings.Contains(f.Where, want["where"]) && strings.Contains(f.Message, want["message"]) {
+			if f.Rule == want["rule"] && strings.Contains(f.Where, want["where"]) && strings.Contains(f.Message, want["message"]) && strings.Contains(f.Fix, want["fix"]) {
 				found = true
 			}
 		}
 		if !found {
 			p = append(p, fmt.Sprintf("missing finding %v (got %v)", want, r.Findings))
+		}
+	}
+	for _, want := range e.Checks {
+		found := false
+		for _, ch := range r.Checks {
+			if ch.Rule == want["rule"] && (want["level"] == "" || ch.Level == want["level"]) && strings.Contains(ch.Where, want["where"]) &&
+				strings.Contains(ch.Message, want["message"]) && strings.Contains(ch.Fix, want["fix"]) {
+				found = true
+			}
+		}
+		if !found {
+			p = append(p, fmt.Sprintf("missing check %v (got %v)", want, r.Checks))
 		}
 	}
 	for _, bad := range e.NoFindings {

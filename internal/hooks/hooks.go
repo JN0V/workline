@@ -174,6 +174,103 @@ func InstallRepo(repo, bin string) (string, error) {
 	return msg, nil
 }
 
+// HandsOver says whether git, running the hook name from dir, reaches
+// workline: the file is executable and is workline's dispatcher, or runs
+// `workline hook <name>` or workline's global hook of that name as a
+// command, before any line that exits. A comment, an echo or a line after
+// `exit` is not a hand-over.
+func HandsOver(dir, name string, p Paths) bool {
+	path := filepath.Join(dir, name)
+	if fi, err := os.Stat(path); err != nil || fi.IsDir() || fi.Mode()&0o111 == 0 {
+		return false // git skips a hook it cannot execute
+	}
+	if p.Hooks != "" && filepath.Clean(dir) == filepath.Clean(p.Hooks) {
+		return true
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	lines := strings.Split(string(data), "\n")
+	if len(lines) > 1 && strings.HasPrefix(lines[1], "# workline hook dispatcher") {
+		return true
+	}
+	global := ""
+	if p.Hooks != "" {
+		global = filepath.Join(p.Hooks, name)
+	}
+	for _, line := range lines {
+		// An exit at the top level ends the script; one indented in a block
+		// may not run.
+		if f := strings.Fields(line); len(f) > 0 && f[0] == "exit" && line[0] == 'e' {
+			return false
+		}
+		for _, words := range commands(line) {
+			w := unquote(words[0])
+			if global != "" && filepath.Clean(expandHome(w)) == global {
+				return true
+			}
+			if filepath.Base(w) == "workline" && len(words) > 2 && words[1] == "hook" && unquote(words[2]) == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// shellOps split a line where a new command may start.
+var shellOps = strings.NewReplacer("&&", "\n", "||", "\n", ";", "\n", "|", "\n", "$(", "\n", "(", "\n", ")", "\n", "{", "\n", "}", "\n", "`", "\n")
+
+// commands returns each command a shell line runs, as its words from the
+// command's name on: leading keywords, VAR=value assignments and a runner's
+// options (`npx --no-install`) are dropped, a trailing comment cut.
+func commands(line string) [][]string {
+	f := strings.Fields(line)
+	for i, w := range f {
+		if strings.HasPrefix(w, "#") {
+			f = f[:i]
+			break
+		}
+	}
+	var out [][]string
+	for _, part := range strings.Split(shellOps.Replace(strings.Join(f, " ")), "\n") {
+		words := strings.Fields(part)
+		for len(words) > 0 {
+			w := words[0]
+			name, _, assign := strings.Cut(w, "=")
+			switch {
+			case w == "exec" || w == "command" || w == "npx" || w == "env" || w == "time" || w == "nohup" || w == "!" ||
+				w == "if" || w == "then" || w == "do" || w == "else" || w == "elif" || w == "while" || w == "until":
+			case strings.HasPrefix(w, "-"):
+			case assign && name != "" && !strings.ContainsAny(name, `/"'$`):
+			default:
+				out = append(out, words)
+				words = nil
+				continue
+			}
+			words = words[1:]
+		}
+	}
+	return out
+}
+
+func unquote(w string) string { return strings.Trim(w, `"'`) }
+
+// expandHome reads ~, $HOME and $XDG_CONFIG_HOME in a path, as the shell would.
+func expandHome(w string) string {
+	if strings.HasPrefix(w, "~/") {
+		if h, err := os.UserHomeDir(); err == nil {
+			w = filepath.Join(h, w[2:])
+		}
+	}
+	return os.Expand(w, func(v string) string {
+		if v == "HOME" || v == "XDG_CONFIG_HOME" {
+			return os.Getenv(v)
+		}
+		return "$" + v
+	})
+}
+
 func writeDispatchers(dir, bin, next string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err

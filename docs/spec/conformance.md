@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: c78417b
+checked: 8e7212c
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -111,7 +111,10 @@ a `PATH` without a tool, or with a fake one first.
 `expect` lists only what the case is about; anything not listed is not checked.
 
 - `findings` — each listed finding must be present (matched by `rule`, and by
-  `where` and a part of its `message` if given).
+  `where` and a part of its `message` and `fix` if given).
+- `checks` — the doctor's checks, ok ones included: each listed must be
+  present, by `rule`, and by `level`, `where`, a part of `message` and of
+  `fix` if given.
 - `no-findings` — findings that must not be there (by `rule` and `where`,
   and a part of the message when given).
 - `agent-calls` — how many times the agent was called.

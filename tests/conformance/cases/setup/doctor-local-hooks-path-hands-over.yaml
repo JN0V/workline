@@ -1,0 +1,13 @@
+case: setup/doctor-local-hooks-path-hands-over
+about: A repository whose own hooks hand over to workline is reported ok, with the path git runs.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p .husky && printf '#!/bin/sh\\nworkline hook commit-msg \"$1\"\\n' > .husky/commit-msg && chmod +x .husky/commit-msg && git config core.hooksPath .husky"
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: hooks-path, level: ok, where: .husky, message: "hands over to workline"}
+  no-findings:
+    - {rule: hooks-bypassed, where: .husky}
