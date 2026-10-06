@@ -19,6 +19,7 @@ released in v0.9.0.
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
 | A judge for each important finding, the level said; a no drops it | `judged-no-not-reported`, `independence-level-in-verdict` |
 | Warn until measured; caps; an agent unreachable | `new-ai-rules-warn`, `findings-capped-rest-counted`, `agent-unreachable-is-blocked-external` |
+| `ai-findings` by lens (#222): a lens set to block fails the run, the others warn, a lens not named warns, one value still sets every lens; a misspelt lens or value stops the run; of two findings on one line, the blocking lens leads (tried.md, planted) | `ai-findings-by-lens-blocks`, `ai-findings-by-lens-warns`, `ai-findings-lens-unnamed-warns`, `ai-findings-one-value-every-lens`, `ai-findings-misspelt-refused`, `ai-findings-blocking-lens-leads-merge` |
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
 | Its measure: twelve evaluation cases on the `shop` fixture, three defects planted a lens, two clean changes and untested code outside one; scored by lens with no agent, recall, findings nothing planted, the judge's refusals, the finder floor, tokens | tests/evaluation/cases/reviewer, `TestScoreReview`, `TestReviewerWithFakeAgent`, `TestReviewerCasesPointRight` |
@@ -39,8 +40,9 @@ Conformance: tests/conformance/cases/reviewer.
    shown; edge cases found 3 of 3 but one was sent outside the change
    (item 8), and it showed one finding a clean rename did not cause; the
    judge refused four true findings of the tests lens (item 9). The
-   maintainer decides from it: `ai-findings: block` (one setting for every
-   lens today), or step 2 on the lenses in doubt. Not measured yet: the
+   maintainer decides from it: `ai-findings: {correctness: block}` (by
+   lens since #222; workline's own line still warns), or step 2 on the
+   lenses in doubt. Not measured yet: the
    finder floor's worth (a run with `finder-floor: false`), five runs a
    case (ADR-0014).
 4. **Inline comments** on the forge's own review (#81: the bot's identity).
@@ -65,3 +67,7 @@ Conformance: tests/conformance/cases/reviewer.
    lens — each saying only that no test covers a behaviour — while it let
    through the eight that named a failure of the code or a test checking
    too little.
+10. **A run that blocks writes nothing to the forge**: as for every role,
+    nothing is applied on a block — no summary comment, no issue outside
+    the change, the record not moved (tried.md, #222). The author reads
+    the finding in the job's verdict and SARIF only.

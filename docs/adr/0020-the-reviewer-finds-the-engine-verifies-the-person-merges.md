@@ -79,6 +79,8 @@ before the push; and on the merge request, a safety net.
    blocks (`ai-findings: block`). The reviewer never approves, never
    patches, never merges: a lens proposing a patch is refused, and the lens
    counted as not answered. The person merges.
+   *(Amended 2026-10-06: `ai-findings` is set by lens too, each lens
+   blocking once it earned it; see Amendment.)*
 
 **Outputs.** The findings as SARIF and GitLab's Code Quality report (as
 every role's), and one summary comment on the merge request, edited on each
@@ -125,3 +127,21 @@ merge-request line; on in workline's own repository.
 - The engine learned two things any role may use: parts answering what the
   role names (`part-intentions`), and questions for a judge written by
   `pre`, each answered apart (docs/spec/role-contract.md).
+
+## Amendment (2026-10-06)
+
+- **`ai-findings` by lens** (#222): one value, `warn` or `block`, still
+  sets every lens; a map sets each lens apart,
+  `{correctness: block, edge-cases: warn}`, a lens not named warning.
+  #90's step 1 found the lenses unequal (roles/reviewer/docs/tried.md):
+  correctness ready to block, edge cases in doubt, tests not ready. One
+  switch for all would hold a merge request on the weakest lens's guess,
+  or let the strongest lens's defect through.
+- **A value or a lens the reviewer does not know stops the run**, never
+  read as `warn` (principle 12).
+- **Two findings on one line**: of two important ones, the one from a lens
+  that blocks leads, so a merge never turns a blocking finding into a
+  warning.
+- **Workline's own line stays at `warn`** until a measure over five runs a
+  case ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)); the
+  maintainer switches correctness to `block`.

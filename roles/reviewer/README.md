@@ -88,9 +88,13 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
    independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
 8. **The verdict.** The rules block (the long comment warns); what the
    lenses find warns (`ai-findings: warn`) until the evaluation has
-   measured it (#90). Past `findings-max` on the change, or `issues-max`
+   measured it (#90). A lens that earned it blocks on its own: a verified
+   important finding of `ai-findings: {correctness: block}` fails the
+   run, the other lenses' still warn; of two on one line, the blocking
+   one leads. Past `findings-max` on the change, or `issues-max`
    outside it, the rest is counted. One summary comment on a merge
-   request, edited each run (`forge-writes`).
+   request, edited each run (`forge-writes`); a run that blocks posts
+   none, its findings in the job's verdict and `--sarif`.
 
 A lens whose answer does not read is asked again once, with what the YAML
 reader said (`promote-after`). A lens that fails is said (`lens-failed`),
@@ -133,7 +137,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `code-lines-max` | `1200` | lines of the changed files a lens is given |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
-| `ai-findings` | `warn` | `block`: a verified important finding blocks |
+| `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates from the change's size |
