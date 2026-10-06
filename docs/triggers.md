@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: d109d62
+checked: c78417b
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -70,6 +70,12 @@ On a machine, `workline route release`; in CI, `workline route release
 --ai "$ai" --no-apply --forge gitlab --open-merge-request --json >
 line.json`, then `workline apply --line line.json`, puts the docs' fix on
 a merge request of its own (untried this way).
+
+**The release fix, on a push to the default branch** — `workline follow
+--base <branch> --forge gitlab` (token, no agent) rebuilds that merge
+request, `workline/documentalist/release`, on the branch's new tip, so it
+stays mergeable as the branch moves (ADR-0034); `user.name` and
+`user.email` set first, as for `apply`.
 
 **Weekly sample** — `workline sample --out sample.json` (agent, writes
 nothing; `--week 2026-W40`), then `workline sample --apply sample.json

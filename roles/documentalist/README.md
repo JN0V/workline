@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist]
-checked: d4fca08
+checked: c78417b
 verified: agent:claude-code
 ---
 # Documentalist

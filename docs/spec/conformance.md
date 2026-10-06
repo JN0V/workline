@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: d293323
+checked: c78417b
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -88,6 +88,9 @@ a `PATH` without a tool, or with a fake one first.
 - `sample: [<option>...]` instead of `role` — draw and read the weekly
   sample (`workline sample`), with no forge; `then: apply` then writes what
   it found with `workline sample --apply`, on the simulated forge;
+- `follow: [<option>...]` instead of `role` — `workline follow` on the
+  repository (`[--base, main]`), on the simulated forge, or GitLab's with
+  `forge: gitlab`;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
@@ -126,6 +129,9 @@ a `PATH` without a tool, or with a fake one first.
   labels the forge defines, their order as id, by `title`.
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
   case's `origin`, or the message of that branch's tip.
+- `not-pushed` — branches of the case's `origin` the run left where they
+  were; `on-top` — a branch of `origin` whose tip holds another's
+  (`{workline/documentalist/release: main}`).
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
 - `summary` — a text the result's summary holds.

@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
-checked: d109d62
+checked: c78417b
 judged: 9ad8c58
 verified: agent:claude-code
 -->
@@ -160,7 +160,7 @@ flowchart LR
 | `pre-push` | your machine, before the commits leave it, if the project routes it; no question: the review is on the merge request (a push approval, on the terminal, in the editor or in a dialog, if you ask for it) | none by default; workline itself: committer, documentalist |
 | `merge-request` | the forge: [GitHub Actions](ci/github/workline.yml) (with [workline-fork.yml](ci/github/workline-fork.yml) to comment on a fork's) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template | committer, documentalist; the reviewer, opt-in (ADR-0020); workline itself: all three |
 | `schedule` | you, or a scheduled pipeline: the [GitHub Actions](ci/github/workline-gardening.yml) or [GitLab CI](ci/gitlab/workline.gitlab-ci.yml) template, each task a merge request of its own (ADR-0006) | documentalist |
-| `release` | wherever you run `workline route release`, before your release tool (semantic-release…) tags; a release tool's pull request (release-please…) is held as the release on `merge-request`: workline cuts no releases (ADR-0017) | documentalist (docs due at the release) |
+| `release` | wherever you run `workline route release`, before your release tool (semantic-release…) tags; a release tool's pull request (release-please…) is held as the release on `merge-request`, its fix's merge request rebuilt on `main` as `main` moves (`workline follow`, ADR-0034): workline cuts no releases (ADR-0017) | documentalist (docs due at the release) |
 
 So the committer checks your messages as you write them, and again on the merge
 request for those without the hook; the documentalist runs on the forge. On a
