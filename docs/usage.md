@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: b196291
+checked: 0efb09c
 verified: agent:claude-code
 ---
 # Using workline
@@ -15,12 +15,12 @@ settings and the variables, in [config.md](config.md).
 |---|---|
 | `workline run-role <role> --event <event>` | runs one role: prepare, propose, judge, apply, again if `pre` left work for later (`in/more`), up to 5 rounds |
 | `workline route <event>` | runs the steps routing names for the event, in order; the first that does not pass stops the line |
-| `workline apply <run-dir>...` or `--line <file>` | applies runs judged with `--no-apply`, or resumes a run stopped while applying; `--line` takes the runs a `route --no-apply --json` result lists as `pending`; `--summary` as below |
+| `workline apply <run-dir>...` or `--line <file>` | applies runs judged with `--no-apply`, or resumes a run stopped while applying; `--line` takes the runs a `route --no-apply --json` or `issues import --json` result lists as `pending`; `--summary` as below |
 | `workline review` | the reviewer reviews this branch before it is pushed (roles/reviewer, ADR-0020): `<base>..HEAD` (`--base`, default the role's `base` setting, `main`), every lens (`--lenses` names some); the rules on the comments the change adds, then each lens, each finding's quote found again, the change's findings told from those outside it, each important one judged. Prints the findings, and the path of the run's `out/review.json`, for the author's agent to fix them before pushing; `--json`, `--sarif`, `--code-quality`, `--ai`, `--forge` (where an issue for what lies outside the change goes) |
 | `workline gate <name>` | runs a gate declared in `.workline/config.yaml` |
 | `workline item ready <id>` | moves a work item to `ready`, once its Need, Verification, Validation and Scope are written (`--forge` reads it from the forge) |
 | `workline issues` / `workline issues show <n>` / `show !<n>` | reads the local forge (`forge: local`, ADR-0016): lists the issues (`#<n>`) and merge requests (`!<n>`) kept in the clone, with their state and labels, or shows one whole, its comments after its body; writes nothing |
-| `workline issues import <file> [--apply]` | moves a roadmap or backlog file, whatever its form, to the forge's issues (docs/spec/backlog-acts.md, "Importing a file"): the product owner reads it a share at a time, each item still to do opened once, its text quoted from the file; without `--apply`, only says what it would open. Then a map: each item of the file, by its lines and first words, to its issue — opened, already open, closed — or why it has none — done, the words quoted; not an item, why; past the cap —, and the lines no answer holds under "Not covered", which exits 2 (`--json`: the result's `coverage`). `--ai`, `--forge`, `--lines` |
+| `workline issues import <file> [--apply]` | moves a roadmap or backlog file, whatever its form, to the forge's issues (docs/spec/backlog-acts.md, "Importing a file"): the product owner reads it a share at a time, each item still to do opened once, its text quoted from the file; without `--apply`, only says what it would open, writes nothing, and lists its runs as pending (`to apply:`; `--json`: `pending`), which `workline apply --line <result>` opens with no agent, in the job that holds the write token (ADR-0030's map stays the judge's: run the import again to see them open). Then a map: each item of the file, by its lines and first words, to its issue — opened, already open, closed — or why it has none — done, the words quoted; not an item, why; past the cap —, and the lines no answer holds under "Not covered", which exits 2 (`--json`: the result's `coverage`). `--ai`, `--forge`, `--lines`; `--summary` as below, the map with it |
 | `workline hooks install --global` / `uninstall --global` | takes `core.hooksPath` for every repository, and gives it back as it was; the hooks run the `commit-msg` and `pre-push` lines, then hand over to the hooks that were there |
 | `workline hooks install --repo` | writes `.githooks/commit-msg` in this repository; remove that file to uninstall |
 | `workline setup` | sets up this machine, asking: the global hooks, your agent (`ai:` in your config), the tools the roles use, each installed with the command it shows; then prints `workline doctor`. Run again, it offers what is set up as the default. `--hooks yes\|no`, `--ai <agent>` and `--install <tool,...>\|all\|none` answer a question; `--yes` takes the defaults; without a terminal, every question must be answered so |
@@ -48,7 +48,7 @@ Options of `run-role` and `route`:
 | `--open-merge-request` | with a forge: what the patches write goes on a branch `workline/<role>/<task>`, pushed, with a merge request opened or updated for it; the role is told how many of its merge requests are open (ADR-0006). With `local`, the branch stays in the clone |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--sarif <file>` / `--code-quality <file>` | also write the findings as SARIF (GitHub code scanning) or a GitLab Code Quality report; `route`: every step's (docs/spec/role-outcome.md) |
-| `--summary <file>` | also add to the file what a CI job's page shows: the verdict, each step's verdict and findings, the agent's calls and notes, what was applied and what waits to be (ADR-0035). Markdown (GitHub's `$GITHUB_STEP_SUMMARY`), or HTML for a file named `.html`; added to, never overwritten, so a judging then an applying job write one page. Repeatable; `apply` and `sample` take it too |
+| `--summary <file>` | also add to the file what a CI job's page shows: the verdict, each step's verdict and findings, the agent's calls and notes, what was applied and what waits to be (ADR-0035). Markdown (GitHub's `$GITHUB_STEP_SUMMARY`), or HTML for a file named `.html`; added to, never overwritten, so a judging then an applying job write one page. Repeatable; `apply`, `sample` and `issues import` take it too |
 | `--json` | print the result as JSON: status, summary, findings, the agent's notes, each agent call (agent, tier, effort, the exact model that answered, tokens in, cached and out, cost, seconds), and for a line its steps and pending runs |
 
 ## Another agent

@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: b196291
+checked: 0efb09c
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -142,7 +142,8 @@ a `PATH` without a tool, or with a fake one first.
 - `summary` — a text the result's summary holds.
 - `coverage` / `not-covered` — with `issues-import`, entries the import's
   map must hold, each matched on the fields given (`lines`, `state`,
-  `issue`; `words` and `why` by a part of them).
+  `issue`; `words` and `why` by a part of them); with `then: resume`,
+  the judge's map, `workline apply` printing none.
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `sarif` / `code-quality` / `left-out` — with `reports`, results each report
   must hold, and the places neither may name.

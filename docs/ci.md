@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: 7f5cf46
+checked: 0efb09c
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -231,8 +231,8 @@ Its acts and proposals are listed in one issue, "Backlog — product owner",
 which opens with what is next — the first ready issues of the order — and
 what is stuck — each issue waiting on a person past `stuck-days` (14),
 with since when (ADR-0031).
-A roadmap or backlog file is moved to issues once, by hand:
-`workline issues import <file>`, then `--apply`.
+A roadmap or backlog file is moved to issues once: by hand,
+`workline issues import <file>`, then `--apply`; or in CI, below.
 
 It refines issues to `ready`, drafting their Need and Validation, and
 labels them `workline:draft`. To accept the drafts, set the label
@@ -268,6 +268,77 @@ pressing) to `/4`, on the issues it reads — one a person set is kept —
 and an issue whose milestone's release is tagged moved to the next open
 milestone. A run moves at most `moved-percent-max` of the open issues —
 20% at `normal`, 10% `cautious`, 30% `enterprising`; the report lists them as they were, to put back.
+
+### Importing a file
+
+The import splits as the other roles do (principle 6): the agent reads the
+file in a job with a read token and no write token; another, with the write
+token and no AI key, opens what it proposed.
+
+- **Judge**: `workline issues import <file> --json > line.json` — writes
+  nothing; the map says what would be opened; `pending` lists its runs.
+- **Apply**: `workline apply --line line.json` — opens them, no agent.
+- Needs the first release after v0.17.0. A map with items not covered
+  ends the judge 2: the apply still opens what was judged.
+
+GitHub, a workflow run by hand (Actions → Run workflow), the steps that
+install the engine and Claude as in workline-gardening.yml:
+
+```yaml
+on: {workflow_dispatch: {inputs: {file: {required: true}}}}
+permissions: {}
+env: {WORKLINE_RUNS_DIR: "${{ github.workspace }}/.workline-runs"}
+jobs:
+  judge:                                   # the agent, a read token
+    runs-on: ubuntu-latest
+    permissions: {contents: read, issues: read}
+    steps:
+      - uses: actions/checkout@v4
+      # + the engine and Claude
+      - env: {GH_TOKEN: "${{ github.token }}", CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", FILE: "${{ inputs.file }}"}
+        run: workline issues import "$FILE" --ai claude --forge github --summary "$GITHUB_STEP_SUMMARY" --json > line.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: workline-import, path: "line.json\n.workline-runs", include-hidden-files: true}
+  apply:                                   # the write token, no agent
+    needs: judge
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {contents: read, issues: write}
+    steps:
+      - uses: actions/checkout@v4
+      # + the engine
+      - uses: actions/download-artifact@v4
+        with: {name: workline-import}
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: workline apply --line line.json --summary "$GITHUB_STEP_SUMMARY"
+```
+
+GitLab, a pipeline run by hand (Build → Pipelines → Run pipeline, the
+variable `WORKLINE_IMPORT` the file), beside the template;
+`WORKLINE_GITLAB_READ_TOKEN`, `read_api`, Reporter
+([gitlab-trigger.md](gitlab-trigger.md#tokens-and-variables)):
+
+```yaml
+workline:import:judge:                     # the agent, a read token
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: test
+  rules: [{if: $WORKLINE_IMPORT}]
+  script:
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_READ_TOKEN
+    - npm install -g --silent @anthropic-ai/claude-code
+    - workline issues import "$WORKLINE_IMPORT" --ai claude --forge gitlab --summary workline-summary.md --json > line.json
+  artifacts: {when: always, paths: [line.json, .workline-runs/, workline-summary.md], expire_in: 1 day}
+workline:import:apply:                     # the write token, no agent
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  needs: [workline:import:judge]
+  rules: [{if: $WORKLINE_IMPORT, when: always}]
+  script:
+    - unset CLAUDE_CODE_OAUTH_TOKEN; export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - workline apply --line line.json --summary workline-summary.md
+  artifacts: {when: always, paths: [workline-summary.md]}
+```
 
 ## The weekly sample
 

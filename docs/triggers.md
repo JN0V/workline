@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 7f5cf46
+checked: 0efb09c
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -21,7 +21,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |
 | gardening | `workline route schedule` (`--forge local --open-merge-request` keeps its merge requests as local branches) | yours |
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
-| a roadmap file to issues | `workline issues import <file>`, then the same with `--apply` | yours |
+| a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |
 | before tagging a release | `workline route release` | yours |
 | the weekly sample | `workline sample --out s.json`, then `workline sample --apply s.json` | the judge |
 
@@ -83,7 +83,10 @@ nothing; `--week 2026-W40`), then `workline sample --apply sample.json
 owner's acts of the week from its report (ADR-0033).
 
 **Import** — `workline issues import <file> --apply` has the agent and the
-write token in one process: run it by hand, not in a shared pipeline.
+write token in one process: run it by hand. In a pipeline, split it as
+any other role: `workline issues import <file> --json > line.json`
+(agent, a read token, writes nothing), then `workline apply --line
+line.json` (write token, no agent); [ci.md](ci.md#importing-a-file).
 
 `--sarif <file>` beside `--code-quality` writes the findings for GitHub's
 code scanning. The `gate:<name>` steps of a line, or `workline gate

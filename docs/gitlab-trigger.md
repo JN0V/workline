@@ -1,8 +1,8 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: b196291
+checked: 0efb09c
 judged: 02da247
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
@@ -12,7 +12,8 @@ instead — the trigger API, the pipelines API, another pipeline — this page
 does the same with a plain script. The commands themselves:
 [triggers.md](triggers.md). Tried on a pipeline the API started
 (2026-10-06): the judging job of `garden`, without an agent, and its
-summary; the other tasks and the applying job, not yet. What follows is
+summary; `import`, both jobs, the engine of the branch and a planted
+answer; the other tasks, not yet. What follows is
 the template's commands under other rules.
 
 ## Before CI: on your machine
@@ -44,8 +45,9 @@ none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, ADR-0034) |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, ADR-0034), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
+| `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
 A triggered pipeline has none of the `CI_MERGE_REQUEST_*` variables: the
 tool reads them from the merge request and passes them. Passing variables
@@ -123,6 +125,8 @@ case "$step:$WORKLINE_TASK" in
     jq '{pending: [."run-dir"]}' po.json > line.json ;;
   judge:release)
     workline route release --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
+  judge:import)                                   # the issues it would open; apply:* opens them
+    workline issues import "$WORKLINE_IMPORT" --ai "$ai" --forge gitlab $sum --json > line.json || status=$? ;;
   judge:sample)
     workline sample --out sample.json $sum || status=$?; [ "$status" != 1 ] && status=0 ;;
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;

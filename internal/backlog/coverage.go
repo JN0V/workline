@@ -367,6 +367,19 @@ func (c *Coverage) Text() string {
 	return b.String()
 }
 
+// Entries are the map's lines for a job's summary: each item to its issue
+// or its reason, then each item not covered, said so.
+func (c *Coverage) Entries() []string {
+	var out []string
+	for _, m := range c.Items {
+		out = append(out, fmt.Sprintf("line %s %s → %s", m.Lines, quoteWords(m.Words), m.say()))
+	}
+	for _, m := range c.NotCovered {
+		out = append(out, fmt.Sprintf("line %s %s → not covered: no issue, no reason", m.Lines, quoteWords(m.Words)))
+	}
+	return out
+}
+
 func quoteWords(w string) string { return "\"" + w + "\"" }
 
 func (m Mapped) say() string {
