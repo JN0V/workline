@@ -282,27 +282,41 @@ func braceEnd(lines []string, def int, shell bool) int {
 }
 
 // stripCode drops a line's strings and comment, roughly: their braces are
-// not the code's.
+// not the code's. A single quote opens a string or a character only when
+// it closes on the line, an apostrophe left open hiding nothing; a
+// backslash escapes, except in shell single quotes and Go's raw strings.
 func stripCode(line string, shell bool) string {
 	var b strings.Builder
-	var quote rune
-	prev := ' '
-	for _, c := range line {
+	rs := []rune(line)
+	for i := 0; i < len(rs); i++ {
+		c := rs[i]
 		switch {
-		case quote != 0:
-			if c == quote && prev != '\\' {
-				quote = 0
+		case c == '"' || c == '\'' || (c == '`' && !shell):
+			raw := c == '`' || (c == '\'' && shell)
+			end := -1
+			for j := i + 1; j < len(rs) && end < 0; j++ {
+				switch {
+				case rs[j] == '\\' && !raw:
+					j++
+				case rs[j] == c:
+					end = j
+				}
 			}
-		case c == '"' || (c == '`' && !shell):
-			quote = c
-		case c == '#' && shell && (prev == ' ' || prev == '\t' || b.Len() == 0):
+			switch {
+			case end >= 0:
+				i = end
+			case c == '\'':
+				b.WriteRune(c)
+			default:
+				return b.String() // a string going on past the line: its rest is not code
+			}
+		case c == '#' && shell && (i == 0 || rs[i-1] == ' ' || rs[i-1] == '\t'):
 			return b.String()
-		case c == '/' && prev == '/' && !shell:
+		case c == '/' && !shell && i+1 < len(rs) && rs[i+1] == '/':
 			return b.String()
 		default:
 			b.WriteRune(c)
 		}
-		prev = c
 	}
 	return b.String()
 }
@@ -550,10 +564,10 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 				w.calls = callsIn(l, r.lines(file)[w.from-1:w.to], "")
 			}
 			return w, true
+		case shown[g.key()]:
+			return g, true
 		case g.lines() > left:
 			around(file, at, fmt.Sprintf("the lines around %s, in `%s` (lines %d to %d, longer than judge-lines-max)", what, g.name, g.from, g.to))
-			return g, true
-		case shown[g.key()]:
 			return g, true
 		}
 		write(g, fmt.Sprintf("`%s`, the function %s lies in", g.name, what))

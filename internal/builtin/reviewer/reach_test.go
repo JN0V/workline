@@ -152,3 +152,36 @@ func TestNamedIn(t *testing.T) {
 		t.Errorf("namedIn, weak = %q", got)
 	}
 }
+
+// A brace in a string, a character, a comment is not the code's; a quote
+// left open on the line, an apostrophe or a lifetime, hides nothing.
+func TestStripCode(t *testing.T) {
+	for _, c := range []struct {
+		line  string
+		shell bool
+		want  string
+	}{
+		{`if c == '{' { // }`, false, `if c ==  { `},
+		{`s := "a\\" + "}"; x {`, false, `s :=  + ; x {`},
+		{"r := `\\` + f() {", false, "r :=  + f() {"},
+		{`fn f<'a>(x: &'a str) {`, false, `fn f<a str) {`}, // a lifetime taken for a quote, its brace kept
+		{`jq '{a: .b}' "$x" # }`, true, `jq   `},
+		{`echo "${#x}" {`, true, `echo  {`},
+		{`msg := "it goes on`, false, `msg := `},
+	} {
+		if got := stripCode(c.line, c.shell); got != c.want {
+			t.Errorf("stripCode(%q) = %q, want %q", c.line, got, c.want)
+		}
+	}
+}
+
+// A symptom in the function its cause lies in is not shown again as lines
+// around it.
+func TestReachSymptomInTheCauseFunction(t *testing.T) {
+	repo := gitRepo(t, map[string]string{"calc/calc.go": calcGo, "calc/sum.go": sumGo})
+	f := Finding{Cause: Quote{Path: "calc/sum.go", Quote: "total := 0"}, Symptom: &Quote{Path: "calc/sum.go", Quote: "return total"}}
+	got := reach(repo, "HEAD", nil, f, 5, 9, 8)
+	if strings.Count(got, "### calc/sum.go") != 1 {
+		t.Errorf("sum shown once:\n%s", got)
+	}
+}
