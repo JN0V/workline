@@ -179,3 +179,61 @@ with no fence).
   8.1k in, 0.6k out.
 
 Not tried: a real agent's own answer failing twice; in CI.
+
+## 2026-10-06 — the measure, step 1 (#90)
+
+The twelve cases of tests/evaluation/cases/reviewer, once each, the
+default model and independence: `WORKLINE_EVAL=claude go test -count=1
+./tests/evaluation/ -run TestEvaluation/reviewer/`. Every lens on each
+change (event `review`), Sonnet (claude-sonnet-5-5) finding, Opus
+(claude-opus-5-5) judging, at the `model` level. A defect counts as found
+when a finding shown on the change has its cause in the planted range,
+whichever lens raised it. The rows are in tests/evaluation/results.tsv,
+the `measure` column; `go run ./tests/evaluation/summary` sums them.
+
+| Lens | Found / planted | Raised by itself | True findings the judge refused | Shown, nothing planted (important) | Nits shown, nothing planted | Refused, nothing planted | Outside the change, verified | Tokens in / out |
+|---|---|---|---|---|---|---|---|---|
+| correctness | 3/3 | 3 | 0 | 0 | 3 | 1 | 1 | 93.9k / 8.4k |
+| edge cases | 2/3 | 2 | 0 | 1 | 1 | 1 | 4 | 89.9k / 9.1k |
+| tests | 3/3 (by itself, 2/3) | 2 | 4 | 1 (true) | 5 | 1 | 1 | 91.5k / 8.9k |
+
+Tokens are each lens's call and the judges of its findings, the whole
+input counted: 275k in and 26k out for the twelve reviews, 58 calls,
+about 25k a review, the costliest 33k. The column "judge refused true"
+above is read by hand; the harness counts the refusals inside a planted
+range (correctness 1, tests 3), and one of correctness's was a tests-lens
+finding.
+
+Read by hand, finding by finding (the test's log):
+
+- **Correctness**: every defect found by the three lenses at once — the
+  `<=` refusing the last units, the coupon error dropped, the story
+  comment over a check dropping a short last page — each verified.
+  Nothing important shown that nothing planted.
+- **Edge cases**: the empty cart and the negative return found. The guard
+  removed from `Page` was found by all three lenses and verified, but each
+  quoted `from := (p - 1) * size`, a line the change kept: the engine sent
+  it outside the change, an issue on a forge, not to the author
+  (status.md, item 8). On the clean rename it showed "Total accepts
+  negative or overflowing lines", verified: true of the code, not of the
+  change, whose renamed line it quoted. Outside, three findings of an
+  integer overflowing past MaxInt/100 in a shop's cents, all verified —
+  three weak issues.
+- **Tests**: the test asserting nothing and the one passing either way
+  found, verified. The untested `Shipping` was credited to nits of the
+  other lenses on its lines ("an empty cart pays shipping"); the tests
+  lens's own "no test" was refused by the judge — as were three more true
+  "no test covers it" findings (status.md, item 9). Its one finding shown
+  that nothing planted is true: Checkout's test omits a bad coupon.
+- **Clean changes**: the rename, one important finding (above); `Has`,
+  three nits on its documented `true` for a count of zero or less; Clear,
+  two nits on its test.
+- **Outside the change**: the untested `Snapshot` on `main` was raised by
+  no lens; the tests lens kept to the change.
+- **Finder floor**: one or two candidates asked (1.8 on average); the
+  lenses answered 1.7 findings a call. Its worth is not told by this run;
+  a run with `finder-floor: false` would.
+
+One run a case: a model answers differently from one run to the next
+(ADR-0014 reads a measure over five). Not tried: another model, another
+independence level, a forge (issues counted, not opened).
