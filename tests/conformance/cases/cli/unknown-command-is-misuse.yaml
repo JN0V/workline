@@ -1,0 +1,7 @@
+case: cli/unknown-command-is-misuse
+about: An unknown command is misuse, 64, and is named.
+given: {repo: basic}
+run: {cli: [frobnicate]}
+expect:
+  exit: 64
+  stderr: ["frobnicate", "workline --help"]

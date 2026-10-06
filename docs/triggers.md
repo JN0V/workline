@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: d261b38
+checked: 2948d73
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -127,7 +127,7 @@ requests from unprotected branches must apply.
 | 3 | `blocked-external`: the agent or the forge failed | a warning; run again later |
 | 64 | the command was misused | fix the job |
 
-An unknown option exits 2 too (#101). `workline gate` exits 0 or 1;
+An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
 `workline sample` exits 2 when a doc is left for a person and 3 when the
 judge cannot be reached; `workline doctor`, 1 on an error only. The
 templates keep a job's status and still apply what passed

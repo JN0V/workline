@@ -1,0 +1,7 @@
+case: cli/bad-option-value-is-misuse
+about: An option given a value it cannot take is misuse, 64.
+given: {repo: basic}
+run: {cli: [issues, import, docs/x.md, --lines, many]}
+expect:
+  exit: 64
+  stderr: ["-lines"]

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: d261b38
+checked: 2948d73
 verified: agent:claude-code
 ---
 # Install
@@ -44,6 +44,7 @@ workline` says where).
 ```sh
 workline setup     # asks three questions, shows each command before it runs it
 workline doctor    # at any time: what is set up, what is missing, the command for each
+workline --help    # every command; `workline <command> --help`, its options
 ```
 
 `setup` asks:

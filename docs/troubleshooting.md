@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 0efb09c
+checked: 2948d73
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -43,8 +43,7 @@ tokens — and `--json` prints every finding.
 
 | Sign | Cause |
 |---|---|
-| exit 64 and the usage | the command was misused (a missing `<role>` or `<event>`) |
-| exit 2 with `flag provided but not defined` | an unknown option: Go's parser exits 2, like `human` (#101); check with `<command> --help` |
+| exit 64 and the usage | the command was misused, named on the first line: a missing `<role>` or `<event>`, an unknown option, a bad value; `workline <command> --help` shows its options |
 | `.workline/config.yaml: line N: …` | a key the engine does not know, a retired role, or a value YAML reads otherwise than written: it blocks rather than be ignored |
 
 ## Docs suspect

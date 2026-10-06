@@ -94,6 +94,7 @@ type caseFile struct {
 		JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
 		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 		Follow  []string          `yaml:"follow"`        // workline follow, with these options
+		CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
 	} `yaml:"run"`
 	Expect struct {
 		Status      string                       `yaml:"status"`
@@ -125,6 +126,9 @@ type caseFile struct {
 		SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
 		Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
 		NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
+		Exit        *int                         `yaml:"exit"`          // with cli: the exit code
+		Stdout      []string                     `yaml:"stdout"`        // with cli: texts printed on stdout
+		Stderr      []string                     `yaml:"stderr"`        // with cli: texts printed on stderr
 	} `yaml:"expect"`
 }
 
@@ -246,6 +250,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		srv := httptest.NewServer(&gitlabMock{file: forgeFile})
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
+	}
+	if c.Run.CLI != nil {
+		return runCLI(c, repo, env)
 	}
 	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
@@ -442,6 +449,37 @@ func runCase(t *testing.T, c *caseFile) []string {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
 	}
 	return problems
+}
+
+// runCLI runs workline with the case's arguments, as a person or a script
+// types them, and checks its exit code and what it prints where.
+func runCLI(c *caseFile, repo string, env []string) []string {
+	cmd := exec.Command(engineBin, c.Run.CLI...)
+	cmd.Dir, cmd.Env = repo, env
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	code := 0
+	if ee, ok := err.(*exec.ExitError); ok {
+		code = ee.ExitCode()
+	} else if err != nil {
+		return []string{err.Error()}
+	}
+	var p []string
+	if c.Expect.Exit != nil && code != *c.Expect.Exit {
+		p = append(p, fmt.Sprintf("exit = %d, want %d\nstdout: %s\nstderr: %s", code, *c.Expect.Exit, stdout.String(), stderr.String()))
+	}
+	for _, text := range c.Expect.Stdout {
+		if !strings.Contains(stdout.String(), text) {
+			p = append(p, fmt.Sprintf("stdout lacks %q:\n%s", text, stdout.String()))
+		}
+	}
+	for _, text := range c.Expect.Stderr {
+		if !strings.Contains(stderr.String(), text) {
+			p = append(p, fmt.Sprintf("stderr lacks %q:\n%s", text, stderr.String()))
+		}
+	}
+	return p
 }
 
 func compare(c *caseFile, r *result, repo string) []string {

@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 0efb09c
+checked: 2948d73
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -91,6 +91,9 @@ a `PATH` without a tool, or with a fake one first.
 - `follow: [<option>...]` instead of `role` — `workline follow` on the
   repository (`[--base, main]`), on the simulated forge, or GitLab's with
   `forge: gitlab`;
+- `cli: [<argument>...]` instead of `role` — `workline` with these
+  arguments, as typed, in the repository: help, misuse; checked by `exit`,
+  `stdout` and `stderr` only;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
@@ -155,6 +158,8 @@ a `PATH` without a tool, or with a fake one first.
   text (`contains`), or not (`not-contains`).
 - `files` — paths that must exist, or contain a text or each of a list of
   texts, or lack one (`lacks`), afterwards.
+- `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
+  printed on each stream.
 
 ## The fakes
 

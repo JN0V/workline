@@ -1,0 +1,7 @@
+case: cli/command-help-without-role
+about: workline run-role --help prints the command's usage and options without a role, and exits 0.
+given: {repo: basic}
+run: {cli: [run-role, --help]}
+expect:
+  exit: 0
+  stdout: ["usage: workline run-role <role> --event <event>", "--event <event>", "--input-file <name=path>"]

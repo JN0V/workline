@@ -1,0 +1,7 @@
+case: cli/help-lists-every-command
+about: workline --help lists every command a person may run, one line each, on stdout, and exits 0.
+given: {repo: basic}
+run: {cli: [--help]}
+expect:
+  exit: 0
+  stdout: ["  run-role ", "  route ", "  apply ", "  review ", "  gate ", "  item ", "  issues ", "  docs ", "  sample ", "  follow ", "  init ", "  setup ", "  doctor ", "  hooks ", "  version ", "  help ", "hook, builtin", "workline <command> --help"]

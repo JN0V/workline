@@ -1,0 +1,7 @@
+case: cli/unknown-option-after-event-is-misuse
+about: An unknown option after the event is misuse, 64.
+given: {repo: basic}
+run: {cli: [route, pre-push, --bogus]}
+expect:
+  exit: 64
+  stderr: ["-bogus", "usage: workline route <event>"]
