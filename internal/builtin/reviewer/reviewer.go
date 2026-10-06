@@ -823,11 +823,12 @@ func material(repo string, st state, s Settings, f Finding) string {
 		fmt.Fprintf(&b, "\nThe author's claim it contradicts, quoted from what they said:\n\n> %s\n", strings.ReplaceAll(f.Claim, "\n", "\n> "))
 	}
 	// A cause quoted from an issue: the issue, and the change it is
-	// compared with, whole up to code-lines-max.
+	// compared with: the whole range, base..head, commits reviewed before
+	// included, so a part one of them did is not missing; up to code-lines-max.
 	if is := issueOf(st, f.Cause.Path); is != nil {
 		b.WriteString("\n" + whatFor([]ClosedIssue{*is}))
 		if diff, err := git(repo, "diff", "-U1", "--no-color", "--no-ext-diff", st.Base, st.Head, "--"); err == nil {
-			fmt.Fprintf(&b, "\n## The change\n\n```diff\n%s```\n", capLines(diff, s.CodeLinesMax, "the change is cut here, past code-lines-max"))
+			fmt.Fprintf(&b, "\n## The whole change: every commit of the merge request, those reviewed before too\n\n```diff\n%s```\n", capLines(diff, s.CodeLinesMax, "the change is cut here, past code-lines-max"))
 		}
 		return b.String()
 	}

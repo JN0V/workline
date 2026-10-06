@@ -9,8 +9,9 @@ judge:
     issue the change closes, shown here? Answer yes when the issue asks,
     in its Need or its Verification, what the change shown does not do or
     prove, or when the change does what the issue's Scope leaves out.
-    Answer no if the change does it, if the issue does not ask it, or if
-    the finding only guesses.
+    The change shown is the whole merge request, its commits reviewed
+    before included: answer no if any of it does it, if the issue does
+    not ask it, or if the finding only guesses.
   reads: issue
 ---
 **Intent.** The change says it closes the issue under "What the change
