@@ -87,6 +87,16 @@ func follow(repo, base, branch, role string, local bool) (verdict.Finding, error
 	if _, err := git(repo, nil, "merge-base", "--is-ancestor", baseTip, tip); err == nil {
 		return verdict.Finding{}, nil // on base's tip already
 	}
+	// The forge lists the branches, not where they go: a branch that did not
+	// leave from base's history goes elsewhere, a maintenance branch, and is
+	// never put on base.
+	if first, _ := git(repo, nil, "rev-list", "--reverse", "--grep=^"+OwnTrailer+": "+regexp.QuoteMeta(role)+"$", baseTip+".."+tip); first != "" {
+		first, _, _ = strings.Cut(first, "\n")
+		if _, err := git(repo, nil, "merge-base", "--is-ancestor", first+"^", baseTip); err != nil {
+			return verdict.Finding{Rule: "not-rebuilt", Level: "warn", Where: branch,
+				Message: fmt.Sprintf("it did not leave from %s, so its merge request goes into another branch: not rebuilt on %s", base, base)}, nil
+		}
+	}
 	if who := personsCommit(repo, baseTip, tip, role); who != "" {
 		return verdict.Finding{Rule: "not-rebuilt", Level: "warn", Where: branch,
 			Message: fmt.Sprintf("%s moved under it, but %s: not rebuilt over it; rebase it by hand, or close it and the next release run proposes the fix again", base, who)}, nil
