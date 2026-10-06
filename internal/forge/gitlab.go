@@ -804,11 +804,13 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 		Target        string `json:"target_branch"`
 		SourceProject int    `json:"source_project_id"`
 		TargetProject int    `json:"target_project_id"`
+		Title         string `json:"title"`
+		Description   string `json:"description"`
 	}
 	if err := decode(out, &mr); err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject}, nil
+	return MergeRequest{Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
 }
 
 func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {

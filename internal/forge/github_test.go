@@ -50,3 +50,25 @@ EOF
 		t.Errorf("comments: %q", bodies)
 	}
 }
+
+// A pull request says where it comes from and goes, and what its author
+// says of it: its title and body, a review's testimony (ADR-0020).
+func TestGitHubMergeRequest(t *testing.T) {
+	bin := t.TempDir()
+	script := "#!/bin/sh\n" + `cat <<'EOF'
+{"title":"Average over the count","body":"Closes #4\n\nNo change in behaviour.","head":{"ref":"feat","repo":{"full_name":"a/b"}},"base":{"ref":"main","repo":{"full_name":"a/b"}}}
+EOF
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	mr, err := (&github{repo: t.TempDir()}).MergeRequest(5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := MergeRequest{Branch: "feat", Base: "main", Here: true, Title: "Average over the count", Body: "Closes #4\n\nNo change in behaviour."}
+	if mr != want {
+		t.Errorf("merge request: %+v, want %+v", mr, want)
+	}
+}

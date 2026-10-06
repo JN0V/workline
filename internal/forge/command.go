@@ -225,9 +225,11 @@ func (c *command) MergeRequest(id int) (MergeRequest, error) {
 		Branch string `json:"branch"`
 		Base   string `json:"base"`
 		Here   bool   `json:"here"`
+		Title  string `json:"title"`
+		Body   string `json:"body"`
 	}
 	err := c.call("merge-request-branch", map[string]any{"id": id}, &a)
-	return MergeRequest{Branch: a.Branch, Base: a.Base, Here: a.Here}, err
+	return MergeRequest{Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body}, err
 }
 
 func (c *command) Milestones() ([]string, error) {

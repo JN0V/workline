@@ -499,15 +499,30 @@ func (g *github) OpenMergeRequests(prefix string) ([]string, error) {
 }
 
 func (g *github) MergeRequest(id int) (MergeRequest, error) {
-	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "--jq", "[.head.ref, .base.ref, (.head.repo.full_name == .base.repo.full_name)] | @tsv")
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id))
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	f := strings.Split(strings.TrimSpace(string(out)), "\t")
-	if len(f) != 3 {
-		return MergeRequest{}, fmt.Errorf("pull request %d: unexpected answer %q", id, out)
+	var pr struct {
+		Title string `json:"title"`
+		Body  string `json:"body"`
+		Head  struct {
+			Ref  string `json:"ref"`
+			Repo struct {
+				Name string `json:"full_name"`
+			} `json:"repo"`
+		} `json:"head"`
+		Base struct {
+			Ref  string `json:"ref"`
+			Repo struct {
+				Name string `json:"full_name"`
+			} `json:"repo"`
+		} `json:"base"`
 	}
-	return MergeRequest{Branch: f[0], Base: f[1], Here: f[2] == "true"}, nil
+	if err := decode(out, &pr); err != nil {
+		return MergeRequest{}, fmt.Errorf("pull request %d: %w", id, err)
+	}
+	return MergeRequest{Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
 }
 
 func (g *github) KeepIssue(title, body string, create bool) (int, error) {

@@ -176,7 +176,7 @@ open-merge-requests)
 	all "/pulls?state=open" | jq -c --arg p "$(arg .prefix)" '{branches: [.[].head.ref | select(startswith($p))] | sort}'
 	;;
 merge-request-branch)
-	api GET "/pulls/$(arg .id)" | jq -c '{branch: .head.ref, here: (.head.repo.full_name == .base.repo.full_name)}'
+	api GET "/pulls/$(arg .id)" | jq -c '{branch: .head.ref, here: (.head.repo.full_name == .base.repo.full_name), title: .title, body: (.body // "")}'
 	;;
 *)
 	printf '{"error": "unknown operation %s"}\n' "$WORKLINE_FORGE_OPERATION"

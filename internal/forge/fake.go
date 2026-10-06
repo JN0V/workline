@@ -318,7 +318,7 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: !it.Fork}, nil
+	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
 }
 
 func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
