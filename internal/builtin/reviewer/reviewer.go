@@ -489,15 +489,22 @@ func readLenses(runDir, repo string, s Settings) int {
 		for _, a := range answers {
 			lens := ls[0]
 			if len(ls) > 1 {
-				// Asked together, a finding names its lens: one naming none
-				// of those asked is dropped, said, never handed to one.
+				// Asked together, a finding names its lens. One naming none
+				// is read as the first lens's, said: dropping it lost a whole
+				// call's findings (tried.md, #147). One naming a lens not
+				// asked is dropped, said.
 				named, title := lensNamed(a.Value)
-				if !slices.Contains(ls, named) {
+				switch {
+				case named == "":
+					c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-lens-unnamed", Level: "warn",
+						Message: fmt.Sprintf("%q names no lens: read as the %s lens's, and judged by its question", title, ls[0])})
+				case !slices.Contains(ls, named):
 					c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
 						Message: fmt.Sprintf("dropped: %q names the lens %q, not one asked (%s)", title, named, strings.Join(ls, ", "))})
 					continue
+				default:
+					lens = named
 				}
-				lens = named
 			}
 			f, why := found(repo, st, lens, a.Value)
 			if why != "" {
