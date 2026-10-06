@@ -621,7 +621,15 @@ Rows in results.tsv.
   explains away; no case plants one.
 - **Decided**: `diff-alone: false` by default; on, it costs one call the
   change's size each run.
-- **Also**: the first case's call was answered by Haiku
-  (claude-haiku-4-5), not Sonnet, as the agent reported it; its row says
-  so. Not tried: five runs (ADR-0014); the facet beside the lenses in one
+- **The unread answer, not explained**: its text went with the test's
+  folder. Not a cut (0.9k tokens out for both answers, no cap) and not a
+  fence (read already); the two errors, `line 1: did not find expected
+  key` then `proposal 2 holds 2 kinds`, say a YAML shape the model wrote
+  wrong. **Fixed**: the evaluation now prints a part's unread answers in
+  its log; no mend written without the answer to test it on.
+- **Haiku named, ours**: Sonnet answered the clean rename with `[]`, 16
+  tokens; Claude Code's own small call on the side wrote more, and the
+  engine named the model writing most. **Fixed**: the model asked is
+  named when it is among those used (`TestClaudeAnswer`); the row stays
+  as written. Not tried: five runs (ADR-0014); the facet beside the lenses in one
   run (each measured apart); a merge request in CI.
