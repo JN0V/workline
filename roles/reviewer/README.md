@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 2fac506
+checked: 79ecb95
 verified: agent:claude-code
 ---
 # Reviewer
