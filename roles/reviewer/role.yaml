@@ -19,7 +19,10 @@ model:
   promote-after: 1   # a lens's answer that does not read is asked for again once
 
 context:
-  budget: 40000      # a lens's call: the change (diff-lines-max) and the files it changes (code-lines-max)
+  # Estimated tokens, 711 + 0.82 a character (#235): the lenses' call, the
+  # change (diff-lines-max) and the files it changes (code-lines-max); real
+  # calls up to 97.0k tokens in (a lens of 117k characters, #147).
+  budget: 100000
 
 duties:
   reads: ["**"]

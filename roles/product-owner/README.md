@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 0efb09c
+checked: 79ecb95
 verified: agent:claude-code
 ---
 # Product owner
@@ -135,9 +135,9 @@ many: the next run moves them to `ready`, with no agent.
 
 ## Cost
 
-One call a run (standard tier, context budget 40k tokens): 45k to 62k tokens
-in for four issues on a real backlog, most of it the agent's own prompt;
-`issues-per-run` and `code-lines-max` size it. A closing as obsolete asks a
+One call a run (standard tier, context budget 120k tokens, estimated): 45k
+to 62k tokens in for four issues on a real backlog, up to 97.6k with their
+code; `issues-per-run` and `code-lines-max` size it. A closing as obsolete asks a
 second judge of another model. A split need's report costs no tokens:
 one or two forge calls a part closed. Three runs in a row with nobody answering
 (`ignored-runs-max`) pause the role: no agent is asked until a person ticks

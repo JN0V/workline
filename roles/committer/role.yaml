@@ -21,7 +21,9 @@ model:
 
 context:
   knowledge: []
-  budget: 4000
+  # Estimated tokens, 711 + 0.82 a character (#235): the task (maxDiff,
+  # the stat, the message) and the facets; real calls 3 to 9.6k tokens in.
+  budget: 16000
 
 duties:
   reads: ["**"]

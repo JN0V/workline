@@ -66,7 +66,7 @@ func staleDocs(docs []*Doc, pl *places, f Freshness, now time.Time, skip func(st
 // unless the project sets `whole-chars`. A doc whose sources do not fit is
 // left for a person, or judged in parts: confirming it without reading them
 // would only fake its freshness. Characters, not tokens: the engine measures
-// a task before the call, with no tokenizer (about four characters a token).
+// a task before the call, with no tokenizer (agent.Tokens).
 const wholeCharsDefault = 20000
 
 // wholeChars is the project's cap on the sources of one doc judged whole.
@@ -75,6 +75,20 @@ func wholeChars(s Settings) int {
 		return s.WholeChars
 	}
 	return wholeCharsDefault
+}
+
+// wholeCharsMax is the most `whole-chars` may be: its task, the facets and
+// an answer asked again fit the role's context budget, 48000 tokens at
+// agent.Tokens' ratio (TestLargestTaskFitsTheBudget). A project asking for
+// more is refused, said, rather than every doc's prompt refused (#235).
+const wholeCharsMax = 25000
+
+// checkWholeChars refuses a `whole-chars` whose task would not fit.
+func checkWholeChars(s Settings) error {
+	if s.WholeChars > wholeCharsMax {
+		return fmt.Errorf("whole-chars %d: over %d, a task would not fit the role's context budget (tokens estimated at 711 + 0.82 a character); set it at most %d", s.WholeChars, wholeCharsMax, wholeCharsMax)
+	}
+	return nil
 }
 
 // taskChars caps a task: the room the doc and the words around its sources

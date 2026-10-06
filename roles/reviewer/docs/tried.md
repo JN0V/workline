@@ -467,3 +467,20 @@ answered with no tokens by the two findings the judged validation run of
 - **Not tried**: the evaluation's cases with a real agent (#90 counts the
   judge's false negatives there); a project in another language than Go
   and shell, for real (unit tests only); CI.
+
+## 2026-10-06 — the context budget against the calls kept (#235)
+
+No tokens: each call kept in a run folder on this machine, its task's
+characters (facets added) against the tokens Claude reported.
+
+- **The estimate**: 711 + 0.82 a character, #147's fit, now the engine's
+  (`agent.Tokens`), not characters / 4.
+- **The lens calls** of 2026-10-05: 117k characters, 96.6k to 97.0k
+  tokens reported, 96.7k estimated. The lenses together (#147): 87.1k
+  characters, 73.6k reported, 72.1k estimated.
+- **The budget**: 40000, which these calls passed as 29k; 100000 now,
+  room for the largest call seen and the lenses together at
+  `diff-lines-max` and `code-lines-max`.
+- **The evaluation's twelve cases**, offline, a recording agent: every
+  lens and judge call asked, none refused (4k to 6k characters).
+- **Not tried**: a real call refused for its size.

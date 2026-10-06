@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: c78417b
+checked: fcc8f36
 verified: agent:claude-code
 ---
 # Documentalist — at the push, the release and the adoption

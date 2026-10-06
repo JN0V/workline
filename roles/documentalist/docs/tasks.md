@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go]
-checked: c78417b
+checked: fcc8f36
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -28,7 +28,7 @@ calls together: past it, the agent is asked nothing more and the rest waits.
 move `checked` only when every one of its sources went whole into the task,
 as it is now — every text file under a source path, the section of a source
 doc, up to the project's `whole-chars` together (20,000 characters by
-default; the task grows by as much as it is raised). A doc judged on
+default, 25,000 at most; the task grows by as much as it is raised). A doc judged on
 diffs alone, or beside a doc of the same task it follows, is told instead
 that `checked` cannot move: its fix leaves it and sets `judged`, the judge
 refusing a move (`checked-unread`), and the doc stays suspect for a person.

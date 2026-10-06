@@ -96,9 +96,23 @@ func Prompt(req Request) (system, user string, err error) {
 	}
 	user = b.String()
 	if budget := req.Role.Context.Budget; budget > 0 {
-		if tokens := (len(system) + len(user)) / 4; tokens > budget {
-			return "", "", fmt.Errorf("prompt is about %d tokens, over the role's budget of %d", tokens, budget)
+		chars := len(system) + len(user)
+		if tokens := Tokens(chars); tokens > budget {
+			return "", "", fmt.Errorf("prompt is about %d tokens (%d characters at %s), over the role's budget of %d", tokens, chars, TokensRatio, budget)
 		}
 	}
 	return system, user, nil
 }
+
+// Tokens estimates what a prompt of so many characters (bytes) costs, before
+// the call, with no tokenizer: 711 + 0.82 a character. Fitted on ten real
+// calls of the reviewer, Go code and diffs, Claude Sonnet and Opus, 87k to
+// 117k characters (#147, roles/reviewer/docs/tried.md, 2026-10-06), within
+// 2% of what Claude reported. On the documentalist's evaluation calls
+// (Sonnet and Opus, 6k to 43k characters) it reads Markdown 5 to 15% high
+// and C++ sources 10% low (#235): one ratio, code and prose alike, since
+// prose here is far from four characters a token.
+func Tokens(chars int) int { return 711 + chars*82/100 }
+
+// TokensRatio says the estimate, in the refusal.
+const TokensRatio = "711 + 0.82 a character"

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 2fac506
+checked: 79ecb95
 verified: agent:claude-code
 ---
 # Reviewer
@@ -146,6 +146,9 @@ left for a person (`not-reviewed`).
   next run.
 - **Said**: the summary gives the tokens used against the cap; each
   call's, by lens and by judged finding, is in `out/review.json`.
+- **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a
+  character before the call (#235); a larger prompt is not sent, the
+  lens failing, said (`lens-failed`).
 
 ## On a machine
 

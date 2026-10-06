@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: ce2783e
+checked: 79ecb95
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -85,7 +85,8 @@ model:                          # what kind of thinking, never a model name
 
 context:
   knowledge: []                 # which knowledge/ files to load; none by default
-  budget: 4000                  # tokens; the engine refuses a larger prompt
+  budget: 16000                 # tokens, estimated 711 + 0.82 a character
+                                # (agent.Tokens); the engine refuses a larger prompt
 
 duties:
   reads: ["**"]                 # paths the role may read

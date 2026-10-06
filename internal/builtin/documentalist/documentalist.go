@@ -554,9 +554,9 @@ func (sd *suspectDoc) evidenceFor(dir, checked, rev, path, anchor string) string
 	return e
 }
 
-// taskMaxChars keeps the task well inside the role's context budget (16000
-// tokens, about 64000 characters, facets included). Docs left out stay
-// suspect, and are judged by a person or by a later run.
+// taskMaxChars keeps the task inside the role's context budget (48000
+// tokens, about 57000 characters at agent.Tokens' ratio, facets included).
+// Docs left out stay suspect, and are judged by a person or by a later run.
 const taskMaxChars = 40000
 
 // Pre finds suspect and pending docs, runs the hygiene checks, and writes the
@@ -570,6 +570,9 @@ func Pre(runDir, repo string) int {
 	useRecords(s)
 	useLanguage(s)
 	if err := useVersions(s); err != nil {
+		return fail(err)
+	}
+	if err := checkWholeChars(s); err != nil {
 		return fail(err)
 	}
 	tree, err := loadTree(repo, s.Docs)
@@ -1386,6 +1389,9 @@ func Post(runDir, repo string) int {
 	useRecords(s)
 	useLanguage(s)
 	if err := useVersions(s); err != nil {
+		return fail(err)
+	}
+	if err := checkWholeChars(s); err != nil {
 		return fail(err)
 	}
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))

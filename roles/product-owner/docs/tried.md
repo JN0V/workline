@@ -723,3 +723,17 @@ planted (`--ai fake:`) each time.
 - Not tried: GitHub Actions' pair (docs/ci.md); the template's own image,
   which has no release with this yet; a real agent's answer; an import of
   several shares split this way (conformance holds one share).
+
+## 2026-10-06 — the context budget against the calls kept (#235)
+
+No tokens: the DomoticsCore runs of 2026-10-04 kept on this machine,
+each one call, its task's characters against the tokens reported.
+
+- **The estimate**: 711 + 0.82 a character (`agent.Tokens`), not
+  characters / 4; on these calls, 15 to 20% over what Claude reported.
+- **Imports**: tasks of 34k to 81k characters, 29.7k to 65.1k tokens.
+- **Refining, with the code**: tasks of 87k to 126k characters, 66.7k
+  to 97.6k tokens — all passed the budget of 40000 at characters / 4.
+- **The budget**: 120000 now, the largest of them (about 112k estimated)
+  still passing; `code-lines-max` (1500) is what sizes it.
+- **Not tried**: a real call refused for its size.

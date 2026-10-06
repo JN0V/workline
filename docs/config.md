@@ -41,7 +41,7 @@ roles:
     settings:
       derive: {cases: "ls tests/*.yaml | wc -l"}   # fills <!-- workline:derive cases -->…<!-- workline:end --> in a doc
       history: ["docs/journal/**"]                 # records, beside changelogs and release notes (role.yaml)
-      whole-chars: 40000                           # sources judged whole up to this; more docs vouched, more tokens
+      whole-chars: 25000                           # sources judged whole up to this (25000 at most); more docs vouched, more tokens
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
       sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
@@ -73,6 +73,10 @@ as written. One YAML reads otherwise than written — a leading zero
 saying to quote it. A project's `settings` for a role are merged into the
 role's at every depth; a list replaces the default whole, a `null` removes
 it ([role-adapting.md](spec/role-adapting.md#settings)).
+
+- **`whole-chars` above 25000 is refused**: its task would pass the
+  documentalist's context budget, tokens estimated at 711 + 0.82 a
+  character (#235), and each doc's prompt would be refused instead.
 
 
 ## Your own config
