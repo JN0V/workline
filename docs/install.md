@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: 77711cd
+checked: 5f21056
 verified: agent:claude-code
 ---
 # Install
@@ -44,6 +44,7 @@ workline` says where).
 ```sh
 workline setup     # asks three questions, shows each command before it runs it
 workline doctor    # at any time: what is set up, what is missing, the command for each
+workline --help    # every command; `workline <command> --help`, its options
 ```
 
 `setup` asks:
@@ -130,20 +131,20 @@ Step by step, in ten minutes: [the quickstart](quickstart.md).
 
 ## In CI
 
-Every detail, forge by forge: [ci.md](ci.md). In short:
+What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
 
 - **GitHub**: copy the workflows of [ci/github](../ci/github/) into
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
   pull request, and each push to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
   [workline-sample.yml](../ci/github/workline-sample.yml)
-  ([ci.md, GitHub](ci.md#github)).
+  ([ci-github.md](ci-github.md)).
 - **GitLab**: include
   [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml),
   then add two pipeline schedules, gardening and the sample
-  ([ci.md, gitlab.com](ci.md#gitlabcom); a [self-managed
-  instance](ci.md#a-self-managed-gitlab)).
-- **Another forge** (Gitea, Forgejo…) or [none](ci.md#no-forge): [ci.md](ci.md).
+  ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
+  instance](ci-gitlab.md#a-self-managed-gitlab)).
+- **Another forge** (Gitea, Forgejo…) or [none](ci-other-forges.md#no-forge): [ci-other-forges.md](ci-other-forges.md).
 
 What the templates need:
 

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/doctor, internal/hooks]
-checked: 77711cd
+checked: 2948d73
 verified: agent:claude-code
 ---
 # Quickstart
@@ -16,6 +16,7 @@ Install the binary ([install](install.md#1-the-binary)), then:
 ```sh
 workline setup     # the global hooks, your agent, the tools the roles use; asks first
 workline doctor    # what is set up, what is missing, and the command for each
+workline --help    # every command; `workline <command> --help`, its options
 ```
 
 `workline setup --yes` takes the defaults; `--ai none` keeps every AI off.

@@ -1,0 +1,25 @@
+case: reviewer/tests-rounding-test-passes-either-way
+about: "Tests, a test that would pass without the change: Discount now rounds to the nearest cent, and the test added for it takes 15% of 20.00, exact either way."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      sed -i 's|rounded down to the cent; percent|rounded to the nearest cent; percent|; s|return total - total\*percent/100|return total - (total*percent+50)/100|' shop/cart.go
+      cat >> shop/cart_test.go <<'GO'
+
+      func TestDiscountRounds(t *testing.T) {
+      	if got := Discount(2000, 15); got != 1700 {
+      		t.Errorf("Discount(2000, 15) = %d, want 1700", got)
+      	}
+      }
+      GO
+      git commit -qam 'feat(cart): round a discount to the nearest cent'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: passes-either-way
+      at:
+        - {file: shop/cart_test.go, lines: [25, 29], text: "Discount(2000, 15)"}
+        - {file: shop/cart.go, lines: [29, 29], text: "(total*percent+50)/100"}

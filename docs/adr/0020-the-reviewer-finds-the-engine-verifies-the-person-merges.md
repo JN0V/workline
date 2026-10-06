@@ -73,12 +73,17 @@ before the push; and on the merge request, a safety net.
    for a merge request the developer role opened, `context` for a person's
    (`judge-at-least`). A no drops the finding, said with the judge's reason
    (`finding-judged-no`); a finding not verified is shown as such. A nit is
-   not judged, and one outside the change is left, counted.
+   not judged, and one outside the change is left, counted. The judge asks
+   the lens's question (#223): whether the quoted code fails, or, for the
+   tests lens, whether a test exercises the behaviour, read from the tests
+   that touch the cause's file.
 6. **The verdict by rules.** The rules' findings block; what the lenses
    find warns until #90 has measured it, then a verified important finding
    blocks (`ai-findings: block`). The reviewer never approves, never
    patches, never merges: a lens proposing a patch is refused, and the lens
    counted as not answered. The person merges.
+   *(Amended 2026-10-06: `ai-findings` is set by lens too, each lens
+   blocking once it earned it; see Amendment.)*
 
 **Outputs.** The findings as SARIF and GitLab's Code Quality report (as
 every role's), and one summary comment on the merge request, edited on each
@@ -125,3 +130,47 @@ merge-request line; on in workline's own repository.
 - The engine learned two things any role may use: parts answering what the
   role names (`part-intentions`), and questions for a judge written by
   `pre`, each answered apart (docs/spec/role-contract.md).
+
+## Amendment (2026-10-06)
+
+- **`ai-findings` by lens** (#222): one value, `warn` or `block`, still
+  sets every lens; a map sets each lens apart,
+  `{correctness: block, edge-cases: warn}`, a lens not named warning.
+  #90's step 1 found the lenses unequal (roles/reviewer/docs/tried.md):
+  correctness ready to block, edge cases in doubt, tests not ready. One
+  switch for all would hold a merge request on the weakest lens's guess,
+  or let the strongest lens's defect through.
+- **A value or a lens the reviewer does not know stops the run**, never
+  read as `warn` (principle 12).
+- **Two findings on one line**: of two important ones, the one from a lens
+  that blocks leads, so a merge never turns a blocking finding into a
+  warning.
+- **Workline's own line stays at `warn`** until a measure over five runs a
+  case ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)); the
+  maintainer switches correctness to `block`.
+
+## Amendment (2026-10-06, #226)
+
+- **A blocked merge request still gets the comment.** A block applied
+  nothing, as for every role: no comment, the record not moved, the
+  next push reviewing the same commits again, and the author reading the
+  finding only in the job's verdict. A block is when the author most
+  needs it.
+- **The engine**: a role names in `on-block` the intentions a blocked run
+  still applies, those that only say why (docs/spec/role-contract.md,
+  step 5); the run still blocks. The reviewer names `comment` and
+  `issue`: its summary comment, the record in it, and the issues outside
+  the change the comment counts.
+- **The comment**: what blocks first, marked `**blocks**`, then the
+  warnings. The record moves when every lens answered, as on a pass; a
+  rule that blocks writes the comment too, the record left as it was.
+- **The templates**: the trust split is kept. The judging job, with the
+  AI key, fails by the verdict; the applying job, with the write token
+  and no AI key, runs whatever the judge's outcome (`if: always()`,
+  `when: always`) and writes what is pending. GitLab's gardening apply
+  had no `when: always` (#142); GitLab's judging jobs now warn on an
+  agent out of reach (3), as GitHub's do.
+- **Rejected**: posting the comment from the judging job (a write token
+  beside the AI key, against
+  [principle 6](../PRINCIPLES.md)); a third job only for the comment
+  (one more job for what `workline apply` already does).

@@ -25,8 +25,12 @@ type Role struct {
 	// PartIntentions are what a part of a question may answer with
 	// (in/parts): claims when unset; a reviewer's lens answers findings.
 	PartIntentions []string `yaml:"part-intentions"`
-	Model          Model    `yaml:"model"`
-	Duties         struct {
+	// OnBlock are the intentions a run still applies when post blocks:
+	// those that only tell why, never change what was judged (the
+	// reviewer's summary comment, #226). Empty: nothing applied on a block.
+	OnBlock []string `yaml:"on-block"`
+	Model   Model    `yaml:"model"`
+	Duties  struct {
 		Reads  []string `yaml:"reads"`
 		Writes []string `yaml:"writes"`
 	} `yaml:"duties"`
@@ -114,6 +118,11 @@ func Load(rolesDir, name string) (*Role, error) {
 	}
 	if r.Name != name {
 		return nil, fmt.Errorf("role %q: role.yaml names itself %q", name, r.Name)
+	}
+	for _, k := range r.OnBlock {
+		if !slices.Contains(r.Intentions, k) {
+			return nil, fmt.Errorf("role %q: on-block names %q, not one of its intentions", name, k)
+		}
 	}
 	r.Dir = dir
 	return &r, nil

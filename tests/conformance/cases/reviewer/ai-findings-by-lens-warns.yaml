@@ -1,0 +1,12 @@
+case: reviewer/ai-findings-by-lens-warns
+about: "ai-findings set by lens: the same verified important finding, from a lens set to warn, passes, the finding shown as a warning (#222)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block, edge-cases: warn, tests: warn}}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: edge-cases}, ai: "fake:review-related", reports: true}
+expect:
+  status: pass
+  findings: [{rule: edge-cases, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}]
+  sarif: [{rule: reviewer/edge-cases, uri: calc/calc.go, line: 11, level: warning}]

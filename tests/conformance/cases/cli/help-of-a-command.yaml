@@ -1,0 +1,7 @@
+case: cli/help-of-a-command
+about: workline help <command> is <command> --help.
+given: {repo: basic}
+run: {cli: [help, issues]}
+expect:
+  exit: 0
+  stdout: ["usage: workline issues", "import <file>", "--apply"]

@@ -1,0 +1,8 @@
+case: reviewer/clean-rename-a-variable
+about: "Clean: Total's running sum renamed. Nothing to find; a rename needs no test."
+given:
+  repo: shop
+  setup:
+    - "git checkout -q -b feature && sed -i 's/\\bsum\\b/cost/g' shop/cart.go && git commit -qam 'refactor(cart): name the running total cost'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review: {}

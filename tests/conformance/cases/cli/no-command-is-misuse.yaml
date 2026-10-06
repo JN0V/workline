@@ -1,0 +1,7 @@
+case: cli/no-command-is-misuse
+about: workline alone is misuse, 64, and points to --help.
+given: {repo: basic}
+run: {cli: []}
+expect:
+  exit: 64
+  stderr: ["workline --help"]

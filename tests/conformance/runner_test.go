@@ -91,8 +91,10 @@ type caseFile struct {
 		Review  []string          `yaml:"review"`        // workline review, with these options
 		Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
 		Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
+		JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
 		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 		Follow  []string          `yaml:"follow"`        // workline follow, with these options
+		CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
 	} `yaml:"run"`
 	Expect struct {
 		Status      string                       `yaml:"status"`
@@ -120,8 +122,13 @@ type caseFile struct {
 		Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
 		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
 		Summary     string                       `yaml:"summary"`       // a text the result's summary holds
+		SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order
+		SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
 		Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
 		NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
+		Exit        *int                         `yaml:"exit"`          // with cli: the exit code
+		Stdout      []string                     `yaml:"stdout"`        // with cli: texts printed on stdout
+		Stderr      []string                     `yaml:"stderr"`        // with cli: texts printed on stderr
 	} `yaml:"expect"`
 }
 
@@ -244,6 +251,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
+	if c.Run.CLI != nil {
+		return runCLI(c, repo, env)
+	}
 	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
 	switch {
@@ -317,6 +327,10 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
 	}
+	summaryFile, summaryHTML := filepath.Join(work, "summary.md"), filepath.Join(work, "summary.html")
+	if c.Run.JobSum {
+		args = append(args, "--summary", summaryFile, "--summary", summaryHTML)
+	}
 	// Judged on one machine, applied on another (CI's two jobs): each its own
 	// cache, the first gone by the time the second applies.
 	// With the roles built into the engine, as CI installs it: no --roles.
@@ -362,7 +376,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		if len(dirs) == 0 {
 			return []string{"the first run reported no run folder to resume"}
 		}
-		resume := exec.Command(engineBin, append(append([]string{"apply"}, dirs...), "--json")...)
+		resumeArgs := append(append([]string{"apply"}, dirs...), "--json")
+		if c.Run.JobSum {
+			resumeArgs = append(resumeArgs, "--summary", summaryFile, "--summary", summaryHTML)
+		}
+		resume := exec.Command(engineBin, resumeArgs...)
 		resume.Env = env
 		if judgeCache != "" {
 			os.RemoveAll(judgeCache)
@@ -377,11 +395,18 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
+		if len(r2.Coverage.Items) == 0 && len(r2.Coverage.NotCovered) == 0 {
+			r2.Coverage = r.Coverage // an import's map is the judge's: apply prints none
+		}
 		r = r2
 	}
 	if c.Run.Sample != nil && c.Run.Then == "apply" {
 		// The write, as CI's job holding the forge's token and no AI key.
-		apply := exec.Command(engineBin, "sample", "--apply", filepath.Join(work, "sample.json"), "--repo", repo, "--forge", forgeSpec, "--json")
+		applyArgs := []string{"sample", "--apply", filepath.Join(work, "sample.json"), "--repo", repo, "--forge", forgeSpec, "--json"}
+		if c.Run.JobSum {
+			applyArgs = append(applyArgs, "--summary", summaryFile, "--summary", summaryHTML)
+		}
+		apply := exec.Command(engineBin, applyArgs...)
 		apply.Dir, apply.Env = repo, cmd.Env
 		stdout.Reset()
 		apply.Stdout, apply.Stderr = &stdout, &stderr
@@ -414,10 +439,47 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Reports {
 		problems = append(problems, compareReports(c, sarifFile, cqFile)...)
 	}
+	if len(c.Expect.SummaryFile) > 0 {
+		problems = append(problems, compareSummaryFile(c.Expect.SummaryFile, summaryFile)...)
+	}
+	if len(c.Expect.SummaryHTML) > 0 {
+		problems = append(problems, compareSummaryFile(c.Expect.SummaryHTML, summaryHTML)...)
+	}
 	if len(c.Expect.Forge) > 0 {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
 	}
 	return problems
+}
+
+// runCLI runs workline with the case's arguments, as a person or a script
+// types them, and checks its exit code and what it prints where.
+func runCLI(c *caseFile, repo string, env []string) []string {
+	cmd := exec.Command(engineBin, c.Run.CLI...)
+	cmd.Dir, cmd.Env = repo, env
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	code := 0
+	if ee, ok := err.(*exec.ExitError); ok {
+		code = ee.ExitCode()
+	} else if err != nil {
+		return []string{err.Error()}
+	}
+	var p []string
+	if c.Expect.Exit != nil && code != *c.Expect.Exit {
+		p = append(p, fmt.Sprintf("exit = %d, want %d\nstdout: %s\nstderr: %s", code, *c.Expect.Exit, stdout.String(), stderr.String()))
+	}
+	for _, text := range c.Expect.Stdout {
+		if !strings.Contains(stdout.String(), text) {
+			p = append(p, fmt.Sprintf("stdout lacks %q:\n%s", text, stdout.String()))
+		}
+	}
+	for _, text := range c.Expect.Stderr {
+		if !strings.Contains(stderr.String(), text) {
+			p = append(p, fmt.Sprintf("stderr lacks %q:\n%s", text, stderr.String()))
+		}
+	}
+	return p
 }
 
 func compare(c *caseFile, r *result, repo string) []string {
@@ -679,8 +741,9 @@ func readPending(t *testing.T) map[string]bool {
 }
 
 // compareForge checks the simulated forge's state: for each listed item, by
-// id, `comments` is a count, `labels` the exact set, `comment-contains` /
-// `comment-lacks` texts some comment holds, or none does, `branch`, `base`
+// id, `comments` is a count, `labels` the exact set, `comment-contains`
+// texts (one or a list) some comment holds, `comment-lacks` one none
+// does, `branch`, `base`
 // `title`, the `reason` it was closed for, its `milestone` and the `parent`
 // it is a sub-issue of (0 for none) an item's, `blocked-by` the issues it
 // waits on in the forge's own relation, `closed` whether it
@@ -746,8 +809,14 @@ func compareForge(want map[string]any, file string) []string {
 				}
 				return false
 			}
-			if t, ok := wm["comment-contains"]; ok && !held(fmt.Sprint(t)) {
-				p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm["id"], t, comments))
+			texts := []any{wm["comment-contains"]} // one text, or several
+			if l, ok := wm["comment-contains"].([]any); ok {
+				texts = l
+			}
+			for _, t := range texts {
+				if t != nil && !held(fmt.Sprint(t)) {
+					p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm["id"], t, comments))
+				}
 			}
 			if t, ok := wm["comment-lacks"]; ok && held(fmt.Sprint(t)) {
 				p = append(p, fmt.Sprintf("forge: a comment on %s %v holds %q", kind, wm["id"], t))
@@ -767,6 +836,23 @@ func compareForge(want map[string]any, file string) []string {
 		}
 	}
 	return p
+}
+
+// compareSummaryFile checks the --summary file holds each text, in order.
+func compareSummaryFile(want []string, file string) []string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{fmt.Sprintf("no summary file: %v", err)}
+	}
+	rest := string(data)
+	for _, w := range want {
+		i := strings.Index(rest, w)
+		if i < 0 {
+			return []string{fmt.Sprintf("the summary file does not hold %q after what came before:\n%s", w, data)}
+		}
+		rest = rest[i+len(w):]
+	}
+	return nil
 }
 
 // compareReports checks the SARIF and Code Quality files a run wrote.

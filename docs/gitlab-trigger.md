@@ -1,17 +1,20 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 7a6289b
-judged: bd68956
-verified: agent:documentalist
+checked: 5f21056
+judged: 02da247
+verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
-The GitLab template ([ci.md](ci.md#gitlabcom)) runs on merge request
+The GitLab template ([ci-gitlab.md](ci-gitlab.md)) runs on merge request
 events and pipeline schedules. Where an internal tool starts the jobs
 instead — the trigger API, the pipelines API, another pipeline — this page
 does the same with a plain script. The commands themselves:
-[triggers.md](triggers.md). **Not tried yet** on a triggered pipeline:
-what follows is the template's commands under other rules.
+[triggers.md](triggers.md). Tried on a pipeline the API started
+(2026-10-06): the judging job of `garden`, without an agent, and its
+summary; `import`, both jobs, the engine of the branch and a planted
+answer; the other tasks, not yet. What follows is
+the template's commands under other rules.
 
 ## Before CI: on your machine
 
@@ -42,8 +45,9 @@ none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, ADR-0034) |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, ADR-0034), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
+| `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
 A triggered pipeline has none of the `CI_MERGE_REQUEST_*` variables: the
 tool reads them from the merge request and passes them. Passing variables
@@ -64,18 +68,24 @@ curl -fsS -X POST --form token="$TRIGGER_TOKEN" --form ref=main \
 
 ```yaml
 stages: [test, deploy]
-variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.16.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}
+variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.17.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}
 .workline:
   image: ghcr.io/jn0v/workline:$WORKLINE_VERSION
   rules: [{if: '$CI_PIPELINE_SOURCE =~ /^(api|trigger|pipeline|parent_pipeline)$/ && $WORKLINE_TASK'}]
+  after_script:                     # the summary: at the end of the log, linked from the job's page
+    - '[ ! -s workline-summary.md ] || cat workline-summary.md'
+    - printf '{"workline":[{"external_link":{"label":"workline summary","url":"%s/artifacts/file/workline-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
 workline:judge:
   extends: .workline
   stage: test
   script: [sh ci/workline-job.sh judge]
   artifacts:
-    when: always
-    paths: [.workline-runs/, line.json, sample.json]
-    reports: {codequality: gl-code-quality.json}
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, sample.json]
+    reports: {codequality: gl-code-quality.json, annotations: workline-annotations.json}
 workline:apply:
   extends: .workline
   stage: deploy
@@ -89,7 +99,7 @@ workline:apply:
 ```sh
 #!/bin/sh
 set -eu
-step=$1; ai=none
+step=$1; ai=none; sum="--summary workline-summary.md --summary workline-summary.html"   # what the job's page shows
 if [ "$step" = judge ]; then                      # reads the forge, writes nothing
   [ -z "${WORKLINE_GITLAB_READ_TOKEN:-}" ] || export GITLAB_TOKEN="$WORKLINE_GITLAB_READ_TOKEN"
   if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
@@ -107,28 +117,32 @@ case "$step:$WORKLINE_TASK" in
     git fetch --quiet origin "$MR_BASE_SHA"
     workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --forge gitlab \
       --target "merge-request:$MR_IID" --branch "$MR_SOURCE_BRANCH" \
-      --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" --code-quality gl-code-quality.json --json > line.json || status=$? ;;
+      --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" --code-quality gl-code-quality.json $sum --json > line.json || status=$? ;;
   judge:garden)
-    workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json || status=$? ;;
+    workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
   judge:product-owner)
-    workline run-role product-owner --event schedule --ai "$ai" --no-apply --forge gitlab --json > po.json || status=$?
+    workline run-role product-owner --event schedule --ai "$ai" --no-apply --forge gitlab $sum --json > po.json || status=$?
     jq '{pending: [."run-dir"]}' po.json > line.json ;;
   judge:release)
-    workline route release --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json || status=$? ;;
+    workline route release --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
+  judge:import)                                   # the issues it would open; apply:* opens them
+    workline issues import "$WORKLINE_IMPORT" --ai "$ai" --forge gitlab $sum --json > line.json || status=$? ;;
   judge:sample)
-    workline sample --out sample.json || status=$?; [ "$status" != 1 ] && status=0 ;;
-  apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab ;;
+    workline sample --out sample.json $sum || status=$?; [ "$status" != 1 ] && status=0 ;;
+  apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;
   judge:follow) ;;                                # no agent: all in the applying job
   apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab || status=$? ;;
-  apply:*) [ ! -f line.json ] || workline apply --line line.json || status=$? ;;
+  apply:*) [ ! -f line.json ] || workline apply --line line.json $sum || status=$? ;;
 esac
 exit "$status"
 ```
 
-The judging job exits with the verdict (1 block, 2 for a person, 3 the
+`--summary` needs the first release after v0.16.0
+([ci.md](ci.md#what-a-job-shows)). The judging job exits with the verdict (1 block, 2 for a person, 3 the
 agent or forge unreachable: make 3 a warning with `allow_failure:
-{exit_codes: [3]}`); the applying job still runs (`when: always`) and
-applies what passed. On `release`, a judging job that does not pass holds
+{exit_codes: [3]}`, as the template does); the applying job still runs
+(`when: always`) and applies what passed, and the comment of a reviewer
+that blocks (#226). On `release`, a judging job that does not pass holds
 the release; the docs' fix goes to a merge request of its own (untried
 outside a release tool's merge request).
 
@@ -148,6 +162,7 @@ The template does the same, and gives its gardening judge the write token.
 
 The Code Quality report shows on the merge request when the pipeline is
 the merge request's own; a pipeline started on its branch by a tool may not
-be shown there (untried). The findings are in the job log either way, and
-the documentalist's and the reviewer's comments on the merge request do not
-depend on it.
+be shown there (untried). The findings are in each job's summary either
+way — `workline-summary.html`, linked from the job's page, and the end of
+its log ([ci.md](ci.md#what-a-job-shows)) — and the documentalist's and the
+reviewer's comments on the merge request do not depend on it.

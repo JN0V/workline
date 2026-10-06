@@ -60,6 +60,8 @@ func main() {
 		col[h] = i
 	}
 	groups := map[key]*group{}
+	lenses := map[lensKey]*lensSum{}
+	outside := map[lensKey]map[string]int{}
 	for {
 		row, err := r.Read()
 		if err == io.EOF {
@@ -98,6 +100,7 @@ func main() {
 		add(&g.tokensOut, get("tokens out"))
 		add(&g.seconds, get("seconds"))
 		add(&g.calls, get("agent calls"))
+		addMeasure(lenses, outside, k, get("measure"))
 	}
 	keys := make([]key, 0, len(groups))
 	for k := range groups {
@@ -138,6 +141,108 @@ func main() {
 			g.passes, len(g.scores), 100*mean(g.scores), 100*lo, 100*hi, show(g.calls, "%.1f"), show(g.tokensIn, "%.0f"), show(g.tokensOut, "%.0f"), show(g.seconds, "%.0f"), strings.Join(notes, ", "))
 	}
 	w.Flush()
+	printLenses(lenses, outside)
+}
+
+// The reviewer's measure (#90): its cases write, a run, each lens's tallies
+// in the `measure` column (tests/evaluation/review_test.go); they are summed
+// here by lens, models and judge.
+type lensKey struct{ lens, models, judge string }
+
+type lensSum struct {
+	runs   int
+	n      map[string]int // the tallies, by name, summed
+	floors []float64
+}
+
+// addMeasure reads one row's measure: "floor=2; correctness planted=1
+// found=1 …; edge-cases …; outside-planted tests:untested=opened by tests".
+func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int, k key, measure string) {
+	if measure == "" {
+		return
+	}
+	floor := ""
+	for _, part := range strings.Split(measure, "; ") {
+		if v, ok := strings.CutPrefix(part, "floor="); ok {
+			floor = v
+			continue
+		}
+		if v, ok := strings.CutPrefix(part, "outside-planted "); ok {
+			ok := lensKey{"", k.models, k.judge}
+			if outside[ok] == nil {
+				outside[ok] = map[string]int{}
+			}
+			for _, o := range strings.Split(v, ", ") {
+				outside[ok][o]++
+			}
+			continue
+		}
+		fields := strings.Fields(part)
+		if len(fields) == 0 {
+			continue
+		}
+		lk := lensKey{fields[0], k.models, k.judge}
+		s := lenses[lk]
+		if s == nil {
+			s = &lensSum{n: map[string]int{}}
+			lenses[lk] = s
+		}
+		s.runs++
+		add(&s.floors, floor)
+		for _, f := range fields[1:] {
+			name, v, _ := strings.Cut(f, "=")
+			n, _ := strconv.Atoi(v)
+			s.n[name] += n
+		}
+	}
+}
+
+// printLenses prints, a lens each, the defects planted for it and how many
+// were found (by any lens), the judge's refusals of true findings, what it
+// raised that nothing planted — shown, nits, or refused — what it raised
+// outside the change, the finder floor, and its tokens.
+func printLenses(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int) {
+	if len(lenses) == 0 {
+		return
+	}
+	keys := make([]lensKey, 0, len(lenses))
+	for k := range lenses {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		a, b := keys[i], keys[j]
+		if a.models+a.judge != b.models+b.judge {
+			return a.models+a.judge < b.models+b.judge
+		}
+		return lensOrder(a.lens) < lensOrder(b.lens)
+	})
+	fmt.Println()
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "reviewer lens\tmodels\tjudge\truns\tfound/planted\town\tjudge refused true\tfalse shown\tnits\tfalse refused\toutside (opened)\tanswers\tfloor\ttokens in\ttokens out\t")
+	for _, k := range keys {
+		s := lenses[k]
+		n := s.n
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d/%d\t%d\t%d\t%d\t%d\t%d\t%d (%d)\t%d\t%s\t%d\t%d\t\n", k.lens, k.models, k.judge, s.runs,
+			n["found"], n["planted"], n["own"], n["judge-no"], n["fp"], n["nits"], n["dropped"], n["outside"], n["opened"], n["answers"], show(s.floors, "%.1f"), n["in"], n["out"])
+	}
+	w.Flush()
+	for k, o := range outside {
+		var lines []string
+		for what, n := range o {
+			lines = append(lines, fmt.Sprintf("%s ×%d", what, n))
+		}
+		sort.Strings(lines)
+		fmt.Printf("outside the change, planted (%s, judge %s): %s\n", k.models, k.judge, strings.Join(lines, "; "))
+	}
+}
+
+func lensOrder(l string) int {
+	for i, x := range []string{"correctness", "edge-cases", "tests"} {
+		if l == x {
+			return i
+		}
+	}
+	return 99
 }
 
 // currentModels returns the models answering now, from the models-seen file;

@@ -1,0 +1,7 @@
+case: cli/missing-event-is-misuse
+about: route without an event is misuse, 64, and says what is missing.
+given: {repo: basic}
+run: {cli: [route, --ai, none]}
+expect:
+  exit: 64
+  stderr: ["an event", "usage: workline route <event>"]

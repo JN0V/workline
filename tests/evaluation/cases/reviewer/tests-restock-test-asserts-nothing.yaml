@@ -1,0 +1,35 @@
+case: reviewer/tests-restock-test-asserts-nothing
+about: "Tests, a test asserting nothing of what it names: TestRestock restocks and checks only that the stock exists. Restock itself is right."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat >> shop/stock.go <<'GO'
+
+      // Restock adds each product of an order to the stock.
+      func (s *Stock) Restock(order map[string]int) {
+      	for sku, n := range order {
+      		s.Add(sku, n)
+      	}
+      }
+      GO
+      cat >> shop/stock_test.go <<'GO'
+
+      func TestRestock(t *testing.T) {
+      	s := NewStock()
+      	s.Restock(map[string]int{"tea": 2, "cup": 1})
+      	if s == nil {
+      		t.Fatal("no stock")
+      	}
+      }
+      GO
+      git commit -qam 'feat(stock): restock from an order'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: asserts-nothing
+      at:
+        - {file: shop/stock_test.go, lines: [17, 22], text: "if s == nil {"}
+        - {file: shop/stock.go, lines: [46, 50], text: "func (s *Stock) Restock(order map[string]int) {"}

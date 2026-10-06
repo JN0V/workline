@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 7a6289b
+checked: 5f21056
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -21,7 +21,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |
 | gardening | `workline route schedule` (`--forge local --open-merge-request` keeps its merge requests as local branches) | yours |
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
-| a roadmap file to issues | `workline issues import <file>`, then the same with `--apply` | yours |
+| a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |
 | before tagging a release | `workline route release` | yours |
 | the weekly sample | `workline sample --out s.json`, then `workline sample --apply s.json` | the judge |
 
@@ -83,7 +83,10 @@ nothing; `--week 2026-W40`), then `workline sample --apply sample.json
 owner's acts of the week from its report (ADR-0033).
 
 **Import** — `workline issues import <file> --apply` has the agent and the
-write token in one process: run it by hand, not in a shared pipeline.
+write token in one process: run it by hand. In a pipeline, split it as
+any other role: `workline issues import <file> --json > line.json`
+(agent, a read token, writes nothing), then `workline apply --line
+line.json` (write token, no agent); [ci.md](ci.md#importing-a-file).
 
 `--sarif <file>` beside `--code-quality` writes the findings for GitHub's
 code scanning. The `gate:<name>` steps of a line, or `workline gate
@@ -124,11 +127,12 @@ requests from unprotected branches must apply.
 | 3 | `blocked-external`: the agent or the forge failed | a warning; run again later |
 | 64 | the command was misused | fix the job |
 
-An unknown option exits 2 too (#101). `workline gate` exits 0 or 1;
+An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
 `workline sample` exits 2 when a doc is left for a person and 3 when the
 judge cannot be reached; `workline doctor`, 1 on an error only. The
-templates keep a job's status and still apply what passed
-(`artifacts: when: always`, `if: always()`).
+templates keep a job's status and still apply what passed, and the
+comment of a reviewer that blocks (`artifacts: when: always`,
+`if: always()`, `when: always`).
 
 ## Outputs
 
@@ -138,9 +142,12 @@ templates keep a job's status and still apply what passed
 - **Reports**: `--sarif <file>` (GitHub code scanning), `--code-quality
   <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
   request, every tier). The paths are yours to choose.
-- **Job summary**: the engine writes none. The GitHub templates build one
-  from `line.json` with jq into `$GITHUB_STEP_SUMMARY`; on GitLab, the job
-  log and the Code Quality report.
+- **Job summary**: `--summary <file>` (`route`, `run-role`, `apply`,
+  `sample`): the verdict, each step's verdict and findings, what was
+  applied and what waits to be, in Markdown, or HTML for a `.html` file,
+  added to the file ([ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)).
+  GitHub: `$GITHUB_STEP_SUMMARY`; GitLab: an artifact the job's page links
+  ([ci.md](ci.md#what-a-job-shows)).
 - **Runs**: `$WORKLINE_RUNS_DIR` (else `.git/workline/runs/`), each with
   `out/calls.jsonl`, the agent's answer and what was refused.
 - **On the forge**: a comment on the merge request (the documentalist's list

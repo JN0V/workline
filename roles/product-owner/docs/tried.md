@@ -698,3 +698,28 @@ No agent called: the answer planted (`--ai fake:`), or none (`--ai none`).
   drawn; conformance shows it, and a closing reopened); a suggestion,
   live (three acts, not ten); a real agent's week; GitLab; workline's own
   report (#110), whose record has no `did` until its next nightly run.
+
+## 2026-10-06 — an import judged in one job, applied in another, GitLab, no agent
+
+`workline issues import` without `--apply`, its runs then applied by
+`workline apply --line` (#174), the engine of the branch, on
+JN0V/workline-sandbox's GitLab issues. No agent called: the answer
+planted (`--ai fake:`) each time.
+
+- **On a clone**: the judge with a project token `read_api`, Reporter,
+  as `GITLAB_TOKEN` — no write token: the map said two items "would be
+  opened", one run pending, exit 0. `workline apply --line` with the
+  write token: #28 and #29 opened, their bodies the file's lines, their
+  state; the summary file holding both jobs. The import again: "#28,
+  already open", "#29, already open".
+- **A GitLab pipeline of two jobs**, started through the pipelines API on
+  a branch with no merge request (the sandbox's merge-request pipeline,
+  which calls Claude, not started): docs/gitlab-trigger.md's script, its
+  `import` task, the engine built from the branch's commit
+  (`go install`), the agent a planted answer, the AI key unset. The judge
+  held the read token (a masked variable, removed after, the token
+  revoked); the apply, `WORKLINE_GITLAB_TOKEN`: #30 and #31 opened, each
+  job's summary in its log, the map in the judge's.
+- Not tried: GitHub Actions' pair (docs/ci.md); the template's own image,
+  which has no release with this yet; a real agent's answer; an import of
+  several shares split this way (conformance holds one share).

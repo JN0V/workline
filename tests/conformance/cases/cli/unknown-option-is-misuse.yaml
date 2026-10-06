@@ -1,0 +1,7 @@
+case: cli/unknown-option-is-misuse
+about: An unknown option is misuse, 64, never 2, which says a person must decide; the command's usage follows on stderr.
+given: {repo: basic}
+run: {cli: [doctor, --bogus]}
+expect:
+  exit: 64
+  stderr: ["-bogus", "usage: workline doctor"]

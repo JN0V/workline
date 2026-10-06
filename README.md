@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 7a6289b
+checked: 5f21056
 judged: 9ad8c58
 verified: agent:claude-code
 -->
@@ -56,7 +56,7 @@ roles, in this order: the [roles panorama](docs/research/roles-panorama.md).
 | [Install](docs/install.md) — your machine, then CI | [Roles](docs/roles.md) — what each does and not, its settings | [Principles](docs/PRINCIPLES.md) |
 | [Quickstart](docs/quickstart.md) — ten minutes, on your machine | [Usage](docs/usage.md) — commands, options, exit codes | [Role contract](docs/spec/role-contract.md) — what a role is |
 | [Concepts](docs/concepts.md) — the words used everywhere | [Configuration](docs/config.md) — settings, files, variables | [Decisions](docs/adr/) · [Research](docs/research/) |
-| [Troubleshooting](docs/troubleshooting.md) | [CI](docs/ci.md) — GitHub, GitLab, other forges, none | [Backlog](https://github.com/JN0V/workline/issues) |
+| [Troubleshooting](docs/troubleshooting.md) | [CI](docs/ci.md) — [GitHub](docs/ci-github.md), [GitLab](docs/ci-gitlab.md), [other forges, none](docs/ci-other-forges.md) | [Backlog](https://github.com/JN0V/workline/issues) |
 | [Contributing](CONTRIBUTING.md) — build, test, commits | [Any trigger](docs/triggers.md) · [GitLab, started by a tool](docs/gitlab-trigger.md) · [Only a part](docs/parts.md) | |
 
 ## Get started
@@ -109,7 +109,7 @@ flowchart LR
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it (`merge-request`) | committer, every commit; documentalist, the docs it made suspect; reviewer, opt-in ([ADR-0020](docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)) | the docs' fix committed to its branch; one summary comment; findings in code scanning (SARIF) or GitLab's Code Quality |
+| each push to it (`merge-request`) | committer, every commit; documentalist, the docs it made suspect; reviewer, opt-in ([ADR-0020](docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)) | the docs' fix committed to its branch; one summary comment; findings in code scanning (SARIF) or GitLab's Code Quality; the job's summary ([ADR-0035](docs/adr/0035-the-engine-writes-the-jobs-summary.md)) |
 | a release tool's (release-please…) | held as the release: the documentalist on the docs due ([ADR-0017](docs/adr/0017-the-release-manager.md)) | the docs' fix in a merge request of its own |
 | a fork's | judged with no agent | on GitHub, a comment ([workline-fork.yml](ci/github/workline-fork.yml)); on GitLab, nothing |
 

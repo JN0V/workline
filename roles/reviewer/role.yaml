@@ -31,6 +31,10 @@ duties:
 # comment on the merge request. Never a patch, never an approval.
 part-intentions: [finding]
 intentions: [issue, comment, note]
+# A finding that blocks is when the author most needs the comment: a
+# blocked run still applies these, which only say what was found, the
+# record of the commits reviewed in the comment (#226).
+on-block: [comment, issue]
 
 # Without AI, the rules that need no judgement still run and still block; the
 # change waits for a person's review, said.
@@ -52,7 +56,9 @@ settings:
   # A comment telling the code's history, not what it does (bug-story).
   story-words: ['\bused to\b', '\bthe bug was\b', '\bpreviously\b']
   # What the lenses find warns until the evaluation has measured it (#90);
-  # block: an important finding the judge verified blocks.
+  # block: an important finding the judge verified blocks. One value for
+  # every lens, or by lens, a lens not named warning:
+  # {correctness: block, edge-cases: warn}.
   ai-findings: warn
   # The independence a verification needs (ADR-0005): context (the same
   # model, apart), model, provider.
@@ -63,3 +69,6 @@ settings:
   # Each lens looks for a number of candidates before it stops, from the
   # change's size; nothing found is ever required to be shown (ADR-0020).
   finder-floor: true
+  # The test files. A lens whose judge reads tests (lenses/tests.md) has
+  # its judge shown those in the cause's folder and those naming its file.
+  tests: ["**/*_test.*", "**/test_*", "**/*_spec.*", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**"]

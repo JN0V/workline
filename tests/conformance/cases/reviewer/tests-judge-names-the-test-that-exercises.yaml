@@ -1,0 +1,37 @@
+case: reviewer/tests-judge-names-the-test-that-exercises
+about: A tests-lens finding on code a test does exercise is refused, the judge naming the test it read among the tests that touch the file (#223).
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      cat > shop/shipping_test.go <<'GO'
+      package shop
+
+      import "testing"
+
+      func TestShipping(t *testing.T) {
+      	if got := Shipping([]Item{{"tea", 100, 1}}); got != 490 {
+      		t.Errorf("Shipping = %d, want 490", got)
+      	}
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-tests.sh"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: tests}, ai: "fake:review-shipping-untested"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: finding-judged-no, message: "the judge: TestShipping calls Shipping"}]
+  no-findings: [{rule: tests}]

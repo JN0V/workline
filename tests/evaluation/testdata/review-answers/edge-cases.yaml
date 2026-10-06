@@ -1,0 +1,12 @@
+# The edge-cases lens: a finding on the change nothing planted, which the
+# judge lets through, and one outside the change.
+- finding:
+    severity: important
+    title: The percent starts at zero
+    why: an unplanted finding, shown.
+    cause: {path: shop/checkout.go, quote: "percent := 0"}
+- finding:
+    severity: important
+    title: A huge total overflows the discount
+    why: total*percent overflows past MaxInt/100.
+    cause: {path: shop/cart.go, quote: "return total - total*percent/100"}

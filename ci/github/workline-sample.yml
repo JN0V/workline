@@ -37,7 +37,8 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.16.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.17.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  # the job summary (--summary) needs the first release after v0.16.0
 
 jobs:
   read:
@@ -69,10 +70,10 @@ jobs:
           WEEK: ${{ inputs.week }}
         run: |
           status=0
-          workline sample ${WEEK:+--week "$WEEK"} --out sample.json || status=$?
+          workline sample ${WEEK:+--week "$WEEK"} --out sample.json --summary workline-summary.md || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           [ "$status" != 1 ] && [ -s sample.json ] && echo "drawn=true" >> "$GITHUB_OUTPUT"
-          { echo "### workline sample"; echo; jq -r '"\(.status) — \(.summary)", ((.findings // [])[] | "- \(.rule) \(.where // ""): \(.message)")' sample.json; } >> "$GITHUB_STEP_SUMMARY"
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: steps.sample.outputs.drawn == 'true'

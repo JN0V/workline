@@ -1,0 +1,8 @@
+# A lens of the reviewer, on the `shop` fixture once Shipping is added:
+# "no test covers it", its cause the function, quoted.
+- finding:
+    severity: important
+    title: Shipping has no test
+    why: no test calls Shipping, so its threshold could move unseen
+    cause: {path: shop/shipping.go, quote: "func Shipping(items []Item) int {"}
+    fix: test the free threshold and the base price

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 1f3641c
+checked: 366be20
 verified: agent:claude-code
 ---
 # Reviewer
@@ -86,11 +86,21 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
    merge request. A nit there is left, counted.
 7. **The judge**, apart, for each important finding, at the best
    independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
+   It reads the finding, the code around its cause and symptom, and what
+   the change did to the cause's file. Its question is the lens's (the
+   front matter of `lenses/<lens>.md`), else whether the quoted code fails:
+   - correctness, edge cases: whether the code quoted fails as the finding says;
+   - tests (#223): whether a test exercises the behaviour and would fail
+     were it wrong, the judge shown the test files (`tests`) in the cause's
+     folder and those naming its file, whole up to `code-lines-max`, the
+     rest named; a no names the test.
+   - Two findings on one line are judged once, by the leading lens's question.
 8. **The verdict.** The rules block (the long comment warns); what the
    lenses find warns (`ai-findings: warn`) until the evaluation has
-   measured it (#90). Past `findings-max` on the change, or `issues-max`
-   outside it, the rest is counted. One summary comment on a merge
-   request, edited each run (`forge-writes`).
+   measured it (#90), lens by lens (Settings). Past `findings-max` on the
+   change, or `issues-max` outside it, the rest is counted. One summary
+   comment on a merge request, edited each run (`forge-writes`); none
+   when the run blocks.
 
 A lens whose answer does not read is asked again once, with what the YAML
 reader said (`promote-after`). A lens that fails is said (`lens-failed`),
@@ -116,6 +126,15 @@ line. The judging job reads the summary comment, to know what was reviewed:
 on GitHub it needs a read token (`GH_TOKEN`, `pull-requests: read`), which
 ci/github/workline.yml gives it.
 
+- **A blocked merge request still gets the comment** (#226): what blocks
+  first, marked `**blocks**`, then the warnings; the issues outside the
+  change opened as on a pass (role.yaml's `on-block`).
+- **The record moves** as on a pass when every lens answered: the next
+  push reviews only the new commits. A rule that blocks writes the comment
+  too, the record left as it was: no lens ran.
+- **The job still fails**: the judging job by the verdict, while the
+  applying one writes the comment (`if: always()`, `when: always`).
+
 ## Settings
 
 Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
@@ -133,7 +152,8 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `code-lines-max` | `1200` | lines of the changed files a lens is given |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
-| `ai-findings` | `warn` | `block`: a verified important finding blocks |
+| `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, the blocking one leading two findings on one line |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates from the change's size |
+| `tests` | `**/*_test.*`, `**/test_*`, `**/*.spec.*`, `**/tests/**`, … | the test files a tests-lens judge is shown |

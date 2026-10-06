@@ -1,0 +1,26 @@
+case: reviewer/correctness-judge-keeps-its-question
+about: A correctness or edge-cases finding's judge is still asked whether the code quoted fails as the finding says, and shown no tests (#223).
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,edge-cases"}, ai: "fake:review-shipping-untested"}
+expect:
+  agent-calls: 3
+  findings: [{rule: correctness, where: "shop/shipping.go:4", message: "verified"}]
+  run-files:
+    in/judge/01/question.yaml: {contains: "does the code quoted, as it reads, fail the way the finding says?", not-contains: "TestTotal"}

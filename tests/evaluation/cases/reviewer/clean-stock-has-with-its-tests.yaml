@@ -1,0 +1,38 @@
+case: reviewer/clean-stock-has-with-its-tests
+about: "Clean: Has, under the lock, with a test of each edge. Its true for a count of zero or less is documented, not a defect."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat >> shop/stock.go <<'GO'
+
+      // Has says whether at least n units of sku are left; it says true for n
+      // of zero or less, which asks for nothing.
+      func (s *Stock) Has(sku string, n int) bool {
+      	s.mu.Lock()
+      	defer s.mu.Unlock()
+      	return n <= 0 || s.left[sku] >= n
+      }
+      GO
+      cat >> shop/stock_test.go <<'GO'
+
+      func TestHas(t *testing.T) {
+      	s := NewStock()
+      	s.Add("tea", 2)
+      	for _, c := range []struct {
+      		sku  string
+      		n    int
+      		want bool
+      	}{{"tea", 2, true}, {"tea", 3, false}, {"tea", 0, true}, {"tea", -1, true}, {"cup", 1, false}, {"cup", 0, true}} {
+      		if got := s.Has(c.sku, c.n); got != c.want {
+      			t.Errorf("Has(%q, %d) = %v, want %v", c.sku, c.n, got, c.want)
+      		}
+      	}
+      }
+      GO
+      git commit -qam 'feat(stock): say whether enough is left'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  not:
+    - {file: shop/stock.go, lines: [51, 51], text: "return n <= 0 || s.left[sku] >= n", why: "true for zero or less is what the doc says"}

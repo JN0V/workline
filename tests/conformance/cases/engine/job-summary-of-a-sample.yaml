@@ -1,0 +1,21 @@
+case: engine/job-summary-of-a-sample
+about: With --summary, the weekly sample's read and its write each append to one Markdown file the judge's verdict on each doc it read, the findings, and what the write did on the forge.
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config:
+    roles:
+      documentalist:
+        settings:
+          sample: {judge: 'cmd:cat "$FIXTURES/agents/sample-ttl-false.yaml"'}
+  forge: {issues: [], merge-requests: []}
+run: {sample: [--week, 2026-W01], then: apply, summary: true}
+expect:
+  status: pass
+  summary-file:
+    - "### workline sample"
+    - "- vouched-false docs/tech/auth.md: "
+    - "- read, docs/tech/auth.md: false"
+    - "### workline sample --apply"
+    - "- applied: "

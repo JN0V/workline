@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -44,10 +45,11 @@ type Settings struct {
 	CodeLinesMax    int      `json:"code-lines-max"`    // lines of the files changed given to a lens, all together
 	CommentBlockMax int      `json:"comment-block-max"` // lines of one comment added
 	StoryWords      []string `json:"story-words"`       // what tells a bug's story in a comment
-	AIFindings      string   `json:"ai-findings"`       // warn, until measured (#90); block: a verified important finding blocks
+	AIFindings      Gate     `json:"ai-findings"`       // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
 	JudgeAtLeast    string   `json:"judge-at-least"`    // the independence a verification needs: context, model, provider
 	ForgeWrites     bool     `json:"forge-writes"`      // on a merge request: the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`      // ask each lens to look for a number of candidates before it stops
+	Tests           []string `json:"tests"`             // the test files: what a judge reading tests is shown of them
 }
 
 // Finding is one defect a lens reported, once its quotes were found again.
@@ -185,12 +187,12 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: commits, Record: rec, Advisories: advisories}
 	if start == head {
-		return final(runDir, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))
+		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
 	if status(mech) == verdict.Block {
-		return final(runDir, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
+		return held(runDir, s, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
 	}
 	// A lens reads what the commits not reviewed yet change, not every file
 	// of the merge request; when they change no code, nobody is asked.
@@ -327,12 +329,12 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", n)
 	}
 	for i, lens := range st.Lenses {
-		text, err := lensText(repo, lens)
+		l, err := readLens(repo, lens)
 		if err != nil {
 			return err
 		}
 		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nThey say what the author meant; they prove nothing: check each claim against the code.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\nRead them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
-			lens, strings.TrimSpace(text), floor, log, diff, code.String())
+			lens, strings.TrimSpace(l.Text), floor, log, diff, code.String())
 		dir := filepath.Join(runDir, "in", "parts", fmt.Sprintf("%d-%s", i+1, lens))
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
@@ -353,6 +355,46 @@ func lensText(repo, lens string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("lens %q: no lenses/%s.md in the role", lens, lens)
+}
+
+// judgeQuestion is what the judge of an important finding is asked when its
+// lens names no question of its own: whether the code fails.
+const judgeQuestion = "Is this finding about the code true: does the code quoted, as it reads, fail the way the finding says? Answer no if it is not a defect, if the code shown handles it, or if the finding only guesses."
+
+// Lens is a lens's file: what it asks, and, in its front matter, what the
+// judge of its important findings is asked and shown besides the finding,
+// the code around it and the change (#223).
+type Lens struct {
+	Text  string `yaml:"-"`
+	Judge struct {
+		Question string `yaml:"question"` // empty: judgeQuestion
+		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file
+	} `yaml:"judge"`
+}
+
+// readLens reads a lens's file, its front matter apart from its text.
+func readLens(repo, name string) (Lens, error) {
+	var l Lens
+	text, err := lensText(repo, name)
+	if err != nil {
+		return l, err
+	}
+	text = strings.ReplaceAll(text, "\r\n", "\n") // a checkout with CRLF endings
+	l.Text = text
+	if rest, ok := strings.CutPrefix(text, "---\n"); ok {
+		head, body, closed := strings.Cut("\n"+rest+"\n", "\n---\n") // empty, or closed on the last line
+		if !closed {
+			return l, fmt.Errorf("lens %q: its front matter is not closed by a line `---`", name)
+		}
+		if err := yaml.Unmarshal([]byte(head), &l); err != nil {
+			return l, fmt.Errorf("lens %q: its front matter: %w", name, err)
+		}
+		l.Text = body
+	}
+	if r := l.Judge.Reads; r != "" && r != "tests" {
+		return l, fmt.Errorf("lens %q: judge.reads %q: only `tests` is known", name, r)
+	}
+	return l, nil
 }
 
 // readLenses reads what each lens answered, finds each finding's quotes
@@ -401,11 +443,13 @@ func readLenses(runDir, repo string, s Settings) int {
 				list = &c.Related
 			}
 			// Two findings on one line are merged, never one dropped: the
-			// important one leads, the other said beside it.
+			// important one leads, the other said beside it; of two important,
+			// a lens that blocks leads (ai-findings).
 			if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
 				o := &(*list)[dup]
-				if f.Severity == "important" && o.Severity != "important" {
-					f.Also, *o = append(o.Also, o.Lens+": "+o.Title), f
+				if f.Severity == "important" && (o.Severity != "important" || s.AIFindings.Blocks(f.Lens) && !s.AIFindings.Blocks(o.Lens)) {
+					f.Also = append(o.Also, o.Lens+": "+o.Title)
+					*o = f
 				} else {
 					o.Also = append(o.Also, f.Lens+": "+f.Title)
 				}
@@ -451,17 +495,33 @@ func readLenses(runDir, repo string, s Settings) int {
 			Message: fmt.Sprintf("%d more findings outside the change were not checked nor opened (issues-max %d)", n, s.IssuesMax)})
 	}
 	c.Outside = outside
+	read := map[string]Lens{}
 	for i, f := range append(slices.Clone(c.Related), c.Outside...) {
 		if f.Severity != "important" {
 			continue
+		}
+		l, ok := read[f.Lens]
+		if !ok {
+			var err error
+			if l, err = readLens(repo, f.Lens); err != nil {
+				return fail(err)
+			}
+			read[f.Lens] = l
+		}
+		question := l.Judge.Question
+		if question == "" {
+			question = judgeQuestion
+		}
+		m := material(repo, st, f)
+		if l.Judge.Reads == "tests" {
+			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.CodeLinesMax)
 		}
 		key := fmt.Sprintf("%02d", i+1)
 		dir := filepath.Join(runDir, "in", "judge", key)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fail(err)
 		}
-		q := map[string]string{"question": "Is this finding about the code true: does the code quoted, as it reads, fail the way the finding says? Answer no if it is not a defect, if the code shown handles it, or if the finding only guesses.",
-			"material": material(repo, st, f)}
+		q := map[string]string{"question": strings.Join(strings.Fields(question), " "), "material": m}
 		data, _ := json.Marshal(q) // JSON, which YAML reads: code quoted may start a line with a tab
 		if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
 			return fail(err)
@@ -577,6 +637,57 @@ func material(repo string, st state, f Finding) string {
 	return b.String()
 }
 
+// testsTouching is what a judge reading tests is shown besides: the test
+// files at the head (the `tests` setting) that touch the cause's file — in
+// its folder, or naming it as a word — whole, its folder's first, up to limit
+// lines all together; those left out are named.
+func testsTouching(repo, head, file string, patterns []string, limit int) string {
+	var b strings.Builder
+	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
+	fmt.Fprintf(&b, "\n## The tests that touch %s\n\nThe test files in %s/ and those naming `%s`, as they read at %s.\n", file, dir, stem, short(head))
+	if len(patterns) == 0 {
+		b.WriteString("\nNone shown: no `tests` setting says which files are tests.\n")
+		return b.String()
+	}
+	var near, far []string
+	if out, err := git(repo, "ls-tree", "-r", "--name-only", head, "--", dir+"/"); err == nil {
+		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
+			if f != "" && path.Dir(f) == dir && pathglob.Any(patterns, f) {
+				near = append(near, f)
+			}
+		}
+	}
+	if out, err := git(repo, "grep", "-l", "-w", "-F", "-e", stem, head, "--"); err == nil { // none: git grep fails
+		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
+			f = strings.TrimPrefix(f, head+":")
+			if f != "" && path.Dir(f) != dir && pathglob.Any(patterns, f) {
+				far = append(far, f)
+			}
+		}
+	}
+	files := append(near, far...)
+	if len(files) == 0 {
+		b.WriteString("\nNo test file touches it.\n")
+		return b.String()
+	}
+	left := limit
+	var cut []string
+	for _, f := range files {
+		text, ok := fileAt(repo, head, f)
+		lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+		if !ok || len(lines) > left {
+			cut = append(cut, f)
+			continue
+		}
+		left -= len(lines)
+		fmt.Fprintf(&b, "\n### %s\n\n```\n%s\n```\n", f, strings.Join(lines, "\n"))
+	}
+	if len(cut) > 0 {
+		fmt.Fprintf(&b, "\nNot shown, past %d lines: %s. A test in them may exercise it.\n", limit, strings.Join(cut, ", "))
+	}
+	return b.String()
+}
+
 // settle reads the judge's answers and proposes what follows: the findings
 // on the change in the verdict, an issue for each verified one outside it,
 // and the summary on the merge request.
@@ -643,7 +754,7 @@ func settle(runDir, repo string, s Settings) int {
 	onForge := mergeRequest() != nil && s.ForgeWrites
 	for _, f := range related {
 		level := "warn"
-		if s.AIFindings == "block" && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified") {
+		if s.AIFindings.Blocks(f.Lens) && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified") {
 			level = ""
 		}
 		v.Findings = append(v.Findings, verdict.Finding{Rule: f.Lens, Where: f.Where, Level: level, Message: message(f)})
@@ -716,7 +827,7 @@ func review(st state, extra []verdict.Finding, summary string) Review {
 }
 
 // status blocks on a finding that blocks: a rule's, or a verified finding
-// once ai-findings says block.
+// once ai-findings says block for its lens.
 func status(fs []verdict.Finding) string {
 	for _, f := range fs {
 		if f.Level == "" || f.Level == "block" {
@@ -779,13 +890,22 @@ func summaryComment(v Review, issues int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
 	if len(v.Findings) > 0 {
-		b.WriteString("| | Where | Finding |\n|---|---|---|\n")
-		for _, f := range v.Findings {
+		// What holds the merge request first, said so: the author reads it
+		// before the warnings (#226).
+		rows := slices.Clone(v.Findings)
+		blocks := func(f verdict.Finding) bool { return status([]verdict.Finding{f}) == verdict.Block }
+		sort.SliceStable(rows, func(i, j int) bool { return blocks(rows[i]) && !blocks(rows[j]) })
+		b.WriteString("| | | Where | Finding |\n|---|---|---|---|\n")
+		for _, f := range rows {
 			where := f.Where
 			if where != "" {
 				where = "`" + where + "`"
 			}
-			fmt.Fprintf(&b, "| %s | %s | %s |\n", f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
+			holds := "warns"
+			if blocks(f) {
+				holds = "**blocks**"
+			}
+			fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", holds, f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
 		}
 		b.WriteString("\n")
 	} else {
@@ -797,6 +917,23 @@ func summaryComment(v Review, issues int) string {
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes, a person merges.\n\n")
 	b.WriteString(v.Record.String())
 	return b.String()
+}
+
+// held settles a run the rules alone decide: blocked on a merge request it
+// may write to, the summary comment still says why, the record left as it
+// was, no lens having run (#226); post then blocks. Otherwise, final.
+func held(runDir string, s Settings, v Review) int {
+	if v.Status != verdict.Block || mergeRequest() == nil || !s.ForgeWrites {
+		return final(runDir, v)
+	}
+	fallback := []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0)}}}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
+		return fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
+		return fail(err)
+	}
+	return 0
 }
 
 // final writes a verdict pre settles alone, with nothing to ask: no agent,
@@ -844,7 +981,61 @@ func settings(runDir string) (Settings, error) {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("settings: %w", err)
 	}
+	for lens := range s.AIFindings.ByLens {
+		if !slices.Contains(s.Lenses, lens) {
+			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v", lens, s.Lenses)
+		}
+	}
 	return s, nil
+}
+
+// Gate is what a verified important finding does: warn or block, one value
+// for every lens, or a map by lens where a lens not named warns (#222).
+type Gate struct {
+	All    string            // the one value, when no map is given
+	ByLens map[string]string // by lens, when a map is given
+}
+
+// Blocks says whether a verified important finding of the lens blocks.
+func (g Gate) Blocks(lens string) bool {
+	if g.ByLens != nil {
+		return g.ByLens[lens] == "block"
+	}
+	return g.All == "block"
+}
+
+// UnmarshalJSON reads warn, block, or a map of the two by lens; anything
+// else is refused, never read as warn (principle 12).
+func (g *Gate) UnmarshalJSON(data []byte) error {
+	check := func(v string) error {
+		if v != "warn" && v != "block" {
+			return fmt.Errorf("ai-findings: %q is neither warn nor block", v)
+		}
+		return nil
+	}
+	if string(data) == "null" {
+		*g = Gate{}
+		return nil
+	}
+	var one string
+	if json.Unmarshal(data, &one) == nil {
+		*g = Gate{All: one}
+		return check(one)
+	}
+	var by map[string]string
+	if err := json.Unmarshal(data, &by); err != nil {
+		return fmt.Errorf("ai-findings: warn, block, or a map of the two by lens: %w", err)
+	}
+	for lens, v := range by {
+		if err := check(v); err != nil {
+			return fmt.Errorf("%w, for the %s lens", err, lens)
+		}
+	}
+	if by == nil {
+		by = map[string]string{}
+	}
+	*g = Gate{ByLens: by}
+	return nil
 }
 
 func roleName() string {

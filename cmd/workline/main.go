@@ -5,12 +5,12 @@
 //	workline run-role <role> --event <event> [--ai none|claude|cmd:<command>|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>] [--forge ...] [--target ...] [--scope ...]
 //	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
-//	                  [--sarif <file>] [--code-quality <file>]
+//	                  [--sarif <file>] [--code-quality <file>] [--summary <file>]
 //	workline route <event> [same options as run-role, but --input-file]
 //	workline review [--base <ref>] [--lenses all|<lens,...>] [--repo <dir>] [--ai ...] [--json]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
 //	workline issues [list] [--repo <dir>] | show <n>|!<n> [--repo <dir>]   (the local forge)
-//	workline apply <run-dir>... | --line <route result> [--json]
+//	workline apply <run-dir>... | --line <route result> [--json] [--summary <file>]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
@@ -25,13 +25,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -60,59 +60,23 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// main runs the command the arguments name (cli.go: the commands, their
+// help, and misuse, which exits 64).
 func main() {
-	if len(os.Args) < 2 {
-		usage()
-	}
-	switch os.Args[1] {
-	case "version", "--version":
-		fmt.Println(engineVersion())
-		os.Exit(0)
-	case "run-role":
-		os.Exit(runRole(os.Args[2:]))
-	case "builtin":
-		os.Exit(builtin(os.Args[2:]))
-	case "hooks":
-		os.Exit(hooksCmd(os.Args[2:]))
-	case "hook":
-		os.Exit(hookCmd(os.Args[2:]))
-	case "gate":
-		os.Exit(gateCmd(os.Args[2:]))
-	case "route":
-		os.Exit(routeCmd(os.Args[2:]))
-	case "review":
-		os.Exit(reviewCmd(os.Args[2:]))
-	case "item":
-		os.Exit(itemCmd(os.Args[2:]))
-	case "apply":
-		os.Exit(applyCmd(os.Args[2:]))
-	case "doctor":
-		os.Exit(doctorCmd(os.Args[2:]))
-	case "init":
-		os.Exit(initCmd(os.Args[2:]))
-	case "setup":
-		os.Exit(setupCmd(os.Args[2:]))
-	case "docs":
-		os.Exit(docsCmd(os.Args[2:]))
-	case "sample":
-		os.Exit(sampleCmd(os.Args[2:]))
-	case "issues":
-		os.Exit(issuesCmd(os.Args[2:]))
-	case "follow":
-		os.Exit(followCmd(os.Args[2:]))
-	}
-	usage()
+	os.Exit(dispatch(os.Args[1:]))
 }
 
 // followCmd rebuilds the roles' release merge requests on their base's new
 // tip, run when it moves (ADR-0034). It calls no agent.
 func followCmd(args []string) int {
-	fs := flag.NewFlagSet("follow", flag.ExitOnError)
+	fs := newFlags("follow")
 	repo := fs.String("repo", ".", "repository")
 	base := fs.String("base", "", "the branch the merge requests go into (default: the branch checked out)")
 	forgeSpec := fs.String("forge", "", "github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	_ = fs.Parse(args)
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
@@ -151,11 +115,6 @@ func engineVersion() string {
 	return "(devel)"
 }
 
-func usage() {
-	fmt.Fprintln(os.Stderr, "usage: workline run-role <role> --event <event> [options]\n       workline version\n       workline hooks install|uninstall --global|--repo\n       workline setup [--hooks yes|no] [--ai <agent>] [--install <tool,...>|none] [--yes]\n       workline doctor [--repo <dir>] [--json]\n       workline init [--repo <dir>] [--ai <agent>] [--human-po yes|no] [--json]")
-	os.Exit(64)
-}
-
 type pairs map[string]string
 
 func (p pairs) String() string { return fmt.Sprint(map[string]string(p)) }
@@ -169,11 +128,7 @@ func (p pairs) Set(s string) error {
 }
 
 func runRole(args []string) int {
-	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		usage()
-	}
-	name := args[0]
-	fs := flag.NewFlagSet("run-role", flag.ExitOnError)
+	fs := newFlags("run-role")
 	event := fs.String("event", "", "event the role runs on")
 	ai := fs.String("ai", "", "agent: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file>, unavailable:<reason> (default: the project's `ai` setting, else none)")
 	repo := fs.String("repo", ".", "repository to work on")
@@ -190,10 +145,15 @@ func runRole(args []string) int {
 	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the run to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	inputs, inputFiles := pairs{}, pairs{}
 	fs.Var(inputs, "input", "input name=value (repeatable)")
 	fs.Var(inputFiles, "input-file", "input name=path, written back by intentions that target it (repeatable)")
-	_ = fs.Parse(args[1:])
+	name, code, done := parseAfter(fs, args, "a role")
+	if done {
+		return code
+	}
 
 	targets := map[string]string{}
 	for k, p := range inputFiles {
@@ -223,6 +183,10 @@ func runRole(args []string) int {
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
 	})
 	if err := wlreport.Write(absRepo, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("run-role "+name+" ("+*event+")", name, res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -272,7 +236,7 @@ func report(r *engine.Result) {
 // findings are printed for the person; out/review.json in the run folder,
 // or --json, gives them to the author's agent, to fix before pushing.
 func reviewCmd(args []string) int {
-	fs := flag.NewFlagSet("review", flag.ExitOnError)
+	fs := newFlags("review")
 	repo := fs.String("repo", ".", "repository to review")
 	base := fs.String("base", "", "where the change starts: the branch it goes into (default: the reviewer's `base` setting, main)")
 	lenses := fs.String("lenses", "", "all (the default on a machine), or the lenses to ask, separated by commas")
@@ -282,7 +246,9 @@ func reviewCmd(args []string) int {
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF")
 	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
-	_ = fs.Parse(args)
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
@@ -328,8 +294,8 @@ func resolveRoles(dir string) (string, error) {
 }
 
 func builtin(args []string) int {
-	if len(args) != 2 {
-		usage()
+	if code, done := positional(newFlags("builtin"), args, 2); done {
+		return code
 	}
 	runDir := os.Getenv("WORKLINE_RUN_DIR")
 	if runDir == "" {
@@ -360,8 +326,13 @@ func builtin(args []string) int {
 }
 
 func hooksCmd(args []string) int {
+	fs := newFlags("hooks")
+	if len(args) > 0 && isHelp(args[0]) {
+		commandHelp(os.Stdout, fs)
+		return 0
+	}
 	if len(args) != 2 || (args[0] != "install" && args[0] != "uninstall") || (args[1] != "--global" && args[1] != "--repo") {
-		usage()
+		return misuse(fs, "install or uninstall, then --global or --repo")
 	}
 	bin, err := os.Executable()
 	if err == nil {
@@ -402,8 +373,11 @@ func hooksCmd(args []string) int {
 // hookCmd is what the installed hooks call: commit-msg and pre-push do work,
 // the others hand over.
 func hookCmd(args []string) int {
-	if len(args) == 0 {
-		usage()
+	if len(args) == 0 || isHelp(args[0]) {
+		// git always names the hook: help, or a person's mistake.
+		if code, done := positional(newFlags("hook"), args, 1); done {
+			return code
+		}
 	}
 	if args[0] == "pre-push" && len(args) >= 2 {
 		return prePush(args[1])
@@ -613,12 +587,14 @@ func contains(l []string, s string) bool {
 // each change reviewed on the terminal and those kept committed (ADR-0007).
 // Without a terminal, the changes stay in the working tree for a person.
 func docsCmd(args []string) int {
-	fs := flag.NewFlagSet("docs", flag.ExitOnError)
+	fs := newFlags("docs")
 	repo := fs.String("repo", ".", "repository")
 	ai := fs.String("ai", "", "agent judging the docs (default: the project's, else yours, else none)")
 	reviewOnly := fs.Bool("review", false, "no agent: review, doc by doc, the doc changes already in the working tree")
 	since := fs.String("since", "", "judge the commits after this one (default: where the docs were last judged, else the last tag, else all)")
-	_ = fs.Parse(args)
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
@@ -674,7 +650,7 @@ func docsCmd(args []string) int {
 // for and has it read (ADR-0014, step 4), writing nothing; with --apply, it
 // writes what a sample found to the forge, with no agent.
 func sampleCmd(args []string) int {
-	fs := flag.NewFlagSet("sample", flag.ExitOnError)
+	fs := newFlags("sample")
 	repo := fs.String("repo", ".", "repository")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	week := fs.String("week", "", "the ISO week sampled, 2026-W40 (default: the last whole week)")
@@ -684,7 +660,11 @@ func sampleCmd(args []string) int {
 	apply := fs.String("apply", "", "write the result in this file to the forge: the tracking issue, and a merge request putting back a false `checked`")
 	forgeSpec := fs.String("forge", "", "with --apply: github, gitlab, fake:<file> (default: the project's `forge` setting)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	_ = fs.Parse(args)
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the sample to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
@@ -718,6 +698,14 @@ func sampleCmd(args []string) int {
 				return 1
 			}
 		}
+	}
+	title := "sample"
+	if *apply != "" {
+		title = "sample --apply"
+	}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.SampleSummary(title, res)); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
 	}
 	if *asJSON {
 		data, _ := json.MarshalIndent(res, "", "  ")
@@ -865,15 +853,15 @@ func userConfig() personal {
 func userDefaultAI() string { return userConfig().AI }
 
 func gateCmd(args []string) int {
-	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		usage()
-	}
-	fs := flag.NewFlagSet("gate", flag.ExitOnError)
+	fs := newFlags("gate")
 	repo := fs.String("repo", ".", "repository to check")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	_ = fs.Parse(args[1:])
+	name, code, done := parseAfter(fs, args, "a gate's name")
+	if done {
+		return code
+	}
 	abs, _ := filepath.Abs(*repo)
-	v := gate.Run(abs, args[0])
+	v := gate.Run(abs, name)
 	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
@@ -888,10 +876,7 @@ func gateCmd(args []string) int {
 }
 
 func routeCmd(args []string) int {
-	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		usage()
-	}
-	fs := flag.NewFlagSet("route", flag.ExitOnError)
+	fs := newFlags("route")
 	repo := fs.String("repo", ".", "repository to work on")
 	ai := fs.String("ai", "", "agent for every role (default: the project's, else yours, else none)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
@@ -906,9 +891,14 @@ func routeCmd(args []string) int {
 	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the line to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
-	_ = fs.Parse(args[1:])
+	event, code, done := parseAfter(fs, args, "an event")
+	if done {
+		return code
+	}
 	abs, _ := filepath.Abs(*repo)
 	rolesDir, err := resolveRoles(*roles)
 	if err != nil {
@@ -920,9 +910,13 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
 	}
-	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
+	res := line.Run(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
 	if err := wlreport.Write(abs, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.LineSummary("route "+event, res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -949,28 +943,36 @@ func routeCmd(args []string) int {
 }
 
 func itemCmd(args []string) int {
-	if len(args) < 2 || args[0] != "ready" {
-		fmt.Fprintln(os.Stderr, "usage: workline item ready <id> [--repo <dir>] [--json]")
-		return 64
-	}
-	fs := flag.NewFlagSet("item", flag.ExitOnError)
+	fs := newFlags("item")
 	repo := fs.String("repo", ".", "repository holding .workline/work/")
 	forgeSpec := fs.String("forge", "", "read the item from this forge instead of .workline/work/")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	_ = fs.Parse(args[2:])
+	if len(args) > 0 && args[0] == "ready" {
+		args = args[1:]
+	} else if len(args) == 0 || !strings.HasPrefix(args[0], "-") {
+		return misuse(fs, "the only action is ready")
+	}
+	item, code, done := parseAfter(fs, args, "an item id")
+	if done {
+		return code
+	}
 	abs, _ := filepath.Abs(*repo)
 	var v *verdict.Verdict
 	if *forgeSpec != "" && *forgeSpec != "none" {
+		// A forge's item is a number, whole: never "abc" read as 0, nor
+		// "12abc" as 12.
+		id, err := strconv.Atoi(strings.TrimPrefix(item, "#"))
+		if err != nil || id < 1 {
+			return misuse(fs, fmt.Sprintf("%q is not an item number", item))
+		}
 		f, err := forge.Open(*forgeSpec, abs)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 64
 		}
-		var id int
-		fmt.Sscan(args[1], &id)
 		v = work.ReadyOnForge(f, id)
 	} else {
-		v = work.Ready(abs, args[1])
+		v = work.Ready(abs, item)
 	}
 	res := &engine.Result{Status: v.Status, Summary: v.Summary, Findings: v.Findings, Applied: []string{}, Refused: []string{}}
 	if *asJSON {
@@ -992,7 +994,7 @@ func issuesCmd(args []string) int {
 	if (what == "show" || what == "import") && len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		id, args = args[0], args[1:]
 	}
-	fs := flag.NewFlagSet("issues", flag.ExitOnError)
+	fs := newFlags("issues")
 	repo := fs.String("repo", ".", "repository")
 	apply := fs.Bool("apply", false, "import: open the issues; without it, only say which")
 	forgeSpec := fs.String("forge", "", "import: github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
@@ -1000,14 +1002,18 @@ func issuesCmd(args []string) int {
 	share := fs.Int("lines", 300, "import: lines of the file read in one call")
 	roles := fs.String("roles", "", "import: folder of roles (default: the shipped ones)")
 	asJSON := fs.Bool("json", false, "import: print the result as JSON")
-	_ = fs.Parse(args)
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "import: also add a Markdown summary, the map with it, to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
 		return 64
 	}
 	if what == "import" {
-		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON)
+		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON, summaryFiles)
 	}
 	l := &forge.Local{Repo: root}
 	switch {
@@ -1087,10 +1093,14 @@ func applyCmd(args []string) int {
 	for len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		dirs, args = append(dirs, args[0]), args[1:]
 	}
-	fs := flag.NewFlagSet("apply", flag.ExitOnError)
+	fs := newFlags("apply")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	lineFile := fs.String("line", "", "apply the runs `workline route --no-apply --json` listed as pending in this file")
-	_ = fs.Parse(args)
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of what was applied to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
 		var l line.Result
@@ -1104,6 +1114,10 @@ func applyCmd(args []string) int {
 		dirs = append(dirs, l.Pending...)
 		if len(dirs) == 0 {
 			fmt.Fprintln(os.Stderr, "pass — nothing to apply: the line proposed nothing")
+			if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true}); err != nil {
+				fmt.Fprintln(os.Stderr, "workline:", err)
+				return 1
+			}
 			return 0
 		}
 	}
@@ -1121,6 +1135,10 @@ func applyCmd(args []string) int {
 		res.Applied = append(res.Applied, next.Applied...)
 		res.Findings = append(res.Findings, next.Findings...)
 		res.Handoffs = append(res.Handoffs, next.Handoffs...)
+	}
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply", "", res)); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
 	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
@@ -1151,13 +1169,15 @@ func parseTarget(s string) (*forge.Target, error) {
 // setupCmd sets workline up on this machine, asking what to enable, then
 // shows the doctor's report. Run again, it reconfigures.
 func setupCmd(args []string) int {
-	fs := flag.NewFlagSet("setup", flag.ExitOnError)
+	fs := newFlags("setup")
 	hooksOn := fs.String("hooks", "", "yes or no: the global git hooks (default: ask)")
 	ai := fs.String("ai", "", "your agent: none, claude, claude:<model>@<effort>, cmd:<command> (default: ask)")
 	install := fs.String("install", "", "the tools to install, comma-separated, all, or none (default: ask)")
 	yes := fs.Bool("yes", false, "take the default of every question not answered by a flag")
 	asJSON := fs.Bool("json", false, "print the doctor's report, at the end, as JSON")
-	_ = fs.Parse(args)
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	var a setup.Answers
 	a.Hooks, a.AI, a.Yes = *hooksOn, *ai, *yes
 	if *install != "" {
@@ -1223,10 +1243,12 @@ func terminal(f *os.File) bool {
 // the command that sets up what is missing. It exits 1 only on an error:
 // something missing that workline was set up to use.
 func doctorCmd(args []string) int {
-	fs := flag.NewFlagSet("doctor", flag.ExitOnError)
+	fs := newFlags("doctor")
 	repo := fs.String("repo", ".", "repository to look at; outside one, the machine only")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
-	_ = fs.Parse(args)
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -1268,14 +1290,16 @@ func doctorCmd(args []string) int {
 // before the agent, whose proposals land in the working tree for a person to
 // review. Running it again only does what is left.
 func initCmd(args []string) int {
-	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	fs := newFlags("init")
 	repo := fs.String("repo", ".", "repository to adopt")
 	ai := fs.String("ai", "", "agent proposing each doc's sources (default: the project's, else yours, else none)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	review := fs.Bool("review", false, "also have the reviewer review each merge request (ADR-0020): added to the project's merge-request line")
 	humanPO := fs.String("human-po", "", "yes when a person is the project's Product Owner: the product owner role proposes what sets direction (autonomy: cautious, ADR-0026); asked on a terminal")
-	_ = fs.Parse(args)
+	if code, done := parseOnly(fs, args); done {
+		return code
+	}
 	root, err := gitRoot(*repo)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
@@ -1370,7 +1394,7 @@ func initCmd(args []string) int {
 // issue for each item still to do, its text quoted; the engine checks each
 // quote and opens it once (docs/spec/backlog-acts.md, "Importing a file").
 // Without apply, it only says what it would open.
-func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJSON bool) int {
+func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJSON bool, summaryFiles []string) int {
 	out := os.Stdout
 	if asJSON {
 		out = os.Stderr // the text goes aside, the result alone on stdout
@@ -1378,6 +1402,15 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 	total := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
 	var coverage *backlog.Coverage // the map: each item of the file to its issue, or why none
 	finish := func(code int) int {
+		total.ToApply = len(total.Pending) > 0
+		s := wlreport.RoleSummary("issues import", "product-owner", total)
+		if coverage != nil {
+			s.Map = coverage.Entries()
+		}
+		if err := wlreport.AppendSummary(summaryFiles, s); err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
 		if asJSON {
 			data, _ := json.MarshalIndent(struct {
 				*engine.Result
@@ -1386,6 +1419,9 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 			fmt.Println(string(data))
 		} else {
 			fmt.Fprintln(out, total.Summary)
+			if len(total.Pending) > 0 {
+				fmt.Fprintf(out, "  to apply: workline apply %s\n", strings.Join(total.Pending, " "))
+			}
 		}
 		return code
 	}
@@ -1442,6 +1478,14 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 		total.Calls = append(total.Calls, res.Calls...)
 		total.Findings = append(total.Findings, res.Findings...)
 		total.Applied = append(total.Applied, res.Applied...)
+		// Judged only, a share's run waits for `workline apply`, in the job
+		// that holds the forge's write token and no AI key, as a line's.
+		switch {
+		case len(res.Pending) > 0:
+			total.Pending = append(total.Pending, res.Pending...)
+		case res.ToApply:
+			total.Pending = append(total.Pending, res.RunDir)
+		}
 		for _, k := range res.Applied {
 			if k == "open" {
 				opened++
@@ -1487,7 +1531,7 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 	if apply {
 		total.Summary = fmt.Sprintf("%s read; %d issues opened", file, opened)
 	} else {
-		total.Summary = fmt.Sprintf("%s read; %d issues would be opened — nothing written: --apply opens them", file, proposed)
+		total.Summary = fmt.Sprintf("%s read; %d issues would be opened — nothing written: --apply opens them, or `workline apply` the runs pending", file, proposed)
 	}
 	if k := len(coverage.NotCovered); k > 0 {
 		// A requirement left with no issue and no reason is a person's to
