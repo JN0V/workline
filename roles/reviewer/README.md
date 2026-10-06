@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 48f1be0
+checked: feadc54
 verified: agent:claude-code
 ---
 # Reviewer
@@ -77,7 +77,8 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
 5. **The quotes.** The engine finds each cause again, spaces and line
    breaks aside, in the file at the head of the range or among the lines
    the change removed; a symptom, in its file. Not found: dropped, said
-   (`finding-unfounded`). Two on one line are merged, the second said.
+   (`finding-unfounded`). Two on one line are grouped, never one dropped
+   (#229).
 6. **Related or not.** A cause on a line the change added or removed, or
    on a kept line within three of a removal (a hunk taking away more lines
    than it adds, #224): the change's, reported on that line, for its
@@ -96,7 +97,8 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
      were it wrong, the judge shown the test files (`tests`) in the cause's
      folder and those naming its file, whole up to `code-lines-max`, the
      rest named; a no names the test.
-   - Two findings on one line are judged once, by the leading lens's question.
+   - Two findings on one line are each judged by their own lens's
+     question (#229); a refused one is dropped alone, the rest still shown.
 8. **The verdict.** The rules block (the long comment warns); what the
    lenses find warns (`ai-findings: warn`) until the evaluation has
    measured it (#90), lens by lens (Settings). Past `findings-max` on the
@@ -154,7 +156,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `code-lines-max` | `1200` | lines of the changed files a lens is given |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
-| `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, the blocking one leading two findings on one line |
+| `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, of findings on one line, a verified one from a blocking lens leading |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates from the change's size |

@@ -135,11 +135,11 @@ func readReview(runDir string, res result) (*reviewRun, error) {
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("candidates: %v", err)
 	}
-	keys := map[string]string{} // where → the judge's question
+	keys := map[string]string{} // a finding's line, lens and title → the judge's question
 	lensAt := map[string]string{}
 	for _, a := range c.Asked {
-		where, key, _ := strings.Cut(a, "\x00")
-		keys[where] = key
+		i := strings.LastIndex(a, "\x00")
+		keys[a[:i]] = a[i+1:]
 	}
 	var judgeCalls []string
 	verdicts := map[string]string{}
@@ -171,13 +171,13 @@ func readReview(runDir string, res result) (*reviewRun, error) {
 		}
 	}
 	for _, list := range [][]reviewer.Finding{c.Related, c.Outside} {
-		for _, f := range list {
-			judged := verdicts[keys[f.Where]]
-			lensAt[keys[f.Where]] = f.Lens
-			rr.Findings = append(rr.Findings, lensFinding{f.Lens, f.Where, f.Severity, f.Title, f.Related, judged})
-			for _, also := range f.Also { // merged on its line: shown, or dropped, with it
-				lens, title, _ := strings.Cut(also, ": ")
-				rr.Findings = append(rr.Findings, lensFinding{lens, f.Where, f.Severity, title, f.Related, judged})
+		for _, g := range list {
+			lead := g
+			lead.Also = nil
+			for _, f := range append([]reviewer.Finding{lead}, g.Also...) { // grouped on its line, each judged apart (#229)
+				key := keys[reviewer.JudgeKey(f)]
+				lensAt[key] = f.Lens
+				rr.Findings = append(rr.Findings, lensFinding{f.Lens, f.Where, f.Severity, f.Title, f.Related, verdicts[key]})
 			}
 		}
 	}

@@ -151,6 +151,20 @@ merge-request line; on in workline's own repository.
   case ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)); the
   maintainer switches correctness to `block`.
 
+## Amendment (2026-10-06, #229)
+
+- **Findings on one line are grouped, each judged by its lens.** Merged
+  and judged once by the leading lens's question, a tests-lens "no test"
+  under a correctness finding was refused with it
+  (roles/reviewer/docs/tried.md, restock).
+- Grouping only shapes what the author reads: one row, the others beside
+  the leader, each with its own verdict. A refused finding is dropped
+  alone (`finding-judged-no`).
+- **The leader**, once judged: a verified finding first, then one from a
+  blocking lens, then an important one; the group blocks when a verified
+  important finding of a blocking lens is in it.
+- **Cost**: one judge call for each important finding, shared line or not.
+
 ## Amendment (2026-10-06, #226)
 
 - **A blocked merge request still gets the comment.** A block applied
