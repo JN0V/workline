@@ -195,31 +195,22 @@ func HandsOver(dir, name string, p Paths) bool {
 	if len(lines) > 1 && strings.HasPrefix(lines[1], "# workline hook dispatcher") {
 		return true
 	}
-	unquote := func(w string) string { return strings.Trim(w, `"';`) }
 	global := ""
 	if p.Hooks != "" {
 		global = filepath.Join(p.Hooks, name)
 	}
 	for _, line := range lines {
-		f := strings.Fields(line)
-		if len(f) == 0 || strings.HasPrefix(f[0], "#") {
-			continue
+		// An exit at the top level ends the script; one indented in a block
+		// may not run.
+		if f := strings.Fields(line); len(f) > 0 && f[0] == "exit" && line[0] == 'e' {
+			return false
 		}
-		if f[0] == "exit" {
-			return false // what follows never runs
-		}
-		for i, w := range f {
-			if strings.HasPrefix(w, "#") {
-				break
-			}
-			if !commandAt(f, i) {
-				continue
-			}
-			w = unquote(w)
-			if global != "" && filepath.Clean(w) == global {
+		for _, words := range commands(line) {
+			w := unquote(words[0])
+			if global != "" && filepath.Clean(expandHome(w)) == global {
 				return true
 			}
-			if filepath.Base(w) == "workline" && i+2 < len(f) && f[i+1] == "hook" && unquote(f[i+2]) == name {
+			if filepath.Base(w) == "workline" && len(words) > 2 && words[1] == "hook" && unquote(words[2]) == name {
 				return true
 			}
 		}
@@ -227,18 +218,57 @@ func HandsOver(dir, name string, p Paths) bool {
 	return false
 }
 
-// commandAt says whether the i-th word of a shell line stands where a
-// command is run, not as an argument (`echo workline hook …`).
-func commandAt(f []string, i int) bool {
-	if i == 0 {
-		return true
+// shellOps split a line where a new command may start.
+var shellOps = strings.NewReplacer("&&", "\n", "||", "\n", ";", "\n", "|", "\n", "$(", "\n", "(", "\n", ")", "\n", "{", "\n", "}", "\n", "`", "\n")
+
+// commands returns each command a shell line runs, as its words from the
+// command's name on: leading keywords, VAR=value assignments and a runner's
+// options (`npx --no-install`) are dropped, a trailing comment cut.
+func commands(line string) [][]string {
+	f := strings.Fields(line)
+	for i, w := range f {
+		if strings.HasPrefix(w, "#") {
+			f = f[:i]
+			break
+		}
 	}
-	switch prev := f[i-1]; prev {
-	case "exec", "command", "npx", "&&", "||", "then", "do", "!", "if", "else":
-		return true
-	default:
-		return strings.HasSuffix(prev, ";")
+	var out [][]string
+	for _, part := range strings.Split(shellOps.Replace(strings.Join(f, " ")), "\n") {
+		words := strings.Fields(part)
+		for len(words) > 0 {
+			w := words[0]
+			name, _, assign := strings.Cut(w, "=")
+			switch {
+			case w == "exec" || w == "command" || w == "npx" || w == "env" || w == "time" || w == "nohup" || w == "!" ||
+				w == "if" || w == "then" || w == "do" || w == "else" || w == "elif" || w == "while" || w == "until":
+			case strings.HasPrefix(w, "-"):
+			case assign && name != "" && !strings.ContainsAny(name, `/"'$`):
+			default:
+				out = append(out, words)
+				words = nil
+				continue
+			}
+			words = words[1:]
+		}
 	}
+	return out
+}
+
+func unquote(w string) string { return strings.Trim(w, `"'`) }
+
+// expandHome reads ~, $HOME and $XDG_CONFIG_HOME in a path, as the shell would.
+func expandHome(w string) string {
+	if strings.HasPrefix(w, "~/") {
+		if h, err := os.UserHomeDir(); err == nil {
+			w = filepath.Join(h, w[2:])
+		}
+	}
+	return os.Expand(w, func(v string) string {
+		if v == "HOME" || v == "XDG_CONFIG_HOME" {
+			return os.Getenv(v)
+		}
+		return "$" + v
+	})
 }
 
 func writeDispatchers(dir, bin, next string) error {

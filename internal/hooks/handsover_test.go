@@ -7,7 +7,9 @@ import (
 )
 
 func TestHandsOver(t *testing.T) {
-	p := Paths{Hooks: filepath.Join(t.TempDir(), "workline", "hooks")}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	p := Paths{Hooks: filepath.Join(home, ".config", "workline", "hooks")}
 	for _, c := range []struct {
 		name, script string
 		mode         os.FileMode
@@ -23,6 +25,14 @@ func TestHandsOver(t *testing.T) {
 		{"echoed", "#!/bin/sh\necho workline hook commit-msg\n", 0o755, false},
 		{"after exit", "#!/bin/sh\nexit 0\nworkline hook commit-msg \"$1\"\n", 0o755, false},
 		{"a longer name", "#!/bin/sh\nworkline hook commit-msg-lint \"$1\"\n", 0o755, false},
+		{"exit indented in a block", "#!/bin/sh\nif [ -n \"$SKIP\" ]; then\n  exit 0\nfi\nworkline hook commit-msg \"$1\"\n", 0o755, true},
+		{"after an assignment", "#!/bin/sh\nFOO=1 workline hook commit-msg \"$1\"\n", 0o755, true},
+		{"glued to an operator", "#!/bin/sh\ntrue;workline hook commit-msg \"$1\"\n", 0o755, true},
+		{"in a subshell", "#!/bin/sh\n(workline hook commit-msg \"$1\") || exit 1\n", 0o755, true},
+		{"a runner's options", "#!/bin/sh\nnpx --no-install workline hook commit-msg \"$1\"\n", 0o755, true},
+		{"global hook under $HOME", "#!/bin/sh\nexec \"$HOME/.config/workline/hooks/commit-msg\" \"$@\"\n", 0o755, true},
+		{"global hook under ~", "#!/bin/sh\n~/.config/workline/hooks/commit-msg \"$@\"\n", 0o755, true},
+		{"trailing comment", "#!/bin/sh\ntrue # workline hook commit-msg\n", 0o755, false},
 		{"dispatcher", "#!/bin/sh\n# workline hook dispatcher, written by \"workline hooks install\".\n", 0o755, true},
 		{"dispatcher marker elsewhere", "#!/bin/sh\nexit 0\n# workline hook dispatcher\n", 0o755, false},
 		{"global hook", "#!/bin/sh\nexec " + filepath.Join(p.Hooks, "commit-msg") + " \"$@\"\n", 0o755, true},
