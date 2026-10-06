@@ -115,12 +115,19 @@ lenses' call 73.6k (430k before #147, docs/tried.md). Caps:
 
 A lens whose answer does not read is asked again once, with what the YAML
 reader said (`promote-after`). A lens that fails is said (`lens-failed`),
-the commits left unrecorded. Once the run has spent `ai-max-tokens`,
-nothing more is asked, said (`ai-max-tokens`): a lens not asked, or a
-finding not judged (`review-not-whole`), leaves the commits unrecorded.
-The summary says the tokens used against the cap. An
+the commits left unrecorded. An
 agent unreachable: `blocked-external`. No agent: the rules alone, the change
 left for a person (`not-reviewed`).
+
+## The budget
+
+- **`ai-max-tokens`**, 200000 a run: once spent, nothing more is asked,
+  said (`ai-max-tokens`); the call that crosses it is paid.
+- **Not whole**: a lens not asked, or a finding not judged
+  (`review-not-whole`), leaves the commits unrecorded, reviewed again
+  next run.
+- **Said**: the summary gives the tokens used against the cap; each
+  call's, by lens and by judged finding, is in `out/review.json`.
 
 ## On a machine
 
