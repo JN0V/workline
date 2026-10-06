@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.0](https://github.com/JN0V/workline/compare/v0.14.0...v0.15.0) (2026-10-06)
+
+
+### Features
+
+* **product-owner:** a changed need flags the issues built on it ([#185](https://github.com/JN0V/workline/issues/185)) ([1dc5d05](https://github.com/JN0V/workline/commit/1dc5d0514ca5603170d4889ce50b64a07280cd42))
+* **product-owner:** an import maps each item to its issue or reason ([#179](https://github.com/JN0V/workline/issues/179)) ([3e0faed](https://github.com/JN0V/workline/commit/3e0faed274c9b2e52fbc41cf06bc2f74a1b48a72))
+* **product-owner:** the report opens with what is next and stuck ([#183](https://github.com/JN0V/workline/issues/183)) ([46a7368](https://github.com/JN0V/workline/commit/46a73681a630bc158f30f24ad99006bb28ab91c6))
+
 ## [0.14.0](https://github.com/JN0V/workline/compare/v0.13.0...v0.14.0) (2026-10-05)
 
 
