@@ -175,8 +175,10 @@ func InstallRepo(repo, bin string) (string, error) {
 }
 
 // HandsOver says whether git, running the hook name from dir, reaches
-// workline: the file is executable and is workline's dispatcher, calls
-// `workline hook <name>`, or calls workline's global hook of that name.
+// workline: the file is executable and is workline's dispatcher, or runs
+// `workline hook <name>` or workline's global hook of that name as a
+// command, before any line that exits. A comment, an echo or a line after
+// `exit` is not a hand-over.
 func HandsOver(dir, name string, p Paths) bool {
 	path := filepath.Join(dir, name)
 	if fi, err := os.Stat(path); err != nil || fi.IsDir() || fi.Mode()&0o111 == 0 {
@@ -189,10 +191,54 @@ func HandsOver(dir, name string, p Paths) bool {
 	if err != nil {
 		return false
 	}
-	s := string(data)
-	return strings.Contains(s, "workline hook dispatcher") ||
-		strings.Contains(strings.Join(strings.Fields(s), " "), "workline hook "+name) ||
-		(p.Hooks != "" && strings.Contains(s, filepath.Join(p.Hooks, name)))
+	lines := strings.Split(string(data), "\n")
+	if len(lines) > 1 && strings.HasPrefix(lines[1], "# workline hook dispatcher") {
+		return true
+	}
+	unquote := func(w string) string { return strings.Trim(w, `"';`) }
+	global := ""
+	if p.Hooks != "" {
+		global = filepath.Join(p.Hooks, name)
+	}
+	for _, line := range lines {
+		f := strings.Fields(line)
+		if len(f) == 0 || strings.HasPrefix(f[0], "#") {
+			continue
+		}
+		if f[0] == "exit" {
+			return false // what follows never runs
+		}
+		for i, w := range f {
+			if strings.HasPrefix(w, "#") {
+				break
+			}
+			if !commandAt(f, i) {
+				continue
+			}
+			w = unquote(w)
+			if global != "" && filepath.Clean(w) == global {
+				return true
+			}
+			if filepath.Base(w) == "workline" && i+2 < len(f) && f[i+1] == "hook" && unquote(f[i+2]) == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// commandAt says whether the i-th word of a shell line stands where a
+// command is run, not as an argument (`echo workline hook …`).
+func commandAt(f []string, i int) bool {
+	if i == 0 {
+		return true
+	}
+	switch prev := f[i-1]; prev {
+	case "exec", "command", "npx", "&&", "||", "then", "do", "!", "if", "else":
+		return true
+	default:
+		return strings.HasSuffix(prev, ";")
+	}
 }
 
 func writeDispatchers(dir, bin, next string) error {
