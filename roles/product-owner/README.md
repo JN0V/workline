@@ -1,9 +1,32 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: d4d818d
+sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
+checked: 1f3641c
 verified: agent:claude-code
 ---
 # Product owner
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+flowchart LR
+  when["<b>When</b><br/>gardening, once in the schedule line<br/>workline issues import a file<br/>the weekly sample, no agent"]
+  reads["<b>Reads</b><br/>a share of the open issues<br/>the code they name<br/>people's answers and ticks"]
+  role(["Product owner"])
+  alone["<b>Alone, within caps</b><br/>names an issue's code, orders,<br/>refines, asks, splits,<br/>closes a duplicate"]
+  proposed["<b>Proposed</b><br/>a box in the report,<br/>for a person to tick"]
+  person["<b>Left to a person</b><br/>a Need and Validation made final<br/>accepting a result"]
+  out["<b>Lands in</b><br/>the issues: labels, sections, comments<br/>one report issue"]
+  when --> role
+  reads --> role
+  role --> alone --> out
+  role --> proposed --> out
+  role --> person
+```
+
+| At `autonomy: normal` | |
+|---|---|
+| Alone | names an issue's code; sets milestones and priorities, at most 20% of the open issues moved a run; closes a duplicate; announces an obsolete issue, closes it 7 days later on silence and a second judge's yes; refines to `ready`, Need and Validation as drafts; asks the reporter what is missing; splits a need too big; renames a vague title; says what an issue waits on; imports a file's items as issues |
+| Proposed | moves past the 20%; an outsider's issue made `ready`; the issues built on a need a person changed; at `cautious`, what sets direction: milestones, priorities, duplicates, splits, titles, dependencies, the Need and Validation drafts |
+| Left to a person | a draft made final (`workline:accepted`); a split need accepted, by closing it; a box ticked; closing as not planned; undoing an act |
 
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md). What a run does,
