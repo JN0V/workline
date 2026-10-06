@@ -1,0 +1,17 @@
+case: reviewer/diff-alone-finding-judged-like-the-others
+about: "A finding of the diff-alone facet goes the way of any lens's (#126): its quote found again in the file, or the finding dropped, said; an important one put to the judge with the usual question and material, the code around its cause and the change near it, not the facet's narrow view."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {diff-alone: true}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-diff-alone"}
+expect:
+  status: pass
+  findings:
+    - {rule: diff-alone, where: "calc/calc.go:11", message: "Important: The mean divides by one less than the count"}
+    - {rule: finding-unfounded, message: "dropped, from the diff-alone lens: \"A guard for an empty list\""}
+  run-files:
+    in/judge/01/question.yaml:
+      contains: ["does the code quoted, as it reads, fail the way the finding says", "func Average(values []int) int", "What the change did to calc/calc.go, near the cause"]
+    out/review.json: {contains: '"lenses": "diff-alone"'}

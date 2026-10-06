@@ -1,0 +1,19 @@
+# The reviewer's lenses, asked together, then its diff-alone facet, on the
+# `reviewed` fixture once Average divides by one less than the count: the
+# lenses find nothing; the facet, reading the change only, finds the
+# divisor, and quotes a line the file does not hold.
+tokens-in: 300
+tokens-out: 30
+calls:
+  - []
+  - - finding:
+        severity: important
+        title: The mean divides by one less than the count
+        why: the change turns the divisor from the count to one less; one value divides by zero
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+        fix: divide by len(values)
+    - finding:
+        severity: nit
+        title: A guard for an empty list
+        why: nothing in the change shows one
+        cause: {path: calc/calc.go, quote: "if len(values) == 0 {"}

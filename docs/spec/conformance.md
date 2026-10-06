@@ -156,7 +156,7 @@ a `PATH` without a tool, or with a fake one first.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
-  text (`contains`), or not (`not-contains`).
+  text (`contains`), or not (`not-contains`), each a text or a list.
 - `files` — paths that must exist, or contain a text or each of a list of
   texts, or lack one (`lacks`), afterwards.
 - `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts

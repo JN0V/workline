@@ -1,0 +1,11 @@
+case: reviewer/diff-alone-off-asks-nothing-more
+about: "The diff-alone facet off (#126): every lens asked, and no call more; the summary names no facet."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config: {roles: {reviewer: {settings: {diff-alone: false}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: all}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}]
+  summary: "lenses: correctness, edge-cases, tests, claims; not asked"

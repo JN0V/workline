@@ -1,0 +1,10 @@
+# The reviewer's diff-alone facet, asked alone, on the `reviewed` fixture
+# once Average divides by one less than the count: it finds the divisor.
+tokens-in: 300
+tokens-out: 30
+calls:
+  - - finding:
+        severity: important
+        title: The mean divides by one less than the count
+        why: the change turns the divisor from the count to one less; one value divides by zero
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
