@@ -20,7 +20,7 @@ given:
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,edge-cases"}, ai: "fake:review-shipping-untested"}
 expect:
-  agent-calls: 3
+  agent-calls: 4
   findings: [{rule: correctness, where: "shop/shipping.go:4", message: "verified"}]
   run-files:
     in/judge/01/question.yaml: {contains: "does the code quoted, as it reads, fail the way the finding says?", not-contains: "TestTotal"}

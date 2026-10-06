@@ -54,19 +54,19 @@ type Settings struct {
 
 // Finding is one defect a lens reported, once its quotes were found again.
 type Finding struct {
-	Lens     string   `json:"lens"`
-	Severity string   `json:"severity"` // important or nit
-	Title    string   `json:"title"`
-	Why      string   `json:"why"`
-	Fix      string   `json:"fix,omitempty"`
-	Cause    Quote    `json:"cause"`
-	Symptom  *Quote   `json:"symptom,omitempty"`
-	Where    string   `json:"where"`          // the cause's file and line
-	Related  bool     `json:"related"`        // the cause lies in the change: the author fixes it
-	Line     string   `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
-	Also     []string `json:"also,omitempty"` // other findings on the same line, merged into this one: lens and title
-	Verified string   `json:"verified,omitempty"`
-	Level    string   `json:"independence,omitempty"`
+	Lens     string    `json:"lens"`
+	Severity string    `json:"severity"` // important or nit
+	Title    string    `json:"title"`
+	Why      string    `json:"why"`
+	Fix      string    `json:"fix,omitempty"`
+	Cause    Quote     `json:"cause"`
+	Symptom  *Quote    `json:"symptom,omitempty"`
+	Where    string    `json:"where"`          // the cause's file and line
+	Related  bool      `json:"related"`        // the cause lies in the change: the author fixes it
+	Line     string    `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
+	Also     []Finding `json:"also,omitempty"` // other findings on the same line, grouped under this one, each judged by its own lens
+	Verified string    `json:"verified,omitempty"`
+	Level    string    `json:"independence,omitempty"`
 }
 
 // Quote is a place a finding quotes.
@@ -442,17 +442,11 @@ func readLenses(runDir, repo string, s Settings) int {
 			if f.Related {
 				list = &c.Related
 			}
-			// Two findings on one line are merged, never one dropped: the
-			// important one leads, the other said beside it; of two important,
-			// a lens that blocks leads (ai-findings).
+			// Two findings on one line are grouped, never one dropped: each
+			// is judged by its own lens, the group only shows them together
+			// (#229); the one ahead leads, the others beside it.
 			if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
-				o := &(*list)[dup]
-				if f.Severity == "important" && (o.Severity != "important" || s.AIFindings.Blocks(f.Lens) && !s.AIFindings.Blocks(o.Lens)) {
-					f.Also = append(o.Also, o.Lens+": "+o.Title)
-					*o = f
-				} else {
-					o.Also = append(o.Also, f.Lens+": "+f.Title)
-				}
+				(*list)[dup] = group(s, append(members((*list)[dup]), f))
 				continue
 			}
 			*list = append(*list, f)
@@ -496,7 +490,12 @@ func readLenses(runDir, repo string, s Settings) int {
 	}
 	c.Outside = outside
 	read := map[string]Lens{}
-	for i, f := range append(slices.Clone(c.Related), c.Outside...) {
+	var judged []Finding
+	for _, g := range append(slices.Clone(c.Related), c.Outside...) {
+		judged = append(judged, members(g)...)
+	}
+	n := 0
+	for _, f := range judged {
 		if f.Severity != "important" {
 			continue
 		}
@@ -516,7 +515,8 @@ func readLenses(runDir, repo string, s Settings) int {
 		if l.Judge.Reads == "tests" {
 			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.CodeLinesMax)
 		}
-		key := fmt.Sprintf("%02d", i+1)
+		n++
+		key := fmt.Sprintf("%02d", n)
 		dir := filepath.Join(runDir, "in", "judge", key)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fail(err)
@@ -526,7 +526,7 @@ func readLenses(runDir, repo string, s Settings) int {
 		if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
 			return fail(err)
 		}
-		c.Asked = append(c.Asked, f.Where+"\x00"+key)
+		c.Asked = append(c.Asked, asked(f)+"\x00"+key)
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "candidates.json"), c); err != nil {
 		return fail(err)
@@ -701,10 +701,10 @@ func settle(runDir, repo string, s Settings) int {
 	if err := readJSON(filepath.Join(runDir, "in", "candidates.json"), &c); err != nil {
 		return fail(err)
 	}
-	asked := map[string]string{}
+	keys := map[string]string{}
 	for _, a := range c.Asked {
-		where, key, _ := strings.Cut(a, "\x00")
-		asked[where] = key
+		i := strings.LastIndex(a, "\x00")
+		keys[a[:i]] = a[i+1:]
 	}
 	floor := s.JudgeAtLeast
 	if floor == "" {
@@ -713,7 +713,7 @@ func settle(runDir, repo string, s Settings) int {
 	verify := func(l []Finding) []Finding {
 		var kept []Finding
 		for _, f := range l {
-			key, ok := asked[f.Where]
+			key, ok := keys[asked(f)]
 			if !ok {
 				kept = append(kept, f) // a nit: reported as found
 				continue
@@ -748,7 +748,18 @@ func settle(runDir, repo string, s Settings) int {
 		}
 		return kept
 	}
-	related, outside := verify(c.Related), verify(c.Outside)
+	// Each finding of a group is judged apart; what its judge keeps is
+	// grouped again, the one ahead leading (#229).
+	regroup := func(l []Finding) []Finding {
+		var kept []Finding
+		for _, g := range l {
+			if ms := verify(members(g)); len(ms) > 0 {
+				kept = append(kept, group(s, ms))
+			}
+		}
+		return kept
+	}
+	related, outside := regroup(c.Related), regroup(c.Outside)
 	v := review(st, nil, "")
 	v.Lenses, v.Change, v.Complete = st.Lenses, related, len(c.Failed) == 0
 	var fallback []intent.Intention
@@ -851,13 +862,65 @@ func message(f Finding) string {
 		m += fmt.Sprintf(" (shows at %s)", f.Symptom.Path)
 	}
 	if len(f.Also) > 0 {
-		m += " (also found on this line — " + strings.Join(f.Also, "; ") + ")"
+		var also []string
+		for _, o := range f.Also {
+			a := o.Lens + ": " + o.Title
+			if o.Verified != "" {
+				a += " (" + o.Verified + ")"
+			}
+			also = append(also, a)
+		}
+		m += " (also found on this line — " + strings.Join(also, "; ") + ")"
 	}
 	if f.Verified != "" {
 		m += " (" + f.Verified + ")"
 	}
 	return m
 }
+
+// members are the findings a group holds: the one leading, then the others.
+func members(g Finding) []Finding {
+	lead := g
+	lead.Also = nil
+	return append([]Finding{lead}, g.Also...)
+}
+
+// group puts findings on one line together: the one ahead leads, the others
+// beside it in the order they came.
+func group(s Settings, ms []Finding) Finding {
+	lead := 0
+	for i := range ms {
+		if ahead(s, ms[i], ms[lead]) {
+			lead = i
+		}
+	}
+	g := ms[lead]
+	g.Also = slices.Delete(slices.Clone(ms), lead, lead+1)
+	return g
+}
+
+// ahead tells whether a finding leads another on their line: what was
+// verified first, then what is important, then what blocks (ai-findings,
+// #222); of two alike, the first found.
+func ahead(s Settings, a, b Finding) bool {
+	rank := func(f Finding) int {
+		r := 0
+		if f.Severity == "important" {
+			r++
+			if s.AIFindings.Blocks(f.Lens) {
+				r++
+			}
+		}
+		if strings.HasPrefix(f.Verified, "verified") {
+			r += 4
+		}
+		return r
+	}
+	return rank(a) > rank(b)
+}
+
+// asked keys a finding's question to the judge: its line, lens and title.
+func asked(f Finding) string { return f.Where + "\x00" + f.Lens + "\x00" + f.Title }
 
 func fixLine(f Finding) string {
 	if f.Fix == "" {
