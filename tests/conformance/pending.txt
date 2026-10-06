@@ -1,2 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# Each finding merged on a line judged by its own lens (#229).
+reviewer/merged-findings-each-judged-by-their-lens
+reviewer/merged-finding-lead-refused-other-shown

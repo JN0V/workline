@@ -1,0 +1,35 @@
+case: reviewer/merged-findings-each-judged-by-their-lens
+about: "A tests finding and a correctness finding on one line are each put to the judge with their own lens's question; the summary comment shows them grouped on one row, each with its own verdict (#229)."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: "correctness,tests"}, target: {merge-request: 5}, ai: "fake:review-shipping-untested"}
+expect:
+  agent-calls: 4
+  applied: [comment]
+  findings:
+    - {rule: correctness, where: "shop/shipping.go:4", message: "(also found on this line — tests: Shipping has no test (verified, independence: "}
+  run-files:
+    in/judge/01/question.yaml: {contains: "fail the way the finding says", not-contains: "a test exercises"}
+    in/judge/02/question.yaml: {contains: "a test exercises"}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: "| warns | correctness | `shop/shipping.go:4` | Important: Shipping has no test"}

@@ -1,0 +1,31 @@
+case: reviewer/merged-finding-lead-refused-other-shown
+about: "Two findings merged on one line, the leading lens's refused by its judge and the other's verified by its own: the verified one is still shown, now leading, and blocks since its lens blocks; the refused one is logged as dropped (#229)."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-tests.sh"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block, tests: block}}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,tests"}, ai: "fake:review-shipping-untested"}
+expect:
+  status: block
+  agent-calls: 4
+  findings:
+    - {rule: tests, where: "shop/shipping.go:4", message: "Important: Shipping has no test"}
+    - {rule: finding-judged-no, message: "dropped, from the correctness lens"}
+  run-files:
+    in/judge/01/question.yaml: {contains: "fail the way the finding says"}
+    in/judge/02/question.yaml: {contains: "a test exercises"}
