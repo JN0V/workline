@@ -1,5 +1,5 @@
 case: engine/job-summary-of-a-line
-about: With --summary, a line judged in one job and applied in another appends to one Markdown file what ran, each step's verdict, the agent's calls, the findings and what waits to be applied, then what was applied — what a CI job's page shows a person, with no log nor JSON to read.
+about: With --summary, a line judged in one job and applied in another appends to one Markdown file, and to one HTML page, what ran, each step's verdict, the agent's calls, the findings and what waits to be applied, then what was applied — what a CI job's page shows a person, with no log nor JSON to read.
 given:
   repo: documented
   setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
@@ -16,3 +16,9 @@ expect:
     - "- to apply: 1 run"
     - "### workline apply"
     - "- applied: label, comment"
+  summary-html:   # GitLab shows a job's HTML artifact, not its Markdown one
+    - "<!doctype html>"
+    - "<h3>workline route merge-request (fake)</h3>"
+    - "<li><strong>committer</strong>: pass"
+    - "<h3>workline apply</h3>"
+    - "<li>applied: label, comment"

@@ -91,7 +91,7 @@ type caseFile struct {
 		Review  []string          `yaml:"review"`        // workline review, with these options
 		Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
 		Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
-		JobSum  bool              `yaml:"summary"`       // also write --summary, the apply after it too
+		JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
 		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 		Follow  []string          `yaml:"follow"`        // workline follow, with these options
 	} `yaml:"run"`
@@ -122,6 +122,7 @@ type caseFile struct {
 		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
 		Summary     string                       `yaml:"summary"`       // a text the result's summary holds
 		SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order
+		SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
 		Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
 		NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
 	} `yaml:"expect"`
@@ -319,9 +320,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Reports {
 		args = append(args, "--sarif", sarifFile, "--code-quality", cqFile)
 	}
-	summaryFile := filepath.Join(work, "summary.md")
+	summaryFile, summaryHTML := filepath.Join(work, "summary.md"), filepath.Join(work, "summary.html")
 	if c.Run.JobSum {
-		args = append(args, "--summary", summaryFile)
+		args = append(args, "--summary", summaryFile, "--summary", summaryHTML)
 	}
 	// Judged on one machine, applied on another (CI's two jobs): each its own
 	// cache, the first gone by the time the second applies.
@@ -370,7 +371,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		resumeArgs := append(append([]string{"apply"}, dirs...), "--json")
 		if c.Run.JobSum {
-			resumeArgs = append(resumeArgs, "--summary", summaryFile)
+			resumeArgs = append(resumeArgs, "--summary", summaryFile, "--summary", summaryHTML)
 		}
 		resume := exec.Command(engineBin, resumeArgs...)
 		resume.Env = env
@@ -393,7 +394,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		// The write, as CI's job holding the forge's token and no AI key.
 		applyArgs := []string{"sample", "--apply", filepath.Join(work, "sample.json"), "--repo", repo, "--forge", forgeSpec, "--json"}
 		if c.Run.JobSum {
-			applyArgs = append(applyArgs, "--summary", summaryFile)
+			applyArgs = append(applyArgs, "--summary", summaryFile, "--summary", summaryHTML)
 		}
 		apply := exec.Command(engineBin, applyArgs...)
 		apply.Dir, apply.Env = repo, cmd.Env
@@ -430,6 +431,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if len(c.Expect.SummaryFile) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryFile, summaryFile)...)
+	}
+	if len(c.Expect.SummaryHTML) > 0 {
+		problems = append(problems, compareSummaryFile(c.Expect.SummaryHTML, summaryHTML)...)
 	}
 	if len(c.Expect.Forge) > 0 {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
