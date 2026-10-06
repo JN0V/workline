@@ -484,3 +484,54 @@ characters (facets added) against the tokens Claude reported.
 - **The evaluation's twelve cases**, offline, a recording agent: every
   lens and judge call asked, none refused (4k to 6k characters).
 - **Not tried**: a real call refused for its size.
+
+## 2026-10-06 — intent and claims (#126)
+
+Offline first, no tokens: #146's review at `5be9afd`, the recording agent
+of #147 (each lens answering nothing), origin/main's engine against this
+branch's.
+
+| Lenses' prompt | Characters | Tokens (711 + 0.82 a character) |
+|---|---|---|
+| origin/main | 87,293 | 72.3k |
+| this branch, no issue read (intent not asked) | 87,943 (+0.7%) | 72.8k |
+| this branch, a commit closing #126, read from a simulated forge | 89,902 (+3.0%) | 74.4k |
+
+- **What grew**: two lens texts (1.2k characters), the commit messages
+  whole (trailers left: they doubled it first), #126's Need,
+  Verification and Scope (2.0k).
+- **Not measured offline**: the judges of intent and claims findings, one
+  call each (below, 1.9k to 4.1k tokens).
+
+**Planted, live**: workline-sandbox#39 asks a session signed out when idle
+30 minutes *and* when its token is past TokenTTL, one idle exactly 30
+minutes still signed in. Pull request workline-sandbox#40, two commits:
+`Idle` turned from `>` to `>=` under "No change in behaviour.", and a
+test of 29 and 31 minutes "Closes #39." Nothing of TokenTTL.
+
+**The validation run**, one, real: `workline review --base origin/main
+--ai claude` on a clone of the branch, `ai-max-tokens: 60000`
+(`forge-writes: false`), Sonnet finding, Opus judging (`model`):
+
+| Call | Tokens in | Out |
+|---|---|---|
+| the five lenses, together | 6.1k | 0.9k |
+| judge, correctness, idle.go:11 | 3.6k | 0.2k |
+| judge, claims, idle.go:11 | 1.9k | 0.1k |
+| judge, tests, idle_test.go:13 | 4.7k | 0.2k |
+| judge, intent, #39 | 4.1k | 0.1k |
+| **total**, 5 calls | **20.3k** | **1.6k** |
+
+- **The part left out, found**: intent at `#39`, quoting "when its token
+  is older than TokenTTL, whichever comes first": no TokenTTL logic nor
+  test; verified.
+- **The false claim, found**: claims at `idle.go:11`, the claim "No
+  change in behaviour." found again in the commit, grouped under the
+  correctness finding on the same line (the boundary at 30 minutes),
+  each verified by its own lens's question. **Fixed**: the grouped
+  finding's line did not say the claim; it does now.
+- **Also**: the tests lens on the 30-minute boundary left untested
+  (verified); an edge-cases nit (a clock going backwards).
+- **Not tried**: on the merge request in CI (the released engine runs
+  there); a claim in the merge request's body only; five runs a case
+  (ADR-0014).

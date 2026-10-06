@@ -49,7 +49,7 @@ settings:
   ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*"]
   # In this order on a merge request, one a push (lenses-per-push), the
   # record turning it; every one on a machine, or with --input lenses=all.
-  lenses: [correctness, edge-cases, tests]
+  lenses: [correctness, edge-cases, tests, intent, claims]
   lenses-per-push: 1
   findings-max: 10      # findings on the change checked and shown a run; the rest counted
   issues-max: 3         # issues opened a run for what lies outside the change; the rest counted
@@ -84,6 +84,12 @@ settings:
   # Every lens a run asks, in one call: the change and its files given
   # once, each finding naming its lens (#147). false: a call each, apart.
   lenses-together: true
+  # What the author says, the lenses' testimony (#126): the messages of the
+  # commits reviewed, whole, and the merge request's title and body.
+  testimony-lines-max: 80
+  # The issues the change closes (`Closes #4`), read from the forge: their
+  # Need, Verification and Scope, for a lens that `needs: issue` (intent).
+  issue-lines-max: 80
   # What a run may spend, all calls together, tokens in and out as the agent
   # reports them; once spent, nothing more is asked, said, and the commits
   # are not recorded as reviewed. The call that crosses it is paid. 0: no cap.

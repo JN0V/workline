@@ -416,7 +416,7 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: true}, nil
+	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body}, nil
 }
 
 func (l *Local) keepsBranches() {}

@@ -1,0 +1,17 @@
+case: reviewer/merge-request-body-given-as-testimony
+about: "On a merge request, its title and body are given to the lenses as testimony beside the commit messages, and a `Closes #4` in its body brings #4 to the intent lens (#126)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    issues:
+      - {id: 4, title: The mean over the count, body: "## Need\n\nThe mean divides by the count.\n", labels: [], comments: []}
+    merge-requests:
+      - {id: 5, title: Average over the count, body: "Closes #4\n\nCovered by the tests.", labels: [], comments: []}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}]
+  summary: "lenses: correctness, edge-cases, tests, intent, claims"
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "### The merge request\n\nAverage over the count\n\nCloses #4\n\nCovered by the tests."}

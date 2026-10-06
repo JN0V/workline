@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 79ecb95
+checked: c212b79
 verified: agent:claude-code
 ---
 # Reviewer
@@ -9,9 +9,9 @@ verified: agent:claude-code
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
   when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in"]
-  reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change"]
+  reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change<br/>the issue it closes<br/>what its author says"]
   role(["Reviewer"])
-  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
+  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
   proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
   person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
   out["<b>Lands in</b><br/>the terminal and out/review.json<br/>one summary comment<br/>issues, needs-triage"]
@@ -26,8 +26,9 @@ For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md).
 
 **Does**: reads the code a change brings before a person does, and says
-what it breaks — each finding quoted, found again by the engine and checked
-by a judge; rules on the comments the change adds (a bug's story, an
+what it breaks, what the issue it closes asks and it leaves out, and what
+its author claims and it contradicts — each finding quoted, found again by
+the engine and checked by a judge; rules on the comments the change adds (a bug's story, an
 internal code), with no agent.
 **Does not**: approve, change the code, merge, or review docs and other
 files that are not code (`ignore`): the author fixes, the person merges
@@ -47,10 +48,12 @@ for each verified finding outside the change.
 one a push on a merge request) and one judge call for each important
 finding. #146's eight commits, every lens: 142k tokens in, estimated, the
 lenses' call 73.6k (430k before #147, docs/tried.md); the judges reading
-whole functions (#127), about 160k. Caps:
+whole functions (#127), about 160k. Intent and claims (#126): the
+lenses' prompt 0.7% larger, 3.0% when the change closes an issue.
+Caps:
 `ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
-`judge-lines-max`, `tests-lines-max`, `findings-max`, `issues-max`,
-`lenses-per-push`.
+`judge-lines-max`, `tests-lines-max`, `testimony-lines-max`,
+`issue-lines-max`, `findings-max`, `issues-max`, `lenses-per-push`.
 **Without AI**: the rules alone; the change is left for a person
 (`not-reviewed`).
 **Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
@@ -70,22 +73,42 @@ whole functions (#127), about 160k. Caps:
    `.git/workline/reviewer-record` on a machine. New commits that change
    no code are recorded, nobody asked, the turn of the lenses kept.
 4. **The lenses** (`lenses/<lens>.md`, a project's own in
-   `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests.
-   Every one on a machine; on a merge request one a push, in turn
+   `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
+   intent, claims (#126). Every one on a machine; on a merge request one a push, in turn
    (`lenses-per-push`), every one with `--input lenses=all`.
    - **Together** (`lenses-together`, #147): the lenses of a run in one
      call, the change given once; each finding names its lens. One naming
      none is read as the first lens's, said (`finding-lens-unnamed`); one
      naming a lens not asked is dropped, said. `false`: a call each.
-   - **What they read**: the commits not reviewed yet (their messages as
-     claims), and each file they change once: whole, the change marked
-     in it, while the files fit `code-lines-max`; the others by the
-     change's hunks (`diff-lines-max`).
+   - **What they read**: what the author says, as testimony: the
+     messages of the commits not reviewed yet, whole, their trailers
+     left, and the merge request's title and body
+     (`testimony-lines-max`); each file they change once: whole, the
+     change marked in it, while the files fit `code-lines-max`; the
+     others by the change's hunks (`diff-lines-max`).
+   - **Intent** (`needs: issue`): a change saying `Closes #4` (or
+     `fixes`, `resolves`, `implements`), in a commit or the merge
+     request, has #4 read from the forge, its Need, Verification and
+     Scope given (`issue-lines-max`). The lens says what the issue asks
+     and the change does not do or prove, its cause quoted from the issue
+     (`path: "#4"`), and what the change does past the Scope. No issue
+     closed: not asked, said in the summary; one that cannot be read:
+     not asked, said (`issue-unread`).
+   - **Claims** (`cites: claim`): each finding quotes the author's claim
+     ("no change in behaviour"), found again in what they said, or is
+     dropped (`finding-unfounded`), and its cause the line contradicting
+     it.
    - **What they answer**: `finding`s: lens, severity, title, why, its
-     cause quoted, its symptom when elsewhere, a fix.
+     cause quoted, its symptom when elsewhere, a fix; the claims lens's,
+     the claim.
+   - **The floor** (`finder-floor`): each lens is asked to look for a
+     number of candidates first, from the change's size; a floor on
+     candidates, never on what is judged or shown: a lens answering
+     nothing leaves the review clean (`finder-floor-nothing-found-is-clean`).
 5. **The quotes.** The engine finds each cause again, spaces and line
    breaks aside, in the file at the head of the range or among the lines
-   the change removed; a symptom, in its file. Not found: dropped, said
+   the change removed, or in the issue it names (`#4`, the change's); a
+   symptom, in its file; a claim, in what the author said. Not found: dropped, said
    (`finding-unfounded`). Two on one line are grouped, never one dropped
    (#229).
 6. **Related or not.** A cause on a line the change added or removed, or
@@ -122,6 +145,12 @@ whole functions (#127), about 160k. Caps:
      were it wrong, the judge shown the test files (`tests`) in the cause's
      folder and those naming its file, whole up to `tests-lines-max`, the
      rest named; a no names the test.
+   - intent (#126): whether the issue asks what the change does not do,
+     or the change does what the Scope leaves out; the judge shown the
+     issue, and for a cause in the issue the whole merge request's change,
+     commits reviewed before included, up to `code-lines-max` lines: a
+     part an earlier push did is refused, not reported missing;
+   - claims (#126): whether the code quoted contradicts the claim quoted.
    - Two findings on one line are each judged by their own lens's
      question (#229); a refused one is dropped alone, the rest still shown.
 8. **The verdict.** The rules block (the long comment warns); what the
@@ -188,7 +217,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `base` | `main` | where `workline review` starts without `--base` |
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
-| `lenses` | `[correctness, edge-cases, tests]` | in this order, in turn, on a merge request |
+| `lenses` | `[correctness, edge-cases, tests, intent, claims]` | in this order, in turn, on a merge request; a lens with nothing to read (intent, no issue closed) skipped |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one |
 | `findings-max` | `10` | findings on the change a run; the rest counted |
 | `issues-max` | `3` | issues opened a run for what lies outside it |
@@ -197,11 +226,13 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
 | `judge-lines-max` | `200` | lines of code a judge is shown: the cause's function, then those it reaches (#127), the rest named; `0`: the 31 lines around the cause |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown, the rest named |
+| `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) the lenses are given |
+| `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) the lenses are given |
 | `ai-max-tokens` | `200000` | tokens a run may spend, in and out, all calls; the call crossing it is paid; `0`: no cap |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, of findings on one line, a verified one from a blocking lens leading |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
-| `finder-floor` | `true` | each lens looks for a number of candidates from the change's size |
+| `finder-floor` | `true` | each lens looks for a number of candidates from the change's size; never a floor on what is judged or shown |
 | `tests` | `**/*_test.*`, `**/test_*`, `**/*.spec.*`, `**/tests/**`, … | the test files a tests-lens judge is shown |

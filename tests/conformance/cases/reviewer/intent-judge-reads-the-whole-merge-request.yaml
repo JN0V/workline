@@ -1,0 +1,26 @@
+case: reviewer/intent-judge-reads-the-whole-merge-request
+about: "On a merge request reviewed push by push, a part of the issue done by an earlier commit, reviewed already, is not reported missing (#126): the intent judge is shown the whole merge request's change, earlier commits included, and asked whether any of it does the part; a no drops the finding."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\ttotal := 0|\\tif len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\ttotal := 0|' calc/calc.go && git commit -qam 'fix: an empty list averages 0'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+    - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean skips zeros and survives an empty list
+        body: "## Need\n\nThe mean skips the zero values, and an empty list gives 0 instead of a crash.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: intent}, ai: "fake:review-intent"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-intent}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: finding-judged-no, message: "An empty list still divides by zero"}
+  no-findings: [{rule: intent}]
+  run-files:
+    in/judge/01/question.yaml: {contains: '+\tif len(values) == 0 {'}

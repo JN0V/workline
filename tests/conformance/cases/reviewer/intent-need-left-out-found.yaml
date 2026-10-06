@@ -1,0 +1,24 @@
+case: reviewer/intent-need-left-out-found
+about: "A change saying `Closes #4` is compared with #4's Need, Verification and Scope (#126): the issue read from the forge and given to the lenses, the intent lens asked with the others, its finding quoting the issue found again there and judged by the intent lens's question, shown the issue."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean skips zeros and survives an empty list
+        body: "## Need\n\nThe mean skips the zero values, and an empty list gives 0 instead of a crash.\n\n## Verification\n\nA test of Average on [0, 2, 4] and on [].\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-intent"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: intent, where: "#4", message: "Important: An empty list still divides by zero"}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "#### Need\n\nThe mean skips the zero values, and an empty list gives 0 instead of a crash."}
+    in/judge/01/question.yaml: {contains: "#### Verification"}

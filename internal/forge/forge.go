@@ -172,6 +172,8 @@ type MergeRequest struct {
 	Branch string // the branch it comes from
 	Base   string // the branch it goes into; "" when the forge does not say
 	Here   bool   // the branch lives in this repository, not in a fork
+	Title  string // what its author calls it
+	Body   string // what its author says of it: testimony for a review (ADR-0020)
 }
 
 // ErrUnreachable marks a forge that did not answer: the run is blocked by

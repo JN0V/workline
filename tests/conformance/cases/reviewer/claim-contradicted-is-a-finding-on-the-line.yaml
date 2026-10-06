@@ -1,0 +1,16 @@
+case: reviewer/claim-contradicted-is-a-finding-on-the-line
+about: "The commit messages are given whole, as testimony (#126): a claim the change contradicts is a finding on the line that contradicts it, the claim quoted, found again in what the author said and judged by the claims lens's question; a claim the author never made is dropped, said."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'refactor: name the divisor' -m 'No change in behaviour.'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-claims"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: claims, where: "calc/calc.go:11", message: "the author: \"No change in behaviour.\""}
+    - {rule: finding-unfounded, message: "its claim is not found in what the author said"}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "refactor: name the divisor\n  No change in behaviour."}
+    in/judge/01/question.yaml: {contains: "No change in behaviour."}

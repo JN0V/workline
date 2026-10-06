@@ -1,0 +1,15 @@
+case: reviewer/finder-floor-nothing-found-is-clean
+about: "`finder-floor` is a floor on the candidates a lens looks for, never on what is judged or shown (#126, ADR-0020): every lens asked under it answering nothing, the review is clean, nothing judged, no lens counted as failed, the commits recorded."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config: {roles: {reviewer: {settings: {finder-floor: true}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}]
+  summary: "0 findings on the change"
+  no-findings: [{rule: lens-failed}, {rule: finding-unfounded}, {rule: review-not-whole}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "candidates for each lens before you stop"}
+    out/review.json: {contains: '"complete": true'}
