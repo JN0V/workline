@@ -774,3 +774,20 @@ it, as it should. Not tried: the `follow` job in CI on a push to `main`
 (it needs this branch merged here, a release for the templates); GitLab,
 whose sandbox would have run Claude on the merge request (its API covered
 by the mock only); a real release run's fix then followed.
+
+On 2026-10-06, the context budget against the calls kept (#235), no
+tokens: the estimate is 711 + 0.82 a character (`agent.Tokens`), not
+characters / 4. The evaluation's single-call cases replayed at the commit
+each ran on, a recording agent keeping the prompt: Markdown docs, 6k to
+23k characters, estimated 5 to 15% over what Claude reported (5.2k to
+17.2k tokens); the drifted C++ sources, 40k and 43k characters,
+estimated 10% under (37.3k and 39.9k). The parts of 2026-10-05's
+catch-up kept on this machine, 40k characters of task each: 37.4k to
+41.2k tokens, about 39.4k estimated. The budget was 16000, which every
+one of these passed at characters / 4; it is 48000 now, taskMaxChars and
+the facets with room for an answer asked again
+(`TestLargestTaskFitsTheBudget`); a night's part is such a task. The
+evaluation, replayed offline with this engine: no prompt refused.
+Open: `whole-chars` past about 30,000 makes a task over the budget
+(past about 37,000 at characters / 4 already); its example in
+docs/config.md, 40,000, too.

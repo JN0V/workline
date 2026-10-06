@@ -146,6 +146,9 @@ left for a person (`not-reviewed`).
   next run.
 - **Said**: the summary gives the tokens used against the cap; each
   call's, by lens and by judged finding, is in `out/review.json`.
+- **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a
+  character before the call (#235); a larger prompt is not sent, the
+  lens failing, said (`lens-failed`).
 
 ## On a machine
 
