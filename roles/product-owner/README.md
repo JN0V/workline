@@ -1,6 +1,6 @@
 ---
-sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: 92b2518
+sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
+checked: dc0a562
 verified: agent:claude-code
 ---
 # Product owner
@@ -106,6 +106,12 @@ roles:
   not delivered — and each item of its Verification, proved where a part
   delivered quotes it, or not proved. Accept the need by closing it.
 - `--json`, `--sarif`, `--code-quality` like any role.
+- Each week, with the docs' sample (`workline sample --apply`, no agent):
+  one in ten of the acts it did alone that week, on the issue "workline:
+  the weekly sample of the product owner's acts" — each with its day, the
+  level it was done at, and whether a person undid it — for you to judge:
+  undo one you find wrong on its issue. From the acts undone it may
+  suggest another level; it never changes the setting.
 
 A person accepts drafts with the label `workline:accepted`, on one issue or
 many: the next run moves them to `ready`, with no agent.

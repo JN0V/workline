@@ -1,7 +1,6 @@
 ---
-sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: c592b51
-judged: fa1d682
+sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, internal/forge/local.go, internal/forge/gitlab.go]
+checked: dc0a562
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -258,6 +257,14 @@ leading zero is refused, YAML reading it as another number.
 The week sampled is the last whole one. For another (`--week 2026-W40`):
 on GitHub, run the workflow by hand with its `week` input; on GitLab, set
 the variable `WORKLINE_SAMPLE_WEEK` on the schedule, then play it.
+
+On a project with the product owner, the same job draws its acts too
+(ADR-0033): one in ten of those it did alone in the week, from the record
+on its report, onto the issue "workline: the weekly sample of the product
+owner's acts" — each with its day, the level it was done at, and whether a
+person undid it — for you to judge; undo one you find wrong. It may
+suggest another `autonomy` level from the acts undone; nothing to set up,
+no agent asked.
 
 ## A self-managed GitLab
 
