@@ -23,7 +23,7 @@
 #   release after v0.16.0.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token, role Developer,
 #          scopes `api` and `write_repository`: one glab command in
-#          docs/ci.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
+#          docs/ci-gitlab.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
 #          no AI key. A doc fix is committed to the merge request's branch
 #          (--push-to-merge-request).
 #
