@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 0f7a5a5
+checked: 1da0ac5
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
