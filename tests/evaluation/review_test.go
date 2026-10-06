@@ -175,7 +175,7 @@ func readReview(runDir string, res result) (*reviewRun, error) {
 			lead := g
 			lead.Also = nil
 			for _, f := range append([]reviewer.Finding{lead}, g.Also...) { // grouped on its line, each judged apart (#229)
-				key := keys[f.Where+"\x00"+f.Lens+"\x00"+f.Title]
+				key := keys[reviewer.JudgeKey(f)]
 				lensAt[key] = f.Lens
 				rr.Findings = append(rr.Findings, lensFinding{f.Lens, f.Where, f.Severity, f.Title, f.Related, verdicts[key]})
 			}

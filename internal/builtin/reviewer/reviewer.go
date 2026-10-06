@@ -446,10 +446,7 @@ func readLenses(runDir, repo string, s Settings) int {
 			// is judged by its own lens, the group only shows them together
 			// (#229); the one ahead leads, the others beside it.
 			if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
-				ms := members((*list)[dup])
-				if !slices.ContainsFunc(ms, func(o Finding) bool { return asked(o) == asked(f) }) { // a lens saying it twice: once
-					(*list)[dup] = group(s, append(ms, f))
-				}
+				(*list)[dup] = group(s, append(members((*list)[dup]), f))
 				continue
 			}
 			*list = append(*list, f)
@@ -529,7 +526,7 @@ func readLenses(runDir, repo string, s Settings) int {
 		if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
 			return fail(err)
 		}
-		c.Asked = append(c.Asked, asked(f)+"\x00"+key)
+		c.Asked = append(c.Asked, JudgeKey(f)+"\x00"+key)
 	}
 	if err := writeJSON(filepath.Join(runDir, "in", "candidates.json"), c); err != nil {
 		return fail(err)
@@ -716,7 +713,7 @@ func settle(runDir, repo string, s Settings) int {
 	verify := func(l []Finding) []Finding {
 		var kept []Finding
 		for _, f := range l {
-			key, ok := keys[asked(f)]
+			key, ok := keys[JudgeKey(f)]
 			if !ok {
 				kept = append(kept, f) // a nit: reported as found
 				continue
@@ -922,8 +919,11 @@ func ahead(s Settings, a, b Finding) bool {
 	return rank(a) > rank(b)
 }
 
-// asked keys a finding's question to the judge: its line, lens and title.
-func asked(f Finding) string { return f.Where + "\x00" + f.Lens + "\x00" + f.Title }
+// JudgeKey keys a finding's question to the judge: its line, lens,
+// severity, title and cause; two findings alike in all read one answer.
+func JudgeKey(f Finding) string {
+	return strings.Join([]string{f.Where, f.Lens, f.Severity, f.Title, f.Cause.Quote}, "\x00")
+}
 
 func fixLine(f Finding) string {
 	if f.Fix == "" {
