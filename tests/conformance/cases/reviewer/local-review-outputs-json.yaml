@@ -8,6 +8,6 @@ given:
 run: {review: [--base, main], ai: "fake:review-related"}
 expect:
   status: pass
-  calls: [{task: part}, {task: part}, {task: part}, {task: judge}, {task: judge}, {task: judge}]
+  calls: [{task: part}, {task: part}, {task: part}, {task: part, for: 4-claims}, {task: judge}, {task: judge}, {task: judge}]
   findings: [{rule: correctness, where: "calc/calc.go:11", message: "also found on this line — edge-cases: Average divides by one less than the count"}]
   run-files: {out/review.json: {contains: '"related": true'}}

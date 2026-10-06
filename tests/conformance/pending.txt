@@ -1,7 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/claim-contradicted-is-a-finding-on-the-line
-reviewer/intent-issue-unread-said
-reviewer/intent-need-left-out-found
-reviewer/intent-not-asked-without-an-issue
-reviewer/merge-request-body-given-as-testimony
