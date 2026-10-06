@@ -1,0 +1,11 @@
+case: setup/doctor-local-hooks-path-bypasses
+about: A repository whose own core.hooksPath points to a folder without workline's dispatchers gets a warning naming the path, and the fix that makes its commit-msg hand over to workline.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p .husky && printf '#!/bin/sh\\nexit 0\\n' > .husky/commit-msg && chmod +x .husky/commit-msg && git config core.hooksPath .husky"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: hooks-bypassed, where: .husky, message: "core.hooksPath (.husky", fix: "workline hook commit-msg"}
