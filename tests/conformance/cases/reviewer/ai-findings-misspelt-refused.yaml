@@ -1,0 +1,11 @@
+case: reviewer/ai-findings-misspelt-refused
+about: "ai-findings naming a lens the reviewer does not run, or a value other than warn or block, stops the run: never read as warn (principle 12, #222)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config: {roles: {reviewer: {settings: {ai-findings: {correctnes: block}}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "pre exited with code 99"}]
+  agent-calls: 0

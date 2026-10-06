@@ -1,2 +1,7 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# ai-findings set by lens (#222).
+reviewer/ai-findings-by-lens-blocks
+reviewer/ai-findings-by-lens-warns
+reviewer/ai-findings-lens-unnamed-warns
