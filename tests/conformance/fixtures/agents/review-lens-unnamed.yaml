@@ -1,0 +1,9 @@
+# The reviewer's lenses asked in one call, on the `reviewed` fixture once
+# Average divides by one less than the count: the finding names no lens,
+# as a real agent's did, the lens written in its why (#147).
+- finding:
+    severity: important
+    title: Average divides by one less than the count
+    why: "lens: correctness. The mean of [2, 4] comes out 6, and one value divides by zero"
+    cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+    fix: divide by len(values)

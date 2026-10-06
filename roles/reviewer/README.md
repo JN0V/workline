@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: feadc54
+checked: 894d7d3
 verified: agent:claude-code
 ---
 # Reviewer
@@ -43,11 +43,12 @@ on the merge request.
 agent to fix; on a merge request, one summary comment edited each run, the
 findings in `--sarif` / `--code-quality`, and an issue (`needs-triage`)
 for each verified finding outside the change.
-**Cost**: one call a lens (three on a machine, one a push on a merge
-request) and one judge call for each important finding; measured from 2k
-to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
-`diff-lines-max`, `code-lines-max`, `findings-max`, `issues-max`,
-`lenses-per-push`.
+**Cost**: one call for the lenses (all of them on a machine, together;
+one a push on a merge request) and one judge call for each important
+finding. #146's eight commits, every lens: 142k tokens in, estimated, the
+lenses' call 73.6k (430k before #147, docs/tried.md). Caps:
+`ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
+`tests-lines-max`, `findings-max`, `issues-max`, `lenses-per-push`.
 **Without AI**: the rules alone; the change is left for a person
 (`not-reviewed`).
 **Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
@@ -66,14 +67,20 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
    it is kept in the summary comment on a merge request,
    `.git/workline/reviewer-record` on a machine. New commits that change
    no code are recorded, nobody asked, the turn of the lenses kept.
-4. **The lenses**, each a part of the question in a context of its own
-   (`lenses/<lens>.md`, a project's own in `.workline/roles/reviewer/lenses/`):
-   correctness, edge cases, tests. Every one on a machine; on a merge
-   request one a push, in turn (`lenses-per-push`), every one with
-   `--input lenses=all`. Each gets the commits not reviewed yet (their
-   messages as claims), what they change, and the files they change, to
-   read whole; it answers `finding`s: severity, title, why, its cause quoted,
-   its symptom when elsewhere, a fix.
+4. **The lenses** (`lenses/<lens>.md`, a project's own in
+   `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests.
+   Every one on a machine; on a merge request one a push, in turn
+   (`lenses-per-push`), every one with `--input lenses=all`.
+   - **Together** (`lenses-together`, #147): the lenses of a run in one
+     call, the change given once; each finding names its lens. One naming
+     none is read as the first lens's, said (`finding-lens-unnamed`); one
+     naming a lens not asked is dropped, said. `false`: a call each.
+   - **What they read**: the commits not reviewed yet (their messages as
+     claims), and each file they change once: whole, the change marked
+     in it, while the files fit `code-lines-max`; the others by the
+     change's hunks (`diff-lines-max`).
+   - **What they answer**: `finding`s: lens, severity, title, why, its
+     cause quoted, its symptom when elsewhere, a fix.
 5. **The quotes.** The engine finds each cause again, spaces and line
    breaks aside, in the file at the head of the range or among the lines
    the change removed; a symptom, in its file. Not found: dropped, said
@@ -90,12 +97,12 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
 7. **The judge**, apart, for each important finding, at the best
    independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
    It reads the finding, the code around its cause and symptom, and what
-   the change did to the cause's file. Its question is the lens's (the
+   the change did within 40 lines of the cause (#147). Its question is the lens's (the
    front matter of `lenses/<lens>.md`), else whether the quoted code fails:
    - correctness, edge cases: whether the code quoted fails as the finding says;
    - tests (#223): whether a test exercises the behaviour and would fail
      were it wrong, the judge shown the test files (`tests`) in the cause's
-     folder and those naming its file, whole up to `code-lines-max`, the
+     folder and those naming its file, whole up to `tests-lines-max`, the
      rest named; a no names the test.
    - Two findings on one line are each judged by their own lens's
      question (#229); a refused one is dropped alone, the rest still shown.
@@ -112,6 +119,16 @@ the commits left unrecorded. An
 agent unreachable: `blocked-external`. No agent: the rules alone, the change
 left for a person (`not-reviewed`).
 
+## The budget
+
+- **`ai-max-tokens`**, 200000 a run: once spent, nothing more is asked,
+  said (`ai-max-tokens`); the call that crosses it is paid.
+- **Not whole**: a lens not asked, or a finding not judged
+  (`review-not-whole`), leaves the commits unrecorded, reviewed again
+  next run.
+- **Said**: the summary gives the tokens used against the cap; each
+  call's, by lens and by judged finding, is in `out/review.json`.
+
 ## On a machine
 
 ```sh
@@ -119,9 +136,11 @@ workline review                 # main..HEAD, every lens
 workline review --base develop --lenses correctness --json
 ```
 
-The findings are printed; the run's `out/review.json` (its path printed, or
-`--json`) gives them to the author's agent: each with its place, its cause
-quoted, whether it is the change's, and how it was verified.
+The findings are printed, then the tokens each call used: the lenses',
+each judge's with its finding's place. The run's `out/review.json` (its
+path printed, or `--json`) gives them to the author's agent: each with its
+place, its cause quoted, whether it is the change's, and how it was
+verified; and what each call used (`calls`).
 
 ## On a merge request
 
@@ -153,7 +172,10 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `findings-max` | `10` | findings on the change a run; the rest counted |
 | `issues-max` | `3` | issues opened a run for what lies outside it |
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
-| `code-lines-max` | `1200` | lines of the changed files a lens is given |
+| `code-lines-max` | `600` | lines of the changed files a lens is given whole, the change marked; the others by their hunks |
+| `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
+| `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown, the rest named |
+| `ai-max-tokens` | `200000` | tokens a run may spend, in and out, all calls; the call crossing it is paid; `0`: no cap |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, of findings on one line, a verified one from a blocking lens leading |

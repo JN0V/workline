@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 5f21056
+checked: ce2783e
 verified: agent:claude-code
 ---
 # Configuration
@@ -107,7 +107,7 @@ rules) and `roles/<role>/<facet>` (your own facets).
 Runs are kept in `.git/workline/runs/` (the last
 <!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
 agent call with what it cost in `out/calls.jsonl` (a judge's too, when
-`pre` asked it), the agent's last answer
+`pre` asked it; `for` names the part or the judge's question it answered), the agent's last answer
 as it came in `out/agent-answer.txt`, each refused answer in
 `out/refused-<n>.yaml` (as it came: `out/refused-<n>-answer.txt`), and the
 claims an accepted answer gave, judged and never applied, in

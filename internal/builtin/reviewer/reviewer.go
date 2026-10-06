@@ -50,6 +50,9 @@ type Settings struct {
 	ForgeWrites     bool     `json:"forge-writes"`      // on a merge request: the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`      // ask each lens to look for a number of candidates before it stops
 	Tests           []string `json:"tests"`             // the test files: what a judge reading tests is shown of them
+	TestsLinesMax   int      `json:"tests-lines-max"`   // lines of those tests a judge is shown, all together
+	LensesTogether  bool     `json:"lenses-together"`   // the lenses of a run asked in one call, the change given once
+	AIMaxTokens     int      `json:"ai-max-tokens"`     // what a run may spend, all calls together; the engine stops asking
 }
 
 // Finding is one defect a lens reported, once its quotes were found again.
@@ -85,6 +88,7 @@ type state struct {
 	Mechanical []verdict.Finding `json:"mechanical"`
 	Commits    []string          `json:"commits"`
 	Lenses     []string          `json:"lenses"`
+	Together   bool              `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
 	Record     Record            `json:"record"`
 	Advisories []verdict.Finding `json:"advisories,omitempty"`
 }
@@ -108,7 +112,19 @@ type Review struct {
 	Lenses   []string          `json:"lenses,omitempty"`
 	Complete bool              `json:"complete"` // every lens answered: the commits are recorded as reviewed
 	Record   Record            `json:"record"`
-	Local    bool              `json:"local"` // the record is kept on this machine
+	Local    bool              `json:"local"`           // the record is kept on this machine
+	Calls    []Spent           `json:"calls,omitempty"` // what each call to an agent used
+}
+
+// Spent is what one call of the review used: a lens's (or the lenses',
+// asked together), or a judge's on one finding.
+type Spent struct {
+	For       string `json:"for"`             // the part (1-lenses, 2-edge-cases) or the judge's question (judge/03)
+	Lenses    string `json:"lenses"`          // the lenses it was for
+	Where     string `json:"where,omitempty"` // a judge's: the finding's place
+	Model     string `json:"model,omitempty"`
+	TokensIn  int    `json:"tokens-in"`
+	TokensOut int    `json:"tokens-out"`
 }
 
 // Pre prepares the review, in up to three passes: the rules and the lenses'
@@ -213,6 +229,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
+	st.Together = s.LensesTogether && len(st.Lenses) > 1
 	if err := ask(runDir, repo, s, st, files); err != nil {
 		return fail(err)
 	}
@@ -298,48 +315,76 @@ func lenses(runDir string, s Settings, rec Record) ([]string, error) {
 // ask writes one part a lens: the lens, the commits not reviewed yet, and
 // the files they change.
 func ask(runDir, repo string, s Settings, st state, files []string) error {
-	diff, err := git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, files...)...)
-	if err != nil {
-		return err
-	}
-	diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
 	log, err := git(repo, "log", "--format=- %h %s", st.From+".."+st.Head)
 	if err != nil {
 		return err
 	}
+	// Each file once (#147): whole, the change marked in it, while the
+	// files fit in code-lines-max; the others by the change's hunks. A file
+	// given whole and again in the diff was a third of a lens's call.
 	var code strings.Builder
+	var hunked []string
 	left := s.CodeLinesMax
 	for _, f := range files {
-		text, ok := fileAt(repo, st.Head, f)
-		if !ok || left <= 0 {
+		body, ok := marked(repo, st.From, st.Head, f)
+		n := strings.Count(body, "\n")
+		if !ok || n > left {
+			hunked = append(hunked, f)
 			continue
 		}
-		lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
-		cut := ""
-		if len(lines) > left {
-			lines, cut = lines[:left], "\n(cut here)"
+		left -= n
+		fmt.Fprintf(&code, "### %s\n\n```diff\n%s```\n\n", f, body)
+	}
+	diff := "(none: every file it changes is given whole below)\n"
+	if len(hunked) > 0 {
+		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, hunked...)...); err != nil {
+			return err
 		}
-		left -= len(lines)
-		fmt.Fprintf(&code, "### %s\n\n```\n%s%s\n```\n\n", f, strings.Join(lines, "\n"), cut)
+		diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
+	}
+	if code.Len() == 0 {
+		code.WriteString("(none: each is too long to give whole; its change is above)\n")
 	}
 	floor := ""
 	if s.FinderFloor { // a floor on candidates, never on what is shown; from the size of what is read
 		kb := float64(len(diff)+code.Len()) / 1024
 		n := min(int(math.Floor(math.Sqrt(kb)+1)), 10)
-		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", n)
+		each := ""
+		if st.Together {
+			each = " for each lens"
+		}
+		floor = fmt.Sprintf("\nLook for at least %d candidates%s before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", n, each)
 	}
-	for i, lens := range st.Lenses {
+	material := fmt.Sprintf("## The commits\n\nThey say what the author meant; they prove nothing: check each claim against the code.\n\n%s\n## The change, in the files too long to give whole\n\n```diff\n%s```\n\n## The files it changes, whole, as they read now\n\nThe change is marked in them: `+` a line it added, `-` a line it removed, a space a line it kept. Read them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
+		log, diff, code.String())
+	write := func(name, task string) error {
+		dir := filepath.Join(runDir, "in", "parts", name)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(dir, "task.md"), []byte(task), 0o644)
+	}
+	if st.Together {
+		// One call, the change given once: the lenses' questions differ,
+		// what they read does not (#147).
+		var b strings.Builder
+		fmt.Fprintf(&b, "# Lenses: %s\n\nEach lens below is a question of its own: ask each in turn, of the whole change, and name in each finding the lens that found it: `lens:` one of %s.\n",
+			strings.Join(st.Lenses, ", "), strings.Join(st.Lenses, ", "))
+		for _, lens := range st.Lenses {
+			l, err := readLens(repo, lens)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(&b, "\n## Lens: %s\n\n%s\n", lens, strings.TrimSpace(l.Text))
+		}
+		return write(partName(st, st.Lenses[0]), b.String()+floor+"\n"+material)
+	}
+	for _, lens := range st.Lenses {
 		l, err := readLens(repo, lens)
 		if err != nil {
 			return err
 		}
-		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nThey say what the author meant; they prove nothing: check each claim against the code.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\nRead them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
-			lens, strings.TrimSpace(l.Text), floor, log, diff, code.String())
-		dir := filepath.Join(runDir, "in", "parts", fmt.Sprintf("%d-%s", i+1, lens))
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(filepath.Join(dir, "task.md"), []byte(task), 0o644); err != nil {
+		if err := write(partName(st, lens), fmt.Sprintf("# Lens: %s\n\n%s\n%s\n%s", lens, strings.TrimSpace(l.Text), floor, material)); err != nil {
 			return err
 		}
 	}
@@ -407,31 +452,60 @@ func readLenses(runDir, repo string, s Settings) int {
 	}
 	var c candidates
 	unavailable := 0
-	for _, lens := range st.Lenses {
-		dir := lensDir(runDir, st, lens)
+	var asked [][]string // the lenses of each part: one a part, or all in one
+	if st.Together {
+		asked = append(asked, st.Lenses)
+	} else {
+		for _, lens := range st.Lenses {
+			asked = append(asked, []string{lens})
+		}
+	}
+	for _, ls := range asked {
+		dir := lensDir(runDir, st, ls[0])
+		which := fmt.Sprintf("the %s lens", ls[0])
+		if len(ls) > 1 {
+			which = fmt.Sprintf("the lenses %s, asked together,", strings.Join(ls, ", "))
+		}
+		failed := func(message string) {
+			c.Failed = append(c.Failed, ls...)
+			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn", Message: message})
+		}
 		if why, err := os.ReadFile(filepath.Join(dir, "unanswered")); err == nil {
-			c.Failed = append(c.Failed, lens)
 			if strings.HasPrefix(string(why), "unavailable:") {
-				unavailable++
+				unavailable += len(ls)
 			}
-			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn",
-				Message: fmt.Sprintf("the %s lens got no answer that reads (%s): what it looks for was not reviewed", lens, strings.TrimSpace(string(why)))})
+			failed(fmt.Sprintf("%s got no answer that reads (%s): what it looks for was not reviewed", which, strings.TrimSpace(string(why))))
 			continue
 		}
 		if !exists(filepath.Join(dir, "answer.yaml")) {
-			c.Failed = append(c.Failed, lens)
-			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn",
-				Message: fmt.Sprintf("the %s lens was not asked: what it looks for was not reviewed", lens)})
+			failed(fmt.Sprintf("%s was not asked: what it looks for was not reviewed", which))
 			continue
 		}
 		answers, err := intent.Read(filepath.Join(dir, "answer.yaml"))
 		if err != nil {
-			c.Failed = append(c.Failed, lens)
-			c.Logged = append(c.Logged, verdict.Finding{Rule: "lens-failed", Level: "warn",
-				Message: fmt.Sprintf("the %s lens's answer does not read (%v): what it looks for was not reviewed", lens, err)})
+			failed(fmt.Sprintf("%s: its answer does not read (%v): what it looks for was not reviewed", which, err))
 			continue
 		}
 		for _, a := range answers {
+			lens := ls[0]
+			if len(ls) > 1 {
+				// Asked together, a finding names its lens. One naming none
+				// is read as the first lens's, said: dropping it lost a whole
+				// call's findings (tried.md, #147). One naming a lens not
+				// asked is dropped, said.
+				named, title := lensNamed(a.Value)
+				switch {
+				case named == "":
+					c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-lens-unnamed", Level: "warn",
+						Message: fmt.Sprintf("%q names no lens: read as the %s lens's, and judged by its question", title, ls[0])})
+				case !slices.Contains(ls, named):
+					c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
+						Message: fmt.Sprintf("dropped: %q names the lens %q, not one asked (%s)", title, named, strings.Join(ls, ", "))})
+					continue
+				default:
+					lens = named
+				}
+			}
 			f, why := found(repo, st, lens, a.Value)
 			if why != "" {
 				c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-unfounded", Level: "warn",
@@ -513,7 +587,7 @@ func readLenses(runDir, repo string, s Settings) int {
 		}
 		m := material(repo, st, f)
 		if l.Judge.Reads == "tests" {
-			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.CodeLinesMax)
+			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.TestsLinesMax)
 		}
 		n++
 		key := fmt.Sprintf("%02d", n)
@@ -633,9 +707,68 @@ func material(repo string, st state, f Finding) string {
 		}
 	}
 	if diff, err := git(repo, "diff", "-U3", "--no-color", "--no-ext-diff", st.Base, st.Head, "--", f.Cause.Path); err == nil && diff != "" {
-		fmt.Fprintf(&b, "\n## What the change did to %s\n\n```diff\n%s```\n", f.Cause.Path, capLines(diff, 200, "cut"))
+		near, far := hunksNear(diff, at, nearCause)
+		fmt.Fprintf(&b, "\n## What the change did to %s, near the cause\n\n", f.Cause.Path)
+		if near != "" {
+			fmt.Fprintf(&b, "```diff\n%s```\n", capLines(near, 200, "cut"))
+		} else {
+			fmt.Fprintf(&b, "Nothing within %d lines of it.\n", nearCause)
+		}
+		if far > 0 {
+			fmt.Fprintf(&b, "\n(%d %s further from the cause not shown.)\n", far, plural(far, "hunk", "hunks"))
+		}
 	}
 	return b.String()
+}
+
+// nearCause is how far from a finding's cause, in lines, a hunk of the
+// change is shown to its judge: what the change did there, not the whole
+// file's diff at every call (#147).
+const nearCause = 40
+
+// hunksNear keeps of one file's diff its header and the hunks whose lines,
+// at the head, come within `within` lines of line at; far counts the others.
+func hunksNear(diff string, at, within int) (near string, far int) {
+	var head strings.Builder
+	var hunks []string
+	for _, l := range strings.SplitAfter(diff, "\n") {
+		switch {
+		case strings.HasPrefix(l, "@@"):
+			hunks = append(hunks, l)
+		case len(hunks) == 0:
+			head.WriteString(l)
+		default:
+			hunks[len(hunks)-1] += l
+		}
+	}
+	var kept strings.Builder
+	for _, h := range hunks {
+		from, n := 0, 1 // "@@ -a,b +from,n @@"
+		if _, plus, ok := strings.Cut(h, " +"); ok {
+			r, _, _ := strings.Cut(plus, " ")
+			first, count, has := strings.Cut(r, ",")
+			fmt.Sscan(first, &from)
+			if has {
+				fmt.Sscan(count, &n)
+			}
+		}
+		if at+within < from || at-within > from+max(n, 1)-1 {
+			far++
+			continue
+		}
+		kept.WriteString(h)
+	}
+	if kept.Len() == 0 {
+		return "", far
+	}
+	return head.String() + kept.String(), far
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }
 
 // testsTouching is what a judge reading tests is shown besides: the test
@@ -710,6 +843,7 @@ func settle(runDir, repo string, s Settings) int {
 	if floor == "" {
 		floor = "context"
 	}
+	unjudged := 0 // findings the judge was not asked of, the run's tokens spent
 	verify := func(l []Finding) []Finding {
 		var kept []Finding
 		for _, f := range l {
@@ -728,6 +862,9 @@ func settle(runDir, repo string, s Settings) int {
 				err = yaml.Unmarshal(data, &a)
 			}
 			who := fmt.Sprintf("independence: %s (%s → %s)", a.Level, a.Author, a.Model)
+			if strings.Contains(a.Error, tokensSpent) {
+				unjudged++
+			}
 			switch {
 			case err != nil || a.Yes == nil:
 				why := a.Error
@@ -788,12 +925,20 @@ func settle(runDir, repo string, s Settings) int {
 				Message: fmt.Sprintf("at %s, outside the change, for an issue (none opened: no forge to write to): %s — %s", f.Where, f.Title, f.Why)})
 		}
 	}
+	// A finding left unjudged for want of tokens leaves the review not
+	// whole: its commits are reviewed again, the judge asked then (#147).
+	if unjudged > 0 {
+		v.Complete = false
+		c.Logged = append(c.Logged, verdict.Finding{Rule: "review-not-whole", Level: "warn",
+			Message: fmt.Sprintf("%d %s not judged, the run having spent its ai-max-tokens (%d): the commits are not recorded as reviewed; review again, with fewer commits or a larger ai-max-tokens", unjudged, plural(unjudged, "finding", "findings"), s.AIMaxTokens)})
+	}
 	v.Findings = append(v.Findings, c.Logged...)
 	if v.Complete {
 		v.Record = st.Record.add(st.Commits)
 	}
+	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)
-	v.Summary = summary(v, len(fallback))
+	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + tokensLine(v.Calls, s.AIMaxTokens)
 	if onForge {
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, len(fallback))}})
 	}
@@ -932,7 +1077,7 @@ func fixLine(f Finding) string {
 	return "What would fix it: " + f.Fix
 }
 
-func summary(v Review, issues int) string {
+func summary(v Review, issues, failed, unjudged int) string {
 	if v.Status == verdict.BlockedExternal {
 		return v.Summary
 	}
@@ -942,8 +1087,12 @@ func summary(v Review, issues int) string {
 		parts = append(parts, fmt.Sprintf("%d issues proposed for what lies outside it", issues))
 	}
 	s := strings.Join(parts, ", ") + "; lenses: " + strings.Join(v.Lenses, ", ")
-	if !v.Complete {
+	switch {
+	case v.Complete:
+	case failed > 0:
 		s += "; not every lens answered: not reviewed whole"
+	case unjudged > 0:
+		s += "; not every finding judged, the tokens spent: not reviewed whole"
 	}
 	if v.Status == verdict.Block {
 		s += "; the author fixes what blocks"
@@ -1019,7 +1168,25 @@ func final(runDir string, v Review) int {
 }
 
 func lensDir(runDir string, st state, lens string) string {
-	return filepath.Join(runDir, "in", "parts", fmt.Sprintf("%d-%s", slices.Index(st.Lenses, lens)+1, lens))
+	return filepath.Join(runDir, "in", "parts", partName(st, lens))
+}
+
+// partName is the part a lens is asked in: its own, or, the lenses asked
+// together, the one part holding them all.
+func partName(st state, lens string) string {
+	if st.Together {
+		return "1-lenses"
+	}
+	return fmt.Sprintf("%d-%s", slices.Index(st.Lenses, lens)+1, lens)
+}
+
+// lensNamed is the lens a finding names, written as the lenses are named,
+// and its title, to say which was dropped.
+func lensNamed(v any) (lens, title string) {
+	m, _ := v.(map[string]any)
+	lens, _ = m["lens"].(string)
+	title, _ = m["title"].(string)
+	return strings.ReplaceAll(strings.ToLower(strings.TrimSpace(lens)), " ", "-"), title
 }
 
 // committerSettings are the committer's, as the project sets them: a code
@@ -1040,7 +1207,7 @@ func committerSettings(repo string) (committer.Settings, error) {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 1200, LensesPerPush: 1}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, LensesPerPush: 1}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err

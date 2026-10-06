@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 5f21056
+checked: ce2783e
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -90,7 +90,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `depend` | name the open issues an issue waits on (`blocked-by`): the forge's own relation, or a line in its body; never a cycle, a person's link kept (docs/spec/backlog-acts.md, "What an issue waits on"; ADR-0028) | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
-| `finding` | a lens's answer (role contract, "In parts"): `{severity, title, why, cause: {path, quote}, symptom, fix}`, `severity` `important` or `nit`; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
+| `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 
 A role that needs another intention asks for it to be added here; it does not

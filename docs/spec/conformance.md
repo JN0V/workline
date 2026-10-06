@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: feadc54
+checked: ce2783e
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -264,7 +264,8 @@ kind, and the places its cause may be quoted at (a file, a range of lines
 as they read at the change's head, a `text` within them); the places
 where nothing may be found (`not`); and code outside the change
 (`outside`), measured and not scored. Built on the `shop` fixture, every
-lens asked (event `review`). The run's folder is read with no agent — what
+lens asked, each apart (`lenses-together: false`, set by the harness),
+event `review`. The run's folder is read with no agent — what
 each lens answered, what the engine kept of it, the judge's verdict on
 each important finding, the tokens each lens's call and its judges used —
 and scored: a point for each defect a finding shown on the change has its

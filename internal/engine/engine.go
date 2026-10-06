@@ -810,6 +810,9 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 	call, err := ag.Propose(req)
 	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 	call.Task = task
+	if task == "part" {
+		call.For = filepath.Base(req.RunDir)
+	}
 	res.Calls = append(res.Calls, call)
 	if data, err := json.Marshal(call); err == nil {
 		if f, err := os.OpenFile(filepath.Join(runDir, "out", "calls.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
@@ -2714,6 +2717,7 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 			answer["error"] = "not asked: " + errTokensSpent.Error()
 		default:
 			ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
+			ans.Call.For = "judge/" + filepath.Base(filepath.Dir(file))
 			res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 			res.AgentCalls++
 			if data, err := json.Marshal(ans.Call); err == nil { // kept with the run's calls, what it cost

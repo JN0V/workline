@@ -1,0 +1,11 @@
+case: reviewer/lens-given-each-file-once
+about: "A lens reads each file the change touches once: whole, the change marked in it, while the files fit in code-lines-max; not whole and again as the diff's hunks (#147)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  run-files:
+    in/parts/1-correctness/task.md: {contains: "(none: every file it changes is given whole below)", not-contains: "@@"}

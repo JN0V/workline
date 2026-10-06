@@ -26,6 +26,7 @@ released in v0.9.0.
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
 | Findings on one line each judged by their own lens's question (#229): grouped on one row, each with its verdict; a refused leader dropped alone, the verified one leading and blocking if its lens blocks (tried.md: restock) | `merged-findings-each-judged-by-their-lens`, `merged-finding-lead-refused-other-shown` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
+| A full review within a token budget (#147): the lenses in one call, each file once (whole, the change marked, or by its hunks), a judge shown the change near the cause and 300 lines of tests; `ai-max-tokens` 200000, the summary saying what each call used; once spent, nothing more asked and the commits not recorded. #146's review: 453k tokens in estimated before, 142k after; the real run 96.1k in, 8.6k out, two of the three true findings verified (tried.md) | `lenses-asked-together-in-one-call`, `lenses-together-finding-naming-no-lens-kept`, `lens-given-each-file-once`, `judge-shown-the-change-near-the-cause`, `tests-judge-reads-tests-up-to-a-cap`, `review-says-the-tokens-of-each-call`, `budget-spent-lens-not-asked`, `budget-spent-findings-not-judged` |
 | Its measure: twelve evaluation cases on the `shop` fixture, three defects planted a lens, two clean changes and untested code outside one; scored by lens with no agent, recall, findings nothing planted, the judge's refusals, the finder floor, tokens | tests/evaluation/cases/reviewer, `TestScoreReview`, `TestReviewerWithFakeAgent`, `TestReviewerCasesPointRight` |
 | An issue outside the change opened through the one way every role shares: a subject an issue holds, open or closed, not opened again (ADR-0018) | backlog `issue-*` cases; the sandbox, live (#9) |
 
@@ -64,3 +65,8 @@ Conformance: tests/conformance/cases/reviewer.
 8. **A removal's reach past three lines**: a removed guard whose defect
    shows further down (a slice ten lines on) is still sent outside the
    change; the window is a diff's context, not the code's flow.
+9. **The lenses together, measured** (#147): validated on #146's
+   commits, 104.7k tokens against 430k, two of the three true findings
+   verified, the third refused by the judge for want of material (item
+   7) (tried.md); the lenses together not yet measured against the
+   lenses apart on the evaluation's cases.

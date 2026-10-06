@@ -18,6 +18,7 @@ given:
       GO
       git add shop && git commit -qm 'feat(shipping): free from 50.00'
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {lenses-together: false}}}}
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,edge-cases"}, ai: "fake:review-shipping-untested"}
 expect:
   agent-calls: 4

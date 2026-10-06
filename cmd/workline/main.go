@@ -278,11 +278,28 @@ func reviewCmd(args []string) int {
 		fmt.Println(string(out))
 	} else {
 		report(res)
+		reviewTokens(filepath.Join(res.RunDir, "out", "review.json"))
 		if _, err := os.Stat(filepath.Join(res.RunDir, "out", "review.json")); err == nil {
 			fmt.Fprintf(os.Stderr, "For the author's agent: %s\n", filepath.Join(res.RunDir, "out", "review.json"))
 		}
 	}
 	return exitFor(res.Status)
+}
+
+// reviewTokens prints what each call of a review used: the lenses' and
+// each judge's, the total being in the summary (#147).
+func reviewTokens(file string) {
+	var v struct{ Calls []reviewer.Spent }
+	if data, err := os.ReadFile(file); err != nil || json.Unmarshal(data, &v) != nil {
+		return
+	}
+	for _, c := range v.Calls {
+		of := c.Lenses
+		if c.Where != "" {
+			of += ", " + c.Where
+		}
+		fmt.Fprintf(os.Stderr, "  tokens, %s (%s): %d in, %d out\n", c.For, of, c.TokensIn, c.TokensOut)
+	}
 }
 
 // resolveRoles returns the given folder, or the built-in roles extracted to the cache.
