@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -48,6 +49,7 @@ type Settings struct {
 	JudgeAtLeast    string   `json:"judge-at-least"`    // the independence a verification needs: context, model, provider
 	ForgeWrites     bool     `json:"forge-writes"`      // on a merge request: the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`      // ask each lens to look for a number of candidates before it stops
+	Tests           []string `json:"tests"`             // the test files: what a judge reading tests is shown of them
 }
 
 // Finding is one defect a lens reported, once its quotes were found again.
@@ -327,12 +329,12 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", n)
 	}
 	for i, lens := range st.Lenses {
-		text, err := lensText(repo, lens)
+		l, err := readLens(repo, lens)
 		if err != nil {
 			return err
 		}
 		task := fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The commits\n\nThey say what the author meant; they prove nothing: check each claim against the code.\n\n%s\n## The change\n\n```diff\n%s```\n\n## The files it changes, as they read now\n\nRead them whole: a defect anywhere in them is reported, the change's or not.\n\n%s",
-			lens, strings.TrimSpace(text), floor, log, diff, code.String())
+			lens, strings.TrimSpace(l.Text), floor, log, diff, code.String())
 		dir := filepath.Join(runDir, "in", "parts", fmt.Sprintf("%d-%s", i+1, lens))
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
@@ -353,6 +355,45 @@ func lensText(repo, lens string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("lens %q: no lenses/%s.md in the role", lens, lens)
+}
+
+// judgeQuestion is what the judge of an important finding is asked when its
+// lens names no question of its own: whether the code fails.
+const judgeQuestion = "Is this finding about the code true: does the code quoted, as it reads, fail the way the finding says? Answer no if it is not a defect, if the code shown handles it, or if the finding only guesses."
+
+// Lens is a lens's file: what it asks, and, in its front matter, what the
+// judge of its important findings is asked and shown besides the finding,
+// the code around it and the change (#223).
+type Lens struct {
+	Text  string `yaml:"-"`
+	Judge struct {
+		Question string `yaml:"question"` // empty: judgeQuestion
+		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file
+	} `yaml:"judge"`
+}
+
+// readLens reads a lens's file, its front matter apart from its text.
+func readLens(repo, name string) (Lens, error) {
+	var l Lens
+	text, err := lensText(repo, name)
+	if err != nil {
+		return l, err
+	}
+	l.Text = text
+	if rest, ok := strings.CutPrefix(text, "---\n"); ok {
+		head, body, closed := strings.Cut(rest, "\n---\n")
+		if !closed {
+			return l, fmt.Errorf("lens %q: its front matter is not closed by a line `---`", name)
+		}
+		if err := yaml.Unmarshal([]byte(head), &l); err != nil {
+			return l, fmt.Errorf("lens %q: its front matter: %w", name, err)
+		}
+		l.Text = body
+	}
+	if r := l.Judge.Reads; r != "" && r != "tests" {
+		return l, fmt.Errorf("lens %q: judge.reads %q: only `tests` is known", name, r)
+	}
+	return l, nil
 }
 
 // readLenses reads what each lens answered, finds each finding's quotes
@@ -453,17 +494,33 @@ func readLenses(runDir, repo string, s Settings) int {
 			Message: fmt.Sprintf("%d more findings outside the change were not checked nor opened (issues-max %d)", n, s.IssuesMax)})
 	}
 	c.Outside = outside
+	read := map[string]Lens{}
 	for i, f := range append(slices.Clone(c.Related), c.Outside...) {
 		if f.Severity != "important" {
 			continue
+		}
+		l, ok := read[f.Lens]
+		if !ok {
+			var err error
+			if l, err = readLens(repo, f.Lens); err != nil {
+				return fail(err)
+			}
+			read[f.Lens] = l
+		}
+		question := l.Judge.Question
+		if question == "" {
+			question = judgeQuestion
+		}
+		m := material(repo, st, f)
+		if l.Judge.Reads == "tests" {
+			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.CodeLinesMax)
 		}
 		key := fmt.Sprintf("%02d", i+1)
 		dir := filepath.Join(runDir, "in", "judge", key)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fail(err)
 		}
-		q := map[string]string{"question": "Is this finding about the code true: does the code quoted, as it reads, fail the way the finding says? Answer no if it is not a defect, if the code shown handles it, or if the finding only guesses.",
-			"material": material(repo, st, f)}
+		q := map[string]string{"question": strings.Join(strings.Fields(question), " "), "material": m}
 		data, _ := json.Marshal(q) // JSON, which YAML reads: code quoted may start a line with a tab
 		if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
 			return fail(err)
@@ -575,6 +632,57 @@ func material(repo string, st state, f Finding) string {
 	}
 	if diff, err := git(repo, "diff", "-U3", "--no-color", "--no-ext-diff", st.Base, st.Head, "--", f.Cause.Path); err == nil && diff != "" {
 		fmt.Fprintf(&b, "\n## What the change did to %s\n\n```diff\n%s```\n", f.Cause.Path, capLines(diff, 200, "cut"))
+	}
+	return b.String()
+}
+
+// testsTouching is what a judge reading tests is shown besides: the test
+// files at the head (the `tests` setting) that touch the cause's file — in
+// its folder, or naming it as a word — whole, its folder's first, up to limit
+// lines all together; those left out are named.
+func testsTouching(repo, head, file string, patterns []string, limit int) string {
+	var b strings.Builder
+	dir, stem := path.Dir(file), strings.TrimSuffix(path.Base(file), path.Ext(file))
+	fmt.Fprintf(&b, "\n## The tests that touch %s\n\nThe test files in %s/ and those naming `%s`, as they read at %s.\n", file, dir, stem, short(head))
+	if len(patterns) == 0 {
+		b.WriteString("\nNone shown: no `tests` setting says which files are tests.\n")
+		return b.String()
+	}
+	var near, far []string
+	if out, err := git(repo, "ls-tree", "-r", "--name-only", head, "--", dir+"/"); err == nil {
+		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
+			if f != "" && path.Dir(f) == dir && pathglob.Any(patterns, f) {
+				near = append(near, f)
+			}
+		}
+	}
+	if out, err := git(repo, "grep", "-l", "-w", "-F", "-e", stem, head, "--"); err == nil { // none: git grep fails
+		for _, f := range strings.Split(strings.TrimSpace(out), "\n") {
+			f = strings.TrimPrefix(f, head+":")
+			if f != "" && path.Dir(f) != dir && pathglob.Any(patterns, f) {
+				far = append(far, f)
+			}
+		}
+	}
+	files := append(near, far...)
+	if len(files) == 0 {
+		b.WriteString("\nNo test file touches it.\n")
+		return b.String()
+	}
+	left := limit
+	var cut []string
+	for _, f := range files {
+		text, ok := fileAt(repo, head, f)
+		lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+		if !ok || len(lines) > left {
+			cut = append(cut, f)
+			continue
+		}
+		left -= len(lines)
+		fmt.Fprintf(&b, "\n### %s\n\n```\n%s\n```\n", f, strings.Join(lines, "\n"))
+	}
+	if len(cut) > 0 {
+		fmt.Fprintf(&b, "\nNot shown, past %d lines: %s. A test in them may exercise it.\n", limit, strings.Join(cut, ", "))
 	}
 	return b.String()
 }
