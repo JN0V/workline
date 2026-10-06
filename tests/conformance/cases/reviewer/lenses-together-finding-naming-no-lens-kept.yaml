@@ -1,0 +1,13 @@
+case: reviewer/lenses-together-finding-naming-no-lens-kept
+about: "Of lenses asked in one call, a finding naming no lens is read as the first lens's and judged by its question, said; never dropped with the call's other findings (#147)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-lens-unnamed"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+    - {rule: finding-lens-unnamed, message: "names no lens: read as the correctness lens's"}
