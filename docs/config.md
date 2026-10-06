@@ -45,6 +45,9 @@ roles:
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
       sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
+  reviewer:
+    settings:
+      ai-findings: {correctness: block}   # a verified important finding blocks for these lenses; the others warn (one value, warn or block, sets every lens)
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge]}
   handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over

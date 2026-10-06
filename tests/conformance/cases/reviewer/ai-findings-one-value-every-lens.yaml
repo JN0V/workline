@@ -1,0 +1,11 @@
+case: reviewer/ai-findings-one-value-every-lens
+about: "ai-findings as one value still applies to every lens: block, and a verified important edge-cases finding fails the run (#222)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: edge-cases}, ai: "fake:review-related", reports: true}
+expect:
+  status: block
+  sarif: [{rule: reviewer/edge-cases, uri: calc/calc.go, line: 11, level: error}]

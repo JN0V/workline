@@ -1,0 +1,12 @@
+case: reviewer/ai-findings-by-lens-blocks
+about: "ai-findings set by lens: a verified important finding of a lens set to block fails the run, the finding shown (#222)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block, edge-cases: warn, tests: warn}}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related", reports: true}
+expect:
+  status: block
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}]
+  sarif: [{rule: reviewer/correctness, uri: calc/calc.go, line: 11, level: error}]

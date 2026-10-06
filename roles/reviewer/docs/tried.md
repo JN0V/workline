@@ -237,3 +237,26 @@ Read by hand, finding by finding (the test's log):
 One run a case: a model answers differently from one run to the next
 (ADR-0014 reads a measure over five). Not tried: another model, another
 independence level, a forge (issues counted, not opened).
+
+## 2026-10-06 — `ai-findings` by lens, a planted answer (#222)
+
+No agent: a scratch copy of the `reviewed` fixture, Average dividing by
+one less than the count, the lens answer planted (`--ai
+fake:review-related`, the same finding whatever the lens), the judge
+planted yes, a fake forge with merge request 5;
+`ai-findings: {correctness: block, edge-cases: warn, tests: warn}`.
+
+- **Correctness**, `--input lenses=correctness` on the merge request:
+  `block`, exit 1, the finding at calc/calc.go:11 an `error` in SARIF.
+  Nothing applied, as for any block: no summary comment on the merge
+  request, the finding only in the job's verdict and SARIF.
+- **Edge cases**, the same finding: `pass`, a `warning` in SARIF, the
+  summary comment posted with it.
+- **Both lenses on one line**, `lenses: [edge-cases, correctness]`,
+  `review` event: `block`, the correctness finding leading, "also found on
+  this line — edge-cases". The try found the second finding's mention lost
+  whenever the first was replaced (nit then important too): **fixed**.
+
+Not tried: a real agent; GitHub or GitLab (the fake forge only);
+workline's own line switched to block — the maintainer's, after a measure
+over five runs a case (ADR-0014).

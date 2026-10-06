@@ -1,0 +1,12 @@
+case: reviewer/ai-findings-blocking-lens-leads-merge
+about: "Two important findings on one line are merged: the one from a lens set to block leads, whatever the lenses' order, so the merge never hides a finding that blocks (#222)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {lenses: [edge-cases, correctness], ai-findings: {correctness: block}}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: all}, ai: "fake:review-related", reports: true}
+expect:
+  status: block
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "also found on this line — edge-cases: Average divides"}]
+  sarif: [{rule: reviewer/correctness, uri: calc/calc.go, line: 11, level: error}]
