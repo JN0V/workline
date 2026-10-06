@@ -1,0 +1,7 @@
+case: cli/item-id-with-trailing-letters
+about: On a forge, 12abc is no item id, never read as 12.
+given: {repo: basic}
+run: {cli: [item, ready, 12abc, --forge, local]}
+expect:
+  exit: 64
+  stderr: ["12abc"]

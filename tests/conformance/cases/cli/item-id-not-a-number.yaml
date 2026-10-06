@@ -1,0 +1,7 @@
+case: cli/item-id-not-a-number
+about: On a forge, an item id that is not a number is misuse, 64, never read as item 0.
+given: {repo: basic}
+run: {cli: [item, ready, abc, --forge, local]}
+expect:
+  exit: 64
+  stderr: ["abc"]

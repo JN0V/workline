@@ -1,0 +1,7 @@
+case: cli/command-help-without-event
+about: workline route --help prints the command's usage and options without an event, and exits 0.
+given: {repo: basic}
+run: {cli: [route, --help]}
+expect:
+  exit: 0
+  stdout: ["usage: workline route <event>", "--ai <agent>", "--no-apply", "--summary <file>"]
