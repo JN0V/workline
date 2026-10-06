@@ -1,0 +1,24 @@
+case: product-owner/sample-says-a-closing-reopened
+about: An act drawn that a person undid since — a closing whose issue is open again — is said undone in the weekly sample, with what shows it; with fewer than ten acts done alone at the level, no level is suggested, and the sample says why.
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {id: 20, title: "Rows lost on Windows", body: "Not the same bug.", labels: []}
+      - id: 5
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\nclosed:\n  - {issue: 20, act: close-duplicate, level: normal}\nmeasure: {level: normal}\ndid:\n  - {issue: 20, act: close-duplicate, level: normal, day: \"2026-01-14\", line: 'Closed #20 as a duplicate of #7'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {sample: [--week, 2026-W03, --judge, none], then: apply}
+expect:
+  status: pass
+  findings:
+    - {rule: acts-sample, message: "1 act done alone by the product owner"}
+  no-findings:
+    - {rule: acts-suggest}
+  forge:
+    issues:
+      - {id: 22, title: "workline: the weekly sample of the product owner's acts", comment-contains: "| #20 | close-duplicate | 2026-01-14 | normal | **undone**: #20 reopened |"}
+      - {id: 22, comment-contains: "Closed #20 as a duplicate of #7"}
+      - {id: 22, comment-contains: "Too few acts done alone at normal to suggest a level: 1, at least 10."}

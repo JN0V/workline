@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-05)
+# Product owner — where it stands (2026-10-06)
 
 **In one line:** it keeps a backlog on GitHub, and on GitLab as on GitHub
 (its members told from outsiders, a bot's token), for real — reads it a share a
@@ -16,7 +16,8 @@ accept — and renames a vague title, orders the backlog
 moves what slipped, opens its report with what is next and what is
 stuck, flags the issues built on a need a person rewrote — its parts
 read again, every act on them proposed, a ready one moved back to
-refine only on a person's tick —, and keeps the one way every role opens an issue —
+refine only on a person's tick —, has a share of what it did alone drawn
+each week for a person to judge, with the level it suggests, and keeps the one way every role opens an issue —
 nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
 ordering included, the reviewer not enabled: its roadmap imported, 56
 issues), refining tried live there and on JN0V/workline-sandbox, ordering
@@ -57,6 +58,8 @@ on the sandbox (tried.md).
 
 | A changed need (ADR-0032): a person's rewrite of an issue's Need or Scope found with no agent against what its state kept; its parts read again first with the text as it was and as it is, every act on them proposed (`need-changed`); `unready`, back to refine, always proposed, done on a person's tick; the issues waiting on it — and, its Scope changed, those on the same code — listed; the report's "Changed needs", a box to tick once checked; the same change flagged once | JN0V/workline-sandbox on GitHub (#10's Need rewritten: #12, #13 read again, a planted answer; #13 moved back to refine by a tick), live, no agent called; an imported file's lines changed, the tick on a change, an edit outside the sections in conformance (`changed-*`, `unchanged-need-flags-nothing`, `unready-ticked-moves-back`) |
 
+| The weekly sample of its acts (ADR-0033): each act done alone kept in the record with its day and level (`did`), a tick's and a slip's left out; `workline sample --apply` drawing one in ten of a week's onto their own tracking issue, each with its issue, kind, day, level and whether a person undid it; the level the acts undone suggest — none at `normal` suggests `enterprising`, more than one in ten the level below —, the setting untouched | JN0V/workline-sandbox on GitHub (three acts planted on #33, #35; #35's rename undone by hand; tracking issue #37, #33's order drawn, a rerun editing the comment in place), live, no agent called; conformance `acts-*`, `sample-*` (product-owner) |
+
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried
 live. GitLab: refining, ordering, a split and a rename tried live on its
@@ -73,21 +76,26 @@ checked.
    (ADR-0023); the gardening template on GitLab run with a release
    holding this.
 2. **Obsolete, what is left** (ADR-0024): a real delay of days waited
-   for; the label taken off, an exempt label, a judge's no tried live; the
-   weekly sample over these closings; 7 days and 3 a run measured.
+   for; the label taken off, an exempt label, a judge's no tried live; 7
+   days and 3 a run measured. (The weekly sample draws these closings
+   with the other acts: ADR-0033.)
 3. **The person's hand, what is left** (ADR-0025): a tick by an
    outsider or a bot tried live (one account on each sandbox); a
    proposal of a real agent's run ticked, not one planted; the pause
    reached by three real runs; a tick on a plugged forge.
-4. **Autonomy, what is left** (ADR-0026): the weekly sample over its
-   acts recording the level, and its suggestions from it (only the
-   report's, from the proposals settled at cautious, is built); a
-   suggestion for enterprising from its acts undone; a rename by a real
+4. **Autonomy, what is left** (ADR-0026): the sample's suggestion
+   written in the role's own report too, beside the one from the proposals
+   settled at cautious; a rename by a real
    agent undone, `ready` taken off and a split's child closed live;
    `workline init`'s question on a terminal; an undone split on GitLab,
    which keeps no reason for a closing.
-5. **The weekly sample over its acts**; a file the agent was not shown
-   named as a source. The one way to open issues is built (ADR-0018,
+5. **The weekly sample of its acts, what is left** (ADR-0033): a real
+   week's acts drawn and read by the maintainer — the sandbox's were
+   planted, a closing undone and a suggestion not yet seen live; ten or more
+   acts in the window, live; a GitLab project's; workline's own (its
+   record has no `did` until its next nightly run with this); a person's
+   tick in the sample read as a verdict, if undoing proves too coarse. A
+   file the agent was not shown named as a source. The one way to open issues is built (ADR-0018,
    amended); left: its import's plan does not yet see a closed issue
    (the engine leaves it closed, said, and the import's map names it).
    **The import's map, what is left** (ADR-0030): a real agent's import

@@ -67,5 +67,5 @@ what is obsolete itself, with 14 days' notice.
 - The record keeps the level with each act; the report suggests another
   level from what it measures — at `cautious`, more than 80% of the
   proposals settled ticked as proposed suggests `normal` — and never
-  changes the setting. The weekly sample over these acts is still to
-  build.
+  changes the setting. The weekly sample over these acts, and its
+  suggestion from the acts undone, are ADR-0033.

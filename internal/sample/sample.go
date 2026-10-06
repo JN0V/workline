@@ -58,6 +58,7 @@ type Result struct {
 	Window     string            `json:"window"` // the window, in words
 	Vouched    int               `json:"vouched"`
 	Reads      []Read            `json:"reads"`
+	Acts       *ActsRead         `json:"acts,omitempty"` // the product owner's acts drawn, written with --apply (ADR-0033)
 }
 
 // Read is one doc of the sample, and what its reading found.
@@ -339,15 +340,35 @@ func verifiedByAgent(content string) bool {
 // for the same week: each is ranked by a digest of the week, the doc and the
 // commit, and the first are taken.
 func Pick(week string, cands []candidate) []candidate {
-	n := (len(cands) + OneIn - 1) / OneIn
-	rank := func(c candidate) string {
-		h := sha256.Sum256([]byte(week + "\x00" + c.doc + "\x00" + c.commit))
+	keys := make([]string, len(cands))
+	for i, c := range cands {
+		keys[i] = c.doc + "\x00" + c.commit
+	}
+	var picked []candidate
+	for _, i := range pick(week, keys) {
+		picked = append(picked, cands[i])
+	}
+	sort.Slice(picked, func(i, j int) bool { return picked[i].doc < picked[j].doc })
+	return picked
+}
+
+// pick draws one in OneIn of the keys, rounded up, ranked by a digest of the
+// week and each key: the places of those drawn, in the keys' order.
+func pick(week string, keys []string) []int {
+	n := (len(keys) + OneIn - 1) / OneIn
+	rank := func(i int) string {
+		h := sha256.Sum256([]byte(week + "\x00" + keys[i]))
 		return hex.EncodeToString(h[:])
 	}
-	sorted := append([]candidate(nil), cands...)
-	sort.Slice(sorted, func(i, j int) bool { return rank(sorted[i]) < rank(sorted[j]) })
-	picked := sorted[:n]
-	sort.Slice(picked, func(i, j int) bool { return picked[i].doc < picked[j].doc })
+	order := make([]int, len(keys))
+	for i := range order {
+		order[i] = i
+	}
+	// Equal keys rank equal: the first in the keys' order first, so a
+	// rerun draws the same.
+	sort.SliceStable(order, func(a, b int) bool { return rank(order[a]) < rank(order[b]) })
+	picked := order[:n]
+	sort.Ints(picked)
 	return picked
 }
 

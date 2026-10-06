@@ -73,7 +73,8 @@ a merge request of its own (untried this way).
 
 **Weekly sample** — `workline sample --out sample.json` (agent, writes
 nothing; `--week 2026-W40`), then `workline sample --apply sample.json
---forge gitlab` (token, no agent).
+--forge gitlab` (token, no agent), which also draws the product
+owner's acts of the week from its report (ADR-0033).
 
 **Import** — `workline issues import <file> --apply` has the agent and the
 write token in one process: run it by hand, not in a shared pipeline.
@@ -141,5 +142,6 @@ templates keep a job's status and still apply what passed
   committed to its branch (`Workline-Role: documentalist`); gardening's
   merge requests on `workline/<role>/<task>`; a release's fix on
   `workline/<role>/release`; issues (the product owner's report, "Backlog —
-  product owner"; the sample's tracking issue; a reviewer's finding outside
+  product owner"; the sample's tracking issues, the docs' and the product
+  owner's acts'; a reviewer's finding outside
   the change, `needs-triage`) and labels.

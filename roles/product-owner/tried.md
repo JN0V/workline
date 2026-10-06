@@ -671,3 +671,30 @@ fake:`).
   flagged — the same change flags once.
 - Not tried: a real agent reading the parts against the change; an
   imported file's lines changed, live (conformance only); GitLab.
+
+## 2026-10-06 — the weekly sample of its acts, live on GitHub, no agent
+
+The weekly sample drawing the role's acts (ADR-0033), the engine built
+from the branch, on a clone of JN0V/workline-sandbox, `--forge github`.
+No agent called: the answer planted (`--ai fake:`), or none (`--ai none`).
+
+- **Run 1**, a person's comment on #33 and #35 to have them read again,
+  then a planted answer: #33's priority set to 3, #35's to 4, #35 renamed
+  "Warn when an imported file is empty". The record's `did` kept the
+  three, each with its day (2026-10-06), level (`normal`) and line.
+  **Fixed**: the first build named the day `on`, which YAML 1.1 reads as
+  a boolean — written quoted (`"on":`); it is `day` now (the sandbox's
+  record edited to match).
+- **#35 renamed back by hand. Run 2**, `--ai none`: the undo found,
+  `rename` back to propose, the record's `undone` saying so.
+- **`workline sample --week 2026-W41 --judge none`**, then `--apply
+  --forge github`: the docs' tracking issue #36 ("no doc vouched for"),
+  and #37, "workline: the weekly sample of the product owner's acts": 3
+  acts done alone that week, 1 drawn — #33's order, standing, with its
+  line —; "3 acts done alone at normal …, 1 undone … Too few acts … to
+  suggest a level: 3, at least 10." A second `--apply` edited the
+  comment in place (one comment on each issue).
+- Not tried: an undone act drawn, live (#35's rename was not the one
+  drawn; conformance shows it, and a closing reopened); a suggestion,
+  live (three acts, not ten); a real agent's week; GitLab; workline's own
+  report (#110), whose record has no `did` until its next nightly run.

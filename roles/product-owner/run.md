@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 92b2518
+checked: d4d818d
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -53,7 +53,10 @@ The contract of its acts is
    report issue lists what was done and proposed. A closing undone, the
    issue reopened, puts that kind back to `propose` (`wrong-closing`).
    The report says each moved issue's priority and milestone before the
-   run, to put the order back.
+   run, to put the order back. Each act done alone — not a person's tick,
+   nor a slip the engine moved — is kept in the record (`did`) with its
+   day and level for 35 days: the weekly sample draws a week's for a
+   person (ADR-0033).
 
 ## Obsolete, waiting, slipped
 

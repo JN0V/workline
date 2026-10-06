@@ -1,0 +1,28 @@
+case: product-owner/sample-draws-one-in-ten-of-the-week
+about: The weekly sample, written with --apply, draws one in ten of the acts the product owner did alone that week — not another week's — from the record on its report, and writes them on a tracking issue of their own, one comment for the week, each act with its kind, issue, day, level and whether it stands; with enough acts done alone at normal and none undone, it suggests enterprising, never changing the setting.
+given:
+  repo: vouched
+  forge:
+    issues:
+      - id: 5
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\nmeasure: {level: normal}\ndid:\n  - {issue: 20, act: rename, level: normal, day: \"2026-01-12\", line: 'Did rename on #20'}\n  - {issue: 21, act: order, level: normal, day: \"2026-01-13\", line: 'Did order on #21'}\n  - {issue: 22, act: close-duplicate, level: normal, day: \"2026-01-14\", line: 'Did close-duplicate on #22'}\n  - {issue: 23, act: ready, level: normal, day: \"2026-01-15\", line: 'Did ready on #23'}\n  - {issue: 24, act: split, level: normal, day: \"2026-01-16\", line: 'Did split on #24'}\n  - {issue: 25, act: milestone, level: normal, day: \"2026-01-17\", line: 'Did milestone on #25'}\n  - {issue: 26, act: rename, level: normal, day: \"2026-01-18\", line: 'Did rename on #26'}\n  - {issue: 27, act: order, level: normal, day: \"2026-01-12\", line: 'Did order on #27'}\n  - {issue: 28, act: close-duplicate, level: normal, day: \"2026-01-13\", line: 'Did close-duplicate on #28'}\n  - {issue: 29, act: ready, level: normal, day: \"2026-01-14\", line: 'Did ready on #29'}\n  - {issue: 30, act: split, level: normal, day: \"2026-01-15\", line: 'Did split on #30'}\n  - {issue: 31, act: milestone, level: normal, day: \"2026-01-16\", line: 'Did milestone on #31'}\n  - {issue: 40, act: rename, level: normal, day: \"2026-01-06\", line: 'Did rename on #40'}\n  - {issue: 41, act: rename, level: normal, day: \"2026-01-07\", line: 'Did rename on #41'}\n  - {issue: 42, act: rename, level: normal, day: \"2026-01-08\", line: 'Did rename on #42'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {sample: [--week, 2026-W03, --judge, none], then: apply}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: acts-sample, message: "12 acts done alone by the product owner"}
+    - {rule: acts-suggest, message: "autonomy: enterprising"}
+  forge:
+    issues:
+      - {id: 5, comments: 1}
+      - {id: 6, title: "workline: the weekly sample of the docs vouched for", comments: 1}
+      - {id: 7, title: "workline: the weekly sample of the product owner's acts", comments: 1, comment-contains: "### 2026-W03"}
+      - {id: 7, comment-contains: "12 acts done alone by the product owner from 2026-01-12 to 2026-01-18; 2 drawn, one in ten"}
+      - {id: 7, comment-contains: "| #27 | order | 2026-01-12 | normal | standing |\n| #29 | ready | 2026-01-14 | normal | standing |"}
+      - {id: 7, comment-contains: "- #27: Did order on #27\n- #29: Did ready on #29"}
+      - {id: 7, comment-lacks: "#40"}
+      - {id: 7, comment-contains: "**Suggested**: `autonomy: enterprising` — none of the 15 acts done alone at normal was undone"}
