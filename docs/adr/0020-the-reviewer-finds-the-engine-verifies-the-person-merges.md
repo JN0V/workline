@@ -54,6 +54,8 @@ before the push; and on the merge request, a safety net.
    on candidates only, never on what is shown; its worth measured by #90);
    finding nothing is not a failure, and nothing requires a finding to be
    shown.
+   *(Amended 2026-10-06: on a machine the lenses share one call, the
+   change given once; see Amendment, #147.)*
 3. **The engine checks the quotes.** A finding whose cause, or symptom, it
    does not find again — in the file at the head of the range, or among the
    lines the change removed — is dropped and said (`finding-unfounded`),
@@ -211,3 +213,30 @@ merge-request line; on in workline's own repository.
   says, the engine does not check: the split this ADR made mechanical);
   the whole function around a removal (a long function sends every
   defect in it to the author).
+
+## Amendment (2026-10-06, #147)
+
+- **A full review's cost, measured** (roles/reviewer/docs/tried.md):
+  #146's eight commits, every lens, 430k tokens in. Its prompts replayed
+  with no agent: the lenses 64%, each sent the same change and files; two
+  tests judges 29%, 68k characters of tests each.
+- **The lenses together** (`lenses-together`): one call for the lenses of
+  a run, the change given once, each finding naming its lens and still
+  judged by its lens's question. "Lenses run apart" gives way on a
+  machine; the setting turns it back, and a merge request asks one lens a
+  push anyway.
+- **Each file once**: whole, the change marked in it, while the files fit
+  `code-lines-max` (600); the others by the change's hunks.
+- **The judge's material**: the change within 40 lines of the cause; a
+  tests judge 300 lines of tests (`tests-lines-max`), the rest named.
+- **A budget**: `ai-max-tokens`, 200000 a run. Once spent, nothing more is
+  asked, said; a lens not asked or a finding not judged leaves the commits
+  unrecorded. The summary says the tokens used against it, each call's in
+  `out/review.json`.
+- **The result**: 453k tokens in, estimated, down to 142k for the same
+  review.
+- **Rejected**: one judge call for several findings (a judge answers one
+  question, [ADR-0005](0005-independence-takes-the-best-level-available.md));
+  estimating a call before making it (the cap is checked against what was
+  spent, docs/spec/role-contract.md); characters / 4 as the estimate (1.2
+  characters a token on this code).

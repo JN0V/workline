@@ -344,3 +344,57 @@ judging (`model`), the engine of the branch; results.tsv holds the row.
   own question (judge-no 1, credited to the tests defect it overlaps).
 - **Not tried**: five runs (ADR-0014); a run where two important
   findings of two lenses share a line (conformance only).
+
+## 2026-10-06 — a full review's cost, measured offline, then cut (#147)
+
+The 430k run of 2026-10-05: #146's eight commits (`ab5a206..5be9afd`),
+every lens, Sonnet finding, Opus judging. Its run folder was kept: four
+lens calls of 96.6k tokens in each (one asked again), six judges of 5.3k
+to 8.9k.
+
+- **The measure, no tokens**: a scratch clone at `5be9afd`, `workline
+  review --base ab5a206 --ai cmd:<a recording agent>`. The agent keeps
+  each prompt, answers each lens with what that lens answered in the 430k
+  run, and each judge yes: the same findings, the same judge questions.
+- **Tokens from characters**: the ten real calls give tokens ≈ 711 +
+  0.82 × characters, about 1.2 characters a token on this code and diff,
+  not 4. The role's `context.budget` (characters / 4) let a 96.6k call
+  through as 29k.
+
+| Call | Before (main) | After |
+|---|---|---|
+| lenses | 3 calls × 117k chars, 96.5k tokens each: diff 65.0k chars, files 48.2k, lens text 0.5k, facets 2.7k | 1 call, 87.1k chars, 72.0k tokens: hunks 55.5k (files too long to give whole), files whole with the change marked 26.9k, three lens texts 1.4k |
+| judges, correctness and edge cases | 5 calls, 33.7k tokens: finding 0.7-0.9k chars, code around 1.0-2.9k, the cause file's whole diff 1.3-6.5k | 5 calls, 26.5k: the hunks within 40 lines of the cause, 1.0-3.1k |
+| judges, tests | 2 calls, 129.6k: 68.1k chars of tests each, up to `code-lines-max` | 2 calls, 43.4k: tests up to `tests-lines-max` (300), 18.8k chars |
+| **total in** | **452.8k** (the engine of today; 430k in the run, an older engine) | **142.0k** |
+
+- **Cut**: the lenses asked in one call, the change given once
+  (`lenses-together`); each file once, whole with the change marked while
+  the files fit `code-lines-max` (now 600 lines), else by its hunks; a
+  judge shown the change near the cause; a tests judge shown 300 lines of
+  tests, the rest named.
+- **The budget**: `ai-max-tokens` set for the reviewer, 200000. The
+  summary says the tokens used against it; each call's, by lens and by
+  judged finding, in `out/review.json` and printed by `workline review`.
+
+**The validation run**, one, the engine of this branch, `ai-max-tokens:
+175000` (the cap plus the largest judge call stays under 200k), Sonnet:
+
+- **The lenses' call**: 73.6k tokens in (72.0k estimated), 4.8k out,
+  40 seconds. Seven findings, none kept: the agent wrote each lens in
+  its `why` ("lens: edge-cases. …"), not as a key, the answer's shape
+  having no `lens`; the engine dropped them all, said. No judge was asked.
+  **Fixed**: the shape names `lens`; a finding naming none is read as the
+  first lens's, said (`lenses-together-finding-naming-no-lens-kept`).
+- **Against the three true findings** of the 430k run, by the answer as
+  written: a later comment cancelling an agreement (backlog.go) raised;
+  the Forgejo comments never flagging bots raised; the Forgejo lookup
+  failing silently (`|| echo none`) not raised. Also raised: the local
+  forge's notes with no author, so no reply there ever agrees (important,
+  not judged); four nits.
+- **Spent**: 78.4k of the 200k allowed. A second run with the fix was not
+  made: one run was allowed.
+
+Not tried: the judges on this branch with a real agent; the run with the
+fix; five runs (ADR-0014); the evaluation's cases with the lenses
+together (it asks them apart, as it measured them).
