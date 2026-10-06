@@ -137,7 +137,7 @@ d890be5, five runs on Sonnet over the held-out set: nothing false
 vouched for, nothing true removed, every count off reported, the right
 fixes made, +5.7% tokens a judged doc on the first night. Steps 0 to 2
 are accepted; the weekly sample starts with the release
-(roles/documentalist/tried.md, 2026-10-02).
+(roles/documentalist/docs/tried.md, 2026-10-02).
 
 ## Amendment (2026-10-01)
 

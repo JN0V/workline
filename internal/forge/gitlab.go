@@ -19,7 +19,7 @@ import (
 
 // gitlab talks to GitLab's REST API itself, with nothing to install: on
 // gitlab.com or an instance of one's own, in CI or on a machine. Tried on
-// gitlab.com (roles/documentalist/tried.md).
+// gitlab.com (roles/documentalist/docs/tried.md).
 type gitlab struct {
 	repo                  string
 	base, project, header string // the API's root, the project's id, how the token goes

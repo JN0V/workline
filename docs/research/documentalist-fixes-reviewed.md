@@ -2,7 +2,7 @@
 
 Every doc change the documentalist made on workline and on DomoticsCore up
 to 2026-10-01, read by an agent against the code as it is now, then a solo
-repository tried (roles/documentalist/tried.md). Read by one agent
+repository tried (roles/documentalist/docs/tried.md). Read by one agent
 (Claude); corrected on one point by a second review (92feb08 left
 `checked`). Every verdict below is **confirmed 2026-10-01, second check**
 (ADR-0014, amended): another agent of the same provider, sharing no context
@@ -148,7 +148,7 @@ documentalist without an agent lists all 26 docs suspect afterwards.
 
 On 2026-10-01, after step 2, eight of the reviewed fixes were replayed with
 Claude Sonnet on copies at their parent, one run each, and the `drifted`
-cases run five times (roles/documentalist/tried.md has both). Against the
+cases run five times (roles/documentalist/docs/tried.md has both). Against the
 verdicts above:
 
 - **What went wrong then, does not now.** No `checked` moved over anything
@@ -194,7 +194,7 @@ Since (0e00fbe), a run keeps them, and the agent's answers as they came.
 
 On 2026-10-02, five runs of the gardening path on WaterMeter, DomoticsCore
 after #114 and workline, Claude Sonnet, graded against the code by another
-agent (roles/documentalist/tried.md has the runs, status.md the bars). The
+agent (roles/documentalist/docs/tried.md has the runs, status.md the bars). The
 kinds above stay away: nothing false vouched for or written, no true claim
 removed, no comment winning, no fixed bug rewritten. Step 4 does not hold
 on its tokens. New kinds, none a falsehood:

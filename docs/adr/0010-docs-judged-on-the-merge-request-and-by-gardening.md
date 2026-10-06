@@ -67,7 +67,7 @@ push of a merge request.
 - 2026-09-30, a throwaway pull request on workline (#10): Claude judged the
   doc the change made false, the App committed the fix to the branch, the
   checks ran again unattended, the loop guard held
-  (roles/documentalist/tried.md). Left: `checked` names the head of the
+  (roles/documentalist/docs/tried.md). Left: `checked` names the head of the
   branch, not GitHub's merge commit; the agent stays off an example.
 
 ## Consequences

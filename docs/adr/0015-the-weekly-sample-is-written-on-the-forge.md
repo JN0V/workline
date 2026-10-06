@@ -12,7 +12,7 @@ standing check: every week, one in ten of the docs vouched for since is read
 against the code by a model of another provider or a person, "written to the
 measures"; one false `checked` sets the documentalist back to step 0. The
 measures so far are files committed to this repository
-(tests/evaluation/results.tsv, roles/documentalist/tried.md). A weekly result
+(tests/evaluation/results.tsv, roles/documentalist/docs/tried.md). A weekly result
 committed that way would be a commit a week carrying only work state — what
 docs/BACKLOG.md ("Work state lives in the forge's issues, not in commits")
 asks to stop — and it would need a write to `main`, which takes pull

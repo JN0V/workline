@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: c78417b
+checked: 7a6289b
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -15,7 +15,7 @@ What every forge needs first, in the repository:
 
 1. Docs that name their sources: `workline init` on your machine proposes
    them, you review and commit
-   ([adopting a repository](../roles/documentalist/push.md#adopting-a-repository)).
+   ([adopting a repository](../roles/documentalist/docs/push.md#adopting-a-repository)).
 2. `.workline/config.yaml`, if the defaults do not suit — for a backlog of
    docs far behind, judging in parts and its caps:
 

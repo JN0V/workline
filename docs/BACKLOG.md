@@ -9,7 +9,7 @@
 ## Next, in order
 
 Where the documentalist stands, what is measured and what comes next for
-it: roles/documentalist/status.md.
+it: roles/documentalist/docs/status.md.
 
 The committer and the documentalist first: two roles that prove their worth on
 this repository before any other role is added.
@@ -34,12 +34,12 @@ this repository before any other role is added.
 3. **Docs judged on the merge request and by gardening** (ADR-0010,
    accepted and built): on GitHub, GitLab, a fork's pull request, and a
    repository without pull requests. Where it stands, and what is missing
-   in order: roles/documentalist/status.md.
+   in order: roles/documentalist/docs/status.md.
 4. **Judge docs far behind in parts** (ADR-0009, accepted on its measures;
    ADR-0012, a doc judged against its sources whole): turned on for
    DomoticsCore's nightly gardening (its PR #107), tried once (#113); on
    workline's own docs nightly since #27. Next: watch those nights and
-   record them in roles/documentalist/tried.md.
+   record them in roles/documentalist/docs/tried.md.
 5. **Try the install and the adoption on the other machine**, where their
    gaps were found (2026-09-28): `workline setup`, `workline doctor`,
    `workline init` there, on a real repository.
@@ -87,7 +87,7 @@ Then, once both work well here:
   request linked to its issue and closing it; a project's own roadmap
   files replaced by its issues. The product owner role (ADR-0018) keeps
   the backlog between a need and its acceptance; its closings are built
-  (docs/spec/backlog-acts.md, roles/product-owner/status.md). Left: opening,
+  (docs/spec/backlog-acts.md, roles/product-owner/docs/status.md). Left: opening,
   refining, ordering, milestones, an obsolete issue announced then closed
   with a second judge, a tick read with its author, one issue-opening
   mechanism for every role; a product manager role, later, for needs.
@@ -204,7 +204,7 @@ last.
   the user adds the bot's pattern, or the committer allows the forge's own
   identities a project names (its App, `noreply@github.com`) by setting.
 - **The weekly sample, left** (ADR-0015, built 2026-10-02, conformance
-  only; tried on GitLab with v0.2.2, roles/documentalist/tried.md). Its
+  only; tried on GitLab with v0.2.2, roles/documentalist/docs/tried.md). Its
   first run on GitHub; a `checked` found false on a forge, its label and
   merge request. A judge of another provider, when there is one
   (`cmd:`). The sample's verdicts kept as a measure (results.tsv), and a

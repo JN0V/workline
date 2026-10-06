@@ -7,7 +7,7 @@
 
 A doc whose sources changed more than a task can show is judged against them
 as they are now; when even that does not fit, it goes to a person, saying so.
-Catching DomoticsCore up (roles/documentalist/tried.md) left 40 such docs:
+Catching DomoticsCore up (roles/documentalist/docs/tried.md) left 40 such docs:
 30 whose sources do not fit a task, 10 the agent itself would not vouch for
 — it found what was wrong, a version 1.4.1 where the code says 1.11.0, but
 could not confirm the rest, and a fix that leaves `checked` alone is refused.

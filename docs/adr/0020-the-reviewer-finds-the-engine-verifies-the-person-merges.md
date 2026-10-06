@@ -1,7 +1,7 @@
 # ADR-0020: The reviewer finds, the engine verifies, the person merges
 
 - **Status:** accepted; the code subject built (local, merge request), the
-  spec subject and the developer's loop to come (roles/reviewer/status.md)
+  spec subject and the developer's loop to come (roles/reviewer/docs/status.md)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was

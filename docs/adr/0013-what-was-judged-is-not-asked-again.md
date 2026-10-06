@@ -8,7 +8,7 @@
 
 ## Context
 
-DomoticsCore's first gardening with parts on (2026-10-01, roles/documentalist/tried.md)
+DomoticsCore's first gardening with parts on (2026-10-01, roles/documentalist/docs/tried.md)
 judged one doc: Opus fixed a version five times and left `checked`, as
 ADR-0012 asks of a fix it cannot vouch for. Run again before the person
 merged it, the line put the same doc first, judged it again — 26k tokens —
@@ -57,7 +57,7 @@ it in review.
 
 ## Amendment (2026-10-02)
 
-workline's first nightly gardening (roles/documentalist/tried.md,
+workline's first nightly gardening (roles/documentalist/docs/tried.md,
 2026-10-02) judged one doc whole and put thirteen off "to be judged in parts
 in a later round": a CI run judged with `--no-apply` has one round, and a
 round judging docs whole asks no parts. The waiting above lets the parts go

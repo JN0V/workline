@@ -12,7 +12,7 @@ On 2026-10-03, every serious defect of the product owner was found by a
 person running it by hand and reading what it wrote: a report that lost
 seven proposals in eight, issues recorded as read from an answer that did
 not read, a prompt over the role's budget, a milestone set on code never
-seen (roles/product-owner/tried.md). Conformance could not see them: they
+seen (roles/product-owner/docs/tried.md). Conformance could not see them: they
 show only in real runs. The person asked for a role that does that work in
 the background — checks that every automatic mechanism is relevant and
 works, and suggests improvements.
