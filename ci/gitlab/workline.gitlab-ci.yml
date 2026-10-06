@@ -76,6 +76,9 @@ workline:judge:
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
       --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
+  # An agent out of reach (3) warns, not taken for the change's fault: a
+  # person judges what it would have (ADR-0010).
+  allow_failure: {exit_codes: [3]}
   after_script: *summary
   artifacts:
     when: always                    # steps that passed before one blocked are still applied
@@ -88,7 +91,7 @@ workline:apply:
   extends: .workline
   stage: deploy
   needs: [workline:judge]
-  rules:
+  rules:                            # also when the judge failed: a blocked merge request still gets the reviewer's comment (#226)
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
       when: always
   script:
@@ -131,6 +134,7 @@ workline:garden:judge:
     - status=0
     - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
+  allow_failure: {exit_codes: [3]}  # an agent out of reach warns, as on a merge request
   after_script: *summary
   artifacts:
     when: always
@@ -142,6 +146,9 @@ workline:garden:apply:
   extends: .workline:garden
   stage: deploy
   needs: [workline:garden:judge]
+  rules:                            # also when the judge failed: what passed before a step blocked is applied (#142)
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample"
+      when: always
   script:
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"

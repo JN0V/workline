@@ -31,6 +31,10 @@ duties:
 # comment on the merge request. Never a patch, never an approval.
 part-intentions: [finding]
 intentions: [issue, comment, note]
+# A finding that blocks is when the author most needs the comment: a
+# blocked run still applies these, which only say what was found, the
+# record of the commits reviewed in the comment (#226).
+on-block: [comment, issue]
 
 # Without AI, the rules that need no judgement still run and still block; the
 # change waits for a person's review, said.

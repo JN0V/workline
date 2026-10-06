@@ -145,3 +145,29 @@ merge-request line; on in workline's own repository.
 - **Workline's own line stays at `warn`** until a measure over five runs a
   case ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)); the
   maintainer switches correctness to `block`.
+
+## Amendment (2026-10-06, #226)
+
+- **A blocked merge request still gets the comment.** A block applied
+  nothing, as for every role: no comment, the record not moved, the
+  next push reviewing the same commits again, and the author reading the
+  finding only in the job's verdict. A block is when the author most
+  needs it.
+- **The engine**: a role names in `on-block` the intentions a blocked run
+  still applies, those that only say why (docs/spec/role-contract.md,
+  step 5); the run still blocks. The reviewer names `comment` and
+  `issue`: its summary comment, the record in it, and the issues outside
+  the change the comment counts.
+- **The comment**: what blocks first, marked `**blocks**`, then the
+  warnings. The record moves when every lens answered, as on a pass; a
+  rule that blocks writes the comment too, the record left as it was.
+- **The templates**: the trust split is kept. The judging job, with the
+  AI key, fails by the verdict; the applying job, with the write token
+  and no AI key, runs whatever the judge's outcome (`if: always()`,
+  `when: always`) and writes what is pending. GitLab's gardening apply
+  had no `when: always` (#142); GitLab's judging jobs now warn on an
+  agent out of reach (3), as GitHub's do.
+- **Rejected**: posting the comment from the judging job (a write token
+  beside the AI key, against
+  [principle 6](../PRINCIPLES.md)); a third job only for the comment
+  (one more job for what `workline apply` already does).

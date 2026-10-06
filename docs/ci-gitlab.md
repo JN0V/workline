@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 2948d73
+checked: 5f21056
 verified: agent:claude-code
 ---
 # workline on GitLab CI
@@ -99,6 +99,12 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   tag. A job set too shallow gets `shallow-clone`, never a pass.
 - **A fork's merge request** runs in the fork, which has neither variable:
   judged without an agent, nothing applied or commented.
+- **A judge that fails**: the applying jobs still run (`when: always`),
+  the pipeline failed by the judge's job.
+  - Gardening: what steps passed before one blocked is applied (#142).
+  - A merge request the reviewer holds still gets its comment (#226).
+  - An agent out of reach (3) warns (`allow_failure: {exit_codes: [3]}`),
+    as on GitHub: a person judges what it would have.
 - **`workline:follow`**, on each push to the default branch: the
   documentalist's merge request for the release, when one is open, is
   rebuilt on the branch's new tip, with `WORKLINE_GITLAB_TOKEN` and no

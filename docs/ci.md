@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 2948d73
+checked: 5f21056
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -35,6 +35,11 @@ then one that applies, with the write token and no AI key
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |
 
+- **A judge that fails still hands over**: the applying job runs whatever
+  the judge's outcome, and the pipeline fails by the judge's. It applies
+  what the steps that passed proposed, and what a blocked role says why
+  it blocks (`on-block`: the reviewer's comment, #226). An agent out of
+  reach (3) warns on both forges.
 - **The agent is a choice** (`--ai`): `none`, `claude` (`claude:opus`…),
   or `cmd:` running any other. The templates call Claude when its token is
   set, no agent otherwise: every check still runs, and what needs

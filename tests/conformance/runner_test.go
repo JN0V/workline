@@ -741,8 +741,9 @@ func readPending(t *testing.T) map[string]bool {
 }
 
 // compareForge checks the simulated forge's state: for each listed item, by
-// id, `comments` is a count, `labels` the exact set, `comment-contains` /
-// `comment-lacks` texts some comment holds, or none does, `branch`, `base`
+// id, `comments` is a count, `labels` the exact set, `comment-contains`
+// texts (one or a list) some comment holds, `comment-lacks` one none
+// does, `branch`, `base`
 // `title`, the `reason` it was closed for, its `milestone` and the `parent`
 // it is a sub-issue of (0 for none) an item's, `blocked-by` the issues it
 // waits on in the forge's own relation, `closed` whether it
@@ -808,8 +809,14 @@ func compareForge(want map[string]any, file string) []string {
 				}
 				return false
 			}
-			if t, ok := wm["comment-contains"]; ok && !held(fmt.Sprint(t)) {
-				p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm["id"], t, comments))
+			texts := []any{wm["comment-contains"]} // one text, or several
+			if l, ok := wm["comment-contains"].([]any); ok {
+				texts = l
+			}
+			for _, t := range texts {
+				if t != nil && !held(fmt.Sprint(t)) {
+					p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm["id"], t, comments))
+				}
 			}
 			if t, ok := wm["comment-lacks"]; ok && held(fmt.Sprint(t)) {
 				p = append(p, fmt.Sprintf("forge: a comment on %s %v holds %q", kind, wm["id"], t))

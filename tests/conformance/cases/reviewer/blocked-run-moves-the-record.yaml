@@ -1,0 +1,16 @@
+case: reviewer/blocked-run-moves-the-record
+about: "Judged in one job and applied in another, as in CI, a blocked merge request's comment is still applied, and it records the commits reviewed, as a passing run's does: the next push reviews only the new ones (#226)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", no-apply: true, then: resume-elsewhere}
+expect:
+  applied: [comment]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 -->", comment-lacks: "reviewed= runs"}

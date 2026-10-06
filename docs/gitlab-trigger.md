@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 2948d73
+checked: 5f21056
 judged: 02da247
 verified: agent:claude-code
 ---
@@ -140,8 +140,9 @@ exit "$status"
 `--summary` needs the first release after v0.16.0
 ([ci.md](ci.md#what-a-job-shows)). The judging job exits with the verdict (1 block, 2 for a person, 3 the
 agent or forge unreachable: make 3 a warning with `allow_failure:
-{exit_codes: [3]}`); the applying job still runs (`when: always`) and
-applies what passed. On `release`, a judging job that does not pass holds
+{exit_codes: [3]}`, as the template does); the applying job still runs
+(`when: always`) and applies what passed, and the comment of a reviewer
+that blocks (#226). On `release`, a judging job that does not pass holds
 the release; the docs' fix goes to a merge request of its own (untried
 outside a release tool's merge request).
 

@@ -443,7 +443,15 @@ func run(o Options, res *Result) error {
 	// A role keeping a backlog reads its report on every run, acts or not:
 	// a closing undone, a box ticked, runs nobody answered (ADR-0025).
 	keeps := slices.ContainsFunc(r.Intentions, func(k string) bool { return slices.Contains(backlog.Kinds, k) })
-	if res.Status != verdict.Pass || (len(intents) == 0 && !keeps) {
+	// Blocked, a run applies only what its role names to tell why
+	// (`on-block`): the reviewer's comment, its record in it (#226). The
+	// run still blocks.
+	onBlock := res.Status == verdict.Block && len(r.OnBlock) > 0
+	if onBlock {
+		intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return !slices.Contains(r.OnBlock, i.Kind) })
+		keeps = false
+	}
+	if res.Status != verdict.Pass && !onBlock || (len(intents) == 0 && !keeps) {
 		return nil
 	}
 
@@ -503,7 +511,11 @@ func run(o Options, res *Result) error {
 		return err
 	}
 	if o.NoApply {
-		res.Summary = fmt.Sprintf("judged, not applied (%d proposals); apply with: workline apply %s", len(intents), runDir)
+		if onBlock {
+			res.Summary = fmt.Sprintf("%s; what says why judged, not applied (%d proposals); apply with: workline apply %s", res.Summary, len(intents), runDir)
+		} else {
+			res.Summary = fmt.Sprintf("judged, not applied (%d proposals); apply with: workline apply %s", len(intents), runDir)
+		}
 		res.ToApply = true
 		for _, in := range intents {
 			if in.Kind == "handoff" {

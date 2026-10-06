@@ -162,3 +162,86 @@ func TestGitHubTemplatesUseTheSummary(t *testing.T) {
 		t.Fatalf("found %d workflows writing a job summary, want six", n)
 	}
 }
+
+// A judge that fails — a step blocked, the reviewer held by a finding —
+// still leaves what it proposed to apply (#226, #142): the job that applies
+// runs whatever the judge's outcome, and the pipeline still fails by the
+// judge's. An agent out of reach (3) warns, as on GitHub, never fails.
+
+func TestGitLabApplyRunsWhenTheJudgeFails(t *testing.T) {
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	applies, judges := 0, 0
+	for name, v := range top {
+		job, ok := v.(map[string]any)
+		if !ok || strings.HasPrefix(name, ".") {
+			continue
+		}
+		script := fmt.Sprint(job["script"])
+		switch {
+		case strings.Contains(script, "workline apply"):
+			applies++
+			rules, _ := job["rules"].([]any)
+			if len(rules) == 0 {
+				t.Errorf("job %s: no rules of its own: GitLab skips it when the judge fails (on_success)", name)
+			}
+			for _, r := range rules {
+				if m, _ := r.(map[string]any); fmt.Sprint(m["when"]) != "always" {
+					t.Errorf("job %s: rule %v is not `when: always`: a failed judge would skip it", name, m)
+				}
+			}
+		case strings.Contains(script, "workline route"):
+			judges++
+			af, _ := job["allow_failure"].(map[string]any)
+			if fmt.Sprint(af["exit_codes"]) != "[3]" {
+				t.Errorf("job %s: allow_failure %v: an agent out of reach (3) fails it, where GitHub warns", name, job["allow_failure"])
+			}
+		}
+	}
+	if applies < 2 || judges < 2 {
+		t.Fatalf("found %d applying and %d judging jobs, want the merge request's and the gardening's", applies, judges)
+	}
+}
+
+func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
+	files, _ := filepath.Glob("../../ci/github/workline*.yml")
+	own, _ := filepath.Glob("../../.github/workflows/workline*.yml")
+	n := 0
+	for _, f := range append(files, own...) {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				If    string `yaml:"if"`
+				Steps []struct {
+					Run string `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		for name, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if !strings.Contains(s.Run, "workline apply") {
+					continue
+				}
+				n++
+				if !strings.HasPrefix(job.If, "always()") {
+					t.Errorf("%s, job %s: if %q: a failed judge would skip it", filepath.Base(f), name, job.If)
+				}
+			}
+		}
+	}
+	if n < 4 {
+		t.Fatalf("found %d jobs running workline apply, want the merge request's and the gardening's, here and in workline's own", n)
+	}
+}
