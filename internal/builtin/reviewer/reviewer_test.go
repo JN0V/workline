@@ -2,6 +2,8 @@ package reviewer
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
@@ -99,5 +101,47 @@ func TestRecord(t *testing.T) {
 	}
 	if empty := parseRecord("no record here"); len(empty.Reviewed) != 0 || empty.Runs != 0 {
 		t.Errorf("no record: %+v", empty)
+	}
+}
+
+func TestAIFindingsByLens(t *testing.T) {
+	lenses := `"lenses": ["correctness", "edge-cases", "tests"]`
+	for _, c := range []struct {
+		value  string
+		blocks []string // the lenses whose finding blocks
+		err    bool
+	}{
+		{`"warn"`, nil, false},
+		{`"block"`, []string{"correctness", "edge-cases", "tests"}, false},
+		{`{"correctness": "block", "edge-cases": "warn"}`, []string{"correctness"}, false},
+		{`{}`, nil, false},
+		{`null`, nil, false},
+		{`"blocks"`, nil, true},
+		{`""`, nil, true},
+		{`{"correctness": "on"}`, nil, true},
+		{`{"correctnes": "block"}`, nil, true},
+		{`["correctness"]`, nil, true},
+	} {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, "in"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		data := fmt.Sprintf(`{%s, "ai-findings": %s}`, lenses, c.value)
+		if err := os.WriteFile(filepath.Join(dir, "in", "settings.json"), []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		s, err := settings(dir)
+		if (err != nil) != c.err {
+			t.Errorf("ai-findings %s: error %v, want one: %v", c.value, err, c.err)
+			continue
+		}
+		if c.err {
+			continue
+		}
+		for _, lens := range []string{"correctness", "edge-cases", "tests"} {
+			if got, want := s.AIFindings.Blocks(lens), slices.Contains(c.blocks, lens); got != want {
+				t.Errorf("ai-findings %s: the %s lens blocks = %v, want %v", c.value, lens, got, want)
+			}
+		}
 	}
 }

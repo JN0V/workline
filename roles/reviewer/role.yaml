@@ -52,7 +52,9 @@ settings:
   # A comment telling the code's history, not what it does (bug-story).
   story-words: ['\bused to\b', '\bthe bug was\b', '\bpreviously\b']
   # What the lenses find warns until the evaluation has measured it (#90);
-  # block: an important finding the judge verified blocks.
+  # block: an important finding the judge verified blocks. One value for
+  # every lens, or by lens, a lens not named warning:
+  # {correctness: block, edge-cases: warn}.
   ai-findings: warn
   # The independence a verification needs (ADR-0005): context (the same
   # model, apart), model, provider.

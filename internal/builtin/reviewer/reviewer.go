@@ -44,7 +44,7 @@ type Settings struct {
 	CodeLinesMax    int      `json:"code-lines-max"`    // lines of the files changed given to a lens, all together
 	CommentBlockMax int      `json:"comment-block-max"` // lines of one comment added
 	StoryWords      []string `json:"story-words"`       // what tells a bug's story in a comment
-	AIFindings      string   `json:"ai-findings"`       // warn, until measured (#90); block: a verified important finding blocks
+	AIFindings      Gate     `json:"ai-findings"`       // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
 	JudgeAtLeast    string   `json:"judge-at-least"`    // the independence a verification needs: context, model, provider
 	ForgeWrites     bool     `json:"forge-writes"`      // on a merge request: the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`      // ask each lens to look for a number of candidates before it stops
@@ -401,11 +401,13 @@ func readLenses(runDir, repo string, s Settings) int {
 				list = &c.Related
 			}
 			// Two findings on one line are merged, never one dropped: the
-			// important one leads, the other said beside it.
+			// important one leads, the other said beside it; of two important,
+			// a lens that blocks leads (ai-findings).
 			if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
 				o := &(*list)[dup]
-				if f.Severity == "important" && o.Severity != "important" {
-					f.Also, *o = append(o.Also, o.Lens+": "+o.Title), f
+				if f.Severity == "important" && (o.Severity != "important" || s.AIFindings.Blocks(f.Lens) && !s.AIFindings.Blocks(o.Lens)) {
+					f.Also = append(o.Also, o.Lens+": "+o.Title)
+					*o = f
 				} else {
 					o.Also = append(o.Also, f.Lens+": "+f.Title)
 				}
@@ -643,7 +645,7 @@ func settle(runDir, repo string, s Settings) int {
 	onForge := mergeRequest() != nil && s.ForgeWrites
 	for _, f := range related {
 		level := "warn"
-		if s.AIFindings == "block" && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified") {
+		if s.AIFindings.Blocks(f.Lens) && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified") {
 			level = ""
 		}
 		v.Findings = append(v.Findings, verdict.Finding{Rule: f.Lens, Where: f.Where, Level: level, Message: message(f)})
@@ -716,7 +718,7 @@ func review(st state, extra []verdict.Finding, summary string) Review {
 }
 
 // status blocks on a finding that blocks: a rule's, or a verified finding
-// once ai-findings says block.
+// once ai-findings says block for its lens.
 func status(fs []verdict.Finding) string {
 	for _, f := range fs {
 		if f.Level == "" || f.Level == "block" {
@@ -844,7 +846,61 @@ func settings(runDir string) (Settings, error) {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("settings: %w", err)
 	}
+	for lens := range s.AIFindings.ByLens {
+		if !slices.Contains(s.Lenses, lens) {
+			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v", lens, s.Lenses)
+		}
+	}
 	return s, nil
+}
+
+// Gate is what a verified important finding does: warn or block, one value
+// for every lens, or a map by lens where a lens not named warns (#222).
+type Gate struct {
+	All    string            // the one value, when no map is given
+	ByLens map[string]string // by lens, when a map is given
+}
+
+// Blocks says whether a verified important finding of the lens blocks.
+func (g Gate) Blocks(lens string) bool {
+	if g.ByLens != nil {
+		return g.ByLens[lens] == "block"
+	}
+	return g.All == "block"
+}
+
+// UnmarshalJSON reads warn, block, or a map of the two by lens; anything
+// else is refused, never read as warn (principle 12).
+func (g *Gate) UnmarshalJSON(data []byte) error {
+	check := func(v string) error {
+		if v != "warn" && v != "block" {
+			return fmt.Errorf("ai-findings: %q is neither warn nor block", v)
+		}
+		return nil
+	}
+	if string(data) == "null" {
+		*g = Gate{}
+		return nil
+	}
+	var one string
+	if json.Unmarshal(data, &one) == nil {
+		*g = Gate{All: one}
+		return check(one)
+	}
+	var by map[string]string
+	if err := json.Unmarshal(data, &by); err != nil {
+		return fmt.Errorf("ai-findings: warn, block, or a map of the two by lens: %w", err)
+	}
+	for lens, v := range by {
+		if err := check(v); err != nil {
+			return fmt.Errorf("%w, for the %s lens", err, lens)
+		}
+	}
+	if by == nil {
+		by = map[string]string{}
+	}
+	*g = Gate{ByLens: by}
+	return nil
 }
 
 func roleName() string {
