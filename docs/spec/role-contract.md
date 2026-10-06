@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 7a6289b
+checked: 5f21056
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -95,6 +95,8 @@ duties:
 intentions: [commit-message, note]   # subset of the catalogue below
 part-intentions: [claim]        # what a part of a question answers with (In parts);
                                 # claims when unset; a reviewer's lens, findings
+on-block: []                    # what a run still applies when post blocks: what
+                                # only says why (the reviewer's comment); none by default
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
 
@@ -260,6 +262,11 @@ token), **apply** (trusted, no AI key).
    A role that keeps a backlog comes here with no intention too, when its
    `pre` did not end the run: its report is read — a box ticked, a closing
    undone (docs/spec/backlog-acts.md).
+   A run that blocks applies nothing, but the kinds its role names in
+   `on-block`, of its intentions: what only says why it blocks, the
+   reviewer's summary comment and the record in it (#226). The run still
+   blocks; judged with `--no-apply`, they wait in `pending` like any
+   other, for the applying job, which runs whatever the judge's outcome.
 6. **Again.** If `pre` took less than there was to do, it writes `in/more`:
    the findings it defers, one `<rule> <where>` a line. When the run passed
    and applied something other than a note, the engine then runs the role

@@ -82,6 +82,9 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
   it writes only code scanning's SARIF.
 - `apply`, `follow` and each pair's second job hold the write token, the
   App's when there is one, and no AI key.
+- `apply` runs when `judge` failed too (`if: always()`): a pull request
+  the reviewer holds still gets its comment (#226); the workflow fails
+  by `judge`'s verdict.
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
 - **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,

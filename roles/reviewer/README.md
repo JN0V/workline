@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 8a069f6
+checked: 5f21056
 verified: agent:claude-code
 ---
 # Reviewer
@@ -116,6 +116,15 @@ quoted, whether it is the change's, and how it was verified.
 line. The judging job reads the summary comment, to know what was reviewed:
 on GitHub it needs a read token (`GH_TOKEN`, `pull-requests: read`), which
 ci/github/workline.yml gives it.
+
+- **A blocked merge request still gets the comment** (#226): what blocks
+  first, marked `**blocks**`, then the warnings; the issues outside the
+  change opened as on a pass (role.yaml's `on-block`).
+- **The record moves** as on a pass when every lens answered: the next
+  push reviews only the new commits. A rule that blocks writes the comment
+  too, the record left as it was: no lens ran.
+- **The job still fails**: the judging job by the verdict, while the
+  applying one writes the comment (`if: always()`, `when: always`).
 
 ## Settings
 

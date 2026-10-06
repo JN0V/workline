@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 0c60609
+checked: 5f21056
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -129,7 +129,8 @@ a `PATH` without a tool, or with a fake one first.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
-  and `comment-lacks` (a text some comment holds, or none does), `closed`
+  (a text some comment holds, or a list of them) and `comment-lacks` (a
+  text none does), `closed`
   and the `reason` it was closed for, its `milestone`, `branch`, `base`,
   `title` and the `parent` it is a sub-issue of (0 for none), `blocked-by`
   the issues it waits on in the forge's relation, `body-contains` and `body-lacks` (a text its body holds, or does

@@ -260,3 +260,24 @@ planted yes, a fake forge with merge request 5;
 Not tried: a real agent; GitHub or GitLab (the fake forge only);
 workline's own line switched to block — the maintainer's, after a measure
 over five runs a case (ADR-0014).
+
+## 2026-10-06 — a blocked merge request still gets the comment (#226)
+
+No agent: a scratch copy of the `reviewed` fixture, a routing of the
+reviewer alone, `ai-findings: {correctness: block}`, the lens answer and
+the judge planted, a fake forge with merge request 5; the template's two
+jobs by hand, `workline route merge-request --no-apply …` then
+`workline apply --line line.json`, the engine of the branch.
+
+- **Push 1**, Average dividing by one less than the count: the judge
+  exited 1, one run pending; the apply exited 0 and posted the comment,
+  `| **blocks** | correctness | calc/calc.go:11 |` first, the record
+  holding the commit, `runs=1`.
+- **Push 2**, the fix and a new function: the lens was given only the new
+  commit; the same comment edited, the record holding both, `runs=2`.
+
+Not tried: a sandbox merge request (its judge job calls Claude, and the
+fix needs a release or a built engine in the workflow); GitLab's
+`when: always` and `allow_failure: {exit_codes: [3]}` in a real pipeline
+(the template test reads them); a real agent.
+

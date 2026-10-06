@@ -20,6 +20,7 @@ released in v0.9.0.
 | A judge for each important finding, the level said; a no drops it | `judged-no-not-reported`, `independence-level-in-verdict` |
 | Warn until measured; caps; an agent unreachable | `new-ai-rules-warn`, `findings-capped-rest-counted`, `agent-unreachable-is-blocked-external` |
 | `ai-findings` by lens (#222): a lens set to block fails the run, the others warn, a lens not named warns, one value still sets every lens; a misspelt lens or value stops the run; of two findings on one line, the blocking lens leads (tried.md, planted) | `ai-findings-by-lens-blocks`, `ai-findings-by-lens-warns`, `ai-findings-lens-unnamed-warns`, `ai-findings-one-value-every-lens`, `ai-findings-misspelt-refused`, `ai-findings-blocking-lens-leads-merge` |
+| A blocked merge request still gets the comment (#226): what blocks first, marked; the record moved when every lens answered; a rule that blocks comments too; applied by the applying job, the judging one failing (tried.md, planted) | `blocked-run-still-comments`, `blocked-run-moves-the-record`, `blocked-run-judged-apart-still-blocks`, `rules-block-still-comments`, `TestGitLabApplyRunsWhenTheJudgeFails`, `TestGitHubApplyRunsWhenTheJudgeFails` |
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
 | Its measure: twelve evaluation cases on the `shop` fixture, three defects planted a lens, two clean changes and untested code outside one; scored by lens with no agent, recall, findings nothing planted, the judge's refusals, the finder floor, tokens | tests/evaluation/cases/reviewer, `TestScoreReview`, `TestReviewerWithFakeAgent`, `TestReviewerCasesPointRight` |
@@ -67,7 +68,3 @@ Conformance: tests/conformance/cases/reviewer.
    lens — each saying only that no test covers a behaviour — while it let
    through the eight that named a failure of the code or a test checking
    too little.
-10. **A run that blocks writes nothing to the forge**: as for every role,
-    nothing is applied on a block — no summary comment, no issue outside
-    the change, the record not moved (tried.md, #222). The author reads
-    the finding in the job's verdict and SARIF only.
