@@ -34,7 +34,7 @@
 # trusted; the engine talks to the instance the job runs on (CI_API_V4_URL).
 # The agent still needs npm's registry and Anthropic's API.
 variables:
-  WORKLINE_VERSION: v0.14.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.15.0          # a release of workline: update it to take a newer one (x-release-please-version)
   WORKLINE_IMAGE: ghcr.io/jn0v/workline
   WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs
 
