@@ -1,6 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/blocked-run-judged-apart-still-blocks
-reviewer/blocked-run-moves-the-record
-reviewer/blocked-run-still-comments
-reviewer/rules-block-still-comments

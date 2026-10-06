@@ -185,12 +185,12 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: commits, Record: rec, Advisories: advisories}
 	if start == head {
-		return final(runDir, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))
+		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
 	if status(mech) == verdict.Block {
-		return final(runDir, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
+		return held(runDir, s, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
 	}
 	// A lens reads what the commits not reviewed yet change, not every file
 	// of the merge request; when they change no code, nobody is asked.
@@ -781,13 +781,22 @@ func summaryComment(v Review, issues int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
 	if len(v.Findings) > 0 {
-		b.WriteString("| | Where | Finding |\n|---|---|---|\n")
-		for _, f := range v.Findings {
+		// What holds the merge request first, said so: the author reads it
+		// before the warnings (#226).
+		rows := slices.Clone(v.Findings)
+		blocks := func(f verdict.Finding) bool { return status([]verdict.Finding{f}) == verdict.Block }
+		sort.SliceStable(rows, func(i, j int) bool { return blocks(rows[i]) && !blocks(rows[j]) })
+		b.WriteString("| | | Where | Finding |\n|---|---|---|---|\n")
+		for _, f := range rows {
 			where := f.Where
 			if where != "" {
 				where = "`" + where + "`"
 			}
-			fmt.Fprintf(&b, "| %s | %s | %s |\n", f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
+			holds := "warns"
+			if blocks(f) {
+				holds = "**blocks**"
+			}
+			fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", holds, f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
 		}
 		b.WriteString("\n")
 	} else {
@@ -799,6 +808,23 @@ func summaryComment(v Review, issues int) string {
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes, a person merges.\n\n")
 	b.WriteString(v.Record.String())
 	return b.String()
+}
+
+// held settles a run the rules alone decide: blocked on a merge request it
+// may write to, the summary comment still says why, the record left as it
+// was, no lens having run (#226); post then blocks. Otherwise, final.
+func held(runDir string, s Settings, v Review) int {
+	if v.Status != verdict.Block || mergeRequest() == nil || !s.ForgeWrites {
+		return final(runDir, v)
+	}
+	fallback := []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0)}}}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
+		return fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
+		return fail(err)
+	}
+	return 0
 }
 
 // final writes a verdict pre settles alone, with nothing to ask: no agent,
