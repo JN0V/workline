@@ -252,7 +252,10 @@ merge-request line; on in workline's own repository.
   cause quoted from the issue (`path: "#4"`), found again there and the
   change's; and what the change does past the Scope, its cause the code.
   Its judge is shown the issue, and for a cause in the issue the whole
-  change up to `code-lines-max`.
+  merge request's change (base..head, commits reviewed before included)
+  up to `code-lines-max`: on a merge request reviewed push by push, the
+  lens reads the new commits only, and a part an earlier one did is
+  refused by the judge, not reported missing.
 - **No issue, no intent lens**: a lens with `needs: issue` is not asked
   of a change closing none, said in the summary; one it cannot read is
   said (`issue-unread`), never a silent pass (principle 12).

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 6a9ca6d
+checked: c212b79
 verified: agent:claude-code
 ---
 # Reviewer
@@ -147,8 +147,9 @@ Caps:
      rest named; a no names the test.
    - intent (#126): whether the issue asks what the change does not do,
      or the change does what the Scope leaves out; the judge shown the
-     issue, and for a cause in the issue the whole change, up to
-     `code-lines-max` lines;
+     issue, and for a cause in the issue the whole merge request's change,
+     commits reviewed before included, up to `code-lines-max` lines: a
+     part an earlier push did is refused, not reported missing;
    - claims (#126): whether the code quoted contradicts the claim quoted.
    - Two findings on one line are each judged by their own lens's
      question (#229); a refused one is dropped alone, the rest still shown.
