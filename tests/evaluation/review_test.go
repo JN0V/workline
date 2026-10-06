@@ -2,13 +2,9 @@ package evaluation
 
 // The reviewer's measure (#90): a case plants defects on a change, each at a
 // file and a range of lines, and says where nothing may be found. The run is
-// read from its folder — what each lens answered, what the engine kept of it,
-// what the judge said of each important finding, and the tokens each call
-// used — and scored with no agent. As the benchmarks of AI reviewers count
-// the known bugs found and the false positives (docs/research/code-review.md,
-// "Measurement"), a planted defect is found when a finding shown on the
-// change has its cause in the range: the finding's quote, which the engine
-// found again, says where, and no judge is needed to match it.
+// read from its folder and scored with no agent: a planted defect is found
+// when a finding shown on the change has its cause in the range, the quote
+// the engine found again saying where (docs/spec/conformance.md).
 
 import (
 	"encoding/json"
