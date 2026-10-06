@@ -87,6 +87,9 @@ settings:
   # What the author says, the lenses' testimony (#126): the messages of the
   # commits reviewed, whole, and the merge request's title and body.
   testimony-lines-max: 80
+  # Decisions put to a person a run (#126): no defect, a choice only a
+  # person makes; never judged, never blocking. The rest counted.
+  questions-max: 3
   # The issues the change closes (`Closes #4`), read from the forge: their
   # Need, Verification and Scope, for a lens that `needs: issue` (intent).
   issue-lines-max: 80

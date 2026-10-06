@@ -19,5 +19,6 @@ is for": compare the two. A part of its Need the change does not do, or a
 Verification it does not prove — no code doing it, no test showing it —
 is a finding, its cause the issue's words, quoted, its `path` the issue's
 number (`"#4"`). Something the change does that the issue's Scope leaves
-out is one too, its cause the changed code. Do not ask more than the
+out is one too, its cause the changed code. A behaviour the issue leaves
+open, that the change had to choose, is a `decision`. Do not ask more than the
 issue does; what commits reviewed before may have done is not missing.

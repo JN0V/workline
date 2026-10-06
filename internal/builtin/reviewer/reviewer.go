@@ -56,6 +56,7 @@ type Settings struct {
 	AIMaxTokens     int      `json:"ai-max-tokens"`       // what a run may spend, all calls together; the engine stops asking
 	IssueLinesMax   int      `json:"issue-lines-max"`     // lines of the issues the change closes the lenses are given, all together
 	TestimonyLines  int      `json:"testimony-lines-max"` // lines of what the author says (commit messages, the merge request) the lenses are given
+	QuestionsMax    int      `json:"questions-max"`       // decisions put to a person a run; the rest counted
 }
 
 // Finding is one defect a lens reported, once its quotes were found again.
@@ -65,7 +66,8 @@ type Finding struct {
 	Title    string    `json:"title"`
 	Why      string    `json:"why"`
 	Fix      string    `json:"fix,omitempty"`
-	Claim    string    `json:"claim,omitempty"` // the author's words it contradicts, found again in what they said (#126)
+	Claim    string    `json:"claim,omitempty"`    // the author's words it contradicts, found again in what they said (#126)
+	Decision string    `json:"decision,omitempty"` // not a defect: the question put to a person, never judged nor blocking (#126)
 	Cause    Quote     `json:"cause"`
 	Symptom  *Quote    `json:"symptom,omitempty"`
 	Where    string    `json:"where"`          // the cause's file and line
@@ -103,6 +105,7 @@ type state struct {
 // candidates is what the lenses answered, its quotes checked, before the judge.
 type candidates struct {
 	Related, Outside []Finding
+	Questions        []Finding         // decisions for a person: never judged, never an issue (#126)
 	Logged           []verdict.Finding // dropped, each said
 	Failed           []string          // lenses with no answer that reads
 	Asked            []string          // the questions put to the judge, by finding
@@ -111,16 +114,17 @@ type candidates struct {
 // Review is what the run found, as post reads it and out/review.json gives
 // it to the author's agent.
 type Review struct {
-	Status   string            `json:"status"`
-	Summary  string            `json:"summary"`
-	Findings []verdict.Finding `json:"findings"`
-	Change   []Finding         `json:"change"`  // on the change: the author fixes them
-	Outside  []Finding         `json:"outside"` // outside it: an issue each
-	Lenses   []string          `json:"lenses,omitempty"`
-	Complete bool              `json:"complete"` // every lens answered: the commits are recorded as reviewed
-	Record   Record            `json:"record"`
-	Local    bool              `json:"local"`           // the record is kept on this machine
-	Calls    []Spent           `json:"calls,omitempty"` // what each call to an agent used
+	Status    string            `json:"status"`
+	Summary   string            `json:"summary"`
+	Findings  []verdict.Finding `json:"findings"`
+	Change    []Finding         `json:"change"`              // on the change: the author fixes them
+	Outside   []Finding         `json:"outside"`             // outside it: an issue each
+	Questions []Finding         `json:"questions,omitempty"` // decisions put to a person: not defects, not judged (#126)
+	Lenses    []string          `json:"lenses,omitempty"`
+	Complete  bool              `json:"complete"` // every lens answered: the commits are recorded as reviewed
+	Record    Record            `json:"record"`
+	Local     bool              `json:"local"`           // the record is kept on this machine
+	Calls     []Spent           `json:"calls,omitempty"` // what each call to an agent used
 }
 
 // Spent is what one call of the review used: a lens's (or the lenses',
@@ -619,6 +623,12 @@ func readLenses(runDir, repo string, s Settings) int {
 					Message: fmt.Sprintf("dropped, from the %s lens: %q — %s", lens, f.Title, why)})
 				continue
 			}
+			// A decision is a question for a person, never a defect: not
+			// grouped with the findings, nor judged (#126).
+			if f.Decision != "" {
+				c.Questions = append(c.Questions, f)
+				continue
+			}
 			list := &c.Outside
 			if f.Related {
 				list = &c.Related
@@ -650,6 +660,11 @@ func readLenses(runDir, repo string, s Settings) int {
 		c.Related = c.Related[:s.FindingsMax]
 		c.Logged = append(c.Logged, verdict.Finding{Rule: "findings-capped", Level: "warn",
 			Message: fmt.Sprintf("%d more findings on the change were not checked nor shown (findings-max %d): fix these, and review again", n, s.FindingsMax)})
+	}
+	if n := len(c.Questions) - s.QuestionsMax; s.QuestionsMax > 0 && n > 0 {
+		c.Questions = c.Questions[:s.QuestionsMax]
+		c.Logged = append(c.Logged, verdict.Finding{Rule: "questions-capped", Level: "warn",
+			Message: fmt.Sprintf("%d more questions for a person were not shown (questions-max %d)", n, s.QuestionsMax)})
 	}
 	nits := 0
 	var outside []Finding
@@ -728,6 +743,7 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		Why      string `json:"why"`
 		Fix      string `json:"fix"`
 		Claim    string `json:"claim"`
+		Decision string `json:"decision"`
 		Cause    *Quote `json:"cause"`
 		Symptom  *Quote `json:"symptom"`
 	}
@@ -739,6 +755,10 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 	f := Finding{Lens: lens, Severity: strings.ToLower(strings.TrimSpace(raw.Severity)), Title: strings.TrimSpace(raw.Title), Why: strings.TrimSpace(raw.Why), Fix: strings.TrimSpace(raw.Fix), Symptom: raw.Symptom}
 	if f.Severity != "important" {
 		f.Severity = "nit"
+	}
+	// A decision is never important: a person answers it, no judge (#126).
+	if f.Decision = strings.TrimSpace(raw.Decision); f.Decision != "" {
+		f.Severity = "question"
 	}
 	if raw.Cause == nil || strings.TrimSpace(raw.Cause.Quote) == "" || strings.TrimSpace(raw.Cause.Path) == "" {
 		return f, "it quotes no cause"
@@ -799,6 +819,10 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 	}
 	if f.Where == "" {
 		return f, fmt.Sprintf("its cause is not found in %s, as it reads at %s nor among the lines the change removed", f.Cause.Path, short(st.Head))
+	}
+	// A question is the change's to raise, or nobody's: never an issue.
+	if f.Decision != "" && !f.Related {
+		return f, "a question on what the change does not touch, never an issue"
 	}
 	if f.Symptom != nil {
 		f.Symptom.Path = clean(f.Symptom.Path)
@@ -1042,6 +1066,11 @@ func settle(runDir, repo string, s Settings) int {
 		}
 		v.Findings = append(v.Findings, verdict.Finding{Rule: f.Lens, Where: f.Where, Level: level, Message: message(f)})
 	}
+	v.Questions = c.Questions
+	for _, f := range c.Questions {
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "decision", Where: f.Where, Level: "question",
+			Message: fmt.Sprintf("Question for a person: %s — %s (the %s lens; not a defect, not judged)", f.Decision, f.Why, f.Lens)})
+	}
 	for _, f := range outside {
 		if !strings.HasPrefix(f.Verified, "verified") {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "outside-unverified", Level: "warn",
@@ -1214,6 +1243,15 @@ func JudgeKey(f Finding) string {
 	return strings.Join([]string{f.Where, f.Lens, f.Severity, f.Title, f.Cause.Quote}, "\x00")
 }
 
+// oneLine is a text on one line, cut past max characters.
+func oneLine(t string, max int) string {
+	t = strings.Join(strings.Fields(t), " ")
+	if r := []rune(t); len(r) > max {
+		t = string(r[:max]) + "…"
+	}
+	return t
+}
+
 func fixLine(f Finding) string {
 	if f.Fix == "" {
 		return ""
@@ -1227,6 +1265,9 @@ func summary(v Review, issues, failed, unjudged int) string {
 	}
 	var parts []string
 	parts = append(parts, fmt.Sprintf("%d findings on the change", len(v.Change)))
+	if n := len(v.Questions); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d %s for a person", n, plural(n, "question", "questions")))
+	}
 	if issues > 0 {
 		parts = append(parts, fmt.Sprintf("%d issues proposed for what lies outside it", issues))
 	}
@@ -1249,10 +1290,11 @@ func summary(v Review, issues, failed, unjudged int) string {
 func summaryComment(v Review, issues int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
-	if len(v.Findings) > 0 {
+	// A decision is not a row of the table: it is asked apart (#126).
+	rows := slices.DeleteFunc(slices.Clone(v.Findings), func(f verdict.Finding) bool { return f.Rule == "decision" })
+	if len(rows) > 0 {
 		// What holds the merge request first, said so: the author reads it
 		// before the warnings (#226).
-		rows := slices.Clone(v.Findings)
 		blocks := func(f verdict.Finding) bool { return status([]verdict.Finding{f}) == verdict.Block }
 		sort.SliceStable(rows, func(i, j int) bool { return blocks(rows[i]) && !blocks(rows[j]) })
 		b.WriteString("| | | Where | Finding |\n|---|---|---|---|\n")
@@ -1270,6 +1312,13 @@ func summaryComment(v Review, issues int) string {
 		b.WriteString("\n")
 	} else {
 		b.WriteString("No finding on the commits reviewed.\n\n")
+	}
+	if len(v.Questions) > 0 {
+		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the change leaves to a person; a reply here is enough, the reviewer does not wait for it.\n\n")
+		for _, q := range v.Questions {
+			fmt.Fprintf(&b, "- `%s` (%s): %s On: “%s”\n", q.Where, q.Lens, oneLine(q.Decision, 300), oneLine(q.Cause.Quote, 200))
+		}
+		b.WriteString("\n")
 	}
 	if issues > 0 {
 		fmt.Fprintf(&b, "What lies outside this change goes to %d issues, labelled `needs-triage`: not the author's to fix here.\n\n", issues)
@@ -1351,7 +1400,7 @@ func committerSettings(repo string) (committer.Settings, error) {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err

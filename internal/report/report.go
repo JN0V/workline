@@ -57,6 +57,8 @@ func FromLine(r *line.Result) []Item {
 // to a warning is a warning, one reported by a run that passed is a note.
 func (i Item) level() string {
 	switch {
+	case i.Level == "question": // a decision put to a person, not a defect (the reviewer, #126)
+		return "note"
 	case i.Level == "warn":
 		return "warning"
 	case i.Level == "block" || i.Status != verdict.Pass:

@@ -25,7 +25,7 @@ expect:
       - id: 9
         comments: 1
         comment-contains:
-          - "No finding on the commits reviewed."
+          - "| warns | finding-unfounded |  | dropped, from the correctness lens"
           - "**Questions for a person**"
           - "- `#4` (intent): Should an empty list give 0, or an error? On: “What an empty list gives is left open.”"
           - "a reply here is enough"
