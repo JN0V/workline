@@ -153,8 +153,18 @@ func mergeRequestText(repo string) (string, error) {
 
 // trailer is a commit message's trailer line, as indented in the log:
 // `Co-Authored-By: …`, `Signed-off-by: …`, `Workline-Role: …` — who, not
-// what the change does. A key without a dash (`Closes: #4`) is kept.
-var trailer = regexp.MustCompile(`^  [A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+: `)
+// what the change does. Only these keys: `Follow-up: no change` is a claim.
+var trailer = regexp.MustCompile(`(?i)^  (?:co-authored-by|signed-off-by|reviewed-by|workline-[a-z-]+): `)
+
+// testimonyHead opens what the lenses read of the author; never the
+// author's own words, so never a claim found again.
+const testimonyHead = "## What the author says\n\nTestimony, not evidence: what the author says the change does. Check each claim against the code.\n\n"
+
+// saidByAuthor is the testimony without its head: where a claim is found
+// again.
+func saidByAuthor(t string) []string {
+	return strings.Split(strings.TrimPrefix(t, testimonyHead), "\n")
+}
 
 // testimony is what the author says of the change, for the lenses to check
 // against it: the messages of the commits not reviewed yet, whole, and the
@@ -166,7 +176,7 @@ func testimony(repo string, st state, mr string, limit int) (string, error) {
 		return "", err
 	}
 	var b strings.Builder
-	b.WriteString("## What the author says\n\nTestimony, not evidence: what the author says the change does. Check each claim against the code.\n\n### The commits\n\n")
+	b.WriteString(testimonyHead + "### The commits\n\n")
 	for _, l := range strings.Split(strings.TrimSpace(log), "\n") {
 		if strings.TrimSpace(l) != "" && !trailer.MatchString(l) {
 			b.WriteString(l + "\n")

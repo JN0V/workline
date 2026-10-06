@@ -359,10 +359,15 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]st
 	case len(usable) == 0:
 		return nil, nil
 	}
+	// In turn over every lens, one with nothing to read passed over: the
+	// same run count names the same place in the turn whatever this
+	// change closes.
 	n := max(1, min(s.LensesPerPush, len(usable)))
 	var out []string
-	for i := range n {
-		out = append(out, usable[(rec.Runs+i)%len(usable)])
+	for i := 0; len(out) < n; i++ {
+		if l := s.Lenses[(rec.Runs+i)%len(s.Lenses)]; slices.Contains(usable, l) && !slices.Contains(out, l) {
+			out = append(out, l)
+		}
 	}
 	return out, nil
 }
@@ -745,7 +750,7 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		if f.Claim == "" {
 			return f, "it quotes no claim of the author"
 		}
-		if len(locate(strings.Split(st.Testimony, "\n"), f.Claim)) == 0 {
+		if len(locate(saidByAuthor(st.Testimony), f.Claim)) == 0 {
 			return f, "its claim is not found in what the author said"
 		}
 	}
