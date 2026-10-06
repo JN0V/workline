@@ -4,10 +4,11 @@ package evaluation
 // file and a range of lines, and says where nothing may be found. The run is
 // read from its folder — what each lens answered, what the engine kept of it,
 // what the judge said of each important finding, and the tokens each call
-// used — and scored with no agent: a planted defect is found when a finding
-// shown on the change has its cause in the range, as the benchmarks of AI
-// reviewers match a finding to a known bug by its place
-// (docs/research/code-review.md, "Measurement").
+// used — and scored with no agent. As the benchmarks of AI reviewers count
+// the known bugs found and the false positives (docs/research/code-review.md,
+// "Measurement"), a planted defect is found when a finding shown on the
+// change has its cause in the range: the finding's quote, which the engine
+// found again, says where, and no judge is needed to match it.
 
 import (
 	"encoding/json"
