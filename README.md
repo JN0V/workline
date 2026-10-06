@@ -21,7 +21,8 @@ A software factory for AI-assisted development:
 - people state the need and accept the result; the line does the work in
   between ([principles](docs/PRINCIPLES.md)).
 
-Status (2026-09-24): used daily on its author's machine;
+Status (2026-10-06): runs on every commit of its author, and in CI on the
+pull requests and nightly gardening of workline and DomoticsCore;
 <!-- workline:derive conformance-cases -->405<!-- workline:end --> conformance cases green in CI.
 
 ## The roles
