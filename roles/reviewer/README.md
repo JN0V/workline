@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: c212b79
+checked: 0f7a5a5
 verified: agent:claude-code
 ---
 # Reviewer
@@ -13,12 +13,14 @@ flowchart LR
   role(["Reviewer"])
   alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
   proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
+  asked["<b>Asked</b><br/>a choice the change leaves open:<br/>a question for a person,<br/>not a defect, never judged"]
   person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
   out["<b>Lands in</b><br/>the terminal and out/review.json<br/>one summary comment<br/>issues, needs-triage"]
   when --> role
   reads --> role
   role --> alone --> out
   role --> proposed --> out
+  role --> asked --> out
   role --> person
 ```
 
@@ -28,7 +30,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 **Does**: reads the code a change brings before a person does, and says
 what it breaks, what the issue it closes asks and it leaves out, and what
 its author claims and it contradicts — each finding quoted, found again by
-the engine and checked by a judge; rules on the comments the change adds (a bug's story, an
+the engine and checked by a judge — and asks a person what only a person
+decides; rules on the comments the change adds (a bug's story, an
 internal code), with no agent.
 **Does not**: approve, change the code, merge, or review docs and other
 files that are not code (`ignore`): the author fixes, the person merges
@@ -49,11 +52,13 @@ one a push on a merge request) and one judge call for each important
 finding. #146's eight commits, every lens: 142k tokens in, estimated, the
 lenses' call 73.6k (430k before #147, docs/tried.md); the judges reading
 whole functions (#127), about 160k. Intent and claims (#126): the
-lenses' prompt 0.7% larger, 3.0% when the change closes an issue.
+lenses' prompt 0.7% larger, 3.0% when the change closes an issue; a
+decision for a person, 0.4% more, no judge call.
 Caps:
 `ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
 `judge-lines-max`, `tests-lines-max`, `testimony-lines-max`,
-`issue-lines-max`, `findings-max`, `issues-max`, `lenses-per-push`.
+`issue-lines-max`, `findings-max`, `issues-max`, `questions-max`,
+`lenses-per-push`.
 **Without AI**: the rules alone; the change is left for a person
 (`not-reviewed`).
 **Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
@@ -100,7 +105,7 @@ Caps:
      it.
    - **What they answer**: `finding`s: lens, severity, title, why, its
      cause quoted, its symptom when elsewhere, a fix; the claims lens's,
-     the claim.
+     the claim; a `decision`, the question for a person (step 6).
    - **The floor** (`finder-floor`): each lens is asked to look for a
      number of candidates first, from the change's size; a floor on
      candidates, never on what is judged or shown: a lens answering
@@ -119,6 +124,14 @@ Caps:
    an issue open or closed, none opened),
    labelled `needs-triage`, with the product owner's state; never on the
    merge request. A nit there is left, counted.
+   - **A decision for a person** (#126): a finding holding `decision` —
+     a trade-off, a design choice, what the issue leaves open — is a
+     question, not a defect: its cause found again, in the change or its
+     issue, else dropped, said, never an issue; never important, never
+     judged, never blocking; `questions-max` a run, the rest counted.
+     Asked in the summary comment under **Questions for a person**, one
+     line each, its cause quoted; locally, `decision` (`question`). A
+     reply on the merge request is enough: the reviewer does not wait.
 7. **The judge**, apart, for each important finding, at the best
    independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
    It reads the finding, the code it stands on, and what the change did
@@ -155,7 +168,8 @@ Caps:
      question (#229); a refused one is dropped alone, the rest still shown.
 8. **The verdict.** The rules block (the long comment warns); what the
    lenses find warns (`ai-findings: warn`) until the evaluation has
-   measured it (#90), lens by lens (Settings). Past `findings-max` on the
+   measured it (#90), lens by lens (Settings); a question for a person
+   neither warns nor blocks, the summary counting it. Past `findings-max` on the
    change, or `issues-max` outside it, the rest is counted. One summary
    comment on a merge request, edited each run (`forge-writes`); none
    when the run blocks.
@@ -221,6 +235,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one |
 | `findings-max` | `10` | findings on the change a run; the rest counted |
 | `issues-max` | `3` | issues opened a run for what lies outside it |
+| `questions-max` | `3` | decisions put to a person a run (#126); the rest counted |
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
 | `code-lines-max` | `600` | lines of the changed files a lens is given whole, the change marked; the others by their hunks |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |

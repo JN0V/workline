@@ -535,3 +535,48 @@ test of 29 and 31 minutes "Closes #39." Nothing of TokenTTL.
 - **Not tried**: on the merge request in CI (the released engine runs
   there); a claim in the merge request's body only; five runs a case
   (ADR-0014).
+
+## 2026-10-06 — a decision for a person (#126)
+
+Offline first, no tokens: #146's review at `5be9afd`, the recording agent
+of #147 (each lens answering nothing), origin/main's engine against this
+branch's.
+
+| Lenses' prompt | Characters | Tokens (711 + 0.82 a character) |
+|---|---|---|
+| origin/main | 87,894 | 72.8k |
+| this branch (intent not asked) | 88,256 (+0.4%) | 73.1k |
+
+- **What grew**: `decision` in the instruction and the answer's shape;
+  the intent lens's line (78 characters) only when it is asked.
+
+**Planted, live**: workline-sandbox#41 asks an account locked after five
+failed sign-ins and leaves open how long it stays locked. Pull request
+workline-sandbox#42 picks 15 minutes, "Closes #41.".
+`workline run-role reviewer --event merge-request --forge github`, the
+lenses answered by a planted intent decision and a tests nit: the summary
+comment holds the nit in the table and the decision under **Questions for
+a person**, its cause quoted from #41; nothing judged, nothing opened.
+
+**The validation run**, one, real: `workline review --base origin/main
+--ai claude --forge github` on a clone of the branch, `ai-max-tokens:
+60000`, `forge-writes: false`, Sonnet finding, Opus judging (`model`):
+
+| Call | Tokens in | Out |
+|---|---|---|
+| the five lenses, together | 6.2k | 1.1k |
+| judge, edge cases, lockout.go:13 | 3.7k | 0.5k |
+| judge, intent, #41 | 4.1k | 0.3k |
+| judge, claims, lockout.go:14 | 3.8k | 0.4k |
+| **total**, 4 calls | **17.8k** | **2.2k** |
+
+- **The open point, asked**: `decision` at `lockout.go:9`
+  (`LockFor = 15 * time.Minute`), "Should the lock instead last until an
+  admin unlocks it?", as a question, not a defect, not judged.
+- **Also**: intent at `#41`, the sixth sign-in not refused (only a
+  predicate, nothing calls it), verified; the expiry untested (tests nit,
+  a correctness nit beside it); edge cases and claims saying the same
+  "nothing calls it", refused by the judge for want of material.
+- **Not tried**: on a merge request in CI (the released engine runs
+  there); a lens marking a true defect as a decision; five runs
+  (ADR-0014).
