@@ -148,3 +148,14 @@ commit's own diff and Claude (haiku):
   author's words, and only cut ("run the project's line in templates and on
   workline's pull requests"). One took a second attempt: the first was 73
   characters.
+
+On 2026-10-06, a copy of a real repository (DomoticsCore) with its own
+`core.hooksPath`, no agent:
+
+- `tools/hooks/` without workline: `AC-3 fix the thing` was committed
+  unchecked; `workline doctor` said `hooks-bypassed` and printed the line to
+  add. Added, the next commit was blocked (`internal-code`, `format`).
+- `.githooks`: doctor printed `git config --local --unset core.hooksPath`;
+  unset, the machine's global hooks blocked the same commit.
+- Not tried: a hook that reads `pre-push`'s input after workline's line;
+  husky or lefthook themselves; a work repository.
