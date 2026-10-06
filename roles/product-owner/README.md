@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 1f3641c
+checked: 0efb09c
 verified: agent:claude-code
 ---
 # Product owner
@@ -44,7 +44,7 @@ it proposes rather than does at `autonomy: cautious`.
 | Event | Fired by | Does |
 |---|---|---|
 | `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, acts and proposes |
-| `import` | `workline issues import <file>` (`--apply` to open) | opens each item still to do in a file as an issue; then maps every item to its issue or the reason it has none, and lists what is left with neither, for a person (exit 2) |
+| `import` | `workline issues import <file>` (`--apply` to open; in CI, judged without `--apply`, then `workline apply --line`) | opens each item still to do in a file as an issue; then maps every item to its issue or the reason it has none, and lists what is left with neither, for a person (exit 2) |
 
 ## Alone, proposed, left to a person
 

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 7a6289b
+checked: 0efb09c
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -157,6 +157,12 @@ judgement: the product owner reads the file, not a parser (principle 4).
   issue gets its state, confirmed at the commit, no sources: gardening
   names them (`sources`).
 - Without `--apply`, it says what it would open and writes nothing.
+  Its runs are listed as pending, as `workline route --no-apply` lists
+  a line's (`to apply:`; `--json`: `pending`): `workline apply --line
+  <result>`, in a job with the write token and no AI key, opens them,
+  no agent called, each opening checked against the forge's issues
+  then, as with `--apply`. The map stays the judge's,
+  "would be opened"; the import run again maps them open.
   `open` is capped per share (`acts.open.max`): past it, an item is
   proposed in the report, and the import run again opens it.
 
