@@ -206,14 +206,15 @@ between screens, wording.
 
 ## Roadmap, decided by the maintainer
 
-1. Reviewer to block-ready: its measure (#90) and its missing facets (#126).
-2. Inspector.
-3. Security.
-4. Auditor widened to every role.
-5. Process engineer (#89).
-6. Tester.
-7. Architect.
-8. UX.
-9. PM.
-10. Developer (#117), **last**: a machine's pull request needs every
+1. Reviewer to block-ready: its measure ([#90](https://github.com/JN0V/workline/issues/90)) and its missing
+   facets ([#126](https://github.com/JN0V/workline/issues/126)).
+2. Inspector ([#202](https://github.com/JN0V/workline/issues/202)); SonarQube read as a gate ([#203](https://github.com/JN0V/workline/issues/203)).
+3. Security ([#204](https://github.com/JN0V/workline/issues/204)).
+4. Auditor widened to every role ([#205](https://github.com/JN0V/workline/issues/205)).
+5. Process engineer ([#89](https://github.com/JN0V/workline/issues/89)).
+6. Tester ([#206](https://github.com/JN0V/workline/issues/206)).
+7. Architect ([#207](https://github.com/JN0V/workline/issues/207)).
+8. UX ([#208](https://github.com/JN0V/workline/issues/208)).
+9. PM ([#209](https://github.com/JN0V/workline/issues/209)), a draft to design with the maintainer.
+10. Developer ([#117](https://github.com/JN0V/workline/issues/117)), **last**: a machine's pull request needs every
     check above before a person reads it.
