@@ -1,0 +1,33 @@
+case: reviewer/tests-shipping-untested
+about: "Tests, new code untested: Shipping adds three prices on two thresholds, and no test. The code itself is right."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90,
+      // and 9.90 for more than five units.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	units := 0
+      	for _, it := range items {
+      		units += it.Qty
+      	}
+      	if units > 5 {
+      		return 990
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: tests
+      kind: untested
+      at: [{file: shop/shipping.go, lines: [3, 16], text: "func Shipping(items []Item) int {"}]

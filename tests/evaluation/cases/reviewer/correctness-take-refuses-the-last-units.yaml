@@ -1,0 +1,12 @@
+case: reviewer/correctness-take-refuses-the-last-units
+about: "Correctness, off by one: Take's check becomes `<=`, so the last units of a product can never be taken, under a message claiming only that stock never goes below zero. The fixture's test takes two of three, which passes either way."
+given:
+  repo: shop
+  setup:
+    - "git checkout -q -b feature && sed -i 's/s.left\\[sku\\] < n {/s.left[sku] <= n {/' shop/stock.go && git commit -qam 'fix(stock): never take a product below zero'"
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: correctness
+      kind: off-by-one
+      at: [{file: shop/stock.go, lines: [32, 33], text: "s.left[sku] <= n"}]

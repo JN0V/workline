@@ -1,0 +1,27 @@
+case: reviewer/edge-cases-page-loses-its-guard
+about: "Edge cases, below the range: the guard on a page or a size below 1 is removed as redundant; page 0 makes `from` negative and the slice panics, while the doc still promises nil. The fixture's test never asks for page 0."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/page.go <<'GO'
+      package shop
+
+      // Page returns page p of the items, counted from 1, size items a page;
+      // nil past the last page, or for a page or a size below 1.
+      func Page(items []Item, p, size int) []Item {
+      	from := (p - 1) * size
+      	if from >= len(items) {
+      		return nil
+      	}
+      	return items[from:min(from+size, len(items))]
+      }
+      GO
+      git commit -qam 'refactor(page): one bound check is enough'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: edge-cases
+      kind: below-range
+      at: [{file: shop/page.go, lines: [5, 10], text: "from := (p - 1) * size"}]

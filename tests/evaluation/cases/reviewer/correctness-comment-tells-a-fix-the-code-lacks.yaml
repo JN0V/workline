@@ -1,0 +1,32 @@
+case: reviewer/correctness-comment-tells-a-fix-the-code-lacks
+about: "Correctness, a comment telling a bug's story the code does not keep: it says a page past the end once panicked (it never did) and that the last page comes back whole; the new check drops a last page shorter than the others. The story avoids the bug-story rule's words, so the lenses are asked."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/page.go <<'GO'
+      package shop
+
+      // Page returns page p of the items, counted from 1, size items a page;
+      // nil past the last page, or for a page or a size below 1.
+      func Page(items []Item, p, size int) []Item {
+      	if p < 1 || size < 1 {
+      		return nil
+      	}
+      	from := (p - 1) * size
+      	// A page reaching past the end once panicked here: such a page is
+      	// nil now, and the last page always comes back whole.
+      	if from+size > len(items) {
+      		return nil
+      	}
+      	return items[from : from+size]
+      }
+      GO
+      git commit -qam 'fix(page): no panic on a page past the end'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: correctness
+      kind: comment-story
+      at: [{file: shop/page.go, lines: [10, 15], text: "if from+size > len(items) {"}]
