@@ -61,7 +61,13 @@ func TestReach(t *testing.T) {
 		"calc/calc.go":      calcGo,
 		"calc/sum.go":       sumGo,
 		"calc/calc_test.go": "package calc\n\nfunc TestMean() { Mean(nil) }\n",
+		"other/other.go":    "package other\n\nfunc sum(v []int) int { return 0 }\n\nfunc use() int { return sum(nil) }\n",
 	})
+	// An unexported Go function is called only from its own package.
+	g := Finding{Cause: Quote{Path: "calc/sum.go", Quote: "total += v"}}
+	if got := reach(repo, "HEAD", nil, g, 7, 0, 200); !strings.Contains(got, "`Mean`, calls `sum`") || strings.Contains(got, "other.go") {
+		t.Errorf("the callers of sum:\n%s", got)
+	}
 	f := Finding{Title: "Mean leaves out the first value", Why: "sum skips one",
 		Cause: Quote{Path: "calc/calc.go", Quote: "return sum(values) / len(values)"}}
 	got := reach(repo, "HEAD", []string{"**/*_test.*"}, f, 5, 0, 200)
@@ -138,8 +144,11 @@ func TestEnclosingByLanguage(t *testing.T) {
 }
 
 func TestNamedIn(t *testing.T) {
-	got := strings.Join(namedIn("The `comments` operation emits no `bot` field, and Agreement accepts it; see load_all() and run(x)."), " ")
-	if got != "comments bot The Agreement load_all run" {
+	names, weak := namedIn("The `comments` operation emits no `bot` field, and Agreement accepts it; see load_all() and run(x). Report says readBlock. Last")
+	if got := strings.Join(names, " "); got != "comments bot Agreement load_all run readBlock" {
 		t.Errorf("namedIn = %q", got)
+	}
+	if got := strings.Join(weak, " "); got != "The Report Last" {
+		t.Errorf("namedIn, weak = %q", got)
 	}
 }

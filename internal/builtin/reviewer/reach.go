@@ -424,7 +424,7 @@ func (r *reacher) callers(f fn) []fn {
 	seen := map[string]bool{f.key(): true}
 	for _, h := range strings.Split(strings.TrimSpace(hits), "\n") {
 		file, n, line, ok := hit(h, r.head)
-		if !ok || pathglob.Any(r.skip, file) || (file == f.file && n >= f.from && n <= f.to) || l.defined(line, re) != "" {
+		if !ok || pathglob.Any(r.skip, file) || (file == f.file && n >= f.from && n <= f.to) || l.defined(line, re) != "" || !visible(f, file) {
 			continue
 		}
 		c, ok := r.enclosing(file, n)
@@ -441,13 +441,16 @@ func (r *reacher) callers(f fn) []fn {
 // in the file, else those in its folder, else every one if few; many: it
 // is named, none shown.
 func pick(defs []fn, file string) (shown []fn, many bool) {
-	var same, near []fn
+	var same, near, far []fn
 	for _, d := range defs {
 		switch {
+		case !visible(d, file):
 		case d.file == file:
 			same = append(same, d)
 		case path.Dir(d.file) == path.Dir(file):
 			near = append(near, d)
+		default:
+			far = append(far, d)
 		}
 	}
 	switch {
@@ -455,19 +458,28 @@ func pick(defs []fn, file string) (shown []fn, many bool) {
 		return same[:1], false
 	case len(near) > 0:
 		return near[:min(len(near), 2)], false
-	case len(defs) <= 2:
-		return defs, false
+	case len(far) <= 2:
+		return far, false
 	}
 	return nil, true
 }
 
+// visible says whether a Go function can be named from a file: an
+// unexported one only from its own package's folder. Other languages: yes.
+func visible(f fn, from string) bool {
+	if languageOf(f.file).body != "go" || f.name == "" || strings.ToUpper(f.name[:1]) == f.name[:1] {
+		return true
+	}
+	return path.Dir(f.file) == path.Dir(from)
+}
+
 // namedIn are the names a finding's words point to: a word in backticks,
-// one followed by a parenthesis, one holding a capital or an underscore.
-func namedIn(text string) []string {
-	var out []string
+// one followed by a parenthesis, one holding a capital or an underscore;
+// weak, a capitalised word opening a sentence, English as often as a name.
+func namedIn(text string) (names, weak []string) {
 	add := func(w string) {
-		if len(w) > 2 && !slices.Contains(out, w) {
-			out = append(out, w)
+		if len(w) > 2 && !slices.Contains(names, w) {
+			names = append(names, w)
 		}
 	}
 	for _, m := range regexp.MustCompile("`([^`]+)`").FindAllStringSubmatch(text, -1) {
@@ -475,13 +487,19 @@ func namedIn(text string) []string {
 			add(w)
 		}
 	}
-	for _, m := range regexp.MustCompile(`\b([A-Za-z_]\w*)(\()?`).FindAllStringSubmatch(text, -1) {
-		w := m[1]
-		if m[2] != "" || strings.Contains(w, "_") || strings.ToLower(w) != w {
+	for _, at := range regexp.MustCompile(`\b([A-Za-z_]\w*)(\()?`).FindAllStringSubmatchIndex(text, -1) {
+		w := text[at[2]:at[3]]
+		before := strings.TrimRight(text[:at[0]], " \t")
+		opens := before == "" || strings.ContainsAny(before[len(before)-1:], ".:;!?\n")
+		switch {
+		case at[4] >= 0 || strings.Contains(w, "_") || strings.ToLower(w[1:]) != w[1:] || (!opens && strings.ToLower(w) != w):
 			add(w)
+		case opens && strings.ToLower(w) != w && len(w) > 2 && !slices.Contains(weak, w):
+			weak = append(weak, w)
 		}
 	}
-	return out
+	weak = slices.DeleteFunc(weak, func(w string) bool { return slices.Contains(names, w) })
+	return names, weak
 }
 
 // reach is what a judge reads of the code a finding stands on, at most
@@ -570,7 +588,8 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 			}
 		}
 	}
-	add(namedIn(f.Title+" "+f.Why+" "+f.Fix), nil, "named by the finding")
+	named, weak := namedIn(f.Title + ". " + f.Why + ". " + f.Fix)
+	add(named, nil, "named by the finding")
 	if l := languageOf(f.Cause.Path); l != nil {
 		by := "called by the lines around the cause"
 		if cause.name != "" {
@@ -583,6 +602,7 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 			}
 		}
 	}
+	add(weak, nil, "named by the finding") // last: a word opening a sentence may be English
 	for _, w := range wants {
 		if shown[w.g.key()] {
 			continue
