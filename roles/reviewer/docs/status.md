@@ -24,6 +24,7 @@ released in v0.9.0.
 | `ai-findings` by lens (#222): a lens set to block fails the run, the others warn, a lens not named warns, one value still sets every lens; a misspelt lens or value stops the run; of two findings on one line, the blocking lens leads (tried.md, planted) | `ai-findings-by-lens-blocks`, `ai-findings-by-lens-warns`, `ai-findings-lens-unnamed-warns`, `ai-findings-one-value-every-lens`, `ai-findings-misspelt-refused`, `ai-findings-blocking-lens-leads-merge` |
 | A blocked merge request still gets the comment (#226): what blocks first, marked; the record moved when every lens answered; a rule that blocks comments too; applied by the applying job, the judging one failing (tried.md, planted) | `blocked-run-still-comments`, `blocked-run-moves-the-record`, `blocked-run-judged-apart-still-blocks`, `rules-block-still-comments`, `TestGitLabApplyRunsWhenTheJudgeFails`, `TestGitHubApplyRunsWhenTheJudgeFails` |
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
+| Findings on one line each judged by their own lens's question (#229): grouped on one row, each with its verdict; a refused leader dropped alone, the verified one leading and blocking if its lens blocks (tried.md: restock) | `merged-findings-each-judged-by-their-lens`, `merged-finding-lead-refused-other-shown` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
 | Its measure: twelve evaluation cases on the `shop` fixture, three defects planted a lens, two clean changes and untested code outside one; scored by lens with no agent, recall, findings nothing planted, the judge's refusals, the finder floor, tokens | tests/evaluation/cases/reviewer, `TestScoreReview`, `TestReviewerWithFakeAgent`, `TestReviewerCasesPointRight` |
 | An issue outside the change opened through the one way every role shares: a subject an issue holds, open or closed, not opened again (ADR-0018) | backlog `issue-*` cases; the sandbox, live (#9) |
@@ -43,7 +44,7 @@ Conformance: tests/conformance/cases/reviewer.
    shown; edge cases found 3 of 3 but one was sent outside the change
    (since routed to the change, #224), and it showed one finding a clean rename did not cause; the
    judge refused four true findings of the tests lens, which its own
-   question now verifies (#223, tried.md; item 9 left). The
+   question now verifies (#223, #229, tried.md). The
    maintainer decides from it: `ai-findings: {correctness: block}` (by
    lens since #222; workline's own line still warns), or step 2 on the
    lenses in doubt. Not measured yet: the
@@ -63,8 +64,3 @@ Conformance: tests/conformance/cases/reviewer.
 8. **A removal's reach past three lines**: a removed guard whose defect
    shows further down (a slice ten lines on) is still sent outside the
    change; the window is a diff's context, not the code's flow.
-9. **Two findings on one line, two questions**: they are merged and
-   judged once, by the leading lens's question; a tests-lens "no test"
-   merged under a correctness finding is refused with it (tried.md,
-   2026-10-06, #223: Restock). Judging each lens's finding on its own
-   question would keep it.

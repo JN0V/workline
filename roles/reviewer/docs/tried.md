@@ -322,3 +322,25 @@ results.tsv holds the rows.
   the code, weak; not raised in the run before.
 - **Not tried**: five runs (ADR-0014); a removal whose defect lies more
   than three lines on (status.md, item 8).
+
+## 2026-10-06 — findings on one line, each judged by its lens (#229)
+
+The restock case (tests/evaluation/cases/reviewer/
+`tests-restock-test-asserts-nothing`), once, Sonnet finding and Opus
+judging (`model`), the engine of the branch; results.tsv holds the row.
+
+| | Before (#223's rerun) | After |
+|---|---|---|
+| Score | 2/2 | 2/2 |
+| The tests lens on `stock.go:48` | "Restock edge cases untested", merged under correctness, judged by its question: refused | "Restock behaviour untested for accumulation and non-positive quantities": verified |
+| The tests lens on `stock_test.go:20` | verified | verified |
+| Tokens | 30.8k in, 2.6k out, 6 calls | 32.9k in, 2.0k out, 6 calls |
+
+- **No extra judge call this run**: the other lenses' findings on the
+  tests lens's lines were nits, judged by nobody; each extra important
+  finding on a shared line costs one judge call (conformance: 3 judge
+  calls instead of 1 in `local-review-outputs-json`).
+- **Still refused**: an edge-cases finding on `stock.go:49`, judged by its
+  own question (judge-no 1, credited to the tests defect it overlaps).
+- **Not tried**: five runs (ADR-0014); a run where two important
+  findings of two lenses share a line (conformance only).
