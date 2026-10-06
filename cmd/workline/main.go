@@ -5,12 +5,12 @@
 //	workline run-role <role> --event <event> [--ai none|claude|cmd:<command>|fake:<file>|unavailable:<reason>]
 //	                  [--repo <dir>] [--roles <dir>] [--forge ...] [--target ...] [--scope ...]
 //	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
-//	                  [--sarif <file>] [--code-quality <file>]
+//	                  [--sarif <file>] [--code-quality <file>] [--summary <file>]
 //	workline route <event> [same options as run-role, but --input-file]
 //	workline review [--base <ref>] [--lenses all|<lens,...>] [--repo <dir>] [--ai ...] [--json]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
 //	workline issues [list] [--repo <dir>] | show <n>|!<n> [--repo <dir>]   (the local forge)
-//	workline apply <run-dir>... | --line <route result> [--json]
+//	workline apply <run-dir>... | --line <route result> [--json] [--summary <file>]
 //	workline gate <name> [--repo <dir>] [--json]
 //	workline hooks install|uninstall --global | --repo
 //	workline setup [--hooks yes|no] [--ai none|claude|...] [--install <tool,...>|none] [--yes]
@@ -190,6 +190,7 @@ func runRole(args []string) int {
 	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
+	summaryFile := fs.String("summary", "", "also add a Markdown summary of the run to this file, for a CI job's page")
 	inputs, inputFiles := pairs{}, pairs{}
 	fs.Var(inputs, "input", "input name=value (repeatable)")
 	fs.Var(inputFiles, "input-file", "input name=path, written back by intentions that target it (repeatable)")
@@ -223,6 +224,10 @@ func runRole(args []string) int {
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
 	})
 	if err := wlreport.Write(absRepo, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if err := wlreport.AppendSummary(*summaryFile, wlreport.RoleSummary("run-role "+name+" ("+*event+")", name, res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -684,6 +689,7 @@ func sampleCmd(args []string) int {
 	apply := fs.String("apply", "", "write the result in this file to the forge: the tracking issue, and a merge request putting back a false `checked`")
 	forgeSpec := fs.String("forge", "", "with --apply: github, gitlab, fake:<file> (default: the project's `forge` setting)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	summaryFile := fs.String("summary", "", "also add a Markdown summary of the sample to this file, for a CI job's page")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -718,6 +724,14 @@ func sampleCmd(args []string) int {
 				return 1
 			}
 		}
+	}
+	title := "sample"
+	if *apply != "" {
+		title = "sample --apply"
+	}
+	if err := wlreport.AppendSummary(*summaryFile, wlreport.SampleSummary(title, res)); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
 	}
 	if *asJSON {
 		data, _ := json.MarshalIndent(res, "", "  ")
@@ -906,6 +920,7 @@ func routeCmd(args []string) int {
 	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
+	summaryFile := fs.String("summary", "", "also add a Markdown summary of the line to this file, for a CI job's page")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	_ = fs.Parse(args[1:])
@@ -923,6 +938,10 @@ func routeCmd(args []string) int {
 	res := line.Run(args[0], engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
 	if err := wlreport.Write(abs, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
+	if err := wlreport.AppendSummary(*summaryFile, wlreport.LineSummary("route "+args[0], res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -1090,6 +1109,7 @@ func applyCmd(args []string) int {
 	fs := flag.NewFlagSet("apply", flag.ExitOnError)
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	lineFile := fs.String("line", "", "apply the runs `workline route --no-apply --json` listed as pending in this file")
+	summaryFile := fs.String("summary", "", "also add a Markdown summary of what was applied to this file, for a CI job's page")
 	_ = fs.Parse(args)
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
@@ -1104,6 +1124,10 @@ func applyCmd(args []string) int {
 		dirs = append(dirs, l.Pending...)
 		if len(dirs) == 0 {
 			fmt.Fprintln(os.Stderr, "pass — nothing to apply: the line proposed nothing")
+			if err := wlreport.AppendSummary(*summaryFile, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true}); err != nil {
+				fmt.Fprintln(os.Stderr, "workline:", err)
+				return 1
+			}
 			return 0
 		}
 	}
@@ -1121,6 +1145,10 @@ func applyCmd(args []string) int {
 		res.Applied = append(res.Applied, next.Applied...)
 		res.Findings = append(res.Findings, next.Findings...)
 		res.Handoffs = append(res.Handoffs, next.Handoffs...)
+	}
+	if err := wlreport.AppendSummary(*summaryFile, wlreport.RoleSummary("apply", "", res)); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
 	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")

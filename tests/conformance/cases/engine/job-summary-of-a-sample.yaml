@@ -15,7 +15,7 @@ expect:
   status: pass
   summary-file:
     - "### workline sample"
-    - "- read, docs/tech/auth.md: false"
     - "- vouched-false docs/tech/auth.md: "
+    - "- read, docs/tech/auth.md: false"
     - "### workline sample --apply"
     - "- applied: "

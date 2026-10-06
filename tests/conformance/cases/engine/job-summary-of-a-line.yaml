@@ -10,8 +10,8 @@ expect:
   applied: [label, comment]
   summary-file:
     - "### workline route merge-request (fake)"
-    - "- ran, committer: pass"
-    - "- ran, documentalist: pass"
+    - "- **committer**: pass"
+    - "- **documentalist**: pass"
     - "- agent, documentalist:"
     - "- to apply: 1 run"
     - "### workline apply"

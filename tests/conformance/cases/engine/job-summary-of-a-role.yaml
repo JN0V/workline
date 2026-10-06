@@ -6,6 +6,6 @@ expect:
   status: pass
   summary-file:
     - "### workline run-role documentalist (schedule)"
-    - "pass — "
+    - "**pass** — "
     - "- section-too-long docs/history.md"
     - "- doc-too-long docs/sessions.md"

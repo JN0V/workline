@@ -1,5 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-engine/job-summary-of-a-line
-engine/job-summary-of-a-role
-engine/job-summary-of-a-sample
