@@ -75,6 +75,23 @@ func TestParseDiffInsideAHunk(t *testing.T) {
 	}
 }
 
+// A removal — a hunk removing more lines than it adds — is placed in the
+// new file, and the kept lines within three of it count as the change;
+// those further do not, nor those beside a replacement or an addition.
+func TestExposedBesideARemoval(t *testing.T) {
+	diff := "diff --git a/a.go b/a.go\n--- a/a.go\n+++ b/a.go\n@@ -6,3 +5,0 @@\n-x\n-y\n-z\n@@ -20,3 +18 @@\n-a\n-b\n-c\n+new\n" +
+		"@@ -40 +38 @@\n-old\n+new\n@@ -50,0 +48 @@\n+added\n"
+	c := parseDiff(diff)
+	if got := c.Removals["a.go"]; !slices.Equal(got, []Place{{6, 5}, {18, 18}}) {
+		t.Errorf("removals: %v", got)
+	}
+	for n, want := range map[int]bool{2: false, 3: true, 8: true, 9: false, 14: false, 15: true, 21: true, 22: false, 37: false, 47: false} {
+		if c.exposedAt("a.go", n) != want {
+			t.Errorf("line %d exposed: %v, want %v", n, !want, want)
+		}
+	}
+}
+
 func TestLocate(t *testing.T) {
 	lines := []string{"func A() {", "\treturn  x / y", "}", "func B() {", "\treturn x / y", "}", "", "if !ok {", "\treturn w", "}"}
 	for _, c := range []struct {

@@ -1,5 +1,5 @@
 case: reviewer/finding-beside-removed-lines-is-fixed-by-author
-about: "A defect the change made by removing lines is the change's, though its cause quotes a line the change kept: a kept line within three lines of a removal (a unified diff's context) counts as the change. It is reported to the author, verified, and no issue is opened for it."
+about: "A defect the change made by removing lines is the change's, though its cause quotes a line the change kept: a kept line within three lines of a removal (a hunk taking more lines away than it adds; three, a unified diff's context) counts as the change. It is reported to the author, verified, and no issue is opened for it."
 given:
   repo: reviewed
   setup: ["sed -i '/for _, v := range values {/,/^\\t}$/d' calc/calc.go && git commit -qam 'refactor: drop the loop'"]

@@ -16,13 +16,22 @@ type Line struct {
 }
 
 // Change is what a range of commits did to the files: the lines it added and
-// removed, by file.
+// removed, by file, and the lines of the new file each removal spans: a
+// hunk removing more lines than it adds.
 type Change struct {
-	Added   map[string][]Line `json:"added"`
-	Removed map[string][]Line `json:"removed"`
+	Added    map[string][]Line  `json:"added"`
+	Removed  map[string][]Line  `json:"removed"`
+	Removals map[string][]Place `json:"removals,omitempty"` // a hunk only removing: From is To+1, between two lines
 }
 
-var hunk = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
+// exposed is how many kept lines either side of a removal count as the
+// change, a unified diff's default context: a guard removed leaves the
+// lines it guarded exposed, and a finding quotes those (#224). A hunk
+// replacing lines one for one exposes nothing: its added lines are the
+// change.
+const exposed = 3
+
+var hunk = regexp.MustCompile(`^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@`)
 
 // readChange reads `git diff -U0 from to -- files`, every line it adds and
 // removes placed in the new file.
@@ -41,7 +50,7 @@ func readChange(repo, from, to string, files []string) (Change, error) {
 // lines are read only in its header, before its first hunk: inside one, a
 // line removed that read `-- x` is `--- x`, and is a line, not a file.
 func parseDiff(out string) Change {
-	c := Change{Added: map[string][]Line{}, Removed: map[string][]Line{}}
+	c := Change{Added: map[string][]Line{}, Removed: map[string][]Line{}, Removals: map[string][]Place{}}
 	path, old, at, header := "", "", 0, false
 	for _, l := range strings.Split(out, "\n") {
 		switch {
@@ -56,7 +65,15 @@ func parseDiff(out string) Change {
 			}
 		case hunk.MatchString(l):
 			header = false
-			at, _ = strconv.Atoi(hunk.FindStringSubmatch(l)[1])
+			m := hunk.FindStringSubmatch(l)
+			at, _ = strconv.Atoi(m[2])
+			if count(m[1]) > count(m[3]) { // lines taken away, nothing in their place
+				p := Place{at, at + count(m[3]) - 1}
+				if count(m[3]) == 0 {
+					p = Place{at + 1, at} // a hunk adding nothing: git names the line before it
+				}
+				c.Removals[path] = append(c.Removals[path], p)
+			}
 		case header:
 		case strings.HasPrefix(l, "+"):
 			c.Added[path] = append(c.Added[path], Line{path, at, l[1:]})
@@ -66,6 +83,26 @@ func parseDiff(out string) Change {
 		}
 	}
 	return c
+}
+
+// count is a hunk's line count as its header gives it: one when left out.
+func count(s string) int {
+	if s == "" {
+		return 1
+	}
+	n, _ := strconv.Atoi(s)
+	return n
+}
+
+// exposedAt says whether line n of path lies beside a removal, within the
+// context a unified diff shows around it.
+func (c Change) exposedAt(path string, n int) bool {
+	for _, p := range c.Removals[path] {
+		if n >= p.From-exposed && n <= p.To+exposed {
+			return true
+		}
+	}
+	return false
 }
 
 // addedAt says whether the change added line n of path.
