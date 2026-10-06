@@ -446,7 +446,10 @@ func readLenses(runDir, repo string, s Settings) int {
 			// is judged by its own lens, the group only shows them together
 			// (#229); the one ahead leads, the others beside it.
 			if dup := slices.IndexFunc(*list, func(o Finding) bool { return o.Where == f.Where }); dup >= 0 {
-				(*list)[dup] = group(s, append(members((*list)[dup]), f))
+				ms := members((*list)[dup])
+				if !slices.ContainsFunc(ms, func(o Finding) bool { return asked(o) == asked(f) }) { // a lens saying it twice: once
+					(*list)[dup] = group(s, append(ms, f))
+				}
 				continue
 			}
 			*list = append(*list, f)
