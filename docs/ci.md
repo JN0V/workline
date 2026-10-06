@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: 7a6289b
+checked: b196291
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -175,6 +175,32 @@ judged without an agent, and nothing is applied or commented.
 On each push to the default branch, `workline:follow` rebuilds the
 documentalist's merge request for the release, when one is open, on the
 branch's new tip, with `WORKLINE_GITLAB_TOKEN` and no agent (ADR-0034).
+
+## What a job shows
+
+Each job's summary — the verdict, each step's verdict and findings, the
+agent's calls, what was applied and what waits to be — is written by the
+engine (`--summary`, [ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)),
+for a person who reads neither the log nor `line.json`:
+
+- **GitHub**: the job's summary page (`$GITHUB_STEP_SUMMARY`); a fork's
+  pull request gets it as a comment.
+- **GitLab**: `workline-summary.html`, linked from the job's page (its
+  annotations) and, for a merge request, from the merge request's page
+  (`expose_as`); `workline-summary.md` printed at the end of the log. Both
+  kept a day as artifacts, a week for the applying jobs, which add what
+  they applied to the judging job's.
+- **Another CI**: pass `--summary` to `route`, `apply` or `sample`, as
+  `.md` or `.html`, whichever your CI shows.
+
+The HTML opens in the browser through GitLab Pages, on by default on
+gitlab.com; without Pages, the link downloads it.
+Tried on gitlab.com (2026-10-06), the engine of the branch: a scheduled
+gardening job, the weekly sample's read, and a gardening job started
+through the pipelines API ([gitlab-trigger.md](gitlab-trigger.md)) each
+printed it, and their job's page linked the HTML, which Pages showed. Not
+tried: a merge request's `expose_as` link, an applying job's page, a
+private project's Pages preview, a self-managed instance.
 
 ## The product owner
 

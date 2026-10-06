@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 7a6289b
+checked: b196291
 judged: 9ad8c58
 verified: agent:claude-code
 -->
@@ -109,7 +109,7 @@ flowchart LR
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it (`merge-request`) | committer, every commit; documentalist, the docs it made suspect; reviewer, opt-in ([ADR-0020](docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)) | the docs' fix committed to its branch; one summary comment; findings in code scanning (SARIF) or GitLab's Code Quality |
+| each push to it (`merge-request`) | committer, every commit; documentalist, the docs it made suspect; reviewer, opt-in ([ADR-0020](docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)) | the docs' fix committed to its branch; one summary comment; findings in code scanning (SARIF) or GitLab's Code Quality; the job's summary ([ADR-0035](docs/adr/0035-the-engine-writes-the-jobs-summary.md)) |
 | a release tool's (release-please…) | held as the release: the documentalist on the docs due ([ADR-0017](docs/adr/0017-the-release-manager.md)) | the docs' fix in a merge request of its own |
 | a fork's | judged with no agent | on GitHub, a comment ([workline-fork.yml](ci/github/workline-fork.yml)); on GitLab, nothing |
 
