@@ -21,7 +21,11 @@ func TestEveryCommandHasHelp(t *testing.T) {
 	list, _, _ = strings.Cut(list, "\n\n")
 	n := 0
 	for _, l := range strings.Split(list, "\n") {
-		name := strings.Fields(l)[0]
+		fields := strings.Fields(l)
+		if len(fields) == 0 {
+			continue
+		}
+		name := fields[0]
 		n++
 		cmd := exec.Command(engineBin, name, "--help")
 		cmd.Env = hermeticEnv()

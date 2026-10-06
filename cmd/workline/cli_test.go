@@ -85,11 +85,12 @@ func captureStdout(t *testing.T, f func() int) (string, int) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	read := make(chan []byte)
+	go func() { out, _ := io.ReadAll(r); read <- out }()
 	old := os.Stdout
 	os.Stdout = w
+	defer func() { os.Stdout = old }()
 	code := f()
-	os.Stdout = old
 	w.Close()
-	out, _ := io.ReadAll(r)
-	return string(out), code
+	return string(<-read), code
 }
