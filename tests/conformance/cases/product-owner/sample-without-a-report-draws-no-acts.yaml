@@ -1,0 +1,16 @@
+case: product-owner/sample-without-a-report-draws-no-acts
+about: A project with no product owner's report gets no sample of its acts — no tracking issue for them, nothing said of them — and the docs' weekly sample is written as before.
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {id: 3, title: "Rows lost", body: "Some rows are lost.", labels: []}
+run: {sample: [--week, 2026-W03, --judge, none], then: apply}
+expect:
+  status: pass
+  no-findings:
+    - {rule: acts-sample}
+  forge:
+    issues:
+      - {id: 4, title: "workline: the weekly sample of the docs vouched for", comments: 1, comment-contains: "2026-W03"}
+      - {id: 5, absent: true}
