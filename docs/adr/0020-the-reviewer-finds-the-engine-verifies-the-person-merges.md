@@ -312,3 +312,29 @@ merge-request line; on in workline's own repository.
 - **Rejected**: a decision judged (a judge says whether code fails, not
   what a person wants); one opened as an issue (nobody decides it before
   the merge); a `severity: decision` (the question itself is the mark).
+
+## Amendment (2026-10-06, #126: the diff alone)
+
+- **A facet given the change only.** A reader holding the files and the
+  author's words explains a line away; one holding the change alone reads
+  what it says by itself. The `diff-alone` facet (lenses/diff-alone.md)
+  is asked apart, its task the change (`git diff -U3`, up to
+  `diff-lines-max`) and its own text: no file whole, no commit message,
+  no merge request, no issue.
+- **A call of its own**: the lenses share one call (#147); this one
+  cannot share their material without losing what it is for. On a merge
+  request, each push when on, beside the lens in turn.
+- **The same way after**: its findings' quotes found again in the files,
+  routed by where the cause lies, the important ones judged with the
+  usual question and material (the code around the cause, the change
+  near it); `ai-findings` may name it.
+- **Off by default, by measure** (roles/reviewer/docs/tried.md): on the
+  evaluation's twelve cases, alone, 10 of 11 planted defects shown on the
+  change (the eleventh, an answer that did not read), nothing false
+  shown, 82k tokens in and out; but every defect it found, the lenses
+  found too (#90's step 1, since #224). On #146's review its prompt is
+  64k characters, about 53k tokens, a third more on a 142k review.
+  `diff-alone: true` turns it on; `--lenses diff-alone` asks it alone.
+- **Rejected**: the facet as one more lens in the shared call (it would
+  read the files); its own judge question (a judge reads the code, the
+  facet's narrow view is no reason to judge it otherwise).

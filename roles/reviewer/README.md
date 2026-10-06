@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 8cfed9b
+checked: 194bf36
 verified: agent:claude-code
 ---
 # Reviewer
@@ -11,7 +11,7 @@ flowchart LR
   when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in"]
   reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change<br/>the issue it closes<br/>what its author says"]
   role(["Reviewer"])
-  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
+  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>what the change says by itself (diff-alone, off),<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
   proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
   asked["<b>Asked</b><br/>a choice the change leaves open:<br/>a question for a person,<br/>not a defect, never judged"]
   person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
@@ -53,7 +53,9 @@ finding. #146's eight commits, every lens: 142k tokens in, estimated, the
 lenses' call 73.6k (430k before #147, docs/tried.md); the judges reading
 whole functions (#127), about 160k. Intent and claims (#126): the
 lenses' prompt 0.7% larger, 3.0% when the change closes an issue; a
-decision for a person, 0.4% more, no judge call.
+decision for a person, 0.4% more, no judge call. The diff-alone facet,
+off: one call more, the change's size (about 4.6k tokens on the
+evaluation's cases, 53k on #146's).
 Caps:
 `ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
 `judge-lines-max`, `tests-lines-max`, `testimony-lines-max`,
@@ -106,6 +108,12 @@ Caps:
    - **What they answer**: `finding`s: lens, severity, title, why, its
      cause quoted, its symptom when elsewhere, a fix; the claims lens's,
      the claim; a `decision`, the question for a person (step 6).
+   - **The diff alone** (`diff-alone`, off, #126): a call of its own,
+     given the change only (`git diff -U3`, up to `diff-lines-max`), not
+     the files, the messages nor the issue: what the change says by
+     itself. Its findings are quoted, judged and routed as a lens's.
+     `--lenses diff-alone` asks it alone, whatever the setting. Off by
+     measure: it found what the lenses found, nothing more (docs/tried.md).
    - **The floor** (`finder-floor`): each lens is asked to look for a
      number of candidates first, from the change's size; a floor on
      candidates, never on what is judged or shown: a lens answering
@@ -240,6 +248,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
 | `code-lines-max` | `600` | lines of the changed files a lens is given whole, the change marked; the others by their hunks |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
+| `diff-alone` | `false` | `true`: the diff-alone facet each run, a call of its own given the change only (#126) |
 | `judge-lines-max` | `200` | lines of code a judge is shown: the cause's function, then those it reaches (#127), the rest named; `0`: the 31 lines around the cause |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown, the rest named |
 | `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) the lenses are given |
