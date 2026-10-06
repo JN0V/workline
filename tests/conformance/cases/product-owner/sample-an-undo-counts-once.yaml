@@ -1,0 +1,18 @@
+case: product-owner/sample-an-undo-counts-once
+about: A person's undo counts against one act only, the newest of its issue and kind done by the day it was found; the same issue renamed again since stands, and the undo is counted once.
+given:
+  repo: vouched
+  forge:
+    issues:
+      - id: 5
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\nundone:\n  - {issue: 21, act: rename, evidence: '#21 renamed back by a person', day: \"2026-01-08\"}\nmeasure: {level: normal}\ndid:\n  - {issue: 21, act: rename, level: normal, day: \"2026-01-06\", line: 'Renamed #21 first'}\n  - {issue: 21, act: rename, level: normal, day: \"2026-01-15\", line: 'Renamed #21 again'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {sample: [--week, 2026-W03, --judge, none], then: apply}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 7, comment-contains: "| #21 | rename | 2026-01-15 | normal | standing |"}
+      - {id: 7, comment-contains: "2 acts done alone at normal in the acts the record keeps, 1 undone"}

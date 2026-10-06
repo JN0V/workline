@@ -1,2 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# An undo counts against one act of the sample (ADR-0033).
+product-owner/sample-an-undo-counts-once
