@@ -58,6 +58,10 @@ agent and holds the write token, as `apply` does (principle 6).
   over a person's commit, it goes in a comment there (`fix-in-comment`).
   Gardening's merge requests (ADR-0006) still say commits added by hand
   are overwritten: they are not touched here.
+- **Only onto its own base.** The forge lists the open branches, not where
+  their merge requests go: a branch whose first commit by the role did not
+  leave from the base's history goes elsewhere — a maintenance branch's
+  release — and is left alone (`not-rebuilt`).
 - **Only when its own change no longer applies is a person asked**:
   `no-longer-applies`, status `human` (exit 2), naming the files; the
   branch is left as it is, to rebase or close — closed, the next release
@@ -97,4 +101,5 @@ agent and holds the write token, as `apply` does (principle 6).
   release-branch-up-to-date-left-alone,
   release-branch-a-person-committed-to-is-kept,
   release-branch-conflict-asks-a-person,
+  release-branch-on-another-base-left-alone,
   release-fix-keeps-a-person-commit.
