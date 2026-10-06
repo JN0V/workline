@@ -379,6 +379,7 @@ func readLens(repo, name string) (Lens, error) {
 	if err != nil {
 		return l, err
 	}
+	text = strings.ReplaceAll(text, "\r\n", "\n") // a checkout with CRLF endings
 	l.Text = text
 	if rest, ok := strings.CutPrefix(text, "---\n"); ok {
 		head, body, closed := strings.Cut("\n"+rest+"\n", "\n---\n") // empty, or closed on the last line

@@ -64,6 +64,7 @@ func TestReadLensFrontMatter(t *testing.T) {
 	for _, c := range []struct{ text, body, question, err string }{
 		{"**Plain.**\n", "**Plain.**\n", "", ""},
 		{"---\n---\n**Empty.**\n", "**Empty.**\n", "", ""},
+		{"---\r\njudge:\r\n  question: Asked?\r\n---\r\n**CRLF.**\r\n", "**CRLF.**\n", "Asked?", ""},
 		{"---\njudge:\n  question: Asked?\n---\n**Lens.**\n", "**Lens.**\n", "Asked?", ""},
 		{"---\njudge:\n  question: Asked?\n---", "", "Asked?", ""},
 		{"---\njudge:\n  question: Asked?\n", "", "", "not closed"},
