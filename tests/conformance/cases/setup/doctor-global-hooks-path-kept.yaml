@@ -1,0 +1,15 @@
+case: setup/doctor-global-hooks-path-kept
+about: A repository without a core.hooksPath of its own runs the global hooks, which the doctor reports as before.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline/hooks\" && printf '#!/bin/sh\\n' > \"$XDG_CONFIG_HOME/workline/hooks/commit-msg\" && git config --file \"$XDG_CONFIG_HOME/gitconfig\" core.hooksPath \"$XDG_CONFIG_HOME/workline/hooks\""
+  env: {GIT_CONFIG_GLOBAL: "$XDG_CONFIG_HOME/gitconfig"}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: hooks, level: ok, message: "global git hooks installed in"}
+    - {rule: hooks-path, level: ok, message: "no core.hooksPath of its own"}
+  no-findings:
+    - {rule: hooks-not-installed}

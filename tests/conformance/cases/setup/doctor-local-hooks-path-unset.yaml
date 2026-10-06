@@ -1,0 +1,11 @@
+case: setup/doctor-local-hooks-path-unset
+about: A repository pointing its own core.hooksPath at .githooks, which workline's global hooks hand over to, is told to unset it, so workline runs and then its hooks.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p .githooks && printf '#!/bin/sh\\nexit 0\\n' > .githooks/commit-msg && chmod +x .githooks/commit-msg && git config core.hooksPath .githooks"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: hooks-bypassed, where: .githooks, fix: "git config --local --unset core.hooksPath"}

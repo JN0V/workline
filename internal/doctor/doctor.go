@@ -212,6 +212,7 @@ func repository(r *Report, o Options) {
 		}
 		return false
 	}
+	hooksPath(r, o, routes("pre-push"))
 	var judged []string
 	if routes("merge-request") && ciRuns(o.Repo, "workline route merge-request") {
 		judged = append(judged, "on each merge request, in CI")
@@ -286,6 +287,71 @@ func repository(r *Report, o Options) {
 	} else if msg != "" {
 		r.add(Check{Area: "repository", Rule: "docs-not-read", Where: where, Level: Warn, Message: msg})
 	}
+}
+
+// hooksPath says which hooks git runs in the repository. A core.hooksPath of
+// its own wins over the global one, workline's included: then its hooks must
+// hand over to workline, or nothing is checked here.
+func hooksPath(r *Report, o Options, prePush bool) {
+	out, _ := exec.Command("git", "-C", o.Repo, "config", "--show-scope", "--type=path", "--get", "core.hooksPath").Output()
+	scope, path, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
+	if path == "" || (scope != "local" && scope != "worktree") {
+		r.add(Check{Area: "repository", Rule: "hooks-path", Level: OK,
+			Message: "this repository sets no core.hooksPath of its own: the global hooks, above, run here"})
+		return
+	}
+	dir := path
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(o.Repo, dir) // git runs hooks from the top of the working tree
+	}
+	p, _ := hooks.DefaultPaths()
+	names := []string{"commit-msg"}
+	if prePush {
+		names = append(names, "pre-push")
+	}
+	var missing []string
+	for _, n := range names {
+		if !hooks.HandsOver(dir, n, p) {
+			missing = append(missing, n)
+		}
+	}
+	own := fmt.Sprintf("this repository's core.hooksPath (%s, %s setting) wins over the global one", path, scope)
+	if len(missing) == 0 {
+		r.add(Check{Area: "repository", Rule: "hooks-path", Where: path, Level: OK,
+			Message: own + ", and its " + strings.Join(names, " and ") + plural(names, " hands", " hand") + " over to workline"})
+		return
+	}
+	lost := "commits are not checked here"
+	if missing[0] == "pre-push" {
+		lost = "pushes are not checked here"
+	}
+	// The global hooks hand over to .githooks/ and the git dir's hooks/:
+	// without the setting, workline runs, then them.
+	var fix string
+	gitDir, _ := exec.Command("git", "-C", o.Repo, "rev-parse", "--absolute-git-dir").Output()
+	if c := filepath.Clean(dir); c == filepath.Join(o.Repo, ".githooks") || c == filepath.Join(strings.TrimSpace(string(gitDir)), "hooks") {
+		fix = fmt.Sprintf("git config --%s --unset core.hooksPath   # workline's global hooks then hand over to %s", scope, path)
+	} else {
+		var adds []string
+		for _, n := range missing {
+			where := "at the top of " + filepath.Join(path, n)
+			if _, err := os.Stat(filepath.Join(dir, n)); err != nil {
+				where = "in a new executable " + filepath.Join(path, n)
+			}
+			adds = append(adds, fmt.Sprintf("workline hook %s \"$@\" || exit $?   # %s", n, where))
+		}
+		fix = strings.Join(adds, "\n      ")
+	}
+	r.add(Check{Area: "repository", Rule: "hooks-bypassed", Where: path, Level: Warn,
+		Message: own + ", and its " + strings.Join(missing, " and ") + plural(missing, " does", " do") + " not hand over to workline: " + lost,
+		Fix:     fix})
+}
+
+func plural(l []string, one, many string) string {
+	if len(l) == 1 {
+		return one
+	}
+	return many
 }
 
 // UsedTools lists the tools the roles use, each once, sorted.
