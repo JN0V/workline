@@ -21,7 +21,8 @@ A software factory for AI-assisted development:
 - people state the need and accept the result; the line does the work in
   between ([principles](docs/PRINCIPLES.md)).
 
-Status (2026-09-24): used daily on its author's machine;
+Status (2026-10-06): runs on every commit of its author, and in CI on the
+pull requests and nightly gardening of workline and DomoticsCore;
 <!-- workline:derive conformance-cases -->405<!-- workline:end --> conformance cases green in CI.
 
 ## The roles
@@ -35,8 +36,8 @@ Status (2026-09-24): used daily on its author's machine;
 | [Judge](roles/judge/role.yaml) | answers one yes-or-no question a role's check cannot, from another context or model; asked by the other roles, never on an event of its own | built |
 | [Auditor](roles/auditor/role.yaml) | not a role of the line: each week, `workline sample` asks it to re-read one in ten of the docs the documentalist vouched for | built |
 | Process engineer | will observe the whole line and propose fixes as issues; the weekly samples are its first measures ([#89](https://github.com/JN0V/workline/issues/89), [ADR-0019](docs/adr/0019-the-line-evaluates-itself.md), a draft) | planned |
-| Developer | will take a ready issue and open the pull request ([#117](https://github.com/JN0V/workline/issues/117)) | planned |
 | Architect, tester | [#87](https://github.com/JN0V/workline/issues/87) | planned |
+| Developer | will take a ready issue and open the pull request ([#117](https://github.com/JN0V/workline/issues/117)) | planned |
 
 What each role does and does not, its settings and costs: its page, or
 [all the roles](docs/roles.md). Checking that a commit holds one change is
