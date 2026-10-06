@@ -364,7 +364,7 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]st
 	// change closes.
 	n := max(1, min(s.LensesPerPush, len(usable)))
 	var out []string
-	for i := 0; len(out) < n; i++ {
+	for i := 0; len(out) < n && i < len(s.Lenses); i++ { // a lens named twice counts once
 		if l := s.Lenses[(rec.Runs+i)%len(s.Lenses)]; slices.Contains(usable, l) && !slices.Contains(out, l) {
 			out = append(out, l)
 		}
