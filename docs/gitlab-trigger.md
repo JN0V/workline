@@ -1,12 +1,12 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 0efb09c
+checked: d261b38
 judged: 02da247
 verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
-The GitLab template ([ci.md](ci.md#gitlabcom)) runs on merge request
+The GitLab template ([ci-gitlab.md](ci-gitlab.md)) runs on merge request
 events and pipeline schedules. Where an internal tool starts the jobs
 instead — the trigger API, the pipelines API, another pipeline — this page
 does the same with a plain script. The commands themselves:
