@@ -1,2 +1,4 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+reviewer/judge-reads-the-function-the-cause-calls
+reviewer/judge-reach-capped-rest-named

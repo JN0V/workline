@@ -1,0 +1,9 @@
+# A lens of the reviewer, on the `reviewed` fixture once Mean calls sum: a
+# true defect whose proof lies in the function the cause calls, in another
+# file (#127).
+- finding:
+    severity: important
+    title: Mean leaves out the first value
+    why: sum adds only the values after the first, so the mean of [2, 4] comes out 2
+    cause: {path: calc/calc.go, quote: "return sum(values) / len(values)"}
+    fix: add every value

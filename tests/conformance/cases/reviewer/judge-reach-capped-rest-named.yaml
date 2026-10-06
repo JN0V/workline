@@ -1,0 +1,38 @@
+case: reviewer/judge-reach-capped-rest-named
+about: "The code a judge reads stops at judge-lines-max lines, the functions left out named with where they lie, so a refusal can say what it did not read (#127)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      git checkout -q main
+      cat > calc/sum.go <<'GO'
+      package calc
+
+      // sum adds the values after the first: the first counts the others.
+      func sum(values []int) int {
+      	total := 0
+      	for _, v := range values[1:] {
+      		total += v
+      	}
+      	return total
+      }
+      GO
+      git add calc && git commit -qm 'feat: sum the values'
+      git checkout -q feature && git reset -q --hard main
+      cat >> calc/calc.go <<'GO'
+
+      // Mean is the average of every value.
+      func Mean(values []int) int {
+      	return sum(values) / len(values)
+      }
+      GO
+      git commit -qam 'feat: the mean of the values'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-from-callee.sh"}
+  config: {roles: {reviewer: {settings: {judge-lines-max: 8}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-mean-callee"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: finding-judged-no, message: "sum, is not given"}]
+  run-files:
+    in/judge/01/question.yaml: {contains: "Not shown, past 8 lines: `sum` (calc/sum.go:3-10", not-contains: "range values[1:]"}
