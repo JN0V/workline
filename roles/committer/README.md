@@ -11,9 +11,10 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 **Does**: checks each commit message (format, length, internal codes), the
 secrets and forbidden terms a commit adds (gitleaks) and the author's
 identity; with an agent, rewrites a refused message in your words.
-**Does not**: split a commit, edit code, rewrite commits already made (on a
-merge request it lists them, for `git rebase -i`), or ask an agent about a
-message that passes.
+**Does not**: check that a commit holds one change (planned:
+[#192](https://github.com/JN0V/workline/issues/192)), split a commit, edit
+code, rewrite commits already made (on a merge request it lists them, for
+`git rebase -i`), or ask an agent about a message that passes.
 
 | Event | Fired by | Checks |
 |---|---|---|
