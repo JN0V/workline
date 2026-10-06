@@ -44,6 +44,7 @@ workline` says where).
 ```sh
 workline setup     # asks three questions, shows each command before it runs it
 workline doctor    # at any time: what is set up, what is missing, the command for each
+workline --help    # every command; `workline <command> --help`, its options
 ```
 
 `setup` asks:

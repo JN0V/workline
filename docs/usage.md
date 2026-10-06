@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 0efb09c
+checked: 90206af
 verified: agent:claude-code
 ---
 # Using workline
@@ -8,6 +8,23 @@ verified: agent:claude-code
 The commands, their options and exit codes, as the engine reads them today.
 What a role does is on its page ([roles.md](roles.md)); the files, the
 settings and the variables, in [config.md](config.md).
+
+## Help
+
+- `workline --help`, `workline help`: every command a person runs, one
+  line each, on stdout, exit 0; `hook` and `builtin` are named apart, run by
+  the installed hooks and the shipped roles.
+- `workline <command> --help`, `workline help <command>`: the command's
+  usage line and its options, without a role or an event, exit 0.
+- Misuse prints what was wrong, then the usage, on stderr, exit 64: no
+  command, an unknown one, an unknown option, a value an option cannot take,
+  an argument left over, a missing `<role>` or `<event>`, an item id on a
+  forge that is not a whole number.
+- Tried: the help of every command; misuse before and after (exit 2 or 1,
+  now 64); the CI templates' `route merge-request --no-apply`, `apply
+  --line`, `follow`, and the hooks' `hook commit-msg`, with `--ai none`,
+  same codes as before. Not tried: a CI job written from the help alone, on
+  GitLab.
 
 ## Commands
 
@@ -81,8 +98,8 @@ Claude Code, run this way (the command the judge's trial used):
 | 3 | `blocked-external`: something outside failed (agent quota, forge, a repository) — never a verdict on the work |
 | 64 | the command was misused |
 
-`workline gate` returns 0 or 1. An unknown option exits 2, from Go's option
-parser, which a script cannot tell from `human` (#101).
+`workline gate` returns 0 or 1. An unknown option exits 64, as any misuse,
+never 2, which says `human`; asking for help exits 0.
 
 ## Before a push
 
