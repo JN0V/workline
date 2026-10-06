@@ -1,0 +1,13 @@
+# The correctness lens, on correctness-checkout-drops-the-coupon-error: the
+# planted defect, and a finding the judge refuses.
+- finding:
+    severity: important
+    title: A coupon that does not read is charged without an error
+    why: Checkout returns the full price and no error for "SAVEx", which its doc calls an error.
+    cause: {path: shop/checkout.go, quote: "if err == nil {"}
+    fix: return the error ParseCoupon gives.
+- finding:
+    severity: important
+    title: REFUSE the cart's total may overflow
+    why: a guess.
+    cause: {path: shop/checkout.go, quote: "func Checkout(items []Item, coupon string) (int, error) {"}

@@ -6,6 +6,8 @@
 #
 #   tests/evaluation/schedule/run.sh [repository]   # WORKLINE_EVAL: the agent, default claude
 #                                                    # WORKLINE_JUDGE: the judge, default claude:sonnet
+#                                                    # WORKLINE_EVAL_SKIP: case folders left out, default
+#                                                    #   reviewer: measured on demand, in steps (#90)
 #
 # The systemd units next to it run it every week (docs/spec/conformance.md).
 set -eu
@@ -30,7 +32,8 @@ fi
 commit=$(git -C "$tree" log -1 --format=%h -- cmd internal roles ':(exclude)roles/*/README.md' go.mod tests/evaluation/cases tests/conformance/fixtures/repos)
 
 # runs of this commit so far: the fewest any case has had
-cases=$(ls "$tree"/tests/evaluation/cases/*/*.yaml | wc -l)
+skip=${WORKLINE_EVAL_SKIP-reviewer}
+cases=$(ls "$tree"/tests/evaluation/cases/*/*.yaml | grep -Ev "/cases/(${skip:-x^})/" | wc -l)
 done_runs=$(awk -F'\t' -v c="$commit" -v a="$agent" -v cases="$cases" '
 	$2 == c && $3 == a { n[$6]++ }
 	END { m = 0; k = 0; for (x in n) { k++; if (m == 0 || n[x] < m) m = n[x] } print (k < cases ? 0 : m) }' "$results")
@@ -45,5 +48,5 @@ fi
 
 echo "workline eval: $commit, $agent (runs so far: $done_runs, model changed: $model_changed)"
 cd "$tree"
-WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m ./tests/evaluation/
+WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m -skip "TestEvaluation/(${skip:-x^})/" ./tests/evaluation/
 touch "$stamp" # after the run: the models it saw answer are not a change

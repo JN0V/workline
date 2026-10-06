@@ -1,0 +1,11 @@
+# The tests lens: a nit nothing planted, and a quote not found again.
+- finding:
+    severity: nit
+    title: No test for a coupon that does not read
+    why: TestCheckout tries a valid coupon and none.
+    cause: {path: shop/checkout_test.go, quote: "func TestCheckout(t *testing.T) {"}
+- finding:
+    severity: important
+    title: A quote that is nowhere
+    why: dropped.
+    cause: {path: shop/checkout.go, quote: "return nil, err"}

@@ -1,0 +1,45 @@
+case: reviewer/correctness-checkout-drops-the-coupon-error
+about: "Correctness, an error dropped: Checkout's doc says a coupon that does not read is an error, and the code charges the full price without one. Its test covers a valid coupon and none."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/checkout.go <<'GO'
+      package shop
+
+      // Checkout is what the cart costs once its coupon, if any, is taken off;
+      // a coupon that does not read is an error, and nothing is charged.
+      func Checkout(items []Item, coupon string) (int, error) {
+      	percent := 0
+      	if coupon != "" {
+      		p, err := ParseCoupon(coupon)
+      		if err == nil {
+      			percent = p
+      		}
+      	}
+      	return Discount(Total(items), percent), nil
+      }
+      GO
+      cat > shop/checkout_test.go <<'GO'
+      package shop
+
+      import "testing"
+
+      func TestCheckout(t *testing.T) {
+      	items := []Item{{"tea", 1000, 1}}
+      	if got, err := Checkout(items, "SAVE10"); err != nil || got != 900 {
+      		t.Errorf("SAVE10: %d, %v", got, err)
+      	}
+      	if got, err := Checkout(items, ""); err != nil || got != 1000 {
+      		t.Errorf("no coupon: %d, %v", got, err)
+      	}
+      }
+      GO
+      git add shop && git commit -qm 'feat(checkout): charge a cart, its coupon taken off'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: correctness
+      kind: error-dropped
+      at: [{file: shop/checkout.go, lines: [8, 13], text: "if err == nil {"}]

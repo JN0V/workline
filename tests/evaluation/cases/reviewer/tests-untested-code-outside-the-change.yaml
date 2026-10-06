@@ -1,0 +1,49 @@
+case: reviewer/tests-untested-code-outside-the-change
+about: "Untested code outside the change: Snapshot, on main, has no test; the change adds Clear, with its test, to the same file. Nothing on the change to find; whether the tests lens raises Snapshot, and how the judge takes it, is measured, not scored (#90: an issue, or left and counted)."
+given:
+  repo: shop
+  setup:
+    - |
+      cat >> shop/stock.go <<'GO'
+
+      // Snapshot is a copy of the stock, product by product.
+      func (s *Stock) Snapshot() map[string]int {
+      	s.mu.Lock()
+      	defer s.mu.Unlock()
+      	out := make(map[string]int, len(s.left))
+      	for sku, n := range s.left {
+      		out[sku] = n
+      	}
+      	return out
+      }
+      GO
+      git commit -qam 'feat(stock): a copy of the stock'
+      git checkout -q -b feature
+      cat >> shop/stock.go <<'GO'
+
+      // Clear empties the stock of sku.
+      func (s *Stock) Clear(sku string) {
+      	s.mu.Lock()
+      	defer s.mu.Unlock()
+      	delete(s.left, sku)
+      }
+      GO
+      cat >> shop/stock_test.go <<'GO'
+
+      func TestClear(t *testing.T) {
+      	s := NewStock()
+      	s.Add("tea", 2)
+      	s.Add("cup", 1)
+      	s.Clear("tea")
+      	if s.Left("tea") != 0 || s.Left("cup") != 1 {
+      		t.Errorf("left %d tea, %d cup", s.Left("tea"), s.Left("cup"))
+      	}
+      }
+      GO
+      git commit -qam 'feat(stock): empty the stock of a product'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  outside:
+    - lens: tests
+      kind: untested
+      at: [{file: shop/stock.go, lines: [46, 55], text: "func (s *Stock) Snapshot() map[string]int {"}]

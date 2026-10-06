@@ -48,7 +48,8 @@ type caseFile struct {
 		Message string            `yaml:"message"` // commit-msg: the message the author wrote
 		Input   map[string]string `yaml:"input"`
 	} `yaml:"run"`
-	Grade []map[string]any `yaml:"grade"`
+	Grade  []map[string]any `yaml:"grade"`
+	Review *reviewCase      `yaml:"review"` // a reviewer case: what is planted, scored with no agent (review_test.go)
 }
 
 type result struct {
@@ -62,6 +63,7 @@ type result struct {
 	} `json:"findings"`
 	Applied []string `json:"applied"`
 	Notes   []string `json:"notes"`
+	RunDir  string   `json:"run-dir"`
 }
 
 type call struct {
@@ -70,6 +72,7 @@ type call struct {
 	TokensIn  int     `json:"tokens-in"`
 	TokensOut int     `json:"tokens-out"`
 	CostUSD   float64 `json:"cost-usd"`
+	Task      string  `json:"task"` // part, judge, or "" for the role's own question
 }
 
 // answeredBy says which models answered, in order, `>` marking a step up, the
@@ -96,7 +99,9 @@ type run struct {
 	repo, message, headBefore string
 	before                    map[string]string // files as they were before the run, when a check needs them
 	res                       result
-	judgedBy                  string // the model that answered the judge checks, and its independence
+	judgedBy                  string   // the model that answered the judge checks, and its independence
+	measure                   string   // a reviewer case's tallies, a lens each (review_test.go)
+	reviewNotes               []string // what each of its findings was taken for
 }
 
 var (
@@ -148,6 +153,12 @@ func TestEvaluation(t *testing.T) {
 			passed, failed, skipped := grade(&c, r)
 			score := fmt.Sprintf("%d/%d", passed, passed+len(failed))
 			t.Logf("%s — %s, %d agent calls; failed: %s", c.Case, score, r.res.AgentCalls, strings.Join(failed, "; "))
+			if c.Review != nil {
+				t.Logf("  measure: %s", r.measure)
+				for _, n := range r.reviewNotes {
+					t.Logf("  finding: %s", n)
+				}
+			}
 			if len(failed) > 0 { // what the run said, to see why
 				t.Logf("  applied: %v", r.res.Applied)
 				for _, n := range r.res.Notes {
@@ -162,7 +173,7 @@ func TestEvaluation(t *testing.T) {
 			models, efforts, tokensIn, tokensOut, cost := answeredBy(r.res.Calls)
 			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), models, efforts,
 				c.Case, score, fmt.Sprint(r.res.AgentCalls), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()),
-				strings.Join(append(failed, skipped...), "; "), r.judgedBy}, "\t")
+				strings.Join(append(failed, skipped...), "; "), r.judgedBy, r.measure}, "\t")
 			record.Lock()
 			defer record.Unlock()
 			results := "results.tsv"
@@ -182,42 +193,9 @@ func TestEvaluation(t *testing.T) {
 // play builds the case's repository and runs the role once, with the agent
 // ai names (an --ai value).
 func play(t *testing.T, c *caseFile, ai string) (*run, error) {
-	work := t.TempDir()
-	repo := filepath.Join(work, "repo")
-	// The user's config folder stays out: their allowed identities and term
-	// lists are not the case's, and would refuse the fixture's commits.
-	env := append(hermetic(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
-	self, _ := filepath.Abs("../..")
-	switch {
-	case c.Given.WorklineCommit != "":
-		sha := c.Given.WorklineCommit
-		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+sha+"^ && git -C "+self+" diff "+sha+"^ "+sha+" | git apply --index"); err != nil {
-			return nil, err
-		}
-	case c.Given.WorklineAt != "":
-		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+c.Given.WorklineAt); err != nil {
-			return nil, err
-		}
-		for _, l := range c.Given.Setup { // the change the case is about, on top
-			if err := sh(repo, env, l); err != nil {
-				return nil, err
-			}
-		}
-	default:
-		script, _ := filepath.Abs(filepath.Join("..", "conformance", "fixtures", "repos", c.Given.Repo+".sh"))
-		if err := os.MkdirAll(repo, 0o755); err != nil {
-			return nil, err
-		}
-		for _, s := range append([]string{"sh " + script}, c.Given.Setup...) {
-			if err := sh(repo, env, s); err != nil {
-				return nil, err
-			}
-		}
-	}
-	if c.Given.Config != nil {
-		data, _ := yaml.Marshal(c.Given.Config)
-		os.MkdirAll(filepath.Join(repo, ".workline"), 0o755)
-		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
+	work, repo, env, err := build(t, c)
+	if err != nil {
+		return nil, err
 	}
 	r := &run{repo: repo, before: map[string]string{}}
 	head, _ := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
@@ -256,6 +234,49 @@ func play(t *testing.T, c *caseFile, ai string) (*run, error) {
 	return r, nil
 }
 
+// build makes the case's repository, as the role will find it, and the
+// environment the role runs in.
+func build(t *testing.T, c *caseFile) (work, repo string, env []string, err error) {
+	work = t.TempDir()
+	repo = filepath.Join(work, "repo")
+	// The user's config folder stays out: their allowed identities and term
+	// lists are not the case's, and would refuse the fixture's commits.
+	env = append(hermetic(), "XDG_CONFIG_HOME="+filepath.Join(work, "config"))
+	self, _ := filepath.Abs("../..")
+	switch {
+	case c.Given.WorklineCommit != "":
+		sha := c.Given.WorklineCommit
+		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+sha+"^ && git -C "+self+" diff "+sha+"^ "+sha+" | git apply --index"); err != nil {
+			return "", "", nil, err
+		}
+	case c.Given.WorklineAt != "":
+		if err := sh(work, env, "git clone -q "+self+" repo && cd repo && git checkout -q "+c.Given.WorklineAt); err != nil {
+			return "", "", nil, err
+		}
+		for _, l := range c.Given.Setup { // the change the case is about, on top
+			if err := sh(repo, env, l); err != nil {
+				return "", "", nil, err
+			}
+		}
+	default:
+		script, _ := filepath.Abs(filepath.Join("..", "conformance", "fixtures", "repos", c.Given.Repo+".sh"))
+		if err := os.MkdirAll(repo, 0o755); err != nil {
+			return "", "", nil, err
+		}
+		for _, s := range append([]string{"sh " + script}, c.Given.Setup...) {
+			if err := sh(repo, env, s); err != nil {
+				return "", "", nil, err
+			}
+		}
+	}
+	if c.Given.Config != nil {
+		data, _ := yaml.Marshal(c.Given.Config)
+		os.MkdirAll(filepath.Join(repo, ".workline"), 0o755)
+		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
+	}
+	return work, repo, env, nil
+}
+
 // grade runs a case's checks; each one is one point. A judge check that
 // could not be asked is skipped: it is no point, earned or lost.
 func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
@@ -278,6 +299,17 @@ func grade(c *caseFile, r *run) (passed int, failed, skipped []string) {
 			} else {
 				passed++
 			}
+		}
+	}
+	if c.Review != nil {
+		rr, err := readReview(r.res.RunDir, r.res)
+		if err != nil {
+			return passed, append(failed, "review: "+err.Error()), skipped
+		}
+		p, f, measure, notes := scoreReview(c.Review, rr)
+		passed, failed, r.measure, r.reviewNotes = passed+p, append(failed, f...), measure, notes
+		if r.judgedBy == "" {
+			r.judgedBy = rr.Judge
 		}
 	}
 	return passed, failed, skipped

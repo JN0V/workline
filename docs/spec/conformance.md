@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 2948d73
+checked: 0c60609
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -257,6 +257,33 @@ control, doing both right must lose neither; the `count-off` findings,
 reported by the engine with no agent (ADR-0014, step 2), are graded there
 too and must never be lost.
 
+**The reviewer's measure** (#90). A reviewer case adds `review:` to
+`given` and `run`: the `defects` planted on the change, each a lens, a
+kind, and the places its cause may be quoted at (a file, a range of lines
+as they read at the change's head, a `text` within them); the places
+where nothing may be found (`not`); and code outside the change
+(`outside`), measured and not scored. Built on the `shop` fixture, every
+lens asked (event `review`). The run's folder is read with no agent — what
+each lens answered, what the engine kept of it, the judge's verdict on
+each important finding, the tokens each lens's call and its judges used —
+and scored: a point for each defect a finding shown on the change has its
+cause in, whichever lens raised it (AI review benchmarks count known bugs
+found and false positives, docs/research/code-review.md; the place, from
+the quote the engine found again, needs no judge); a point for each
+`not` kept clean; a point when nothing important was shown that nothing
+planted. The `measure` column of `results.tsv` holds, a lens each, the
+defects planted for it and found, those it raised itself, those the judge
+refused, what it raised that nothing planted (shown, nits, refused),
+outside the change (and verified), its answers, its quotes not found
+again, its tokens, and the finder floor asked; the summary sums them by
+lens. `TestReviewerCasesPointRight` builds each case — each place holds
+its text, the code builds, the fixture's tests pass, a planted defect
+they caught measuring nothing — and `TestReviewerWithFakeAgent` plays one
+through the engine with a fake agent (testdata/review-agent.sh). The
+model and independence matrix of ADR-0005 is a run with
+`WORKLINE_EVAL=claude:<model>` and `WORKLINE_JUDGE=claude:<model>`, never
+by default.
+
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
 What a change is designed on is never what it is accepted on: the
@@ -286,7 +313,9 @@ week, or at the next session when the machine was off. It skips the week when
 the last commit changing the engine, the roles or the cases already has three
 runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
 same models adds little, and a subscription counts the tokens. The `workline`
-column of `results.tsv` names that commit.
+column of `results.tsv` names that commit. The reviewer's cases are left
+out (`WORKLINE_EVAL_SKIP`, `reviewer` by default): they are measured on
+demand, in steps.
 
 *Tried so far* (2026-09-26): the judge through `cmd:`, and `claude:sonnet` at
 the `model` level on every judged case — it failed rewrites that dropped
