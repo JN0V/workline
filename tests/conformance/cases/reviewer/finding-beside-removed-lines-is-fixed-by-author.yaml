@@ -1,0 +1,18 @@
+case: reviewer/finding-beside-removed-lines-is-fixed-by-author
+about: "A defect the change made by removing lines is the change's, though its cause quotes a line the change kept: a kept line within three lines of a removal (a hunk taking more lines away than it adds; three, a unified diff's context) counts as the change. It is reported to the author, verified, and no issue is opened for it."
+given:
+  repo: reviewed
+  setup: ["sed -i '/for _, v := range values {/,/^\\t}$/d' calc/calc.go && git commit -qam 'refactor: drop the loop'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-beside-removed"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: [comment]
+  findings: [{rule: correctness, where: "calc/calc.go:8", message: "Important: Average always returns 0"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: "calc/calc.go:8"}

@@ -540,7 +540,8 @@ func readLenses(runDir, repo string, s Settings) int {
 // found reads one finding a lens answered, and finds its quotes again: its
 // cause in the file at the head of the range, or among the lines the change
 // removed; its symptom, when it gives one, in its file. Related: its cause
-// lies on a line the change added or removed. why says why it is dropped.
+// lies on a line the change added or removed, or on a kept line beside a
+// removal. why says why it is dropped.
 func found(repo string, st state, lens string, v any) (Finding, string) {
 	var raw struct {
 		Severity string `json:"severity"`
@@ -568,20 +569,16 @@ func found(repo string, st state, lens string, v any) (Finding, string) {
 	if ok {
 		places = locate(strings.Split(text, "\n"), f.Cause.Quote)
 	}
-	for _, p := range places {
-		for n := p.From; n <= p.To; n++ {
-			if st.Change.addedAt(f.Cause.Path, n) {
-				f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true
-				break
+	// The change's: a line it added, then a kept line beside a removal, then
+	// a line it removed, even one also kept elsewhere (#224).
+	for _, in := range []func(string, int) bool{st.Change.addedAt, st.Change.exposedAt} {
+		for _, p := range places {
+			for n := p.From; n <= p.To && f.Where == ""; n++ {
+				if in(f.Cause.Path, n) {
+					f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true
+				}
 			}
 		}
-		if f.Related {
-			break
-		}
-	}
-	if f.Where == "" && len(places) > 0 {
-		f.Where = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From)
-		f.Line = norm(strings.Split(text, "\n")[places[0].From-1])
 	}
 	if f.Where == "" {
 		var removed []string
@@ -591,6 +588,10 @@ func found(repo string, st state, lens string, v any) (Finding, string) {
 		if at := locate(removed, f.Cause.Quote); len(at) > 0 {
 			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, st.Change.Removed[f.Cause.Path][at[0].From-1].At), true
 		}
+	}
+	if f.Where == "" && len(places) > 0 {
+		f.Where = fmt.Sprintf("%s:%d", f.Cause.Path, places[0].From)
+		f.Line = norm(strings.Split(text, "\n")[places[0].From-1])
 	}
 	if f.Where == "" {
 		return f, fmt.Sprintf("its cause is not found in %s, as it reads at %s nor among the lines the change removed", f.Cause.Path, short(st.Head))

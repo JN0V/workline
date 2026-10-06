@@ -1,0 +1,8 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average's loop is
+# removed: a defect from before it, on a kept line far from the removal.
+- finding:
+    severity: important
+    title: Parse drops the conversion error
+    why: "\"x\" reads as 0, and the caller cannot tell it from a real 0"
+    cause: {path: calc/calc.go, quote: "n, _ := strconv.Atoi(s)"}
+    fix: return the error

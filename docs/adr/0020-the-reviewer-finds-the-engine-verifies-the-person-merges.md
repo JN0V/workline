@@ -68,6 +68,8 @@ before the push; and on the merge request, a safety net.
    issue holding it left as it is, `needs-triage`, the product owner's state
    naming its file and the commit, a cap a run. It is not posted on the
    merge request.
+   *(Amended 2026-10-06: a kept line beside a removal is the change's too;
+   see Amendment, #224.)*
 5. **A judge for each important finding**, apart, at the best independence
    available, the level said in the verdict (ADR-0005): at least `model`
    for a merge request the developer role opened, `context` for a person's
@@ -174,3 +176,24 @@ merge-request line; on in workline's own repository.
   beside the AI key, against
   [principle 6](../PRINCIPLES.md)); a third job only for the comment
   (one more job for what `workline apply` already does).
+
+## Amendment (2026-10-06, #224)
+
+- **A removal's exposed lines are the change's.** #90's step 1: every
+  lens found the guard removed from `Page`, each quoting
+  `from := (p - 1) * size`, a line the change kept; the engine sent the
+  change's defect to an issue (roles/reviewer/docs/tried.md).
+- **The rule**, in order: a cause on a line the change added; else on a
+  kept line within three lines of a removal; else on a line the change
+  removed, even one whose text is also kept elsewhere; else outside the
+  change.
+- **A removal** is a hunk taking away more lines than it adds; three is a
+  unified diff's default context. A hunk replacing lines one for one
+  exposes nothing: its added lines are the change.
+- **The cost**: a defect from before the change, quoted within three
+  lines of a removal, goes to the author, not to an issue. Kept small by
+  the window; the judge still verifies it.
+- **Rejected**: asking the lens which lines a finding is about (the model
+  says, the engine does not check: the split this ADR made mechanical);
+  the whole function around a removal (a long function sends every
+  defect in it to the author).

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 366be20
+checked: 48f1be0
 verified: agent:claude-code
 ---
 # Reviewer
@@ -78,8 +78,10 @@ to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
    breaks aside, in the file at the head of the range or among the lines
    the change removed; a symptom, in its file. Not found: dropped, said
    (`finding-unfounded`). Two on one line are merged, the second said.
-6. **Related or not.** A cause on a line the change added or removed: the
-   change's, reported on that line, for its author to fix. Elsewhere: an
+6. **Related or not.** A cause on a line the change added or removed, or
+   on a kept line within three of a removal (a hunk taking away more lines
+   than it adds, #224): the change's, reported on that line, for its
+   author to fix. Elsewhere: an
    issue, once (ADR-0018: its key the file and the cause's line; held by
    an issue open or closed, none opened),
    labelled `needs-triage`, with the product owner's state; never on the
