@@ -1922,6 +1922,20 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return rename(a.forge, a.role, d.Act)
+	case "unready":
+		// Back to refine, a person having ticked it (ADR-0032): the issue
+		// told why, its labels moved.
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
+		say := fmt.Sprintf("Moved back to refine: %s\n\nBy the %s role, %s having ticked it in the report. Put the label %s back to undo.",
+			strings.TrimSpace(d.Act.Why), a.role, d.Act.Ticked, backlog.LabelReady)
+		if err := a.forge.Comment(t, say, a.marker()); err != nil {
+			return err
+		}
+		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady})
 	case "split":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
@@ -2198,7 +2212,7 @@ func (a *applier) split(c backlog.Proposal) error {
 	}
 	st.Split = ids
 	if body != "" {
-		st.Body = backlog.BodyDigest(body) // the engine's own change: not read again for it
+		st.Keep(body) // the engine's own change: not read again for it
 	}
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
@@ -2242,7 +2256,7 @@ func (a *applier) depend(id int, blockers []int, digest bool) error {
 	if err != nil {
 		return fmt.Errorf("#%d: its state comment: %w", id, err)
 	}
-	st.Body = backlog.BodyDigest(body)
+	st.Keep(body)
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 
@@ -2329,7 +2343,7 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources [
 	if len(st.Sources) == 0 {
 		st.Sources = sources
 	}
-	st.Body = backlog.BodyDigest(body)
+	st.Keep(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
 }
 
@@ -2776,7 +2790,15 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			return nil, fmt.Errorf("in/waits.yaml: %v", err)
 		}
 	}
-	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, waits)
+	// What open issues were built on that changed, and those read again
+	// for it (ADR-0032).
+	var changes []backlog.Change
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "changes.yaml")); err == nil {
+		if err := yaml.Unmarshal(data, &changes); err != nil {
+			return nil, fmt.Errorf("in/changes.yaml: %v", err)
+		}
+	}
+	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, waits, changes)
 	if err != nil {
 		return nil, err
 	}

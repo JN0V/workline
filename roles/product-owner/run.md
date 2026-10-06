@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: c64eb35
+checked: 92b2518
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -87,6 +87,17 @@ as obsolete past its delay, no second judge yet. An issue appears once,
 in its first list. A day the forge does not say is said
 (`stuck-unknown`), never read as nothing stuck. A run with nothing else
 to write rewrites the report when its opening changed.
+
+A changed need flags the issues built on it (ADR-0032), found with or
+without an agent: an issue's Need or Scope a person rewrote since its
+state kept them, or the lines of a file an issue was imported from,
+changed by a commit since it was read. Its open parts, and the issue
+imported, are read first, with the text as it was and as it is; every
+act the agent proposes on them goes to the report (`need-changed`) —
+`unready`, back to refine, included, which only a person's tick does.
+The issues waiting on it and those on the same code are listed, not
+read. The report's "Changed needs" says each change and its issues,
+until a person ticks it checked; nothing is written to them.
 
 A split need — a parent — gets one comment, with or without an agent,
 edited in place as its parts move (ADR-0029): each part open, closed as

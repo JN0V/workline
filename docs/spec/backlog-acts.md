@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 82c365e
+checked: 92b2518
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -12,8 +12,9 @@ its code (ADR-0018). The product owner proposes the acts; the engine checks
 each one against the code and the forge, then does it, proposes it, or drops
 it. This page is the contract; the acts built are closing, naming an
 issue's sources, putting it in a milestone, ordering it, opening one from
-a file, refining one to ready, splitting one — and reporting on a
-parent as its parts close —, renaming it and naming what it waits on.
+a file, refining one to ready — and back —, splitting one — and
+reporting on a parent as its parts close —, renaming it, naming what it
+waits on, and flagging the issues built on a need that changed.
 
 ## The issue's state
 
@@ -30,6 +31,9 @@ priority: 2                              # the priority the role last set (Order
 title: The CSV export drops the last row  # the title the role last set (Renaming)
 split: [13, 14]                          # the children it was split into (Splitting)
 kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, by their quote (Closing)
+sections:                                # its Need and Scope as last read or written (A changed need)
+  Need: Every row exported, so a report counts what was sold.
+  Scope: WriteRows in src/export/csv.go.
 ```
 
 Two carrying the marker, the last is read: on GitLab only a note's author
@@ -70,12 +74,57 @@ is decided again, and the proposal leaves the report once its issue is
 read —, then those never read, then those with
 something new since they were read — a commit touched their sources, a
 person commented (`comments` counts people's comments read), a person
-changed its body (`body`), or a person reopened what the role closed. An issue with nothing new is not read again,
+changed its body (`body`), or a person reopened what the role closed —
+except the issues read again for a change to what they were built on,
+read before all ("A changed need", below). An issue with nothing new is not read again,
 however old (ADR-0018). An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
 against; the others are listed by title only. Each issue read gets `judged`
 moved to the run's commit; without an agent, or when its answer does not
 read, none is.
+
+### A changed need
+
+A person's change to what open issues were built on flags them
+(ADR-0032), as a requirements tool marks a link suspect; with no agent,
+at every run:
+
+- **An issue's Need or Scope rewritten by a person.** The state keeps
+  both as the engine last read or wrote them (`sections`), the engine's
+  own lines — a draft line, a blocked-by line — left out
+  (`backlog.Basis`). Another text there, spaces aside, is a change
+  (`backlog.Rewritten`); a section written where there was none, an edit
+  elsewhere in the body, a label are not — the issue is read again for
+  its body as before, and flags nothing. A state that kept none gets
+  them, once, with no agent.
+- **The lines of a file an issue was imported from, changed by a
+  commit**: the lines its body names (`Opened from `ROADMAP.md`, lines 7
+  to 8`, beside its `import=` key), carried from the commit it was
+  opened at (`confirmed`) to the one it was last read at (`judged`),
+  then through the commits since (`backlog.LinesChange`): lines changed,
+  removed, or added between two of them are a change; lines that only
+  moved are not. A commit that cannot be read — gone after a force-push,
+  beyond a shallow clone — is said (`lines-unread`, warn), never read
+  as no change.
+
+What a change touches (`backlog.Touched`), none twice, in this order:
+
+| Touched | What the run does |
+|---|---|
+| an open part of the issue (`backlog.Parts`) | read first, before the issues proposed for a cap, the sections as they were and as they are given beside it |
+| the issue imported from the lines | read first, the lines as they were and as they are |
+| an open issue waiting on it (`backlog.Blockers`) | listed in the report, not read |
+| its Scope rewritten: an open issue whose sources share a file with its own | listed in the report, not read |
+
+Every act the agent proposes on an issue read for a change is proposed,
+not done (`need-changed`, info), `keep` aside: what the change asks of it
+is a person's to decide. A part past `issues-per-run`, or every part
+without an agent or while paused, is listed instead of read. Nothing is
+written to an issue touched. The changed issue's state keeps its new
+sections at that run — after the agent's answer when a part was given
+to it —, an issue imported its new `judged`: the same change flags once.
+A change that touches no open issue is kept in the state and flags
+nothing. Only these direct consequences are followed (principle 9).
 
 ## Importing a file
 
@@ -320,6 +369,17 @@ what it can and asks for the rest:
   from the project's members (ADR-0023) — a token that may not list them
   fails the run, loud; on a plugged forge, its `insider`. One the forge
   does not say is outside.
+- **`unready`** moves a ready issue back to refine: `workline:ready`
+  off, `workline:to-refine` on, a comment telling the issue why and who
+  ticked it. It is **always proposed**, whatever the level or the
+  settings — a ready issue is moved back by a person only (ADR-0032) —,
+  done when a person of the project ticks it; one not `workline:ready`
+  is dropped (`unready-not-ready`). No quote; the state must read.
+
+  ```yaml
+  - unready: {issue: 13, why: "#12 now asks for JSON: its CSV row count no longer proves it."}
+  ```
+
 - **`ask`** comments on the issue, naming its reporter, with the agent's
   questions. The answer is a person's comment: the issue is read again at
   the next run.
@@ -634,7 +694,13 @@ its children's titles, to close; an announcement with the day it may close
 and how to keep it open; an issue kept open, and why. Under "Waiting",
 each issue waiting on an open one, and each cycle. Under "To accept", each open parent whose parts are all closed,
 recorded (`to-accept`) so the report is rewritten when that list
-changes ("A parent and its parts"). Under "Before this run", each issue the run
+changes ("A parent and its parts"). Under "Changed needs", each change
+to what open issues were built on ("A changed need"), a box — the issue
+and the sections a person rewrote, or the file's lines, the day it was
+found —, and under it each open issue it touches: how, read again or
+not, and the kinds of act proposed for it; it stays until a person of
+the project ticks it checked, or none of its issues is open, kept in the
+record (`changes`). Under "Before this run", each issue the run
 moved is listed with its priority and milestone as they were, to put the
 order back. A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to
@@ -706,6 +772,7 @@ report's body and who ticked each (ADR-0025):
 |---|---|
 | A person of the project, a proposal it can do | Done as the record holds it, never as an intention says (`not-ticked`), whatever its mode or cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, no announcement nor second judge, naming who ticked it |
 | A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
+| A person of the project, the box of a changed need (`changed/<issue>`; `changed-lines/<issue>` for the lines it was imported from, a change of its own) | Checked: it leaves the report and the record, said under "Boxes ticked"; nothing done to its issues |
 | A person of the project, an issue to open, rounds spent, a slip with nowhere to go | Not done: the report says to do it by hand; the proposal leaves it |
 | Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
 

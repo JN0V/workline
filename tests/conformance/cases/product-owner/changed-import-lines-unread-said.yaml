@@ -1,0 +1,16 @@
+case: product-owner/changed-import-lines-unread-said
+about: "An imported issue whose lines git cannot follow — the commit it was opened at gone, after a force-push or beyond a shallow clone — is said in a warning, never read as unchanged (ADR-0032; principle 12)."
+given:
+  repo: backlog
+  setup:
+    - |
+      printf '# Roadmap\n\n1. **Keep the last row.**\n' > ROADMAP.md
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge:
+    issues:
+      - {id: 4, title: "Keep the last row", body: "1. **Keep the last row.**\n\nOpened from `ROADMAP.md`, lines 3 to 3 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: 0123abc\njudged: 0123abc\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: lines-unread, where: "#4", message: "not said unchanged"}

@@ -39,6 +39,9 @@ type State struct {
 	Title     string   `yaml:"title,omitempty"`    // the title the role last set: another on the issue is a person's
 	Split     []int    `yaml:"split,omitempty"`    // the children the role split it into: it is not split again
 	Kept      []string `yaml:"kept,omitempty"`     // the evidence an announcement as obsolete rested on, kept open: not announced again for it
+	// Sections are its Need and Scope as last read or written (Basis): a
+	// person's change to them touches the issues built on it (ADR-0032).
+	Sections map[string]string `yaml:"sections,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -87,16 +90,17 @@ func ReadState(comments []string, role string) (*State, bool, error) {
 // the forge's Sticky.
 func FormatState(s State) string {
 	data, _ := yaml.Marshal(struct {
-		Sources   []string `yaml:"sources,flow"`
-		Confirmed string   `yaml:"confirmed"`
-		Judged    string   `yaml:"judged,omitempty"`
-		Comments  int      `yaml:"comments,omitempty"`
-		Body      string   `yaml:"body,omitempty"`
-		Priority  int      `yaml:"priority,omitempty"`
-		Title     string   `yaml:"title,omitempty"`
-		Split     []int    `yaml:"split,flow,omitempty"`
-		Kept      []string `yaml:"kept,flow,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept})
+		Sources   []string          `yaml:"sources,flow"`
+		Confirmed string            `yaml:"confirmed"`
+		Judged    string            `yaml:"judged,omitempty"`
+		Comments  int               `yaml:"comments,omitempty"`
+		Body      string            `yaml:"body,omitempty"`
+		Priority  int               `yaml:"priority,omitempty"`
+		Title     string            `yaml:"title,omitempty"`
+		Split     []int             `yaml:"split,flow,omitempty"`
+		Kept      []string          `yaml:"kept,flow,omitempty"`
+		Sections  map[string]string `yaml:"sections,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept, s.Sections})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -122,6 +126,9 @@ type Record struct {
 	// ToAccept are the open parents whose parts are all closed, as the
 	// report lists them for a person to accept (ADR-0029).
 	ToAccept []int `yaml:"to-accept,flow,omitempty"`
+	// Changes are what open issues were built on that changed, kept until
+	// a person ticks each seen or its issues are closed (ADR-0032).
+	Changes []Change `yaml:"changes,omitempty"`
 }
 
 // Pending is an act proposed to a person, as the report says it.
@@ -248,7 +255,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "ask", "split", "rename", "depend"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "unready", "ask", "split", "rename", "depend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -290,6 +297,9 @@ type Plan struct {
 	ticked   map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
 	said     []string        // what the report says of the boxes ticked
 	added    map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
+	// changedFor are the issues read again for a change to what they were
+	// built on: every act on them proposed (ADR-0032).
+	changedFor map[int]Change
 }
 
 // Setting is a kind of act's mode and cap.
@@ -366,14 +376,17 @@ func MovedPercent(settings map[string]any) int {
 // again, decided again or not. A run moves at most cfg.MovedPercent of the
 // open issues (milestone and order). judged holds the second judge's
 // answers on the issues announced obsolete (ADR-0024); waits, the issues
-// pre found waiting on a person, for the report's opening (ADR-0031).
-func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged, waits []Wait) (*Plan, error) {
+// pre found waiting on a person, for the report's opening (ADR-0031);
+// changes, what open issues were built on that pre found changed, and the
+// issues it read again for them (ADR-0032).
+func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged, waits []Wait, changes []Change) (*Plan, error) {
 	settings, movedPercent := cfg.Acts, cfg.MovedPercent
 	p := &Plan{read: read, judged: judged, settings: settings, config: cfg}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
 	p.readToAccept()
+	p.readChanges(changes)
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
 	}
@@ -451,9 +464,19 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "keep" {
 				s = Setting{Mode: Act} // keeping an issue open is never held back
 			}
+			if c.Do == "unready" {
+				s = Setting{Mode: Propose} // a ready issue is moved back by a person only (ADR-0032)
+			}
 			d.Mode = s.Mode
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
+			}
+			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" {
+				// Read again for a change to what it was built on: what the
+				// change asks of it is a person's to decide (ADR-0032).
+				d.Mode = Propose
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "need-changed", Level: "info", Where: c.where(),
+					Message: fmt.Sprintf("read again for %s: %s is proposed, not done", ch.said(), c.Kind())})
 			}
 			if what, ok := theirs[c.Do]; ok && d.Mode == Act && !p.issues[c.Issue].Insider && !Accepted(p.issues[c.Issue]) {
 				// The reporter has no write access: the issue is theirs
@@ -841,6 +864,15 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkDepend(c); rule != "" {
 		return rule, why
 	}
+	if c.Do == "unready" {
+		is, ok := p.issues[c.Issue]
+		switch {
+		case !ok || c.Issue == p.Report:
+			return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
+		case !slices.Contains(is.Labels, LabelReady):
+			return "unready-not-ready", fmt.Sprintf("#%d is not %s: nothing to move back", c.Issue, LabelReady)
+		}
+	}
 	if c.Do == "milestone" || c.Do == "order" {
 		// Ordering says nothing of an issue's truth: no quote, its state
 		// readable all the same.
@@ -916,7 +948,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -1668,6 +1700,8 @@ func (p *Plan) ReportBody() string {
 				}
 			case "ready":
 				undo = " Remove the label workline:ready to undo."
+			case "unready":
+				undo = " Put the label workline:ready back to undo."
 			case "ask":
 				undo = ""
 			case "rename":
@@ -1765,6 +1799,7 @@ func (p *Plan) ReportBody() string {
 	}
 	b.WriteString(p.waiting())
 	b.WriteString(p.toAccept())
+	b.WriteString(p.changes())
 	if len(proposed) > 0 {
 		b.WriteString("\n## Proposed\n\nFor a person: tick a box if you agree, and the engine does it at its next run, as written — or do it yourself; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
 	}
@@ -1821,6 +1856,8 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("%s #%d: %s. %s", map[bool]string{true: "Refined", false: "Refine"}[done], c.Issue, strings.Join(names, ", "), strings.TrimSpace(c.Why))
 	case "ready":
 		return fmt.Sprintf("%s #%d to ready: %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, strings.TrimSpace(c.Why))
+	case "unready":
+		return fmt.Sprintf("%s #%d back to refine (%s off, %s on): %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, LabelReady, LabelToRefine, strings.TrimSpace(c.Why))
 	case "depend":
 		return fmt.Sprintf("%s #%d as waiting on %s: %s", map[bool]string{true: "Marked", false: "Mark"}[done], c.Issue, issueList(c.BlockedBy), strings.TrimSpace(c.Why))
 	case "ask":

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: c64eb35
+checked: 92b2518
 verified: agent:claude-code
 ---
 # Product owner
@@ -19,13 +19,18 @@ names an issue's code; sets milestones and priorities; refines an issue to
 what is missing; splits a need too big for one issue and, as its parts
 close, says on it what each delivered and which items of its
 Verification are proved, for a person to accept (ADR-0029); renames a
-vague title; says what an issue waits on. It also imports a roadmap file as
+vague title; says what an issue waits on. When a person rewrites an
+issue's Need or Scope, or a roadmap line an issue was imported from
+changes, it reads again the issues built on it and proposes — moving a
+ready one back to refine included — or lists them for a person
+(ADR-0032). It also imports a roadmap file as
 issues, and keeps the one way every role opens an issue.
 
 **Does not**: write code or docs (`writes: []`: the forge's issues only),
 write the Need or Validation of a person's issue as final, close as "not
 planned", close a split need — a person accepts it —, undo a person's
-priority, title or link, or move an
+priority, title or link, act alone on an issue whose need changed, move
+a ready issue back to refine without a person's tick, or move an
 issue to `ready` while a section is missing or a draft. What sets direction
 it proposes rather than does at `autonomy: cautious`.
 
@@ -86,8 +91,11 @@ roles:
   naming it since, its reporter not answering, a proposal of the report
   unticked, an announcement as obsolete past its delay with no second
   judge. Then what was done, what is proposed (a box a person of the
-  project ticks; done at the next run), what waits on an open issue, and
-  the split needs whose parts are all closed, to accept.
+  project ticks; done at the next run), what waits on an open issue, the
+  split needs whose parts are all closed, to accept, and the **Changed
+  needs**: each issue whose Need or Scope a person rewrote, or imported
+  lines that changed, with the issues built on it — read again, or to
+  check — and what is proposed for each; tick its box once checked.
 - On each issue it reads: a state comment; labels (`workline:priority/N`,
   `workline:draft`, `workline:obsolete`, `workline:ready`); milestones;
   sections written; a comment to an outsider reporter; sub-issues or tasks;
@@ -118,7 +126,8 @@ Nothing is judged: each issue taken gets its state comment; accepted drafts
 (`workline:accepted`), ticked boxes and an `agreed` reply are still done;
 an issue whose milestone was released moves to the next; the backlog's
 order and what waits are still said, the report's Next and Stuck
-rebuilt, and a split need's parts reported.
+rebuilt, a split need's parts reported, and a changed need's issues
+listed for a person.
 
 **Status**: beta, nightly in DomoticsCore's CI and on workline's own
 issues; [status.md](status.md), each try in [tried.md](tried.md).

@@ -26,7 +26,7 @@ duties:
 
 # comment: the engine's state comment on each issue it takes (pre).
 # skip: an item of a file an import does not open, and why, for its map.
-intentions: [open, skip, close, keep, sources, milestone, order, refine, ready, ask, split, rename, depend, comment, note]
+intentions: [open, skip, close, keep, sources, milestone, order, refine, ready, unready, ask, split, rename, depend, comment, note]
 
 # Without AI, nothing is judged: the issues taken get their state comment.
 without-ai: pass

@@ -645,3 +645,29 @@ clone of JN0V/workline-sandbox and a clone of JN0V/workline; every run
   sandboxes is this week's; an announcement due with no judge, live; a
   plugged forge's `trail`; workline's #110 rewritten (that is the
   nightly run's, after the merge).
+
+## 2026-10-05 — a changed need, live on GitHub, no agent called
+
+A changed need flags the issues built on it (ADR-0032), the engine built
+from the branch, on a fresh clone of JN0V/workline-sandbox, `--forge
+github`. No agent called: `--ai none`, or the answer planted (`--ai
+fake:`).
+
+- **Run 1**, `--ai none`: every open issue's state kept its Need and
+  Scope, once, with no agent (15 state comments edited); nothing flagged.
+- **#10's Need rewritten by hand** (a split need: #12, #13), sign-out on
+  every device dropped; #13 labelled `workline:ready` by hand, to have a
+  ready part. **Run 2**, a planted answer (`unready` on #13, `order` on
+  #12): #12 and #13 read first, the Need as it was and as it is in the
+  task; the report's "Changed needs" listed #10 with #12 ("proposed below
+  — order") and #13 ("— unready"), both proposed, neither done.
+  **Fixed**: nine other issues were listed too, all only naming
+  `src/auth/token.go`, as #10 does — noise on a small codebase. The code
+  shared now counts only when the Scope changed.
+- **The box ticked by hand** (JN0V), #10's Need edited again. **Run 3**,
+  an answer proposing nothing: #13 moved back to refine — `workline:ready`
+  off, `workline:to-refine` on, a comment saying why and who ticked it;
+  the change listed #12 and #13 alone. **Run 4**, `--ai none`: nothing
+  flagged — the same change flags once.
+- Not tried: a real agent reading the parts against the change; an
+  imported file's lines changed, live (conformance only); GitLab.

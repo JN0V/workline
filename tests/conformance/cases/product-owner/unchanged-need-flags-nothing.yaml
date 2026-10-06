@@ -1,0 +1,17 @@
+case: product-owner/unchanged-need-flags-nothing
+about: "An edit that changes neither Need nor Scope — a typo in the text above them, spaces — has the issue read again as any body changed, and flags nothing: its parts and the issues waiting on it are not read nor listed; a change its state kept already is not flagged again (ADR-0032)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export, fixed.\n\n## Need\n\nEvery row   exported as CSV.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\nsections:\n  Need: Every row exported as CSV.\n  Scope: src/export/csv.go\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export in JSON", body: "## Need\n\nA JSON export.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\nsections:\n  Need: A JSON export.\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Stream the JSON export", body: "Write rows as they come.", labels: [], blocked-by: [9, 10], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  no-findings:
+    - {rule: need-changed}
+  run-files:
+    in/task.md: {contains: "## #9 Export fixes", not-contains: "Read again for a change"}

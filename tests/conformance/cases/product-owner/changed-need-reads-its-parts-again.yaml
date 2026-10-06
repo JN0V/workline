@@ -1,0 +1,25 @@
+case: product-owner/changed-need-reads-its-parts-again
+about: "A person rewrites a parent's Need: at the next run each open part is read again, the Need as it was and as it is given beside it; every act the agent proposes on a part goes to the report — back to refine included —, nothing is written to them, and the report lists the parts under the change, each with what is proposed (ADR-0032)."
+given:
+  repo: backlog
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "## Need\n\nEvery row exported as JSON, so another tool reads it.\n\n## Verification\n\n- A test writes three rows.\n\n## Validation\n\nThe maintainer opens an export.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\nsplit: [11, 12]\nsections:\n  Need: Every row exported as CSV, so a report counts what was sold.\n  Scope: src/export/csv.go\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", author: ann, insider: true, labels: [workline:ready], parent: 9, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", author: ann, insider: true, labels: [workline:ready], parent: 9, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:unready-eleven}
+expect:
+  findings:
+    - {rule: need-changed, where: "#9", message: "#11 (part, read again), #12 (part, read again)"}
+    - {rule: need-changed, where: "#12", message: "order is proposed, not done"}
+  run-files:
+    in/task.md: {contains: "Read again for a change: #9, which it is a part of, had its Need rewritten by a person. Every act you propose on it goes to a person, never done: say what the change asks of it — `unready` to move it back to refine when it no longer fits, a `refine` for what it lacks, or nothing.\nWas:\n> ## Need\n>\n> Every row exported as CSV, so a report counts what was sold.\nNow:\n> ## Need\n>\n> Every row exported as JSON, so another tool reads it.\n"}
+  forge:
+    issues:
+      - {id: 11, labels: [workline:ready], comments: 1}
+      - {id: 12, labels: [workline:ready], comments: 1}
+      - {id: 13, title: "Backlog — product owner", body-contains: "- [ ] #9 Export fixes: a person changed its Need ("}
+      - {id: 13, body-contains: "  - #11 Keep the last row in the CSV export, a part of it: read again with the change: proposed below — unready.\n  - #12 Quote commas in exported cells, a part of it: read again with the change: proposed below — order.\n"}
+      - {id: 13, body-contains: "- [ ] Move #11 back to refine (workline:ready off, workline:to-refine on): #9 now asks for a JSON export"}
+      - {id: 9, comment-contains: "Need: Every row exported as JSON, so another tool reads it."}
