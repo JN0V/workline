@@ -273,8 +273,12 @@ func anchorFor(repo, rev, doc, checked string) anchored {
 		out, err := git(repo, "log", "--reverse", "--format=%H", "-S"+checked, rev, "--", doc)
 		first, _, _ := strings.Cut(out, "\n")
 		a = anchored{commit: first, ok: err == nil && first != ""}
-		if a.ok && shallowEdge(repo)[first] {
-			a = anchored{cut: true}
+		if a.ok {
+			if edge, err := shallowEdge(repo); err != nil {
+				a = anchored{err: err}
+			} else if edge[first] {
+				a = anchored{cut: true}
+			}
 		}
 	}
 	onMainSeen[key] = a
@@ -282,30 +286,38 @@ func anchorFor(repo, rev, doc, checked string) anchored {
 }
 
 // anchored is what onMain found, kept for the doc's other sources. cut: the
-// clone is too shallow to tell.
+// clone is too shallow to tell; err: whether it is could not be read.
 type anchored struct {
 	commit  string
 	ok, cut bool
+	err     error
 }
 
 var onMainSeen = map[string]anchored{}
 
 // shallowEdge is the commits at a shallow clone's edge, whose parents were
 // not fetched; none in a whole clone.
-func shallowEdge(repo string) map[string]bool {
+func shallowEdge(repo string) (map[string]bool, error) {
 	if e, ok := shallowSeen[repo]; ok {
-		return e
+		return e, nil
+	}
+	p, err := git(repo, "rev-parse", "--git-path", "shallow")
+	if err != nil {
+		return nil, err
+	}
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(repo, p)
 	}
 	e := map[string]bool{}
-	if p, err := git(repo, "rev-parse", "--path-format=absolute", "--git-path", "shallow"); err == nil {
-		if data, err := os.ReadFile(p); err == nil {
-			for _, c := range strings.Fields(string(data)) {
-				e[c] = true
-			}
-		}
+	data, err := os.ReadFile(p)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	for _, c := range strings.Fields(string(data)) {
+		e[c] = true
 	}
 	shallowSeen[repo] = e
-	return e
+	return e, nil
 }
 
 var shallowSeen = map[string]map[string]bool{}
@@ -622,13 +634,22 @@ func Pre(runDir, repo string) int {
 			// A doc fixed on a merge request names a commit of its branch,
 			// which a squash or a rebase leaves out of main.
 			unanchored := false
+			gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/"))
 			if err == nil && name == "" {
 				switch a := anchorFor(repo, where.rev, d.Path, checked); {
+				case a.err != nil:
+					findings = append(findings, verdict.Finding{Rule: "unknown", Where: d.Path, Level: "block",
+						Message: fmt.Sprintf("cannot tell whether %s changed since %s: %v", src, checked, a.err)})
+					continue
 				case a.cut:
 					if !slices.Contains(cut, d.Path) {
 						cut = append(cut, d.Path)
 					}
 					cutHeld = cutHeld || !ranged || docTouched(d, touched)
+					if gone { // said without history; what removed it is beyond the clone
+						findings = append(findings, verdict.Finding{Rule: "source-gone", Where: d.Path,
+							Message: fmt.Sprintf("names %s as a source, which no longer exists: name what replaced it, or drop it", src)})
+					}
 					continue
 				case a.ok:
 					checked = a.commit
@@ -636,7 +657,6 @@ func Pre(runDir, repo string) int {
 					unanchored = true
 				}
 			}
-			gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/"))
 			// A doc the commits did not touch is only left for gardening:
 			// once it is found suspect, its other sources need no reading.
 			if !gone && ranged && hasSuspect(findings, d.Path) && !docTouched(d, touched) {
