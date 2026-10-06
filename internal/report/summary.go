@@ -2,7 +2,10 @@ package report
 
 import (
 	"fmt"
+	"html"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
@@ -203,20 +206,89 @@ func contains(l []string, s string) bool {
 	return false
 }
 
-// AppendSummary adds the summary to file, as GitHub's $GITHUB_STEP_SUMMARY
-// is added to: a job that judges, then one that applies, write one page.
-// An empty file name writes nothing.
-func AppendSummary(file string, s Summary) error {
-	if file == "" {
-		return nil
+var (
+	bold = regexp.MustCompile(`\*\*(.+?)\*\*`)
+	code = regexp.MustCompile("`([^`]+)`")
+)
+
+// HTML renders the summary's Markdown as a page a browser shows, for a CI
+// that shows an HTML file and no Markdown one: GitLab previews a job's HTML
+// artifact (with Pages), not its Markdown. Every text is escaped first.
+func (s Summary) HTML() string {
+	var b strings.Builder
+	inline := func(t string) string {
+		t = html.EscapeString(t)
+		return code.ReplaceAllString(bold.ReplaceAllString(t, "<strong>$1</strong>"), "<code>$1</code>")
 	}
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
+	depth := 0
+	closeTo := func(d int) {
+		for ; depth > d; depth-- {
+			b.WriteString("</li></ul>\n")
+		}
 	}
-	if _, err := f.WriteString(s.Markdown()); err != nil {
-		f.Close()
-		return err
+	b.WriteString("<section>\n")
+	for _, l := range strings.Split(strings.TrimRight(s.Markdown(), "\n"), "\n") {
+		d, item := 0, ""
+		if x, ok := strings.CutPrefix(l, "  - "); ok {
+			d, item = 2, x
+		} else if x, ok := strings.CutPrefix(l, "- "); ok {
+			d, item = 1, x
+		}
+		switch {
+		case d > depth:
+			for ; depth < d; depth++ {
+				b.WriteString("<ul><li>")
+			}
+			b.WriteString(inline(item))
+		case d > 0:
+			closeTo(d)
+			b.WriteString("</li><li>" + inline(item))
+		case l == "":
+		default:
+			closeTo(0)
+			if h, ok := strings.CutPrefix(l, "### "); ok {
+				b.WriteString("<h3>" + inline(h) + "</h3>\n")
+			} else {
+				b.WriteString("<p>" + inline(l) + "</p>\n")
+			}
+		}
 	}
-	return f.Close()
+	closeTo(0)
+	b.WriteString("</section>\n")
+	return b.String()
+}
+
+const htmlHead = `<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workline summary</title>
+<style>body{font-family:system-ui,sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem;line-height:1.5}code{font-size:.9em}</style>
+`
+
+// AppendSummary adds the summary to each file, as GitHub's
+// $GITHUB_STEP_SUMMARY is added to: a job that judges, then one that
+// applies, write one page. A file named .html gets HTML, any other
+// Markdown.
+func AppendSummary(files []string, s Summary) error {
+	for _, file := range files {
+		text := s.Markdown()
+		if strings.EqualFold(filepath.Ext(file), ".html") {
+			text = s.HTML()
+			if st, err := os.Stat(file); err != nil || st.Size() == 0 {
+				text = htmlHead + text
+			}
+		}
+		f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			return err
+		}
+		if _, err := f.WriteString(text); err != nil {
+			f.Close()
+			return err
+		}
+		if err := f.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

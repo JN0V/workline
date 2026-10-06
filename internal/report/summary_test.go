@@ -31,3 +31,18 @@ func TestLineSummaryPutsFindingsUnderTheirStep(t *testing.T) {
 		t.Error("a step's finding is listed twice")
 	}
 }
+
+func TestHTMLSummaryEscapesAndNests(t *testing.T) {
+	s := Summary{Title: "route merge-request", Status: verdict.Block,
+		Steps: []Step{{Name: "documentalist", Status: verdict.Block,
+			Findings: []verdict.Finding{{Rule: "suspect", Where: "docs/<b>.md", Message: "<script>alert(1)</script> `x`"}}}},
+		Pending: 2}
+	got := s.HTML()
+	want := "<section>\n<h3>workline route merge-request</h3>\n<p><strong>block</strong></p>\n" +
+		"<ul><li><strong>documentalist</strong>: block" +
+		"<ul><li>suspect docs/&lt;b&gt;.md: &lt;script&gt;alert(1)&lt;/script&gt; <code>x</code></li></ul>\n" +
+		"</li><li>to apply: 2 runs, by the job that holds the write token (<code>workline apply</code>)</li></ul>\n</section>\n"
+	if got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}

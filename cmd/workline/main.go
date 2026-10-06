@@ -190,7 +190,8 @@ func runRole(args []string) int {
 	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write the findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write the findings to this file as a GitLab Code Quality report")
-	summaryFile := fs.String("summary", "", "also add a Markdown summary of the run to this file, for a CI job's page")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the run to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	inputs, inputFiles := pairs{}, pairs{}
 	fs.Var(inputs, "input", "input name=value (repeatable)")
 	fs.Var(inputFiles, "input-file", "input name=path, written back by intentions that target it (repeatable)")
@@ -227,7 +228,7 @@ func runRole(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	if err := wlreport.AppendSummary(*summaryFile, wlreport.RoleSummary("run-role "+name+" ("+*event+")", name, res)); err != nil {
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("run-role "+name+" ("+*event+")", name, res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -689,7 +690,8 @@ func sampleCmd(args []string) int {
 	apply := fs.String("apply", "", "write the result in this file to the forge: the tracking issue, and a merge request putting back a false `checked`")
 	forgeSpec := fs.String("forge", "", "with --apply: github, gitlab, fake:<file> (default: the project's `forge` setting)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
-	summaryFile := fs.String("summary", "", "also add a Markdown summary of the sample to this file, for a CI job's page")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the sample to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -729,7 +731,7 @@ func sampleCmd(args []string) int {
 	if *apply != "" {
 		title = "sample --apply"
 	}
-	if err := wlreport.AppendSummary(*summaryFile, wlreport.SampleSummary(title, res)); err != nil {
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.SampleSummary(title, res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -920,7 +922,8 @@ func routeCmd(args []string) int {
 	pushMR := fs.Bool("push-to-merge-request", false, "commit what the patches write to the branch of the merge request --target names; from a fork, a comment (needs a forge)")
 	sarifFile := fs.String("sarif", "", "also write every step's findings to this file as SARIF, for code scanning")
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
-	summaryFile := fs.String("summary", "", "also add a Markdown summary of the line to this file, for a CI job's page")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the line to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	_ = fs.Parse(args[1:])
@@ -941,7 +944,7 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
-	if err := wlreport.AppendSummary(*summaryFile, wlreport.LineSummary("route "+args[0], res)); err != nil {
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.LineSummary("route "+args[0], res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -1109,7 +1112,8 @@ func applyCmd(args []string) int {
 	fs := flag.NewFlagSet("apply", flag.ExitOnError)
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	lineFile := fs.String("line", "", "apply the runs `workline route --no-apply --json` listed as pending in this file")
-	summaryFile := fs.String("summary", "", "also add a Markdown summary of what was applied to this file, for a CI job's page")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of what was applied to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	_ = fs.Parse(args)
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
@@ -1124,7 +1128,7 @@ func applyCmd(args []string) int {
 		dirs = append(dirs, l.Pending...)
 		if len(dirs) == 0 {
 			fmt.Fprintln(os.Stderr, "pass — nothing to apply: the line proposed nothing")
-			if err := wlreport.AppendSummary(*summaryFile, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true}); err != nil {
+			if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true}); err != nil {
 				fmt.Fprintln(os.Stderr, "workline:", err)
 				return 1
 			}
@@ -1146,7 +1150,7 @@ func applyCmd(args []string) int {
 		res.Findings = append(res.Findings, next.Findings...)
 		res.Handoffs = append(res.Handoffs, next.Handoffs...)
 	}
-	if err := wlreport.AppendSummary(*summaryFile, wlreport.RoleSummary("apply", "", res)); err != nil {
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
