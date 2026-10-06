@@ -17,6 +17,7 @@ released in v0.9.0.
 | On workline's own pull requests in CI, forge writes on: the summary comment edited in place, the record, the lenses in turn (tried.md) | workline#132 |
 | Lenses as parts, answering findings only; a patch refused; an answer that does not read asked again once (#138) | `never-approves-nor-patches`, `lens-failed-not-clean`, `lens-answer-asked-again-once` |
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
+| A removal's exposed lines are the change's (#224): a kept line within three of a hunk taking lines away, or a removed line named, goes to the author; a kept line far from it stays outside (tried.md: the guard removed from `Page` now lands on the change) | `finding-beside-removed-lines-is-fixed-by-author`, `finding-far-from-removed-lines-becomes-issue`, `TestExposedBesideARemoval` |
 | A judge for each important finding, the level said; a no drops it | `judged-no-not-reported`, `independence-level-in-verdict` |
 | The judge asks the lens's question (#223): for the tests lens, whether a test exercises the behaviour, shown the tests touching the cause's file, a no naming the test; correctness and edge cases keep theirs (tried.md) | `tests-judge-asked-if-a-test-exercises`, `tests-judge-names-the-test-that-exercises`, `correctness-judge-keeps-its-question`, `TestTestsTouching` |
 | Warn until measured; caps; an agent unreachable | `new-ai-rules-warn`, `findings-capped-rest-counted`, `agent-unreachable-is-blocked-external` |
@@ -40,7 +41,7 @@ Conformance: tests/conformance/cases/reviewer.
 3. **Measured** (#90): step 1 done, once, Sonnet finding and Opus judging
    (tried.md, 2026-10-06): correctness found 3 of 3 with nothing false
    shown; edge cases found 3 of 3 but one was sent outside the change
-   (item 8), and it showed one finding a clean rename did not cause; the
+   (since routed to the change, #224), and it showed one finding a clean rename did not cause; the
    judge refused four true findings of the tests lens, which its own
    question now verifies (#223, tried.md; item 9 left). The
    maintainer decides from it: `ai-findings: {correctness: block}` (by
@@ -59,11 +60,9 @@ Conformance: tests/conformance/cases/reviewer.
 7. **The judge's material**: thirty lines around the cause; it refused a
    true finding whose evidence lay further (tried.md). The functions the
    cause calls or is called by, given whole, are the next step.
-8. **A defect made by removing lines**: a guard removed, the finding quotes
-   the line that survives it, which the change did not touch, and the
-   engine sends a defect of the change to an issue (#90's step 1, all
-   three lenses). The removed lines next to the quoted one could make it
-   the change's.
+8. **A removal's reach past three lines**: a removed guard whose defect
+   shows further down (a slice ten lines on) is still sent outside the
+   change; the window is a diff's context, not the code's flow.
 9. **Two findings on one line, two questions**: they are merged and
    judged once, by the leading lens's question; a tests-lens "no test"
    merged under a correctness finding is refused with it (tried.md,

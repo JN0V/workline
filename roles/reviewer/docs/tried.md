@@ -303,3 +303,22 @@ of the branch; results.tsv holds the rows. Before: #90's step 1, above.
 - **Not tried**: five runs a case (ADR-0014); the other lenses' cases
   (their question is today's, conformance `correctness-judge-keeps-its-question`);
   a project whose tests lie in another folder (unit test only).
+
+## 2026-10-06 — a removal's exposed lines are the change's (#224)
+
+The edge-cases case with the guard removed from `Page`
+(tests/evaluation/cases/reviewer/`edge-cases-page-loses-its-guard`), once,
+Sonnet finding and Opus judging (`model`), the engine of the branch;
+results.tsv holds the rows.
+
+| | Before (#90's step 1) | After |
+|---|---|---|
+| Score | 1/2: the defect not found on the change | 2/2 |
+| Where | every lens quoted `from := (p - 1) * size`, kept: an issue (outside 1 a lens) | the same line, `shop/page.go:6`, beside the removal: on the change, verified, by all three lenses (own 1 for edge cases) |
+| Tokens | 16.7k in, 1.5k out, 4 calls | 16.5k in, 2.0k out, 4 calls |
+
+- **Also on the change now**: "Overflow in offset computation", an edge-cases
+  finding on the same line, verified, merged under the guard's: true of
+  the code, weak; not raised in the run before.
+- **Not tried**: five runs (ADR-0014); a removal whose defect lies more
+  than three lines on (status.md, item 8).
