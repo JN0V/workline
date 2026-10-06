@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 59f2c51
+checked: 0f7a5a5
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -37,7 +37,8 @@ Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 Quality report, rule `<role>/<rule>`, on the file and line `where` names — at
 the heading of its `#anchor`, else line 1. A finding that blocks is an
 `error` (`blocker`), one lowered by `enforce` a `warning` (`minor`), one from
-a run that passed a `note` (`info`). One whose `where` names no file — a
+a run that passed, or of level `question` (a reviewer's question for a
+person), a `note` (`info`). One whose `where` names no file — a
 commit's subject, a folder, a gate's check — is left out: both formats need a
 file, and `--json` still has it, as does `--summary`, the summary a CI job's
 page shows (ADR-0035).

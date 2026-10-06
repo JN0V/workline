@@ -1,0 +1,32 @@
+case: reviewer/decision-in-its-own-section-on-the-merge-request
+about: "On a merge request, a decision for a person (#126) is not a row of the findings' table: the summary comment asks it under its own heading, its cause quoted, a reply there being enough; no issue is opened for it, nor for one outside the change."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean skips zeros
+        body: "## Need\n\nThe mean skips the zero values. What an empty list gives is left open.\n\n## Verification\n\nA test of Average on [0, 2, 4].\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: [{id: 9, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: "intent,correctness"}, target: {merge-request: 9}, ai: "fake:review-decision"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-lenses}]
+  forge:
+    issues:
+      - {id: 5, absent: true}
+    merge-requests:
+      - id: 9
+        comments: 1
+        comment-contains:
+          - "| warns | finding-unfounded |  | dropped, from the correctness lens"
+          - "**Questions for a person**"
+          - "- `#4` (intent): Should an empty list give 0, or an error? On: “What an empty list gives is left open.”"
+          - "a reply here is enough"
+        comment-lacks: "| decision |"

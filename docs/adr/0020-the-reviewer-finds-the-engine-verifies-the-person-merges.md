@@ -278,3 +278,37 @@ merge-request line; on in workline's own repository.
   merge request whatever the lens); a claim checked by the model's word
   (the engine finds the quote again, as for a cause); an intent finding
   with no quote (the issue's words are the cause).
+
+## Amendment (2026-10-06, #126: a decision for a person)
+
+- **A third outcome.** A finding was the change's (the author fixes) or
+  an issue. A trade-off, a design choice, a behaviour the issue leaves
+  open is neither: forced into a fix, it asks the author to guess; into
+  an issue, nobody decides it.
+- **Marked by the lens**: `decision`, the question for a person, in its
+  finding; one line in the lenses' instruction, one in the intent lens.
+- **Guarded by the engine**, so it is no way past the judge:
+  - its cause found again like any other, in the change or the issue it
+    closes; elsewhere it is dropped, said (`finding-unfounded`), never
+    an issue;
+  - never important, never judged, never blocking, never counted as a
+    finding on the change; one a line (in an issue, one a quote),
+    `questions-max` (3) a run, the rest counted;
+  - the lens is told what fails is a finding, never a decision; a defect
+    marked as one still reaches a person, as a question, not lost.
+- **Shown**: the summary comment asks each under **Questions for a
+  person**, one line, its cause quoted, apart from the findings' table;
+  the verdict's summary counts them; locally, a `decision` finding of
+  level `question` (SARIF `note`, Code Quality `info`), and `questions`
+  in `out/review.json`.
+- **Answered** by a reply on the merge request: the reviewer does not
+  wait, nor read it back; the record moves as on any run.
+- **Not the product owner's tick**
+  ([ADR-0025](0025-a-persons-tick-is-done-ignored-runs-pause.md)): a tick
+  is a yes to a proposal the engine then applies; a question leaves the
+  engine nothing to apply: the person decides, the author follows.
+- **Cost**: no judge call; the lenses' prompt 0.4% larger on #146's
+  review, offline (roles/reviewer/docs/tried.md).
+- **Rejected**: a decision judged (a judge says whether code fails, not
+  what a person wants); one opened as an issue (nobody decides it before
+  the merge); a `severity: decision` (the question itself is the mark).

@@ -26,6 +26,7 @@ released in v0.9.0.
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
 | Intent (#126): a change saying `Closes #N` (a commit or the merge request) has N read from the forge, its Need, Verification and Scope given to the `intent` lens; a part left out quoted from the issue (`#N`), found again there, judged shown the issue and the whole merge request's change, so a part an earlier commit did is refused; no issue closed, not asked, said; one unread, said (`issue-unread`). Live on the sandbox: #39's token-age part found, verified (tried.md) | `intent-need-left-out-found`, `intent-not-asked-without-an-issue`, `intent-issue-unread-said`, `intent-judge-reads-the-whole-merge-request`, `TestCloses`, `TestIssueText` |
 | The author's claims contested (#126): the commit messages whole and the merge request's title and body given as testimony; the `claims` lens quotes the claim, found again in what the author said or dropped, its cause the contradicting line. Live: "No change in behaviour." over `>` turned `>=`, verified (tried.md) | `claim-contradicted-is-a-finding-on-the-line`, `merge-request-body-given-as-testimony`, `TestGitHubMergeRequest` |
+| A decision for a person (#126): a finding holding `decision` — a trade-off, what the issue leaves open — asked as a question under **Questions for a person**, its cause quoted; never important, judged, blocking nor an issue; one outside the change dropped. Live: workline-sandbox#42, the lock's length #41 leaves open asked, not reported as a defect (tried.md) | `decision-asked-of-a-person-not-judged`, `decision-in-its-own-section-on-the-merge-request` |
 | The floor on finders only (#126): a lens under `finder-floor` answering nothing leaves the review clean, nothing judged, the commits recorded | `finder-floor-nothing-found-is-clean` |
 | Findings on one line each judged by their own lens's question (#229): grouped on one row, each with its verdict; a refused leader dropped alone, the verified one leading and blocking if its lens blocks (tried.md: restock) | `merged-findings-each-judged-by-their-lens`, `merged-finding-lead-refused-other-shown` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
@@ -75,6 +76,6 @@ Conformance: tests/conformance/cases/reviewer.
    evaluation's cases with the judges reading whole functions, by a real
    agent; and a call across languages other than by name (a script's
    JSON read by Go) is found only when the finding names the function.
-10. **The rest of #126**: the diff alone (a facet given the change only),
-    and a decision put to a person (a third outcome). Intent and claims
-    measured by #90 (on by default until then).
+10. **The rest of #126**: the diff alone (a facet given the change only).
+    Intent, claims and decisions measured by #90 (on by default until
+    then); a decision on workline's own pull requests, not tried.
