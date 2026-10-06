@@ -11,20 +11,13 @@ settings and the variables, in [config.md](config.md).
 
 ## Help
 
-- `workline --help`, `workline help`: every command a person runs, one
-  line each, on stdout, exit 0; `hook` and `builtin` are named apart, run by
-  the installed hooks and the shipped roles.
-- `workline <command> --help`, `workline help <command>`: the command's
-  usage line and its options, without a role or an event, exit 0.
-- Misuse prints what was wrong, then the usage, on stderr, exit 64: no
-  command, an unknown one, an unknown option, a value an option cannot take,
-  an argument left over, a missing `<role>` or `<event>`, an item id on a
-  forge that is not a whole number.
-- Tried: the help of every command; misuse before and after (exit 2 or 1,
-  now 64); the CI templates' `route merge-request --no-apply`, `apply
-  --line`, `follow`, and the hooks' `hook commit-msg`, with `--ai none`,
-  same codes as before. Not tried: a CI job written from the help alone, on
-  GitLab.
+- `workline --help`: every command, one line each (`hook`, `builtin`:
+  internal); `workline <command> --help`: its usage and options; exit 0.
+- Misuse (an unknown command or option, a bad value, a missing `<role>`
+  or `<event>`, a forge item id not a number) names the fault, then the
+  usage, on stderr: exit 64.
+- Tried: every command's help; CI's and the hooks' calls with `--ai none`,
+  codes unchanged. Not tried: a GitLab job written from the help alone.
 
 ## Commands
 
