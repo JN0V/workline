@@ -44,6 +44,7 @@ func (r Request) tier() string {
 type Call struct {
 	Agent  string `json:"agent"`
 	Task   string `json:"task,omitempty"` // the kind of task, when pre named one
+	For    string `json:"for,omitempty"`  // what it answered: a part (1-correctness), a judge's question (judge/03)
 	Tier   string `json:"tier,omitempty"`
 	Effort string `json:"effort,omitempty"` // the role's level, before the agent maps it
 	Asked  string `json:"asked,omitempty"`  // the model named to the agent: an alias or an exact id
