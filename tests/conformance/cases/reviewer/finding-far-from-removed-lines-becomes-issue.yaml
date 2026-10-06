@@ -1,0 +1,20 @@
+case: reviewer/finding-far-from-removed-lines-becomes-issue
+about: "A kept line far from any hunk stays outside the change, even when the change removed lines elsewhere in its file: a finding quoting it is not the author's, it becomes an issue."
+given:
+  repo: reviewed
+  setup: ["sed -i '/for _, v := range values {/,/^\\t}$/d' calc/calc.go && git commit -qam 'refactor: drop the loop'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-far-from-removed"}
+expect:
+  status: pass
+  applied: [comment, issue]
+  no-findings:
+    - {rule: correctness, where: "calc/calc.go:13"}
+  forge:
+    issues:
+      - {id: 1, title: "Parse drops the conversion error", labels: [needs-triage]}
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: "not the author's to fix here"}

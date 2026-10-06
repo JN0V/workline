@@ -1,0 +1,8 @@
+# A lens of the reviewer, on the `reviewed` fixture once Average's loop is
+# removed: the defect the removal makes, quoted on the kept line beside it.
+- finding:
+    severity: important
+    title: Average always returns 0
+    why: the loop summing the values is gone, so total stays 0
+    cause: {path: calc/calc.go, quote: "return total / len(values)"}
+    fix: put the loop back
