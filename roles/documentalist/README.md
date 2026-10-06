@@ -74,6 +74,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 - Gardening: a branch and merge request per task,
   `workline/documentalist/<task>`; a tracking issue for docs due at the
   release; an issue when the code disagrees with a doc it follows.
+- On a release tool's pull request: the fix on a merge request of its own,
+  `workline/documentalist/release`, rebuilt on `main` each time `main`
+  moves (`workline follow`, ADR-0034), never over a person's commit.
 - `--json`, `--sarif`, `--code-quality` for CI.
 
 ## Cost

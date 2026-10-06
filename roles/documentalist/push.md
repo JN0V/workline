@@ -45,7 +45,14 @@ since the last one and the docs due then, not only what the pull
 request's commits touched. Its fix does not go onto that branch, which the
 tool rewrites: it goes to a merge request of its own into the release's
 base, `workline/documentalist/release`, and the release pull request stays
-held until that one is merged and the tool brings it in.
+held until that one is merged and the tool brings it in. That merge request
+follows its base, as the tool's own branch does (ADR-0034): on each push to
+the base, `workline follow` rebuilds it on the new tip — main's `checked`
+kept beside the `judged` the fix wrote, where a rebase would conflict —
+and leaves it alone when it is on the tip already, when a person committed
+to it, or, asking that person, when its change no longer applies. A new fix
+judged on the release pull request is not pushed over a person's commit
+either: it goes in a comment there.
 
 ## Adopting a repository
 

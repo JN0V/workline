@@ -66,7 +66,10 @@ workflow, so its checks would never run. On that pull request, workline.yml
 holds it as the release (ADR-0017): the judging job passes the branch it
 comes from (`--branch`), a release tool's, and the documentalist holds it
 on every doc made suspect since the last release; its fix goes to a pull
-request of its own on `main`, which release-please brings in once merged.
+request of its own on `main`, which release-please brings in once merged,
+and which workline.yml's `follow` job rebuilds on `main` at each push there,
+as release-please does its own (ADR-0034) — that job builds the engine
+from `main`'s commit, merged and reviewed.
 The person merges it; that is the decision. release-please then tags the merged commit, `vX.Y.Z`, and writes
 the GitHub release with its notes; in the same run, release.yml builds the
 binaries with GoReleaser, which uploads them to that release and keeps its
@@ -77,7 +80,12 @@ pushed is never moved (the Go proxy keeps its first commit).
 ## GitHub
 
 1. **Copy the workflows** into `.github/workflows/`:
-   - [ci/github/workline.yml](../ci/github/workline.yml): each pull request;
+   - [ci/github/workline.yml](../ci/github/workline.yml): each pull request,
+     and, on a push to `main`, `workline follow` (ADR-0034): the
+     documentalist's merge request for the release, when one is open, is
+     rebuilt on `main`'s new tip, so a pull request merged meanwhile that
+     touched the same doc leaves it mergeable; one a person committed to is
+     left alone. Rename `main` in its `push:` for another default branch;
    - [ci/github/workline-fork.yml](../ci/github/workline-fork.yml): comments
      a fork's pull request, which gets no secret and no right to write;
    - [ci/github/workline-gardening.yml](../ci/github/workline-gardening.yml):
@@ -163,6 +171,10 @@ suspect or passed for it.
 
 A fork's merge request runs in the fork, which has neither token: it is
 judged without an agent, and nothing is applied or commented.
+
+On each push to the default branch, `workline:follow` rebuilds the
+documentalist's merge request for the release, when one is open, on the
+branch's new tip, with `WORKLINE_GITLAB_TOKEN` and no agent (ADR-0034).
 
 ## The product owner
 

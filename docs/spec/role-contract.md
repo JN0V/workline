@@ -305,7 +305,10 @@ branch one of `release.branches`), a role that runs on `release` is run on
 it: `WORKLINE_EVENT` is `release`, and `WORKLINE_RELEASE_BRANCH` names the
 branch (ADR-0017). A fix judged there is not pushed onto that branch, which
 the release tool rewrites: it goes to a merge request of its own into the
-release's base, and the release waits until it is merged (`fixed-elsewhere`).
+release's base, and the release waits until it is merged (`fixed-elsewhere`);
+never over a person's commit on that branch, where it goes in a comment
+instead. `workline follow` rebuilds that merge request on its base as the
+base moves (ADR-0034).
 
 ### Exit codes
 
