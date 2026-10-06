@@ -1,9 +1,26 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: d477467
+sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
+checked: 1f3641c
 verified: agent:claude-code
 ---
 # Reviewer
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+flowchart LR
+  when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in"]
+  reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change"]
+  role(["Reviewer"])
+  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
+  proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
+  person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
+  out["<b>Lands in</b><br/>the terminal and out/review.json<br/>one summary comment<br/>issues, needs-triage"]
+  when --> role
+  reads --> role
+  role --> alone --> out
+  role --> proposed --> out
+  role --> person
+```
 
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md).
