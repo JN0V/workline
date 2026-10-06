@@ -1145,6 +1145,9 @@ func message(f Finding) string {
 		var also []string
 		for _, o := range f.Also {
 			a := o.Lens + ": " + o.Title
+			if o.Claim != "" {
+				a += fmt.Sprintf(" (the author: %q)", o.Claim)
+			}
 			if o.Verified != "" {
 				a += " (" + o.Verified + ")"
 			}
