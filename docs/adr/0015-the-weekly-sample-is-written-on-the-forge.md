@@ -1,7 +1,7 @@
 # ADR-0015: The weekly sample is written on the forge, not in commits
 
 - **Status:** accepted; built (`workline sample`), not yet run for real;
-  amended 2026-10-02 (which forge)
+  amended 2026-10-02 (which forge), 2026-10-06 (every role's acts)
 - **Date:** 2026-10-02
 - **Amends:** ADR-0014 (step 4's weekly sample, "written to the measures")
 
@@ -106,3 +106,20 @@ request on GitHub, GitLab, another forge plugged by a command, or, with
 `forge: local`, in the clone — the merge request a local branch, nothing
 pushed. With no forge, it writes nothing and says so. The decision is
 unchanged.
+
+## Amendment (2026-10-06)
+
+The auditor is widened from the documentalist's docs to **a sample of
+every role's acts**: the docs vouched for, the product owner's closings,
+splits and milestones (drawn today for a person, ADR-0033), the reviewer's
+findings kept and dropped, the committer's rewrites. For each act drawn,
+one verdict, against the code at that act's commit, at the best
+independence available from the model that acted
+([ADR-0005](0005-independence-takes-the-best-level-available.md)), with the
+proof the engine finds again. It **never proposes a change** to the line:
+its verdicts are measures, which the process engineer reads
+([ADR-0019](0019-the-line-evaluates-itself.md), amended the same day).
+Why two roles: the
+[roles panorama](../research/roles-panorama.md). Not built: today it reads
+docs only; the work is
+[#205](https://github.com/JN0V/workline/issues/205).
