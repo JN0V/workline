@@ -98,8 +98,42 @@ func main() {
 		os.Exit(sampleCmd(os.Args[2:]))
 	case "issues":
 		os.Exit(issuesCmd(os.Args[2:]))
+	case "follow":
+		os.Exit(followCmd(os.Args[2:]))
 	}
 	usage()
+}
+
+// followCmd rebuilds the roles' release merge requests on their base's new
+// tip, run when it moves (ADR-0034). It calls no agent.
+func followCmd(args []string) int {
+	fs := flag.NewFlagSet("follow", flag.ExitOnError)
+	repo := fs.String("repo", ".", "repository")
+	base := fs.String("base", "", "the branch the merge requests go into (default: the branch checked out)")
+	forgeSpec := fs.String("forge", "", "github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
+	asJSON := fs.Bool("json", false, "print the result as JSON")
+	_ = fs.Parse(args)
+	root, err := gitRoot(*repo)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
+		return 64
+	}
+	if *forgeSpec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 64
+		}
+		*forgeSpec = cfg.Forge
+	}
+	res := engine.Follow(root, *forgeSpec, *base)
+	if *asJSON {
+		out, _ := json.MarshalIndent(res, "", "  ")
+		fmt.Println(string(out))
+	} else {
+		report(res)
+	}
+	return exitFor(res.Status)
 }
 
 // version is the release, set when one is built (-X main.version=v0.1.0).
