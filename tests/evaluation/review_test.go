@@ -355,7 +355,7 @@ func scoreReview(rc *reviewCase, rr *reviewRun) (passed int, failed []string, me
 
 // lensRank keeps the role's order of the lenses in a measure.
 func lensRank(l string) int {
-	if i := slices.Index([]string{"correctness", "edge-cases", "tests"}, l); i >= 0 {
+	if i := slices.Index([]string{"correctness", "edge-cases", "tests", "intent", "claims", "diff-alone"}, l); i >= 0 {
 		return i
 	}
 	return 99

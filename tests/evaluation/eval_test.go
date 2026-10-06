@@ -10,6 +10,9 @@
 // WORKLINE_JUDGE names the agent grading the `judge` checks, at the best
 // independence it reaches (ADR-0005); without one, they are skipped.
 // WORKLINE_JUDGE_AT_LEAST (provider, model or context) sets a floor.
+// For the reviewer's cases, WORKLINE_EVAL_LENSES names the lenses asked
+// (`diff-alone`, the facet alone) and WORKLINE_EVAL_REVIEWER sets its
+// settings, a YAML map (`{ai-max-tokens: 12000}`).
 package evaluation
 
 import (
@@ -218,7 +221,13 @@ func play(t *testing.T, c *caseFile, ai string) (*run, error) {
 		args = append(args, "--input-file", "message="+msgFile)
 	}
 	for k, v := range c.Run.Input {
+		if k == "lenses" && c.Review != nil && os.Getenv("WORKLINE_EVAL_LENSES") != "" {
+			continue
+		}
 		args = append(args, "--input", k+"="+v)
+	}
+	if l := os.Getenv("WORKLINE_EVAL_LENSES"); l != "" && c.Review != nil {
+		args = append(args, "--input", "lenses="+l) // the reviewer's lenses a measure asks, `diff-alone` among them
 	}
 	cmd := exec.Command(engineBin, args...)
 	cmd.Env = env
@@ -275,6 +284,17 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 		// measured them, not together as a review on a machine asks them
 		// (#147).
 		cfg = withSetting(cfg, "reviewer", "lenses-together", false)
+		// A measure of some of its settings (the diff-alone facet, #126):
+		// WORKLINE_EVAL_REVIEWER, a YAML map of them.
+		if v := os.Getenv("WORKLINE_EVAL_REVIEWER"); v != "" {
+			var set map[string]any
+			if err := yaml.Unmarshal([]byte(v), &set); err != nil {
+				return "", "", nil, fmt.Errorf("WORKLINE_EVAL_REVIEWER: %v", err)
+			}
+			for k, v := range set {
+				cfg = withSetting(cfg, "reviewer", k, v)
+			}
+		}
 	}
 	if cfg != nil {
 		data, _ := yaml.Marshal(cfg)
