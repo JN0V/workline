@@ -5,19 +5,15 @@ owner, which roles does a software line need — for every kind of project,
 not workline's own — which of them are tools run as gates, and in what
 order to build them?
 
-**Verdict.** Most of a real team's specialist roles are **tools first**:
-static analysis, security scanners, accessibility, performance, licences,
-infrastructure and migration linters all exist as pinned binaries with an
-exit code or SARIF, and belong in gates (docs/spec/gates.md). A role is
-needed only where judgement sits between the tools' output and a person:
-an **inspector** that reads static analysis on a merge request, a
-**security** lens and later a pentest, an **auditor** that re-checks every
-role's acts, a **process engineer** that proposes how to change the line,
-then a **tester**, an **architect**, a **UX** role, a **PM**, and the
-**developer** last. Two decisions settle the line's self-control: the
-auditor and the process engineer stay two roles (a quality audit is not
-industrial engineering), and a team that already runs SonarQube has its
-verdict read, never rerun.
+**Verdict.** Most specialist roles of a real team are **tools first**:
+static analysis, security, accessibility, performance, licences,
+infrastructure and migration linters exist as pinned binaries with an exit
+code or SARIF, and belong in gates (docs/spec/gates.md). A role is needed
+only where judgement sits between the tools and a person: inspector,
+security, auditor, process engineer, tester, architect, UX, PM, and the
+developer last. The auditor and the process engineer stay two roles (a
+quality audit is not industrial engineering); a team's SonarQube verdict
+is read, never rerun.
 
 Already covered elsewhere, not repeated here: the tools per kind of check
 (gates.md), how AI reviewers find and verify (code-review.md), how
@@ -157,13 +153,11 @@ error, never a pass (principle 12).
   spiders for a minute and scans passively, "doesn't perform any actual
   attacks", exits 1 on a FAIL; [Nuclei](https://github.com/projectdiscovery/nuclei)
   runs templates. AI pentest tools, verified:
-  [Strix](https://github.com/usestrix/strix) (66.7k★, Apache-2.0):
-  `--non-interactive` "exits with non-zero code when vulnerabilities are
-  found", scopes quick reviews to changed files on pull requests, each
-  finding with a working proof of concept;
+  [Strix](https://github.com/usestrix/strix) (66.7k★, Apache-2.0)
+  "exits with non-zero code when vulnerabilities are found", scopes pull
+  requests to changed files, a proof of concept per finding;
   [Shannon](https://github.com/KeygraphHQ/shannon) (48.6k★, AGPL-3.0):
-  white-box, "No exploit, no report", SARIF 2.1.0, "Do not run Shannon
-  against production systems".
+  white-box, "No exploit, no report", SARIF, not for production.
 - **An agent's finding counts only once its exploit replays** in a
   deterministic step (docs/spec/gates.md, "Where AI fits").
 
@@ -181,33 +175,19 @@ between screens, wording.
 
 ## Architect, tester, the rest as gates
 
-- **Architect**: spec review before building (#128, the reviewer's spec
-  subject) and architecture rules as gates —
-  [ArchUnit](https://github.com/TNG/ArchUnit) (Java),
-  [dependency-cruiser](https://github.com/sverweij/dependency-cruiser)
-  (JS, TS), [import-linter](https://github.com/seddonym/import-linter)
-  (Python), [go-arch-lint](https://github.com/fe3dback/go-arch-lint) (Go).
-- **Tester**: tests written from the issue's Verification before the code,
-  red first, kept from the developer (Shadow Score in gates.md); mutation
-  testing as a gate.
-- **Performance**: [k6](https://github.com/grafana/k6) thresholds,
-  Lighthouse CI budgets.
-- **Licences**: [go-licenses](https://github.com/google/go-licenses),
-  [licensee](https://github.com/licensee/licensee), Trivy.
-- **Infrastructure as code**: [Checkov](https://github.com/bridgecrewio/checkov),
-  Trivy's config scan (tfsec is now part of Trivy),
-  [hadolint](https://github.com/hadolint/hadolint).
-- **Database**: a reviewer lens, with migration linters as gates —
-  [squawk](https://github.com/sbdchd/squawk) (Postgres),
-  [strong_migrations](https://github.com/ankane/strong_migrations) (Rails),
-  [Atlas](https://github.com/ariga/atlas) lint.
-- **Verdict as code** over several outputs:
-  [conftest](https://github.com/open-policy-agent/conftest).
+| Need | What to borrow |
+|---|---|
+| Architect | spec review before building (#128, the reviewer's spec subject); rules as gates: [ArchUnit](https://github.com/TNG/ArchUnit) (Java), [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) (JS, TS), [import-linter](https://github.com/seddonym/import-linter) (Python), [go-arch-lint](https://github.com/fe3dback/go-arch-lint) (Go) |
+| Tester | tests from the issue's Verification before the code, red first, kept from the developer (Shadow Score in gates.md); mutation testing as a gate |
+| Performance | [k6](https://github.com/grafana/k6) thresholds, Lighthouse CI budgets |
+| Licences | [go-licenses](https://github.com/google/go-licenses), [licensee](https://github.com/licensee/licensee), Trivy |
+| Infrastructure as code | [Checkov](https://github.com/bridgecrewio/checkov), Trivy's config scan (tfsec is now part of Trivy), [hadolint](https://github.com/hadolint/hadolint) |
+| Database | a reviewer lens; migration linters as gates: [squawk](https://github.com/sbdchd/squawk) (Postgres), [strong_migrations](https://github.com/ankane/strong_migrations) (Rails), [Atlas](https://github.com/ariga/atlas) lint |
+| Verdict over several outputs | [conftest](https://github.com/open-policy-agent/conftest) |
 
 ## Roadmap, decided by the maintainer
 
-1. Reviewer to block-ready: its measure ([#90](https://github.com/JN0V/workline/issues/90)) and its missing
-   facets ([#126](https://github.com/JN0V/workline/issues/126)).
+1. Reviewer to block-ready ([#90](https://github.com/JN0V/workline/issues/90), [#126](https://github.com/JN0V/workline/issues/126)).
 2. Inspector ([#202](https://github.com/JN0V/workline/issues/202)); SonarQube read as a gate ([#203](https://github.com/JN0V/workline/issues/203)).
 3. Security ([#204](https://github.com/JN0V/workline/issues/204)).
 4. Auditor widened to every role ([#205](https://github.com/JN0V/workline/issues/205)).
@@ -216,5 +196,4 @@ between screens, wording.
 7. Architect ([#207](https://github.com/JN0V/workline/issues/207)).
 8. UX ([#208](https://github.com/JN0V/workline/issues/208)).
 9. PM ([#209](https://github.com/JN0V/workline/issues/209)), a draft to design with the maintainer.
-10. Developer ([#117](https://github.com/JN0V/workline/issues/117)), **last**: a machine's pull request needs every
-    check above before a person reads it.
+10. Developer ([#117](https://github.com/JN0V/workline/issues/117)), **last**: its pull requests need every check above.
