@@ -230,6 +230,9 @@ func TestReviewerCasesPointRight(t *testing.T) {
 		}
 		var places []place
 		for _, d := range append(slices.Clone(c.Review.Defects), c.Review.Outside...) {
+			if len(d.At) == 0 {
+				t.Errorf("%s: the %s %s defect names no place", f, d.Lens, d.Kind)
+			}
 			places = append(places, d.At...)
 		}
 		places = append(places, c.Review.Not...)
