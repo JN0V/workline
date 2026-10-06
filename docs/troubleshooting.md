@@ -110,5 +110,5 @@ gardening proposes again when fewer wait.
   `GITLAB_CI` set): pass `--forge github` or `--forge gitlab` to jobs that
   write.
 - GitLab: `CI_JOB_TOKEN` reaches no issue; give `GITLAB_TOKEN`
-  ([ci.md](ci.md#gitlabcom)). A **protected** variable never reaches a merge
+  ([ci-gitlab.md](ci-gitlab.md#gitlabcom)). A **protected** variable never reaches a merge
   request's pipeline on an unprotected branch.
