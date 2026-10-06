@@ -27,6 +27,7 @@ released in v0.9.0.
 | Findings on one line each judged by their own lens's question (#229): grouped on one row, each with its verdict; a refused leader dropped alone, the verified one leading and blocking if its lens blocks (tried.md: restock) | `merged-findings-each-judged-by-their-lens`, `merged-finding-lead-refused-other-shown` |
 | A quote found spaces and line breaks aside, a tab-indented one read | `quote-over-lines-found` |
 | A full review within a token budget (#147): the lenses in one call, each file once (whole, the change marked, or by its hunks), a judge shown the change near the cause and 300 lines of tests; `ai-max-tokens` 200000, the summary saying what each call used; once spent, nothing more asked and the commits not recorded. #146's review: 453k tokens in estimated before, 142k after; the real run 96.1k in, 8.6k out, two of the three true findings verified (tried.md) | `lenses-asked-together-in-one-call`, `lenses-together-finding-naming-no-lens-kept`, `lens-given-each-file-once`, `judge-shown-the-change-near-the-cause`, `tests-judge-reads-tests-up-to-a-cap`, `review-says-the-tokens-of-each-call`, `budget-spent-lens-not-asked`, `budget-spent-findings-not-judged` |
+| A judge reads the code the finding stands on (#127): the cause's function whole, then the functions the finding names, those it calls and those calling it, up to `judge-lines-max` (200) lines, the rest named; no build (Go parsed, other languages by pattern). #146's two findings refused "for want of code" both verified by Opus, 16.6k tokens in; the judges' prompts about 25% larger on #146, 10% on #90's cases (tried.md) | `judge-reads-the-function-the-cause-calls`, `judge-reach-capped-rest-named`, `TestReach`, `TestEnclosingByLanguage` |
 | Its measure: twelve evaluation cases on the `shop` fixture, three defects planted a lens, two clean changes and untested code outside one; scored by lens with no agent, recall, findings nothing planted, the judge's refusals, the finder floor, tokens | tests/evaluation/cases/reviewer, `TestScoreReview`, `TestReviewerWithFakeAgent`, `TestReviewerCasesPointRight` |
 | An issue outside the change opened through the one way every role shares: a subject an issue holds, open or closed, not opened again (ADR-0018) | backlog `issue-*` cases; the sandbox, live (#9) |
 
@@ -59,14 +60,15 @@ Conformance: tests/conformance/cases/reviewer.
    in #90's step 1 the tests lens left such code alone (0 of 1), while the
    edge-cases lens had three weak overflow findings outside the change
    verified, each an issue on a forge.
-7. **The judge's material**: thirty lines around the cause; it refused a
-   true finding whose evidence lay further (tried.md). The functions the
-   cause calls or is called by, given whole, are the next step.
-8. **A removal's reach past three lines**: a removed guard whose defect
+7. **A removal's reach past three lines**: a removed guard whose defect
    shows further down (a slice ten lines on) is still sent outside the
    change; the window is a diff's context, not the code's flow.
-9. **The lenses together, measured** (#147): validated on #146's
+8. **The lenses together, measured** (#147): validated on #146's
    commits, 104.7k tokens against 430k, two of the three true findings
-   verified, the third refused by the judge for want of material (item
-   7) (tried.md); the lenses together not yet measured against the
-   lenses apart on the evaluation's cases.
+   verified, the third refused by the judge for want of material — since
+   #127, verified (tried.md); the lenses together not yet measured against
+   the lenses apart on the evaluation's cases.
+9. **The judge's false negatives, counted again** (#90, #127): the
+   evaluation's cases with the judges reading whole functions, by a real
+   agent; and a call across languages other than by name (a script's
+   JSON read by Go) is found only when the finding names the function.

@@ -427,3 +427,43 @@ to 8.9k.
 
 Not tried: five runs (ADR-0014); the evaluation's cases with the lenses
 together (it asks them apart, as it measured them).
+
+## 2026-10-06 — a judge reads the functions the cause reaches (#127)
+
+Offline first, no tokens: the recording agent of #147 on #146's review
+(the 430k run's answers, each judge yes), and on the twelve evaluation
+cases (a planted finding a defect, each judge yes); origin/main's engine
+against this branch's. Tokens from characters by #147's fit (711 + 0.82
+× characters a call).
+
+| Judges | Before | After |
+|---|---|---|
+| #146's review, 7 judges | 79.4k chars, 70.1k tokens | 100.8k chars, 87.7k tokens |
+| the evaluation's cases, 9 judges | 33.0k chars, 33.5k tokens | 37.0k chars, 36.7k tokens |
+
+- **What grew**: a judge reads the cause's function whole and up to 200
+  lines more (`judge-lines-max`); #146's whole review, about 142k
+  estimated before, about 160k after, under `ai-max-tokens`.
+- **Noise found and cut on the way**: a capitalised word opening the
+  title (`Last`) pulled a function of that name from another package —
+  such a word now comes last; an unexported Go function's namesake in
+  another package taken for its caller — now its package only.
+
+**The validation run**, one, real: #146's review at `5be9afd`, the lenses
+answered with no tokens by the two findings the judged validation run of
+#147 (above) had refused "for want of code", the judge Opus
+(`WORKLINE_JUDGE=claude:opus`).
+
+| Finding | Before (#147's run) | After |
+|---|---|---|
+| Forgejo comments never flag bots (workline-forge.sh:94) | refused: "the claimed failure rests on things not shown here" | verified: "`reply.Bot` in Agreement is always false and a write-permission bot passes" |
+| Forgejo issues carry no author (workline-forge.sh:74) | refused: "the engine's `reply.Author != is.Author` check … is not shown" | verified, citing `Agreement`'s check |
+
+- **What the judge read**: the 31 lines around the shell cause (no
+  function there), `Agreement` (backlog.go, named by the finding, in Go),
+  and the script's own functions those lines call (`all`, `api`, `arg`).
+- **Tokens**: 16.6k in, 0.8k out, two calls (8.2k and 8.4k in, against
+  5.5k and 5.4k before).
+- **Not tried**: the evaluation's cases with a real agent (#90 counts the
+  judge's false negatives there); a project in another language than Go
+  and shell, for real (unit tests only); CI.

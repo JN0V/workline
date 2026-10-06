@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 894d7d3
+checked: 2f0ffc4
 verified: agent:claude-code
 ---
 # Reviewer
@@ -46,9 +46,11 @@ for each verified finding outside the change.
 **Cost**: one call for the lenses (all of them on a machine, together;
 one a push on a merge request) and one judge call for each important
 finding. #146's eight commits, every lens: 142k tokens in, estimated, the
-lenses' call 73.6k (430k before #147, docs/tried.md). Caps:
+lenses' call 73.6k (430k before #147, docs/tried.md); the judges reading
+whole functions (#127), about 160k. Caps:
 `ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
-`tests-lines-max`, `findings-max`, `issues-max`, `lenses-per-push`.
+`judge-lines-max`, `tests-lines-max`, `findings-max`, `issues-max`,
+`lenses-per-push`.
 **Without AI**: the rules alone; the change is left for a person
 (`not-reviewed`).
 **Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
@@ -96,8 +98,24 @@ lenses' call 73.6k (430k before #147, docs/tried.md). Caps:
    merge request. A nit there is left, counted.
 7. **The judge**, apart, for each important finding, at the best
    independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
-   It reads the finding, the code around its cause and symptom, and what
-   the change did within 40 lines of the cause (#147). Its question is the lens's (the
+   It reads the finding, the code it stands on, and what the change did
+   within 40 lines of the cause (#147). The code (#127), found with no
+   build ([research](../../docs/research/code-navigation.md)), up to
+   `judge-lines-max` lines all together, the rest named with where it lies:
+   - the function the cause lies in, whole (the symptom's too); none
+     found, or longer than the cap, the 31 lines around it;
+   - then, each whole while it fits: the functions the finding names, those
+     the cause's function calls, those calling it, and last a capitalised
+     word opening a sentence that names a function;
+   - Go by its own parser, an unexported name looked for in its package
+     only; shell, Python, Ruby, Lua and C-like files (C, C++, Java, C#,
+     JavaScript, TypeScript, Rust, Kotlin, Swift, PHP, Scala, Dart) by a
+     definition pattern and braces, indentation or `end`; references by
+     `git grep -w` at the head; a name defined in the cause's file first,
+     then its folder; in more than two other places, named, none shown;
+     test files left to the tests judge.
+
+   Its question is the lens's (the
    front matter of `lenses/<lens>.md`), else whether the quoted code fails:
    - correctness, edge cases: whether the code quoted fails as the finding says;
    - tests (#223): whether a test exercises the behaviour and would fail
@@ -174,6 +192,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
 | `code-lines-max` | `600` | lines of the changed files a lens is given whole, the change marked; the others by their hunks |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
+| `judge-lines-max` | `200` | lines of code a judge is shown: the cause's function, then those it reaches (#127), the rest named; `0`: the 31 lines around the cause |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown, the rest named |
 | `ai-max-tokens` | `200000` | tokens a run may spend, in and out, all calls; the call crossing it is paid; `0`: no cap |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
