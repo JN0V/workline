@@ -1,5 +1,5 @@
 ---
-sources: [internal/engine, internal/intent, internal/role, internal/agent]
+sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
 checked: 383f62a
 verified: agent:claude-code
 ---
@@ -22,8 +22,13 @@ roles/<name>/
   policy.md
   pre               deterministic: gathers input, decides whether a decision is needed
   post              deterministic: validates, decides the verdict
+  lenses/*.md       the reviewer's: one facet per lens
   skills/           optional, Agent Skills format (SKILL.md); not read yet
+  docs/             about the role, never loaded: reference pages, status.md, tried.md
 ```
+
+- The top level holds README.md and what the engine loads, nothing else.
+- A page about the role goes to `docs/`; `roles_test.go` fails otherwise.
 
 `pre` and `post` are executables in any language. The engine runs them; it does
 not care what they are written in.
