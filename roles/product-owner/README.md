@@ -24,7 +24,7 @@ flowchart LR
 
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md). What a run does,
-step by step: [run.md](run.md).
+step by step: [docs/run.md](docs/run.md).
 
 **Does**: keeps a project's backlog — its open issues — true to the code
 and in order, between the need a person states and the result they accept
@@ -153,4 +153,4 @@ rebuilt, a split need's parts reported, and a changed need's issues
 listed for a person.
 
 **Status**: beta, nightly in DomoticsCore's CI and on workline's own
-issues; [status.md](status.md), each try in [tried.md](tried.md).
+issues; [docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).

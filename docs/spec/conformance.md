@@ -250,7 +250,7 @@ too and must never be lost.
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
 What a change is designed on is never what it is accepted on: the
-**held-out set** — WaterMeter (a solo repository, roles/documentalist/tried.md),
+**held-out set** — WaterMeter (a solo repository, roles/documentalist/docs/tried.md),
 DomoticsCore after its pull request #114, and workline's own nightly
 gardening — is not looked at while designing ADR-0014's steps, and is
 replayed only to accept them (its step 4).

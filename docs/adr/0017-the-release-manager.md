@@ -90,7 +90,7 @@ this machine:
   setup/doctor-docs-judged-nowhere; no evaluation case.
 - **Docs**: README.md (the roles table, the `release` event row),
   docs/spec/routing.md, docs/usage.md, docs/spec/role-contract.md (an
-  example), roles/documentalist/role.yaml and checks.md (the handoff),
+  example), roles/documentalist/role.yaml and docs/checks.md (the handoff),
   docs/research/docs-and-release.md, `.goreleaser.yaml`'s comment.
 
 The documentalist's `release` event is not the role's: its hold

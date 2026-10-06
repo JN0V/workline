@@ -5,7 +5,7 @@ verified: agent:claude-code
 ---
 # Documentalist — the judge
 
-Part of [the documentalist](README.md).
+Part of [the documentalist](../README.md).
 
 ## Judge (`post`, no AI)
 

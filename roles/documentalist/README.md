@@ -112,12 +112,12 @@ comment. Gardening only regenerates derived blocks.
 
 ## How it works
 
-- [The checks](checks.md): what `pre` finds with no AI, their levels, and
+- [The checks](docs/checks.md): what `pre` finds with no AI, their levels, and
   how cascades are cut.
-- [The agent's tasks](tasks.md): suspect docs judged whole or in parts,
+- [The agent's tasks](docs/tasks.md): suspect docs judged whole or in parts,
   gardening, one merge request per task.
-- [The judge](judge.md): what `post` refuses of the agent's patches.
-- [At the push, the release and the adoption](push.md).
+- [The judge](docs/judge.md): what `post` refuses of the agent's patches.
+- [At the push, the release and the adoption](docs/push.md).
 
 **Status**: beta, used on workline and DomoticsCore in CI;
-[status.md](status.md), each try in [tried.md](tried.md).
+[docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).

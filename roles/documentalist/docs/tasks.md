@@ -7,7 +7,7 @@ verified: agent:claude-code
 
 What the agent is asked: suspect docs, judged whole or in parts, and, when
 gardening, stale docs, duplicates, condensing, merging and splitting cards.
-Part of [the documentalist](README.md).
+Part of [the documentalist](../README.md).
 
 ## Suspect docs
 

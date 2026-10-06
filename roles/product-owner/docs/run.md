@@ -5,9 +5,9 @@ verified: agent:claude-code
 ---
 # Product owner — a run
 
-Part of [the product owner](README.md): what a run does, step by step.
+Part of [the product owner](../README.md): what a run does, step by step.
 The contract of its acts is
-[docs/spec/backlog-acts.md](../../docs/spec/backlog-acts.md).
+[docs/spec/backlog-acts.md](../../../docs/spec/backlog-acts.md).
 
 ## A run, when gardening (`schedule`)
 

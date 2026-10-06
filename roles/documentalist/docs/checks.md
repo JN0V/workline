@@ -6,7 +6,7 @@ verified: agent:claude-code
 # Documentalist — the checks
 
 What `pre` finds with no AI, how much each finding weighs, and how cascades
-are cut. Part of [the documentalist](README.md).
+are cut. Part of [the documentalist](../README.md).
 
 ## Prepare (`pre`, no AI)
 

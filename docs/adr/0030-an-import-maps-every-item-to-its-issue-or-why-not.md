@@ -15,7 +15,7 @@ agent judged done, took for an introduction, lost at a share's edge or
 simply missed left no trace, and the file then "stays as it is, for its
 history": a forgotten requirement was gone. On DomoticsCore's roadmap,
 two runs of the same import left out different items (BUG-94, CI-7,
-CI-16), and nothing showed it (roles/product-owner/tried.md).
+CI-16), and nothing showed it (roles/product-owner/docs/tried.md).
 
 Requirements tools trace declared items — an id, a tag, a row — and list
 what is not covered (docs/research/product-owner.md, "An import's

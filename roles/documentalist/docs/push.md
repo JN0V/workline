@@ -5,7 +5,7 @@ verified: agent:claude-code
 ---
 # Documentalist — at the push, the release and the adoption
 
-Part of [the documentalist](README.md).
+Part of [the documentalist](../README.md).
 
 ## Before a push
 

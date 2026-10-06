@@ -244,7 +244,7 @@ on #3 by a person; a comment on #2, #6, #7, then #3, to have them read again.
 ## 2026-10-04 — the one way to open issues
 
 Tried live through the reviewer, on JN0V/workline-sandbox #9
-(roles/reviewer/tried.md): a subject held by an open issue not opened
+(roles/reviewer/docs/tried.md): a subject held by an open issue not opened
 again, then by one closed as completed said once on it. The product
 owner's side — a role's issue read first as its draft to refine — is in
 conformance only (`role-finding-read-as-draft`): no product owner run

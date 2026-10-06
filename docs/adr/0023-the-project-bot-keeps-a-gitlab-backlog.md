@@ -13,7 +13,7 @@ The product owner wrote to GitLab with whatever token it found, and took
 every reporter there for an outsider — GitLab's issue says nothing of its
 author's access, where GitHub's says `author_association`. So on GitLab
 every refine became a comment to the reporter, and a split, a rename or a
-move to ready only a proposal (roles/product-owner/tried.md, 2026-10-05).
+move to ready only a proposal (roles/product-owner/docs/tried.md, 2026-10-05).
 docs/research/ci-and-forge.md ("A bot writing GitLab issues from CI")
 found: CI's job token reaches neither issues nor GraphQL; a project access
 token is a bot user, a member of that project only, with a role and

@@ -16,7 +16,7 @@ events: [merge-request, pre-push, schedule, handoff, release, init]
 requires: [git]
 # Budgets, duplicates and links inside the repository are checked by the engine
 # itself (ADR-0003). Optional tools, run when installed; the verdict says when
-# one is missing. lychee: links to other sites, when gardening (checks.md, "Links").
+# one is missing. lychee: links to other sites, when gardening (docs/checks.md, "Links").
 # Coming: vale (style).
 uses: [lychee]
 
@@ -95,14 +95,14 @@ settings:
   # decision-records or decision-log: these globs add to them, each record
   # numbered by the first number in its name, e.g. ["docs/design/*.md"].
   decisions: []
-  # Versions, for `value-left` (checks.md): how the project writes one, when
+  # Versions, for `value-left` (docs/checks.md): how the project writes one, when
   # not in three parts (1.4.1, v1.4.1), as a regexp, e.g. '\d{2}\.\d+' for a
   # calendar version (26.2); and the files saying its version, e.g.
   # [pyproject.toml]: a doc still saying a version a fix replaces is reported
   # when one of them says the new one, whatever the doc's own sources.
   versions: {pattern: "", files: []}
   # The docs' language, whose glue and fact words the removal rule reads
-  # (judge.md): en or fr. Unset, each doc's own, told by its frequent words.
+  # (docs/judge.md): en or fr. Unset, each doc's own, told by its frequent words.
   language: ""
   max-open-merge-requests: 5         # backpressure: with --open-merge-request, no gardening while this many wait
   ai-max-calls: 10                   # suspect docs per call; the rest wait for the next round

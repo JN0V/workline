@@ -45,12 +45,12 @@ findings in `--sarif` / `--code-quality`, and an issue (`needs-triage`)
 for each verified finding outside the change.
 **Cost**: one call a lens (three on a machine, one a push on a merge
 request) and one judge call for each important finding; measured from 2k
-to 51k tokens in for a lens, 3k to 8k for a judge (tried.md). Caps:
+to 51k tokens in for a lens, 3k to 8k for a judge (docs/tried.md). Caps:
 `diff-lines-max`, `code-lines-max`, `findings-max`, `issues-max`,
 `lenses-per-push`.
 **Without AI**: the rules alone; the change is left for a person
 (`not-reviewed`).
-**Status**: beta, released in v0.9.0; [status.md](status.md).
+**Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
 
 ## A run
 
