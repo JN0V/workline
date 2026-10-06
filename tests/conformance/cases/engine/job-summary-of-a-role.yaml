@@ -1,0 +1,11 @@
+case: engine/job-summary-of-a-role
+about: With --summary, a role's run writes its verdict and each finding, the first line of its message, to a Markdown file, those that name no file too.
+given: {repo: untidy}
+run: {role: documentalist, event: schedule, ai: none, summary: true}
+expect:
+  status: pass
+  summary-file:
+    - "### workline run-role documentalist (schedule)"
+    - "**pass** — "
+    - "- section-too-long docs/history.md"
+    - "- doc-too-long docs/sessions.md"

@@ -14,6 +14,13 @@
 #          are listed for a person. GitLab gives a variable to the whole job,
 #          installs included, where GitHub gives it to one step.
 #   The findings show in the merge request's Code Quality report, on every tier.
+#   Each job also writes its summary (`--summary`): what ran, each step's
+#   verdict, the findings, what waits to be applied; the applying job adds
+#   what it applied to the judging job's. workline-summary.md is printed at
+#   the end of the log; workline-summary.html, a page GitLab shows (an .md
+#   artifact it only downloads), is linked from the job's page (Annotations)
+#   and from the merge request's (`expose_as`). `--summary` needs the first
+#   release after v0.16.0.
 #   apply  holds WORKLINE_GITLAB_TOKEN (a project access token, role Developer,
 #          scopes `api` and `write_repository`: one glab command in
 #          docs/ci.md makes and stores it; CI_JOB_TOKEN reaches no issue) and
@@ -40,6 +47,9 @@ variables:
 
 .workline:trust: &trust             # a self-managed instance's own authority, when it has one
   - '[ -z "${CI_SERVER_TLS_CA_FILE:-}" ] || cat "$CI_SERVER_TLS_CA_FILE" >> /etc/ssl/certs/ca-certificates.crt'
+.workline:summary: &summary         # the summary, at the end of the log and linked from the job's page
+  - '[ ! -s workline-summary.md ] || cat workline-summary.md'
+  - printf '{"workline":[{"external_link":{"label":"workline summary","url":"%s/artifacts/file/workline-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
 .workline:claude: &claude           # the agent, only when the project gives its token
   - ai=none
   - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
@@ -64,12 +74,14 @@ workline:judge:
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
-      --code-quality gl-code-quality.json --json > line.json || status=$?
+      --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
+  after_script: *summary
   artifacts:
     when: always                    # steps that passed before one blocked are still applied
-    paths: [.workline-runs/, line.json]
-    reports: {codequality: gl-code-quality.json}
+    expose_as: workline summary
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    reports: {codequality: gl-code-quality.json, annotations: workline-annotations.json}
     expire_in: 1 day
 
 workline:apply:
@@ -84,7 +96,14 @@ workline:apply:
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - workline apply --line line.json
+    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    expose_as: workline applied
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
 
 # Gardening: in a scheduled pipeline (CI/CD → Schedules, weekly), the project's
 # `schedule` line runs (by default the documentalist); each task it takes up
@@ -110,11 +129,13 @@ workline:garden:judge:
   script:
     - *claude
     - status=0
-    - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json || status=$?
+    - workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
+  after_script: *summary
   artifacts:
     when: always
-    paths: [.workline-runs/, line.json]
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    reports: {annotations: workline-annotations.json}
     expire_in: 1 day
 
 workline:garden:apply:
@@ -125,7 +146,13 @@ workline:garden:apply:
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - workline apply --line line.json
+    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
 
 # The release's own fix follows the default branch (ADR-0034): when it
 # moves, the documentalist's merge request for the release, when one is
@@ -180,11 +207,13 @@ workline:sample:read:               # the agent reads; nothing is written
   script:
     - *claude
     - status=0
-    - workline sample ${WORKLINE_SAMPLE_WEEK:+--week "$WORKLINE_SAMPLE_WEEK"} --out sample.json || status=$?
+    - workline sample ${WORKLINE_SAMPLE_WEEK:+--week "$WORKLINE_SAMPLE_WEEK"} --out sample.json --summary workline-summary.md --summary workline-summary.html || status=$?
     - '[ "$status" != 1 ]'           # 2 and 3: for a person, on the issue
+  after_script: *summary
   artifacts:
     when: always
-    paths: [sample.json]
+    paths: [workline-summary.html, workline-summary.md, sample.json]
+    reports: {annotations: workline-annotations.json}
     expire_in: 1 day
 
 workline:sample:write:              # writes to the forge; no agent installed
@@ -196,4 +225,10 @@ workline:sample:write:              # writes to the forge; no agent installed
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - workline sample --apply sample.json --forge gitlab
+    - workline sample --apply sample.json --forge gitlab --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week

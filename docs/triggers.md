@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 7a6289b
+checked: 7f5cf46
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -138,9 +138,12 @@ templates keep a job's status and still apply what passed
 - **Reports**: `--sarif <file>` (GitHub code scanning), `--code-quality
   <file>` (GitLab: `artifacts: reports: codequality`, shown on the merge
   request, every tier). The paths are yours to choose.
-- **Job summary**: the engine writes none. The GitHub templates build one
-  from `line.json` with jq into `$GITHUB_STEP_SUMMARY`; on GitLab, the job
-  log and the Code Quality report.
+- **Job summary**: `--summary <file>` (`route`, `run-role`, `apply`,
+  `sample`): the verdict, each step's verdict and findings, what was
+  applied and what waits to be, in Markdown, or HTML for a `.html` file,
+  added to the file ([ADR-0035](adr/0035-the-engine-writes-the-jobs-summary.md)).
+  GitHub: `$GITHUB_STEP_SUMMARY`; GitLab: an artifact the job's page links
+  ([ci.md](ci.md#what-a-job-shows)).
 - **Runs**: `$WORKLINE_RUNS_DIR` (else `.git/workline/runs/`), each with
   `out/calls.jsonl`, the agent's answer and what was refused.
 - **On the forge**: a comment on the merge request (the documentalist's list
