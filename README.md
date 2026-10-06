@@ -23,7 +23,7 @@ A software factory for AI-assisted development:
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
 pull requests and nightly gardening of workline and DomoticsCore;
-<!-- workline:derive conformance-cases -->405<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->473<!-- workline:end --> conformance cases green in CI.
 
 ## The roles
 
