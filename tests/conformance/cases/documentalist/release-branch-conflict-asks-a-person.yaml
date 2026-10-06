@@ -1,0 +1,14 @@
+case: documentalist/release-branch-conflict-asks-a-person
+about: "When the documentalist's own change to its release branch no longer applies on main — main rewrote the sentence it fixed — the branch is left as it is and a person is asked (#184)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
+    - "sed -i 's/one hour/ninety minutes/' docs/tech/auth.md && git commit -qam 'docs: tokens last ninety minutes' && git push -q origin main"
+  forge: {merge-requests: [{id: 2, branch: workline/documentalist/release, base: main, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: human
+  findings: [{rule: no-longer-applies, where: workline/documentalist/release, message: docs/tech/auth.md}]
+  not-pushed: [workline/documentalist/release]

@@ -1,0 +1,19 @@
+case: documentalist/release-fix-keeps-a-person-commit
+about: "A fix judged on a release tool's pull request goes to the documentalist's release branch; when a person committed to that branch, it is not force-pushed over them: the fix goes in a comment instead (#184)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git tag v1.0.0"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb workline/documentalist/release && echo 'More.' >> docs/product/sign-in.md && git commit -qam 'docs: a word more' && git push -q origin workline/documentalist/release && git checkout -q main"
+    - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}, {id: 2, branch: workline/documentalist/release, base: main, labels: [], comments: []}]}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-fixed", push-to-merge-request: true}
+expect:
+  status: block
+  applied: [patch]
+  findings: [{rule: fix-in-comment, message: "a person committed"}]
+  not-pushed: [workline/documentalist/release]
+  forge:
+    merge-requests:
+      - {id: 1, comment-contains: "Access tokens last two hours."}

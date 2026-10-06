@@ -99,6 +99,16 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 	switch {
 	case p == "/members/all":
 		return s.Members, 200
+	case p == "/merge_requests" && method == "GET":
+		out := []map[string]any{}
+		for _, it := range s.MergeRequests {
+			if q.Get("state") == "opened" && it.Closed {
+				continue
+			}
+			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
+				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed]})
+		}
+		return out, 200
 	case p == "/issues" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.Issues {

@@ -1,0 +1,21 @@
+case: documentalist/release-branch-follows-main
+about: "The documentalist's release merge request conflicted once a feature merged into main moved `checked` on the line beside the `judged` it wrote (#184): run on main, `workline follow` rebuilds the branch from main's new tip — main's `checked`, the branch's `judged` and fix — and force-pushes it, the merge request kept, as a release tool rebuilds its own branch."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: abcdef1/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: [{id: 2, branch: workline/documentalist/release, base: main, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: rebuilt, where: workline/documentalist/release, message: "on main"}]
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "checked: abcdef1\njudged: 1a8e5a4"}
+  pushed-message: {workline/documentalist/release: "Workline-Role: documentalist"}
+  on-top: {workline/documentalist/release: main}
+  forge:
+    merge-requests:
+      - {id: 2, branch: workline/documentalist/release, closed: false}
+      - {id: 3, absent: true}

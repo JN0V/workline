@@ -1,2 +1,9 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+documentalist/release-branch-follows-main
+documentalist/release-branch-follows-main-on-gitlab
+documentalist/release-branch-rebuilt-keeps-its-fix
+documentalist/release-branch-up-to-date-left-alone
+documentalist/release-branch-a-person-committed-to-is-kept
+documentalist/release-branch-conflict-asks-a-person
+documentalist/release-fix-keeps-a-person-commit
