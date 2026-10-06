@@ -22,32 +22,16 @@ flowchart LR
   role --> person
 ```
 
-| At `autonomy: normal` | |
-|---|---|
-| Alone | names an issue's code; sets milestones and priorities, at most 20% of the open issues moved a run; closes a duplicate; announces an obsolete issue, closes it 7 days later on silence and a second judge's yes; refines to `ready`, Need and Validation as drafts; asks the reporter what is missing; splits a need too big; renames a vague title; says what an issue waits on; imports a file's items as issues |
-| Proposed | moves past the 20%; an outsider's issue made `ready`; the issues built on a need a person changed; at `cautious`, what sets direction: milestones, priorities, duplicates, splits, titles, dependencies, the Need and Validation drafts |
-| Left to a person | a draft made final (`workline:accepted`); a split need accepted, by closing it; a box ticked; closing as not planned; undoing an act |
-
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md). What a run does,
 step by step: [run.md](run.md).
 
 **Does**: keeps a project's backlog — its open issues — true to the code
 and in order, between the need a person states and the result they accept
-(ADR-0018). A run reads a share of the open issues against the code, and:
-closes a duplicate, its original quoted; announces what the code made
-obsolete and closes it a week later on silence and a second judge's yes;
-names an issue's code; sets milestones and priorities; refines an issue to
-`ready` (Need and Validation as drafts for a person) and asks its reporter
-what is missing; splits a need too big for one issue and, as its parts
-close, says on it what each delivered and which items of its
-Verification are proved, for a person to accept (ADR-0029); renames a
-vague title; says what an issue waits on. When a person rewrites an
-issue's Need or Scope, or a roadmap line an issue was imported from
-changes, it reads again the issues built on it and proposes — moving a
-ready one back to refine included — or lists them for a person
-(ADR-0032). It also imports a roadmap file as
-issues, and keeps the one way every role opens an issue.
+([ADR-0018](../../docs/adr/0018-the-product-owner.md)). A run reads a
+share of the open issues against the code, acts within caps and
+proposes the rest (below); it also keeps the one way every role opens an
+issue.
 
 **Does not**: write code or docs (`writes: []`: the forge's issues only),
 write the Need or Validation of a person's issue as final, close as "not
@@ -61,6 +45,16 @@ it proposes rather than does at `autonomy: cautious`.
 |---|---|---|
 | `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, acts and proposes |
 | `import` | `workline issues import <file>` (`--apply` to open) | opens each item still to do in a file as an issue; then maps every item to its issue or the reason it has none, and lists what is left with neither, for a person (exit 2) |
+
+## Alone, proposed, left to a person
+
+At `autonomy: normal`, the default:
+
+| | Acts |
+|---|---|
+| Alone | names an issue's code; sets milestones and priorities, at most 20% of the open issues moved a run; closes a duplicate, its original quoted; announces an obsolete issue, closes it a week later on silence and a second judge's yes; refines to `ready`, Need and Validation as drafts; asks the reporter what is missing; splits a need too big, then says on it what each part delivered ([ADR-0029](../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)); renames a vague title; says what an issue waits on; imports a roadmap file as issues |
+| Proposed | moves past the 20%; an outsider's issue made `ready`; the issues built on a Need, a Scope or a roadmap line a person changed, a ready one back to refine included ([ADR-0032](../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)); at `cautious`, what sets direction: milestones, priorities, duplicates, splits, titles, dependencies, the drafts |
+| Left to a person | a draft made final (`workline:accepted`); a split need accepted, by closing it; a box ticked; closing as not planned; undoing an act |
 
 ## Settings
 
