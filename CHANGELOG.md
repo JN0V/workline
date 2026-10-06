@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.18.0](https://github.com/JN0V/workline/compare/v0.17.0...v0.18.0) (2026-10-06)
+
+
+### Features
+
+* **cli:** help lists every command, misuse exits 64 ([#219](https://github.com/JN0V/workline/issues/219)) ([4adb67d](https://github.com/JN0V/workline/commit/4adb67ddf431e19f88d95c7fd47bb8b292cbf64c))
+* **product-owner:** an import judged in one job, applied in another ([#215](https://github.com/JN0V/workline/issues/215)) ([bb4b45a](https://github.com/JN0V/workline/commit/bb4b45af3c805254d637dfafc277eee36f650d3a))
+* **reviewer:** judge the tests lens on whether a test exercises it ([#228](https://github.com/JN0V/workline/issues/228)) ([f1f01bd](https://github.com/JN0V/workline/commit/f1f01bdcfbdc4985e5ba9a22572ce24dea2ea92c))
+* **reviewer:** set ai-findings by lens, a lens not named warning ([#225](https://github.com/JN0V/workline/issues/225)) ([80925b0](https://github.com/JN0V/workline/commit/80925b035ebbc92c0e47e1e6719cbcfcb16b7750))
+
+
+### Bug Fixes
+
+* **reviewer:** a blocked merge request still gets the comment ([#227](https://github.com/JN0V/workline/issues/227)) ([dd05a46](https://github.com/JN0V/workline/commit/dd05a4638c3ae5884d69ad447afa0e42ccd4f54a))
+
 ## [0.17.0](https://github.com/JN0V/workline/compare/v0.16.0...v0.17.0) (2026-10-06)
 
 
