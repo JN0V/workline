@@ -281,3 +281,25 @@ fix needs a release or a built engine in the workflow); GitLab's
 `when: always` and `allow_failure: {exit_codes: [3]}` in a real pipeline
 (the template test reads them); a real agent.
 
+
+## 2026-10-06 — the tests lens judged on whether a test exercises it (#223)
+
+The four tests cases of the evaluation (tests/evaluation/cases/reviewer/
+`tests-*`), once, Sonnet finding and Opus judging (`model`), the engine
+of the branch; results.tsv holds the rows. Before: #90's step 1, above.
+
+| Case | Before | After |
+|---|---|---|
+| `tests-shipping-untested` | the tests lens's "no test" refused; credited to other lenses' nits | its "Shipping has no tests" verified (own 1) |
+| `tests-rounding-test-passes-either-way` | found; one tests-lens finding refused (judge-no 1) | both verified: the test passing either way, "changed rounding has no failing test" (judge-no 0) |
+| `tests-restock-test-asserts-nothing` | found; one tests-lens finding refused (judge-no 1) | the test asserting nothing verified; "Restock edge cases untested" refused, merged on line 48 under the correctness lens's finding and judged by its question (status.md, item 9) |
+| `tests-untested-code-outside-the-change` | Snapshot not raised | not raised; two nits on Clear's test, as before |
+
+- **Nothing false shown**: fp 0 for the tests lens in the four cases.
+- **Tokens**: 110.8k in all, in and out (shipping 24.3k, rounding 32.7k,
+  restock 33.4k, outside 20.4k); the tests lens and its judges 6k to 18k
+  in a case, from 6k to 14k before: the judge now reads the tests in the
+  cause's folder.
+- **Not tried**: five runs a case (ADR-0014); the other lenses' cases
+  (their question is today's, conformance `correctness-judge-keeps-its-question`);
+  a project whose tests lie in another folder (unit test only).

@@ -73,7 +73,10 @@ before the push; and on the merge request, a safety net.
    for a merge request the developer role opened, `context` for a person's
    (`judge-at-least`). A no drops the finding, said with the judge's reason
    (`finding-judged-no`); a finding not verified is shown as such. A nit is
-   not judged, and one outside the change is left, counted.
+   not judged, and one outside the change is left, counted. The judge asks
+   the lens's question (#223): whether the quoted code fails, or, for the
+   tests lens, whether a test exercises the behaviour, read from the tests
+   that touch the cause's file.
 6. **The verdict by rules.** The rules' findings block; what the lenses
    find warns until #90 has measured it, then a verified important finding
    blocks (`ai-findings: block`). The reviewer never approves, never

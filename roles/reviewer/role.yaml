@@ -69,3 +69,6 @@ settings:
   # Each lens looks for a number of candidates before it stops, from the
   # change's size; nothing found is ever required to be shown (ADR-0020).
   finder-floor: true
+  # The test files. A lens whose judge reads tests (lenses/tests.md) has
+  # its judge shown those in the cause's folder and those naming its file.
+  tests: ["**/*_test.*", "**/test_*", "**/*_spec.*", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**"]
