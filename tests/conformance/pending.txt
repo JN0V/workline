@@ -1,15 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-cli/bad-option-value-is-misuse
-cli/command-help-without-event
-cli/command-help-without-role
-cli/help-command-lists-every-command
-cli/help-lists-every-command
-cli/help-of-a-command
-cli/item-id-not-a-number
-cli/item-id-with-trailing-letters
-cli/missing-event-is-misuse
-cli/no-command-is-misuse
-cli/unknown-command-is-misuse
-cli/unknown-option-after-event-is-misuse
-cli/unknown-option-is-misuse
