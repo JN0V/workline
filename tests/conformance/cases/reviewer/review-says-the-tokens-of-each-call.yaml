@@ -1,0 +1,13 @@
+case: reviewer/review-says-the-tokens-of-each-call
+about: "The review says the tokens each lens and each judge call used, and the total against the run's ai-max-tokens (#147)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-max-tokens: 50000}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-lenses-together"}
+expect:
+  status: pass
+  summary: "tokens: 1200 in, 100 out (3 calls), of 50000 a run (ai-max-tokens)"
+  run-files:
+    out/review.json: {contains: '"for": "judge/02"'}

@@ -1,0 +1,16 @@
+case: reviewer/budget-spent-lens-not-asked
+about: "Once the run has spent its ai-max-tokens, the next lens is not asked, said; the commits are not recorded as reviewed (#147)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-max-tokens: 1000, lenses-together: false}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,tests"}, ai: "fake:review-costly"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: lens-failed, message: "the tests lens got no answer that reads (spent: the run spent its ai-max-tokens)"}
+    - {rule: ai-max-tokens, message: "1600 tokens spent, the run allows 1000"}
+  summary: "not every lens answered: not reviewed whole"
+  run-files: {out/review.json: {contains: '"complete": false'}}

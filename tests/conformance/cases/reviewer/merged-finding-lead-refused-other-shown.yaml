@@ -18,7 +18,7 @@ given:
       GO
       git add shop && git commit -qm 'feat(shipping): free from 50.00'
   env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-tests.sh"}
-  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block, tests: block}}}}}
+  config: {roles: {reviewer: {settings: {lenses-together: false, ai-findings: {correctness: block, tests: block}}}}}
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,tests"}, ai: "fake:review-shipping-untested"}
 expect:
   status: block

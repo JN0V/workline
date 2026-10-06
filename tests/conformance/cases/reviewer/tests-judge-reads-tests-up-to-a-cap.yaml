@@ -1,0 +1,27 @@
+case: reviewer/tests-judge-reads-tests-up-to-a-cap
+about: "A tests-lens judge reads the tests touching the cause's file up to tests-lines-max lines, those left out named, not every test file at every call (#147)."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {tests-lines-max: 3}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: tests}, ai: "fake:review-shipping-untested"}
+expect:
+  status: pass
+  agent-calls: 2
+  run-files:
+    in/judge/01/question.yaml: {contains: "Not shown, past 3 lines"}

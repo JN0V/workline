@@ -1,2 +1,7 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+reviewer/lenses-asked-together-in-one-call
+reviewer/review-says-the-tokens-of-each-call
+reviewer/budget-spent-findings-not-judged
+reviewer/tests-judge-reads-tests-up-to-a-cap
+reviewer/judge-shown-the-change-near-the-cause

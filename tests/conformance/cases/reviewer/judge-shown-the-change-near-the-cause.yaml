@@ -1,0 +1,19 @@
+case: reviewer/judge-shown-the-change-near-the-cause
+about: "A judge reads what the change did near the finding's cause, not every hunk of its file: a hunk far from the cause is counted, not shown (#147)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      git checkout -q main
+      for i in $(seq 1 120); do echo "// note $i" >> calc/calc.go; done
+      git commit -qam 'docs: notes at the end'
+      git checkout -q feature && git reset -q --hard main
+      sed -i 's|return total / len(values)|return total / (len(values) - 1)|; s|^// note 120$|// a far change|' calc/calc.go
+      git commit -qam 'fix: average over the count'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  run-files:
+    in/judge/01/question.yaml: {contains: "1 hunk further from the cause not shown", not-contains: "a far change"}

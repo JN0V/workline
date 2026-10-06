@@ -1,0 +1,25 @@
+# The reviewer's lenses asked in one call, on the `reviewed` fixture once
+# Average divides by one less than the count: each finding names the lens
+# that found it; the last names a lens the run did not ask.
+tokens-in: 1200
+tokens-out: 100
+calls:
+  - - finding:
+        lens: correctness
+        severity: important
+        title: Average divides by one less than the count
+        why: the mean of [2, 4] comes out 6, and one value divides by zero
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+        fix: divide by len(values)
+    - finding:
+        lens: tests
+        severity: important
+        title: The changed division has no test
+        why: no test calls Average, so the divisor could move unseen
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+    - finding:
+        lens: style
+        severity: nit
+        title: Name the running sum
+        why: total says little
+        cause: {path: calc/calc.go, quote: "total := 0"}

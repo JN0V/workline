@@ -3,6 +3,7 @@ about: A lens whose answer does not read, asked for again once and still unreada
 given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  config: {roles: {reviewer: {settings: {lenses-together: false}}}}
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: "correctness,tests"}, ai: "fake:review-then-unreadable"}
 expect:
   status: pass

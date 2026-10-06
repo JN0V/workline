@@ -1,0 +1,16 @@
+case: reviewer/lenses-asked-together-in-one-call
+about: "Every lens of a run is asked in one call, the change given once (#147): each finding names its lens and is judged by its lens's question; one naming a lens not asked is dropped, said."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-lenses-together"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}, {task: judge, for: judge/02}]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "also found on this line — tests: The changed division has no test (verified"}
+    - {rule: finding-unfounded, message: "names the lens \"style\", not one asked"}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "## Lens: edge-cases"}
+    in/judge/02/question.yaml: {contains: "a test exercises"}

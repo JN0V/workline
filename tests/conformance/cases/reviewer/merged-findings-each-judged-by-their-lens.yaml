@@ -21,6 +21,7 @@ given:
   forge:
     issues: []
     merge-requests: [{id: 5, labels: [], comments: []}]
+  config: {roles: {reviewer: {settings: {lenses-together: false}}}}
 run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: "correctness,tests"}, target: {merge-request: 5}, ai: "fake:review-shipping-untested"}
 expect:
   agent-calls: 4
