@@ -1,0 +1,28 @@
+case: reviewer/tests-judge-asked-if-a-test-exercises
+about: A tests-lens finding on new code no test reaches is verified — its judge asked whether a test exercises the behaviour, not whether the code fails, and shown the change and the tests that touch the file (#223).
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-tests.sh"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: tests}, ai: "fake:review-shipping-untested"}
+expect:
+  agent-calls: 2
+  findings: [{rule: tests, where: "shop/shipping.go:4", message: "verified, independence: provider"}]
+  no-findings: [{rule: finding-judged-no}]
+  run-files:
+    in/judge/01/question.yaml: {contains: "a test exercises"}
+    in/judge/*/question.yaml: {contains: "func TestTotal(t *testing.T)"}

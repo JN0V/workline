@@ -1,2 +1,4 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+reviewer/tests-judge-asked-if-a-test-exercises
+reviewer/tests-judge-names-the-test-that-exercises
