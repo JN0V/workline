@@ -80,7 +80,7 @@ import (
 // from 1 to 90.
 func ParseCoupon(code string) (int, error) {
 	rest, ok := strings.CutPrefix(code, "SAVE")
-	if !ok {
+	if !ok || strings.Trim(rest, "0123456789") != "" {
 		return 0, fmt.Errorf("coupon %q: not a SAVE code", code)
 	}
 	n, err := strconv.Atoi(rest)
@@ -102,7 +102,7 @@ func TestParseCoupon(t *testing.T) {
 	if n, err := ParseCoupon("SAVE15"); err != nil || n != 15 {
 		t.Errorf("SAVE15 = %d, %v", n, err)
 	}
-	for _, bad := range []string{"", "SAVE", "SAVEx", "SAVE0", "SAVE91", "GIFT10"} {
+	for _, bad := range []string{"", "SAVE", "SAVEx", "SAVE0", "SAVE91", "SAVE+15", "GIFT10"} {
 		if _, err := ParseCoupon(bad); err == nil {
 			t.Errorf("%q: no error", bad)
 		}
