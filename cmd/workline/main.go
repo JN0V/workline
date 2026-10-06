@@ -1022,6 +1022,8 @@ func issuesCmd(args []string) int {
 	share := fs.Int("lines", 300, "import: lines of the file read in one call")
 	roles := fs.String("roles", "", "import: folder of roles (default: the shipped ones)")
 	asJSON := fs.Bool("json", false, "import: print the result as JSON")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "import: also add a Markdown summary, the map with it, to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	_ = fs.Parse(args)
 	root, err := gitRoot(*repo)
 	if err != nil {
@@ -1029,7 +1031,7 @@ func issuesCmd(args []string) int {
 		return 64
 	}
 	if what == "import" {
-		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON)
+		return importIssues(root, id, *forgeSpec, *ai, *roles, *share, *apply, *asJSON, summaryFiles)
 	}
 	l := &forge.Local{Repo: root}
 	switch {
@@ -1402,7 +1404,7 @@ func initCmd(args []string) int {
 // issue for each item still to do, its text quoted; the engine checks each
 // quote and opens it once (docs/spec/backlog-acts.md, "Importing a file").
 // Without apply, it only says what it would open.
-func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJSON bool) int {
+func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJSON bool, summaryFiles []string) int {
 	out := os.Stdout
 	if asJSON {
 		out = os.Stderr // the text goes aside, the result alone on stdout
@@ -1410,6 +1412,15 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 	total := &engine.Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
 	var coverage *backlog.Coverage // the map: each item of the file to its issue, or why none
 	finish := func(code int) int {
+		total.ToApply = len(total.Pending) > 0
+		s := wlreport.RoleSummary("issues import", "product-owner", total)
+		if coverage != nil {
+			s.Map = coverage.Entries()
+		}
+		if err := wlreport.AppendSummary(summaryFiles, s); err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
 		if asJSON {
 			data, _ := json.MarshalIndent(struct {
 				*engine.Result
@@ -1418,6 +1429,9 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 			fmt.Println(string(data))
 		} else {
 			fmt.Fprintln(out, total.Summary)
+			if len(total.Pending) > 0 {
+				fmt.Fprintf(out, "  to apply: workline apply %s\n", strings.Join(total.Pending, " "))
+			}
 		}
 		return code
 	}
@@ -1474,6 +1488,14 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 		total.Calls = append(total.Calls, res.Calls...)
 		total.Findings = append(total.Findings, res.Findings...)
 		total.Applied = append(total.Applied, res.Applied...)
+		// Judged only, a share's run waits for `workline apply`, in the job
+		// that holds the forge's write token and no AI key, as a line's.
+		switch {
+		case len(res.Pending) > 0:
+			total.Pending = append(total.Pending, res.Pending...)
+		case res.ToApply:
+			total.Pending = append(total.Pending, res.RunDir)
+		}
 		for _, k := range res.Applied {
 			if k == "open" {
 				opened++
@@ -1519,7 +1541,7 @@ func importIssues(root, file, forgeSpec, ai, roles string, share int, apply, asJ
 	if apply {
 		total.Summary = fmt.Sprintf("%s read; %d issues opened", file, opened)
 	} else {
-		total.Summary = fmt.Sprintf("%s read; %d issues would be opened — nothing written: --apply opens them", file, proposed)
+		total.Summary = fmt.Sprintf("%s read; %d issues would be opened — nothing written: --apply opens them, or `workline apply` the runs pending", file, proposed)
 	}
 	if k := len(coverage.NotCovered); k > 0 {
 		// A requirement left with no issue and no reason is a person's to
