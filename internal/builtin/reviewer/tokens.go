@@ -50,10 +50,10 @@ func spent(runDir string, st state, c candidates) []Spent {
 		if key, ok := strings.CutPrefix(call.For, "judge/"); ok {
 			f := judged[key]
 			s.Lenses, s.Where = f.Lens, f.Where
-		} else if st.Together {
-			s.Lenses = strings.Join(st.Lenses, ", ")
+		} else if _, part, _ := strings.Cut(call.For, "-"); part == alone || !st.Together {
+			s.Lenses = part
 		} else {
-			_, s.Lenses, _ = strings.Cut(call.For, "-")
+			s.Lenses = strings.Join(st.Lenses, ", ")
 		}
 		out = append(out, s)
 	}

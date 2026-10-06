@@ -1,5 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/diff-alone-task-holds-only-the-change
-reviewer/diff-alone-finding-judged-like-the-others
-reviewer/diff-alone-asked-by-name-alone
