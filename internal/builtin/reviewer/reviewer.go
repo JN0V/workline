@@ -899,9 +899,9 @@ func group(s Settings, ms []Finding) Finding {
 	return g
 }
 
-// ahead tells whether a finding leads another on their line: what was
-// verified first, then what is important, then what blocks (ai-findings,
-// #222); of two alike, the first found.
+// ahead tells whether a finding leads another on their line: a verified
+// one first, then an important one from a blocking lens (ai-findings,
+// #222), then an important one; of two alike, the first found.
 func ahead(s Settings, a, b Finding) bool {
 	rank := func(f Finding) int {
 		r := 0
