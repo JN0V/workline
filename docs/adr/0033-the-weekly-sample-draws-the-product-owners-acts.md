@@ -41,7 +41,8 @@ does not watch them.
 the weekly sample of the product owner's acts", a comment a week edited in
 place on a rerun: each act drawn with its kind, issue, day, level, and
 whether a person undid it since — a closing reopened, or what the record's
-`undone` says. The person's verdict is the one ADR-0026 already reads: an
+`undone` says, which now keeps the day each undo was found: an undo counts
+against one act, the newest of its issue and kind done by that day. The person's verdict is the one ADR-0026 already reads: an
 act found wrong is undone on its issue, and the next run demotes that kind.
 No box to tick in the sample: a second way to say "wrong" would have to be
 read, checked for who ticked it, and reconciled with the undo.

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: dc0a562
+checked: d4d818d
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -714,7 +714,7 @@ answered (`ignored`), the comments of people of the project on the
 report (`comments`), the role's own acts a person may undo (`done`, each
 with the value before and the one set, and the level it was done at;
 closings in `closed`, with their level) and those undone (`undone`, with
-their evidence), what people did with the proposals at the level in
+their evidence and the day a run found them), what people did with the proposals at the level in
 force (`measure`: ticked, settled otherwise), and the acts it did alone
 (`did`: each act a run decided to do alone, with its kind, issue, level,
 day and a line; for 35 days, at most 200; a person's tick and a slip
@@ -731,7 +731,8 @@ the week sampled, one in ten, rounded up, drawn the same on a rerun, goes
 to the tracking issue "workline: the weekly sample of the product owner's
 acts", a comment a week, for a person to judge — each with its issue,
 kind, day, level, and, when a person undid it since, what shows it (a
-closing reopened, the record's `undone`). An act found wrong is undone on
+closing reopened, the record's `undone`); an undo counts against one act,
+the newest of its issue and kind done by the day it was found. An act found wrong is undone on
 its issue, which demotes its kind at the next run ("Trust"). Over the acts
 `did` keeps at the level in force, up to the week's end, 10 or more: more
 than one in ten undone suggests the level below; none undone at `normal`
