@@ -1,5 +1,5 @@
 <!-- workline
-sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go]
+sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
 checked: 21b4d8c
 judged: 9ad8c58
 verified: agent:claude-code
@@ -34,14 +34,20 @@ pull requests and nightly gardening of workline and DomoticsCore;
 | [**Reviewer**](roles/reviewer/README.md) | reads a change's code before a person does and says what it breaks; never approves | beta |
 | [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order; a person still accepts | beta |
 | [Judge](roles/judge/role.yaml) | answers one yes-or-no question a role's check cannot, from another context or model; asked by the other roles, never on an event of its own | built |
-| [Auditor](roles/auditor/role.yaml) | not a role of the line: each week, `workline sample` asks it to re-read one in ten of the docs the documentalist vouched for | built |
-| Process engineer | will observe the whole line and propose fixes as issues; the weekly samples are its first measures ([#89](https://github.com/JN0V/workline/issues/89), [ADR-0019](docs/adr/0019-the-line-evaluates-itself.md), a draft) | planned |
-| Architect, tester | [#87](https://github.com/JN0V/workline/issues/87) | planned |
-| Developer | will take a ready issue and open the pull request ([#117](https://github.com/JN0V/workline/issues/117)) | planned |
+| [Auditor](roles/auditor/role.yaml) | re-checks a sample of every role's acts (docs today): `workline sample` asks it each week, a verdict per act; widening to every role: [#205](https://github.com/JN0V/workline/issues/205) | built (docs) |
+| Inspector | will read a merge request's static analysis: only the findings it adds, posted on it, explained by an AI that never changes the verdict ([#202](https://github.com/JN0V/workline/issues/202)); SonarQube read, not rerun ([#203](https://github.com/JN0V/workline/issues/203)) | planned |
+| Security | will add scanners as gates and a security lens to the reviewer; a pentest later, on an authorised staging only ([#204](https://github.com/JN0V/workline/issues/204)) | planned |
+| Process engineer | will read the line's measures, the auditor's verdicts first, and propose fixes as issues ([#89](https://github.com/JN0V/workline/issues/89), [ADR-0019](docs/adr/0019-the-line-evaluates-itself.md), a draft) | planned |
+| Tester | will write an issue's tests from its Verification, red first, kept from the developer ([#206](https://github.com/JN0V/workline/issues/206)) | planned |
+| Architect | will read specs for structure and keep architecture rules as gates ([#207](https://github.com/JN0V/workline/issues/207)) | planned |
+| UX | for projects with a user interface: accessibility tools as gates, flows read against the need ([#208](https://github.com/JN0V/workline/issues/208)) | planned |
+| PM | will map the product, watch similar ones and suggest functions; to design with the maintainer ([#209](https://github.com/JN0V/workline/issues/209)) | planned |
+| Developer | will take a ready issue and open the pull request, last ([#117](https://github.com/JN0V/workline/issues/117)) | planned |
 
 What each role does and does not, its settings and costs: its page, or
 [all the roles](docs/roles.md). Checking that a commit holds one change is
-planned ([#192](https://github.com/JN0V/workline/issues/192)).
+planned ([#192](https://github.com/JN0V/workline/issues/192)). Why these
+roles, in this order: the [roles panorama](docs/research/roles-panorama.md).
 
 ## Documentation
 
@@ -138,3 +144,30 @@ releases: it runs before your release tool.
 | a person | accepts: the label `workline:accepted`, a parent closed |
 
 Each role, from a hook, a script or a CI job: [triggers.md](docs/triggers.md).
+
+## Gates
+
+- A gate is a checkpoint before merging or releasing: it runs your tools
+  and gives a verdict by rules, never by asking a model.
+- Your tools, your thresholds: any command; its exit code, or its SARIF
+  results counted against a `max` set before it runs.
+- Three outcomes for each check: **pass**, **finding**, or **error** — a
+  tool missing, crashed or unreadable fails the gate, never passes it
+  (an `optional` check is still reported).
+- Run with `workline gate <name>`, or as `gate:<name>` in a routing
+  sequence.
+
+```yaml
+gates:
+  release:
+    checks:
+      - {id: load, run: k6 run load/checkout.js, output: exit}
+      - {id: deps, run: "osv-scanner scan --format sarif --output {out}/deps.sarif .", output: sarif, max: {error: 0}}
+```
+
+- SonarQube, where a team runs it: its quality gate will be read, never
+  rerun ([#203](https://github.com/JN0V/workline/issues/203)).
+- Everything else: [the gates spec](docs/spec/gates.md).
+- Not built yet: only a merge request's new findings, posted on it
+  ([#202](https://github.com/JN0V/workline/issues/202)); other outputs (k6 or benchmark JSON); baselines with
+  an expiry date.
