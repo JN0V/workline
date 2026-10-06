@@ -1,0 +1,11 @@
+# The reviewer's lenses asked together, on the `reviewed` fixture once a
+# commit closing #4 skips the zeros in Average: the intent lens quotes,
+# from the issue, the part of #4's Need the change leaves out.
+calls:
+  - - finding:
+        lens: intent
+        severity: important
+        title: An empty list still divides by zero
+        why: "#4 asks that an empty list give 0; Average still divides by len(values), zero for an empty list"
+        cause: {path: "#4", quote: "an empty list gives 0 instead of a crash"}
+        fix: return 0 when values is empty

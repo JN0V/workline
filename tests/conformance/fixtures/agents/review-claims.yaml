@@ -1,0 +1,19 @@
+# The reviewer's lenses asked together, on the `reviewed` fixture once a
+# commit saying "No change in behaviour." divides by one less than the
+# count: the claims lens quotes the claim and the line contradicting it;
+# a second finding quotes a claim the author never made.
+calls:
+  - - finding:
+        lens: claims
+        severity: important
+        title: The divisor changed, the commit says nothing did
+        why: the mean of [2, 4] was 3 and is now 6
+        claim: No change in behaviour.
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
+    - finding:
+        lens: claims
+        severity: important
+        title: The tests do not cover the divisor
+        why: no test calls Average
+        claim: Covered by the tests.
+        cause: {path: calc/calc.go, quote: "return total / (len(values) - 1)"}
