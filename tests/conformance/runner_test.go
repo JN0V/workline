@@ -388,6 +388,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
+		if len(r2.Coverage.Items) == 0 && len(r2.Coverage.NotCovered) == 0 {
+			r2.Coverage = r.Coverage // an import's map is the judge's: apply prints none
+		}
 		r = r2
 	}
 	if c.Run.Sample != nil && c.Run.Then == "apply" {

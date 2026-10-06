@@ -1,0 +1,42 @@
+case: backlog/import-judged-then-applied
+about: Without --apply, `workline issues import` lists its runs as pending, as `workline route --no-apply` does, and its summary says so; `workline apply` on them, as CI's job holding the forge's token and no agent, opens the issues the map said would be opened, and no agent is called.
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      Where the project is going.
+
+      ## Next
+
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **A JSON export.** Done in 1.2.
+
+      ## Later
+
+      - Empty rows become blank lines; skip them.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge: {issues: []}
+run: {issues-import: [ROADMAP.md], ai: fake:import-roadmap, then: resume, summary: true}
+expect:
+  status: pass
+  agent-calls: 1
+  coverage:
+    - {lines: "7-8", state: would-open}
+    - {lines: "13", state: would-open}
+    - {lines: "9", state: done, why: "Done in 1.2."}
+  forge:
+    issues:
+      - {id: 1, title: "Keep the last row", body-contains: "Opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role."}
+      - {id: 2, title: "Skip empty rows, again"}
+  summary-file:
+    - "### workline issues import"
+    - "line 7-8"
+    - "would be opened"
+    - "to apply: 1 run"
+    - "### workline apply"
+    - "applied: "
