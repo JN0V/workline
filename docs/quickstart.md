@@ -11,15 +11,16 @@ with one, refused messages are rewritten and docs fixed.
 
 ## 1. Install and set up the machine
 
-Install the binary ([README, Install](../README.md#install)), then:
+Install the binary ([install](install.md#1-the-binary)), then:
 
 ```sh
-workline setup     # the global hooks, your agent, gitleaks and the claude CLI; asks first
+workline setup     # the global hooks, your agent, the tools the roles use; asks first
 workline doctor    # what is set up, what is missing, and the command for each
 ```
 
 `workline setup --yes` takes the defaults; `--ai none` keeps every AI off.
-Claude Code needs a login once (`claude`), a subscription or an API key.
+The agent is your choice: none, Claude Code (`claude`, a login once), or
+any command as `cmd:` ([the choice](install.md#3-the-agent-your-choice)).
 
 ## 2. Try the committer
 
@@ -66,6 +67,7 @@ plain script: [triggers.md](triggers.md).
 
 ## Next
 
+- [Install](install.md) — your machine and CI, in full.
 - [Concepts](concepts.md) — the words used everywhere.
 - [Roles](roles.md) — what each role does, its settings.
 - [Configuration](config.md) — `.workline/config.yaml`, your config, variables.
