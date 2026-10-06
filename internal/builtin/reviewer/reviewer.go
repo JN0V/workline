@@ -381,7 +381,7 @@ func readLens(repo, name string) (Lens, error) {
 	}
 	l.Text = text
 	if rest, ok := strings.CutPrefix(text, "---\n"); ok {
-		head, body, closed := strings.Cut(rest, "\n---\n")
+		head, body, closed := strings.Cut("\n"+rest+"\n", "\n---\n") // empty, or closed on the last line
 		if !closed {
 			return l, fmt.Errorf("lens %q: its front matter is not closed by a line `---`", name)
 		}

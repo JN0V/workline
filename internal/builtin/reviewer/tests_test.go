@@ -53,3 +53,32 @@ func TestTestsTouching(t *testing.T) {
 		t.Errorf("no setting, not said:\n%s", got)
 	}
 }
+
+// A lens's front matter is read empty, closed on the last line, or not at
+// all; left open, it is refused.
+func TestReadLensFrontMatter(t *testing.T) {
+	roles := t.TempDir()
+	t.Setenv("WORKLINE_ROLES_DIR", roles)
+	dir := filepath.Join(roles, roleName(), "lenses")
+	os.MkdirAll(dir, 0o755)
+	for _, c := range []struct{ text, body, question, err string }{
+		{"**Plain.**\n", "**Plain.**\n", "", ""},
+		{"---\n---\n**Empty.**\n", "**Empty.**\n", "", ""},
+		{"---\njudge:\n  question: Asked?\n---\n**Lens.**\n", "**Lens.**\n", "Asked?", ""},
+		{"---\njudge:\n  question: Asked?\n---", "", "Asked?", ""},
+		{"---\njudge:\n  question: Asked?\n", "", "", "not closed"},
+		{"---\njudge: {reads: code}\n---\n", "", "", "only `tests`"},
+	} {
+		os.WriteFile(filepath.Join(dir, "l.md"), []byte(c.text), 0o644)
+		l, err := readLens(t.TempDir(), "l")
+		if c.err != "" {
+			if err == nil || !strings.Contains(err.Error(), c.err) {
+				t.Errorf("%q: error %v, want %q", c.text, err, c.err)
+			}
+			continue
+		}
+		if err != nil || strings.TrimSpace(l.Text) != strings.TrimSpace(c.body) || l.Judge.Question != c.question {
+			t.Errorf("%q: %q, %q, %v; want %q, %q", c.text, l.Text, l.Judge.Question, err, c.body, c.question)
+		}
+	}
+}
