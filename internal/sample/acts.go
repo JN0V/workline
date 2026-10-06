@@ -80,27 +80,27 @@ func applyActs(res *Result, f forge.Forge) error {
 	}
 	first, end := from.Format("2006-01-02"), to.Format("2006-01-02")
 	r := &ActsRead{Report: acts.Report, Level: acts.Level, Drawn: []Drawn{}}
-	var week []backlog.Did
+	var week []int // the places in the record of the week's acts
 	var keys []string
-	for _, d := range acts.Did {
+	for i, d := range acts.Did {
 		if d.Day >= end {
 			continue
 		}
 		if d.Level == acts.Level {
 			r.Counted++
-			if _, undone := acts.Undone(d); undone {
+			if _, undone := acts.Undone(i); undone {
 				r.Undone++
 			}
 		}
 		if d.Day >= first {
-			week = append(week, d)
+			week = append(week, i)
 			keys = append(keys, fmt.Sprintf("%d\x00%s\x00%s", d.Issue, d.Act, d.Day))
 		}
 	}
 	r.Week = len(week)
-	for _, i := range pick(res.Week, keys) {
-		why, _ := acts.Undone(week[i])
-		r.Drawn = append(r.Drawn, Drawn{Did: week[i], Undone: why})
+	for _, k := range pick(res.Week, keys) {
+		why, _ := acts.Undone(week[k])
+		r.Drawn = append(r.Drawn, Drawn{Did: acts.Did[week[k]], Undone: why})
 	}
 	r.Suggest, r.Why = backlog.SuggestFromActs(r.Level, r.Counted, r.Undone)
 	id, err := f.KeepIssue(ActsIssueTitle, actsIntro, true)

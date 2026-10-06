@@ -364,7 +364,9 @@ func pick(week string, keys []string) []int {
 	for i := range order {
 		order[i] = i
 	}
-	sort.Slice(order, func(a, b int) bool { return rank(order[a]) < rank(order[b]) })
+	// Equal keys rank equal: the first in the keys' order first, so a
+	// rerun draws the same.
+	sort.SliceStable(order, func(a, b int) bool { return rank(order[a]) < rank(order[b]) })
 	picked := order[:n]
 	sort.Ints(picked)
 	return picked

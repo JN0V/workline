@@ -823,6 +823,9 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	p.Record.Done = slices.Clone(p.hand.Standing)
 	for _, u := range p.hand.Undone {
 		p.Changed = true
+		if u.Day == "" {
+			u.Day = time.Now().UTC().Format(dateLayout)
+		}
 		p.Record.Undone = append(p.Record.Undone, u)
 		if !slices.Contains(p.Record.Propose, u.Act) {
 			p.Record.Propose = append(p.Record.Propose, u.Act)

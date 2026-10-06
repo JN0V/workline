@@ -36,6 +36,7 @@ type Undo struct {
 	Issue    int    `yaml:"issue"`
 	Act      string `yaml:"act"`
 	Evidence string `yaml:"evidence"`
+	Day      string `yaml:"day,omitempty"` // when a run found it, YYYY-MM-DD: the weekly sample counts it against one act
 }
 
 // recordDone keeps an act of the role's to find it undone at a later run:

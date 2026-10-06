@@ -59,7 +59,7 @@ type Acts struct {
 	Report int
 	Level  string
 	Did    []Did
-	undone map[string]string // issue/kind → what shows it undone
+	undone map[int]string // the place in Did of an act undone → what shows it
 }
 
 // ErrRecordBroken is a record on the report that does not read.
@@ -82,7 +82,7 @@ func ReadActs(f forge.Backlog, role string) (*Acts, error) {
 	if h.Broken != nil {
 		return nil, fmt.Errorf("%w on #%d: %w", ErrRecordBroken, h.Report, h.Broken)
 	}
-	a := &Acts{Report: h.Report, Did: h.Record.Did, undone: map[string]string{}}
+	a := &Acts{Report: h.Report, Did: h.Record.Did, undone: map[int]string{}}
 	if m := h.Record.Measure; m != nil && m.Level != "" {
 		a.Level = m.Level
 	} else if n := len(a.Did); n > 0 {
@@ -94,19 +94,41 @@ func ReadActs(f forge.Backlog, role string) (*Acts, error) {
 	for _, is := range open {
 		isOpen[is.ID] = true
 	}
-	reopened := append(slices.Clone(h.Record.Wrong), slices.DeleteFunc(slices.Clone(h.Record.Closed), func(c Closing) bool { return !isOpen[c.Issue] })...)
-	for _, c := range reopened {
-		a.undone[fmt.Sprintf("%d/%s", c.Issue, c.Act)] = fmt.Sprintf("#%d reopened", c.Issue)
+	// Each undo counts against one act: the newest of its issue and kind
+	// done by the day it was found — one found before the record kept
+	// days, or by this read, against the newest.
+	undo := func(issue int, kind, day, evidence string) {
+		for i := len(a.Did) - 1; i >= 0; i-- {
+			d := a.Did[i]
+			if d.Issue == issue && d.Act == kind && (day == "" || d.Day <= day) {
+				if _, taken := a.undone[i]; !taken {
+					a.undone[i] = evidence
+				}
+				return
+			}
+		}
 	}
-	for _, u := range append(slices.Clone(h.Record.Undone), h.Undone...) {
-		a.undone[fmt.Sprintf("%d/%s", u.Issue, u.Act)] = u.Evidence
+	for _, c := range h.Record.Wrong {
+		undo(c.Issue, c.Act, "", fmt.Sprintf("#%d reopened", c.Issue))
+	}
+	for _, c := range h.Record.Closed {
+		if isOpen[c.Issue] {
+			undo(c.Issue, c.Act, "", fmt.Sprintf("#%d reopened", c.Issue))
+		}
+	}
+	for _, u := range h.Record.Undone {
+		undo(u.Issue, u.Act, u.Day, u.Evidence)
+	}
+	for _, u := range h.Undone {
+		undo(u.Issue, u.Act, "", u.Evidence)
 	}
 	return a, nil
 }
 
-// Undone says whether a person undid the act, and what shows it.
-func (a *Acts) Undone(d Did) (string, bool) {
-	why, ok := a.undone[fmt.Sprintf("%d/%s", d.Issue, d.Act)]
+// Undone says whether a person undid the record's i-th act, and what
+// shows it.
+func (a *Acts) Undone(i int) (string, bool) {
+	why, ok := a.undone[i]
 	return why, ok
 }
 
