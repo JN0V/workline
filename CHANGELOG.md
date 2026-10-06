@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/JN0V/workline/compare/v0.15.0...v0.16.0) (2026-10-06)
+
+
+### Features
+
+* **sample:** draw the product owner's acts of the week for a person ([#187](https://github.com/JN0V/workline/issues/187)) ([961a12a](https://github.com/JN0V/workline/commit/961a12a333ba4f6709dd98f404b6685020ce3767))
+
+
+### Bug Fixes
+
+* **ci:** report a shallow clone, and fetch the whole history on GitLab ([#190](https://github.com/JN0V/workline/issues/190)) ([d10ed0d](https://github.com/JN0V/workline/commit/d10ed0dd3aa7ade54dfb01d72c434adeb9ffcf62))
+
 ## [0.15.0](https://github.com/JN0V/workline/compare/v0.14.0...v0.15.0) (2026-10-06)
 
 
