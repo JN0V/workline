@@ -77,6 +77,20 @@ func wholeChars(s Settings) int {
 	return wholeCharsDefault
 }
 
+// wholeCharsMax is the most `whole-chars` may be: its task, the facets and
+// an answer asked again fit the role's context budget, 48000 tokens at
+// agent.Tokens' ratio (TestLargestTaskFitsTheBudget). A project asking for
+// more is refused, said, rather than every doc's prompt refused (#235).
+const wholeCharsMax = 25000
+
+// checkWholeChars refuses a `whole-chars` whose task would not fit.
+func checkWholeChars(s Settings) error {
+	if s.WholeChars > wholeCharsMax {
+		return fmt.Errorf("whole-chars %d: over %d, a task would not fit the role's context budget (tokens estimated at 711 + 0.82 a character); set it at most %d", s.WholeChars, wholeCharsMax, wholeCharsMax)
+	}
+	return nil
+}
+
 // taskChars caps a task: the room the doc and the words around its sources
 // take is kept, whatever the sources may take.
 func taskChars(s Settings) int {

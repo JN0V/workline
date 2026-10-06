@@ -1,0 +1,11 @@
+case: documentalist/whole-chars-over-the-budget-refused
+about: "A `whole-chars` whose task cannot fit the role's context budget, its tokens estimated at 711 + 0.82 a character (#235), is refused when the settings are read, said with the most it may be; no agent is asked, rather than each doc's prompt refused one by one."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {whole-chars: 40000}}}}
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {cli: [run-role, documentalist, --event, merge-request, --ai, "cmd:echo '- note: asked'"]}
+expect:
+  exit: 1
+  stderr: ["whole-chars 40000: over 25000", "set it at most 25000"]

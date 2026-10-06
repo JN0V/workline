@@ -572,6 +572,9 @@ func Pre(runDir, repo string) int {
 	if err := useVersions(s); err != nil {
 		return fail(err)
 	}
+	if err := checkWholeChars(s); err != nil {
+		return fail(err)
+	}
 	tree, err := loadTree(repo, s.Docs)
 	if err != nil {
 		return fail(err)
@@ -1386,6 +1389,9 @@ func Post(runDir, repo string) int {
 	useRecords(s)
 	useLanguage(s)
 	if err := useVersions(s); err != nil {
+		return fail(err)
+	}
+	if err := checkWholeChars(s); err != nil {
 		return fail(err)
 	}
 	fallback, err := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))

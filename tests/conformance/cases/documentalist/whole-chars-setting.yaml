@@ -1,14 +1,14 @@
 case: documentalist/whole-chars-setting
-about: "How much of a doc's sources may go whole into a task is the project's `whole-chars` (20,000 characters by default): raised, a doc whose sources hold over 40,000 characters is judged against them whole, a line far from the change included; the task grows with it (docs/research/documentalist-genericity.md)."
+about: "How much of a doc's sources may go whole into a task is the project's `whole-chars` (20,000 characters by default): raised, a doc whose sources hold over 20,000 characters is judged against them whole, a line far from the change included; the task grows with it (docs/research/documentalist-genericity.md)."
 given:
   repo: documented
-  config: {roles: {documentalist: {settings: {whole-chars: 60000}}}}
+  config: {roles: {documentalist: {settings: {whole-chars: 25000}}}}
   setup:
-    - "for i in $(seq 1 1300); do echo \"// Rule $i of the token package.\"; done >> src/auth/token.go && git commit -qam 'docs(auth): say the rules'"
+    - "for i in $(seq 1 680); do echo \"// Rule $i of the token package.\"; done >> src/auth/token.go && git commit -qam 'docs(auth): say the rules'"
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
 # A command agent: it answers only when given token.go whole, its last line included.
-run: {role: documentalist, event: merge-request, ai: "cmd:p=$(cat); echo \"$p\" | grep -q 'as they are now, in full' && echo \"$p\" | grep -q 'Rule 1300 of the token package' && echo '- note: judged against the sources whole'"}
+run: {role: documentalist, event: merge-request, ai: "cmd:p=$(cat); echo \"$p\" | grep -q 'as they are now, in full' && echo \"$p\" | grep -q 'Rule 680 of the token package' && echo '- note: judged against the sources whole'"}
 expect:
   status: pass
   agent-calls: 1

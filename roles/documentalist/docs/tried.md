@@ -788,6 +788,6 @@ one of these passed at characters / 4; it is 48000 now, taskMaxChars and
 the facets with room for an answer asked again
 (`TestLargestTaskFitsTheBudget`); a night's part is such a task. The
 evaluation, replayed offline with this engine: no prompt refused.
-Open: `whole-chars` past about 30,000 makes a task over the budget
-(past about 37,000 at characters / 4 already); its example in
-docs/config.md, 40,000, too.
+`whole-chars` is now 25,000 at most, refused above when the settings
+are read (`whole-chars-over-the-budget-refused`): more made a task over
+the budget (past about 37,000 already at characters / 4).

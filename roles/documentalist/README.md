@@ -76,7 +76,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `max-open-merge-requests` | `5` | gardening pauses while this many of its merge requests wait |
 | `ai-max-calls` | `10` | suspect docs per call |
 | `ai-max-tokens` | `0` (no cap) | tokens one run may spend, all calls together |
-| `whole-chars` | `20000` | characters of sources a doc may take to be judged whole |
+| `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
 | `judge-in-parts` | `false` | judge a doc too large in parts (ADR-0009) |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run |
 | `sample` | unset | `{judge, at-least, after}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
