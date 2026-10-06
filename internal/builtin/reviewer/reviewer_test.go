@@ -162,3 +162,18 @@ func TestAIFindingsByLens(t *testing.T) {
 		}
 	}
 }
+
+// Two questions on one line are one; two on different words of one issue,
+// which has no lines, are two (#126).
+func TestQuestionAt(t *testing.T) {
+	q := func(where, quote string) Finding { return Finding{Where: where, Cause: Quote{Quote: quote}} }
+	if questionAt(q("a.go:3", "x := 1")) != questionAt(q("a.go:3", "y := 2")) {
+		t.Error("two questions on one line are not one")
+	}
+	if questionAt(q("#4", "how long it lasts")) == questionAt(q("#4", "who unlocks it")) {
+		t.Error("two open points of one issue are one")
+	}
+	if questionAt(q("#4", "how long  it\nlasts")) != questionAt(q("#4", "how long it lasts")) {
+		t.Error("one open point quoted with other spaces is two")
+	}
+}

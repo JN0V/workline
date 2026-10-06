@@ -624,11 +624,12 @@ func readLenses(runDir, repo string, s Settings) int {
 				continue
 			}
 			// A decision is a question for a person, never a defect: not
-			// grouped with the findings, nor judged (#126). One a line: a
+			// grouped with the findings, nor judged (#126). One a place: a
 			// second on it asks the same choice again, and would take a
-			// place of questions-max.
+			// place of questions-max. In an issue, which has no lines, the
+			// place is the words quoted.
 			if f.Decision != "" {
-				if !slices.ContainsFunc(c.Questions, func(q Finding) bool { return q.Where == f.Where }) {
+				if !slices.ContainsFunc(c.Questions, func(q Finding) bool { return questionAt(q) == questionAt(f) }) {
 					c.Questions = append(c.Questions, f)
 				}
 				continue
@@ -1245,6 +1246,15 @@ func ahead(s Settings, a, b Finding) bool {
 // severity, title and cause; two findings alike in all read one answer.
 func JudgeKey(f Finding) string {
 	return strings.Join([]string{f.Where, f.Lens, f.Severity, f.Title, f.Cause.Quote}, "\x00")
+}
+
+// questionAt is where a question stands: its line, or, quoted from an
+// issue, the issue and the words quoted.
+func questionAt(f Finding) string {
+	if strings.HasPrefix(f.Where, "#") {
+		return f.Where + "\x00" + norm(f.Cause.Quote)
+	}
+	return f.Where
 }
 
 // oneLine is a text on one line, cut past max characters.
