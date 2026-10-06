@@ -109,10 +109,18 @@ func claudeAnswer(stdout []byte, call *Call) (claudeResult, bool) {
 	if err := json.Unmarshal(bytes.TrimSpace(stdout), &r); err != nil {
 		return r, false
 	}
-	most := -1
+	// The model asked answers, when one of those used is it: a short answer
+	// ("[]") can be outwritten by the small model on the side, which then
+	// passed for the one answering (#126, tried.md).
+	asked := func(m string) bool { return call.Asked != "" && strings.Contains(m, call.Asked) }
+	most, mostAsked := -1, false
 	for m, u := range r.ModelUsage {
-		if u.OutputTokens > most || (u.OutputTokens == most && m < call.Model) {
-			call.Model, most = m, u.OutputTokens
+		better := u.OutputTokens > most || (u.OutputTokens == most && m < call.Model)
+		if a := asked(m); a != mostAsked {
+			better = a
+		}
+		if better {
+			call.Model, most, mostAsked = m, u.OutputTokens, asked(m)
 		}
 		call.TokensIn += u.InputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
 		call.TokensCached += u.CacheReadInputTokens
