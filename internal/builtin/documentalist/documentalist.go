@@ -554,9 +554,9 @@ func (sd *suspectDoc) evidenceFor(dir, checked, rev, path, anchor string) string
 	return e
 }
 
-// taskMaxChars keeps the task well inside the role's context budget (16000
-// tokens, about 64000 characters, facets included). Docs left out stay
-// suspect, and are judged by a person or by a later run.
+// taskMaxChars keeps the task inside the role's context budget (48000
+// tokens, about 57000 characters at agent.Tokens' ratio, facets included).
+// Docs left out stay suspect, and are judged by a person or by a later run.
 const taskMaxChars = 40000
 
 // Pre finds suspect and pending docs, runs the hygiene checks, and writes the

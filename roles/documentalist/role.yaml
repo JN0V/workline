@@ -38,7 +38,9 @@ model:
 
 context:
   knowledge: [doc-model.md]
-  budget: 16000
+  # Estimated tokens, 711 + 0.82 a character (#235): a task of 40,000
+  # characters (taskMaxChars) and the facets; real calls up to 41k tokens in.
+  budget: 48000
 
 duties:
   reads: ["**"]

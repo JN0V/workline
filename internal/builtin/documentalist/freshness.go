@@ -66,7 +66,7 @@ func staleDocs(docs []*Doc, pl *places, f Freshness, now time.Time, skip func(st
 // unless the project sets `whole-chars`. A doc whose sources do not fit is
 // left for a person, or judged in parts: confirming it without reading them
 // would only fake its freshness. Characters, not tokens: the engine measures
-// a task before the call, with no tokenizer (about four characters a token).
+// a task before the call, with no tokenizer (agent.Tokens).
 const wholeCharsDefault = 20000
 
 // wholeChars is the project's cap on the sources of one doc judged whole.

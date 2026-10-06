@@ -18,7 +18,10 @@ model:
   promote-after: 1   # an answer that does not read is asked for again once
 
 context:
-  budget: 40000      # eight issues, their code (code-lines-max), and refining's instruction
+  # Estimated tokens, 711 + 0.82 a character (#235): eight issues, their
+  # code (code-lines-max) and refining's instruction; real calls up to 97.6k
+  # tokens in (DomoticsCore, a task of 126k characters).
+  budget: 120000
 
 duties:
   reads: ["**"]
