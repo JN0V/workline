@@ -624,9 +624,13 @@ func readLenses(runDir, repo string, s Settings) int {
 				continue
 			}
 			// A decision is a question for a person, never a defect: not
-			// grouped with the findings, nor judged (#126).
+			// grouped with the findings, nor judged (#126). One a line: a
+			// second on it asks the same choice again, and would take a
+			// place of questions-max.
 			if f.Decision != "" {
-				c.Questions = append(c.Questions, f)
+				if !slices.ContainsFunc(c.Questions, func(q Finding) bool { return q.Where == f.Where }) {
+					c.Questions = append(c.Questions, f)
+				}
 				continue
 			}
 			list := &c.Outside

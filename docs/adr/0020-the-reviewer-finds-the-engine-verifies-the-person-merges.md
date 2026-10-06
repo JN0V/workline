@@ -292,7 +292,8 @@ merge-request line; on in workline's own repository.
     closes; elsewhere it is dropped, said (`finding-unfounded`), never
     an issue;
   - never important, never judged, never blocking, never counted as a
-    finding on the change; `questions-max` (3) a run, the rest counted;
+    finding on the change; one a line, `questions-max` (3) a run, the
+    rest counted;
   - the lens is told what fails is a finding, never a decision; a defect
     marked as one still reaches a person, as a question, not lost.
 - **Shown**: the summary comment asks each under **Questions for a

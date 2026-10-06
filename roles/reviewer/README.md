@@ -128,7 +128,7 @@ Caps:
      a trade-off, a design choice, what the issue leaves open — is a
      question, not a defect: its cause found again, in the change or its
      issue, else dropped, said, never an issue; never important, never
-     judged, never blocking; `questions-max` a run, the rest counted.
+     judged, never blocking; one a line; `questions-max` a run, the rest counted.
      Asked in the summary comment under **Questions for a person**, one
      line each, its cause quoted; locally, `decision` (`question`). A
      reply on the merge request is enough: the reviewer does not wait.

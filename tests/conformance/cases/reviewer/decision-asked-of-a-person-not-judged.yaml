@@ -1,5 +1,5 @@
 case: reviewer/decision-asked-of-a-person-not-judged
-about: "A finding a lens marks as a decision (#126) — a behaviour the issue leaves open — is put to a person as a question: not counted as a defect, never judged, never blocking even marked important under `ai-findings: block`, the verdict saying a person is asked; one on a line the change does not touch is dropped, said, never an issue."
+about: "A finding a lens marks as a decision (#126) — a behaviour the issue leaves open — is put to a person as a question: not counted as a defect, never judged, never blocking even marked important under `ai-findings: block`, the verdict saying a person is asked; a second on its line asked once; one on a line the change does not touch is dropped, said, never an issue."
 given:
   repo: reviewed
   setup:

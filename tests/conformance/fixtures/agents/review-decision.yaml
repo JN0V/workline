@@ -1,7 +1,8 @@
 # The reviewer's lenses asked together, on the `reviewed` fixture once a
 # commit closing #4 skips the zeros in Average: the intent lens puts what
 # #4 leaves open to a person as a question, marked important to try the
-# guard; a second decision quotes a line the change does not touch.
+# guard; the same choice asked again on its line by another lens; a
+# decision quoting a line the change does not touch.
 calls:
   - - finding:
         lens: intent
@@ -9,6 +10,12 @@ calls:
         title: What an empty list gives
         why: "#4 leaves it open; Average still divides by len(values), a crash for an empty list"
         decision: Should an empty list give 0, or an error?
+        cause: {path: "#4", quote: "What an empty list gives is left open."}
+    - finding:
+        lens: edge-cases
+        title: An empty list
+        why: the same choice, asked again on the same line
+        decision: What should an empty list give?
         cause: {path: "#4", quote: "What an empty list gives is left open."}
     - finding:
         lens: correctness
