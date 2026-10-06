@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, Dockerfile, .goreleaser.yaml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, internal/forge/local.go, internal/forge/gitlab.go]
-checked: d4d818d
+checked: d109d62
 verified: agent:claude-code
 ---
 # Setting up workline in CI
@@ -153,6 +153,13 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
    written: a cron off the hour (`13 17 * * *`) was listed as due at 18:00
    and ran at 18:08. Off the hour or not, expect it within the hour after.
 4. **Protect main**: merge requests only, pipelines must succeed.
+
+The template's jobs fetch the whole history (`GIT_DEPTH: 0`, over the
+project's "Git shallow clone" setting, 20 commits on a new project): the
+documentalist compares each doc's sources since the commit its `checked`
+names, and the release looks for its last tag. A job that sets its own
+`GIT_DEPTH` too shallow for that gets `shallow-clone`, never docs found
+suspect or passed for it.
 
 A fork's merge request runs in the fork, which has neither token: it is
 judged without an agent, and nothing is applied or commented.

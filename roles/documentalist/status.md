@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-02)
+# Documentalist — where it stands (2026-10-06)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -27,6 +27,7 @@ two tokens set as masked variables (the GitLab one expires about
 | Judging a suspect doc whole, against its sources whole beside the diffs; a fix it cannot vouch for kept, `checked` left (ADR-0012) | evaluation; DomoticsCore |
 | A fix may grow a doc by a tenth; a refused doc left out, the others applied | DomoticsCore gardening (PR #106) |
 | `checked` after a squash or a rebase: the commit that brought it stands for it | fixture, by hand |
+| A shallow clone lacking a doc's `checked`: `shallow-clone`, never a silent pass; the GitLab template fetches the whole history; the doctor warns | gitlab.com JN0V/workline-sandbox, probe pipeline, no agent; the new engine on copies only (tried.md, 2026-10-06) |
 | On each pull request in CI: Claude judges, the App commits the fix, checks rerun, the line skips its own commit | workline PR #10; DomoticsCore PR #108, a real bug-fix pull request |
 | Gardening at night: one pull request per task, at most 3 waiting | DomoticsCore, two runs by hand (PR #106, #109); gitlab.com JN0V/workline-sandbox, its schedule played (!3, issue #1) |
 | The push counts suspect docs in one line, asks nothing (ADR-0010, 0011) | workline, DomoticsCore |

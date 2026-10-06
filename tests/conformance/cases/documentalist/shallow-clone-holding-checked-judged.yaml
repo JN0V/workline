@@ -1,0 +1,12 @@
+case: documentalist/shallow-clone-holding-checked-judged
+about: "A shallow clone deep enough to hold the commit each doc's `checked` names is judged as a whole one: what changed since is found, and the clone's depth is not reported."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git add src && git commit -qm 'feat(auth): tokens last two hours'"
+    - "git rev-list --max-parents=0 HEAD > .git/shallow"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "tokens last two hours"}]
+  no-findings: [{rule: shallow-clone}]

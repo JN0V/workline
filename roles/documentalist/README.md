@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist]
-checked: d477467
+checked: d4fca08
 verified: agent:claude-code
 ---
 # Documentalist
@@ -33,6 +33,10 @@ doc by doc), or make a push wait on an agent.
 
 `workline docs` judges, on your machine, what was made suspect since the
 last time, and asks you to keep or drop each change.
+
+It needs the history back to each doc's `checked`: a shallow clone lacking
+it gets `shallow-clone`, never a doc found suspect or passed by guess. The
+CI templates fetch the whole history; elsewhere, `git fetch --unshallow`.
 
 ## Settings
 

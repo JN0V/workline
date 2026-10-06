@@ -46,6 +46,7 @@ variables:
 
 .workline:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  variables: {GIT_DEPTH: 0}         # the whole history: docs are compared since their `checked`, the release since its tag
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   before_script:
@@ -94,6 +95,7 @@ workline:apply:
 # derived blocks are regenerated.
 .workline:garden:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK != "sample"
   before_script:
@@ -142,6 +144,7 @@ workline:garden:apply:
 # Needs a workline release with `workline sample`: the first after v0.2.1.
 .workline:sample:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule" && $WORKLINE_GITLAB_TOKEN && $WORKLINE_TASK == "sample"
   before_script:

@@ -256,27 +256,71 @@ func changed(dir, checked, rev, path, anchor string) (string, error) {
 // that name into the doc — the squash or the rebased commit of the merge
 // request where the doc was judged. ok is false when rev has neither.
 func onMain(repo, rev, doc, checked string) (string, bool) {
-	key := strings.Join([]string{repo, rev, doc, checked}, "\x00")
-	if a, ok := onMainSeen[key]; ok {
-		return a.commit, a.ok
-	}
-	a := anchored{checked, true}
-	if _, err := git(repo, "merge-base", "--is-ancestor", checked, rev); err != nil {
-		out, err := git(repo, "log", "--reverse", "--format=%H", "-S"+checked, rev, "--", doc)
-		first, _, _ := strings.Cut(out, "\n")
-		a = anchored{first, err == nil && first != ""}
-	}
-	onMainSeen[key] = a
+	a := anchorFor(repo, rev, doc, checked)
 	return a.commit, a.ok
 }
 
-// anchored is what onMain found, kept for the doc's other sources.
+// anchorFor is onMain's answer, saying also when the clone is too shallow to
+// give one: the commit that brought the name in is at the clone's edge,
+// where every file looks added because its parents were not fetched.
+func anchorFor(repo, rev, doc, checked string) anchored {
+	key := strings.Join([]string{repo, rev, doc, checked}, "\x00")
+	if a, ok := onMainSeen[key]; ok {
+		return a
+	}
+	a := anchored{commit: checked, ok: true}
+	if _, err := git(repo, "merge-base", "--is-ancestor", checked, rev); err != nil {
+		out, err := git(repo, "log", "--reverse", "--format=%H", "-S"+checked, rev, "--", doc)
+		first, _, _ := strings.Cut(out, "\n")
+		a = anchored{commit: first, ok: err == nil && first != ""}
+		if a.ok {
+			if edge, err := shallowEdge(repo); err != nil {
+				a = anchored{err: err}
+			} else if edge[first] {
+				a = anchored{cut: true}
+			}
+		}
+	}
+	onMainSeen[key] = a
+	return a
+}
+
+// anchored is what onMain found, kept for the doc's other sources. cut: the
+// clone is too shallow to tell; err: whether it is could not be read.
 type anchored struct {
-	commit string
-	ok     bool
+	commit  string
+	ok, cut bool
+	err     error
 }
 
 var onMainSeen = map[string]anchored{}
+
+// shallowEdge is the commits at a shallow clone's edge, whose parents were
+// not fetched; none in a whole clone.
+func shallowEdge(repo string) (map[string]bool, error) {
+	if e, ok := shallowSeen[repo]; ok {
+		return e, nil
+	}
+	p, err := git(repo, "rev-parse", "--git-path", "shallow")
+	if err != nil {
+		return nil, err
+	}
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(repo, p)
+	}
+	e := map[string]bool{}
+	data, err := os.ReadFile(p)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	for _, c := range strings.Fields(string(data)) {
+		e[c] = true
+	}
+	shallowSeen[repo] = e
+	return e, nil
+}
+
+var shallowSeen = map[string]map[string]bool{}
 
 // headersOnly says whether a commit changed, under path, only the headers of
 // docs: recording who checked a doc changes nothing it says, and would
@@ -573,6 +617,8 @@ func Pre(runDir, repo string) int {
 	suspects := map[string]*suspectDoc{}
 	var stale map[string]*suspectDoc      // docs confirmed too long ago, whose sources fit in a task
 	propagate := map[string]*suspectDoc{} // docs due now, at the moment their edge names
+	var cut []string                      // docs whose `checked` the shallow clone lacks
+	cutHeld := false                      // one of them is the task: the run blocks
 	// A doc is suspect when one of its own sources changed since it was checked.
 	for _, d := range docs {
 		for _, src := range d.Sources {
@@ -588,14 +634,29 @@ func Pre(runDir, repo string) int {
 			// A doc fixed on a merge request names a commit of its branch,
 			// which a squash or a rebase leaves out of main.
 			unanchored := false
+			gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/"))
 			if err == nil && name == "" {
-				if c, ok := onMain(repo, where.rev, d.Path, checked); ok {
-					checked = c
-				} else {
+				switch a := anchorFor(repo, where.rev, d.Path, checked); {
+				case a.err != nil:
+					findings = append(findings, verdict.Finding{Rule: "unknown", Where: d.Path, Level: "block",
+						Message: fmt.Sprintf("cannot tell whether %s changed since %s: %v", src, checked, a.err)})
+					continue
+				case a.cut:
+					if !slices.Contains(cut, d.Path) {
+						cut = append(cut, d.Path)
+					}
+					cutHeld = cutHeld || !ranged || docTouched(d, touched)
+					if gone { // said without history; what removed it is beyond the clone
+						findings = append(findings, verdict.Finding{Rule: "source-gone", Where: d.Path,
+							Message: fmt.Sprintf("names %s as a source, which no longer exists: name what replaced it, or drop it", src)})
+					}
+					continue
+				case a.ok:
+					checked = a.commit
+				default:
 					unanchored = true
 				}
 			}
-			gone := name == "" && !tree.exists(strings.TrimSuffix(path, "/"))
 			// A doc the commits did not touch is only left for gardening:
 			// once it is found suspect, its other sources need no reading.
 			if !gone && ranged && hasSuspect(findings, d.Path) && !docTouched(d, touched) {
@@ -662,6 +723,22 @@ func Pre(runDir, repo string) int {
 				}
 			}
 		}
+	}
+	// A clone too shallow to hold what a doc was checked against cannot
+	// tell whether its sources changed since: said, never read as a pass. It
+	// blocks when one of them is the task — not a doc that commits in range
+	// did not touch, which they would only leave for gardening.
+	if len(cut) > 0 {
+		named := strings.Join(cut, ", ")
+		if len(cut) > 5 {
+			named = fmt.Sprintf("%s and %d more docs", strings.Join(cut[:5], ", "), len(cut)-5)
+		}
+		level := ""
+		if cutHeld {
+			level = "block"
+		}
+		findings = append(findings, verdict.Finding{Rule: "shallow-clone", Level: level,
+			Message: fmt.Sprintf("this clone is shallow: it lacks the commit `checked` names in %s, so whether their sources changed since cannot be told; fetch the whole history (actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`, or `git fetch --unshallow`)", named)})
 	}
 	// A doc far behind its sources is judged against them as they are now:
 	// what changed would not fit, and reading months of diffs cut short

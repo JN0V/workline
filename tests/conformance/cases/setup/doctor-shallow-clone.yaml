@@ -1,0 +1,11 @@
+case: setup/doctor-shallow-clone
+about: "`workline doctor` in a shallow clone warns that the documentalist and the release need the whole history; its fix is `git fetch --unshallow` (CI: `fetch-depth: 0`, `GIT_DEPTH: 0`)."
+given:
+  repo: documented
+  setup:
+    - "git rev-parse HEAD > .git/shallow"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: shallow-clone, message: "this clone is shallow"}

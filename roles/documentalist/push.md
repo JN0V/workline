@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: 515d48f
+checked: d4fca08
 verified: agent:claude-code
 ---
 # Documentalist — at the push, the release and the adoption
@@ -35,7 +35,8 @@ already at that release was let through then; one judged without being
 vouched for, or in parts, waits for a person and does not hold it. The last
 release is the highest version tag merged (`release.tags`, `v*` by
 default), prereleases left out, never the nearest tag, which a hotfix merged
-back would be; a shallow clone, which may lack it, holds the release.
+back would be; a shallow clone, which may lack it or a doc's `checked`,
+holds the release (`shallow-clone`).
 
 A release tool's pull request — its branch one of `release.branches`,
 release-please's and the like by default — is the release (ADR-0017): on

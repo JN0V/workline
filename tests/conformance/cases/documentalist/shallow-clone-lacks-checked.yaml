@@ -1,0 +1,14 @@
+case: documentalist/shallow-clone-lacks-checked
+about: "In a shallow clone (GitLab's default depth) that lacks the commit a doc's `checked` names, whether its sources changed cannot be told: the clone is reported as too shallow, naming the fix, and the doc is neither suspect nor passed silently — the commit at the clone's edge holds `checked` only because its parents were not fetched."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git add src && git commit -qm 'feat(auth): tokens last two hours'"
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+    - "echo '// unrelated' > src/more.go && git add src && git commit -qm 'chore: add another file'"
+    - "git rev-parse HEAD~1 > .git/shallow"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: block
+  findings: [{rule: shallow-clone, level: block, message: "GIT_DEPTH: 0"}]
+  no-findings: [{rule: suspect}]

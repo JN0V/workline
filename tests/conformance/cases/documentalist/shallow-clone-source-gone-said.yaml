@@ -1,0 +1,16 @@
+case: documentalist/shallow-clone-source-gone-said
+about: "In a shallow clone lacking a doc's `checked`, a source of the doc that no longer exists is still said: that needs no history."
+given:
+  repo: documented
+  setup:
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+    - "git rm -q src/auth/token.go && git commit -qm 'refactor(auth): drop the tokens'"
+    - "echo '// unrelated' > src/more.go && git add src && git commit -qm 'chore: add another file'"
+    - "git rev-parse HEAD~1 > .git/shallow"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: shallow-clone, message: "GIT_DEPTH: 0"}
+    - {rule: source-gone, where: docs/tech/auth.md, message: "src/auth/token.go"}
+  no-findings: [{rule: suspect}]

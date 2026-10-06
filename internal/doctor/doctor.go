@@ -242,6 +242,13 @@ func repository(r *Report, o Options) {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
 			Message: "the push counts the docs its commits make suspect"})
 	}
+	// A shallow clone lacks the commits docs were checked against, and the
+	// last release: the documentalist and the release say so and stop.
+	if out, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--is-shallow-repository").Output(); err == nil && strings.TrimSpace(string(out)) == "true" {
+		r.add(Check{Area: "repository", Rule: "shallow-clone", Where: where, Level: Warn,
+			Message: "this clone is shallow: a doc checked against a commit it lacks cannot be judged, and the release cannot find the last one",
+			Fix:     "git fetch --unshallow   # in CI: actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`"})
+	}
 
 	d, err := role.Load(o.RolesDir, "documentalist")
 	if err != nil {

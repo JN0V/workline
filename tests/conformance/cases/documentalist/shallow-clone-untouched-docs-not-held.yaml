@@ -1,0 +1,14 @@
+case: documentalist/shallow-clone-untouched-docs-not-held
+about: "Given the commits of a push or a merge request, a shallow clone lacking the `checked` of docs those commits did not touch is said, without holding them: such docs would only be left for gardening."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+    - "echo '// unrelated' > src/other.go && git add src && git commit -qm 'chore: add a file'"
+    - "echo 'package main' > main.go && git add main.go && git commit -qm 'feat: add an entry point'"
+    - "git rev-parse HEAD~1 > .git/shallow"
+run: {role: documentalist, event: pre-push, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  status: pass
+  findings: [{rule: shallow-clone, message: "GIT_DEPTH: 0"}]
+  no-findings: [{rule: suspect}]
