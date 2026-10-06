@@ -124,3 +124,18 @@ flags read by the person before any proposal is trusted.
 - Each automatic mechanism earns its place by measured use; a dead or noisy
   one is proposed for removal, with its evidence.
 - Nothing the role finds changes the line without a person.
+
+## Amendment (2026-10-06)
+
+Decided by the person: the **process engineer** keeps its name (Open,
+point 2), and stays apart from the **auditor**. The auditor re-checks a
+sample of every role's acts and gives a verdict per act
+([ADR-0015](0015-the-weekly-sample-is-written-on-the-forge.md), amended);
+the process engineer reads the measures — the auditor's verdicts, the
+evaluation's results, the run records, what people did after — and
+proposes changes to the line as issues. The first never proposes, the
+second never re-judges an act: a quality audit and industrial engineering,
+as in a factory ([roles panorama](../research/roles-panorama.md)). It
+comes fifth in the roadmap
+([#89](https://github.com/JN0V/workline/issues/89)), after the auditor is
+widened ([#205](https://github.com/JN0V/workline/issues/205)).
