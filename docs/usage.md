@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 5f21056
+checked: ce2783e
 verified: agent:claude-code
 ---
 # Using workline
@@ -26,7 +26,7 @@ settings and the variables, in [config.md](config.md).
 | `workline run-role <role> --event <event>` | runs one role: prepare, propose, judge, apply, again if `pre` left work for later (`in/more`), up to 5 rounds |
 | `workline route <event>` | runs the steps routing names for the event, in order; the first that does not pass stops the line |
 | `workline apply <run-dir>...` or `--line <file>` | applies runs judged with `--no-apply`, or resumes a run stopped while applying; `--line` takes the runs a `route --no-apply --json` or `issues import --json` result lists as `pending`; `--summary` as below |
-| `workline review` | the reviewer reviews this branch before it is pushed (roles/reviewer, ADR-0020): `<base>..HEAD` (`--base`, default the role's `base` setting, `main`), every lens (`--lenses` names some); the rules on the comments the change adds, then each lens, each finding's quote found again, the change's findings told from those outside it, each important one judged. Prints the findings, and the path of the run's `out/review.json`, for the author's agent to fix them before pushing; `--json`, `--sarif`, `--code-quality`, `--ai`, `--forge` (where an issue for what lies outside the change goes) |
+| `workline review` | the reviewer reviews this branch before it is pushed (roles/reviewer, ADR-0020): `<base>..HEAD` (`--base`, default the role's `base` setting, `main`), every lens (`--lenses` names some); the rules on the comments the change adds, then each lens, each finding's quote found again, the change's findings told from those outside it, each important one judged. Prints the findings, the tokens each call used against the reviewer's `ai-max-tokens`, and the path of the run's `out/review.json`, for the author's agent to fix them before pushing; `--json`, `--sarif`, `--code-quality`, `--ai`, `--forge` (where an issue for what lies outside the change goes) |
 | `workline gate <name>` | runs a gate declared in `.workline/config.yaml` |
 | `workline item ready <id>` | moves a work item to `ready`, once its Need, Verification, Validation and Scope are written (`--forge` reads it from the forge) |
 | `workline issues` / `workline issues show <n>` / `show !<n>` | reads the local forge (`forge: local`, ADR-0016): lists the issues (`#<n>`) and merge requests (`!<n>`) kept in the clone, with their state and labels, or shows one whole, its comments after its body; writes nothing |

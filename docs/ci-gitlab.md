@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 5f21056
+checked: ce2783e
 verified: agent:claude-code
 ---
 # workline on GitLab CI

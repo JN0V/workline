@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 5f21056
+checked: ce2783e
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -159,9 +159,10 @@ token), **apply** (trusted, no AI key).
    **In parts** (ADR-0009). A question too large for one call is written as
    several instead: `in/parts/<name>/task.md`, each whole in itself, and no
    `in/task.md`; or several lenses on one change, each a question of its
-   own (ADR-0020). The engine asks each part in a context of its own, one
-   after the other, on the tier `model.tasks.part` names, each call counted
-   and kept like any other; a part answers only what the role's
+   own (ADR-0020), or all of them in one part (`lenses-together`, #147).
+   The engine asks each part in a context of its own, one after the other,
+   on the tier `model.tasks.part` names, each call counted and kept like
+   any other, named by its part (`for: <name>` in `out/calls.jsonl`); a part answers only what the role's
    `part-intentions` name — `claim`s when it names none, a reviewer's lens
    `finding`s — which are never applied: they inform. The answers are put
    back as `in/parts/<name>/answer.yaml`, and `pre` runs again, with
@@ -187,7 +188,7 @@ token), **apply** (trusted, no AI key).
    available from that author, else from the agents that answered the run
    (as in step 4), writes its answer beside it — `answer.yaml`, `{yes, why, model,
    judge, author, level}`, or `{error}`; the call kept with the run's,
-   `out/calls.jsonl` — and runs `pre` again with
+   `out/calls.jsonl`, named by its question (`for: judge/<key>`) — and runs `pre` again with
    `WORKLINE_JUDGED=answered`, to read them. A no refuses nothing there:
    `pre` reads the answers one by one (the reviewer drops a finding judged
    no; the product owner keeps an announced issue open). Without an agent, or once `ai-max-tokens` is spent, none is asked;
