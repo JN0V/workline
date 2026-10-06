@@ -73,6 +73,11 @@ settings:
   # its judge shown those in the cause's folder and those naming its file.
   tests: ["**/*_test.*", "**/test_*", "**/*_spec.*", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**"]
   tests-lines-max: 300  # lines of those tests one judge is shown, all together; the rest named
+  # Lines of code one judge is shown, all together: the function the
+  # cause lies in, whole; then the functions the finding names, those it
+  # calls and those calling it, each whole while they fit; the rest named
+  # (#127). 0: the 31 lines around the cause only.
+  judge-lines-max: 200
   # Every lens a run asks, in one call: the change and its files given
   # once, each finding naming its lens (#147). false: a call each, apart.
   lenses-together: true

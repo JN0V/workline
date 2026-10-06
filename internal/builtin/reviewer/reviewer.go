@@ -51,6 +51,7 @@ type Settings struct {
 	FinderFloor     bool     `json:"finder-floor"`      // ask each lens to look for a number of candidates before it stops
 	Tests           []string `json:"tests"`             // the test files: what a judge reading tests is shown of them
 	TestsLinesMax   int      `json:"tests-lines-max"`   // lines of those tests a judge is shown, all together
+	JudgeLinesMax   int      `json:"judge-lines-max"`   // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
 	LensesTogether  bool     `json:"lenses-together"`   // the lenses of a run asked in one call, the change given once
 	AIMaxTokens     int      `json:"ai-max-tokens"`     // what a run may spend, all calls together; the engine stops asking
 }
@@ -585,7 +586,7 @@ func readLenses(runDir, repo string, s Settings) int {
 		if question == "" {
 			question = judgeQuestion
 		}
-		m := material(repo, st, f)
+		m := material(repo, st, s, f)
 		if l.Judge.Reads == "tests" {
 			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.TestsLinesMax)
 		}
@@ -680,32 +681,23 @@ func found(repo string, st state, lens string, v any) (Finding, string) {
 	return f, ""
 }
 
-// material is what the judge reads of a finding: the finding, and the code
-// around its cause, and its symptom.
-func material(repo string, st state, f Finding) string {
+// material is what the judge reads of a finding: the finding, the code it
+// stands on (reach), and what the change did near its cause.
+func material(repo string, st state, s Settings, f Finding) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "## The finding\n\n%s: %s\n\nWhy: %s\n", f.Severity, f.Title, f.Why)
-	around := func(q Quote, at int) {
-		text, _ := fileAt(repo, st.Head, q.Path)
-		lines := strings.Split(text, "\n")
-		from, to := max(at-15, 1), min(at+15, len(lines))
-		fmt.Fprintf(&b, "\n## %s, lines %d to %d\n\n```\n", q.Path, from, to)
-		for n := from; n <= to; n++ {
-			fmt.Fprintf(&b, "%d  %s\n", n, lines[n-1])
-		}
-		b.WriteString("```\n")
-	}
 	_, line, _ := strings.Cut(f.Where, ":")
 	at := 1
 	fmt.Sscan(line, &at)
 	fmt.Fprintf(&b, "\nIts cause, quoted:\n\n```\n%s\n```\n", strings.TrimSpace(f.Cause.Quote))
-	around(f.Cause, at)
+	symptomAt := 0
 	if f.Symptom != nil {
 		text, _ := fileAt(repo, st.Head, f.Symptom.Path)
 		if p := locate(strings.Split(text, "\n"), f.Symptom.Quote); len(p) > 0 {
-			around(*f.Symptom, p[0].From)
+			symptomAt = p[0].From
 		}
 	}
+	b.WriteString(reach(repo, st.Head, s.Tests, f, at, symptomAt, s.JudgeLinesMax))
 	if diff, err := git(repo, "diff", "-U3", "--no-color", "--no-ext-diff", st.Base, st.Head, "--", f.Cause.Path); err == nil && diff != "" {
 		near, far := hunksNear(diff, at, nearCause)
 		fmt.Fprintf(&b, "\n## What the change did to %s, near the cause\n\n", f.Cause.Path)
@@ -1207,7 +1199,7 @@ func committerSettings(repo string) (committer.Settings, error) {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, LensesPerPush: 1}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err

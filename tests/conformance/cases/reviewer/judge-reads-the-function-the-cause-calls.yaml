@@ -1,0 +1,38 @@
+case: reviewer/judge-reads-the-function-the-cause-calls
+about: "A true finding whose proof lies in a function the cause calls, in another file, is verified: the judge reads that function whole, not only the lines around the cause (#127)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      git checkout -q main
+      cat > calc/sum.go <<'GO'
+      package calc
+
+      // sum adds the values after the first: the first counts the others.
+      func sum(values []int) int {
+      	total := 0
+      	for _, v := range values[1:] {
+      		total += v
+      	}
+      	return total
+      }
+      GO
+      git add calc && git commit -qm 'feat: sum the values'
+      git checkout -q feature && git reset -q --hard main
+      cat >> calc/calc.go <<'GO'
+
+      // Mean is the average of every value.
+      func Mean(values []int) int {
+      	return sum(values) / len(values)
+      }
+      GO
+      git commit -qam 'feat: the mean of the values'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-from-callee.sh"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-mean-callee"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: correctness, where: "calc/calc.go:22", message: "verified"}]
+  no-findings: [{rule: finding-judged-no}]
+  run-files:
+    in/judge/01/question.yaml: {contains: "func sum(values []int) int {"}
