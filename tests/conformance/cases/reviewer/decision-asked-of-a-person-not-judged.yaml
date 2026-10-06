@@ -1,0 +1,31 @@
+case: reviewer/decision-asked-of-a-person-not-judged
+about: "A finding a lens marks as a decision (#126) — a behaviour the issue leaves open — is put to a person as a question: not counted as a defect, never judged, never blocking even marked important under `ai-findings: block`, the verdict saying a person is asked; one on a line the change does not touch is dropped, said, never an issue."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues:
+      - id: 4
+        title: The mean skips zeros
+        body: "## Need\n\nThe mean skips the zero values. What an empty list gives is left open.\n\n## Verification\n\nA test of Average on [0, 2, 4].\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-decision"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}]
+  summary: "0 findings on the change, 1 question for a person"
+  findings:
+    - {rule: decision, where: "#4", message: "Question for a person: Should an empty list give 0, or an error?"}
+    - {rule: finding-unfounded, message: "a question on what the change does not touch"}
+  no-findings:
+    - {rule: intent}
+    - {rule: correctness}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "`decision`"}
+    out/review.json: {contains: '"decision": "Should an empty list give 0, or an error?"'}
+    out/verdict.yaml: {contains: "level: question"}
