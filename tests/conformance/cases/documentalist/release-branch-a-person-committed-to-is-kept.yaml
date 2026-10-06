@@ -1,0 +1,15 @@
+case: documentalist/release-branch-a-person-committed-to-is-kept
+about: "A release branch of the documentalist a person committed to is never rebuilt over their commit, even with main moved under it: the run says so, and leaves it to them (#184)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && echo 'More.' >> docs/tech/auth.md && git commit -qam 'docs: a word more' && git push -q origin workline/documentalist/release && git checkout -q main"
+    - "sed -i 's/^checked: .*/checked: abcdef1/' docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc' && git push -q origin main"
+  forge: {merge-requests: [{id: 2, branch: workline/documentalist/release, base: main, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: not-rebuilt, where: workline/documentalist/release, message: "a word more"}]
+  no-findings: [{rule: rebuilt, where: workline/documentalist/release}]
+  not-pushed: [workline/documentalist/release]

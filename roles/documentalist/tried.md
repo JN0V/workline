@@ -752,3 +752,25 @@ suspect. `workline doctor` warned in the shallow clones. On workline
 itself at depth 5, gardening named about twenty docs under
 `shallow-clone` and none suspect; whole, it found six suspect. Not tried: the new engine
 in a GitLab pipeline (it needs a release), a merge request there.
+
+On 2026-10-06, the release fix following `main` (issue #184, ADR-0034), on
+github.com/JN0V/workline-sandbox, the engine of branch
+feat/184-release-branch-follows-main run by hand, no agent. A branch
+`workline/documentalist/release` as the release run writes it — `judged`
+added under `checked` in docs/tech/auth.md, a line added to its body, one
+commit with `Workline-Role: documentalist` — and pull request #38 from it;
+then a commit on `main` moving that doc's `checked`. GitHub said #38
+CONFLICTING, as workline's #182 and #189 were. `workline follow --base main
+--forge github`: "1 rebuilt on main", #38 the same pull request, one commit
+on main's new tip, main's `checked` and the branch's `judged` side by side,
+the message and trailer kept; GitHub said MERGEABLE. Run again: nothing
+rebuilt, nothing pushed. Then a commit without the trailer added to the
+branch and `main` moved again: `not-rebuilt`, a warning naming that commit,
+the branch where it was. #38 closed, its branch deleted; the two commits on
+the sandbox's `main` stay. One thing met on the way: a first attempt of the
+try wrote `judged` twice; a front matter with a key twice is merged as a
+plain file, which conflicted, and the run said `no-longer-applies` and left
+it, as it should. Not tried: the `follow` job in CI on a push to `main`
+(it needs this branch merged here, a release for the templates); GitLab,
+whose sandbox would have run Claude on the merge request (its API covered
+by the mock only); a real release run's fix then followed.

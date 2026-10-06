@@ -92,6 +92,7 @@ type caseFile struct {
 		Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
 		Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
 		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
+		Follow  []string          `yaml:"follow"`        // workline follow, with these options
 	} `yaml:"run"`
 	Expect struct {
 		Status      string                       `yaml:"status"`
@@ -103,6 +104,8 @@ type caseFile struct {
 		Files       map[string]map[string]any    `yaml:"files"`
 		Pushed      map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
 		PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
+		NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
+		OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
 		Forge       map[string]any               `yaml:"forge"`
 		Steps       []string                     `yaml:"steps"`
 		Calls       []map[string]string          `yaml:"calls"`
@@ -263,6 +266,8 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 	case c.Run.Route != "":
 		args = []string{"route", c.Run.Route, "--repo", repo, "--roles", roles, "--json"}
+	case c.Run.Follow != nil:
+		args = append(append([]string{"follow"}, c.Run.Follow...), "--repo", repo, "--json")
 	}
 	ai := c.Run.AI
 	if strings.HasPrefix(ai, "fake:") {
@@ -328,6 +333,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for k, v := range c.Given.Env {
 		cmd.Env = append(cmd.Env, k+"="+os.Expand(v, func(name string) string { return lookup(cmd.Env, name) }))
 	}
+	tips := map[string]string{} // the remote's branches before the run
+	for _, b := range c.Expect.NotPushed {
+		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
+		tips[b] = string(out)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	_ = cmd.Run() // the exit code mirrors the status, which is checked below
@@ -377,6 +387,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	problems := compare(c, &r, repo)
+	for b, before := range tips {
+		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); string(out) != before {
+			problems = append(problems, fmt.Sprintf("origin's %s moved: %q, was %q", b, out, before))
+		}
+	}
 	if len(c.Expect.Listed) > 0 {
 		list := exec.Command(engineBin, "issues", "list", "--repo", repo)
 		list.Env = env
@@ -473,6 +488,12 @@ func compare(c *caseFile, r *result, repo string) []string {
 		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%B", "origin/"+branch).Output()
 		if err != nil || !strings.Contains(string(out), text) {
 			p = append(p, fmt.Sprintf("the tip of origin's %s does not say %q in its message: %s", branch, text, out))
+		}
+	}
+	for branch, base := range e.OnTop {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		if exec.Command("git", "-C", repo, "merge-base", "--is-ancestor", "origin/"+base, "origin/"+branch).Run() != nil {
+			p = append(p, fmt.Sprintf("origin's %s is not on top of origin's %s", branch, base))
 		}
 	}
 	if e.RefusedKept > 0 {

@@ -1094,6 +1094,20 @@ func commitOntoBase(st runState, base, title string, local bool) (why string, er
 	} else if _, err := git(st.Repo, nil, "fetch", "-q", "origin", base); err != nil {
 		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
 	}
+	if tip, err = git(st.Repo, nil, "rev-parse", tip); err != nil {
+		return "", err
+	}
+	branch := branchPrefix(st.Role) + "release"
+	// A person's commit on the branch is never pushed over (ADR-0034).
+	baseTip, was, err := tips(st.Repo, base, branch, local)
+	if err != nil {
+		return "", err
+	}
+	if was != "" {
+		if who := personsCommit(st.Repo, baseTip, was, st.Role); who != "" {
+			return fmt.Sprintf("%s holds the last fix, and %s: not pushed over it", branch, who), nil
+		}
+	}
 	if _, err := git(st.Repo, nil, "checkout", "-q", "--detach", tip); err != nil {
 		back()
 		return fmt.Sprintf("the docs it fixes differ on %s", base), nil
@@ -1104,8 +1118,7 @@ func commitOntoBase(st runState, base, title string, local bool) (why string, er
 			return "", err
 		}
 	}
-	branch := branchPrefix(st.Role) + "release"
-	move := []string{"push", "-q", "--force", "origin", "HEAD:refs/heads/" + branch}
+	move := []string{"push", "-q", "--force-with-lease=refs/heads/" + branch + ":" + was, "origin", "HEAD:refs/heads/" + branch}
 	if local {
 		move = []string{"branch", "-q", "-f", branch, "HEAD"}
 	}

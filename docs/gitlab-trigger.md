@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: d109d62
+checked: c78417b
 judged: bd68956
 verified: agent:documentalist
 ---
@@ -42,7 +42,7 @@ none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample` |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, ADR-0034) |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
 
 A triggered pipeline has none of the `CI_MERGE_REQUEST_*` variables: the
@@ -118,6 +118,8 @@ case "$step:$WORKLINE_TASK" in
   judge:sample)
     workline sample --out sample.json || status=$?; [ "$status" != 1 ] && status=0 ;;
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab ;;
+  judge:follow) ;;                                # no agent: all in the applying job
+  apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab || status=$? ;;
   apply:*) [ ! -f line.json ] || workline apply --line line.json || status=$? ;;
 esac
 exit "$status"

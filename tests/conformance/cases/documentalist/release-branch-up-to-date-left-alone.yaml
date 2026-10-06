@@ -1,0 +1,13 @@
+case: documentalist/release-branch-up-to-date-left-alone
+about: "A release branch of the documentalist already on main's tip is left as it is: nothing rebuilt, nothing pushed (#184)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
+  forge: {merge-requests: [{id: 2, branch: workline/documentalist/release, base: main, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  no-findings: [{rule: rebuilt, where: workline/documentalist/release}]
+  not-pushed: [workline/documentalist/release]

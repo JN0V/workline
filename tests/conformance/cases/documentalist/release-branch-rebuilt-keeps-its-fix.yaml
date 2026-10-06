@@ -1,0 +1,16 @@
+case: documentalist/release-branch-rebuilt-keeps-its-fix
+about: "Rebuilt on main's new tip, the documentalist's release branch still holds the fix it proposed, beside what main changed in the same doc (#184)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
+    - "sed -i 's/^checked: .*/checked: abcdef1/; s/^# Authentication/# Signing in/' docs/tech/auth.md && git commit -qam 'docs: rename the auth page' && git push -q origin main"
+  forge: {merge-requests: [{id: 2, branch: workline/documentalist/release, base: main, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: rebuilt, where: workline/documentalist/release}]
+  pushed:
+    workline/documentalist/release: {docs/tech/auth.md: "# Signing in\n\n## Token refresh\n\nAccess tokens last two hours."}
+  on-top: {workline/documentalist/release: main}

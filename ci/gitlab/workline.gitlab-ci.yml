@@ -127,6 +127,28 @@ workline:garden:apply:
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - workline apply --line line.json
 
+# The release's own fix follows the default branch (ADR-0034): when it
+# moves, the documentalist's merge request for the release, when one is
+# open (workline/documentalist/release), is rebuilt on its new tip and
+# force-pushed, as release-please rebuilds its own branch, so a merge
+# request that touched the same doc leaves it mergeable. No agent; one a
+# person committed to is left as it is. Needs a workline release with
+# `workline follow`: the first after v0.16.0.
+workline:follow:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $WORKLINE_GITLAB_TOKEN
+  script:
+    - *trust
+    - workline version
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - git config user.name "workline"
+    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab
+
 # The weekly sample of the docs vouched for (ADR-0014, step 4): a second
 # pipeline schedule, weekly (Mondays, after the gardening), with the variable
 # WORKLINE_TASK=sample. One in ten of the docs whose `checked` the
