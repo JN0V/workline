@@ -86,6 +86,9 @@ workline hooks uninstall --global   # gives core.hooksPath back as it was
 - Each global hook hands over to the one that held `core.hooksPath` before,
   or else to the repository's own (`.githooks/`, `.git/hooks/`): nothing
   that ran before stops running.
+- A repository that sets its own `core.hooksPath` bypasses the global
+  hooks: `workline doctor` there says so and prints the fix
+  ([troubleshooting](troubleshooting.md#a-hook-does-not-fire)).
 - A repository opts out with an empty `.workline/off` file.
 
 Try it in any repository:

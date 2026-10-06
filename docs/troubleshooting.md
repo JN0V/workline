@@ -20,9 +20,16 @@ tokens — and `--json` prints every finding.
   Install it to the same place, or run `workline hooks install --global`
   again.
 - **A repository sets its own `core.hooksPath`** (husky, lefthook…): git
-  takes it over the global one, and workline's hooks never run there.
-  `git config --show-origin core.hooksPath` in the repository says which
-  wins; doctor checks only the global one.
+  takes it over the global one. `workline doctor` in the repository says
+  `hooks-bypassed`, naming the path, when its `commit-msg` (and `pre-push`,
+  when routed) does not hand over to workline; `hooks-path` when it does.
+  The fix it prints:
+  - the path is `.githooks` or `.git/hooks`: unset it (`git config --local
+    --unset core.hooksPath`); the global hooks run workline, then hand over
+    to that folder;
+  - another folder: add `workline hook <hook> "$@" || exit $?` at the top of
+    each hook there. `pre-push` reads the pushed refs on its input: a hook
+    that reads them too must copy them first.
 - **The repository opted out**: an empty `.workline/off` (doctor says so).
 - **`pre-push` does nothing**: it runs only when `.workline/config.yaml`
   routes `pre-push` (`workline init` does). `git push --no-verify` skips it.

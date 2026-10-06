@@ -174,6 +174,27 @@ func InstallRepo(repo, bin string) (string, error) {
 	return msg, nil
 }
 
+// HandsOver says whether git, running the hook name from dir, reaches
+// workline: the file is executable and is workline's dispatcher, calls
+// `workline hook <name>`, or calls workline's global hook of that name.
+func HandsOver(dir, name string, p Paths) bool {
+	path := filepath.Join(dir, name)
+	if fi, err := os.Stat(path); err != nil || fi.IsDir() || fi.Mode()&0o111 == 0 {
+		return false // git skips a hook it cannot execute
+	}
+	if p.Hooks != "" && filepath.Clean(dir) == filepath.Clean(p.Hooks) {
+		return true
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	s := string(data)
+	return strings.Contains(s, "workline hook dispatcher") ||
+		strings.Contains(strings.Join(strings.Fields(s), " "), "workline hook "+name) ||
+		(p.Hooks != "" && strings.Contains(s, filepath.Join(p.Hooks, name)))
+}
+
 func writeDispatchers(dir, bin, next string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err

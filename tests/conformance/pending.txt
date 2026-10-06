@@ -1,6 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-setup/doctor-local-hooks-path-bypasses
-setup/doctor-local-hooks-path-unset
-setup/doctor-local-hooks-path-hands-over
-setup/doctor-global-hooks-path-kept
