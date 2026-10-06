@@ -90,9 +90,9 @@ jobs:
             --sarif workline.sarif --summary workline-summary.md --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
-          cat workline-summary.md
-          cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
-          mkdir -p report && cp workline-summary.md report/report.md
+          [ ! -s workline-summary.md ] || cat workline-summary.md
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
           echo "${{ github.event.pull_request.number }}" > report/number
 
       # From a fork, this job has no right to comment: the report goes to

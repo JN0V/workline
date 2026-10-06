@@ -73,7 +73,7 @@ jobs:
           workline sample ${WEEK:+--week "$WEEK"} --out sample.json --summary workline-summary.md || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           [ "$status" != 1 ] && [ -s sample.json ] && echo "drawn=true" >> "$GITHUB_OUTPUT"
-          cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: steps.sample.outputs.drawn == 'true'

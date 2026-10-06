@@ -42,8 +42,8 @@ jobs:
           workline route schedule --ai "$ai" --no-apply --forge github --open-merge-request --summary workline-summary.md --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
-          cat workline-summary.md
-          cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          [ ! -s workline-summary.md ] || cat workline-summary.md
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: steps.line.outputs.proposed == 'true'
