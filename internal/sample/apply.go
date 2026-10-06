@@ -105,6 +105,12 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	if mr > 0 {
 		res.Summary += fmt.Sprintf(", merge request #%d", mr)
 	}
+	if err := applyActs(res, f); err != nil {
+		return failed(res, fmt.Errorf("the product owner's acts: %w", err))
+	}
+	if res.Acts != nil {
+		res.Summary += fmt.Sprintf("; the product owner's acts to issue #%d", res.Acts.Issue)
+	}
 	return res
 }
 

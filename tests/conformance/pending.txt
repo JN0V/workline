@@ -1,9 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-
-# The weekly sample of the product owner's acts (ADR-0033): sample --apply.
-product-owner/acts-recorded-with-day-and-level
-product-owner/sample-draws-one-in-ten-of-the-week
-product-owner/sample-says-a-closing-reopened
-product-owner/sample-says-a-rename-undone
-product-owner/sample-suggests-the-level-below

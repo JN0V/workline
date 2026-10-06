@@ -129,6 +129,9 @@ type Record struct {
 	// Changes are what open issues were built on that changed, kept until
 	// a person ticks each seen or its issues are closed (ADR-0032).
 	Changes []Change `yaml:"changes,omitempty"`
+	// Did are the acts the role did alone, with their day and level, for
+	// the weekly sample to draw (ADR-0033).
+	Did []Did `yaml:"did,omitempty"`
 }
 
 // Pending is an act proposed to a person, as the report says it.
@@ -550,6 +553,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 					p.added[c.Issue] = append(p.added[c.Issue], c.BlockedBy...)
 				}
 				p.recordDone(c)
+				p.recordDid(c)
 			}
 		}
 		p.Decisions = append(p.Decisions, d)
