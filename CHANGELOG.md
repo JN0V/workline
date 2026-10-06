@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.17.0](https://github.com/JN0V/workline/compare/v0.16.0...v0.17.0) (2026-10-06)
+
+
+### Features
+
+* a readable job summary on GitLab and any CI ([#212](https://github.com/JN0V/workline/issues/212)) ([e9c629c](https://github.com/JN0V/workline/commit/e9c629ccfec65e5e5533525c765c5e392477f6ef))
+* **engine:** the release fix follows main as it moves ([#191](https://github.com/JN0V/workline/issues/191)) ([21b4d8c](https://github.com/JN0V/workline/commit/21b4d8ce990ab8885104f67e43366c0b170d4240))
+* **setup:** doctor reports a repository's own core.hooksPath ([#199](https://github.com/JN0V/workline/issues/199)) ([51eed6a](https://github.com/JN0V/workline/commit/51eed6a396d28af258e33b4dd8b671bee2a302dd))
+
 ## [0.16.0](https://github.com/JN0V/workline/compare/v0.15.0...v0.16.0) (2026-10-06)
 
 
