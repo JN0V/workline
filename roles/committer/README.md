@@ -1,9 +1,24 @@
 ---
-sources: [internal/builtin/committer, roles/committer/role.yaml]
-checked: 8bdd941
+sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
+checked: 1f3641c
 verified: agent:claude-code
 ---
 # Committer
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+flowchart LR
+  when["<b>When</b><br/>git commit: the commit-msg hook<br/>git push: the pre-push hook<br/>each push to a merge request, in CI"]
+  reads["<b>Reads</b><br/>the message<br/>what the commit adds<br/>its author"]
+  role(["Committer"])
+  alone["<b>Alone</b><br/>refuses a bad message,<br/>a secret, an author not allowed<br/>with an agent: rewrites<br/>a refused message"]
+  person["<b>Left to a person</b><br/>a refused message, with no agent<br/>a commit to split<br/>commits already made: git rebase -i"]
+  out["<b>Lands in</b><br/>the commit's message<br/>the verdict: terminal or CI log"]
+  when --> role
+  reads --> role
+  role --> alone --> out
+  role --> person
+```
 
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md).
