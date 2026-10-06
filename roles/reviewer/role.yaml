@@ -19,7 +19,7 @@ model:
   promote-after: 1   # a lens's answer that does not read is asked for again once
 
 context:
-  budget: 40000      # a lens: the change (diff-lines-max) and the files it changes (code-lines-max)
+  budget: 40000      # a lens's call: the change (diff-lines-max) and the files it changes (code-lines-max)
 
 duties:
   reads: ["**"]
@@ -51,7 +51,7 @@ settings:
   findings-max: 10      # findings on the change checked and shown a run; the rest counted
   issues-max: 3         # issues opened a run for what lies outside the change; the rest counted
   diff-lines-max: 1500  # lines of the change a lens is given
-  code-lines-max: 1200  # lines of the files changed a lens is given, all together
+  code-lines-max: 600   # lines of the files changed a lens is given whole, all together; the others by their hunks
   comment-block-max: 8  # lines of one comment the change adds (long-comment, a warning)
   # A comment telling the code's history, not what it does (bug-story).
   story-words: ['\bused to\b', '\bthe bug was\b', '\bpreviously\b']
@@ -72,3 +72,11 @@ settings:
   # The test files. A lens whose judge reads tests (lenses/tests.md) has
   # its judge shown those in the cause's folder and those naming its file.
   tests: ["**/*_test.*", "**/test_*", "**/*_spec.*", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/spec/**", "**/__tests__/**"]
+  tests-lines-max: 300  # lines of those tests one judge is shown, all together; the rest named
+  # Every lens a run asks, in one call: the change and its files given
+  # once, each finding naming its lens (#147). false: a call each, apart.
+  lenses-together: true
+  # What a run may spend, all calls together, tokens in and out as the agent
+  # reports them; once spent, nothing more is asked, said, and the commits
+  # are not recorded as reviewed. The call that crosses it is paid. 0: no cap.
+  ai-max-tokens: 200000

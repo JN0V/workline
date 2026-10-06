@@ -269,12 +269,40 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 			}
 		}
 	}
-	if c.Given.Config != nil {
-		data, _ := yaml.Marshal(c.Given.Config)
+	cfg := c.Given.Config
+	if c.Review != nil {
+		// The reviewer's measure is by lens: each asked apart, as step 1
+		// measured them, not together as a review on a machine asks them
+		// (#147).
+		cfg = withSetting(cfg, "reviewer", "lenses-together", false)
+	}
+	if cfg != nil {
+		data, _ := yaml.Marshal(cfg)
 		os.MkdirAll(filepath.Join(repo, ".workline"), 0o755)
 		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
 	}
 	return work, repo, env, nil
+}
+
+// withSetting is a project config with a role's setting set, unless the
+// config sets it already.
+func withSetting(cfg map[string]any, role, key string, value any) map[string]any {
+	sub := func(m map[string]any, k string) map[string]any {
+		if v, ok := m[k].(map[string]any); ok {
+			return v
+		}
+		v := map[string]any{}
+		m[k] = v
+		return v
+	}
+	if cfg == nil {
+		cfg = map[string]any{}
+	}
+	settings := sub(sub(sub(cfg, "roles"), role), "settings")
+	if _, ok := settings[key]; !ok {
+		settings[key] = value
+	}
+	return cfg
 }
 
 // grade runs a case's checks; each one is one point. A judge check that
