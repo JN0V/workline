@@ -12,7 +12,8 @@ instead — the trigger API, the pipelines API, another pipeline — this page
 does the same with a plain script. The commands themselves:
 [triggers.md](triggers.md). Tried on a pipeline the API started
 (2026-10-06): the judging job of `garden`, without an agent, and its
-summary; the other tasks and the applying job, not yet. What follows is
+summary; `import`, both jobs, the engine of the branch and a planted
+answer; the other tasks, not yet. What follows is
 the template's commands under other rules.
 
 ## Before CI: on your machine
