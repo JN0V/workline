@@ -117,15 +117,15 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 			continue
 		}
 		n++
-		if !strings.Contains(script, "--summary workline-summary.md") {
-			t.Errorf("job %s: workline is not given --summary workline-summary.md", name)
+		if !strings.Contains(script, "--summary workline-summary.md") || !strings.Contains(script, "--summary workline-summary.html") {
+			t.Errorf("job %s: workline is not given --summary workline-summary.md and .html", name)
 		}
 		art, _ := job["artifacts"].(map[string]any)
-		if !strings.Contains(fmt.Sprint(art["paths"]), "workline-summary.md") || fmt.Sprint(art["when"]) != "always" {
+		if !strings.Contains(fmt.Sprint(art["paths"]), "workline-summary.html") || fmt.Sprint(art["when"]) != "always" {
 			t.Errorf("job %s: workline-summary.md is not kept as an artifact, always: %v", name, art)
 		}
 		if !strings.Contains(fmt.Sprint(art["reports"]), "annotations:workline-annotations.json") ||
-			!strings.Contains(fmt.Sprint(job["after_script"]), "workline-annotations.json") {
+			!strings.Contains(fmt.Sprint(job["after_script"]), "artifacts/file/workline-summary.html") {
 			t.Errorf("job %s: the job's page does not link the summary (annotations)", name)
 		}
 		if strings.Contains(script, "--target merge-request") && art["expose_as"] == nil {
