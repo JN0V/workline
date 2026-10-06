@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 8e7212c
+checked: 38e4f39
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -23,6 +23,9 @@ tokens — and `--json` prints every finding.
   takes it over the global one. `workline doctor` in the repository says
   `hooks-bypassed`, naming the path, when its `commit-msg` (and `pre-push`,
   when routed) does not hand over to workline; `hooks-path` when it does.
+  A hook hands over when it is executable and runs `workline hook <hook>`
+  (or workline's global hook) as a command before any `exit`: a comment or
+  an `echo` does not count.
   The fix it prints:
   - the path is `.githooks` or `.git/hooks`: unset it (`git config --local
     --unset core.hooksPath`); the global hooks run workline, then hand over
