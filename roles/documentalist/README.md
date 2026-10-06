@@ -1,9 +1,26 @@
 ---
-sources: [roles/documentalist/role.yaml, internal/builtin/documentalist]
-checked: c78417b
+sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
+checked: 1f3641c
 verified: agent:claude-code
 ---
 # Documentalist
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+flowchart LR
+  when["<b>When</b><br/>git push: the pre-push hook<br/>each push to a merge request<br/>gardening, nightly or weekly<br/>before your release tool tags<br/>workline init, workline docs"]
+  reads["<b>Reads</b><br/>each doc's sources and checked<br/>the commits since<br/>the code they name"]
+  role(["Documentalist"])
+  alone["<b>Alone</b><br/>counts the docs a push made suspect<br/>on a merge request: fixes a doc<br/>or vouches for it, on its branch<br/>holds a release while docs are due"]
+  proposed["<b>Proposed</b><br/>workline docs: each fix, kept or dropped<br/>gardening, release: a merge request a task<br/>workline init: each doc's sources"]
+  person["<b>Left to a person</b><br/>a doc it cannot judge<br/>code that disagrees with a decision"]
+  out["<b>Lands in</b><br/>a commit on the merge request<br/>merge requests of its own<br/>one comment, issues"]
+  when --> role
+  reads --> role
+  role --> alone --> out
+  role --> proposed --> out
+  role --> person --> out
+```
 
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md).
