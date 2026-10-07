@@ -41,6 +41,7 @@ var (
 			"events":       free,
 			"handoffs":     {keys: map[string]*shape{"from": free, "to": free}}, // a list: each item
 			"max-handoffs": free,
+			"fail-fast":    free,
 		}},
 		"gates": {any: &shape{keys: map[string]*shape{
 			"criteria": free,

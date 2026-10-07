@@ -23,6 +23,7 @@ owner), then the project's `settings`.
 | `roles.<role>.settings` | the role's settings, merged into its defaults |
 | `roles.<role>.enforce` | `<rule>: block \| warn \| off`, per rule |
 | `routing.events` | `<event>: [role, gate:<name>, …]`, replacing the shipped line event by event |
+| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
 | `routing.handoffs`, `routing.max-handoffs` | which role may hand over to which, and how many times ([routing](spec/routing.md)) |
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
@@ -58,6 +59,7 @@ routing:                    # replaces the shipped line, event by event
     schedule: [documentalist, product-owner, reviewer]}   # the reviewer reads each spec the product owner refines; ready waits on it
   handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
   max-handoffs: 3
+  fail-fast: {schedule: false}   # every step of the schedule runs, the worst verdict stands (the default)
 gates:                      # your own checks, as a step of the line
   merge:
     checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]

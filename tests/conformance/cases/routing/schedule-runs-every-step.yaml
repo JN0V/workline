@@ -1,0 +1,11 @@
+case: routing/schedule-runs-every-step
+about: On schedule the roles are upkeep, each on its own (fail-fast false by default), so a step that does not pass stops none after it, and the line takes the worst verdict of them.
+given:
+  repo: basic
+  config:
+    gates:
+      docs: {checks: [{id: links, run: "false", output: exit}]}
+      backlog: {checks: [{id: issues, run: "true", output: exit}]}
+    routing: {events: {schedule: ["gate:docs", "gate:backlog"]}}
+run: {route: schedule}
+expect: {status: block, steps: ["gate:docs", "gate:backlog"]}

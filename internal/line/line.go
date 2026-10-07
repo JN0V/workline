@@ -39,9 +39,12 @@ type Result struct {
 
 // Run runs event's steps. base carries what every role run shares (repository,
 // roles, agent, inputs, forge, target, scope, NoApply); Role and Event are set
-// per step. The first step that does not pass stops the line: it fails closed.
-// With NoApply, each step judges the tree as it is — no step sees what an
-// earlier one proposed — and handoffs wait, since nothing is applied yet.
+// per step. The first step that does not pass stops the line: it fails
+// closed. On an event the routing sets `fail-fast: false` for (schedule, by
+// default), every step runs all the same and the line takes the worst
+// verdict (ADR-0037). With NoApply, each step judges the tree as it is — no
+// step sees what an earlier one proposed — and handoffs wait, since nothing
+// is applied yet.
 func Run(event string, base engine.Options) *Result {
 	res := &Result{Status: verdict.Pass, Steps: []Step{}}
 	cfg, err := routing.Load(base.Repo)
@@ -62,31 +65,55 @@ func Run(event string, base engine.Options) *Result {
 		res.Summary = fmt.Sprintf("%s: the last commit is workline's own (%s): nothing to judge", event, role)
 		return res
 	}
+	stopAtFirst := cfg.StopsAtFirst(event)
+	var notPassed []string // with every step run: those that did not pass, and how
 	for _, name := range steps {
+		step, status := name, verdict.Pass
 		if g, isGate := strings.CutPrefix(name, "gate:"); isGate {
 			v := gate.Run(base.Repo, g)
 			res.Steps = append(res.Steps, Step{Name: name, Status: v.Status, Gate: v})
 			res.Findings = append(res.Findings, v.Findings...)
-			if v.Status != verdict.Pass {
-				return stopped(res, name, v.Status)
-			}
+			status = v.Status
+		} else {
+			o := base
+			o.Role, o.Event = name, event
+			step, status = runRole(res, cfg, o, 0)
+		}
+		if status == verdict.Pass {
 			continue
 		}
-		o := base
-		o.Role, o.Event = name, event
-		if !runRole(res, cfg, o, 0) {
-			return res
+		if stopAtFirst {
+			return stopped(res, step, status)
 		}
+		notPassed = append(notPassed, fmt.Sprintf("%s (%s)", step, status))
+		res.Status = worst(res.Status, status)
 	}
-	res.Summary = fmt.Sprintf("%s: %d steps passed", event, len(res.Steps))
+	if len(notPassed) > 0 {
+		res.Summary = fmt.Sprintf("%s: every step ran; %d of %d did not pass: %s", event, len(notPassed), len(steps), strings.Join(notPassed, ", "))
+	} else {
+		res.Summary = fmt.Sprintf("%s: %d steps passed", event, len(res.Steps))
+	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
 	}
 	return res
 }
 
-// runRole runs one role, then the handoffs it asked for; false stops the line.
-func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) bool {
+// worst is the verdict of a line whose steps all ran: a block on the work
+// first, then a person's decision, then an outside failure, which is never
+// a verdict on the work.
+func worst(a, b string) string {
+	rank := map[string]int{verdict.Pass: 0, verdict.BlockedExternal: 1, verdict.Human: 2, verdict.Block: 3}
+	if rank[b] > rank[a] {
+		return b
+	}
+	return a
+}
+
+// runRole runs one role, then the handoffs it asked for. It returns the
+// step that did not pass and its verdict, or the role and pass; a handoff
+// past max-handoffs is a block.
+func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) (string, string) {
 	r := engine.Run(o)
 	label := o.Role
 	if o.Event == "handoff" {
@@ -102,26 +129,26 @@ func runRole(res *Result, cfg *routing.Config, o engine.Options, depth int) bool
 		res.Pending = append(res.Pending, r.RunDir)
 	}
 	if r.Status != verdict.Pass {
-		stopped(res, label, r.Status)
-		return false
+		return label, r.Status
 	}
 	for _, h := range r.Handoffs {
 		m, _ := h.(map[string]any)
 		to, _ := m["role"].(string)
 		reason, _ := m["reason"].(string)
 		if depth+1 > cfg.MaxHandoffs {
-			failed(res, label, fmt.Sprintf("more than %d handoffs in a row; stopped before %s", cfg.MaxHandoffs, to))
-			return false
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "routing-error", Where: label,
+				Message: fmt.Sprintf("more than %d handoffs in a row; stopped before %s", cfg.MaxHandoffs, to)})
+			return label, verdict.Block
 		}
 		next := o
 		next.Role, next.Event, next.AI = to, "handoff", o.AI
 		next.Inputs = map[string]string{"handoff-from": o.Role, "handoff-reason": reason}
 		next.Targets = nil
-		if !runRole(res, cfg, next, depth+1) {
-			return false
+		if step, status := runRole(res, cfg, next, depth+1); status != verdict.Pass {
+			return step, status
 		}
 	}
-	return true
+	return label, verdict.Pass
 }
 
 func stopped(res *Result, step, status string) *Result {

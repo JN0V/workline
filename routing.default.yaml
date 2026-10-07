@@ -6,5 +6,10 @@ events:
   merge-request: [committer, documentalist]
   schedule:      [documentalist]
   release:       [documentalist]   # before the project's release tool: the docs due at the release gate it
+# The first step that does not pass stops the line, but on schedule: its
+# roles are upkeep, each on its own (docs, backlog), so every one runs and
+# the line takes the worst verdict (ADR-0037).
+fail-fast:
+  schedule: false
 handoffs: []
 max-handoffs: 3

@@ -19,7 +19,9 @@ to 5 rounds. Options: [usage](usage.md#options-of-run-role-and-route).
 ### workline route
 
 `workline route <event>` runs the steps routing names for the event, in
-order; the first that does not pass stops the line.
+order; the first that does not pass stops the line. On `schedule`, every
+step runs and the worst verdict stands (`fail-fast`,
+[ADR-0037](adr/0037-the-schedule-runs-every-step.md)).
 
 ### workline apply
 

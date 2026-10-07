@@ -24,6 +24,10 @@ type Config struct {
 	Events      map[string][]string `yaml:"events"`
 	Handoffs    *[]Edge             `yaml:"handoffs"`
 	MaxHandoffs int                 `yaml:"max-handoffs"`
+	// FailFast says, per event, whether the first step that does not pass
+	// stops the line (true, the default) or every step runs and the line
+	// takes the worst verdict (false: the schedule's upkeep, ADR-0037).
+	FailFast map[string]bool `yaml:"fail-fast"`
 }
 
 // Load returns the shipped routing with the project's changes applied.
@@ -55,8 +59,21 @@ func Load(repo string) (*Config, error) {
 		if p.MaxHandoffs > 0 {
 			c.MaxHandoffs = p.MaxHandoffs
 		}
+		for event, stop := range p.FailFast {
+			if c.FailFast == nil {
+				c.FailFast = map[string]bool{}
+			}
+			c.FailFast[event] = stop
+		}
 	}
 	return &c, nil
+}
+
+// StopsAtFirst reports whether the first step of event that does not pass
+// stops the line: it does, unless the routing sets `fail-fast: false` for it.
+func (c *Config) StopsAtFirst(event string) bool {
+	stop, set := c.FailFast[event]
+	return stop || !set
 }
 
 // Allowed reports whether role from may hand over to role to.

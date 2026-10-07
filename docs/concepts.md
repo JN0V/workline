@@ -20,7 +20,9 @@ The words the other pages use, each in a few lines. The rules behind them:
   CI job or you run the command for one ([triggers](triggers.md)).
 - **Routing, the line** — which roles run, in order, for an event
   (`routing.default.yaml`, changed in `.workline/config.yaml`). `workline
-  route <event>` runs the line; the first step that does not pass stops it.
+  route <event>` runs the line; the first step that does not pass stops it,
+  but on `schedule`, where every step runs and the worst verdict stands
+  ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)).
   `workline run-role <role> --event <event>` runs one role alone.
 - **Gate** — a step that runs your own scanners and reads their output
   against thresholds, never asking a model (`gate:<name>` in a line).
