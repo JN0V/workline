@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.0](https://github.com/JN0V/workline/compare/v0.19.0...v0.20.0) (2026-10-07)
+
+
+### Features
+
+* **reviewer:** a spec read on the forge before it goes ready ([#248](https://github.com/JN0V/workline/issues/248)) ([18b4018](https://github.com/JN0V/workline/commit/18b401808f62975c81d54949c9e08f15f5fe8ade))
+* **reviewer:** review a spec on a machine, a file or an issue ([#245](https://github.com/JN0V/workline/issues/245)) ([82f970a](https://github.com/JN0V/workline/commit/82f970a4d08779fdce8bd801e0d6cb98d252e5dd))
+
 ## [0.19.0](https://github.com/JN0V/workline/compare/v0.18.0...v0.19.0) (2026-10-07)
 
 
