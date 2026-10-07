@@ -155,7 +155,7 @@ with release-please, never a tag by hand:
 - on each push to `main`, release-please.yml, with the App's token, keeps
   one pull request open, "chore(main): release X": the next version from
   the conventional commits since the last tag (`feat` moves the minor
-  while workline is at 0.x, as a breaking change does), CHANGELOG.md, and
+  while workline is at 0.x, as a breaking change does), [CHANGELOG.md](../CHANGELOG.md), and
   the templates' `WORKLINE_VERSION`, each on a line marked
   `x-release-please-version` (release-please-config.json);
 - the App's token, not the job's: a pull request opened with

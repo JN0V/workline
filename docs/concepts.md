@@ -75,7 +75,7 @@ merge request per task. A **derived block**
 Where workline writes comments, issues and merge requests: `github`,
 `gitlab`, `local` (files kept in the clone, never pushed), `cmd:<command>`
 (any other, through a small contract), or `none`. Writes go where the
-project lives (ADR-0016).
+project lives ([ADR-0016](adr/0016-writes-go-where-the-project-lives.md)).
 
 ## Agents and independence
 
@@ -83,14 +83,17 @@ The agent is Claude Code (`--ai claude`, `claude:<model>@<effort>`) or any
 command (`cmd:`); a role asks for a **tier** (`light`, `standard`,
 `frontier`) and an effort, not a model. A **judge** checks what an agent
 produced from another context, another model or another provider — the
-best available, said in the verdict (ADR-0005).
+best available, said in the verdict
+([ADR-0005](adr/0005-independence-takes-the-best-level-available.md)).
 
 ## People
 
-People state the need and accept the result; workline never merges, never
-approves. What a role cannot settle is written where a person looks — an
-issue, a comment, the report — with what to do. A **parent** — a need the
-product owner split into parts, each an issue — is never closed by a
-role: as its parts close, a comment on it says what each delivered and
-which items of its Verification are proved, and a person accepts the need
-by closing it (ADR-0029).
+- People state the need and accept the result; workline never merges,
+  never approves.
+- What a role cannot settle is written where a person looks — an issue, a
+  comment, the report — with what to do.
+- A **parent** — a need the product owner split into parts, each an issue
+  — is never closed by a role: as its parts close, a comment on it says
+  what each delivered and which items of its Verification are proved, and
+  a person accepts the need by closing it
+  ([ADR-0029](adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)).

@@ -1,0 +1,25 @@
+case: documentalist/reader-walls-of-prose
+about: "When gardening, a paragraph or a list item of a user page over `reader.paragraph-words` (80), and a table cell over `reader.cell-words` (30), are reported, once a page, with each line and its words (#193). Short ones, and code, are not; a link's address is not words."
+given:
+  repo: documented
+  setup:
+    - |
+      w() { i=0; while [ $i -lt $1 ]; do printf 'word '; i=$((i+1)); done; }
+      printf '# Shop\n\nSee [the guide](docs/guide.md).\n' > README.md
+      {
+        printf '# Guide\n\n'
+        w 90; printf '\n\n'
+        w 50; printf '\n\n'
+        printf -- '- '; w 85; printf '\n- short item\n\n'
+        printf '| Key | What |\n|---|---|\n| a | '; w 35; printf '|\n| b | one short sentence, [linked](https://example.com/a/very/long/address/that/is/not/words) |\n\n'
+        printf '```\n'; w 200; printf '\n```\n'
+      } > docs/guide.md
+      git add . && git commit -qm 'docs: a guide'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: paragraph-too-long, where: docs/guide.md, message: "2 paragraph(s) over 80 words: line 3 (90 words), line 7 (85 words)"}
+    - {rule: cell-too-long, where: docs/guide.md, message: "1 table cell(s) over 30 words: line 12 (35 words)"}
+  no-findings:
+    - {rule: paragraph-too-long, where: README.md}

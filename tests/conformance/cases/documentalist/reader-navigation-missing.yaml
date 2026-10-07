@@ -1,0 +1,10 @@
+case: documentalist/reader-navigation-missing
+about: "When gardening, with no page of `reader.navigation` in the repository, the pages no navigation reaches cannot be looked for: that is said (`navigation-missing`), never read as all reached (#193)."
+given: {repo: documented}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: navigation-missing, message: "README.md"}
+  no-findings:
+    - {rule: page-unreachable}

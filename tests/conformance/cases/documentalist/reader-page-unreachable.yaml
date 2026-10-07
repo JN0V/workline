@@ -1,0 +1,30 @@
+case: documentalist/reader-page-unreachable
+about: "When gardening, a user page no link reaches from `reader.navigation` (README.md), link after link through user pages, is reported (#193). A page linked only from a decision record is not reached: a reader does not browse records. Nor one linked only from an HTML comment, which no reader sees. A folder's link reaches its README."
+given:
+  repo: documented
+  setup:
+    - |
+      mkdir -p docs/adr docs/howto
+      printf '# Shop\n\n[Guide](docs/guide.md), [how-to](docs/howto/).\n<!--\n[Draft](docs/draft.md)\n-->\n' > README.md
+      printf '# Draft\n\nLinked only from a comment.\n' > docs/draft.md
+      printf '# Guide\n\n[Deeper](deeper.md).\n' > docs/guide.md
+      printf '# Deeper\n\nThe end.\n' > docs/deeper.md
+      printf '# How-to\n\nSteps.\n' > docs/howto/README.md
+      printf '# Orphan\n\nNobody links here.\n' > docs/orphan.md
+      printf '# 1. Go\n\nSee [the hidden page](../hidden.md).\n' > docs/adr/0001-go.md
+      printf '# Hidden\n\nOnly a record links here.\n' > docs/hidden.md
+      git add . && git commit -qm 'docs: pages'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: page-unreachable, where: docs/orphan.md}
+    - {rule: page-unreachable, where: docs/hidden.md}
+    - {rule: page-unreachable, where: docs/draft.md}
+    - {rule: page-unreachable, where: docs/tech/auth.md}
+  no-findings:
+    - {rule: page-unreachable, where: docs/guide.md}
+    - {rule: page-unreachable, where: docs/deeper.md}
+    - {rule: page-unreachable, where: docs/howto/README.md}
+    - {rule: page-unreachable, where: docs/adr/0001-go.md}
+    - {rule: navigation-missing}

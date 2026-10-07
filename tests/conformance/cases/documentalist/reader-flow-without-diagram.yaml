@@ -1,0 +1,27 @@
+case: documentalist/reader-flow-without-diagram
+about: "When gardening, a user page that explains a flow — named in `reader.flow`, or with a \"How it works\" heading — and holds no diagram is reported (#193). A Mermaid block, or an image, is a diagram."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {reader: {flow: ["docs/roles/*.md"]}}}}
+  setup:
+    - |
+      mkdir -p docs/roles
+      printf '# Shop\n\n[Guide](docs/guide.md), [drawn](docs/drawn.md), [pictured](docs/pictured.md), [a role](docs/roles/seller.md), [another](docs/roles/buyer.md).\n' > README.md
+      printf '# Guide\n\n## How it works\n\nThe order goes to the warehouse.\n' > docs/guide.md
+      printf '# Drawn\n\n## How it works\n\n```mermaid\nflowchart LR\n  a --> b\n```\n' > docs/drawn.md
+      printf '# Pictured\n\n## How it works\n\n![The flow](flow.svg)\n' > docs/pictured.md
+      printf '# Seller\n\nSells.\n' > docs/roles/seller.md
+      printf '# Buyer\n\n```mermaid\nflowchart LR\n  a --> b\n```\n' > docs/roles/buyer.md
+      git add . && git commit -qm 'docs: pages'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: flow-without-diagram, where: docs/guide.md, message: "heading at line 3 explains how it works"}
+    - {rule: flow-without-diagram, where: docs/roles/seller.md, message: "reader.flow"}
+  no-findings:
+    - {rule: flow-without-diagram, where: docs/drawn.md}
+    - {rule: flow-without-diagram, where: docs/pictured.md}
+    - {rule: flow-without-diagram, where: docs/roles/buyer.md}
+    - {rule: flow-without-diagram, where: README.md}

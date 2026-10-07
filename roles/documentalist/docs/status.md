@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-06)
+# Documentalist — where it stands (2026-10-07)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -105,6 +105,14 @@ two tokens set as masked variables (the GitLab one expires about
   French glue and fact words; `init` without an agent proposes sources by
   name. Conformance and the probe's public copies, no agent; `whole-chars`
   raised costs tokens no agent run has measured yet.
+
+- **Docs for their reader** ([#193](https://github.com/JN0V/workline/issues/193)):
+  when gardening, with no agent, user pages are checked for decisions,
+  docs and issues named without a link, paragraphs and table cells too
+  long, a flow with no diagram, a page no link reaches (docs/checks.md,
+  12). Run on workline's own pages (tried.md, 2026-10-07). Not built: the
+  agent reading the pages they point to
+  ([#256](https://github.com/JN0V/workline/issues/256)).
 
 ## Tried once for real
 

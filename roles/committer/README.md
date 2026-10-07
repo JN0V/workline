@@ -74,23 +74,31 @@ and `pre-push`, every commit of the range given as `--input range=<base>..<head>
 | `blank-after-subject` | a second line that is not empty: git would read it as part of the subject |
 | `subject-length` | a subject over `subject-max` characters (72) |
 | `body-length` | a body over `body-max-lines` lines (12), not counting comments, blank lines and trailers |
-| `internal-code` | a reference that means nothing outside the project (`AC-3`) in the subject; it belongs in a trailer (`Refs: AC-3`). `internal-codes-allow` lists standard identifiers that look like one (`SHA-256`, `RFC-1234`). The reviewer reads the same lists in the comments a change adds (roles/reviewer) |
-| `possible-internal-code` | a code with no dash (`F207`, `internal-codes-maybe`), as often a public name (`ESP32`): the agent judges it, and may keep it; without AI it blocks; on commits already made, only a warning |
+| `internal-code` | a reference that means nothing outside the project (`AC-3`) in the subject; it belongs in a trailer (`Refs: AC-3`) |
+| `possible-internal-code` | a code with no dash (`F207`), as often a public name (`ESP32`): the agent judges it |
+
+- `internal-codes-allow` lists standard identifiers that look like an
+  internal code (`SHA-256`, `RFC-1234`); the [reviewer](../reviewer/README.md)
+  reads the same lists in the comments a change adds.
+- `internal-codes-maybe` holds the patterns of codes with no dash. The
+  agent may keep one; without AI it blocks; on commits already made, it is
+  only a warning.
 
 Messages git writes itself (`Merge …`, `Revert "…"`, `fixup! …`, `squash! …`,
 `amend! …`) are not checked. A message that passes asks no agent.
 
 ### Secrets and forbidden terms
 
-What the commit adds (on `commit-msg`) or every commit of the range is
-scanned with [gitleaks](https://github.com/gitleaks/gitleaks), before the
-message: no rewrite fixes a secret, so a `leak` blocks without asking the
-agent, at its file and line. The message is scanned too (`gitleaks stdin`),
-without what git strips from it (comments, the diff of `commit -v`): a `leak`
-there names its line, and the agent is not asked either, since the message
-would carry the match to it. A rewrite is scanned like the message it
-replaces. The match is never printed. Without gitleaks, the commit goes on
-and the verdict says so (`secrets-not-checked`).
+- **What the commit adds** (on `commit-msg`), or every commit of the
+  range, is scanned with [gitleaks](https://github.com/gitleaks/gitleaks),
+  before the message: no rewrite fixes a secret, so a `leak` blocks without
+  asking the agent, at its file and line.
+- **The message** is scanned too (`gitleaks stdin`), without what git
+  strips from it (comments, the diff of `commit -v`): a `leak` there names
+  its line, and the agent is not asked either, since the message would
+  carry the match to it. A rewrite is scanned like the message it replaces.
+- The match is never printed. Without gitleaks, the commit goes on and the
+  verdict says so (`secrets-not-checked`).
 
 gitleaks' own rules find secrets. Terms that must never reach a repository
 are rules of the user's, in lists kept outside it, gitleaks taking the first
@@ -111,13 +119,15 @@ project commits to share its allowlist is not private.
 
 ### Identity
 
-An author or committer address outside the allow list blocks (`identity`):
-the one git will record, on `commit-msg` — `git var`, so an address given for
-one commit (`-c user.email`, `--author`) is caught too — and those of every
-commit of the range. The list is the project's `allowed-identities` setting
-(patterns; noreply addresses, for a public repository) and the user's own, one
-pattern a line, in `workline/allowed-identities` in their config folder. Both
-empty, identities are not checked, and nothing is said.
+An author or committer address outside the allow list blocks (`identity`).
+
+- **Checked**: the one git will record, on `commit-msg` — `git var`, so an
+  address given for one commit (`-c user.email`, `--author`) is caught too
+  — and those of every commit of the range.
+- **The list**: the project's `allowed-identities` setting (patterns;
+  noreply addresses, for a public repository) and the user's own, one
+  pattern a line, in `workline/allowed-identities` in their config folder.
+  Both empty, identities are not checked, and nothing is said.
 
 ## Rewrite (the agent)
 

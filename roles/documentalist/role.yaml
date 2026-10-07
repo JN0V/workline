@@ -74,6 +74,17 @@ settings:
     root-agent-file-lines: 200       # AGENTS.md / CLAUDE.md: a routing file, not a dump
   freshness:                         # on schedule: a doc confirmed longer ago is stale
     stale-after-days: 180
+  # Whether the user pages serve their reader, beside whether they are true
+  # (docs/checks.md, "Reader"): on schedule, no agent, reported only. User
+  # pages are the docs matching `pages`, but `skip` and the records
+  # (decisions, research, history: `history`, `decisions`).
+  reader:
+    pages: ["README.md", "docs/**"]
+    skip: ["docs/spec/**", "docs/specs/**"]
+    navigation: ["README.md"]        # where a reader starts; every user page is reached from one
+    flow: []                          # pages explaining a flow, which need a diagram (with any "How it works")
+    paragraph-words: 80               # a paragraph, or a list item, over it is a wall of prose
+    cell-words: 30                    # a table cell holds one short sentence and a link
   duplicates:
     min-words: 40                    # shorter repeats are not worth merging
     similarity: 0.85

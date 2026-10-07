@@ -151,3 +151,28 @@ others do:
 
 Taken (ADR-0027): a branch's derived block may lag; gardening regenerates
 it on the default branch, in a merge request of its own.
+
+## Docs for their reader (2026-10-07)
+
+Whether a user page serves its reader, beside whether it is true
+([#193](https://github.com/JN0V/workline/issues/193)). What exists:
+
+- **Vale**: an `occurrence` rule scoped to `paragraph` caps the words of a
+  paragraph, and `metric` rules give readability scores. It reads the text
+  with the markup taken out, so it cannot tell `ADR-0026` from a link to
+  it, and knows nothing of the pages around one. A binary and rules to keep
+  ([#95](https://github.com/JN0V/workline/issues/95)).
+- **markdownlint**: line length (MD013), headings, lists; no word count,
+  nothing across pages.
+- **Pages no navigation reaches**: Sphinx warns "document isn't included in
+  any toctree", MkDocs lists the pages "not included in the nav"; site
+  crawlers call them orphan pages. Each reads its own navigation file.
+- **A diagram where a page explains a flow**, a decision or an issue named
+  without a link: no linter found.
+
+Taken: the idea of the orphan page — reached from an entry point, link
+after link — and Vale's paragraph cap, both computed in the engine as the
+other checks are
+([ADR-0003](../adr/0003-documentalist-checks-in-the-engine.md)): no binary,
+and one pass sees links and pages together. Vale stays for a project that
+keeps a config ([#95](https://github.com/JN0V/workline/issues/95)).

@@ -56,7 +56,7 @@ Every one on a machine; on a merge request one a push, in turn
     files fit `code-lines-max`; the others by the change's hunks
     (`diff-lines-max`).
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
-  `resolves`, `implements`), in a commit or the merge request, has #4 read
+  `resolves`, `implements`), in a commit or the merge request, has `#4` read
   from the forge, its Need, Verification and Scope given
   (`issue-lines-max`).
   - The lens says what the issue asks and the change does not do or

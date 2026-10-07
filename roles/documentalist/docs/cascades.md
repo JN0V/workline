@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: fcc8f36
+checked: 35ad2e5
 verified: agent:claude-code
 ---
 # Documentalist — cascades and the authority

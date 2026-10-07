@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: fcc8f36
+checked: 35ad2e5
 verified: agent:claude-code
 ---
 # Documentalist
@@ -25,14 +25,18 @@ flowchart LR
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md).
 
-**Does**: keeps the docs true to the code they describe. A doc names its
-code in `sources` and the commit it was last checked against in `checked`;
-a commit touching one of those sources makes the doc *suspect*. With no
-agent, it finds the suspect docs, and checks sizes, duplicates, dead links,
-identifiers gone from the code, decisions superseded, derived blocks. With
-an agent, it reads each suspect doc against its sources and fixes it, or
-vouches for it by moving `checked`; when gardening, it also reads stale
-docs again, merges repeated passages and condenses a doc over budget.
+**Does**: keeps the docs true to the code they describe.
+
+- A doc names its code in `sources`, and the commit it was last checked
+  against in `checked`; a commit touching one of those sources makes the
+  doc *suspect*.
+- With no agent: finds the suspect docs, and checks sizes, duplicates, dead
+  links, identifiers gone from the code, decisions superseded, derived
+  blocks; when gardening, whether user pages serve their reader.
+- With an agent: reads each suspect doc against its sources, and fixes it
+  or vouches for it by moving `checked`; when gardening, it also reads
+  stale docs again, merges repeated passages and condenses a doc over
+  budget.
 
 **Does not**: write code (its patches touch only `docs`), rewrite a doc the
 code follows (`truth: doc`, decisions by default: it opens an issue
@@ -44,7 +48,7 @@ doc by doc), or make a push wait on an agent.
 |---|---|---|
 | `pre-push` | the global hook, when routed | counts the docs the pushed commits made suspect, no agent |
 | `merge-request` | CI | judges the docs the merge request made suspect; fix committed to its branch |
-| `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, budgets, links; one merge request per task |
+| `schedule` | CI, nightly or weekly (gardening) | every suspect or stale doc, budgets, links, reader checks; one merge request per task |
 | `release` | `workline route release`, before your release tool tags | holds the release until the docs due are judged |
 | `init` | `workline init` | proposes each doc's `sources`, for you to review |
 
@@ -65,8 +69,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `docs` | `["docs/**", "*.md"]` | what is a doc; only these are ever patched |
 | `truth` | `{doc: ["docs/adr/**"]}` | docs the code follows: an issue, never a rewrite |
 | `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at the release | which cascades wait |
-| `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, AGENTS.md 200 lines | sizes reported |
+| `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
 | `freshness.stale-after-days` | `180` | a doc confirmed longer ago is read again |
+| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30 | which pages a reader uses, and how much they read at once ([checks](docs/checks.md)) |
 | `duplicates` | `{min-words: 40, similarity: 0.85}` | repeated passages |
 | `derive` | `{}` | named commands filling `<!-- workline:derive name -->` blocks |
 | `documented` | `[]` | code globs every file of which a doc must describe |
@@ -77,7 +82,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `ai-max-calls` | `10` | suspect docs per call |
 | `ai-max-tokens` | `0` (no cap) | tokens one run may spend, all calls together |
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
-| `judge-in-parts` | `false` | judge a doc too large in parts (ADR-0009) |
+| `judge-in-parts` | `false` | judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)) |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run |
 | `sample` | unset | `{judge, at-least, after}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
@@ -93,7 +98,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   release; an issue when the code disagrees with a doc it follows.
 - On a release tool's pull request: the fix on a merge request of its own,
   `workline/documentalist/release`, rebuilt on `main` each time `main`
-  moves (`workline follow`, ADR-0034), never over a person's commit.
+  moves (`workline follow`, [ADR-0034](../../docs/adr/0034-the-release-fix-follows-its-base.md)), never over a person's commit.
 - `--json`, `--sarif`, `--code-quality` for CI.
 
 ## Cost
