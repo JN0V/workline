@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: 6de6c6b
+checked: 8b7e871
 verified: agent:claude-code
 ---
 # Product owner — what each run tracks
@@ -36,12 +36,12 @@ or without an agent, says:
 - each issue waiting (`waiting`);
 - each cycle (`dependency-cycle`).
 
-The report says them too, under "Waiting". A split need is never the one
-offered: its parts are.
+The report says them too, folded under "issues waiting on another open
+issue". A split need is never the one offered: its parts are.
 
 ## Next and Stuck
 
-The report opens with **Next** and **Stuck**
+After what a person has to do, the report says **Next** and **Stuck**
 ([ADR-0031](../../../docs/adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md)),
 rebuilt at every run with or without an agent, nothing of them stored.
 
@@ -75,8 +75,12 @@ from, changed by a commit since it was read.
   — `unready`, back to refine, included, which only a person's tick does.
 - The issues waiting on it and those on the same code are listed, not
   read.
-- The report's "Changed needs" says each change and its issues, until a
-  person ticks it checked; nothing is written to them.
+- Nothing is written to them. In the report:
+  - every issue read again, nothing proposed: no box, one folded line;
+  - proposals made: under each issue, with the change it was read for;
+  - an issue not read: a box under "To check", until a person ticks it.
+- A file the project archived (`archived`) flags nothing: a roadmap whose
+  items became issues, edited since.
 
 ## A parent and its parts
 

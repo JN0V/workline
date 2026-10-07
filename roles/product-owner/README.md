@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 6de6c6b
+checked: 8b7e871
 verified: agent:claude-code
 ---
 # Product owner
@@ -129,6 +129,7 @@ under the project's own settings, which win field by field:
 | `ignored-runs-max` | `3` (1 to 20; 0 never pauses) | | |
 | `next-max` | `5` (0 to 20; 0 lists none) | | |
 | `stuck-days` | `14` (1 to 365) | | |
+| `archived` | `[]`: files no longer a source, whose changes flag nothing | | |
 | `moved-percent-max` | `20` | `10` | `30` |
 | `acts.open` | act, max 30 | | |
 | `acts.sources` | act, max 10 | | |
@@ -158,8 +159,9 @@ roles:
 
 ## Outputs
 
-- **One report issue**, "Backlog — product owner": what is next, what is
-  stuck, what was done and proposed, the needs a person changed.
+- **One report issue**, "Backlog — product owner": first what you have to
+  do — the proposals to tick, the changes to check —, then what is next,
+  what is stuck and what it did, folded.
 - **On each issue it reads**: a state comment, labels, milestones,
   sections, links to what it waits on.
 - **On a split need**: one comment listing its parts and what they proved.

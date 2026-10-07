@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 9e31d4b
+checked: 8b7e871
 judged: a8574a5
 verified: agent:documentalist
 ---
@@ -112,7 +112,9 @@ What it does, its acts and settings: [its page](../roles/product-owner/README.md
 In short:
 
 - its acts and proposals go to one issue, "Backlog — product owner", which
-  opens with what is next and what is stuck past `stuck-days` (14)
+  opens with what you have to do — the boxes to tick, a warning a run
+  before it pauses —, then what is next and what is stuck past
+  `stuck-days` (14)
   ([ADR-0031](adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md));
 - it refines issues to `ready`, drafts labelled `workline:draft`; the label
   `workline:accepted`, on one issue or many from the list, moves them to

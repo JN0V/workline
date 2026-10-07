@@ -820,3 +820,29 @@ passes.", "The test `TestIdleWarns` tells the user.") with one sub-issue
   `remove-blocker`; a real agent proposing `undepend` on a link whose
   blocker is open, and a person ticking it live (conformance only); a
   split's `after` kept and taken off live (conformance only).
+
+## 2026-10-07 — the report opens with what to do, live on GitHub, no agent
+
+The redesigned report, read first on workline's own (#110: ten "changed
+needs" boxes, nine with nothing to decide; the pause warning mid-page),
+then tried twice.
+
+- **#110's record, rendered locally** (the engine of the branch, its
+  record and open issues read from GitHub, nothing written): "What to do"
+  first — 5 proposals to decide, "answer before the next run, or the role
+  pauses", 1 act done alone —; the proposals under #83, #85, #87, #108
+  with their titles, "Add the sections Need and Validation to it —
+  drafted from its words, marked for you to correct"; #108's change said
+  beside its title; the nine changes with nothing proposed in one folded
+  line, no box. With `archived: [docs/BACKLOG.md]`: no change at all.
+- **JN0V/workline-sandbox**, `workline run-role product-owner --event
+  schedule --forge github --ai none` on a clone: report #5 rewritten —
+  #12's order proposal under its title with the change it was read for,
+  the box to set `rename` back to act; GitHub rendered the `<details>`
+  folds and the task-list boxes. **Put back**: #5's body as it was; the
+  record comment was left unchanged by the run.
+- **Not tried**: a box ticked inside the new layout live (the keys are
+  unchanged, conformance only); GitLab's rendering of the folds; a real
+  agent's run settling a change with nothing proposed (conformance
+  `changed-import-lines-read-again`, `changed-read-nothing-proposed-settles`).
+

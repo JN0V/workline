@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 7545ece
+checked: 8b7e871
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -10,8 +10,19 @@ Part of [the product owner](../README.md). What a run does, step by step:
 
 ## The report
 
-One report issue, "Backlog — product owner":
+One report issue, "Backlog — product owner", rewritten at each run; what
+to do first, what the role did after, the long parts folded:
 
+- **What to do**: how many proposals to decide and changes to check,
+  about a minute each; the needs to accept; a warning a run before the
+  role pauses, or the box that resumes it.
+- **To decide**: each proposal under the issue it is on, saying in plain
+  words what a tick does and why — done at the next run when a person of
+  the project ticks it; why the issue was read again, when a change was
+  the reason.
+- **To check**: a change to what an issue was built on that the role
+  could not read again; tick it once checked.
+- **To accept**: the split needs whose parts are all closed.
 - **Next**: the first `next-max` ready issues in the backlog's order that
   wait on nothing, never a split need, each with its milestone and
   priority.
@@ -21,12 +32,9 @@ One report issue, "Backlog — product owner":
   - its reporter not answering;
   - a proposal of the report unticked;
   - an announcement as obsolete past its delay with no second judge.
-- Then what was done, what is proposed (a box a person of the project
-  ticks; done at the next run), what waits on an open issue, and the split
-  needs whose parts are all closed, to accept.
-- **Changed needs**: each issue whose Need or Scope a person rewrote, or
-  imported lines that changed, with the issues built on it — read again,
-  or to check — and what is proposed for each; tick its box once checked.
+- **Folded**: the issues waiting on another; what the role did alone and
+  how to undo each; the issues read again after a change with nothing to
+  change, in one line; the autonomy, kind by kind; how the page works.
 
 ## On the issues
 

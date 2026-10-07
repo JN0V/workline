@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 6de6c6b
+checked: 8b7e871
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -94,9 +94,10 @@ cap (`acts`).
 
 ### 4. What a run leaves
 
-- **One report issue** lists what was done and proposed. It says each
-  moved issue's priority and milestone before the run, to put the order
-  back.
+- **One report issue**, what a person has to do first: what is
+  proposed, what to check and to accept; then what was done, folded, with
+  each moved issue's priority and milestone before the run, to put the
+  order back ([outputs.md](outputs.md#the-report)).
 - **A closing undone**, the issue reopened, puts that kind back to
   `propose` (`wrong-closing`).
 - **Each act done alone** — not a person's tick, nor a slip the engine
@@ -172,7 +173,9 @@ Each proposal in the report is a box
 - **The pause**: three runs in a row (`ignored-runs-max`; 0 never pauses,
   said in every report) read with an agent and nobody answering — no box
   ticked, no comment on the report, no act undone, no proposal settled —
-  pause the role: no agent asked until a person does one of those.
+  pause the role: no agent asked until a person does one of those. The
+  report's top says it a run ahead: "answer before the next run, or the
+  role pauses".
 
 ## Opening issues
 

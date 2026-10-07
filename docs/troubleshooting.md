@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 35ad2e5
+checked: 8b7e871
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -85,6 +85,9 @@ gardening proposes again when fewer wait.
   person decides: `workline:accepted`, or `workline:ready` by hand.
 - A kind of act stays `propose` after a person undid one; the report offers
   a box to set it back to `act`.
+- A file the issues were imported from, archived since, flags them each
+  time it is edited: name it in `archived`
+  ([ADR-0032](adr/0032-a-changed-need-flags-the-issues-built-on-it.md)).
 - `autonomy: cautious` proposes what sets direction: see the report.
 - The report's Stuck is empty though issues wait: `stuck-unknown` says
   which issues the forge gives no day for — the local forge keeps none, a
