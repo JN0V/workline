@@ -17,6 +17,22 @@ its fork jn0v-lab/workline-sandbox; gitlab.com/JN0V/workline-sandbox, its
 two tokens set as masked variables (the GitLab one expires about
 2026-10-31).
 
+## To leave beta
+
+Beta until the three criteria of
+[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
+hold:
+
+1. **Nothing buildable in Missing**: open. The docs to split and the
+   default of judging in parts (Missing 3, 4) are still to do; open bugs
+   [#120](https://github.com/JN0V/workline/issues/120) and
+   [#121](https://github.com/JN0V/workline/issues/121) to fix or park.
+2. **The main issue validated on real use**: open. No issue of the role
+   holds a Validation section the maintainer has signed.
+3. **AI verdicts measured**: in part. ADR-0014's step 4 holds on the
+   `drifted` cases (Measures, below); the other evaluation cases have one
+   run each, not five.
+
 ## Built and tried for real
 
 | What | Tried on |

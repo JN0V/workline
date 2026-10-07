@@ -48,14 +48,14 @@ pull requests and nightly gardening of workline and of another project;
 
 ## The roles
 
-| Role | What it does for you | Status |
+| Role | What it does for you | [Status](docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md) |
 |---|---|---|
-| [**Committer**](roles/committer/README.md) | checks each commit's message, the secrets it adds and its author | built |
-| [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name | built |
-| [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | beta |
-| [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | beta |
-| [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | built |
-| [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts (the docs' today) | built (docs) |
+| [**Committer**](roles/committer/README.md) | checks each commit's message, the secrets it adds and its author | [beta](roles/committer/docs/status.md) |
+| [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name | [beta](roles/documentalist/docs/status.md) |
+| [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | [beta](roles/reviewer/docs/status.md) |
+| [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | [beta](roles/product-owner/docs/status.md) |
+| [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [beta](roles/judge/docs/status.md) |
+| [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts (the docs' today) | [beta](roles/auditor/docs/status.md) |
 | [Inspector](https://github.com/JN0V/workline/issues/202) | will post the static-analysis findings a merge request adds | planned |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |

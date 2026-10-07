@@ -9,6 +9,23 @@ released in v0.9.0. It reads a spec too, a file or an issue, on a machine;
 on the forge, after the product owner refines an issue, its findings hold
 the issue from `ready` (#128).
 
+## To leave beta
+
+Beta until the three criteria of
+[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
+hold:
+
+1. **Nothing buildable in Missing**: open. Most of Missing is still to
+   build: the developer's loop
+   ([#117](https://github.com/JN0V/workline/issues/117)), inline comments,
+   every lens once when a merge request becomes ready, a removal's reach.
+2. **The main issue validated on real use**: open. No issue of the role
+   holds a Validation section the maintainer has signed.
+3. **AI verdicts measured**: in part.
+   [#90](https://github.com/JN0V/workline/issues/90)'s step 1 ran once
+   (Missing 3); five runs a case (ADR-0014) and the judge's false
+   negatives counted again (Missing 9) are left.
+
 ## Built
 
 | What | Proof |
