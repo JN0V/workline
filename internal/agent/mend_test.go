@@ -125,6 +125,13 @@ func TestMendQuotedThenMore(t *testing.T) {
 	if c, _ := f["cause"].(map[string]any); c["quote"] != "key: \"a\" b\n" || f["title"] != `"Idle for 60 minutes" is unclear` {
 		t.Errorf("block scalar changed: %q, title %q", f["cause"], f["title"])
 	}
+	// Both slips in one answer, code quoted with its tabs and a title
+	// going on after its quotes: each mended in turn (PR #245's review).
+	answer = "- finding:\n    title: \"Average\" divides by zero\n    cause:\n      path: calc.go\n      quote: |\n        \treturn total / len(values)\n"
+	f, mended = finding(t, answer)
+	if c, _ := f["cause"].(map[string]any); c["quote"] != "\treturn total / len(values)\n" || f["title"] != `"Average" divides by zero` || len(mended) != 2 {
+		t.Errorf("both slips: %q, title %q, mended %v", f["cause"], f["title"], mended)
+	}
 	// One quoted text whose inner quotes were left unescaped is asked
 	// again, not mended: its outer quotes are not the agent's words.
 	broken := "- note: \"it returns `\"one hour\"` when unset.\"\n"

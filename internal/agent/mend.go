@@ -21,21 +21,25 @@ import (
 func Mend(answer string) (string, []string) {
 	var said []string
 	var probe any
-	if err := yaml.Unmarshal([]byte(answer), &probe); err != nil {
-		var fixed string
+	// Each slip the reader stops on, mended in turn, one of each at most:
+	// an answer may hold both (PR #245's review).
+	came := answer
+	tabs, quotes := false, false
+	for err := yaml.Unmarshal([]byte(answer), &probe); err != nil; err = yaml.Unmarshal([]byte(answer), &probe) {
 		var n int
 		switch {
-		case strings.Contains(err.Error(), "tab character"):
-			fixed, n = untab(answer)
+		case !tabs && strings.Contains(err.Error(), "tab character"):
+			tabs = true
+			answer, n = untab(answer)
 			said = append(said, fmt.Sprintf("%d block(s) of code indented with tabs (the YAML reader refuses a tab as indentation): indented with spaces, their text kept as written", n))
-		case strings.Contains(err.Error(), "did not find expected key"):
-			fixed, n = unquote(answer)
+		case !quotes && strings.Contains(err.Error(), "did not find expected key"):
+			quotes = true
+			answer, n = unquote(answer)
 			said = append(said, fmt.Sprintf("%d value(s) opening on a quoted phrase and going on after it (the YAML reader takes the quotes for the whole value): read whole, as written", n))
 		}
-		if n == 0 || yaml.Unmarshal([]byte(fixed), &probe) != nil {
-			return answer, nil
+		if n == 0 {
+			return came, nil
 		}
-		answer = fixed
 	}
 	if fixed, n := unhash(answer); n > 0 {
 		answer = fixed
