@@ -59,7 +59,7 @@ func TestProofIsAQuote(t *testing.T) {
 
 func TestCloserNotReadIsSaid(t *testing.T) {
 	part := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Title: "Keep the last row"}, Unread: errors.New("the forge refused closers: unknown operation")}
-	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner")
+	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner", nil)
 	if !strings.Contains(ev.Body, "| #11 Keep the last row | closed as completed | not read: the forge did not say |") || strings.Contains(ev.Body, "by hand") {
 		t.Errorf("a closer the forge refused to say is said not read, never by hand:\n%s", ev.Body)
 	}
@@ -68,5 +68,24 @@ func TestCloserNotReadIsSaid(t *testing.T) {
 	}
 	if len(ev.Unread) != 1 || ev.Unread[0].ID != 11 {
 		t.Errorf("Unread = %v, want #11", ev.Unread)
+	}
+}
+
+func TestTestNames(t *testing.T) {
+	cases := []struct {
+		item string
+		want []string
+	}{
+		{"`TestWriteRows` passes", []string{"TestWriteRows"}},
+		{"the test `keeps-the-last-row` and `src/export/csv_test.go::TestQuote`", []string{"keeps-the-last-row", "src/export/csv_test.go::TestQuote"}},
+		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts", "test_quote"}},
+		{"conformance case `parent-x` passes", []string{"parent-x"}},
+		{"`WriteRows` keeps the last row; `make check` is green", nil},
+		{"A test writes three rows.", nil},
+	}
+	for _, c := range cases {
+		if got := TestNames(c.item); !slices.Equal(got, c.want) {
+			t.Errorf("TestNames(%q) = %q, want %q", c.item, got, c.want)
+		}
 	}
 }

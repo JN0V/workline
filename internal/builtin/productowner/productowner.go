@@ -286,7 +286,7 @@ func Pre(runDir, repo string) int {
 		// A parent (ADR-0029): what its parts delivered, kept in one
 		// comment, with no agent; a person accepts it once all are closed.
 		if parts := backlog.Parts(is); len(parts) > 0 {
-			ev, err := evidence(b, is, parts, role, &all)
+			ev, err := evidence(b, repo, is, parts, role, &all)
 			if errors.Is(err, forge.ErrUnreachable) {
 				fmt.Fprintln(os.Stderr, err)
 				return exitExternal
@@ -299,6 +299,10 @@ func Pre(runDir, repo string) int {
 			for _, p := range ev.Unread {
 				findings = append(findings, verdict.Finding{Rule: "closers-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
 					Message: fmt.Sprintf("the forge did not say what closed #%d (%v): said on the parent as not read, never taken for closed by hand", p.ID, p.Unread)})
+			}
+			if len(ev.NoTest) > 0 {
+				findings = append(findings, verdict.Finding{Rule: "proof-test-missing", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+					Message: fmt.Sprintf("its Verification names %s as proof, and the code at this commit holds no such test: the item is said not proved", strings.Join(ev.NoTest, ", "))})
 			}
 			if ev.AllClosed {
 				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it — the role never does", ev.Parts)
@@ -625,7 +629,7 @@ func opening(open []forge.Issue, report int, waits []backlog.Wait, hand *backlog
 // evidence reads a parent's parts — every issue listed once a run, into
 // all — and what closed each part delivered, and writes its report
 // (ADR-0029).
-func evidence(b forge.Backlog, parent forge.Issue, ids []int, role string, all *[]forge.Issue) (backlog.Evidence, error) {
+func evidence(b forge.Backlog, repo string, parent forge.Issue, ids []int, role string, all *[]forge.Issue) (backlog.Evidence, error) {
 	if *all == nil {
 		list, err := b.AllIssues()
 		if err != nil {
@@ -653,7 +657,7 @@ func evidence(b forge.Backlog, parent forge.Issue, ids []int, role string, all *
 		}
 		parts = append(parts, p)
 	}
-	return backlog.ReadEvidence(parent, parts, role), nil
+	return backlog.ReadEvidence(parent, parts, role, backlog.CodeTests(repo)), nil
 }
 
 // issueRefs says issue numbers as references: "#12, #13".

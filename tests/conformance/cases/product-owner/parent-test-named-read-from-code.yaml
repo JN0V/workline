@@ -1,0 +1,21 @@
+case: product-owner/parent-test-named-read-from-code
+about: A Verification item of a parent that names a test, quoted by a part delivered, is proved only when the code at the run's commit holds that test — found by its name in a test file, or by its path — and the comment says where; a test it names that the code does not hold leaves the item not proved, said on the parent and in a finding, never taken on trust (ADR-0029).
+given:
+  repo: backlog-tested
+  forge:
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.\n\n## Verification\n\n- `TestWriteRowsKeepsTheLast` passes.\n- The test `TestQuoteCommas` reads a cell back whole.\n- `src/export/csv_test.go` runs in CI.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.\n\n## Verification\n\n`TestWriteRowsKeepsTheLast` passes; `src/export/csv_test.go` runs in CI.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#20", text: "fix(export): write the last row"}]}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.\n\n## Verification\n\nThe test `TestQuoteCommas` reads a cell back whole.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#21", text: "fix(export): quote commas"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: proof-test-missing, where: "#9", message: "its Verification names `TestQuoteCommas` as proof, and the code at this commit holds no such test"}
+    - {rule: parent-to-accept, where: "#9", message: "not proved: 1 Verification item(s)"}
+  forge:
+    issues:
+      - {id: 9, closed: false, comment-contains: "- Proved: \"`TestWriteRowsKeepsTheLast` passes.\" — quoted in #11's Verification, closed by pull request #20; the test `TestWriteRowsKeepsTheLast` in src/export/csv_test.go, read from the code."}
+      - {id: 9, comment-contains: "- Proved: \"`src/export/csv_test.go` runs in CI.\" — quoted in #11's Verification, closed by pull request #20; the test `src/export/csv_test.go`, read from the code."}
+      - {id: 9, comment-contains: "- **Not proved**: \"The test `TestQuoteCommas` reads a cell back whole.\" — quoted in #12's Verification, closed by pull request #21, but the code holds no test `TestQuoteCommas`: a test named is no proof until it is there."}

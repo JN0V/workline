@@ -2,6 +2,7 @@ package backlog
 
 import (
 	"fmt"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strconv"
@@ -117,7 +118,8 @@ type Evidence struct {
 	Parts     int
 	Closed    int      // the parts closed, or gone from the forge
 	Undone    []int    // the parts closed without delivering: not planned, a duplicate, gone
-	Unproved  []string // the Verification items no part delivered quotes
+	Unproved  []string // the Verification items no part delivered quotes, or whose test is not in the code
+	NoTest    []string // the tests a quoted item names that the code does not hold
 	Unread    []Part   // the parts whose closer the forge refused to say, with why
 	AllClosed bool
 }
@@ -125,8 +127,10 @@ type Evidence struct {
 // ReadEvidence writes a parent's report from its parts: what each became
 // and what closed it; each item of its Verification proved by a part
 // delivered that quotes it — in its own Verification, or in the text of
-// the pull request or commit that closed it — or said not proved.
-func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
+// the pull request or commit that closed it — and, when it names a test,
+// that test found in the code by tests (nil: not looked for); or said not
+// proved.
+func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder) Evidence {
 	ev := Evidence{Parts: len(parts)}
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The parts of this need**, as they close: kept up to date by the %s role, which never closes this issue — accepting the need is a person's.\n\n", strings.ReplaceAll(role, "-", " "))
@@ -176,9 +180,31 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 	if len(items) == 0 {
 		b.WriteString("\nThis issue has no Verification of its own: nothing to prove its parts against; a person judges from the parts alone.\n")
 	} else {
-		b.WriteString("\n**Its Verification**, each item against the parts delivered — proved when a part's Verification, or what closed it, quotes it:\n\n")
+		b.WriteString("\n**Its Verification**, each item against the parts delivered — proved when a part's Verification, or what closed it, quotes it, and a test it names is in the code:\n\n")
 		for _, item := range items {
-			if where := proof(item, parts); where != "" {
+			where := proof(item, parts)
+			if where != "" && tests != nil {
+				var in, missing []string
+				for _, name := range TestNames(item) {
+					if path := tests(name); path == name || strings.HasPrefix(name, path+"::") {
+						in = append(in, "`"+name+"`") // a file, or a test in it, named by its path
+					} else if path != "" {
+						in = append(in, fmt.Sprintf("`%s` in %s", name, path))
+					} else {
+						missing = append(missing, "`"+name+"`")
+					}
+				}
+				if len(missing) > 0 {
+					ev.Unproved = append(ev.Unproved, item)
+					ev.NoTest = append(ev.NoTest, missing...)
+					fmt.Fprintf(&b, "- %s: \"%s\" — %s, but the code holds no test %s: a test named is no proof until it is there.\n", notYet, item, where, strings.Join(missing, ", "))
+					continue
+				}
+				if len(in) > 0 {
+					where += "; the test " + strings.Join(in, ", ") + ", read from the code"
+				}
+			}
+			if where != "" {
 				fmt.Fprintf(&b, "- Proved: \"%s\" — %s.\n", item, where)
 				continue
 			}
@@ -231,6 +257,76 @@ func proof(item string, parts []Part) string {
 		}
 	}
 	return ""
+}
+
+// TestFinder says where the code holds a test a Verification item names:
+// the file, or "" when it holds none (ADR-0029).
+type TestFinder func(name string) string
+
+// codeSpan is a Markdown code span: where an item names a test.
+var codeSpan = regexp.MustCompile("`([^`\n]+)`")
+
+// testFile is a path a test lives in, by the conventions of the common
+// languages: a tests or spec folder, a _test, .test, .spec or _spec file,
+// a test_ file.
+var testFile = regexp.MustCompile(`(?i)(^|/)(tests?|specs?|__tests__)/|(_test|\.test|\.spec|_spec)\.[a-z0-9]+$|(^|/)test_[^/]+$`)
+
+// testFunc is a test's own name: Go's and JUnit's TestX, Python's test_x,
+// JavaScript's and Java's testX.
+var testFunc = regexp.MustCompile(`^(Test[A-Z0-9_]\w*|test_\w+|test[A-Z]\w*)$`)
+
+// testBefore is the word that says the next code span names a test.
+var testBefore = regexp.MustCompile(`(?i)\b(tests?|cases?|specs?)\s*$`)
+
+// TestNames are the tests a Verification item names, each in a code span:
+// a test file (a path, with ::name after it for one test in it), a test's
+// own name, or any name right after the word test or case. The rest of
+// the item is prose, and names none.
+func TestNames(item string) []string {
+	var out []string
+	for _, m := range codeSpan.FindAllStringSubmatchIndex(item, -1) {
+		name := strings.TrimSpace(item[m[2]:m[3]])
+		path, _, _ := strings.Cut(name, "::")
+		switch {
+		case strings.ContainsAny(name, " \t"):
+		case testFile.MatchString(path), testFunc.MatchString(name), testBefore.MatchString(item[:m[0]]):
+			if !slices.Contains(out, name) {
+				out = append(out, name)
+			}
+		}
+	}
+	return out
+}
+
+// CodeTests finds a test in the repository at HEAD: a test file named by
+// its path, one test in it by path::name, or a name found as a word in a
+// test file (TestNames). The run's commit, never the working tree.
+func CodeTests(repo string) TestFinder {
+	return func(name string) string {
+		path, fn, two := strings.Cut(name, "::")
+		if testFile.MatchString(path) && (two || strings.Contains(path, "/") || strings.Contains(path, ".")) {
+			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
+				return ""
+			}
+			if !two {
+				return path
+			}
+			if exec.Command("git", "-C", repo, "grep", "-q", "-w", "-F", "-e", fn, "HEAD", "--", path).Run() != nil {
+				return ""
+			}
+			return path
+		}
+		out, err := exec.Command("git", "-C", repo, "grep", "-l", "-w", "-F", "-e", name, "HEAD").Output()
+		if err != nil {
+			return ""
+		}
+		for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			if p := strings.TrimPrefix(l, "HEAD:"); testFile.MatchString(p) {
+				return p
+			}
+		}
+		return ""
+	}
 }
 
 // closerName says what closed an issue as the forge names it.
