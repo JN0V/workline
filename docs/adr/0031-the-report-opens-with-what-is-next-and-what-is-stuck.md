@@ -102,3 +102,19 @@ they were to do.
 - The hidden keys of the boxes are unchanged: ticks, the pause and the
   undoing read as before.
 
+
+## Amendment (2026-10-07): what a person ticked is not done alone
+
+On workline's own report, five acts done because a person ticked their
+boxes sat under "What the role did alone this run", each "Ticked by
+@…", and What to do asked to check "5 acts done alone". They were the
+person's acts, not the role's.
+
+- **Two folds**: "What the role did alone this run" holds only the acts
+  the role decided; "Done as you ticked this run" holds the acts done for
+  a tick, each saying who ticked it and how to undo it.
+- **Counted apart in What to do**: the acts done alone, to check; the
+  acts done as ticked, nothing to check.
+- The record is unchanged: a ticked act was already left out of the acts
+  done alone the weekly sample draws from
+  ([ADR-0033](0033-the-weekly-sample-draws-the-product-owners-acts.md)).

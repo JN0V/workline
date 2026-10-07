@@ -32,7 +32,7 @@ func TestWhatToDoPause(t *testing.T) {
 		{0, 3, "**1 proposal to decide**", "pauses"},
 	} {
 		p := &Plan{Record: Record{Ignored: c.ignored, Proposed: proposed}, config: Config{IgnoredMax: c.max}}
-		got := p.whatToDo(1, 0, 0)
+		got := p.whatToDo(1, 0, 0, 0)
 		if !strings.Contains(got, c.want) || strings.Contains(got, c.not) {
 			t.Errorf("ignored %d of %d: %q, want %q without %q", c.ignored, c.max, got, c.want, c.not)
 		}
@@ -41,7 +41,7 @@ func TestWhatToDoPause(t *testing.T) {
 
 func TestWhatToDoSettle(t *testing.T) {
 	p := &Plan{Record: Record{Proposed: []Pending{{Issue: 9, Act: "milestone", Line: "Move #9 out.", Proposal: &Proposal{Do: "milestone", Issue: 9}}}}, config: Config{IgnoredMax: 3}}
-	got := p.whatToDo(0, 0, 0)
+	got := p.whatToDo(0, 0, 0, 0)
 	if !strings.Contains(got, "**1 issue for you to settle**") || strings.Contains(got, "Nothing waits on you") {
 		t.Errorf("a slip with nowhere to go: %q", got)
 	}

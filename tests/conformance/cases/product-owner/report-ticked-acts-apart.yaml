@@ -1,0 +1,31 @@
+case: product-owner/report-ticked-acts-apart
+about: An act done because a person of the project ticked its box is listed under "Done as you ticked", apart from the acts the role did alone, and counted apart in "What to do"; only the acts done alone are for the person to check.
+given:
+  repo: backlog
+  setup: ["git tag v1.0.0"]
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    milestones: [v1.0.0, v1.9.0]
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", body: "Some rows are lost.", milestone: v1.0.0, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [x] Rename #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing. <!-- workline:proposal=9/rename -->\n"
+        labels: []
+        ticks: [{item: "Rename #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing. <!-- workline:proposal=9/rename -->", done: true, author: dev, insider: true}]
+        comments: ["```yaml\nproposed:\n  - issue: 9\n    act: rename\n    line: 'Rename #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing.'\n    proposal: {do: rename, issue: 9, title: The CSV export drops the last row, why: '\"bug\" says nothing.'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 10, body-contains: "**1 act done alone this run**: check it under *What the role did alone*"}
+      - {id: 10, body-contains: "**1 act done as you ticked this run** (*Done as you ticked*)"}
+      - {id: 10, body-contains: "What the role did alone this run: 1 act, and how to undo each"}
+      - {id: 10, body-contains: "Done as you ticked this run: 1 act, and how to undo each"}
+      - {id: 10, body-contains: "Ticked by @dev."}

@@ -15,7 +15,8 @@ to do first, what the role did after, the long parts folded:
 
 - **What to do**: how many proposals to decide and changes to check;
   what only you can settle; the needs to accept; a warning a run before the
-  role pauses, or the box that resumes it.
+  role pauses, or the box that resumes it; the acts done alone, to check,
+  and those done as you ticked, counted apart.
 - **To decide**: each proposal under the issue it is on, saying in plain
   words what a tick does and why — done at the next run when a person of
   the project ticks it; why the issue was read again, when a change was
@@ -32,7 +33,8 @@ to do first, what the role did after, the long parts folded:
   - its reporter not answering;
   - a proposal of the report unticked;
   - an announcement as obsolete past its delay with no second judge.
-- **Folded**: the issues waiting on another; what the role did alone and
+- **Folded**: the issues waiting on another; what the role did alone, and
+  apart what it did as you ticked ([ADR-0031](../../../docs/adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md)), and
   how to undo each; the issues read again after a change with nothing to
   change, in one line; the autonomy, kind by kind; how the page works.
 

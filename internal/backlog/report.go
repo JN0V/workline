@@ -24,10 +24,10 @@ const howItWorks = "- A box ticked by a person of the project is done at the nex
 func (p *Plan) ReportBody() string {
 	decide, boxes := p.toDecide()
 	check, checks := p.toCheck()
-	did, before := p.didLines()
+	did, before, ticked, tickedBefore := p.didLines()
 	var b strings.Builder
 	b.WriteString(reportIntro)
-	b.WriteString(p.whatToDo(boxes, checks, len(did)))
+	b.WriteString(p.whatToDo(boxes, checks, len(did), len(ticked)))
 	b.WriteString(decide)
 	b.WriteString(check)
 	b.WriteString(p.toAccept())
@@ -36,13 +36,20 @@ func (p *Plan) ReportBody() string {
 	}
 	b.WriteString(p.Opening)
 	b.WriteString(p.waiting())
-	if len(did) > 0 {
-		body := strings.Join(did, "\n")
+	// The acts a person ticked are theirs, listed apart from those the
+	// role did alone: only the second are the role's to check.
+	acts := func(title string, lines, before []string) {
+		if len(lines) == 0 {
+			return
+		}
+		body := strings.Join(lines, "\n")
 		if len(before) > 0 {
 			body += "\n\n**Before this run** — the issues it moved, as they were: to put the order back, set their priority label and milestone to these.\n\n" + strings.Join(before, "\n")
 		}
-		b.WriteString(fold(fmt.Sprintf("What the role did alone this run: %s, and how to undo each", plural(len(did), "act")), body))
+		b.WriteString(fold(fmt.Sprintf("%s: %s, and how to undo each", title, plural(len(lines), "act")), body))
 	}
+	acts("What the role did alone this run", did, before)
+	acts("Done as you ticked this run", ticked, tickedBefore)
 	b.WriteString(p.rechecked())
 	b.WriteString(p.autonomy())
 	b.WriteString(fold("How this page works", howItWorks))
@@ -51,7 +58,7 @@ func (p *Plan) ReportBody() string {
 
 // whatToDo is the report's top: what waits on a person, how long it
 // takes, and whether the role is about to pause or paused.
-func (p *Plan) whatToDo(decide, checks, did int) string {
+func (p *Plan) whatToDo(decide, checks, did, ticked int) string {
 	var items []string
 	r, max := p.Record, p.config.IgnoredMax
 	paused := max > 0 && r.Ignored >= max
@@ -95,7 +102,10 @@ func (p *Plan) whatToDo(decide, checks, did int) string {
 		if did == 1 {
 			them = "it"
 		}
-		items = append(items, fmt.Sprintf("**%s done alone this run**: check %s under *What the role did*, and undo what you disagree with.", plural(did, "act"), them))
+		items = append(items, fmt.Sprintf("**%s done alone this run**: check %s under *What the role did alone*, and undo what you disagree with.", plural(did, "act"), them))
+	}
+	if ticked > 0 {
+		items = append(items, fmt.Sprintf("**%s done as you ticked this run** (*Done as you ticked*): nothing to check; undo one there if it went wrong.", plural(ticked, "act")))
 	}
 	if level, why := p.Record.Measure.Suggest(); level != "" {
 		items = append(items, fmt.Sprintf("**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.", level, why))
@@ -216,8 +226,9 @@ func (p *Plan) backToAct() string {
 }
 
 // didLines are the acts this run did alone, each with how to undo it, and
-// the issues it moved as they were.
-func (p *Plan) didLines() (did, before []string) {
+// the issues it moved as they were; then the same for the acts done
+// because a person of the project ticked their box.
+func (p *Plan) didLines() (did, before, ticked, tickedBefore []string) {
 	listed := map[int]bool{}
 	for _, d := range p.Decisions {
 		if d.Mode != Act {
@@ -252,13 +263,17 @@ func (p *Plan) didLines() (did, before []string) {
 		if d.Act.Ticked != "" {
 			undo += " Ticked by " + d.Act.Ticked + "."
 		}
-		did = append(did, "- "+describe(d.Act, "Closed")+undo)
+		lines, was := &did, &before
+		if d.Act.Ticked != "" {
+			lines, was = &ticked, &tickedBefore
+		}
+		*lines = append(*lines, "- "+describe(d.Act, "Closed")+undo)
 		if slices.Contains(moves, d.Act.Do) && !listed[d.Act.Issue] {
 			listed[d.Act.Issue] = true
-			before = append(before, fmt.Sprintf("- #%d: %s", d.Act.Issue, d.Act.Before))
+			*was = append(*was, fmt.Sprintf("- #%d: %s", d.Act.Issue, d.Act.Before))
 		}
 	}
-	return did, before
+	return did, before, ticked, tickedBefore
 }
 
 // offer says, in plain words, what ticking a proposal does to the issue
