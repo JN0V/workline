@@ -196,5 +196,5 @@ Nothing is judged, but:
   Stuck rebuilt, a split need's parts reported, and a changed need's
   issues listed for a person.
 
-**Status**: beta, nightly on workline's own issues and in the CI of
+**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), nightly on workline's own issues and in the CI of
 another project of its author's; [docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).

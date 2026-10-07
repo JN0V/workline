@@ -66,7 +66,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   [status](docs/status.md#cost-measured).
 - **Without AI**: the rules alone; the change is left for a person
   (`not-reviewed`).
-- **Status**: beta, released in v0.9.0; [where it stands](docs/status.md),
+- **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), released in v0.9.0; [where it stands](docs/status.md),
   [each try](docs/tried.md).
 
 ## A run, in short
