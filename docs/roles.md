@@ -12,25 +12,37 @@ and where it stands.
 
 | Role | Does | Runs on | Page |
 |---|---|---|---|
-| Committer | checks each commit's message, secrets and author; rewrites a refused message | `commit-msg` (the git hook), `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
+| Committer | checks each commit's message, secrets and author | `commit-msg`, `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
-| Reviewer | reads the code a change brings, or a spec before it is built, and says what it breaks, what the issue it closes asks and it leaves out, and what its author claims and it contradicts; asks a person what only a person decides; never approves | `review` (`workline review`), `merge-request` (opt-in), `spec` (`workline review --spec`, `--issue`), `schedule` (opt-in, after the product owner: a refined issue, held from ready while a finding is open) | [reviewer](../roles/reviewer/README.md) |
-| Product owner | keeps the backlog — the open issues — true to the code and in order; opens its report with what is next and what is stuck; says on a split need what its parts delivered, for a person to accept; flags the issues built on a need a person changed; a weekly sample of its acts, for a person to judge | `schedule` (opt-in), `import`, the weekly sample | [product owner](../roles/product-owner/README.md) |
+| Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
+| Product owner | keeps the open issues true to the code, refined and in order | `schedule` (opt-in), `import`, the weekly sample | [product owner](../roles/product-owner/README.md) |
+| Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
+| Auditor | re-checks a weekly sample of the docs the documentalist confirmed | `workline sample` | [auditor](../roles/auditor/role.yaml) |
+
+## Which role runs when
 
 Which role runs on which event is the routing: `routing.default.yaml` as
-shipped, changed in `.workline/config.yaml` ([config](config.md)). By
-default: `commit-msg` → committer; `merge-request` → committer,
-documentalist; `schedule` and `release` → documentalist. `workline init`
-routes `pre-push` to the committer and the documentalist; `--review` adds
-the reviewer to `merge-request`. The reviewer after the product owner in
-`schedule` reads each spec it refines before it goes ready (#128).
+shipped, changed in `.workline/config.yaml` ([config](config.md)).
 
-Two more roles run behind the others, never on an event of their own: the
-**judge** answers one yes-or-no question a role's check cannot (a
-reviewer's finding, a closing as obsolete), from another context or model
-than the one judged; the **auditor** reads the weekly sample of the docs
-the documentalist vouched for (`workline sample`). The same sample draws
-the product owner's acts of the week, for a person, with no agent.
+- **By default**: `commit-msg` → committer; `merge-request` → committer,
+  documentalist; `schedule` and `release` → documentalist.
+- **`workline init`** routes `pre-push` to the committer and the
+  documentalist; `--review` adds the reviewer to `merge-request`.
+- **The reviewer after the product owner** in `schedule` reads each spec it
+  refines before it goes ready
+  ([a spec on the forge](../roles/reviewer/docs/spec.md#on-the-forge)).
+
+## Behind the others
+
+Two roles never run on an event of their own:
+
+- the **judge** answers one yes-or-no question a role's check cannot (a
+  reviewer's finding, a closing as obsolete), from another context or
+  model than the one judged;
+- the **auditor** reads the weekly sample of the docs the documentalist
+  confirmed — those whose `checked` it moved (`workline sample`). The same
+  sample draws the product owner's acts of the week, for a person, with
+  no agent.
 
 How to run each role from a hook, a script or a CI job:
 [triggers.md](triggers.md). What a role is, for those who write one:
