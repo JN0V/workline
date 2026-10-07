@@ -6,314 +6,110 @@ verified: agent:claude-code
 # Reviewer
 
 ```mermaid
-%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
-  when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in<br/>workline review --spec, --issue:<br/>a spec before it is built<br/>gardening, after the product owner,<br/>opt-in: an issue it refined"]
-  reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change<br/>the issue it closes<br/>what its author says<br/>a spec: the file or the issue,<br/>the code it names"]
+  when["<b>When</b><br/>before you push<br/>on a merge request (opt-in)<br/>on a spec"]
   role(["Reviewer"])
-  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>what the change says by itself (diff-alone, off),<br/>in a spec: what is ambiguous, unverifiable,<br/>out of scope, contradicted by the code,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
-  proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
-  asked["<b>Asked</b><br/>a choice the change leaves open:<br/>a question for a person,<br/>not a defect, never judged"]
-  person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
-  out["<b>Lands in</b><br/>the terminal and out/review.json<br/>one summary comment<br/>issues, needs-triage<br/>on a refined issue: one comment,<br/>ready held while a finding is open"]
+  finds["<b>Finds</b><br/>what the change breaks<br/>what it leaves out<br/>each finding checked"]
+  asks["<b>Asks</b><br/>a choice only<br/>a person makes"]
+  person["<b>Left to a person</b><br/>fix, approve, merge"]
+  out["<b>Lands in</b><br/>your terminal<br/>one comment<br/>issues"]
   when --> role
-  reads --> role
-  role --> alone --> out
-  role --> proposed --> out
-  role --> asked --> out
+  role --> finds --> out
+  role --> asks --> out
   role --> person
 ```
 
 For people: what the role does and how to set it. The AI never reads this
 file. All roles: [docs/roles.md](../../docs/roles.md).
 
-**Does**: reads the code a change brings before a person does, and says
-what it breaks, what the issue it closes asks and it leaves out, and what
-its author claims and it contradicts — each finding quoted, found again by
-the engine and checked by a judge — and asks a person what only a person
-decides; rules on the comments the change adds (a bug's story, an
-internal code), with no agent. Reads a spec before it is built too, a
-file or an issue: what is ambiguous, unverifiable, out of its scope, or
-contradicted by the code (#128, [below](#a-spec)); on the forge, after
-the product owner refines an issue, its findings hold the issue from
-`ready` ([below](#a-spec-on-the-forge)).
-**Does not**: approve, change the code, merge, or review docs and other
-files that are not code (`ignore`): the author fixes, the person merges
-(ADR-0020). A finding outside the change becomes an issue, never a comment
-on the merge request.
+**Does**:
+
+- reads the code a change brings before a person does, and says what it
+  breaks, what the issue it closes asks and it leaves out, and what its
+  author claims and it contradicts;
+- quotes each finding; the engine finds the quote again, and a second AI
+  call (the judge) checks each important one;
+- asks a person what only a person decides;
+- rules on the comments the change adds (a bug's story, an internal code),
+  with no agent;
+- reads a spec before it is built too, a file or an issue: what is
+  ambiguous, unverifiable, out of its scope, or contradicted by the code;
+  on the forge, after the product owner refines an issue, its findings
+  hold the issue from `ready` ([a spec](docs/spec.md)).
+
+**Does not**:
+
+- approve, change the code or merge: the author fixes, the person merges
+  ([ADR-0020](../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md));
+- review docs and other files that are not code (`ignore`);
+- comment on the merge request for a finding outside the change: that
+  becomes an issue.
+
+## When, what it costs
 
 | Event | Fired by | Reads |
 |---|---|---|
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
 | `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push |
-| `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens (#128) |
-| `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens (#128) |
+| `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
+| `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 
-**Outputs**: on a machine, the findings and `out/review.json` for your
-agent to fix; on a merge request, one summary comment edited each run, the
-findings in `--sarif` / `--code-quality`, and an issue (`needs-triage`)
-for each verified finding outside the change.
-**Cost**: one call for the lenses (all of them on a machine, together;
-one a push on a merge request) and one judge call for each important
-finding. #146's eight commits, every lens: 142k tokens in, estimated, the
-lenses' call 73.6k (430k before #147, docs/tried.md); the judges reading
-whole functions (#127), about 160k. Intent and claims (#126): the
-lenses' prompt 0.7% larger, 3.0% when the change closes an issue; a
-decision for a person, 0.4% more, no judge call. The diff-alone facet,
-off: one call more, the change's size (about 4.6k tokens on the
-evaluation's cases, 53k on #146's). A spec (#128): one call, 9k to
-13k characters measured (#128's body; a spec naming a Go file), at most
-the spec and `code-lines-max` lines of code; on workline-sandbox#43,
-22.5k tokens with two judges. On the forge, one spec a run: 19.2k and
-23.3k tokens on the sandbox, three and four judges (docs/tried.md).
-Caps:
-`ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
-`judge-lines-max`, `tests-lines-max`, `testimony-lines-max`,
-`issue-lines-max`, `findings-max`, `issues-max`, `questions-max`,
-`lenses-per-push`, `spec-rounds`.
-**Without AI**: the rules alone; the change is left for a person
-(`not-reviewed`).
-**Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
+- **Outputs**: on a machine, the findings and `out/review.json` for your
+  agent to fix; on a merge request, one summary comment edited each run,
+  the findings for GitHub's code scanning or GitLab's Code Quality
+  (`--sarif`, `--code-quality`), and an issue (`needs-triage`) for each
+  verified finding outside the change.
+- **Cost**: one call for the lenses (all of them on a machine, together;
+  one a push on a merge request), one judge call for each important
+  finding; a spec, one call. Capped at 200000 tokens a run
+  (`ai-max-tokens`) and by the `*-max` settings below. Measured:
+  [status](docs/status.md#cost-measured).
+- **Without AI**: the rules alone; the change is left for a person
+  (`not-reviewed`).
+- **Status**: beta, released in v0.9.0; [where it stands](docs/status.md),
+  [each try](docs/tried.md).
 
-## A run
+## A run, in short
 
-1. **The range.** `workline review`: `base..HEAD` (`base`, `--base`); on a
-   merge request, the range CI gives. A change touching only what
-   is not code (`ignore`) asks nobody.
-2. **The rules**, on the comments the change adds, no agent: a story of
-   the code (`bug-story`, `story-words`: "used to", "the bug was"); a code
-   internal to the project (`internal-code`, by the committer's lists); a
-   block over `comment-block-max` lines (`long-comment`, a warning). While
-   a rule blocks, no agent is asked.
-3. **The record.** Commits a review answered whole are not asked again;
-   it is kept in the summary comment on a merge request,
-   `.git/workline/reviewer-record` on a machine. New commits that change
-   no code are recorded, nobody asked, the turn of the lenses kept.
-4. **The lenses** (`lenses/<lens>.md`, a project's own in
-   `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
-   intent, claims (#126). Every one on a machine; on a merge request one a push, in turn
-   (`lenses-per-push`), every one with `--input lenses=all`.
-   - **Together** (`lenses-together`, #147): the lenses of a run in one
-     call, the change given once; each finding names its lens. One naming
-     none is read as the first lens's, said (`finding-lens-unnamed`); one
-     naming a lens not asked is dropped, said. `false`: a call each.
-   - **What they read**: what the author says, as testimony: the
-     messages of the commits not reviewed yet, whole, their trailers
-     left, and the merge request's title and body
-     (`testimony-lines-max`); each file they change once: whole, the
-     change marked in it, while the files fit `code-lines-max`; the
-     others by the change's hunks (`diff-lines-max`).
-   - **Intent** (`needs: issue`): a change saying `Closes #4` (or
-     `fixes`, `resolves`, `implements`), in a commit or the merge
-     request, has #4 read from the forge, its Need, Verification and
-     Scope given (`issue-lines-max`). The lens says what the issue asks
-     and the change does not do or prove, its cause quoted from the issue
-     (`path: "#4"`), and what the change does past the Scope. No issue
-     closed: not asked, said in the summary; one that cannot be read:
-     not asked, said (`issue-unread`).
-   - **Claims** (`cites: claim`): each finding quotes the author's claim
-     ("no change in behaviour"), found again in what they said, or is
-     dropped (`finding-unfounded`), and its cause the line contradicting
-     it.
-   - **What they answer**: `finding`s: lens, severity, title, why, its
-     cause quoted, its symptom when elsewhere, a fix; the claims lens's,
-     the claim; a `decision`, the question for a person (step 6).
-   - **The diff alone** (`diff-alone`, off, #126): a call of its own,
-     given the change only (`git diff -U3`, up to `diff-lines-max`), not
-     the files, the messages nor the issue: what the change says by
-     itself. Its findings are quoted, judged and routed as a lens's.
-     `--lenses diff-alone` asks it alone, whatever the setting. Off by
-     measure: it found what the lenses found, nothing more (docs/tried.md).
-   - **The floor** (`finder-floor`): each lens is asked to look for a
-     number of candidates first, from the change's size; a floor on
-     candidates, never on what is judged or shown: a lens answering
-     nothing leaves the review clean (`finder-floor-nothing-found-is-clean`).
-5. **The quotes.** The engine finds each cause again, spaces and line
-   breaks aside, in the file at the head of the range or among the lines
-   the change removed, or in the issue it names (`#4`, the change's); a
-   symptom, in its file; a claim, in what the author said. Not found: dropped, said
-   (`finding-unfounded`). Two on one line are grouped, never one dropped
-   (#229).
-6. **Related or not.** A cause on a line the change added or removed, or
-   on a kept line within three of a removal (a hunk taking away more lines
-   than it adds, #224): the change's, reported on that line, for its
-   author to fix. Elsewhere: an
-   issue, once (ADR-0018: its key the file and the cause's line; held by
-   an issue open or closed, none opened),
-   labelled `needs-triage`, with the product owner's state; never on the
-   merge request. A nit there is left, counted.
-   - **A decision for a person** (#126): a finding holding `decision` —
-     a trade-off, a design choice, what the issue leaves open — is a
-     question, not a defect: its cause found again, in the change or its
-     issue, else dropped, said, never an issue; never important, never
-     judged, never blocking; one a line (in an issue, one a quote);
-     `questions-max` a run, the rest counted.
-     Asked in the summary comment under **Questions for a person**, one
-     line each, its cause quoted; locally, `decision` (`question`). A
-     reply on the merge request is enough: the reviewer does not wait.
-7. **The judge**, apart, for each important finding, at the best
-   independence (`judge-at-least`); its level and both models said. A no drops it, said (`finding-judged-no`).
-   It reads the finding, the code it stands on, and what the change did
-   within 40 lines of the cause (#147). The code (#127), found with no
-   build ([research](../../docs/research/code-navigation.md)), up to
-   `judge-lines-max` lines all together, the rest named with where it lies:
-   - the function the cause lies in, whole (the symptom's too); none
-     found, or longer than the cap, the 31 lines around it;
-   - then, each whole while it fits: the functions the finding names, those
-     the cause's function calls, those calling it, and last a capitalised
-     word opening a sentence that names a function;
-   - Go by its own parser, an unexported name looked for in its package
-     only; shell, Python, Ruby, Lua and C-like files (C, C++, Java, C#,
-     JavaScript, TypeScript, Rust, Kotlin, Swift, PHP, Scala, Dart) by a
-     definition pattern and braces, indentation or `end`; references by
-     `git grep -w` at the head; a name defined in the cause's file first,
-     then its folder; in more than two other places, named, none shown;
-     test files left to the tests judge.
+Step by step, with every rule: [a run on code](docs/run.md).
 
-   Its question is the lens's (the
-   front matter of `lenses/<lens>.md`), else whether the quoted code fails:
-   - correctness, edge cases: whether the code quoted fails as the finding says;
-   - tests (#223): whether a test exercises the behaviour and would fail
-     were it wrong, the judge shown the test files (`tests`) in the cause's
-     folder and those naming its file, whole up to `tests-lines-max`, the
-     rest named; a no names the test.
-   - intent (#126): whether the issue asks what the change does not do,
-     or the change does what the Scope leaves out; the judge shown the
-     issue, and for a cause in the issue the whole merge request's change,
-     commits reviewed before included, up to `code-lines-max` lines: a
-     part an earlier push did is refused, not reported missing;
-   - claims (#126): whether the code quoted contradicts the claim quoted.
-   - Two findings on one line are each judged by their own lens's
-     question (#229); a refused one is dropped alone, the rest still shown.
-8. **The verdict.** The rules block (the long comment warns); what the
-   lenses find warns (`ai-findings: warn`) until the evaluation has
-   measured it (#90), lens by lens (Settings); a question for a person
-   neither warns nor blocks, the summary counting it. Past `findings-max` on the
-   change, or `issues-max` outside it, the rest is counted. One summary
-   comment on a merge request, edited each run (`forge-writes`); none
-   when the run blocks.
+1. **The range**: `base..HEAD` on a machine, CI's range on a merge
+   request; a change that is not code asks nobody.
+2. **The rules** on the comments added, with no agent; while one blocks, no
+   agent is asked.
+3. **The record**: commits already reviewed whole are not asked again.
+4. **The lenses**: correctness, edge cases, tests, intent (the issue the
+   change closes), claims (what its author says), in one call; a project
+   adds its own in `.workline/roles/reviewer/lenses/`.
+5. **The quotes**: each cause found again in the code, the issue or the
+   author's words; not found, dropped.
+6. **Whose finding**: a cause in the change goes to its author; elsewhere,
+   to an issue; a choice for a person is asked as a question.
+7. **The judge**: each important finding checked apart, reading the code
+   it stands on; a no drops it ([more](docs/judge.md)).
+8. **The verdict**: rules block; findings warn until measured
+   (`ai-findings`); one summary comment on a merge request.
 
-A lens whose answer does not read is asked again once, with what the YAML
-reader said (`promote-after`). A lens that fails is said (`lens-failed`),
-the commits left unrecorded. An
-agent unreachable: `blocked-external`. No agent: the rules alone, the change
-left for a person (`not-reviewed`).
-
-## A spec
-
-`workline review --spec docs/x.md`, or `--issue 12`, reads a spec before
-it is built (#128), the reviewer's `spec` event (`--input spec=<file>` or
-`issue=<n>`): the same pipeline as for code, with lenses of its own.
-
-- **What it reads**: the file as it reads in the working tree, or the
-  issue's body from the forge, up to `spec-lines-max` (the rest cut,
-  said: `spec-cut`); for a lens that `needs: code`, the code the spec
-  names, at HEAD: the code files it names, whole, then the functions it
-  names (backticked, called, or capitalised) the files do not hold, up to
-  `code-lines-max` lines, the rest named. None named: that lens is not
-  asked, said.
-- **The spec lenses** (`spec-lenses`, `subject: spec` in their front
-  matter), together in one call, each judged by its own question:
-  - **ambiguous**: words two readings would build or test differently;
-    the judge: can they be taken two ways that build different things?
-  - **unverifiable**: a Verification that proves nothing; the judge: can
-    it not tell whether the Need is met?
-  - **out-of-scope**: a Need asking what the Scope leaves out, or the
-    reverse; the judge: does the Need ask outside the Scope?
-  - **contradicted**: what the spec says of today's code, the code says
-    otherwise, its symptom quoted from the code; the judge: does the
-    code contradict it? It reads the function the symptom lies in and
-    those it reaches, up to `judge-lines-max`.
-- **The quotes**: each cause found again in the spec as given
-  (`docs/x.md:9`, `#12:3`, a line of the body), a symptom in its file at
-  HEAD; not found, dropped (`finding-unfounded`). Every finding is the
-  spec's author's: the product owner, or the person who wrote it.
-- **The judge, the verdict, the questions** as for code: each important
-  finding judged, a no dropped; what the lenses find warns
-  (`ai-findings`, by lens too); an open point only a person settles is a
-  `decision`. No record is kept: a spec is read whole each run.
-
-## A spec on the forge
-
-Opt-in, off by default: the reviewer after the product owner in the
-gardening line (#128, ADR-0020):
-
-```yaml
-routing:
-  events: {schedule: [documentalist, product-owner, reviewer]}
-```
-
-- **Which issue**: one a run, the first in the backlog's order the
-  product owner keeps (its state comment), not `workline:ready`, its four
-  sections written (drafts too), its body not read as it is. None: no
-  agent asked.
-- **What it writes**: one comment on the issue, edited each review: what
-  holds it from ready, the findings, the questions for a person, and a
-  hidden record (`workline:spec-review`): the body's digest, the round,
-  the important findings open and the sections they lie in. A nit or a
-  decision holds nothing; a finding its judge refused is dropped.
-- **The hold** is the product owner's: its `ready` waits until the
-  reviewer read the body as it is and no important finding is open, then
-  the engine moves it, with no agent
-  ([backlog acts](../../docs/spec/backlog-acts.md#refining-to-ready)).
-- **The answer**: the product owner's next refine rewrites the sections
-  the findings lie in that are its own; a person's, it asks the reporter.
-  The body changed, the reviewer reads it again: one round more.
-- **Five rounds** (`spec-rounds`): reviews in a row that leave a finding
-  open. The sixth asks no agent: the comment puts a question to a person
-  — accept it as it reads (`workline:accepted`), settle it and set
-  `workline:ready`, or delete the comment for five rounds more — and the
-  reviewer stops reading it.
-- **A review not whole** (a lens failed, the tokens spent) keeps the
-  last record, its body unread: read again at the next run, the rounds
-  counted as before, ready still held.
-- **In CI**: judged, then applied; the reviewer reads what an earlier run
-  refined, so a round takes two nights. `forge-writes: false` writes no
-  comment: ready then stays held, `spec-not-reviewed`.
-- **Without AI**: nothing read, nothing written; ready held. The sixth
-  round's question needs no agent.
-
-## The budget
-
-- **`ai-max-tokens`**, 200000 a run: once spent, nothing more is asked,
-  said (`ai-max-tokens`); the call that crosses it is paid.
-- **Not whole**: a lens not asked, or a finding not judged
-  (`review-not-whole`), leaves the commits unrecorded, reviewed again
-  next run.
-- **Said**: the summary gives the tokens used against the cap; each
-  call's, by lens and by judged finding, is in `out/review.json`.
-- **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a
-  character before the call (#235); a larger prompt is not sent, the
-  lens failing, said (`lens-failed`).
+The run's tokens are capped and said ([the budget](docs/judge.md#the-budget)).
 
 ## On a machine
 
 ```sh
 workline review                 # main..HEAD, every lens
 workline review --base develop --lenses correctness --json
+workline review --spec docs/x.md    # a spec before it is built
 ```
 
-The findings are printed, then the tokens each call used: the lenses',
-each judge's with its finding's place. The run's `out/review.json` (its
-path printed, or `--json`) gives them to the author's agent: each with its
-place, its cause quoted, whether it is the change's, and how it was
-verified; and what each call used (`calls`).
+The findings are printed with the tokens each call used; `out/review.json`
+gives them to your agent ([more](docs/run.md#on-a-machine)).
 
 ## On a merge request
 
 `workline init --review` adds the reviewer to the project's merge-request
-line. The judging job reads the summary comment, to know what was reviewed:
-on GitHub it needs a read token (`GH_TOKEN`, `pull-requests: read`), which
-ci/github/workline.yml gives it.
-
-- **A blocked merge request still gets the comment** (#226): what blocks
-  first, marked `**blocks**`, then the warnings; the issues outside the
-  change opened as on a pass (role.yaml's `on-block`).
-- **The record moves** as on a pass when every lens answered: the next
-  push reviews only the new commits. A rule that blocks writes the comment
-  too, the record left as it was: no lens ran.
-- **The job still fails**: the judging job by the verdict, while the
-  applying one writes the comment (`if: always()`, `when: always`).
+line. On GitHub the judging job needs a read token (`GH_TOKEN`,
+`pull-requests: read`), which the [template](../../ci/github/workline.yml)
+gives it. A blocked merge request still gets the comment
+([more](docs/run.md#on-a-merge-request)).
 
 ## Settings
 
@@ -324,27 +120,40 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 |---|---|---|
 | `base` | `main` | where `workline review` starts without `--base` |
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
-| `lenses` | `[correctness, edge-cases, tests, intent, claims]` | in this order, in turn, on a merge request; a lens with nothing to read (intent, no issue closed) skipped |
+| `lenses` | `[correctness, edge-cases, tests, intent, claims]` | in this order, in turn, on a merge request; a lens with nothing to read skipped |
 | `lenses-per-push` | `1` | `--input lenses=all` asks every one |
-| `findings-max` | `10` | findings on the change a run; the rest counted |
-| `issues-max` | `3` | issues opened a run for what lies outside it |
-| `questions-max` | `3` | decisions put to a person a run (#126); the rest counted |
-| `diff-lines-max` | `1500` | lines of the change a lens is given |
-| `code-lines-max` | `600` | lines of the changed files a lens is given whole, the change marked; the others by their hunks |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
-| `diff-alone` | `false` | `true`: the diff-alone facet each run, a call of its own given the change only (#126) |
-| `judge-lines-max` | `200` | lines of code a judge is shown: the cause's function, then those it reaches (#127), the rest named; `0`: the 31 lines around the cause |
-| `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown, the rest named |
-| `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) the lenses are given |
-| `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) the lenses are given |
-| `ai-max-tokens` | `200000` | tokens a run may spend, in and out, all calls; the call crossing it is paid; `0`: no cap |
-| `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through (#128) |
-| `spec-lines-max` | `300` | lines of a spec the lenses and each judge are given; the rest cut, said |
+| `diff-alone` | `false` | `true`: one more call, given the change only |
+| `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through |
 | `spec-rounds` | `5` | on the forge: reviews in a row leaving a finding open, then a question to a person (1 to 20) |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
-| `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, of findings on one line, a verified one from a blocking lens leading |
+| `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}` (below) |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
 | `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
-| `finder-floor` | `true` | each lens looks for a number of candidates from the change's size; never a floor on what is judged or shown |
+| `finder-floor` | `true` | each lens looks for a number of candidates first; never a floor on what is shown |
 | `tests` | `**/*_test.*`, `**/test_*`, `**/*.spec.*`, `**/tests/**`, … | the test files a tests-lens judge is shown |
+
+- **`ai-findings` by lens**: a lens not named warns; of findings on one
+  line, a verified one from a blocking lens leads.
+- **`lenses`**: intent has nothing to read when the change closes no issue,
+  and is skipped.
+
+### Caps
+
+What a run may read and write, and spend:
+
+| Key | Default | |
+|---|---|---|
+| `findings-max` | `10` | findings on the change a run; the rest counted |
+| `issues-max` | `3` | issues opened a run for what lies outside it |
+| `questions-max` | `3` | questions put to a person a run; the rest counted |
+| `diff-lines-max` | `1500` | lines of the change a lens is given |
+| `code-lines-max` | `600` | lines of changed files a lens is given whole; the others by their hunks |
+| `judge-lines-max` | `200` | lines of code a judge is shown, the rest named; `0`: the 31 lines around the cause |
+| `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown |
+| `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) |
+| `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) |
+| `ai-max-tokens` | `200000` | tokens a run may spend, all calls; the call crossing it is paid; `0`: no cap |
+| `spec-lines-max` | `300` | lines of a spec given; the rest cut, said |
+
