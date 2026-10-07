@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: beb53f8
+checked: 3bc3de5
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -78,6 +78,11 @@ gardening proposes again when fewer wait.
   act: the next run asks the agent again. `ignored-runs-max: 0` never
   pauses, said in every report.
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
+- An issue refined never goes ready, the reviewer after it in the line
+  (#128): `spec-not-reviewed` — the reviewer reads one issue a run, none
+  without an agent or with `forge-writes: false`; `spec-findings-open` —
+  read the reviewer's comment on the issue; `spec-rounds-spent` — a
+  person decides: `workline:accepted`, or `workline:ready` by hand.
 - A kind of act stays `propose` after a person undid one; the report offers
   a box to set it back to `act`.
 - `autonomy: cautious` proposes what sets direction: see the report.

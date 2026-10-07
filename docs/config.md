@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: beb53f8
+checked: 3bc3de5
 verified: agent:claude-code
 ---
 # Configuration
@@ -50,8 +50,10 @@ roles:
       ai-findings: {correctness: block}   # a verified important finding blocks for these lenses; the others warn (one value, warn or block, sets every lens)
       judge-lines-max: 300                # lines of code a judge reads: the cause's function, then those it reaches, the rest named (200; 0: 31 lines around the cause)
       diff-alone: true                    # one call more a run, given the change only, not the files nor the messages (#126; off by default, measured)
+      spec-rounds: 3                      # on the forge: reviews of a spec in a row with a finding open, then a question to a person (5)
 routing:                    # replaces the shipped line, event by event
-  events: {merge-request: [committer, documentalist, gate:merge]}
+  events: {merge-request: [committer, documentalist, gate:merge],
+    schedule: [documentalist, product-owner, reviewer]}   # the reviewer reads each spec the product owner refines; ready waits on it (#128)
   handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
   max-handoffs: 3
 gates:                      # docs/spec/gates.md

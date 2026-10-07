@@ -1,8 +1,8 @@
 # ADR-0020: The reviewer finds, the engine verifies, the person merges
 
 - **Status:** accepted; the code subject built (local, merge request), the
-  spec subject on a machine (#128); on the forge and the developer's loop to
-  come (roles/reviewer/docs/status.md)
+  spec subject on a machine and on the forge (#128); the developer's loop
+  to come (roles/reviewer/docs/status.md)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -112,7 +112,7 @@ machine, and once on the merge request when it becomes ready
 the gates do; its tests lens checks that a test covers each behaviour the
 change adds or changes.
 
-**Spec review** (on a machine since #128, see Amendment). Its input is a file or an issue's number; on the
+**Spec review** (built, #128, see the Amendments). Its input is a file or an issue's number; on the
 forge it runs after the product owner refines an issue, which goes `ready`
 only once no important finding is open: a loop between the product owner
 and the reviewer, five rounds at most, then a question to a person.
@@ -371,3 +371,49 @@ merge-request line; on in workline's own repository.
 - **Rejected**: the code lenses on a spec (they read a diff); the spec in
   the code review's call (paid on every push); the PO's refine reading
   the findings now (part 2).
+
+## Amendment (2026-10-07, #128: a spec on the forge)
+
+- **Where it runs.** The reviewer on `schedule`, after the product owner
+  in the gardening line (`schedule: [documentalist, product-owner,
+  reviewer]`), opt-in as on merge requests; off by default. One issue a
+  run: the first, in the backlog's order, the product owner keeps, not
+  ready, its four sections written (drafts too), its body not read as it
+  is. Judged then applied (principle 6): in CI the reviewer reads what an
+  earlier run refined.
+- **Where the findings live**: one comment on the issue
+  (`sticky=reviewer/spec`), edited each review, hiding a record the
+  engine reads back: the body's digest, the round, the important
+  findings open and the sections they lie in. Open: an important
+  finding not refused by its judge; a nit or a decision holds nothing.
+- **The hold**: the product owner's `ready` check, when the line runs the
+  reviewer after it. Dropped while the reviewer has not read the body as
+  it is (`spec-not-reviewed`), while a finding is open
+  (`spec-findings-open`), once the rounds are spent
+  (`spec-rounds-spent`). The same at every autonomy level
+  ([ADR-0026](0026-the-product-owners-autonomy-is-a-level.md)): a check,
+  not a mode. Released by the engine, with no agent, once the reviewer
+  read the body as it is and found nothing open.
+- **The answer**: at its next refine, the product owner is given the
+  findings and rewrites the sections they lie in that are still its own
+  (a draft, or a text as it wrote it, recorded in its state's `wrote`); a
+  person's section is never rewritten: it `ask`s the reporter
+  ([ADR-0021](0021-the-product-owner-talks-with-the-reporter.md)). No
+  second mechanism: the reviewer reads the new body, and a finding no
+  longer found is answered.
+- **Five rounds** (`spec-rounds`): reviews in a row that leave a finding
+  open; the sixth asks no agent, puts a question to a person on the
+  issue, and stops reading it. A person answers with `workline:accepted`
+  (their yes to the issue as it reads, which lifts the hold at any round),
+  `workline:ready` by hand, or by deleting the comment.
+- **Cost**: one spec review a run, one lens call and a judge for each
+  important finding, within the reviewer's `ai-max-tokens`; the product
+  owner's prompt grows by the comment, clipped at 3000 characters. On the
+  sandbox, 19.2k to 23.3k tokens a review, three or four judges
+  (roles/reviewer/docs/tried.md).
+- **Rejected**: the hold as a label of the reviewer's (a second state a
+  person would have to keep in step); the reviewer in the product owner's
+  call (one role, one job); every refined issue a run (several reviews
+  where one run reads one spec); the product owner rewriting a person's
+  section to answer a finding (principle 1).
+

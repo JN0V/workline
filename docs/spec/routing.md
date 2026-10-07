@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: b34c3f6
+checked: 3bc3de5
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -131,12 +131,19 @@ reviews the commits not reviewed yet, one lens a push; with `--input
 lenses=all`, every lens. It never moves an item: `review` stays the
 machine's part, `validation` the person's. Its `spec` event reads a spec
 before it is built — a file, or an issue by its number (`--input
-issue=<n>`) — so a line may route it (#128); on a machine, `workline
-review --spec` or `--issue`.
+issue=<n>`); on a machine, `workline review --spec` or `--issue` (#128).
+
+After the product owner in a line, the reviewer reads the specs it
+refined (#128): on `schedule`, one issue a run, its findings in a comment
+on it; the product owner's `ready` waits until none important is open
+(docs/spec/backlog-acts.md, "A spec read before ready"). Opt-in, as on
+merge requests:
+
+```yaml
+routing:
+  events: {schedule: [documentalist, product-owner, reviewer]}
+```
 
 ## Not in this version
 
-The developer and tester roles, which will consume `ready` items; the
-reviewer's hold on `ready` while a finding on the spec is open (#128,
-part 2); splitting an item
-into sub-issues, which the product owner does not do yet.
+The developer and tester roles, which will consume `ready` items.
