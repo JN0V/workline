@@ -298,12 +298,13 @@ next run.
 Puts an open issue in the milestone of a release, created when none with
 that title is open. Ordering says nothing of an issue's truth: no quote,
 but its state must read as for any act. The task gives the last release
-tag and the milestones open; each issue says its own.
+tag and the milestones open, in the order below, each with its due date
+when it has one; each issue says its own.
 
 **What slipped** is moved by the engine, with or without an agent: an
 open issue whose milestone is named after a tag that exists is put in
-the nearest open milestone not released, in version order (`v1.9.0`
-before `v1.10.0`); with none left, the move is proposed in the report,
+the nearest open milestone not released, in the milestones' order (below);
+with none left, the move is proposed in the report,
 the issue left where it is. The engine's move comes first: an agent's
 milestone for the same issue in the same run is dropped.
 
@@ -324,8 +325,10 @@ taken off by one — is a person's: the act is dropped and the label kept
 must read, as for any act.
 
 **The backlog's order** is derived, never stored: the nearest milestone
-first (titles in version order; an issue in none after every one in
-one), then the priority (an issue with none after 4), then the lowest
+first (by its due date, GitHub's and GitLab's alike, a milestone with one
+before a milestone without; then by title, in version order, `v1.9.0`
+before `v1.10.0`; an issue in none after every one in one), then the
+priority (an issue with none after 4), then the lowest
 number (`backlog.Less`) — and an issue that waits on an open issue after
 it, whatever its labels ("What an issue waits on", below;
 `backlog.Order`). The task lists the issues not read in that order, each

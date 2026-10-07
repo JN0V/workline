@@ -284,6 +284,7 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		Labels      []string `json:"labels"`
 		Milestone   *struct {
 			Title string `json:"title"`
+			Due   string `json:"due_date"`
 		} `json:"milestone"`
 		Author struct {
 			Username string `json:"username"`
@@ -303,7 +304,7 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		}
 		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Insider: in, Closed: f.State == "closed"}
 		if f.Milestone != nil {
-			is.Milestone = f.Milestone.Title
+			is.Milestone, is.MilestoneDue = f.Milestone.Title, f.Milestone.Due
 		}
 		all = append(all, is)
 	}
@@ -846,14 +847,7 @@ func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {
 
 // milestoneIDs maps the active milestones' titles to their ids.
 func (g *gitlab) milestoneIDs() (map[string]int, error) {
-	out, err := g.api("--paginate", "projects/:id/milestones?state=active&per_page=100")
-	if err != nil {
-		return nil, err
-	}
-	all, err := pages[struct {
-		ID    int    `json:"id"`
-		Title string `json:"title"`
-	}](out)
+	all, err := g.milestones()
 	m := map[string]int{}
 	for _, x := range all {
 		m[x.Title] = x.ID
@@ -861,13 +855,28 @@ func (g *gitlab) milestoneIDs() (map[string]int, error) {
 	return m, err
 }
 
-func (g *gitlab) Milestones() ([]string, error) {
-	m, err := g.milestoneIDs()
-	var out []string
-	for t := range m {
-		out = append(out, t)
+type gitlabMilestone struct {
+	ID    int    `json:"id"`
+	Title string `json:"title"`
+	Due   string `json:"due_date"`
+}
+
+// milestones lists the active milestones, each due on a day or not.
+func (g *gitlab) milestones() ([]gitlabMilestone, error) {
+	out, err := g.api("--paginate", "projects/:id/milestones?state=active&per_page=100")
+	if err != nil {
+		return nil, err
 	}
-	sort.Strings(out)
+	return pages[gitlabMilestone](out)
+}
+
+func (g *gitlab) Milestones() ([]Milestone, error) {
+	all, err := g.milestones()
+	var out []Milestone
+	for _, x := range all {
+		out = append(out, Milestone{Title: x.Title, Due: x.Due})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Title < out[j].Title })
 	return out, err
 }
 

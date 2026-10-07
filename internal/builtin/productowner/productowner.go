@@ -1000,7 +1000,17 @@ func releases(repo string, b forge.Backlog) string {
 	}
 	open := "none"
 	if ms, err := b.Milestones(); err == nil && len(ms) > 0 {
-		open = strings.Join(ms, ", ")
+		// In the backlog's order: by due date, then by title.
+		sort.SliceStable(ms, func(i, j int) bool { return backlog.CompareDue(ms[i], ms[j]) < 0 })
+		var said []string
+		for _, m := range ms {
+			if m.Due != "" {
+				said = append(said, fmt.Sprintf("%s (due %s)", m.Title, m.Due))
+			} else {
+				said = append(said, m.Title)
+			}
+		}
+		open = strings.Join(said, ", ")
 	}
 	return fmt.Sprintf("Last release: %s. Open milestones: %s.\n", last, open)
 }

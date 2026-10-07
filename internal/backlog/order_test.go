@@ -30,6 +30,28 @@ func TestOrder(t *testing.T) {
 	}
 }
 
+// Milestones ranked by their due date, the earlier first, one with a date
+// before one without; the title, as a version, when neither has one or
+// both the same.
+func TestOrderByDueDate(t *testing.T) {
+	issues := []forge.Issue{
+		{ID: 1, Milestone: "v1.9.0"},
+		{ID: 2, Milestone: "v1.10.0"},
+		{ID: 3, Milestone: "Autumn", MilestoneDue: "2026-11-30"},
+		{ID: 4, Milestone: "v2.0.0", MilestoneDue: "2026-10-31"},
+		{ID: 5, Milestone: "v1.8.0", MilestoneDue: "2026-11-30"},
+		{ID: 6},
+	}
+	Order(issues)
+	if got, want := ids(issues), "[4 3 5 1 2 6]"; got != want {
+		t.Fatalf("order = %s, want %s", got, want)
+	}
+	ms := []forge.Milestone{{Title: "v1.9.0"}, {Title: "v3.0.0", Due: "2026-12-01"}, {Title: "v2.0.0", Due: "2026-11-01"}}
+	if got := NextMilestone(t.TempDir(), ms); got != "v2.0.0" {
+		t.Fatalf("next milestone = %q, want v2.0.0", got)
+	}
+}
+
 func ids(issues []forge.Issue) string {
 	var got []int
 	for _, is := range issues {

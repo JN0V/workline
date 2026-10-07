@@ -27,6 +27,9 @@ type Issue struct {
 	Closed    bool     `json:"closed,omitempty"`
 	Reason    string   `json:"reason,omitempty"`    // why it was closed, when the forge says: completed, not_planned, duplicate
 	Milestone string   `json:"milestone,omitempty"` // the title of the milestone it is in, if any
+	// MilestoneDue is its milestone's due date, YYYY-MM-DD, when it has
+	// one: the backlog's order ranks milestones by it (Milestone).
+	MilestoneDue string `json:"milestone-due,omitempty"`
 	Author    string   `json:"author,omitempty"`    // who opened it
 	Insider   bool     `json:"insider,omitempty"`   // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
 	// BlockedBy are the issues it waits on in the forge's own relation
@@ -37,6 +40,14 @@ type Issue struct {
 	// sub-issues, GitLab's tasks), open or closed, as Issues gives them; a
 	// task list under "## Sub-issues" in its body says the rest (ADR-0029).
 	Children []int `json:"children,omitempty"`
+}
+
+// Milestone is an open milestone: its title, and its due date when it has
+// one, YYYY-MM-DD — what the backlog's order ranks milestones by first,
+// the title after (docs/spec/backlog-acts.md, "Ordering").
+type Milestone struct {
+	Title string `json:"title"`
+	Due   string `json:"due,omitempty"`
 }
 
 // Closer is what closed an issue, as the forge links it: a pull or merge
@@ -133,8 +144,8 @@ type Backlog interface {
 	// Close closes an issue: as a duplicate of dup when dup > 0, else as
 	// completed. Closing one already closed changes nothing.
 	Close(id, dup int) error
-	// Milestones lists the titles of the open milestones.
-	Milestones() ([]string, error)
+	// Milestones lists the open milestones, with their due dates.
+	Milestones() ([]Milestone, error)
 	// SetMilestone puts an issue in the open milestone with this title,
 	// creating it when there is none.
 	SetMilestone(id int, title string) error

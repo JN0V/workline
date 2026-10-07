@@ -97,7 +97,7 @@ func TestLocalBacklog(t *testing.T) {
 	if err := l.SetMilestone(2, "v1.0.0"); err != nil {
 		t.Fatal(err)
 	}
-	if ms, err := l.Milestones(); err != nil || len(ms) != 1 || ms[0] != "v1.0.0" {
+	if ms, err := l.Milestones(); err != nil || len(ms) != 1 || ms[0].Title != "v1.0.0" {
 		t.Fatalf("Milestones = %v, %v", ms, err)
 	}
 }

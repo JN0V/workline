@@ -44,6 +44,7 @@ on the sandbox (tried.md).
 | Refining: Scope and Verification from the code, Need and Validation drafted; the drafts accepted by a person, the issue moved to `ready` by the engine's check; a vague issue's reporter asked, the answer read, the issue refined | JN0V/workline-sandbox, live (#6, #7); DomoticsCore, live (#163, #167, #168, #171, #172) |
 
 | Ordering: one priority label of four set, a person's kept; an issue whose milestone is released moved to the next by the engine, no agent; a fifth of the backlog moved a run, the rest proposed; the order before the run in the report | JN0V/workline-sandbox, live (#2, #4, #6, #7) |
+| Milestones ranked by their due date, a dated one before one without, then by title in version order — in the backlog's order, Next, the move of what slipped and the task's list of milestones; read from GitHub's `due_on`, GitLab's `due_date`, a plugged forge's `due` | JN0V/workline-sandbox on GitHub, read live with `--no-apply`, nothing written: v0.2.0 given an earlier date than v0.1.0, #7 put in it — Next #7 before #44, the reverse of the titles; dates and milestone taken off after (tried.md); conformance `slipped-milestone-moved-by-due-date`, `report-next-milestones-by-due-date`. Not on GitLab |
 | One way for every role to open an issue: a key per subject made by the engine, looked for in the issues open and closed — open, left; closed as not planned or duplicate, left; closed as done, said once — the role named, `needs-triage`, a cap a run; a role's issue read as its draft to refine | JN0V/workline-sandbox, live with the reviewer (#9 found again open, then closed: said once); cases in tests/conformance/cases/backlog (`issue-*`) and product-owner |
 | The conversation with the reporter (ADR-0021): asked again only after an answer, the conversation shown to the agent, never the same question twice, three rounds then the report; an outsider's issue proposed to its reporter in a comment, written in the body once a person sets `workline:accepted` | JN0V/workline-sandbox, live (#3: the answer read, refined from it); an outsider's issue with a real agent on a simulated forge (two proposals, then agreed, ready); the rest in conformance |
 
@@ -108,7 +109,7 @@ checked.
    missing; the tokens a `skip` a line costs, measured.
 6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
    GitHub project's position), deferred (ADR-0018); milestones ranked by
-   their due date, not only their title; the engine refusing a person's
+   their due date tried on GitLab; the engine refusing a person's
    priority, tried in conformance only.
 7. **A parent, what is left** (ADR-0029): an agent drafting which
    Verification items look proved in other words, if live use asks; a

@@ -76,7 +76,7 @@ func (g *github) AllIssues() ([]Issue, error) { return g.issues("all") }
 
 func (g *github) issues(state string) ([]Issue, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/issues?state="+state+"&per_page=100",
-		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url}")
+		"--jq", ".[] | select(.pull_request == null) | {id: .number, title, body: (.body // \"\"), labels: [.labels[].name], milestone: (.milestone.title // \"\"), \"milestone-due\": ((.milestone.due_on // \"\") | .[0:10]), author: .user.login, association: .author_association, closed: (.state == \"closed\"), reason: (.state_reason // \"\"), blocked: (.issue_dependencies_summary.total_blocked_by // 0), subs: (.sub_issues_summary.total // 0), repo: .repository_url}")
 	if err != nil {
 		return nil, err
 	}
@@ -552,14 +552,7 @@ func (g *github) KeepIssue(title, body string, create bool) (int, error) {
 
 // milestoneNumbers maps the open milestones' titles to their numbers.
 func (g *github) milestoneNumbers() (map[string]int, error) {
-	out, err := g.api("--paginate", "repos/{owner}/{repo}/milestones?state=open&per_page=100", "--jq", ".[] | {number, title}")
-	if err != nil {
-		return nil, err
-	}
-	all, err := lines[struct {
-		Number int    `json:"number"`
-		Title  string `json:"title"`
-	}](out)
+	all, err := g.milestones()
 	m := map[string]int{}
 	for _, x := range all {
 		m[x.Title] = x.Number
@@ -567,13 +560,28 @@ func (g *github) milestoneNumbers() (map[string]int, error) {
 	return m, err
 }
 
-func (g *github) Milestones() ([]string, error) {
-	m, err := g.milestoneNumbers()
-	var out []string
-	for t := range m {
-		out = append(out, t)
+type githubMilestone struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	Due    string `json:"due"`
+}
+
+// milestones lists the open milestones, each due on a day or not.
+func (g *github) milestones() ([]githubMilestone, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/milestones?state=open&per_page=100", "--jq", `.[] | {number, title, due: ((.due_on // "") | .[0:10])}`)
+	if err != nil {
+		return nil, err
 	}
-	sort.Strings(out)
+	return lines[githubMilestone](out)
+}
+
+func (g *github) Milestones() ([]Milestone, error) {
+	all, err := g.milestones()
+	var out []Milestone
+	for _, x := range all {
+		out = append(out, Milestone{Title: x.Title, Due: x.Due})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Title < out[j].Title })
 	return out, err
 }
 

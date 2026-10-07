@@ -1,0 +1,19 @@
+case: product-owner/slipped-milestone-moved-by-due-date
+about: An issue whose milestone was released moves to the nearest open milestone by its due date — v2.0.0, due first, before v1.9.0, which has none; the engine moves it, and the task lists the open milestones in that order, each with its date.
+given:
+  repo: backlog
+  setup: ["git tag v1.0.0"]
+  forge:
+    milestones: [v1.0.0, v1.9.0, v2.0.0, v3.0.0]
+    milestone-due: {v2.0.0: "2026-11-01", v3.0.0: "2026-12-01"}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", milestone: v1.0.0, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: "Open milestones: v2.0.0 (due 2026-11-01), v3.0.0 (due 2026-12-01), v1.0.0, v1.9.0."}
+  forge:
+    issues:
+      - {id: 9, milestone: v2.0.0}
+      - {id: 10, title: "Backlog — product owner", body-contains: "Put #9 in the milestone \"v2.0.0\""}

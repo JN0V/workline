@@ -777,3 +777,18 @@ bodies of #33, #34 and #35 and committed locally, not pushed;
 - **Not tried**: a real agent's answer to it — whether it answers the
   line `held`, #34, rather than proposing it again; the engine would
   leave #34 closed either way.
+
+## 2026-10-07 — milestones ranked by their due date, live on GitHub, no agent
+
+JN0V/workline-sandbox: v0.1.0 given a due date of 2026-12-31, v0.2.0 of
+2026-10-31, and #7 (ready, priority 1, no milestone) put in v0.2.0; then
+`workline run-role product-owner --event schedule --forge github
+--no-apply`, an agent planted to propose nothing: the forge read, nothing
+written.
+
+- **Seen**: "next-ready #7" — v0.2.0, due first — where the engine before
+  this said #44, of v0.1.0, first by title.
+- **Put back**: #7 out of v0.2.0, both dates taken off.
+- **Not tried**: GitLab's `due_date` live; a slipped issue moved by date
+  live (conformance only); the task's list of milestones with their dates
+  live (the run asked no agent: nothing to read).

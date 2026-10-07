@@ -68,20 +68,36 @@ func Released(repo, milestone string) bool {
 	return exec.Command("git", "-C", repo, "rev-parse", "-q", "--verify", "refs/tags/"+milestone).Run() == nil
 }
 
-// NextMilestone is the nearest open milestone not released, in version
-// order; "" when there is none.
-func NextMilestone(repo string, open []string) string {
-	var left []string
+// NextMilestone is the nearest open milestone not released, in the
+// milestones' order (CompareDue); "" when there is none.
+func NextMilestone(repo string, open []forge.Milestone) string {
+	var left []forge.Milestone
 	for _, m := range open {
-		if !Released(repo, m) {
+		if !Released(repo, m.Title) {
 			left = append(left, m)
 		}
 	}
-	sort.SliceStable(left, func(i, j int) bool { return CompareMilestones(left[i], left[j]) < 0 })
+	sort.SliceStable(left, func(i, j int) bool { return CompareDue(left[i], left[j]) < 0 })
 	if len(left) == 0 {
 		return ""
 	}
-	return left[0]
+	return left[0].Title
+}
+
+// CompareDue orders two milestones: by their due date, the earlier first,
+// one with a date before one without; then by title, as versions
+// (CompareMilestones). GitHub and GitLab both give a milestone a due date.
+func CompareDue(a, b forge.Milestone) int {
+	switch {
+	case a.Due != b.Due && (a.Due == "" || b.Due == ""):
+		if a.Due == "" {
+			return 1
+		}
+		return -1
+	case a.Due != b.Due:
+		return strings.Compare(a.Due, b.Due)
+	}
+	return CompareMilestones(a.Title, b.Title)
 }
 
 var chunk = regexp.MustCompile(`\d+|\D+`)
@@ -105,15 +121,15 @@ func CompareMilestones(a, b string) int {
 }
 
 // Less is the backlog's order (docs/spec/backlog-acts.md, "Ordering"):
-// the nearest milestone first, an issue in none after every one in one;
-// then the priority, an issue with none after priority 4; then the
-// lowest number.
+// the nearest milestone first — by its due date, then its title
+// (CompareDue) —, an issue in none after every one in one; then the
+// priority, an issue with none after priority 4; then the lowest number.
 func Less(a, b forge.Issue) bool {
 	switch {
 	case a.Milestone != b.Milestone && (a.Milestone == "" || b.Milestone == ""):
 		return b.Milestone == ""
 	case a.Milestone != b.Milestone:
-		if c := CompareMilestones(a.Milestone, b.Milestone); c != 0 {
+		if c := CompareDue(forge.Milestone{Title: a.Milestone, Due: a.MilestoneDue}, forge.Milestone{Title: b.Milestone, Due: b.MilestoneDue}); c != 0 {
 			return c < 0
 		}
 	}

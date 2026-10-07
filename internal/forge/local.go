@@ -423,18 +423,22 @@ func (l *Local) keepsBranches() {}
 
 // Milestones are the ones its open issues are in: the local forge keeps no
 // milestone apart from them.
-func (l *Local) Milestones() ([]string, error) {
+func (l *Local) Milestones() ([]Milestone, error) {
 	open, err := l.Issues()
 	if err != nil {
 		return nil, err
 	}
-	var out []string
+	var titles []string
 	for _, is := range open {
-		if is.Milestone != "" && !slices.Contains(out, is.Milestone) {
-			out = append(out, is.Milestone)
+		if is.Milestone != "" && !slices.Contains(titles, is.Milestone) {
+			titles = append(titles, is.Milestone)
 		}
 	}
-	sort.Strings(out)
+	sort.Strings(titles)
+	var out []Milestone
+	for _, t := range titles {
+		out = append(out, Milestone{Title: t}) // no due date: the local forge keeps none
+	}
 	return out, nil
 }
 
