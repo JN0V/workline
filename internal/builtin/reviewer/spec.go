@@ -204,7 +204,7 @@ func specLenses(runDir string, s Settings, skip map[string]string) ([]string, er
 // specIntro tells the lenses what they read: a spec, not a change, whose
 // author fixes what they find.
 func specIntro(sp Spec) string {
-	return fmt.Sprintf("\n## What you review: a spec, before it is built\n\nNot a change to code: a spec, what a person or an agent will build from. What you find is its author's to fix: the product owner, or the person who wrote it. Each finding's `cause` quotes the spec as it reads, its `path` %q; a `symptom`, only where the code contradicts the spec, quotes the code, its `path` the file. An open point only a person can settle is a `decision`, not a finding.\n\n## The spec: %s\n\n", sp.Path, sp.heading())
+	return fmt.Sprintf("\n## What you review: a spec, before it is built\n\nNot a change to code: a spec, what a person or an agent will build from. What you find is its author's to fix: the product owner, or the person who wrote it. Each finding's `cause` quotes the spec as it reads, its `path` %q; a `symptom`, only where the code contradicts the spec, quotes the code, its `path` the file. An open point only a person can settle is no defect: a finding holding `decision`, the question for them, its cause the open point quoted.\n\n## The spec: %s\n\n", sp.Path, sp.heading())
 }
 
 // fenced puts a text in a fence longer than any it holds.
