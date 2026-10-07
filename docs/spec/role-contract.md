@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: beb53f8
+checked: 8bc0ea1
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -226,8 +226,9 @@ token), **apply** (trusted, no AI key).
    reason, and never tabs indenting the YAML itself. A value opening on a
    quoted phrase and going on after it (`title: "60 minutes" is unclear`),
    which the reader refuses, is read whole, its quotes kept, when the
-   answer does not read for that reason (#128); one closing on the quote
-   it opened with, its inner quotes unescaped, is asked again. A plain value
+   answer does not read for that reason (#128), never a line of a block
+   scalar; one closing on the quote it opened with, its inner quotes
+   unescaped, is asked again. A plain value
    followed on its line by ` #…`, which the reader would drop as a
    comment, is read whole, as written, when it is free text — several
    words, or a `#` stuck to what follows (`#20`) — while a single word
