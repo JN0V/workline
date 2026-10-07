@@ -791,3 +791,15 @@ evaluation, replayed offline with this engine: no prompt refused.
 `whole-chars` is now 25,000 at most, refused above when the settings
 are read (`whole-chars-over-the-budget-refused`): more made a task over
 the budget (past about 37,000 already at characters / 4).
+
+On 2026-10-07, the reader checks (#193) on workline's own pages, no agent
+(`workline run-role documentalist --event schedule --ai none --no-apply`,
+on the branch, after #254 and before #255): README.md and docs/roles.md
+clean; 16 pages flagged — 72 decisions, docs or issues named without a
+link on 14, 45 paragraphs over 80 words on 9, 6 table cells over 30 words
+on 4; no role page without a diagram, no page out of reach. Before the
+fix, a name in a code span (`#4`, an example) and a link's second line
+were counted: both left out now. docs/BACKLOG.md and
+docs/backlog-parked.md, archived, are skipped by workline's config. The
+pages flagged hold 139k characters: about 115k tokens estimated, four
+pages a task of 40k characters, for the agent part (#256); no agent run.

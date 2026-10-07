@@ -1,5 +1,5 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, roles/documentalist/role.yaml]
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
 checked: fcc8f36
 verified: agent:claude-code
 ---
@@ -12,7 +12,9 @@ or weekly (`schedule`).
 
 ## Prepare (`pre`, no AI)
 
-Eleven checks, each below. Not built yet: style (vale).
+Twelve checks, each below. Not built yet: style (vale); the agent reading
+the pages the reader checks point to
+([#256](https://github.com/JN0V/workline/issues/256)).
 
 ### Suspects
 
@@ -169,6 +171,32 @@ that read as docs and that the role does not read, a few of each kind.
   takes it (`"**/README.md"`); the other formats are not read yet, no
   header form being settled for them.
 
+### Docs for their reader
+
+On `schedule` only
+([#193](https://github.com/JN0V/workline/issues/193)), whether user pages
+serve their reader. User pages: the docs matching `reader.pages`, but
+`reader.skip` (specs) and the records (decisions, research, history). One
+finding a page, with its lines:
+
+- `reference-unlinked`: a decision (`ADR-12`), a doc of the repository or
+  an issue (`#128`) named as plain text. Left alone: a name in a code span
+  (an example) or an HTML comment; a link's definition
+  (`[x]: docs/x.md`) is a link.
+- `paragraph-too-long`: a paragraph, or a list item, over
+  `reader.paragraph-words` (80).
+- `cell-too-long`: a table cell over `reader.cell-words` (30).
+- `flow-without-diagram`: a page of `reader.flow`, or with a "How it
+  works" heading, with no diagram (a Mermaid, PlantUML, Graphviz or D2
+  block, or an image).
+- `page-unreachable`: no link reaches it from `reader.navigation`
+  (`README.md`), through user pages; a link to a folder reaches its
+  README, one in an HTML comment nothing. With no such entry,
+  `navigation-missing` says so.
+
+Borrowed from Vale and Sphinx, without running them:
+[research](../../../docs/research/documentalist.md#docs-for-their-reader-2026-10-07).
+
 ## Levels
 
 Findings are reported rather than blocking while they are new (warn before
@@ -180,7 +208,8 @@ turns one off with `enforce`.
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
   `no-sources` and `sources-by-name` (on `init`), `undocumented`,
-  `source-gone`, `docs-not-read`, `gardening-paused`; for a doc judged in
+  `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks;
+  for a doc judged in
   parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
