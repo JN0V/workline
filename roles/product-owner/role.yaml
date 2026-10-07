@@ -53,6 +53,10 @@ settings:
   # and an announcement past its delay, each with since when.
   next-max: 5
   stuck-days: 14
+  # The files no longer a source, as paths or globs — a roadmap archived
+  # once its items became issues: a change to their lines flags no issue
+  # opened from them (ADR-0032).
+  archived: []
   # Each kind of act: act (done, up to max a run), propose (in the report,
   # for a person), off (dropped). Closing as obsolete, in act, is announced
   # on the issue first and closed `days` later if nobody wrote, the label

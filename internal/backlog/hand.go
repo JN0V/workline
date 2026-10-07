@@ -133,6 +133,12 @@ func (q Pending) TickKey() string {
 	return fmt.Sprintf("%d/%s", q.Issue, q.Act)
 }
 
+// Undrafted says whether a proposal on an issue was recorded with its line
+// alone, the act not kept — by an engine before acts were recorded: its
+// issue is read again, and the act drafted then; done when a person of the
+// project ticked it.
+func (q Pending) Undrafted() bool { return q.Proposal == nil && q.Key == "" && q.Issue > 0 }
+
 // Doable says whether the engine can do a proposal ticked: what it would
 // do recorded, and not one only a person or the import does.
 func (q Pending) Doable() bool {

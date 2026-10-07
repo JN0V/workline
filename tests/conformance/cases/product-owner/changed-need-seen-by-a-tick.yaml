@@ -19,5 +19,5 @@ expect:
   forge:
     issues:
       - {id: 20, body-contains: "- The change to #9 checked by @dev: it leaves the report.", body-lacks: "proposal=changed/9"}
-      - {id: 20, body-contains: "- [ ] #14 Slow export: a person changed its Scope (2026-10-01). <!-- workline:proposal=changed/14 -->"}
+      - {id: 20, body-contains: "- [ ] #14 Slow export: a person rewrote its Scope (found 2026-10-01). Check the issues built on it, then tick. <!-- workline:proposal=changed/14 -->"}
       - {id: 13, labels: [workline:ready], comments: 1}

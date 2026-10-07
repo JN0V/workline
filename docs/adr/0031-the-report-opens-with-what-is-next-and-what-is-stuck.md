@@ -78,3 +78,27 @@ not said stuck — it cannot be measured —, and the run says so once
   value stops the run, as `ignored-runs-max`.
 - Not decided now: closing or pinging on what is stuck — the report says,
   a person acts.
+
+## Amendment (2026-10-07): the report opens with what a person has to do
+
+Read by its maintainer as a newcomer would, the report said what it knew
+before what it asked: Next, Stuck, a line of twelve kinds of act, what was
+done and the order before it all came before the boxes, the warning that
+the role would pause sat mid-page, and a proposal read "Refine #83: Need
+(draft), Validation (draft)". A person opening it could not tell what
+they were to do.
+
+- **What to do opens it**: the proposals to decide and the changes to
+  check, counted; the parents to accept; one run
+  before the pause, "answer before the next run, or the role pauses";
+  the acts done alone, to check.
+- **Then the actions**: To decide — each proposal under its issue's
+  number and title, saying in plain words what a tick does and why —, To
+  check, To accept.
+- **Then Next and Stuck**, as decided above, then the rest folded
+  (`<details>`): what waits on an open issue, what the run did and the
+  order before it, the changes settled with no person, each kind's mode,
+  how the page works. Folded, never left out.
+- The hidden keys of the boxes are unchanged: ticks, the pause and the
+  undoing read as before.
+

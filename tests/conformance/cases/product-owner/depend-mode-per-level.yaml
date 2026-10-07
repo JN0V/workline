@@ -19,4 +19,4 @@ expect:
   forge:
     issues:
       - {id: 12, blocked-by: [], body-lacks: "Blocked by"}
-      - {id: 14, title: "Backlog — product owner", body-contains: "- [ ] Mark #12 as waiting on #13: "}
+      - {id: 14, title: "Backlog — product owner", body-contains: "- [ ] Mark it as waiting on #13: ordered after, never offered first. Why: "}

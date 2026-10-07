@@ -25,4 +25,5 @@ expect:
       - {id: 10, closed: true}
       - {id: 11, closed: true}
       - {id: 12, closed: true}
-      - {id: 13, title: "Backlog — product owner", body-contains: "Autonomy: **enterprising** — sources: act, 10 a run (level); close-duplicate: act, 5 a run (level); close-obsolete: act, 5 a run (level); milestone: act, 10 a run (level); order: act, 15 a run (level); refine: act, 10 a run (level); ready: act, 10 a run (level); ask: act, 5 a run (level); split: act, 4 a run (level); depend: act, 10 a run (level); rename: act, 10 a run (level); open: act, 30 a run (level)."}
+      - {id: 13, title: "Backlog — product owner", body-contains: "- sources: act, 10 a run (level)\n- close-duplicate: act, 5 a run (level)\n- close-obsolete: act, 5 a run (level)\n- milestone: act, 10 a run (level)\n- order: act, 15 a run (level)\n- refine: act, 10 a run (level)\n- ready: act, 10 a run (level)\n- ask: act, 5 a run (level)\n- split: act, 4 a run (level)\n- depend: act, 10 a run (level)\n- rename: act, 10 a run (level)\n- open: act, 30 a run (level)"}
+      - {id: 13, body-contains: "<details><summary>Autonomy: enterprising — what the role does alone, and what it proposes</summary>"}

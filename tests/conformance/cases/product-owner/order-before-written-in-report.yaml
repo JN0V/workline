@@ -15,5 +15,5 @@ expect:
   forge:
     issues:
       - {id: 9, milestone: v1.1.0, labels: [workline:priority/1]}
-      - {id: 10, title: "Backlog — product owner", body-contains: "## Before this run"}
+      - {id: 10, title: "Backlog — product owner", body-contains: "**Before this run** — the issues it moved, as they were"}
       - {id: 10, body-contains: "- #9: priority 3, milestone v1.0.0"}

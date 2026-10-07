@@ -1,0 +1,20 @@
+case: product-owner/undrafted-proposal-read-again
+about: "A proposal an older engine recorded with its line alone, no act kept, nobody ticking it: its issue is read again first, though nothing changed, and the agent decides it anew — the old line leaves the report, never a box nobody can have done (ADR-0025, amended)."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "## Proposed\n\n- [ ] Refine #9: Need (draft), Validation (draft). The issue says what is wrong. <!-- workline:proposal=9/refine -->\n"
+        labels: []
+        comments: ["```yaml\nproposed:\n  - issue: 9\n    act: refine\n    line: 'Refine #9: Need (draft), Validation (draft). The issue says what is wrong.'\n    since: '2026-10-04'\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: "## #9 Rows lost"}
+  forge:
+    issues:
+      - {id: 10, body-lacks: "proposal=9/refine", comment-lacks: "act: refine"}

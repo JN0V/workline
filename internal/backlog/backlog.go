@@ -7,6 +7,7 @@ package backlog
 import (
 	"crypto/sha256"
 	"fmt"
+	"maps"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -42,7 +43,7 @@ type State struct {
 	// its siblings: the role's own links, taken off once a blocker closes
 	// (ADR-0028).
 	After map[int][]int `yaml:"after,flow,omitempty"`
-	Kept      []string `yaml:"kept,omitempty"`     // the evidence an announcement as obsolete rested on, kept open: not announced again for it
+	Kept  []string      `yaml:"kept,omitempty"` // the evidence an announcement as obsolete rested on, kept open: not announced again for it
 	// Sections are its Need and Scope as last read or written (Basis): a
 	// person's change to them touches the issues built on it (ADR-0032).
 	Sections map[string]string `yaml:"sections,omitempty"`
@@ -163,6 +164,10 @@ type Pending struct {
 	// Since is the day it was first proposed, YYYY-MM-DD: the report says
 	// it stuck past stuck-days (ADR-0031).
 	Since string `yaml:"since,omitempty"`
+	// Agreed is who of the project ticked it, kept for one recorded
+	// without its act (Undrafted): drafted, then done, at the next run
+	// that reads its issue with an agent (ADR-0025, amended).
+	Agreed string `yaml:"agreed,omitempty"`
 }
 
 // Closing is one issue the role closed.
@@ -193,9 +198,9 @@ type Proposal struct {
 	BlockedBy   []int    `yaml:"blocked-by,flow,omitempty"` // depend: the issues it waits on; undepend: those taken off (ADR-0028)
 	// Native, the engine's: the blockers an undepend takes off the forge's
 	// own relation, the rest being in the engine's line; never the agent's.
-	Native []int `yaml:"native,flow,omitempty"`
-	Quote       *Quote   `yaml:"quote"`
-	Why         string   `yaml:"why"`
+	Native []int  `yaml:"native,flow,omitempty"`
+	Quote  *Quote `yaml:"quote"`
+	Why    string `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts; Added,
 	// the engine's, says which the body did not have yet.
 	Scope        string   `yaml:"scope,omitempty"`
@@ -206,8 +211,8 @@ type Proposal struct {
 	// Revise, the engine's: the sections with text this refine may rewrite,
 	// to answer the reviewer's findings on the spec (#128) — the role's own
 	// only (Revisable); never taken from the agent.
-	Revise []string `yaml:"revise,omitempty"`
-	Questions    string   `yaml:"questions,omitempty"` // asking the reporter; for an outsider's refine, what it still needs
+	Revise    []string `yaml:"revise,omitempty"`
+	Questions string   `yaml:"questions,omitempty"` // asking the reporter; for an outsider's refine, what it still needs
 	// The engine's, for the conversation with the reporter: the round this
 	// comment would be, and whether a refine is proposed to the reporter in
 	// a comment rather than written in the body (an outsider's issue).
@@ -308,20 +313,25 @@ type Plan struct {
 	// Opening is what the report opens with, what is next and what is
 	// stuck, as this run reads it (ADR-0031): kept with the plan so a
 	// resumed run writes the same, never in the record.
-	Opening  string       `yaml:"opening,omitempty"`
-	open     map[int]bool // the open issues, read once
-	issues   map[int]forge.Issue
-	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
-	settings map[string]Setting
-	config   Config
-	bodies   []string        // their bodies, to find an import again
-	seen     map[string]bool // the imports this run decided
-	read     []int           // the issues this run read
-	hand     *Hand           // what people did on the report since the last run
-	ticked   map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
-	said     []string        // what the report says of the boxes ticked
-	added    map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
-	dropped  map[int][]int   // the blockers this run's undepend acts take off
+	Opening string `yaml:"opening,omitempty"`
+	// Rechecked are the changes this run settled with no person: every
+	// issue they touch read again with them, nothing proposed on any
+	// (ADR-0032). The report says them once, in a line, folded.
+	Rechecked []Change     `yaml:"rechecked,omitempty"`
+	open      map[int]bool // the open issues, read once
+	issues    map[int]forge.Issue
+	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings  map[string]Setting
+	config    Config
+	bodies    []string          // their bodies, to find an import again
+	seen      map[string]bool   // the imports this run decided
+	read      []int             // the issues this run read
+	hand      *Hand             // what people did on the report since the last run
+	ticked    map[string]bool   // the proposals ticked this run decided, done or dropped: they leave the report
+	agreed    map[string]string // the proposals recorded without their act, ticked by a person and read again this run: the agent's act on them is theirs
+	said      []string          // what the report says of the boxes ticked
+	added     map[int][]int     // the blockers this run's depend acts add, for the next act's cycle check
+	dropped   map[int][]int     // the blockers this run's undepend acts take off
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -450,6 +460,13 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				dropped(c, "once-a-run", c.Do+": one an issue a run; the first that passed its check is kept")
 			}
 			continue
+		}
+		if who, ok := p.agreed[c.key()]; ok && c.Ticked == "" {
+			// A proposal recorded without its act, ticked: the act the
+			// agent drafted now is the person's yes.
+			c.Ticked = who
+			delete(p.agreed, c.key())
+			p.ticked[c.key()] = true
 		}
 		once := c.Do == "split" || c.Do == "rename"
 		if !once {
@@ -596,7 +613,16 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			p.Decisions = append(p.Decisions, *extra)
 		}
 	}
+	for _, key := range slices.Sorted(maps.Keys(p.agreed)) {
+		// Ticked, read again, and the agent drafted no such act: the
+		// person is told, the box leaves the report.
+		p.ticked[key], p.Changed = true, true
+		p.said = append(p.said, fmt.Sprintf("- %s, ticked by %s: read again, the agent found nothing of it to draft now; its box leaves the report.", key, p.agreed[key]))
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "tick-not-drafted", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
+			Message: fmt.Sprintf("%s was ticked by %s, recorded without its act; read again, the agent drafted none", key, p.agreed[key])})
+	}
 	p.keepProposed()
+	p.settleChanges()
 	p.pause()
 	p.opening(waits)
 	return p, nil
@@ -688,9 +714,31 @@ func (p *Plan) readTicks() {
 			p.said = append(p.said, fmt.Sprintf("- %s set back to act by %s.", kind, t.Who()))
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "back-to-act", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
 				Message: fmt.Sprintf("%s set back to act by %s's tick in the report", kind, t.Who())})
+		case q != nil && q.Undrafted() && slices.Contains(p.read, q.Issue):
+			p.agreed[t.Key] = t.Who() // read again this run: the act drafted is done
+		case q != nil && q.Undrafted():
+			// Kept with who ticked it: the box is not asked again.
+			for k := range p.Record.Proposed {
+				if r := &p.Record.Proposed[k]; r.TickKey() == t.Key && r.Agreed != t.Who() {
+					r.Agreed, p.Changed = t.Who(), true
+				}
+			}
 		case q != nil && !q.Doable():
 			p.Changed, p.ticked[t.Key] = true, true
 			p.said = append(p.said, fmt.Sprintf("- Ticked by %s, not something the engine does — do it by hand: %s", t.Who(), q.Line))
+		}
+	}
+}
+
+// readAgreed has the proposals recorded without their act, ticked at an
+// earlier run and kept with who ticked them, done once their issue is read
+// again: the act the agent drafts is that person's yes.
+func (p *Plan) readAgreed() {
+	for _, q := range p.Record.Proposed {
+		if q.Agreed != "" && q.Undrafted() && slices.Contains(p.read, q.Issue) {
+			if _, ok := p.agreed[q.TickKey()]; !ok {
+				p.agreed[q.TickKey()] = q.Agreed
+			}
 		}
 	}
 }
@@ -770,7 +818,7 @@ func (p *Plan) keepProposed() {
 		case p.ticked[key]:
 			settled = true // a person's tick, done or said why not
 			m.Ticked++
-		case q.Capped && slices.Contains(p.read, q.Issue):
+		case (q.Capped || q.Undrafted()) && slices.Contains(p.read, q.Issue):
 			settled = true // read again: the agent decided it anew, or not at all
 		case settled && !q.Capped:
 			m.Other++
@@ -808,6 +856,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 		return err
 	}
 	p.open, p.seen, p.issues, p.ticked, p.added, p.dropped = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}, map[int][]int{}
+	p.agreed = map[string]string{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is
@@ -868,6 +917,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 			Message: fmt.Sprintf("%s: %s is back to propose until a person sets it to act", u.Evidence, u.Act)})
 	}
 	p.readTicks()
+	p.readAgreed()
 	return nil
 }
 
@@ -1742,139 +1792,6 @@ func (p *Plan) found(f forge.Backlog, repo string, q Quote) bool {
 
 func squeeze(s string) string { return strings.Join(strings.Fields(s), " ") }
 
-// ReportBody is the report issue's body: what the run did and proposes.
-func (p *Plan) ReportBody() string {
-	var did, proposed []string
-	for _, q := range p.Record.Proposed {
-		proposed = append(proposed, "- [ ] "+q.Line+" "+TickMarker(q.TickKey()))
-	}
-	for _, d := range p.Decisions {
-		switch d.Mode {
-		case Act:
-			undo := " Reopen it to undo."
-			switch d.Act.Do {
-			case "sources":
-				undo = ""
-			case "milestone", "order":
-				undo = " Put it back as it was before this run (below) to undo."
-			case "refine":
-				undo = " Edit its body to undo."
-				if d.Act.ToReporter {
-					undo = ""
-				}
-			case "ready":
-				undo = " Remove the label workline:ready to undo."
-			case "unready":
-				undo = " Put the label workline:ready back to undo."
-			case "ask":
-				undo = ""
-			case "rename":
-				undo = " Rename it back to undo."
-			case "split":
-				undo = fmt.Sprintf(" Close the issues opened from #%d to undo: its own text was left as it was.", d.Act.Issue)
-			case "depend":
-				undo = " Remove the link, or the line in its body, to undo."
-			case "undepend":
-				undo = ""
-			case "keep":
-				undo = ""
-			case "close":
-				if d.Act.Announce {
-					undo = fmt.Sprintf(" To keep it open, write on it or take the label %s off.", LabelObsolete)
-				}
-			}
-			if d.Act.Ticked != "" {
-				undo += " Ticked by " + d.Act.Ticked + "."
-			}
-			did = append(did, "- "+describe(d.Act, "Closed")+undo)
-		}
-	}
-	var b strings.Builder
-	b.WriteString("What the product owner did on its last run, and what it proposes until a person settles it. An act undone — a closing reopened, a title, a priority or a milestone put back, `" + LabelReady + "` taken off, a split's part closed as not planned, a link it set between issues taken off — puts that kind of act back to a person. A box ticked by a person of the project is done at the next run.\n")
-	b.WriteString(p.Opening)
-	fmt.Fprintf(&b, "\nAutonomy: **%s** — %s.\n", p.config.Level, ModesLine(p.config.Modes(p.Record.Propose)))
-	if level, why := p.Record.Measure.Suggest(); level != "" {
-		fmt.Fprintf(&b, "\n**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)
-	}
-	if level, why := SuggestFromRecord(p.Record); level != "" {
-		fmt.Fprintf(&b, "\n**Suggested** from the acts done alone: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)
-	}
-	switch r, max := p.Record, p.config.IgnoredMax; {
-	case max == 0:
-		fmt.Fprintf(&b, "\n**Never paused** (ignored-runs-max: 0): the agent is asked on every run, though nobody answered the last %d.\n", r.Ignored)
-	case r.Ignored >= max:
-		fmt.Fprintf(&b, "\n**Paused**: %d runs in a row proposed something and nobody ticked a box, wrote here or undid an act. No agent is asked until a person does; tick this to resume:\n\n- [ ] Resume %s\n", r.Ignored, TickMarker(KeyResume))
-	case r.Ignored > 0:
-		fmt.Fprintf(&b, "\nRuns since a person last answered: %d; at %d, the role pauses.\n", r.Ignored, max)
-	}
-	if len(p.Record.Propose) > 0 {
-		fmt.Fprintf(&b, "\nBack to propose after a wrong closing or an act undone: %s.\n", strings.Join(p.Record.Propose, ", "))
-	}
-	for _, w := range p.Record.Wrong {
-		if slices.Contains(p.Record.Propose, w.Act) {
-			fmt.Fprintf(&b, "- #%d, closed as %s, was reopened.\n", w.Issue, w.Act)
-		}
-	}
-	for _, u := range p.Record.Undone {
-		if slices.Contains(p.Record.Propose, u.Act) {
-			fmt.Fprintf(&b, "- %s.\n", u.Evidence)
-		}
-	}
-	for _, kind := range p.Record.Propose {
-		if !strings.HasPrefix(kind, "close-") {
-			standing, undone := 0, 0
-			for _, d := range p.Record.Done {
-				if d.Act == kind {
-					standing++
-				}
-			}
-			for _, u := range p.Record.Undone {
-				if u.Act == kind {
-					undone++
-				}
-			}
-			fmt.Fprintf(&b, "- [ ] Set %s back to act: %d of its acts still standing, %d undone. %s\n", kind, standing, undone, TickMarker(KeyAct+kind))
-			continue
-		}
-		kept, wrong := 0, 0
-		for _, c := range p.Record.Closed {
-			if c.Act == kind {
-				kept++
-			}
-		}
-		for _, c := range p.Record.Wrong {
-			if c.Act == kind {
-				wrong++
-			}
-		}
-		fmt.Fprintf(&b, "- [ ] Set %s back to act: %d of its closings still closed, %d reopened. %s\n", kind, kept, wrong, TickMarker(KeyAct+kind))
-	}
-	if len(p.said) > 0 {
-		b.WriteString("\n## Boxes ticked\n\n" + strings.Join(p.said, "\n") + "\n")
-	}
-	if len(did) > 0 {
-		b.WriteString("\n## Done\n\n" + strings.Join(did, "\n") + "\n")
-	}
-	var before []string
-	listed := map[int]bool{}
-	for _, d := range p.Decisions {
-		if d.Mode == Act && slices.Contains(moves, d.Act.Do) && !listed[d.Act.Issue] {
-			listed[d.Act.Issue] = true
-			before = append(before, fmt.Sprintf("- #%d: %s", d.Act.Issue, d.Act.Before))
-		}
-	}
-	if len(before) > 0 {
-		b.WriteString("\n## Before this run\n\nThe issues this run moved, as they were: to put the order back, set their priority label and milestone to these.\n\n" + strings.Join(before, "\n") + "\n")
-	}
-	b.WriteString(p.waiting())
-	b.WriteString(p.toAccept())
-	b.WriteString(p.changes())
-	if len(proposed) > 0 {
-		b.WriteString("\n## Proposed\n\nFor a person: tick a box if you agree, and the engine does it at its next run, as written — or do it yourself; an issue to open is opened by running the import again.\n\n" + strings.Join(proposed, "\n") + "\n")
-	}
-	return b.String()
-}
-
 // describe says one closing in a line, its evidence quoted.
 func describe(c Proposal, verb string) string {
 	if c.Do == "open" {
@@ -2077,7 +1994,7 @@ func CappedByRole(f forge.Backlog, role string, open []forge.Issue) []int {
 	}
 	var ids []int
 	for _, q := range r.Proposed {
-		if q.Capped && q.Issue > 0 {
+		if (q.Capped || q.Undrafted()) && q.Issue > 0 {
 			ids = append(ids, q.Issue)
 		}
 	}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -303,10 +304,17 @@ func (p *Plan) readChanges(found []Change) {
 			p.Changed = true
 			continue
 		}
+		if c.Path != "" && pathglob.Any(p.config.Archived, c.Path) {
+			p.Changed = true // its file archived since: no longer a source
+			continue
+		}
 		kept = append(kept, c)
 	}
 	today := time.Now().UTC().Format(dateLayout)
 	for _, c := range found {
+		if c.Path != "" && pathglob.Any(p.config.Archived, c.Path) {
+			continue
+		}
 		c.Was, c.Now = "", ""
 		for _, t := range c.Touch {
 			if _, ok := p.changedFor[t.Issue]; t.Read && !ok {
@@ -334,45 +342,45 @@ func sameChange(a, b Change) bool {
 		a.Since == b.Since && slices.Equal(a.Touch, b.Touch)
 }
 
-// changes is the report's part on the changes it holds: each issue it
-// touches, how, whether it was read again, and what is proposed for it.
-func (p *Plan) changes() string {
-	if len(p.Record.Changes) == 0 {
-		return ""
-	}
-	proposed := map[int][]string{}
-	for _, q := range p.Record.Proposed {
-		if q.Issue > 0 && q.Key == "" && !slices.Contains(proposed[q.Issue], q.Act) {
-			proposed[q.Issue] = append(proposed[q.Issue], q.Act)
-		}
-	}
-	var b strings.Builder
-	b.WriteString("\n## Changed needs\n\nWhat these issues were built on changed: the role read again those it could, and only proposes — it moves none of them alone. Check each against the change, then tick its box.\n\n")
+// settleChanges settles, with no person, the changes the record holds
+// whose every open issue touched was read again with the change and has
+// nothing proposed: there is nothing to check, so no box (ADR-0032). They
+// leave the record; this run's report says them in a line, folded.
+func (p *Plan) settleChanges() {
+	var kept []Change
 	for _, c := range p.Record.Changes {
-		title := ""
-		if is, ok := p.issues[c.Issue]; ok {
-			title = " " + is.Title
+		if p.nothingToCheck(c) {
+			p.Rechecked, p.Changed = append(p.Rechecked, c), true
+			continue
 		}
-		switch {
-		case c.Path != "":
-			fmt.Fprintf(&b, "- [ ] `%s`, lines %s, which #%d%s was opened from, changed (%s). %s\n", c.Path, c.Lines, c.Issue, title, c.Since, TickMarker(c.Key()))
-		default:
-			fmt.Fprintf(&b, "- [ ] #%d%s: a person changed its %s (%s). %s\n", c.Issue, title, strings.Join(c.What, " and "), c.Since, TickMarker(c.Key()))
+		kept = append(kept, c)
+	}
+	p.Record.Changes = kept
+}
+
+// nothingToCheck says whether every open issue a change touches was read
+// again with it and has no proposal waiting.
+func (p *Plan) nothingToCheck(c Change) bool {
+	touched := 0
+	for _, t := range c.Touch {
+		if !p.open[t.Issue] {
+			continue
 		}
-		for _, t := range c.Touch {
-			if !p.open[t.Issue] {
-				continue
-			}
-			how := map[string]string{TouchPart: "a part of it", TouchWaits: "waits on it", TouchSources: "names the same code, " + t.Files, TouchImport: "opened from those lines"}[t.How]
-			what := "not read: check it against the change"
-			if t.Read {
-				what = "read again with the change: nothing proposed"
-				if kinds := proposed[t.Issue]; len(kinds) > 0 {
-					what = "read again with the change: proposed below — " + strings.Join(kinds, ", ")
-				}
-			}
-			fmt.Fprintf(&b, "  - #%d %s, %s: %s.\n", t.Issue, p.issues[t.Issue].Title, how, what)
+		touched++
+		if !t.Read || len(p.proposedOn(t.Issue)) > 0 {
+			return false
 		}
 	}
-	return b.String()
+	return touched > 0
+}
+
+// proposedOn are the proposals waiting on an issue.
+func (p *Plan) proposedOn(id int) []Pending {
+	var out []Pending
+	for _, q := range p.Record.Proposed {
+		if q.Issue == id && q.Key == "" {
+			out = append(out, q)
+		}
+	}
+	return out
 }

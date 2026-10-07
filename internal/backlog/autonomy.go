@@ -44,6 +44,9 @@ type Config struct {
 	IgnoredMax   int                // runs nobody answered before the role pauses; 0 never
 	NextMax      int                // the ready issues the report lists first; 0 none (ADR-0031)
 	StuckDays    int                // the days an issue waits on a person before the report says it stuck
+	// Archived are the files no longer a source, as globs: an issue
+	// imported from one is not flagged when its lines change (ADR-0032).
+	Archived []string
 	// SpecReview: the project's line runs the reviewer after the role, so
 	// ready is held while the reviewer's important findings on the spec are
 	// open (#128); set by the caller, from the routing.
@@ -81,6 +84,20 @@ func ReadConfig(settings map[string]any) (Config, error) {
 				return c, fmt.Errorf("%s: %v is not a number from %d to %d", b.name, v, b.min, b.max)
 			}
 			*b.to = n
+		}
+	}
+	if v, ok := settings["archived"]; ok && v != nil {
+		list, isList := v.([]any)
+		for _, x := range list {
+			s, isText := x.(string)
+			if !isText || strings.TrimSpace(s) == "" {
+				isList = false
+				break
+			}
+			c.Archived = append(c.Archived, s)
+		}
+		if !isList {
+			return c, fmt.Errorf("archived: %v is not a list of file paths or globs", v)
 		}
 	}
 	level, _ := settings[byLevel].(map[string]any)

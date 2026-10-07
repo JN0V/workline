@@ -208,7 +208,7 @@ func (b Board) Empty() bool { return len(b.Next) == 0 && len(b.Stuck) == 0 }
 func (b Board) Text() string {
 	var s strings.Builder
 	if b.NextMax > 0 {
-		fmt.Fprintf(&s, "\n## Next\n\nThe first ready issues in the backlog's order, waiting on no open issue, at most %d (next-max): where to start.\n\n", b.NextMax)
+		fmt.Fprintf(&s, "\n## Next\n\nWhere to start: the first ready issues in the backlog's order, waiting on no open issue (at most %d, the setting `next-max`).\n\n", b.NextMax)
 		if len(b.Next) == 0 {
 			fmt.Fprintf(&s, "None: no issue bearing `%s` waits on nothing.\n", LabelReady)
 		}
@@ -218,10 +218,10 @@ func (b Board) Text() string {
 	}
 	s.WriteString("\n## Stuck\n\n")
 	if len(b.Stuck) == 0 {
-		fmt.Fprintf(&s, "Nothing waits on a person for more than %s (stuck-days).\n", plural(b.StuckDays, "day"))
+		fmt.Fprintf(&s, "Nothing has waited on a person for more than %s (the setting `stuck-days`).\n", plural(b.StuckDays, "day"))
 		return s.String()
 	}
-	fmt.Fprintf(&s, "Waiting on a person for more than %s (stuck-days), since the day given. An issue announced obsolete waits on a second judge from the day its delay ended.\n\n", plural(b.StuckDays, "day"))
+	fmt.Fprintf(&s, "Waiting on a person for more than %s (the setting `stuck-days`), since the day given. An issue announced obsolete waits on a second judge from the day its delay ended.\n\n", plural(b.StuckDays, "day"))
 	for _, w := range b.Stuck {
 		since := fmt.Sprintf("%s (%s)", w.Since, plural(Days(w.Since, b.now), "day"))
 		who := fmt.Sprintf("#%d %s", w.Issue, b.titles[w.Issue])

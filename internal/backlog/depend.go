@@ -286,15 +286,18 @@ func (p *Plan) waiting() string {
 	if len(bl.Blocked) == 0 && len(bl.Cycles) == 0 {
 		return ""
 	}
-	var b strings.Builder
-	b.WriteString("\n## Waiting\n\nIssues that wait on an open issue: ordered after it, never offered first to whoever builds next.\n\n")
+	var lines []string
 	for _, id := range bl.Blocked {
-		fmt.Fprintf(&b, "- #%d %s waits on %s.\n", id, p.issues[id].Title, issueList(bl.Waiting[id]))
+		lines = append(lines, fmt.Sprintf("- #%d %s waits on %s.", id, p.issues[id].Title, issueList(bl.Waiting[id])))
 	}
 	for _, c := range bl.Cycles {
-		fmt.Fprintf(&b, "- **Cycle**: %s. None of them is offered first until a person takes a link off.\n", CycleText(c))
+		lines = append(lines, fmt.Sprintf("- **Cycle**: %s. None of them is offered first until a person takes a link off.", CycleText(c)))
 	}
-	return b.String()
+	summary := plural(len(bl.Blocked), "issue") + " waiting on another open issue"
+	if len(bl.Cycles) > 0 {
+		summary += ", " + plural(len(bl.Cycles), "cycle") + " to break"
+	}
+	return fold(summary, "Ordered after what they wait on, never offered first to whoever builds next.\n\n"+strings.Join(lines, "\n"))
 }
 
 // closedInRun are the issues this run closes, as decided so far: no longer
