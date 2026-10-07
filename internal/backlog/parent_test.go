@@ -80,12 +80,22 @@ func TestTestNames(t *testing.T) {
 		{"the test `keeps-the-last-row` and `src/export/csv_test.go::TestQuote`", []string{"keeps-the-last-row", "src/export/csv_test.go::TestQuote"}},
 		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts", "test_quote"}},
 		{"conformance case `parent-x` passes", []string{"parent-x"}},
+		{"in that case `WriteRows` returns; the spec `x` says so", nil},
 		{"`WriteRows` keeps the last row; `make check` is green", nil},
 		{"A test writes three rows.", nil},
 	}
 	for _, c := range cases {
 		if got := TestNames(c.item); !slices.Equal(got, c.want) {
 			t.Errorf("TestNames(%q) = %q, want %q", c.item, got, c.want)
+		}
+	}
+}
+
+func TestCodeTestsUnreadIsNotMissing(t *testing.T) {
+	find := CodeTests(t.TempDir()) // not a repository: git fails
+	for _, name := range []string{"TestWriteRows", "src/export/csv_test.go"} {
+		if path, err := find(name); err == nil {
+			t.Errorf("CodeTests(%q) = %q, no error: a git that failed is read as a test missing", name, path)
 		}
 	}
 }

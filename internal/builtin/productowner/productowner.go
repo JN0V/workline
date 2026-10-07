@@ -300,6 +300,10 @@ func Pre(runDir, repo string) int {
 				findings = append(findings, verdict.Finding{Rule: "closers-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
 					Message: fmt.Sprintf("the forge did not say what closed #%d (%v): said on the parent as not read, never taken for closed by hand", p.ID, p.Unread)})
 			}
+			if len(ev.TestUnread) > 0 {
+				findings = append(findings, verdict.Finding{Rule: "proof-test-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+					Message: fmt.Sprintf("its Verification names %s as proof, and the code could not be read for it: the item is said not proved, never the test missing", strings.Join(ev.TestUnread, ", "))})
+			}
 			if len(ev.NoTest) > 0 {
 				findings = append(findings, verdict.Finding{Rule: "proof-test-missing", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
 					Message: fmt.Sprintf("its Verification names %s as proof, and the code at this commit holds no such test: the item is said not proved", strings.Join(ev.NoTest, ", "))})

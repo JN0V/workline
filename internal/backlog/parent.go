@@ -1,6 +1,7 @@
 package backlog
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -120,6 +121,7 @@ type Evidence struct {
 	Undone    []int    // the parts closed without delivering: not planned, a duplicate, gone
 	Unproved  []string // the Verification items no part delivered quotes, or whose test is not in the code
 	NoTest    []string // the tests a quoted item names that the code does not hold
+	TestUnread []string // the tests a quoted item names that could not be looked for, with why
 	Unread    []Part   // the parts whose closer the forge refused to say, with why
 	AllClosed bool
 }
@@ -184,20 +186,31 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 		for _, item := range items {
 			where := proof(item, parts)
 			if where != "" && tests != nil {
-				var in, missing []string
+				var in, missing, unread []string
 				for _, name := range TestNames(item) {
-					if path := tests(name); path == name || strings.HasPrefix(name, path+"::") {
-						in = append(in, "`"+name+"`") // a file, or a test in it, named by its path
-					} else if path != "" {
-						in = append(in, fmt.Sprintf("`%s` in %s", name, path))
-					} else {
+					path, err := tests(name)
+					switch {
+					case err != nil:
+						unread = append(unread, "`"+name+"`")
+						ev.TestUnread = append(ev.TestUnread, fmt.Sprintf("`%s` (%v)", name, err))
+					case path == "":
 						missing = append(missing, "`"+name+"`")
+					case path == name || strings.HasPrefix(name, path+"::"):
+						in = append(in, "`"+name+"`") // a file, or a test in it, named by its path
+					default:
+						in = append(in, fmt.Sprintf("`%s` in %s", name, path))
 					}
 				}
-				if len(missing) > 0 {
+				switch {
+				case len(missing) > 0:
 					ev.Unproved = append(ev.Unproved, item)
 					ev.NoTest = append(ev.NoTest, missing...)
 					fmt.Fprintf(&b, "- %s: \"%s\" — %s, but the code holds no test %s: a test named is no proof until it is there.\n", notYet, item, where, strings.Join(missing, ", "))
+					continue
+				case len(unread) > 0:
+					// Never said missing when git could not say: not looked for.
+					ev.Unproved = append(ev.Unproved, item)
+					fmt.Fprintf(&b, "- %s: \"%s\" — %s, but the test %s could not be looked for in the code: not proved until it is read.\n", notYet, item, where, strings.Join(unread, ", "))
 					continue
 				}
 				if len(in) > 0 {
@@ -260,8 +273,9 @@ func proof(item string, parts []Part) string {
 }
 
 // TestFinder says where the code holds a test a Verification item names:
-// the file, or "" when it holds none (ADR-0029).
-type TestFinder func(name string) string
+// the file, or "" when it holds none; an error when it could not look,
+// never read as none (ADR-0029).
+type TestFinder func(name string) (string, error)
 
 // codeSpan is a Markdown code span: where an item names a test.
 var codeSpan = regexp.MustCompile("`([^`\n]+)`")
@@ -275,12 +289,15 @@ var testFile = regexp.MustCompile(`(?i)(^|/)(tests?|specs?|__tests__)/|(_test|\.
 // JavaScript's and Java's testX.
 var testFunc = regexp.MustCompile(`^(Test[A-Z0-9_]\w*|test_\w+|test[A-Z]\w*)$`)
 
-// testBefore is the word that says the next code span names a test.
-var testBefore = regexp.MustCompile(`(?i)\b(tests?|cases?|specs?)\s*$`)
+// testBefore are the words that say the next code span names a test:
+// "test", "test case", "conformance case" — never "case" alone, prose's
+// "in that case".
+var testBefore = regexp.MustCompile(`(?i)\b(tests?|(test|conformance)\s+cases?)\s*$`)
 
 // TestNames are the tests a Verification item names, each in a code span:
 // a test file (a path, with ::name after it for one test in it), a test's
-// own name, or any name right after the word test or case. The rest of
+// own name, or any name right after the word test, test case or
+// conformance case. The rest of
 // the item is prose, and names none.
 func TestNames(item string) []string {
 	var out []string
@@ -302,30 +319,52 @@ func TestNames(item string) []string {
 // its path, one test in it by path::name, or a name found as a word in a
 // test file (TestNames). The run's commit, never the working tree.
 func CodeTests(repo string) TestFinder {
-	return func(name string) string {
+	// grep lists the files at HEAD holding a word, under path when given:
+	// none is git's exit 1, any other failure an error.
+	grep := func(word, path string) ([]string, error) {
+		args := []string{"-C", repo, "grep", "-l", "-w", "-F", "-e", word, "HEAD"}
+		if path != "" {
+			args = append(args, "--", path)
+		}
+		out, err := exec.Command("git", args...).Output()
+		var exit *exec.ExitError
+		switch {
+		case errors.As(err, &exit) && exit.ExitCode() == 1:
+			return nil, nil
+		case err != nil:
+			return nil, fmt.Errorf("git grep: %v", err)
+		}
+		var files []string
+		for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			files = append(files, strings.TrimPrefix(l, "HEAD:"))
+		}
+		return files, nil
+	}
+	return func(name string) (string, error) {
 		path, fn, two := strings.Cut(name, "::")
 		if testFile.MatchString(path) && (two || strings.Contains(path, "/") || strings.Contains(path, ".")) {
-			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
-				return ""
+			out, err := exec.Command("git", "-C", repo, "ls-tree", "--name-only", "HEAD", "--", path).Output()
+			switch {
+			case err != nil:
+				return "", fmt.Errorf("git ls-tree: %v", err)
+			case strings.TrimSpace(string(out)) != path:
+				return "", nil
+			case !two:
+				return path, nil
 			}
-			if !two {
-				return path
+			files, err := grep(fn, path)
+			if err != nil || len(files) == 0 {
+				return "", err
 			}
-			if exec.Command("git", "-C", repo, "grep", "-q", "-w", "-F", "-e", fn, "HEAD", "--", path).Run() != nil {
-				return ""
-			}
-			return path
+			return path, nil
 		}
-		out, err := exec.Command("git", "-C", repo, "grep", "-l", "-w", "-F", "-e", name, "HEAD").Output()
-		if err != nil {
-			return ""
-		}
-		for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-			if p := strings.TrimPrefix(l, "HEAD:"); testFile.MatchString(p) {
-				return p
+		files, err := grep(name, "")
+		for _, p := range files {
+			if testFile.MatchString(p) {
+				return p, nil
 			}
 		}
-		return ""
+		return "", err
 	}
 }
 
