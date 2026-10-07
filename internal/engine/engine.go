@@ -1479,6 +1479,7 @@ type attemptResult struct {
 	askedAgent bool
 	external   bool
 	unread     string // why the agent's answer could not be read, if it could not
+	overBudget bool   // the task was not put before the agent: over the context budget
 }
 
 // attempt asks the agent (when there is a question and an agent), merges the
@@ -1497,7 +1498,7 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 			// A task too large for the role's context is the role's to
 			// shrink, not a block of the line: the run goes on as without
 			// an agent, and what the task held waits for a person.
-			a.askedAgent = false
+			a.askedAgent, a.overBudget = false, true
 			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget", Level: "warn",
 				Message: err.Error() + ": the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
 		case errors.Is(err, agent.ErrUnavailable):
@@ -1579,6 +1580,14 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		}
 	}
 	v.Findings = append(a.findings, v.Findings...)
+	// On an event that fails closed — a gate: commit-msg, pre-push, a merge
+	// request, the release — a task nobody judged never passes: a person
+	// decides. On one whose steps all run (schedule, ADR-0037), it is upkeep
+	// left for later: reported, and the line goes on.
+	if a.overBudget && v.Status == verdict.Pass && (line == nil || line.StopsAtFirst(o.Event)) {
+		v.Status = verdict.Human
+		v.Summary = "the task was over the role's context budget and nobody judged it: a person does (" + v.Summary + ")"
+	}
 	a.verdict = v
 	return a, nil
 }

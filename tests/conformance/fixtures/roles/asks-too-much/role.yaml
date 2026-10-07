@@ -2,7 +2,7 @@ contract: 1
 name: asks-too-much
 mission: A role of the tests only — its task never fits its context budget — so a prompt over the budget is tried with any agent.
 
-events: [schedule]
+events: [schedule, pre-push]
 requires: [git]
 model: {capability: writing, tier: standard, effort: medium}
 context:

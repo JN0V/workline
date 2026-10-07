@@ -1,0 +1,10 @@
+case: engine/prompt-over-budget-on-a-gate-is-human
+about: "On an event that fails closed — a gate, here a push — a task over the role's context budget, judged by nobody, never passes: the run ends human, a person decides, and nothing is applied. On schedule the same task is only reported (engine/prompt-over-budget-is-a-finding)."
+given:
+  repo: basic
+run: {role: asks-too-much, event: pre-push, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: human
+  agent-calls: 0
+  findings: [{rule: prompt-over-budget}]
+  no-findings: [{rule: engine-error}]

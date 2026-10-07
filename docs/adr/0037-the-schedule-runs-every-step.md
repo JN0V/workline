@@ -34,6 +34,11 @@
   `pass`. The summary names each step that did not pass and its verdict.
 - **A role that does not pass runs no handoff**, whatever `fail-fast`
   says; a chain past `max-handoffs` is a `block` of that step.
+- **A task over the role's context budget**, judged by nobody, follows
+  the same split: on an event that fails closed the run ends `human`,
+  a person decides; on `schedule` it is reported (`prompt-over-budget`)
+  and the line goes on. A part over it is a part not answered, as the
+  role treats one: the reviewer's "not reviewed whole".
 - Nothing changes for apply: `workline apply --line` applies the pending
   runs in order and stops at the first that does not pass, since a run
   applied out of order could see a tree it was not judged on.

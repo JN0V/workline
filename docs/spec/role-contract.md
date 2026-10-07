@@ -89,7 +89,10 @@ context:
                                 # (agent.Tokens); the engine refuses a larger prompt:
                                 # the agent is not asked, the run goes on without it,
                                 # and says so (`prompt-over-budget`, a part's
-                                # `part-unanswered`), never an engine error
+                                # `part-unanswered`), never an engine error; on a
+                                # gate's event the run then ends `human` (a part:
+                                # as the role treats a part not answered); on
+                                # schedule, reported only (ADR-0037)
 
 duties:
   reads: ["**"]                 # paths the role may read
