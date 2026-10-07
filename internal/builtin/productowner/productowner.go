@@ -330,7 +330,7 @@ func Pre(runDir, repo string) int {
 			again = append(again, due{is, st, comments, notes})
 		case st.Judged == "":
 			never = append(never, due{is, st, comments, notes})
-		case cfg.SpecReview && backlog.SpecOpen(is, comments) != nil && backlog.SpecOpen(is, comments).Round != st.Answered:
+		case cfg.SpecReview && backlog.SpecOpen(is, comments) != nil && backlog.SpecOpen(is, comments).Body != st.Answered:
 			// The reviewer's findings on its spec, not given yet: answered
 			// at this refine (#128).
 			changed = append(changed, due{is, st, comments, notes})
@@ -468,7 +468,7 @@ func Pre(runDir, repo string) int {
 		read := *d.st
 		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
-			read.Answered = r.Round
+			read.Answered = r.Body
 		}
 		read.Keep(d.is.Body)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{

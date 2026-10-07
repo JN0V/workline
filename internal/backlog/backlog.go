@@ -44,9 +44,11 @@ type State struct {
 	Sections map[string]string `yaml:"sections,omitempty"`
 	// Wrote are the sections the role wrote, each the digest of its text:
 	// another text there is a person's (SectionDigest). Answered is the
-	// reviewer's round on its spec the role was last given (#128).
+	// review of its spec the role was last given, by the digest of the
+	// body that review read (#128): a review restarting at round 1 is
+	// another review, never taken for one answered.
 	Wrote    map[string]string `yaml:"wrote,omitempty"`
-	Answered int               `yaml:"answered,omitempty"`
+	Answered string            `yaml:"answered,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -106,7 +108,7 @@ func FormatState(s State) string {
 		Kept      []string          `yaml:"kept,flow,omitempty"`
 		Sections  map[string]string `yaml:"sections,omitempty"`
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
-		Answered  int               `yaml:"answered,omitempty"`
+		Answered  string            `yaml:"answered,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept, s.Sections, s.Wrote, s.Answered})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
