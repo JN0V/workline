@@ -68,6 +68,26 @@ func TestClosedParentKeepsItsLinks(t *testing.T) {
 	}
 }
 
+// An open split parent whose state does not read is still watched: never
+// a panic, never dropped.
+func TestOpenParentUnreadStateWatched(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "forge.json")
+	data := `{"issues": [
+	  {"id": 1, "title": "Parent, its state broken", "body": "", "labels": [], "comments": [` + quote("```yaml\nsplit: [\n```\n\n<!-- workline:sticky=product-owner/state -->") + `]}
+	], "merge-requests": []}`
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := &forge.Fake{Path: path}
+	standing, undone, _, err := findUndone(f, "product-owner", map[int]forge.Issue{1: {ID: 1}}, []Done{{Issue: 1, Act: "split"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(undone) != 0 || len(standing) != 1 || standing[0].Issue != 1 {
+		t.Errorf("standing %v, undone %v: want the split of #1 still watched", standing, undone)
+	}
+}
+
 func quote(s string) string {
 	b := []byte{'"'}
 	for _, r := range s {

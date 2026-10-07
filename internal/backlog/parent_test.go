@@ -104,6 +104,10 @@ func TestCodeTestsReadsHead(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "tests", "export", "rows_test.go"), []byte("package export\n\nfunc TestRows(t *testing.T) {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// A name in code that is no test: never found as one.
+	if err := os.WriteFile(filepath.Join(dir, "cols.go"), []byte("package export\n\n// TestCols is no test.\nfunc TestCols() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "test"}} {
 		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
 			t.Fatalf("git %v: %v %s", args, err, out)
@@ -113,6 +117,7 @@ func TestCodeTestsReadsHead(t *testing.T) {
 	for name, want := range map[string]string{
 		"tests/export/rows_test.go":          "tests/export/rows_test.go",
 		"tests/export/rows_test.go::TestRows": "tests/export/rows_test.go",
+		"tests/export/rows_test.go::TestNope": "", // the file there, the test not
 		"TestRows":                           "tests/export/rows_test.go",
 		"tests/export":                       "", // a folder, no test file
 		"tests/export/cols_test.go":          "",
