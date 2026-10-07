@@ -90,3 +90,28 @@ agent, is listed for a person instead of read.
 - Not done: following a change further than one step; a change to
   Verification or Validation (what proves and who accepts it, not what is
   built); an imported file renamed (its lines read as gone).
+
+## Amendment (2026-10-07): no box with nothing to decide; an archived file
+
+On workline's own backlog the report asked a person to tick ten changes,
+nine of them "read again with the change: nothing proposed", each found
+because the backlog file the issues were imported from — archived since,
+the issues its source of truth — was edited.
+
+- **Read again, nothing proposed: settled with no person.** A change
+  whose every open issue was read again with it and has no proposal
+  waiting leaves the record; the report says it once, in a folded line.
+  The run that read them decided there was nothing to change; a box would
+  ask a person to confirm nothing.
+- **Proposals waiting: their boxes are the change's.** The change is said
+  beside the issue's title, above its proposals; it has no box of its
+  own, and settles once they do.
+- **An issue not read** — listed for a person, past `issues-per-run`, no
+  agent — keeps the box, under "To check", until a person ticks it.
+- **A file archived flags nothing**: `archived`, a list of paths or globs
+  in the role's settings, names the files no longer a source; a change to
+  their lines is not one, and a change the record held from one leaves
+  it. A setting, not a mark in the file: the file need not be one the
+  engine can parse, and the project says it where its other settings
+  are.
+

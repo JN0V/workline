@@ -26,4 +26,4 @@ expect:
     issues:
       - {id: 7, closed: true}
       - {id: 9, closed: false, labels: [], comments: 1}
-      - {id: 10, title: "Backlog — product owner", body-contains: "- [ ] Close #9 as obsolete"}
+      - {id: 10, title: "Backlog — product owner", body-contains: "**#9 Last row missing**\n\n- [ ] Announce it obsolete, on the issue"}

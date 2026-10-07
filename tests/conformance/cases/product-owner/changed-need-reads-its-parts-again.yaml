@@ -19,7 +19,7 @@ expect:
     issues:
       - {id: 11, labels: [workline:ready], comments: 1}
       - {id: 12, labels: [workline:ready], comments: 1}
-      - {id: 13, title: "Backlog — product owner", body-contains: "- [ ] #9 Export fixes: a person changed its Need ("}
-      - {id: 13, body-contains: "  - #11 Keep the last row in the CSV export, a part of it: read again with the change: proposed below — unready.\n  - #12 Quote commas in exported cells, a part of it: read again with the change: proposed below — order.\n"}
-      - {id: 13, body-contains: "- [ ] Move #11 back to refine (workline:ready off, workline:to-refine on): #9 now asks for a JSON export"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "**#11 Keep the last row in the CSV export** — read again because #9 Export fixes, which it is a part of, had its Need rewritten by a person (found ", body-lacks: "proposal=changed/9"}
+      - {id: 13, body-contains: "**#12 Quote commas in exported cells** — read again because #9 Export fixes, which it is a part of, had its Need rewritten by a person (found ", comment-contains: "how: part"}
+      - {id: 13, body-contains: "- [ ] Move it back to refine: `workline:ready` off, `workline:to-refine` on. Why: #9 now asks for a JSON export"}
       - {id: 9, comment-contains: "Need: Every row exported as JSON, so another tool reads it."}

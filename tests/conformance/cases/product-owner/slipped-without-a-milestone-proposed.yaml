@@ -13,4 +13,5 @@ expect:
   forge:
     issues:
       - {id: 9, milestone: v1.0.0}
-      - {id: 10, title: "Backlog — product owner", body-contains: "- [ ] Move #9 out of the milestone \"v1.0.0\""}
+      - {id: 10, title: "Backlog — product owner", body-contains: "- For you to settle: Move #9 out of the milestone \"v1.0.0\""}
+      - {id: 10, body-contains: "- **1 issue for you to settle** (*To decide*)", body-lacks: "Nothing waits on you"}

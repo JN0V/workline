@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 6de6c6b
+checked: c24603b
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -94,9 +94,10 @@ cap (`acts`).
 
 ### 4. What a run leaves
 
-- **One report issue** lists what was done and proposed. It says each
-  moved issue's priority and milestone before the run, to put the order
-  back.
+- **One report issue**, what a person has to do first: what is
+  proposed, what to check and to accept; then what was done, folded, with
+  each moved issue's priority and milestone before the run, to put the
+  order back ([outputs.md](outputs.md#the-report)).
 - **A closing undone**, the issue reopened, puts that kind back to
   `propose` (`wrong-closing`).
 - **Each act done alone** — not a person's tick, nor a slip the engine
@@ -161,6 +162,9 @@ Each proposal in the report is a box
 - **Ticked by a person of the project** — the forge says who ticked it:
   GitHub's edit history, GitLab's system notes — it is done at the next
   run, as the record keeps it, with no agent.
+- **Recorded without its act** by an older engine: its issue is read
+  again first; ticked, the act the agent drafts then is done as that
+  person's yes — never handed back to them.
 - **Ticked by an outsider, a bot or nobody the forge names**, it is not,
   and the report says why.
 - **A kind back to `propose`** after a person undid one of its acts gets a
@@ -172,7 +176,9 @@ Each proposal in the report is a box
 - **The pause**: three runs in a row (`ignored-runs-max`; 0 never pauses,
   said in every report) read with an agent and nobody answering — no box
   ticked, no comment on the report, no act undone, no proposal settled —
-  pause the role: no agent asked until a person does one of those.
+  pause the role: no agent asked until a person does one of those. The
+  report's top says it a run ahead: "answer before the next run, or the
+  role pauses".
 
 ## Opening issues
 

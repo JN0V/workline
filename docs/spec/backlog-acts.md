@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 6de6c6b
+checked: c24603b
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -108,6 +108,11 @@ at every run:
   moved are not. A commit that cannot be read — gone after a force-push,
   beyond a shallow clone — is said (`lines-unread`, warn), never read
   as no change.
+- **Not a file archived**: `archived`, a list of paths or globs, names
+  the files no longer a source — a roadmap whose items became issues,
+  kept for its history. A change to their lines flags nothing; a change
+  the record held from one leaves it. A value that is not a list of
+  paths stops the run (principle 12).
 
 What a change touches (`backlog.Touched`), none twice, in this order:
 
@@ -789,30 +794,36 @@ a kind demoted ("Trust"), proposed whatever the level until a person's
 tick; then a person's tick on one act ("The person's hand"). The task
 given to the agent lists each kind's mode and where it comes from —
 `level`, `setting` (differs from the level's) or `demoted` —, and so does
-the report, on its `Autonomy:` line. A level the role does not have, or
-`ignored-runs-max` outside 0 to 20, `next-max` outside 0 to 20 or
-`stuck-days` outside 1 to 365, stops the run.
+the report, folded, one kind a line. A level the role does not have,
+`ignored-runs-max` outside 0 to 20, `next-max` outside 0 to 20,
+`stuck-days` outside 1 to 365, or `archived` not a list of paths, stops
+the run.
 
 ## The report
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-opens with what is next and what is stuck ("What is next, what is
-stuck", below), then lists what the last run did and what is proposed, each proposal a box a
-person of the project ticks to have it done ("The person's hand"), each closing with its
-quote and how to undo it — a rename with the title it had, a split with
-its children's titles, to close; an announcement with the day it may close
-and how to keep it open; an issue kept open, and why. Under "Waiting",
-each issue waiting on an open one, and each cycle. Under "To accept", each open parent whose parts are all closed,
-recorded (`to-accept`) so the report is rewritten when that list
-changes ("A parent and its parts"). Under "Changed needs", each change
-to what open issues were built on ("A changed need"), a box — the issue
-and the sections a person rewrote, or the file's lines, the day it was
-found —, and under it each open issue it touches: how, read again or
-not, and the kinds of act proposed for it; it stays until a person of
-the project ticks it checked, or none of its issues is open, kept in the
-record (`changes`). Under "Before this run", each issue the run
-moved is listed with its priority and milestone as they were, to put the
-order back. A proposal stays there from run to run until a person
+a page for a person: what they have to do first, then what the run did,
+the long parts folded (`<details>`), nothing left out (ADR-0031). In
+order (`backlog.ReportBody`):
+
+| Part | What it says |
+|---|---|
+| What to do | the proposals to decide, the changes to check and what only a person settles, counted; the parents to accept; one run before the pause, "answer before the next run, or the role pauses" (within N runs when more are left); **Paused** and its box to resume; `ignored-runs-max: 0` said; the acts done alone, to check; a level suggested |
+| To decide | each proposal a box ("The person's hand"), grouped under its issue — number and title — saying in plain words what a tick does and why (`backlog.offer`): "Set its priority to 3 (now: …)", "Add Need and Validation to it (Need and Validation as drafts for you to correct)", then a short why that does not say the act again; when the issue was read again for a change, the change beside its title; an issue to open says the import opens it; one the engine cannot do — its reporter's rounds spent, a slip with nowhere to go — is a line "For you to settle", no box; a proposal recorded without its act says it is drafted when the agent next reads it, and once ticked is a line saying who ticked it, no box; then the kinds back to propose, with their evidence and a box each |
+| To check | each change with an issue it touches not read again ("A changed need"): a box — the issue and the sections a person rewrote, or the file's lines, the day found — and under it each open issue it touches: how, read again or not |
+| To accept | each open parent whose parts are all closed, recorded (`to-accept`) so the report is rewritten when that list changes ("A parent and its parts") |
+| Boxes ticked | what the run read of the boxes ticked since the last |
+| Next, Stuck | "What is next, what is stuck", below |
+| folded | the issues waiting on an open one and each cycle; what the run did alone, each closing with its quote and how to undo it — a rename with the title it had, a split with its children's titles, to close; an announcement with the day it may close and how to keep it open; an issue kept open, and why — and each issue it moved with its priority and milestone as they were, to put the order back; the changes settled with no person; each kind's mode; how the page works |
+
+A change ("A changed need") stays in the record (`changes`) until a
+person of the project ticks it checked, none of its issues is open, or
+every open issue it touches was read again with it and has no proposal
+waiting: then it needs no person — no box, it leaves the record, and that
+run's report says it in one folded line (`rechecked`, kept with the
+plan). A change whose issues have proposals waiting has no box of its
+own: their proposals are its answer, the change said beside their issue.
+A proposal stays there from run to run until a person
 settles it — its issue closed — or a run decides it again. An issue to
 open past the cap stays there until an open issue holds its text: an
 import run again opens it. Its own engine
@@ -854,7 +865,7 @@ settled. The sample never changes the setting; a record that does not read is sa
 
 ### What is next, what is stuck
 
-The report opens with two lists (ADR-0031), computed by the engine at
+After what to do, the report says two lists (ADR-0031), computed by the engine at
 every run, with or without an agent, from the forge as it is — nothing of
 them stored:
 
@@ -905,10 +916,11 @@ report's body and who ticked each (ADR-0025):
 | A person of the project, a proposal it can do | Done as the record holds it, never as an intention says (`not-ticked`), whatever its mode or cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, no announcement nor second judge, naming who ticked it |
 | A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
 | A person of the project, the box of a changed need (`changed/<issue>`; `changed-lines/<issue>` for the lines it was imported from, a change of its own) | Checked: it leaves the report and the record, said under "Boxes ticked"; nothing done to its issues |
-| A person of the project, an issue to open, rounds spent, a slip with nowhere to go | Not done: the report says to do it by hand; the proposal leaves it |
+| A person of the project, a proposal an older engine recorded with its line alone, no act kept (`Undrafted`) | Its issue read first at the next run with an agent, the agent asked to write that act; the act it drafts is done as their yes, whatever its mode or cap, said "Ticked by". No agent, paused, or past `issues-per-run`: kept with who ticked it (`agreed`), a line in the report, no box. The agent drafting none: said (`tick-not-drafted`, warn), it leaves the report |
+| A person of the project, an issue to open | Not done: opened when the import runs again; the proposal leaves the report |
 | Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
 
-A proposal ticked, done or dropped, leaves the record: a box still ticked
+A proposal recorded without its act and not ticked has its issue read again first, as one proposed for a cap: the agent decides it anew, and the old line leaves the record. A proposal ticked, done or dropped, leaves the record: a box still ticked
 whose proposal the record no longer holds is nothing.
 
 **Paused.** A run that read issues with an agent while the report held a

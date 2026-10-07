@@ -7,6 +7,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -25,8 +26,9 @@ type due struct {
 // to read first, the change it is read with; rebase, the issues whose
 // state is to keep their sections now — rewritten, or never kept.
 // unread are the imported issues whose lines git could not follow, said
-// in the run's findings, never read as unchanged.
-func changesFound(repo string, open []forge.Issue, report int, all []due) (found []backlog.Change, front map[int]string, rebase []due, unread []verdict.Finding) {
+// in the run's findings, never read as unchanged. A file archived — no
+// longer a source, as the setting says — flags nothing.
+func changesFound(repo string, open []forge.Issue, report int, all []due, archived []string) (found []backlog.Change, front map[int]string, rebase []due, unread []verdict.Finding) {
 	front = map[int]string{}
 	slices.SortFunc(all, func(a, b due) int { return a.is.ID - b.is.ID })
 	sources := map[int][]string{}
@@ -65,7 +67,7 @@ func changesFound(repo string, open []forge.Issue, report int, all []due) (found
 			rebase = append(rebase, d) // its sections kept from now on, once
 		}
 		path, from, to, ok := backlog.Imported(d.is.Body)
-		if !ok || d.st.Confirmed == "" {
+		if !ok || d.st.Confirmed == "" || pathglob.Any(archived, path) {
 			continue
 		}
 		base := d.st.Judged

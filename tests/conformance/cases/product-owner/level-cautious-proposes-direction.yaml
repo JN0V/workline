@@ -24,8 +24,9 @@ expect:
       - {id: 9, title: "bug", labels: []}
       - {id: 10, comment-lacks: "split:"}
       - {id: 11, comment-contains: "sources: [src/export/csv.go]"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "Autonomy: **cautious** — sources: act, 10 a run (level); close-duplicate: propose (level); close-obsolete: act, 3 a run (level); milestone: propose (level); order: propose (level); refine: act, 5 a run, Need and Validation drafts proposed (level); ready: act, 5 a run (level); ask: act, 2 a run (level); split: propose (level); depend: propose (level); rename: propose (level); open: act, 30 a run (level)."}
-      - {id: 13, body-contains: "- [ ] Close #12 as a duplicate of #7"}
-      - {id: 13, body-contains: "- [ ] Rename #9 from \"bug\" to \"The CSV export drops the last row\""}
-      - {id: 13, body-contains: "- [ ] Set #9's priority to 1"}
-      - {id: 13, body-contains: "- [ ] Split #10 into 2 issues"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "- sources: act, 10 a run (level)\n- close-duplicate: propose (level)\n- close-obsolete: act, 3 a run (level)\n- milestone: propose (level)\n- order: propose (level)\n- refine: act, 5 a run, Need and Validation drafts proposed (level)\n- ready: act, 5 a run (level)\n- ask: act, 2 a run (level)\n- split: propose (level)\n- depend: propose (level)\n- rename: propose (level)\n- open: act, 30 a run (level)"}
+      - {id: 13, body-contains: "<details><summary>Autonomy: cautious — what the role does alone, and what it proposes</summary>"}
+      - {id: 13, body-contains: "**#12 Last row missing in CSV**\n\n- [ ] Close it as a duplicate of #7"}
+      - {id: 13, body-contains: "- [ ] Rename it to \"The CSV export drops the last row\""}
+      - {id: 13, body-contains: "**#9 bug**\n\n- [ ] Set its priority to 1 (now: no priority, no milestone)."}
+      - {id: 13, body-contains: "- [ ] Split it into 2 issues"}

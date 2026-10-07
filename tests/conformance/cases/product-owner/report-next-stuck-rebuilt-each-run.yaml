@@ -15,6 +15,6 @@ expect:
   agent-calls: 0
   forge:
     issues:
-      - {id: 10, body-contains: "at most 5 (next-max): where to start.\n\n1. #13 Keep the last row in the CSV export — no milestone, priority 3\n", comment-lacks: "#13"}
+      - {id: 10, body-contains: "(at most 5, the setting `next-max`).\n\n1. #13 Keep the last row in the CSV export — no milestone, priority 3\n", comment-lacks: "#13"}
       - {id: 10, body-lacks: "#9 An issue closed since", comment-lacks: "stuck"}
-      - {id: 10, body-contains: "Nothing waits on a person for more than 14 days (stuck-days)."}
+      - {id: 10, body-contains: "Nothing has waited on a person for more than 14 days (the setting `stuck-days`)."}

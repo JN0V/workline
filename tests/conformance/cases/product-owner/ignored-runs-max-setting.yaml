@@ -14,11 +14,11 @@ given:
         title: "Backlog — product owner"
         body: "## Proposed\n\n- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n"
         labels: []
-        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\nignored: 3\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop', proposal: {do: close, issue: 7, reason: obsolete, quote: {path: src/export/csv.go, text: the loop}, why: The loop reaches the last row.}}\nignored: 3\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   agent-calls: 1
   no-findings: [{rule: paused}]
   forge:
     issues:
-      - {id: 10, body-contains: "Runs since a person last answered: 4; at 5, the role pauses.", comment-contains: "ignored: 4"}
+      - {id: 10, body-contains: "- **Answer before the next run, or the role pauses**: nobody answered its last 4 runs (it pauses at 5).", comment-contains: "ignored: 4"}

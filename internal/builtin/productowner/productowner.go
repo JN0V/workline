@@ -467,8 +467,20 @@ func Pre(runDir, repo string) int {
 	// a file an issue was imported from. The parts of the issue changed,
 	// and the issue imported, are read first, with the change; the others
 	// it touches are listed in the report for a person.
-	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, never, changed, rest))
+	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, never, changed, rest), cfg.Archived)
 	findings = append(findings, unread...)
+	// A proposal an older engine recorded without its act, ticked by a
+	// person of the project: its issue read first, the agent asked to draft
+	// that act now; it is done as their yes (ADR-0025, amended).
+	for _, q := range hand.Record.Proposed {
+		who := q.Agreed
+		if t, ok := hand.Tick(q.TickKey()); ok && t.Person() {
+			who = t.Who()
+		}
+		if who != "" && q.Undrafted() {
+			front[q.Issue] += fmt.Sprintf("A person of the project, %s, ticked this proposal in the report, recorded before its act was: \"%s\". Write that act now (`%s`), whole, with its text: it is done as their yes.\n", who, q.Line, q.Act)
+		}
+	}
 	var ahead []due
 	pick := func(list []due) []due {
 		var left []due

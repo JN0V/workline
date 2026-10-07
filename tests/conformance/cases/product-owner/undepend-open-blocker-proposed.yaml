@@ -25,4 +25,4 @@ expect:
     issues:
       - {id: 12, blocked-by: [13]}
       - {id: 14, blocked-by: [15]}
-      - {id: 20, body-contains: "- [ ] Take off the link the role set from #12 to #13: #12's need changed: it no longer reads #13's row count."}
+      - {id: 20, body-contains: "**#12 Quote commas in exported cells**\n\n- [ ] Take off the link the role set to #13. Why: #12's need changed: it no longer reads #13's row count."}

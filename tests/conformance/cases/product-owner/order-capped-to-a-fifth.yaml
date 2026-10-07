@@ -23,5 +23,5 @@ expect:
       - {id: 2, labels: []}
       - {id: 3, labels: []}
       - {id: 4, milestone: v1.1.0}
-      - {id: 11, title: "Backlog — product owner", body-contains: "- [ ] Set #3's priority to 3"}
-      - {id: 11, body-contains: "- [ ] Set #2's priority to 1"}
+      - {id: 11, title: "Backlog — product owner", body-contains: "**#3 Issue 3**\n\n- [ ] Set its priority to 3"}
+      - {id: 11, body-contains: "**#2 Issue 2**\n\n- [ ] Set its priority to 1"}

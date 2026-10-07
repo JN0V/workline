@@ -13,4 +13,4 @@ expect:
       - {id: 9, title: "bug", body-lacks: "## Need", comments: 2}
       - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=1 -->", comment-lacks: "The CSV export drops the last row\""}
       - {id: 10, title: "Backlog — product owner", body-contains: "Proposed to #9's reporter (an outsider)"}
-      - {id: 10, body-contains: "Rename #9 from \"bug\" to \"The CSV export drops the last row\""}
+      - {id: 10, body-contains: "**#9 bug**\n\n- [ ] Rename it to \"The CSV export drops the last row\""}
