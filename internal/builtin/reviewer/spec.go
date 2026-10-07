@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -34,6 +35,9 @@ type Spec struct {
 	Issue  int    `json:"issue,omitempty"`
 	Digest string `json:"digest,omitempty"`
 	Round  int    `json:"round,omitempty"`
+	// Prior is the record the last review left, carried as it was when
+	// this one is not whole.
+	Prior *backlog.SpecReview `json:"prior,omitempty"`
 }
 
 // heading names the spec where the lenses and the judge read it.

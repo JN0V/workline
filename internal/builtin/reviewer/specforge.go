@@ -132,14 +132,14 @@ func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, i
 		return nil, nil, 0, false
 	}
 	sp := Spec{Path: where, Title: strings.TrimSpace(w.issue.Title), Text: w.issue.Body, Issue: w.issue.ID,
-		Digest: backlog.BodyDigest(w.issue.Body), Round: n}
+		Digest: backlog.BodyDigest(w.issue.Body), Round: n, Prior: w.prior}
 	return &sp, w.prior, 0, true
 }
 
 // specRecord is what the comment on the issue records of this review: the
 // body read, its round, the important findings open and the sections they
-// lie in. A review not whole leaves the body unread, its round uncounted:
-// the spec is read again at the next run.
+// lie in. A review not whole leaves the record as it was, its body unread:
+// the spec is read again at the next run, the rounds counted as before.
 func specRecord(st state, v Review) backlog.SpecReview {
 	sp := st.Spec
 	r := backlog.SpecReview{Body: sp.Digest, Round: sp.Round}
@@ -156,7 +156,11 @@ func specRecord(st state, v Review) backlog.SpecReview {
 		}
 	}
 	if !v.Complete {
-		r.Body, r.Round = "", sp.Round-1
+		r = backlog.SpecReview{}
+		if sp.Prior != nil {
+			r = *sp.Prior
+		}
+		r.Body = ""
 	}
 	return r
 }
