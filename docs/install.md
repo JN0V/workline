@@ -64,8 +64,11 @@ Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
 | Answer | What judges |
 |---|---|
 | `none` | no AI: a refused message is explained, you rewrite it; suspect docs are listed for you |
-| `claude` | [Claude Code](https://docs.claude.com/en/docs/claude-code/setup): `setup` offers to install its CLI; run `claude` once to log in (a subscription or an API key). workline calls `claude -p` with that login and holds no key of its own |
+| `claude` | [Claude Code](https://docs.claude.com/en/docs/claude-code/setup): `setup` offers to install its CLI; run `claude` once to log in (below) |
 | `cmd:<command>` | any command: another provider's CLI, or a wrapper of your own ([the contract](usage.md#another-agent)) |
+
+Claude logs in with a subscription or an API key; workline calls `claude -p`
+with that login and holds no key of its own.
 
 Other agents built in (Codex, OpenCode…) are planned:
 [#86](https://github.com/JN0V/workline/issues/86).
