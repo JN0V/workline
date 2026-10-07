@@ -376,11 +376,9 @@ merge-request line; on in workline's own repository.
 
 - **Where it runs.** The reviewer on `schedule`, after the product owner
   in the gardening line (`schedule: [documentalist, product-owner,
-  reviewer]`), opt-in as on merge requests; off by default. One issue a
-  run: the first, in the backlog's order, the product owner keeps, not
-  ready, its four sections written (drafts too), its body not read as it
-  is. Judged then applied (principle 6): in CI the reviewer reads what an
-  earlier run refined.
+  reviewer]`), opt-in as on merge requests. One issue a run: the first
+  in the backlog's order the product owner keeps, not ready, its four
+  sections written, its body not read as it is.
 - **Where the findings live**: one comment on the issue
   (`sticky=reviewer/spec`), edited each review, hiding a record the
   engine reads back: the body's digest, the round, the important
@@ -411,9 +409,7 @@ merge-request line; on in workline's own repository.
   owner's prompt grows by the comment, clipped at 3000 characters. On the
   sandbox, 19.2k to 23.3k tokens a review, three or four judges
   (roles/reviewer/docs/tried.md).
-- **Rejected**: the hold as a label of the reviewer's (a second state a
-  person would have to keep in step); the reviewer in the product owner's
-  call (one role, one job); every refined issue a run (several reviews
-  where one run reads one spec); the product owner rewriting a person's
-  section to answer a finding (principle 1).
+- **Rejected**: the hold as a label of the reviewer's (a second state to
+  keep in step); the reviewer in the product owner's call (one role, one
+  job); rewriting a person's section to answer a finding (principle 1).
 
