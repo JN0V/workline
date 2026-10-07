@@ -1,0 +1,15 @@
+case: product-owner/new-issue-acted-on-when-read
+about: An issue opened since the role's last run, read in this run, is acted on in it; its first state is written before the act, which records itself there.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing", body: "The last row is missing.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:order-without-state}
+expect:
+  run-files:
+    in/issues-read: {contains: "12"}
+  forge:
+    issues:
+      - {id: 12, labels: ["workline:priority/1"], comments: 1, comment-contains: ["judged: d8c4dff", "priority: 1"], comment-lacks: "new: true"}

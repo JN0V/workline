@@ -69,8 +69,9 @@ func (s Settings) rounds() int {
 }
 
 // Pre lists the open issues in in/task.md. An issue without a state comment
-// gets one, through a fallback comment, and is judged from the next run; one
-// whose state comment does not read is left out, and said.
+// gets one, through a fallback comment: opened since the role's last run,
+// it is read first; one whose state comment does not read is left out, and
+// said.
 func Pre(runDir, repo string) int {
 	role := os.Getenv("WORKLINE_ROLE")
 	if role == "" {
@@ -130,7 +131,9 @@ func Pre(runDir, repo string) int {
 	var code []string // the files the issues name, given once each
 	var others []string
 	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
-	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
+	var again, fresh, never, changed, rest []due    // again: an act proposed only for the cap, read first
+	var unseen []due                                // no state comment yet: opened since the last run, once the role has run
+	ran := false                                    // the role ran on this backlog before: a state or its report found
 	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
 	// The person's hand (ADR-0025): a box a person of the project ticked
 	// in the report is done as the record holds it, with no agent; runs
@@ -208,6 +211,7 @@ func Pre(runDir, repo string) int {
 	var waits []backlog.Wait                                 // the issues waiting on a person, for the report (ADR-0031)
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
+			ran = true
 			continue
 		}
 		notes, err := b.Notes(forge.Target{Kind: "issue", ID: is.ID})
@@ -221,6 +225,7 @@ func Pre(runDir, repo string) int {
 		}
 		notesOf[is.ID] = notes
 		st, found, err := backlog.ReadState(comments, role)
+		ran = ran || found
 		// Only the text as last proposed, not answered since — an answer
 		// may change it, the agent reads it first — and only while the body
 		// still lacks what it adds.
@@ -275,8 +280,7 @@ func Pre(runDir, repo string) int {
 		}
 		switch {
 		case !found:
-			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
-				"issue": is.ID, "sticky": "state", "body": backlog.FormatState(backlog.State{Confirmed: commit})}})
+			unseen = append(unseen, due{is, &backlog.State{Confirmed: commit}, comments, notes})
 			continue
 		case err != nil:
 			findings = append(findings, verdict.Finding{Rule: "state-broken", Where: fmt.Sprintf("#%d", is.ID),
@@ -373,16 +377,19 @@ func Pre(runDir, repo string) int {
 			rest = append(rest, due{is, st, comments, notes})
 		case slices.Contains(capped, is.ID):
 			again = append(again, due{is, st, comments, notes})
+		case st.New:
+			fresh = append(fresh, due{is, st, comments, notes}) // opened since a run before, not read yet
 		case st.Judged == "":
 			never = append(never, due{is, st, comments, notes})
+		case backlog.PeopleComments(comments) != st.Comments, // someone wrote since it was read
+			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
+			slices.Contains(reopened, is.ID):
+			fresh = append(fresh, due{is, st, comments, notes})
 		case cfg.SpecReview && backlog.SpecOpen(is, comments) != nil && backlog.SpecOpen(is, comments).Body != st.Answered:
 			// The reviewer's findings on its spec, not given yet: answered
 			// at this refine (#128).
 			changed = append(changed, due{is, st, comments, notes})
-		case sourcesChanged(repo, st),
-			backlog.PeopleComments(comments) != st.Comments,         // someone wrote since it was read
-			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
-			slices.Contains(reopened, is.ID):
+		case sourcesChanged(repo, st):
 			changed = append(changed, due{is, st, comments, notes})
 		default:
 			rest = append(rest, due{is, st, comments, notes})
@@ -391,6 +398,22 @@ func Pre(runDir, repo string) int {
 	if asked {
 		return 0 // the judge first: pre runs again with its answers
 	}
+	// An issue with no state comment gets one. Once the role ran on this
+	// backlog, it is a person's issue opened since: marked new, and read
+	// this run with what people wrote since (ADR-0018, amended); on the
+	// role's first run, the whole backlog is new, and read from the next.
+	for _, d := range unseen {
+		d.st.New = ran
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
+			"issue": d.is.ID, "sticky": "state", "body": backlog.FormatState(*d.st)}})
+		if ran {
+			fresh = append(fresh, d)
+		}
+	}
+	// What a person did since the last run is read newest first, the
+	// issues never read from before oldest first (ADR-0018, amended).
+	slices.SortStableFunc(fresh, func(a, b due) int { return b.is.ID - a.is.ID })
+	slices.SortStableFunc(never, func(a, b due) int { return a.is.ID - b.is.ID })
 	// What the order holds back (ADR-0028), with no agent: the first ready
 	// issue offered, those waiting on an open one, the cycles.
 	report, isOpen := 0, map[int]bool{}
@@ -467,7 +490,7 @@ func Pre(runDir, repo string) int {
 	// a file an issue was imported from. The parts of the issue changed,
 	// and the issue imported, are read first, with the change; the others
 	// it touches are listed in the report for a person.
-	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, never, changed, rest), cfg.Archived)
+	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, fresh, never, changed, rest), cfg.Archived)
 	findings = append(findings, unread...)
 	// A proposal an older engine recorded without its act, ticked by a
 	// person of the project: its issue read first, the agent asked to draft
@@ -493,12 +516,15 @@ func Pre(runDir, repo string) int {
 		}
 		return left
 	}
-	again, never, changed, rest = pick(again), pick(never), pick(changed), pick(rest)
+	again, fresh, never, changed, rest = pick(again), pick(fresh), pick(never), pick(changed), pick(rest)
 	slices.SortFunc(ahead, func(a, b due) int { return a.is.ID - b.is.ID })
-	// Then those never read, then those whose code changed since; an issue
-	// whose code did not change is not read again (ADR-0018). Without an
-	// agent, nothing is read, and no issue is said to be.
-	toRead := slices.Concat(ahead, again, never, changed)
+	// Then what a person did since the last run — an issue opened, written
+	// on, edited or reopened —, newest first; then those never read from
+	// before, oldest first; then those whose code changed since, or on
+	// whose spec the reviewer left findings. An issue with nothing new is
+	// not read again (ADR-0018, amended). Without an agent, nothing is
+	// read, and no issue is said to be.
+	toRead := slices.Concat(ahead, again, fresh, never, changed)
 	if os.Getenv("WORKLINE_AI") == "none" || paused {
 		toRead = nil
 	}
@@ -523,7 +549,7 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		read := *d.st
-		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
+		read.Judged, read.Comments, read.New = commit, backlog.PeopleComments(d.comments), false
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 			read.Answered = r.Body
 		}

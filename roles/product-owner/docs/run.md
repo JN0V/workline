@@ -17,14 +17,25 @@ the report's opening, changed needs, parents, slipped milestones:
 ### 1. What the agent is given
 
 `pre` gives the agent a share of the open issues (`issues-per-run`), in
-this order:
+this order
+([ADR-0018, amended](../../../docs/adr/0018-the-product-owner.md#amendment-2026-10-07-a-persons-new-issue-is-read-before-the-catch-up)):
 
-- those an act was proposed on only for a run's cap;
-- then those never read;
-- then those whose code changed, that someone commented on or edited, or
-  reopened after it closed them, or on whose spec the reviewer left
-  findings open, not given yet
-  ([#128](https://github.com/JN0V/workline/issues/128)), since read.
+1. **What a person asked for**: the issues of a proposal ticked before
+   its act was drafted, and those read again for a changed need
+   ([tracking](tracking.md)); then those an act was proposed on only for
+   a run's cap.
+2. **What came since the last run**, newest first: an issue opened since
+   — by a person, or by a role for a finding —, and one a person wrote
+   on, edited or reopened since it was read.
+3. **The catch-up**, oldest first: the issues never read from before —
+   those there at the role's first run, and those an import opened.
+4. **Then** those whose code changed since read, or on whose spec the
+   reviewer left findings not given yet
+   ([#128](https://github.com/JN0V/workline/issues/128)).
+
+A person's new issue is read at the first run that sees it with an
+agent, never behind the catch-up; one left by the cap, or by a run with
+no agent, stays ahead (`new` in its state until read).
 
 Each issue comes with:
 
@@ -39,9 +50,10 @@ Each issue comes with:
   lines in all; up to six others on the same code whole, the rest by
   title.
 
-An issue with no state comment gets one, judged from the next run; one
-whose comment does not read is left out (`state-broken`), as is the report
-issue.
+An issue with no state comment gets one, and is read in the same run —
+on the role's first run, the whole backlog gets its state and is read
+from the next. One whose comment does not read is left out
+(`state-broken`), as is the report issue.
 
 ### 2. The acts it proposes
 

@@ -70,16 +70,11 @@ with no AI:
 ## Reading
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name: first those an act was proposed on only
-because a run's cap was reached — though nothing changed on them, the act
-is decided again, and the proposal leaves the report once its issue is
-read —, then those never read, then those with
-something new since they were read — a commit touched their sources, a
-person commented (`comments` counts people's comments read), a person
-changed its body (`body`), or a person reopened what the role closed —
-except the issues read again for a change to what they were built on,
-read before all ("A changed need", below). An issue with nothing new is not read again,
-however old (ADR-0018). An issue on the same code as one read is given with
+lines of the code they name, in the order of
+[a run](../../roles/product-owner/docs/run.md) (ADR-0018, amended): a
+person's new issue (`new` in its state), reply (`comments`), edit (`body`)
+or reopening before the catch-up of those never read. An issue with nothing
+new is not read again, however old. An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
 against; the others are listed by title only. Each issue read gets `judged`
 moved to the run's commit; without an agent, or when its answer does not

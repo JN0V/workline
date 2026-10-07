@@ -853,3 +853,28 @@ then tried twice.
   agent's run settling a change with nothing proposed (conformance
   `changed-import-lines-read-again`, `changed-read-nothing-proposed-settles`).
 
+
+## 2026-10-07 — a new issue waited behind the catch-up, found on a gardening run
+
+Workline's own scheduled gardening (Actions run 37682808989, its run
+folder read from the artifact). The maintainer had opened a raw issue,
+[#264](https://github.com/JN0V/workline/issues/264) "A tester role", to
+see the role refine and split it.
+
+- **What the run read** (`in/issues-read`, `issues-per-run: 8`): #83,
+  #85, #87 (proposals ticked), then #102 to #106, the oldest never read.
+  #264 had no state comment: it got one (`fallback.yaml`), was not read,
+  and the old queue would have kept it behind the catch-up for nights.
+- **What the report said**: the five acts done because the maintainer
+  ticked them sat under "What the role did alone this run: 5 acts", each
+  "Ticked by @JN0V", and What to do asked to check "5 acts done alone".
+- **Changed** (ADR-0018 and ADR-0031, amended): what came since the last
+  run is read before the catch-up, a new issue in the run that first sees
+  it; the acts done as ticked have their own fold and count.
+- **Tried**: conformance only — the run's order and report rebuilt as
+  cases (`reads-a-new-issue-first`, `new-issue-acted-on-when-read`,
+  `new-issue-stays-first-past-the-cap`, `report-ticked-acts-apart`). **Not
+  tried**: a live run with an agent. #264 got its state from the engine
+  before this change, with no `new`: it stays in the catch-up unless
+  `new: true` is added to its state; issues opened from now on are read
+  first.

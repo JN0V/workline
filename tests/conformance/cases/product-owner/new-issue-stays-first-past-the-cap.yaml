@@ -1,0 +1,19 @@
+case: product-owner/new-issue-stays-first-past-the-cap
+about: An issue marked new, left unread by an earlier run's cap or a run with no agent, stays ahead of the issues never read from before; the issues opened since are read newest first.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 2}}}
+  forge:
+    issues:
+      - {id: 3, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\nnew: true\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Export to JSON", body: "Add a JSON export.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\nnew: true\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "8\n5", not-contains: "3"}
+  forge:
+    issues:
+      - {id: 5, comment-contains: "judged: d8c4dff", comment-lacks: "new: true"}
+      - {id: 3, comment-lacks: "judged: d8c4dff"}

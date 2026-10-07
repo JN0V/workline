@@ -54,6 +54,10 @@ type State struct {
 	// another review, never taken for one answered.
 	Wrote    map[string]string `yaml:"wrote,omitempty"`
 	Answered string            `yaml:"answered,omitempty"`
+	// New: opened since the role's last run — by a person, or by a role
+	// for a finding — and not read yet: read before the issues never read
+	// from before (ADR-0018, amended); off once read.
+	New bool `yaml:"new,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -115,7 +119,8 @@ func FormatState(s State) string {
 		Sections  map[string]string `yaml:"sections,omitempty"`
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
 		Answered  string            `yaml:"answered,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered})
+		New       bool              `yaml:"new,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.New})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -1012,9 +1017,15 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return "no-state", err.Error()
 	}
 	st, found, err := ReadState(comments, role)
-	if !found {
+	switch {
+	case !found && slices.Contains(p.read, c.Issue):
+		// Opened since the role's last run and read in this one: pre wrote
+		// its first state, applied before any act (ADR-0018, amended).
+		st, err = &State{}, nil
+	case !found:
 		return "no-state", "the issue has no state comment yet: it is not acted on before the engine has one"
-	} else if err != nil {
+	}
+	if err != nil {
 		return "state-broken", "the issue's state comment does not read (" + err.Error() + "): nothing is written on it"
 	}
 	if c.Do == "order" {

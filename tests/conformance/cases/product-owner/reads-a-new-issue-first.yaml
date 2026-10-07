@@ -1,0 +1,21 @@
+case: product-owner/reads-a-new-issue-first
+about: An issue a person opened since the role's last run, with no state comment yet, is read in this run, before the issues never read from before; those are read oldest first, and the new one's state is no longer marked new once read.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 2}}}
+  forge:
+    issues:
+      - {id: 3, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 4, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 6, title: "A tester role", body: "A role that writes the tests a need asks for.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  run-files:
+    in/issues-read: {contains: "6\n3", not-contains: "4"}
+  forge:
+    issues:
+      - {id: 6, comments: 1, comment-contains: "judged: d8c4dff", comment-lacks: "new: true"}
+      - {id: 3, comments: 1, comment-contains: "judged: d8c4dff"}
+      - {id: 4, comments: 1, comment-lacks: "judged: d8c4dff"}

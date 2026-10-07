@@ -1,0 +1,17 @@
+case: product-owner/reads-a-persons-reply-before-the-catch-up
+about: An issue a person wrote on since it was read comes before the issues never read from before, so a reply does not wait for the catch-up.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 1}}}
+  forge:
+    issues:
+      - {id: 3, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "It happens on every file with more than 100 rows."]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "7", not-contains: "3"}
+  forge:
+    issues:
+      - {id: 7, comment-contains: "judged: d8c4dff\ncomments: 1"}

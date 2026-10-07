@@ -1,0 +1,15 @@
+case: product-owner/first-run-marks-nothing-new
+about: On the role's first run on a backlog — no state comment, no report — every issue gets its state, none marked new, and none is read before the next run.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 3, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: []}
+      - {id: 4, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 3, comments: 1, comment-contains: "confirmed: d8c4dff", comment-lacks: "new: true"}
+      - {id: 4, comments: 1, comment-lacks: "new: true"}

@@ -1,11 +1,14 @@
 case: product-owner/order-without-state-dropped
-about: An issue the engine has no state of yet is not ordered; it gets its state, and is ordered from the next run.
+about: An issue the engine has no state of yet, not read in this run, is not ordered; it gets its state, and is ordered once read.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 1}}}
   forge:
     issues:
       - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 12, title: "Last row missing", body: "The last row is missing.", labels: [], comments: []}
+      - {id: 13, title: "Export to JSON", body: "Add a JSON export.", labels: [], comments: []}
 run: {role: product-owner, event: schedule, ai: fake:order-without-state}
 expect:
   findings: [{rule: no-state, where: "#12"}]

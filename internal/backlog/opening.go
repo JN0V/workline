@@ -155,7 +155,7 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 			return err
 		}
 	}
-	st := State{Sources: op.Sources, Confirmed: op.Commit}
+	st := State{Sources: op.Sources, Confirmed: op.Commit, New: op.Triage} // a finding read with the new issues; an import, with the catch-up
 	for _, name := range op.Wrote {
 		if st.Wrote == nil {
 			st.Wrote = map[string]string{}

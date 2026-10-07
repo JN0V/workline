@@ -35,8 +35,9 @@ intentions: [open, skip, close, keep, sources, milestone, order, refine, ready, 
 without-ai: pass
 
 settings:
-  # A run reads the issues never read first, then those whose code changed
-  # since; one whose code did not change is not read again.
+  # A run reads what came since its last run first (new issues, replies,
+  # edits), newest first; then the issues never read, oldest first; then
+  # those whose code changed. One with nothing new is not read again.
   issues-per-run: 8
   code-lines-max: 1500     # lines of code given in one run, all files together
   # How far the role goes (ADR-0026): cautious, normal or enterprising —

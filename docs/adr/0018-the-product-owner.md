@@ -227,3 +227,36 @@ a copy, applying nothing.
 - Every role's issues share one way in; their lifecycle is the PO
   assistant's.
 - A roadmap file goes, once its entries are issues.
+
+## Amendment (2026-10-07): a person's new issue is read before the catch-up
+
+A gardening run on workline's own backlog read eight issues: three
+proposals a person had ticked, then the five oldest never read. A raw
+issue the maintainer had just opened was not read: it got its state that
+night, and then waited behind the catch-up of older issues, several
+nights at eight a run.
+
+**Borrowed**: triage practice puts a fresh issue first — Kubernetes
+labels every new issue `needs-triage` until a person sorts it — while a
+bot with a cap per run (gitlab-triage's `limits`) works through the rest
+over several runs ([research](../research/product-owner.md)).
+
+**The order of a run's reading**:
+
+1. What a person asked for: a ticked proposal's issue, an issue read
+   again for a changed need, then an act proposed only for the cap.
+2. What came since the last run, newest first: an issue opened since —
+   by a person, or by a role for a finding — and one a person wrote on,
+   edited or reopened since it was read.
+3. The catch-up, oldest first: the issues never read from before — the
+   backlog there at the role's first run, and what an import opened.
+4. The issues whose code changed, or with spec findings to answer.
+
+**How "since the last run" is known, with no date**: an issue the role
+finds without a state comment, once it ran on that backlog (a state or
+its report exists), was opened since; its first state says `new`, and it
+is read in the same run, its acts checked against that first state,
+written before them. `new` stays until it is read, so the cap or a run
+with no agent never sends it to the catch-up. A role's finding is
+opened with `new`; an import's issues are not. On the role's first run,
+nothing is new: the whole backlog is the catch-up.
