@@ -467,7 +467,7 @@ func Pre(runDir, repo string) int {
 	// a file an issue was imported from. The parts of the issue changed,
 	// and the issue imported, are read first, with the change; the others
 	// it touches are listed in the report for a person.
-	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, never, changed, rest))
+	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, never, changed, rest), cfg.Archived)
 	findings = append(findings, unread...)
 	var ahead []due
 	pick := func(list []due) []due {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -303,10 +304,17 @@ func (p *Plan) readChanges(found []Change) {
 			p.Changed = true
 			continue
 		}
+		if c.Path != "" && pathglob.Any(p.config.Archived, c.Path) {
+			p.Changed = true // its file archived since: no longer a source
+			continue
+		}
 		kept = append(kept, c)
 	}
 	today := time.Now().UTC().Format(dateLayout)
 	for _, c := range found {
+		if c.Path != "" && pathglob.Any(p.config.Archived, c.Path) {
+			continue
+		}
 		c.Was, c.Now = "", ""
 		for _, t := range c.Touch {
 			if _, ok := p.changedFor[t.Issue]; t.Read && !ok {

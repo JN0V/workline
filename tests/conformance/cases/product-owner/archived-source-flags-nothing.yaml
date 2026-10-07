@@ -1,0 +1,53 @@
+case: product-owner/archived-source-flags-nothing
+about: "A file the project archived — no longer a source, the setting `archived` naming it — flags nothing when its lines change: the issue imported from it is not read again for it, and a change the record kept from it leaves the report (ADR-0032)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {archived: [ROADMAP.md]}
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      Where the project is going.
+
+      ## Next
+
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export.
+      2. **Sort the columns.** By name, then by type.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap' && git tag imported
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      Where the project is going.
+
+      ## Next
+
+      1. **Keep the last row.** WriteRows stops one row short.
+         It loses data on every export,
+         and the header too.
+      2. **Sort the columns.** By name, then by type.
+      MD
+      git commit -qam 'docs: the header too'
+  forge:
+    issues:
+      - {id: 4, title: "Keep the last row", body: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\nOpened from `ROADMAP.md`, lines 7 to 8 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\njudged: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Sort the columns", body: "2. **Sort the columns.** By name, then by type.\n\nOpened from `ROADMAP.md`, lines 9 to 9 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:5f4e3d2c1b0a -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\njudged: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 6
+        title: "Backlog — product owner"
+        body: "An older report."
+        labels: []
+        comments: ["```yaml\nchanges:\n  - {issue: 5, path: ROADMAP.md, lines: 9 to 9, since: 2026-10-01, touched: [{issue: 5, how: import}]}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  no-findings:
+    - {rule: need-changed}
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 6, body-lacks: "ROADMAP.md", comment-lacks: "path: ROADMAP.md"}
