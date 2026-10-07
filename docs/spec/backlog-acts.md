@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: c9c9aba
+checked: c24603b
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -808,7 +808,7 @@ order (`backlog.ReportBody`):
 
 | Part | What it says |
 |---|---|
-| What to do | the proposals to decide and the changes to check, counted; the parents to accept; one run before the pause, "answer before the next run, or the role pauses" (within N runs when more are left); **Paused** and its box to resume; `ignored-runs-max: 0` said; the acts done alone, to check; a level suggested |
+| What to do | the proposals to decide, the changes to check and what only a person settles, counted; the parents to accept; one run before the pause, "answer before the next run, or the role pauses" (within N runs when more are left); **Paused** and its box to resume; `ignored-runs-max: 0` said; the acts done alone, to check; a level suggested |
 | To decide | each proposal a box ("The person's hand"), grouped under its issue — number and title — saying in plain words what a tick does and why (`backlog.offer`): "Set its priority to 3 (now: …)", "Add Need and Validation to it (Need and Validation as drafts for you to correct)", then a short why that does not say the act again; when the issue was read again for a change, the change beside its title; an issue to open says the import opens it; one the engine cannot do — its reporter's rounds spent, a slip with nowhere to go — is a line "For you to settle", no box; a proposal recorded without its act says it is drafted when the agent next reads it, and once ticked is a line saying who ticked it, no box; then the kinds back to propose, with their evidence and a box each |
 | To check | each change with an issue it touches not read again ("A changed need"): a box — the issue and the sections a person rewrote, or the file's lines, the day found — and under it each open issue it touches: how, read again or not |
 | To accept | each open parent whose parts are all closed, recorded (`to-accept`) so the report is rewritten when that list changes ("A parent and its parts") |

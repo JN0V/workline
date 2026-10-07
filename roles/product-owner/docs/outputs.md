@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: c9c9aba
+checked: c24603b
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -14,7 +14,7 @@ One report issue, "Backlog — product owner", rewritten at each run; what
 to do first, what the role did after, the long parts folded:
 
 - **What to do**: how many proposals to decide and changes to check;
-  the needs to accept; a warning a run before the
+  what only you can settle; the needs to accept; a warning a run before the
   role pauses, or the box that resumes it.
 - **To decide**: each proposal under the issue it is on, saying in plain
   words what a tick does and why — done at the next run when a person of

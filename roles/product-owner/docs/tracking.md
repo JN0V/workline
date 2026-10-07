@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: c9c9aba
+checked: c24603b
 verified: agent:claude-code
 ---
 # Product owner — what each run tracks
