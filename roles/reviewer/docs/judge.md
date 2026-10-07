@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 604ed00
+checked: 7545ece
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
