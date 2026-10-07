@@ -40,6 +40,7 @@ type Settings struct {
 	Budgets    Budgets    `json:"budgets"`
 	Duplicates Duplicates `json:"duplicates"`
 	Freshness  Freshness  `json:"freshness"`
+	Reader     Reader     `json:"reader"`
 	// MaxOpenMergeRequests stops gardening while this many of the role's
 	// merge requests wait for review (ADR-0006).
 	MaxOpenMergeRequests int `json:"max-open-merge-requests"`
@@ -839,6 +840,8 @@ func Pre(runDir, repo string) int {
 			return suspects[p] != nil || hasPending(findings, p)
 		})...)
 		stale = staleForAgent(findings, byPath, pl, s)
+		// Whether the user pages serve their reader (#193): no agent.
+		problems = append(problems, ReaderChecks(tree, s.Reader)...)
 	}
 	// Line counts off: counted by the engine, never vouched for (ADR-0014).
 	counts := CountsOff(repo, tree, docs)

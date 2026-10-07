@@ -1,0 +1,33 @@
+case: documentalist/reader-references-unlinked
+about: "When gardening, a user page naming a decision record, a doc or an issue without a link — `ADR-0003`, `docs/tech/auth.md`, `#12` as plain text — is reported, once a page, with the lines (#193). A link, and a name in a code span (an example), are not; nor a decision record's own bare citations: records are not user pages."
+given:
+  repo: documented
+  setup:
+    - |
+      mkdir -p docs/adr
+      cat > README.md <<'DOC'
+      # Shop
+
+      See [the guide](docs/guide.md).
+      DOC
+      cat > docs/guide.md <<'DOC'
+      # Guide
+
+      Tokens last an hour, as ADR-0003 decided; docs/tech/auth.md says how, and #12 asks for more.
+      [ADR-0001](adr/0001-go.md) is linked, and `#7` or `ADR-0009` in a code span is an example.
+      The [sign-in page](product/sign-in.md) is linked too.
+      DOC
+      printf '# 1. Go\n\nSupersedes nothing; see ADR-0002 and #3.\n' > docs/adr/0001-go.md
+      git add . && git commit -qm 'docs: a guide'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: reference-unlinked, where: docs/guide.md, message: "3 decision, doc or issue named without a link: line 3 `ADR-0003`, line 3 `#12`, line 3 `docs/tech/auth.md`"}
+  no-findings:
+    - {rule: reference-unlinked, where: docs/adr/0001-go.md}
+    - {rule: reference-unlinked, where: README.md}
+    - {rule: reference-unlinked, message: "ADR-0001"}
+    - {rule: reference-unlinked, message: "#7"}
+    - {rule: reference-unlinked, message: "ADR-0009"}

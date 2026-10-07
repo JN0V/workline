@@ -1,0 +1,27 @@
+case: documentalist/reader-specs-left-out
+about: "User pages are the docs matching `reader.pages` (README.md, docs/**), but `reader.skip` (specs by default) and the records — decisions, research, history (#193). A project skips more: here its technical docs."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {reader: {skip: ["docs/spec/**", "docs/tech/**"]}}}}
+  setup:
+    - |
+      mkdir -p docs/spec docs/research
+      printf '# Shop\n\nAs ADR-0003 says. [Sign in](docs/product/sign-in.md).\n' > README.md
+      printf '# Spec\n\nAs ADR-0003 says.\n' > docs/spec/api.md
+      printf '# Research\n\nAs ADR-0003 says.\n' > docs/research/tools.md
+      printf '# Changes\n\nAs ADR-0003 says.\n' > docs/CHANGELOG.md
+      printf '\nAs ADR-0003 says.\n' >> docs/tech/auth.md
+      git add . && git commit -qm 'docs: cite a decision'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: reference-unlinked, where: README.md}
+  no-findings:
+    - {rule: reference-unlinked, where: docs/spec/api.md}
+    - {rule: reference-unlinked, where: docs/research/tools.md}
+    - {rule: reference-unlinked, where: docs/CHANGELOG.md}
+    - {rule: reference-unlinked, where: docs/tech/auth.md}
+    - {rule: page-unreachable, where: docs/spec/api.md}
+    - {rule: page-unreachable, where: docs/tech/auth.md}

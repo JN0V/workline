@@ -16,6 +16,13 @@ roles:
         roles/documentalist/docs/judge-claims.md,
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md]
+      # The user pages (AGENTS.md, "Writing user docs"): the role pages too,
+      # but their status and the archived backlog; each role page opens
+      # with a diagram.
+      reader:
+        pages: ["README.md", "docs/**", "roles/*/README.md", "roles/*/docs/*.md"]
+        skip: ["docs/spec/**", "roles/*/docs/status.md", docs/BACKLOG.md, docs/backlog-parked.md]
+        flow: ["roles/*/README.md"]
       # Catching up its own docs, far behind: those whose sources do not fit
       # one call are judged in parts (ADR-0009), one doc a night (8 parts),
       # and a night spends at most 400k tokens.

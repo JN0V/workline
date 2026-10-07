@@ -1,0 +1,18 @@
+case: documentalist/reader-threshold-unset
+about: "A reader threshold a project sets to 0 is said, never read as a pass (#193): `setting-missing` blocks, as for a budget; the other reader checks still run."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {reader: {paragraph-words: 0}}}}
+  setup:
+    - |
+      printf '# Shop\n\nAs ADR-0003 says.\n' > README.md
+      git add . && git commit -qm 'docs: cite a decision'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: setting-missing, message: "reader.paragraph-words"}
+    - {rule: reference-unlinked, where: README.md}
+  no-findings:
+    - {rule: setting-missing, message: "reader.cell-words"}
