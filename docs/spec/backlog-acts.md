@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 3bc3de5
+checked: 3c2c426
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -35,7 +35,7 @@ sections:                                # its Need and Scope as last read or wr
   Need: Every row exported, so a report counts what was sold.
   Scope: WriteRows in src/export/csv.go.
 wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready)
-answered: 1                              # the reviewer's round on its spec last given to the agent
+answered: 3f9a1c0e2b7d                   # the review of its spec last given to the agent, by the body it read
 ```
 
 Two carrying the marker, the last is read: on GitLab only a note's author
@@ -417,7 +417,9 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   `spec-findings-open`, `spec-rounds-spent`. A person's
   `workline:accepted` lifts it; `workline:ready` set by hand is theirs.
 - **Read again**: an issue with findings open on its body as it is, a
-  round its state has not `answered`, is read again, the comment given
+  review its state has not `answered` — kept by the body that review
+  read, never by its round, which restarts at 1 after a clean review —,
+  is read again, the comment given
   to the agent (clipped at 3000 characters) with the sections it may
   rewrite.
 - **Answered**: a `refine` may rewrite a section with text when a finding
