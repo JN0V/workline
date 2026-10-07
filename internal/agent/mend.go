@@ -51,10 +51,26 @@ var quotedThenMore = regexp.MustCompile(`^( *(?:- +)*[A-Za-z][\w-]*: +)("[^"\\]*
 
 // unquote reads whole the values quotedThenMore matches, rewritten
 // double-quoted as the agent wrote them, quotes included, and says how many.
+// A block scalar's lines are its text, code quoted as it is: left alone.
 func unquote(answer string) (string, int) {
 	lines := strings.Split(answer, "\n")
 	n := 0
+	block := -1 // in a block scalar: its key's column
 	for i, l := range lines {
+		if block >= 0 {
+			k := len(l) - len(strings.TrimLeft(l, " "))
+			if strings.TrimSpace(l) == "" || k > block || l[k] == '\t' {
+				continue
+			}
+			block = -1
+		}
+		if h := blockHeader.FindStringSubmatchIndex(l); h != nil {
+			block = len(l[h[2]:h[3]]) + len(l[h[4]:h[5]])
+			if h[6] < 0 && h[5] > h[4] {
+				block -= 2 // `- |`: the dash's column
+			}
+			continue
+		}
 		m := quotedThenMore.FindStringSubmatch(strings.TrimRight(l, " \t\r"))
 		// Closed on the quote it opened with, it is one quoted text whose
 		// inner quotes were left unescaped: the agent is asked again.

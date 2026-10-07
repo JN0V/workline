@@ -118,6 +118,13 @@ func TestMendQuotedThenMore(t *testing.T) {
 	if f["title"] != `"Idle for 60 minutes" boundary is unclear` || f["why"] != `'it' can be read two ways` || len(mended) != 1 {
 		t.Errorf("title %q, why %q, mended %v", f["title"], f["why"], mended)
 	}
+	// Inside a block scalar, a line that looks like one is the quote's
+	// text, kept as written (PR #245's review).
+	answer = "- finding:\n    title: \"Idle for 60 minutes\" is unclear\n    cause:\n      path: a.yaml\n      quote: |\n        key: \"a\" b\n"
+	f, _ = finding(t, answer)
+	if c, _ := f["cause"].(map[string]any); c["quote"] != "key: \"a\" b\n" || f["title"] != `"Idle for 60 minutes" is unclear` {
+		t.Errorf("block scalar changed: %q, title %q", f["cause"], f["title"])
+	}
 	// One quoted text whose inner quotes were left unescaped is asked
 	// again, not mended: its outer quotes are not the agent's words.
 	broken := "- note: \"it returns `\"one hour\"` when unset.\"\n"
