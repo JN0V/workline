@@ -36,8 +36,8 @@ this order
 
 - **Never read by the agent**: its state has no `judged`, set only once
   the agent's answer on it read.
-- **Opened by a person**: no key of an import or a finding in its body,
-  and its author not a bot.
+- **Opened by a person**: no key of an import or a finding on a line of
+  its own in its body, and its author not a bot.
 - A person's new issue is read at the first run that sees it with an
   agent, never behind the catch-up.
 

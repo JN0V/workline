@@ -260,8 +260,9 @@ over several runs ([research](../research/product-owner.md)).
   writing. A state written by an engine before this change, or a run
   that only gave it its state, reads the same: such an issue (#264) is
   ranked in step 2.
-- *Opened by a person*: no key of an import or a finding in the body
-  (`workline:import=`, `workline:issue=`, `opened-by`), and the author not
+- *Opened by a person*: no key of an import or a finding on a line of its
+  own in the body, as the engine writes it — one quoted is a person's text
+  — (`workline:import=`, `workline:issue=`, `opened-by`), and the author not
   a bot (a GitHub app's `[bot]` login, a GitLab project or group bot).
 - *Opened since*: an issue found without a state comment, once the role
   ran on that backlog (a state or its report exists), gets a first state

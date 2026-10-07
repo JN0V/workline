@@ -64,3 +64,24 @@ func TestOpenResumedCompletesTheIssue(t *testing.T) {
 		t.Errorf("labels %v, comments %q", is.Labels, comments)
 	}
 }
+
+// A person's issue: no key on a line of its own, as Openings writes it —
+// one quoted or inside a sentence is their text —, and no bot author.
+func TestByPerson(t *testing.T) {
+	for _, c := range []struct {
+		is   forge.Issue
+		want bool
+	}{
+		{forge.Issue{Body: "A tester role.", Author: "ann"}, true},
+		{forge.Issue{Body: "Text.\n\n<!-- workline:import=BACKLOG.md:0a1b2c3d4e5f -->", Author: "ann"}, false},
+		{forge.Issue{Body: "Found.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=a.go#12345678 -->"}, false},
+		{forge.Issue{Body: "As #12 said:\n> <!-- workline:import=BACKLOG.md:0a1b2c3d4e5f -->", Author: "ann"}, true},
+		{forge.Issue{Body: "It writes `<!-- workline:issue=a.go#1 -->` at the end.", Author: "ann"}, true},
+		{forge.Issue{Body: "Bump it.", Author: "renovate[bot]"}, false},
+		{forge.Issue{Body: "Bump it.", Author: "project_12_bot_ab12"}, false},
+	} {
+		if got := ByPerson(c.is); got != c.want {
+			t.Errorf("ByPerson(%q by %q) = %v, want %v", c.is.Body, c.is.Author, got, c.want)
+		}
+	}
+}

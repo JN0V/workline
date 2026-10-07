@@ -167,16 +167,15 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 }
 
 // ByPerson says whether a person opened an issue: not through Openings
-// (no key of a finding or an import in its body) and not by a bot — a
-// GitHub app's `[bot]` login, a GitLab project or group bot.
+// (no key of a finding or an import on a line of its own in its body, as
+// Openings writes it — one quoted or inside a sentence is a person's text)
+// and not by a bot — a GitHub app's `[bot]` login, a GitLab project or
+// group bot.
 func ByPerson(is forge.Issue) bool {
-	for _, m := range []string{"<!-- workline:import=", "<!-- workline:issue=", "<!-- workline:opened-by="} {
-		if strings.Contains(is.Body, m) {
-			return false
-		}
-	}
-	return !strings.HasSuffix(is.Author, "[bot]") && !gitlabBot.MatchString(is.Author)
+	return !openedKey.MatchString(is.Body) && !strings.HasSuffix(is.Author, "[bot]") && !gitlabBot.MatchString(is.Author)
 }
+
+var openedKey = regexp.MustCompile(`(?m)^<!-- workline:(import|issue|opened-by)=[^\n]*-->[ \t\r]*$`)
 
 var gitlabBot = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
