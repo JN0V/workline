@@ -1,7 +1,8 @@
 ---
 sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
 checked: 55c1bc8
-verified: agent:claude-code
+judged: cd97f28
+verified: agent:documentalist
 ---
 # workline on another forge, or none
 
