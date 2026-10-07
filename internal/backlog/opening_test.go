@@ -77,6 +77,8 @@ func TestByPerson(t *testing.T) {
 		{forge.Issue{Body: "Found.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=a.go#12345678 -->"}, false},
 		{forge.Issue{Body: "As #12 said:\n> <!-- workline:import=BACKLOG.md:0a1b2c3d4e5f -->", Author: "ann"}, true},
 		{forge.Issue{Body: "It writes `<!-- workline:issue=a.go#1 -->` at the end.", Author: "ann"}, true},
+		{forge.Issue{Body: "<!-- workline:import=BACKLOG.md:0a1b2c3d4e5f --> \r\nText edited on Windows.", Author: "ann"}, false},
+		{forge.Issue{Body: "  <!-- workline:import=BACKLOG.md:0a1b2c3d4e5f -->", Author: "ann"}, true},
 		{forge.Issue{Body: "Bump it.", Author: "renovate[bot]"}, false},
 		{forge.Issue{Body: "Bump it.", Author: "project_12_bot_ab12"}, false},
 	} {
