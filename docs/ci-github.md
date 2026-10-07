@@ -84,7 +84,7 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
 - `apply`, `follow` and each pair's second job hold the write token, the
   App's when there is one, and no AI key.
 - `apply` runs when `judge` failed too (`if: always()`): a pull request
-  the reviewer holds still gets its comment (#226); the workflow fails
+  the reviewer holds still gets its comment ([#226](https://github.com/JN0V/workline/issues/226)); the workflow fails
   by `judge`'s verdict.
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
@@ -113,8 +113,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # + the engine and the agent
-      - env: {GH_TOKEN: "${{ github.token }}", CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", FILE: "${{ inputs.file }}"}
-        run: workline issues import "$FILE" --ai claude --forge github --summary "$GITHUB_STEP_SUMMARY" --json > line.json
+      # AGENT: your choice — claude, claude:<model>, cmd:<command> (another agent, its own install and token)
+      - env: {AGENT: claude, GH_TOKEN: "${{ github.token }}", CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", FILE: "${{ inputs.file }}"}
+        run: workline issues import "$FILE" --ai "$AGENT" --forge github --summary "$GITHUB_STEP_SUMMARY" --json > line.json
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: workline-import, path: "line.json\n.workline-runs", include-hidden-files: true}
