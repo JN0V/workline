@@ -633,3 +633,34 @@ Rows in results.tsv.
   named when it is among those used (`TestClaudeAnswer`); the row stays
   as written. Not tried: five runs (ADR-0014); the facet beside the lenses in one
   run (each measured apart); a merge request in CI.
+
+## 2026-10-07 — a spec before it is built (#128), workline-sandbox#43
+
+workline-sandbox#43, "A session lasts 60 minutes idle": a Need saying
+`IdleTimeout` signs out after 15 minutes (the code: 30), a Verification
+"Sessions feel right to the users.", its Scope `src/auth/idle.go`.
+
+- **Offline, recording agent**: the lenses' prompt 9.0k characters on
+  #128's own body (about 8k tokens), 13.4k on a spec naming
+  `internal/builtin/reviewer/intent.go` (about 12k); the judges' 1.1k and
+  2.3k characters of material on #43.
+- **Planted answers**, on the issue (`--issue 43 --forge github`) and on
+  the same text as a file in the sandbox's clone: both findings found
+  again (`#43:9`, `#43:5`; `docs/idle-spec.md:9`, `:5`), a misquote
+  dropped, the contradicted judge shown `Idle` and the constant; no record
+  written.
+- **Real, Sonnet finding** (`ai-max-tokens: 60000`): seven findings and a
+  decision, both planted defects among them, but the answer did not read,
+  twice (12.2k in, 2.7k out): a title opening on a quoted phrase
+  (`title: "Idle for 60 minutes" boundary is unclear`), and the decision
+  given as a proposal of its own. **Fixed**: the engine reads such a value
+  whole (`TestMendQuotedThenMore`); the task now says an open point is a
+  finding holding `decision`.
+- **Its answer replayed, Opus judging** (7.2k in, 0.4k out): the
+  contradiction (`#43:5`) and the unverifiable Verification (`#43:9`)
+  verified; four nits shown (a test file the Scope leaves out, the
+  Validation's reach, TokenTTL unchecked, the 60-minute boundary), the
+  three on line 5 grouped under the contradiction. 22.5k tokens all
+  together. The decision was left out of the replay.
+- **Not tried**: a real run after the fixes; the spec lenses on a spec
+  with nothing wrong (false findings).

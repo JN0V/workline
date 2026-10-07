@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
-checked: 194bf36
+checked: beb53f8
 verified: agent:claude-code
 ---
 # The roles
@@ -14,7 +14,7 @@ and where it stands.
 |---|---|---|---|
 | Committer | checks each commit's message, secrets and author; rewrites a refused message | `commit-msg` (the git hook), `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
-| Reviewer | reads the code a change brings and says what it breaks, what the issue it closes asks and it leaves out, and what its author claims and it contradicts; asks a person what only a person decides; never approves | `review` (`workline review`), `merge-request` (opt-in) | [reviewer](../roles/reviewer/README.md) |
+| Reviewer | reads the code a change brings, or a spec before it is built, and says what it breaks, what the issue it closes asks and it leaves out, and what its author claims and it contradicts; asks a person what only a person decides; never approves | `review` (`workline review`), `merge-request` (opt-in), `spec` (`workline review --spec`, `--issue`) | [reviewer](../roles/reviewer/README.md) |
 | Product owner | keeps the backlog — the open issues — true to the code and in order; opens its report with what is next and what is stuck; says on a split need what its parts delivered, for a person to accept; flags the issues built on a need a person changed; a weekly sample of its acts, for a person to judge | `schedule` (opt-in), `import`, the weekly sample | [product owner](../roles/product-owner/README.md) |
 
 Which role runs on which event is the routing: `routing.default.yaml` as

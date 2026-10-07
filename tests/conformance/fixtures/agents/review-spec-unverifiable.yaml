@@ -1,0 +1,10 @@
+# The reviewer's spec lenses asked together, on a spec of the `reviewed`
+# fixture whose Verification names no check: the unverifiable lens quotes it.
+calls:
+  - - finding:
+        lens: unverifiable
+        severity: important
+        title: The Verification names no check
+        why: "No test, command or threshold says whether Average returns 0 for an empty list; it would pass with the crash left"
+        cause: {path: docs/spec-mean.md, quote: "The mean works well."}
+        fix: name a test of Average on an empty list that expects 0

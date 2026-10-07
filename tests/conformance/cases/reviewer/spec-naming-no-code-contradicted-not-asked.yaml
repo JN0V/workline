@@ -1,0 +1,29 @@
+case: reviewer/spec-naming-no-code-contradicted-not-asked
+about: "A spec naming no code the repository holds gives the contradicted lens nothing to read: not asked, said, the other spec lenses asked (#128)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      cat > docs/spec-welcome.md <<'MD'
+      # A friendlier welcome
+
+      ## Need
+
+      The welcome page greets the visitor by name.
+
+      ## Verification
+
+      A test opens the page and finds the name.
+
+      ## Scope
+
+      The welcome page.
+      MD
+run: {review: [--spec, docs/spec-welcome.md], ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  summary: "not asked: contradicted (the spec names no code the repository holds)"
+  run-files:
+    in/parts/1-lenses/task.md: {contains: "# Lenses: ambiguous, unverifiable, out-of-scope\n"}

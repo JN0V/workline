@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 59f2c51
+checked: beb53f8
 judged: 9ad8c58
 verified: agent:claude-code
 -->
@@ -103,6 +103,7 @@ flowchart LR
 | `git commit` | `commit-msg`, the global hook | committer | yours, to rewrite a refused message |
 | `git push` | `pre-push`, the global hook, once `workline init` routes it | committer, documentalist: counts the docs made suspect | never |
 | `workline review` | `review` | reviewer, before you push | yours |
+| `workline review --spec <file>`, `--issue <n>` | `spec` | reviewer: a spec before it is built (#128) | yours |
 | `workline docs` | | documentalist: judges the docs made suspect, you keep or drop each fix | yours |
 
 ### The merge request

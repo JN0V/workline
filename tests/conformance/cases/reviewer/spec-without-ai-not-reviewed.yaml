@@ -1,0 +1,13 @@
+case: reviewer/spec-without-ai-not-reviewed
+about: "With no agent, a spec is not reviewed, said, and left for a person (#128): nobody asked."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      printf '# The mean\n\n## Need\n\nThe mean of no values is 0.\n' > docs/spec-mean.md
+run: {review: [--spec, docs/spec-mean.md], ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: not-reviewed, message: "the spec waits for a person"}]

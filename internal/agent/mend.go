@@ -10,32 +10,85 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Mend fixes the two slips that leave agents' answers unreadable or cut,
+// Mend fixes the slips that leave agents' answers unreadable or cut,
 // before any YAML reader takes them, and says what it mended: code quoted
-// with its tabs under a block scalar, when the answer fails on a tab (#157),
-// and a plain free text cut by ` #`, read whole (#156). The block's text and
+// with its tabs under a block scalar, when the answer fails on a tab (#157);
+// a value opening on a quoted phrase and going on after it, when the answer
+// fails there (#128); and a plain free text cut by ` #`, read whole (#156). The block's text and
 // the line's are kept exactly as written; an answer that still does not read
 // comes back as it came. Why and the rules: docs/spec/role-contract.md,
 // "One run", step 3.
 func Mend(answer string) (string, []string) {
 	var said []string
 	var probe any
-	if err := yaml.Unmarshal([]byte(answer), &probe); err != nil {
-		if !strings.Contains(err.Error(), "tab character") {
-			return answer, nil
+	// Each slip the reader stops on, mended in turn, one of each at most:
+	// an answer may hold both (PR #245's review).
+	came := answer
+	tabs, quotes := false, false
+	for err := yaml.Unmarshal([]byte(answer), &probe); err != nil; err = yaml.Unmarshal([]byte(answer), &probe) {
+		var n int
+		switch {
+		case !tabs && strings.Contains(err.Error(), "tab character"):
+			tabs = true
+			answer, n = untab(answer)
+			said = append(said, fmt.Sprintf("%d block(s) of code indented with tabs (the YAML reader refuses a tab as indentation): indented with spaces, their text kept as written", n))
+		case !quotes && strings.Contains(err.Error(), "did not find expected key"):
+			quotes = true
+			answer, n = unquote(answer)
+			said = append(said, fmt.Sprintf("%d value(s) opening on a quoted phrase and going on after it (the YAML reader takes the quotes for the whole value): read whole, as written", n))
 		}
-		fixed, n := untab(answer)
-		if n == 0 || yaml.Unmarshal([]byte(fixed), &probe) != nil {
-			return answer, nil
+		if n == 0 {
+			return came, nil
 		}
-		answer = fixed
-		said = append(said, fmt.Sprintf("%d block(s) of code indented with tabs (the YAML reader refuses a tab as indentation): indented with spaces, their text kept as written", n))
 	}
 	if fixed, n := unhash(answer); n > 0 {
 		answer = fixed
 		said = append(said, fmt.Sprintf("%d plain text(s) holding ` #` (the YAML reader reads the rest as a comment and drops it): read whole, as written", n))
 	}
 	return answer, said
+}
+
+// quotedThenMore is a line whose value opens on a quoted phrase and goes
+// on after its closing quote: `title: "Idle for 60 minutes" is unclear`.
+// No comment after the quote: `x: "a" # note` reads already.
+var quotedThenMore = regexp.MustCompile(`^( *(?:- +)*[A-Za-z][\w-]*: +)("[^"\\]*"|'[^']*')([ \t]*[^ \t#].*)$`)
+
+// unquote reads whole the values quotedThenMore matches, rewritten
+// double-quoted as the agent wrote them, quotes included, and says how many.
+// A block scalar's lines are its text, code quoted as it is: left alone.
+func unquote(answer string) (string, int) {
+	lines := strings.Split(answer, "\n")
+	n := 0
+	block := -1 // in a block scalar: its key's column
+	for i, l := range lines {
+		if block >= 0 {
+			k := len(l) - len(strings.TrimLeft(l, " "))
+			if strings.TrimSpace(l) == "" || k > block || l[k] == '\t' {
+				continue
+			}
+			block = -1
+		}
+		if h := blockHeader.FindStringSubmatchIndex(l); h != nil {
+			block = len(l[h[2]:h[3]]) + len(l[h[4]:h[5]])
+			if h[6] < 0 && h[5] > h[4] {
+				block -= 2 // `- |`: the dash's column
+			}
+			continue
+		}
+		m := quotedThenMore.FindStringSubmatch(strings.TrimRight(l, " \t\r"))
+		// Closed on the quote it opened with, it is one quoted text whose
+		// inner quotes were left unescaped: the agent is asked again.
+		if m == nil || strings.HasSuffix(m[3], m[2][:1]) {
+			continue
+		}
+		var b bytes.Buffer
+		enc := json.NewEncoder(&b)
+		enc.SetEscapeHTML(false)
+		enc.Encode(m[2] + m[3])
+		lines[i] = m[1] + strings.TrimSpace(b.String())
+		n++
+	}
+	return strings.Join(lines, "\n"), n
 }
 
 // blockHeader is a line opening a block scalar: `key: |`, `- key: >-`,

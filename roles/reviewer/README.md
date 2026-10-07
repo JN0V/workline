@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: 194bf36
+checked: beb53f8
 verified: agent:claude-code
 ---
 # Reviewer
@@ -8,10 +8,10 @@ verified: agent:claude-code
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
-  when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in"]
-  reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change<br/>the issue it closes<br/>what its author says"]
+  when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in<br/>workline review --spec, --issue:<br/>a spec before it is built"]
+  reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change<br/>the issue it closes<br/>what its author says<br/>a spec: the file or the issue,<br/>the code it names"]
   role(["Reviewer"])
-  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>what the change says by itself (diff-alone, off),<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
+  alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>what the change says by itself (diff-alone, off),<br/>in a spec: what is ambiguous, unverifiable,<br/>out of scope, contradicted by the code,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
   proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
   asked["<b>Asked</b><br/>a choice the change leaves open:<br/>a question for a person,<br/>not a defect, never judged"]
   person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
@@ -32,7 +32,9 @@ what it breaks, what the issue it closes asks and it leaves out, and what
 its author claims and it contradicts — each finding quoted, found again by
 the engine and checked by a judge — and asks a person what only a person
 decides; rules on the comments the change adds (a bug's story, an
-internal code), with no agent.
+internal code), with no agent. Reads a spec before it is built too, a
+file or an issue: what is ambiguous, unverifiable, out of its scope, or
+contradicted by the code (#128, [below](#a-spec)).
 **Does not**: approve, change the code, merge, or review docs and other
 files that are not code (`ignore`): the author fixes, the person merges
 (ADR-0020). A finding outside the change becomes an issue, never a comment
@@ -42,6 +44,7 @@ on the merge request.
 |---|---|---|
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
 | `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push |
+| `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens (#128) |
 
 **Outputs**: on a machine, the findings and `out/review.json` for your
 agent to fix; on a merge request, one summary comment edited each run, the
@@ -55,7 +58,10 @@ whole functions (#127), about 160k. Intent and claims (#126): the
 lenses' prompt 0.7% larger, 3.0% when the change closes an issue; a
 decision for a person, 0.4% more, no judge call. The diff-alone facet,
 off: one call more, the change's size (about 4.6k tokens on the
-evaluation's cases, 53k on #146's).
+evaluation's cases, 53k on #146's). A spec (#128): one call, 9k to
+13k characters measured (#128's body; a spec naming a Go file), at most
+the spec and `code-lines-max` lines of code; on workline-sandbox#43,
+22.5k tokens with two judges.
 Caps:
 `ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
 `judge-lines-max`, `tests-lines-max`, `testimony-lines-max`,
@@ -189,6 +195,42 @@ the commits left unrecorded. An
 agent unreachable: `blocked-external`. No agent: the rules alone, the change
 left for a person (`not-reviewed`).
 
+## A spec
+
+`workline review --spec docs/x.md`, or `--issue 12`, reads a spec before
+it is built (#128), the reviewer's `spec` event (`--input spec=<file>` or
+`issue=<n>`): the same pipeline as for code, with lenses of its own.
+
+- **What it reads**: the file as it reads in the working tree, or the
+  issue's body from the forge, up to `spec-lines-max` (the rest cut,
+  said: `spec-cut`); for a lens that `needs: code`, the code the spec
+  names, at HEAD: the code files it names, whole, then the functions it
+  names (backticked, called, or capitalised) the files do not hold, up to
+  `code-lines-max` lines, the rest named. None named: that lens is not
+  asked, said.
+- **The spec lenses** (`spec-lenses`, `subject: spec` in their front
+  matter), together in one call, each judged by its own question:
+  - **ambiguous**: words two readings would build or test differently;
+    the judge: can they be taken two ways that build different things?
+  - **unverifiable**: a Verification that proves nothing; the judge: can
+    it not tell whether the Need is met?
+  - **out-of-scope**: a Need asking what the Scope leaves out, or the
+    reverse; the judge: does the Need ask outside the Scope?
+  - **contradicted**: what the spec says of today's code, the code says
+    otherwise, its symptom quoted from the code; the judge: does the
+    code contradict it? It reads the function the symptom lies in and
+    those it reaches, up to `judge-lines-max`.
+- **The quotes**: each cause found again in the spec as given
+  (`docs/x.md:9`, `#12:3`, a line of the body), a symptom in its file at
+  HEAD; not found, dropped (`finding-unfounded`). Every finding is the
+  spec's author's: the product owner, or the person who wrote it.
+- **The judge, the verdict, the questions** as for code: each important
+  finding judged, a no dropped; what the lenses find warns
+  (`ai-findings`, by lens too); an open point only a person settles is a
+  `decision`. No record is kept: a spec is read whole each run.
+- **Not yet** (#128, part 2): on the forge, after the product owner
+  refines an issue, `ready` held while an important finding is open.
+
 ## The budget
 
 - **`ai-max-tokens`**, 200000 a run: once spent, nothing more is asked,
@@ -254,6 +296,8 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) the lenses are given |
 | `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) the lenses are given |
 | `ai-max-tokens` | `200000` | tokens a run may spend, in and out, all calls; the call crossing it is paid; `0`: no cap |
+| `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through (#128) |
+| `spec-lines-max` | `300` | lines of a spec the lenses and each judge are given; the rest cut, said |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, of findings on one line, a verified one from a blocking lens leading |

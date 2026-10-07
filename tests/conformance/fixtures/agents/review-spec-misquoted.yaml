@@ -1,0 +1,8 @@
+# A spec lens quoting words the spec does not hold: dropped, never judged.
+calls:
+  - - finding:
+        lens: ambiguous
+        severity: important
+        title: '"exact" can be read two ways'
+        why: "Rounded or not: two builds"
+        cause: {path: docs/spec-mean.md, quote: "The mean is exact."}

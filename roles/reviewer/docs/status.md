@@ -1,11 +1,12 @@
-# Reviewer — where it stands (2026-10-06)
+# Reviewer — where it stands (2026-10-07)
 
 **In one line:** it reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
 the change's findings told from the rest by where their cause lies, each
 important one judged; built and in conformance, tried with a real agent on
 a copy of workline and live on a sandbox pull request (tried.md),
-released in v0.9.0.
+released in v0.9.0. It reads a spec on a machine too, a file or an issue
+(#128); on the forge, not yet.
 
 ## Built
 
@@ -34,15 +35,19 @@ released in v0.9.0.
 | A full review within a token budget (#147): the lenses in one call, each file once (whole, the change marked, or by its hunks), a judge shown the change near the cause and 300 lines of tests; `ai-max-tokens` 200000, the summary saying what each call used; once spent, nothing more asked and the commits not recorded. #146's review: 453k tokens in estimated before, 142k after; the real run 96.1k in, 8.6k out, two of the three true findings verified (tried.md) | `lenses-asked-together-in-one-call`, `lenses-together-finding-naming-no-lens-kept`, `lens-given-each-file-once`, `judge-shown-the-change-near-the-cause`, `tests-judge-reads-tests-up-to-a-cap`, `review-says-the-tokens-of-each-call`, `budget-spent-lens-not-asked`, `budget-spent-findings-not-judged` |
 | A judge reads the code the finding stands on (#127): the cause's function whole, then the functions the finding names, those it calls and those calling it, up to `judge-lines-max` (200) lines, the rest named; no build (Go parsed, other languages by pattern). #146's two findings refused "for want of code" both verified by Opus, 16.6k tokens in; the judges' prompts about 25% larger on #146, 10% on #90's cases (tried.md) | `judge-reads-the-function-the-cause-calls`, `judge-reach-capped-rest-named`, `TestReach`, `TestEnclosingByLanguage` |
 | Its measure: twelve evaluation cases on the `shop` fixture, three defects planted a lens, two clean changes and untested code outside one; scored by lens with no agent, recall, findings nothing planted, the judge's refusals, the finder floor, tokens | tests/evaluation/cases/reviewer, `TestScoreReview`, `TestReviewerWithFakeAgent`, `TestReviewerCasesPointRight` |
+| A spec on a machine (#128): `workline review --spec <file>` or `--issue <n>`, the `spec` event; the spec lenses (ambiguous, unverifiable, out-of-scope, contradicted) together, each judged by its own question; causes found again in the spec (`file:line`, `#n:line`), a symptom in the code; the code the spec names given, none: contradicted not asked; no agent: not reviewed, said; no record. Live on workline-sandbox#43: both planted defects found and verified, 22.5k tokens (tried.md) | `spec-verification-unchecked-found`, `spec-issue-read-by-number`, `spec-contradicted-judge-reads-the-code`, `spec-quote-not-found-dropped`, `spec-naming-no-code-contradicted-not-asked`, `spec-without-ai-not-reviewed`, `TestMendQuotedThenMore` |
 | An issue outside the change opened through the one way every role shares: a subject an issue holds, open or closed, not opened again (ADR-0018) | backlog `issue-*` cases; the sandbox, live (#9) |
 
 Conformance: tests/conformance/cases/reviewer.
 
 ## Missing, in the order to build it
 
-1. **Spec review**: a file or an issue as input; on the forge after the
-   product owner refines, `ready` only with no important finding open, the
-   loop bounded at five rounds, then a person.
+1. **Spec review on the forge** (#128, part 2; on a machine, built): after
+   the product owner refines, `ready` only with no important finding open,
+   the product owner answering at its next refine, five rounds, then a
+   question to a person; the `spec` event takes an issue already. Not
+   measured: the spec lenses on more than one spec, false findings counted
+   (#43: four nits shown, none judged).
 2. **The developer's loop** (#117): a handoff to the developer, five rounds,
    then `human`; `judge-at-least: model` for the developer's merge requests,
    `context` for a person's, told apart by the author (#81).

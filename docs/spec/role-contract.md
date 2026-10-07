@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 1da0ac5
+checked: b6b0f6e
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -214,7 +214,7 @@ token), **apply** (trusted, no AI key).
    or ` #` as a YAML block scalar (`|`), which takes code as it is; the
    request again repeats it (#138). YAML, not JSON: code wrapped in JSON
    comes out worse (docs/research/portability.md).
-   Before any of that, the engine mends two slips agents keep making, in
+   Before any of that, the engine mends three slips agents keep making, in
    the one place every role's answers are read (`agent.Mend`), and says
    what it mended (`answer-mended`, the answer as it came kept in
    `out/agent-answer.txt`): code quoted with its tabs under a block
@@ -223,7 +223,13 @@ token), **apply** (trusted, no AI key).
    indented with spaces, and given an indentation indicator (`|2`) when
    its first line starts with a tab, the text of the block kept as
    written (PR #157); this only when the answer does not read for that
-   reason, and never tabs indenting the YAML itself. A plain value
+   reason, and never tabs indenting the YAML itself. A value opening on a
+   quoted phrase and going on after it (`title: "60 minutes" is unclear`),
+   which the reader refuses, is read whole, its quotes kept, when the
+   answer does not read for that reason (#128), never a line of a block
+   scalar; one closing on the quote it opened with, its inner quotes
+   unescaped, is asked again. An answer holding both slips has each
+   mended in turn. A plain value
    followed on its line by ` #…`, which the reader would drop as a
    comment, is read whole, as written, when it is free text — several
    words, or a `#` stuck to what follows (`#20`) — while a single word

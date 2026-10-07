@@ -108,3 +108,38 @@ func TestMendHash(t *testing.T) {
 		t.Errorf("in a list: %q %v", got, err)
 	}
 }
+
+// A title opening on a quoted phrase and going on after it, as a spec lens
+// wrote it on workline-sandbox#43 (#128): the reader refuses the whole
+// answer; mended, the title reads as written, its quotes kept.
+func TestMendQuotedThenMore(t *testing.T) {
+	answer := "- finding:\n    lens: ambiguous\n    severity: nit\n    title: \"Idle for 60 minutes\" boundary is unclear\n    why: 'it' can be read two ways\n    cause:\n      path: \"#43\"\n      quote: \"so a session should last 60 minutes idle\"\n"
+	f, mended := finding(t, answer)
+	if f["title"] != `"Idle for 60 minutes" boundary is unclear` || f["why"] != `'it' can be read two ways` || len(mended) != 1 {
+		t.Errorf("title %q, why %q, mended %v", f["title"], f["why"], mended)
+	}
+	// Inside a block scalar, a line that looks like one is the quote's
+	// text, kept as written (PR #245's review).
+	answer = "- finding:\n    title: \"Idle for 60 minutes\" is unclear\n    cause:\n      path: a.yaml\n      quote: |\n        key: \"a\" b\n"
+	f, _ = finding(t, answer)
+	if c, _ := f["cause"].(map[string]any); c["quote"] != "key: \"a\" b\n" || f["title"] != `"Idle for 60 minutes" is unclear` {
+		t.Errorf("block scalar changed: %q, title %q", f["cause"], f["title"])
+	}
+	// Both slips in one answer, code quoted with its tabs and a title
+	// going on after its quotes: each mended in turn (PR #245's review).
+	answer = "- finding:\n    title: \"Average\" divides by zero\n    cause:\n      path: calc.go\n      quote: |\n        \treturn total / len(values)\n"
+	f, mended = finding(t, answer)
+	if c, _ := f["cause"].(map[string]any); c["quote"] != "\treturn total / len(values)\n" || f["title"] != `"Average" divides by zero` || len(mended) != 2 {
+		t.Errorf("both slips: %q, title %q, mended %v", f["cause"], f["title"], mended)
+	}
+	// One quoted text whose inner quotes were left unescaped is asked
+	// again, not mended: its outer quotes are not the agent's words.
+	broken := "- note: \"it returns `\"one hour\"` when unset.\"\n"
+	if got, said := Mend(broken); got != broken || said != nil {
+		t.Errorf("a quoted text with inner quotes was mended: %q, %v", got, said)
+	}
+	// One that reads is left as it is: a quoted value and a comment.
+	if got, said := Mend("- note: \"a\" # said\n"); got != "- note: \"a\" # said\n" || said != nil {
+		t.Errorf("a quoted value with a comment was mended: %q, %v", got, said)
+	}
+}

@@ -1,0 +1,24 @@
+case: reviewer/spec-quote-not-found-dropped
+about: "A spec lens's finding whose cause the spec does not hold is dropped, said, and no judge is asked (#128): quotes found again in the spec, as in the code."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      cat > docs/spec-mean.md <<'MD'
+      # The mean of no values
+
+      ## Need
+
+      Average returns 0 for an empty list, instead of a crash.
+
+      ## Verification
+
+      The mean works well.
+      MD
+run: {review: [--spec, docs/spec-mean.md], ai: "fake:review-spec-misquoted"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: finding-unfounded, message: "its cause is not found in docs/spec-mean.md"}]
+  no-findings: [{rule: ambiguous}]

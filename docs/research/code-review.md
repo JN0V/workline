@@ -137,3 +137,32 @@ CodeRabbit's incremental review among the caps and caches (ci-and-forge.md,
 - Re-finding the author's claim, and the issue's words a finding quotes,
   before it is judged: Qodo grades a whole pull request against its
   ticket, with no quote to check (#126).
+
+## Spec review (2026-10-07, #128)
+
+What reviews a spec before it is built, in the field's words:
+*requirements smells*, *requirements quality*, *spec analysis*.
+
+- **Requirements smells** (Femmer, Méndez Fernández, Wagner, Eder,
+  [arXiv:1611.08847](https://arxiv.org/abs/1611.08847), JSS 2017): eight
+  smells from ISO/IEC/IEEE 29148's language criteria — subjective
+  language, ambiguous adverbs and adjectives, loopholes, open-ended
+  non-verifiable terms, superlatives, comparatives, negative statements,
+  vague pronouns — found by their tool Smella at 59% precision, 82%
+  recall on industrial specs; precision 0.26 to 0.96 by smell.
+- **GitHub Spec Kit's `analyze`**
+  ([templates/commands/analyze.md](https://github.com/github/spec-kit/blob/main/templates/commands/analyze.md)):
+  read-only, before implementation; passes for duplication, ambiguity,
+  underspecification, coverage gaps and inconsistency; severities
+  critical to low. Its `clarify` asks at most five questions and writes
+  the answers into the spec.
+- **Taken**: ambiguity and verifiability as two lenses (29148's
+  unambiguous, verifiable); a scope lens for Spec Kit's coverage gaps; a
+  question for a person rather than a defect, as `clarify` does
+  (`decision`, #126); read-only, before the build.
+- **Added**: each finding's quote found again in the spec, the important
+  ones judged; a lens reading the code the spec names (no tool checks a
+  spec against today's code).
+- **Refused**: word lists as rules (Smella's precision on vague pronouns
+  and comparatives would block on noise); writing answers into the spec
+  (the product owner does, part 2 of #128).

@@ -58,6 +58,8 @@ type Settings struct {
 	TestimonyLines  int      `json:"testimony-lines-max"` // lines of what the author says (commit messages, the merge request) the lenses are given
 	QuestionsMax    int      `json:"questions-max"`       // decisions put to a person a run; the rest counted
 	DiffAlone       bool     `json:"diff-alone"`          // ask the diff-alone facet too, apart, given the change only
+	SpecLenses      []string `json:"spec-lenses"`         // the lenses a spec is read through (#128)
+	SpecLinesMax    int      `json:"spec-lines-max"`      // lines of a spec the lenses are given; the rest cut, said
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -108,6 +110,7 @@ type state struct {
 	Issues     []ClosedIssue     `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
 	Testimony  string            `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
 	Skipped    []string          `json:"skipped,omitempty"`   // lenses not asked, each with why
+	Spec       *Spec             `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -122,6 +125,8 @@ type candidates struct {
 // Review is what the run found, as post reads it and out/review.json gives
 // it to the author's agent.
 type Review struct {
+	Subject   string            `json:"subject,omitempty"` // code, or spec (#128)
+	Spec      string            `json:"spec,omitempty"`    // the spec reviewed: its file, or its issue (`#4`)
 	Status    string            `json:"status"`
 	Summary   string            `json:"summary"`
 	Findings  []verdict.Finding `json:"findings"`
@@ -159,6 +164,8 @@ func Pre(runDir, repo string) int {
 		return settle(runDir, repo, s)
 	case os.Getenv("WORKLINE_PARTS") == "answered":
 		return readLenses(runDir, repo, s)
+	case os.Getenv("WORKLINE_EVENT") == specEvent:
+		return prepareSpec(runDir, repo, s)
 	}
 	return prepare(runDir, repo, s)
 }
@@ -401,6 +408,9 @@ func unasked(repo string, names []string, issues []ClosedIssue, ids []int) (map[
 		if err != nil {
 			return nil, err
 		}
+		if l.Subject == "spec" {
+			return nil, fmt.Errorf("lens %q reads a spec: it belongs under spec-lenses, not lenses", name)
+		}
 		if l.Needs == "issue" && len(issues) == 0 {
 			skip[name] = "the change closes no issue"
 			if len(ids) > 0 {
@@ -550,11 +560,12 @@ const judgeQuestion = "Is this finding about the code true: does the code quoted
 // the code around it and the change (#223).
 type Lens struct {
 	Text  string `yaml:"-"`
-	Needs string `yaml:"needs"` // issue: asked only of a change closing an issue, given it (#126)
+	Subject string `yaml:"subject"` // spec: a lens of a spec, under spec-lenses (#128); empty, of code
+	Needs   string `yaml:"needs"`   // issue: asked only of a change closing an issue, given it (#126); code: of a spec naming code, given it (#128)
 	Cites string `yaml:"cites"` // claim: each finding quotes a claim of the author, found again in what they said, or is dropped
 	Judge struct {
 		Question string `yaml:"question"` // empty: judgeQuestion
-		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file; issue: the issues the change closes
+		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file; issue: the issues the change closes; code: the code a spec's finding stands on
 	} `yaml:"judge"`
 }
 
@@ -577,11 +588,14 @@ func readLens(repo, name string) (Lens, error) {
 		}
 		l.Text = body
 	}
-	if r := l.Judge.Reads; r != "" && r != "tests" && r != "issue" {
-		return l, fmt.Errorf("lens %q: judge.reads %q: only `tests` and `issue` are known", name, r)
+	if r := l.Judge.Reads; r != "" && r != "tests" && r != "issue" && r != "code" {
+		return l, fmt.Errorf("lens %q: judge.reads %q: only `tests`, `issue` and `code` are known", name, r)
 	}
-	if l.Needs != "" && l.Needs != "issue" {
-		return l, fmt.Errorf("lens %q: needs %q: only `issue` is known", name, l.Needs)
+	if l.Needs != "" && l.Needs != "issue" && l.Needs != "code" {
+		return l, fmt.Errorf("lens %q: needs %q: only `issue` and `code` are known", name, l.Needs)
+	}
+	if l.Subject != "" && l.Subject != "spec" {
+		return l, fmt.Errorf("lens %q: subject %q: only `spec` is known", name, l.Subject)
 	}
 	if l.Cites != "" && l.Cites != "claim" {
 		return l, fmt.Errorf("lens %q: cites %q: only `claim` is known", name, l.Cites)
@@ -762,12 +776,17 @@ func readLenses(runDir, repo string, s Settings) int {
 		if question == "" {
 			question = judgeQuestion
 		}
-		m := material(repo, st, s, f)
+		var m string
 		switch {
+		case st.Spec != nil:
+			m = specMaterial(repo, st, s, f, l.Judge.Reads == "code")
 		case l.Judge.Reads == "tests":
+			m = material(repo, st, s, f)
 			m += testsTouching(repo, st.Head, f.Cause.Path, s.Tests, s.TestsLinesMax)
 		case l.Judge.Reads == "issue" && issueOf(st, f.Cause.Path) == nil: // one quoting an issue is shown it already
-			m += "\n" + whatFor(st.Issues)
+			m = material(repo, st, s, f) + "\n" + whatFor(st.Issues)
+		default:
+			m = material(repo, st, s, f)
 		}
 		n++
 		key := fmt.Sprintf("%02d", n)
@@ -835,6 +854,9 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		}
 	}
 	f.Cause = Quote{Path: clean(raw.Cause.Path), Quote: raw.Cause.Quote}
+	if st.Spec != nil {
+		return inSpec(repo, st, f)
+	}
 	// A cause quoted from the issue the change closes: what it asks and the
 	// change does not do, the author's to do (#126).
 	if strings.HasPrefix(f.Cause.Path, "#") {
@@ -1156,7 +1178,7 @@ func settle(runDir, repo string, s Settings) int {
 			Message: fmt.Sprintf("%d %s not judged, the run having spent its ai-max-tokens (%d): the commits are not recorded as reviewed; review again, with fewer commits or a larger ai-max-tokens", unjudged, plural(unjudged, "finding", "findings"), s.AIMaxTokens)})
 	}
 	v.Findings = append(v.Findings, c.Logged...)
-	if v.Complete {
+	if v.Complete && st.Spec == nil { // a spec is read whole each run: no commits to record
 		v.Record = st.Record.add(st.Commits)
 	}
 	v.Calls = spent(runDir, st, c)
@@ -1185,7 +1207,7 @@ func Post(runDir, repo string) int {
 	if err := readJSON(filepath.Join(runDir, "in", "review.json"), &v); err != nil {
 		return fail(err)
 	}
-	if v.Complete {
+	if v.Complete && v.Subject != "spec" {
 		if err := saveLocal(repo, v.Record); err != nil {
 			return fail(err)
 		}
@@ -1204,7 +1226,10 @@ func Post(runDir, repo string) int {
 
 // review starts a review from the rules' findings.
 func review(st state, extra []verdict.Finding, summary string) Review {
-	v := Review{Findings: append(append(slices.Clone(st.Mechanical), extra...), st.Advisories...), Record: st.Record}
+	v := Review{Subject: "code", Findings: append(append(slices.Clone(st.Mechanical), extra...), st.Advisories...), Record: st.Record}
+	if st.Spec != nil {
+		v.Subject, v.Spec = "spec", st.Spec.Path
+	}
 	v.Status = status(v.Findings)
 	v.Summary = summary
 	return v
@@ -1333,7 +1358,11 @@ func summary(v Review, issues, failed, unjudged int) string {
 		return v.Summary
 	}
 	var parts []string
-	parts = append(parts, fmt.Sprintf("%d findings on the change", len(v.Change)))
+	on := "the change"
+	if v.Subject == "spec" {
+		on = "the spec"
+	}
+	parts = append(parts, fmt.Sprintf("%d findings on %s", len(v.Change), on))
 	if n := len(v.Questions); n > 0 {
 		parts = append(parts, fmt.Sprintf("%d %s for a person", n, plural(n, "question", "questions")))
 	}
@@ -1485,7 +1514,7 @@ func committerSettings(repo string) (committer.Settings, error) {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err
@@ -1497,8 +1526,8 @@ func settings(runDir string) (Settings, error) {
 		return s, fmt.Errorf("settings: lenses names %q, a facet asked apart by its own setting, diff-alone", alone)
 	}
 	for lens := range s.AIFindings.ByLens {
-		if !slices.Contains(s.Lenses, lens) && lens != alone {
-			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v nor %s", lens, s.Lenses, alone)
+		if !slices.Contains(s.Lenses, lens) && !slices.Contains(s.SpecLenses, lens) && lens != alone {
+			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v, the spec lenses %v, nor %s", lens, s.Lenses, s.SpecLenses, alone)
 		}
 	}
 	return s, nil

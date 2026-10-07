@@ -1,0 +1,21 @@
+case: reviewer/spec-issue-read-by-number
+about: "`workline review --issue <n>` reads the issue from the forge as the spec (#128): its body given to the lenses; a Need its Scope leaves out found, quoted from the issue (`#4`, its line in the body), and judged by the out-of-scope lens's question."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {review: [--issue, "4"], ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings: [{rule: out-of-scope, where: "#4:3", message: "verified"}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["Issue #4: The mean of no values", "and the README tells the users"]}
+    in/judge/01/question.yaml: {contains: "the Scope does not name"}

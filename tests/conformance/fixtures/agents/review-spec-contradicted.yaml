@@ -1,0 +1,11 @@
+# A spec stating, of today's code, what the code contradicts: Average does
+# not return 0 for an empty list, it divides by zero.
+calls:
+  - - finding:
+        lens: contradicted
+        severity: important
+        title: Average does not return 0 for an empty list
+        why: "The Need builds on Average returning 0 for an empty list; it divides by len(values), zero, and crashes"
+        cause: {path: docs/spec-parse.md, quote: "Average already returns 0 for an empty list"}
+        symptom: {path: calc/calc.go, quote: "return total / len(values)"}
+        fix: make the Need ask for both, or fix Average first
