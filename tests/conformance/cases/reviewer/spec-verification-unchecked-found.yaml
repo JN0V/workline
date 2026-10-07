@@ -1,0 +1,38 @@
+case: reviewer/spec-verification-unchecked-found
+about: "`workline review --spec <file>` reads a spec before it is built (#128): the spec lenses asked together, given the file as it reads in the working tree; a Verification that cannot be checked found, its cause quoted from the file and found again there, on its line, and judged by the unverifiable lens's own question."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      cat > docs/spec-mean.md <<'MD'
+      # The mean of no values
+
+      ## Need
+
+      Average returns 0 for an empty list, instead of a crash.
+
+      ## Verification
+
+      The mean works well.
+
+      ## Validation
+
+      The maintainer reads the test.
+
+      ## Scope
+
+      calc/calc.go
+      MD
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {review: [--spec, docs/spec-mean.md], ai: "fake:review-spec-unverifiable"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: unverifiable, where: "docs/spec-mean.md:9", message: "Important: The Verification names no check"}
+    - {rule: unverifiable, where: "docs/spec-mean.md:9", message: "verified"}
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: unverifiable", "## Lens: ambiguous", "The mean works well."]}
+    in/judge/01/question.yaml: {contains: "whether the Need is met"}
+    out/review.json: {contains: '"subject": "spec"'}

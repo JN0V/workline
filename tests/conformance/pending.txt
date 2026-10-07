@@ -1,2 +1,10 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# Spec review on a machine (#128): workline review --spec / --issue.
+reviewer/spec-contradicted-judge-reads-the-code
+reviewer/spec-issue-read-by-number
+reviewer/spec-naming-no-code-contradicted-not-asked
+reviewer/spec-quote-not-found-dropped
+reviewer/spec-verification-unchecked-found
+reviewer/spec-without-ai-not-reviewed

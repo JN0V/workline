@@ -1,0 +1,31 @@
+case: reviewer/spec-contradicted-judge-reads-the-code
+about: "A spec stating of today's code what the code contradicts (#128): the lenses given the code the spec names (calc/calc.go, whole); the finding's cause quoted from the spec, its symptom from the code, both found again; its judge asked the contradicted lens's question and shown the function the symptom lies in (#127)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      cat > docs/spec-parse.md <<'MD'
+      # Parse an empty text
+
+      ## Need
+
+      Average already returns 0 for an empty list; Parse should do the same for an empty text.
+
+      ## Verification
+
+      A test of Parse on "" expects 0.
+
+      ## Scope
+
+      calc/calc.go
+      MD
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {review: [--spec, docs/spec-parse.md], ai: "fake:review-spec-contradicted"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings: [{rule: contradicted, where: "docs/spec-parse.md:5", message: "verified"}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## The code the spec names", "### calc/calc.go", "func Parse(s string) int {"]}
+    in/judge/01/question.yaml: {contains: ["contradict", "func Average(values []int) int {"]}
