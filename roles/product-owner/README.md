@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 79ecb95
+checked: 3bc3de5
 verified: agent:claude-code
 ---
 # Product owner
@@ -9,9 +9,9 @@ verified: agent:claude-code
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
   when["<b>When</b><br/>gardening, once in the schedule line<br/>workline issues import a file<br/>the weekly sample, no agent"]
-  reads["<b>Reads</b><br/>a share of the open issues<br/>the code they name<br/>people's answers and ticks"]
+  reads["<b>Reads</b><br/>a share of the open issues<br/>the code they name<br/>people's answers and ticks<br/>the reviewer's findings on a spec"]
   role(["Product owner"])
-  alone["<b>Alone, within caps</b><br/>names an issue's code, orders,<br/>refines, asks, splits,<br/>closes a duplicate"]
+  alone["<b>Alone, within caps</b><br/>names an issue's code, orders,<br/>refines, asks, splits,<br/>closes a duplicate<br/>answers the reviewer's findings;<br/>ready once none is open (opt-in)"]
   proposed["<b>Proposed</b><br/>a box in the report,<br/>for a person to tick"]
   person["<b>Left to a person</b><br/>a Need and Validation made final<br/>accepting a result"]
   out["<b>Lands in</b><br/>the issues: labels, sections, comments<br/>one report issue"]
@@ -38,7 +38,9 @@ write the Need or Validation of a person's issue as final, close as "not
 planned", close a split need — a person accepts it —, undo a person's
 priority, title or link, act alone on an issue whose need changed, move
 a ready issue back to refine without a person's tick, or move an
-issue to `ready` while a section is missing or a draft. What sets direction
+issue to `ready` while a section is missing or a draft — nor, with the
+reviewer after it in the line, while the reviewer has not read its spec
+as it is or an important finding is open (#128, [below](#a-spec-read-before-ready)). What sets direction
 it proposes rather than does at `autonomy: cautious`.
 
 | Event | Fired by | Does |
@@ -55,6 +57,27 @@ At `autonomy: normal`, the default:
 | Alone | names an issue's code; sets milestones and priorities, at most 20% of the open issues moved a run; closes a duplicate, its original quoted; announces an obsolete issue, closes it a week later on silence and a second judge's yes; refines to `ready`, Need and Validation as drafts; asks the reporter what is missing; splits a need too big, then says on it what each part delivered ([ADR-0029](../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)); renames a vague title; says what an issue waits on; imports a roadmap file as issues |
 | Proposed | moves past the 20%; an outsider's issue made `ready`; the issues built on a Need, a Scope or a roadmap line a person changed, a ready one back to refine included ([ADR-0032](../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)); at `cautious`, what sets direction: milestones, priorities, duplicates, splits, titles, dependencies, the drafts |
 | Left to a person | a draft made final (`workline:accepted`); a split need accepted, by closing it; a box ticked; closing as not planned; undoing an act |
+
+## A spec read before ready
+
+Opt-in: the reviewer after the product owner in the gardening line
+(`schedule: [documentalist, product-owner, reviewer]`, #128,
+[ADR-0020](../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)).
+The reviewer reads one refined issue a run and keeps its findings in a
+comment on it ([reviewer](../reviewer/README.md#a-spec-on-the-forge)).
+
+- **Held**: `ready` waits — the agent's, an accepted draft's, a ticked
+  box's alike, at every autonomy level — while the reviewer has not read
+  the body as it is (`spec-not-reviewed`), an important finding is open
+  (`spec-findings-open`), or its rounds are spent (`spec-rounds-spent`).
+- **Answered**: the next run reads the issue again and gives the agent
+  the findings; a `refine` rewrites the sections they lie in that are the
+  role's own — a draft, or a text as the role wrote it (the state's
+  `wrote`) —, never a person's: for those it asks the reporter.
+- **Released**: once the reviewer read the body as it is and found no
+  important finding open, the engine moves it to ready, with no agent.
+- **A person decides** at any round: `workline:accepted` lifts the hold,
+  `workline:ready` set by hand is theirs.
 
 ## Settings
 

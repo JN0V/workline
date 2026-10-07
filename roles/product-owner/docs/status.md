@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-06)
+# Product owner — where it stands (2026-10-07)
 
 **In one line:** it keeps a backlog on GitHub, and on GitLab as on GitHub
 (its members told from outsiders, a bot's token), for real — reads it a share a
@@ -17,7 +17,9 @@ moves what slipped, opens its report with what is next and what is
 stuck, flags the issues built on a need a person rewrote — its parts
 read again, every act on them proposed, a ready one moved back to
 refine only on a person's tick —, has a share of what it did alone drawn
-each week for a person to judge, with the level it suggests, and keeps the one way every role opens an issue —
+each week for a person to judge, with the level it suggests, holds an
+issue from `ready` while the reviewer's findings on its spec are open and
+answers them (opt-in, #128), and keeps the one way every role opens an issue —
 nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
 ordering included, the reviewer not enabled: its roadmap imported, 56
 issues), refining tried live there and on JN0V/workline-sandbox, ordering
@@ -60,6 +62,7 @@ on the sandbox (tried.md).
 | A changed need (ADR-0032): a person's rewrite of an issue's Need or Scope found with no agent against what its state kept; its parts read again first with the text as it was and as it is, every act on them proposed (`need-changed`); `unready`, back to refine, always proposed, done on a person's tick; the issues waiting on it — and, its Scope changed, those on the same code — listed; the report's "Changed needs", a box to tick once checked; the same change flagged once | JN0V/workline-sandbox on GitHub (#10's Need rewritten: #12, #13 read again, a planted answer; #13 moved back to refine by a tick), live, no agent called; an imported file's lines changed, the tick on a change, an edit outside the sections in conformance (`changed-*`, `unchanged-need-flags-nothing`, `unready-ticked-moves-back`) |
 
 | The weekly sample of its acts (ADR-0033): each act done alone kept in the record with its day and level (`did`), a tick's and a slip's left out; `workline sample --apply` drawing one in ten of a week's onto their own tracking issue, each with its issue, kind, day, level and whether a person undid it; the level the acts undone suggest — none at `normal` suggests `enterprising`, more than one in ten the level below —, the setting untouched | JN0V/workline-sandbox on GitHub (three acts planted on #33, #35; #35's rename undone by hand; tracking issue #37, #33's order drawn, a rerun editing the comment in place), live, no agent called; conformance `acts-*`, `sample-*` (product-owner) |
+| A spec read before ready (#128, ADR-0020): with the reviewer after it in the line, `ready` held while the reviewer has not read the body as it is, a finding is open, or the rounds are spent — the agent's, an accepted draft's, a tick's alike; the findings given at the next refine, its own sections rewritten (`wrote`), a person's asked of the reporter; released by the engine with no agent; `workline:accepted` a person's yes | JN0V/workline-sandbox on GitHub: #44 held, answered, released (planted); #45 held at the sixth round, released by the label (planted); #46 refined by a real agent, read by the reviewer, released; #12 held, its reporter asked the reviewer's question by a real agent (tried.md); conformance `ready-held-while-a-spec-finding-is-open`, `ready-released-once-the-spec-is-answered`, `refine-answers-the-spec-findings` |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
 issues, comments, closings and the report tried live; its milestones untried

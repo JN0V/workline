@@ -737,3 +737,28 @@ each one call, its task's characters against the tokens reported.
 - **The budget**: 120000 now, the largest of them (about 112k estimated)
   still passing; `code-lines-max` (1500) is what sizes it.
 - **Not tried**: a real call refused for its size.
+
+## 2026-10-07 — a spec read before ready (#128), live on GitHub
+
+The sandbox's gardening line with the reviewer after the product owner;
+Sonnet. Details of the reviewer's side in roles/reviewer/docs/tried.md.
+
+- **Planted**: #44 refined (Verification, Scope), its `ready` held
+  (`spec-not-reviewed`); the reviewer's finding given at the next run, its
+  own Verification rewritten (`wrote` matched), `answered: 1`; released
+  by the engine, no agent. #45's planted `ready` held at the sixth round
+  (`spec-rounds-spent`); `workline:accepted` set by hand, ready.
+- **Real, run 1** (10.8k tokens in, 0.5k out): #46 named no code; the
+  agent set it waiting on #44 and asked, in a note, for its files.
+- **Real, run 2** (17.7k in, 0.9k out, two issues), after a person's
+  comment naming `Idle`: #46 refined, read by the reviewer, released the
+  next run. #12, held: its Verification read as a person's — refined
+  before `wrote` existed — the agent asked its reporter the reviewer's
+  question, as told.
+- **Found and fixed**: a split's children now record their four sections
+  as the role's (`wrote`); the issues refined before still read as a
+  person's.
+- **Prompt**: the findings given clipped at 3000 characters, about 2.3k
+  on #12; offline, the task of one issue 14.7k characters, two 25.8k.
+- **Side effects**: the planted runs paused the role on the sandbox
+  (three runs nobody answered); a comment on the report resumed it.
