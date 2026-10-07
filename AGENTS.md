@@ -30,6 +30,31 @@ against it. Then only what the task needs:
 - **Commits**: conventional, atomic, each one builds; workline's own hook checks
   the messages. Explanations go in docs, not in commit bodies.
 
+## Writing user docs
+
+For README.md, docs/ outside spec/, adr/ and research/, and each role's
+README and docs/ pages other than status.md and tried.md:
+
+- **Bullets over paragraphs**: short prose is fine, not a novel. A paragraph
+  over ~80 words is a defect; a section over 400 words is too long; a doc
+  over 200 lines is split into pages linked from it (the documentalist's
+  budgets check the last two).
+- **An overview stays an overview**: the README, docs/roles.md and other
+  front tables hold one short sentence and a link per row; no ADR lists,
+  settings or edge cases. Detail goes on the role's page or a page below it.
+- **Every ADR, doc or issue cited is a link**: never a bare `ADR-0026`,
+  `docs/x.md` or `#128`.
+- **Diagrams readable at a glance**: macro blocks first, a few words each;
+  detail goes in the text below. Each role's README opens with one.
+- **Install covers a person's machine and CI**; the README links to the docs
+  early.
+- **The agent is a choice, never imposed**: none, `claude`, `cmd:<any
+  command>`. An example naming one agent says the others exist.
+- **No unexplained internals**: no sandbox issue numbers, token histories
+  ("430k before #147"), other projects by name, internal words ("vouched",
+  verdict codes) left unexplained to a newcomer. Measures go in status.md,
+  tried.md or an ADR; a user doc links to them.
+
 ## Build and test
 
 ```sh
