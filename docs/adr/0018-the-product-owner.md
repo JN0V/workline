@@ -245,18 +245,26 @@ over several runs ([research](../research/product-owner.md)).
 
 1. What a person asked for: a ticked proposal's issue, an issue read
    again for a changed need, then an act proposed only for the cap.
-2. What came since the last run, newest first: an issue opened since —
-   by a person, or by a role for a finding — and one a person wrote on,
-   edited or reopened since it was read.
-3. The catch-up, oldest first: the issues never read from before — the
-   backlog there at the role's first run, and what an import opened.
+2. What a person waits on, newest first: an issue a person opened that
+   the agent never read, whenever its state was written; a role's
+   finding opened since the last run; one a person wrote on, edited or
+   reopened since it was read.
+3. The catch-up, oldest first: the issues never read that an import or
+   a bot opened.
 4. The issues whose code changed, or with spec findings to answer.
 
-**How "since the last run" is known, with no date**: an issue the role
-finds without a state comment, once it ran on that backlog (a state or
-its report exists), was opened since; its first state says `new`, and it
-is read in the same run, its acts checked against that first state,
-written before them. `new` stays until it is read, so the cap or a run
-with no agent never sends it to the catch-up. A role's finding is
-opened with `new`; an import's issues are not. On the role's first run,
-nothing is new: the whole backlog is the catch-up.
+**How it is told, with no date**:
+
+- *Never read by the agent*: the state has no `judged` — written only
+  once the agent's answer on the issue read, never by the state's first
+  writing. A state written by an engine before this change, or a run
+  that only gave it its state, reads the same: such an issue (#264) is
+  ranked in step 2.
+- *Opened by a person*: no key of an import or a finding in the body
+  (`workline:import=`, `workline:issue=`, `opened-by`), and the author not
+  a bot (a GitHub app's `[bot]` login, a GitLab project or group bot).
+- *Opened since*: an issue found without a state comment, once the role
+  ran on that backlog (a state or its report exists), gets a first state
+  saying `new` and is read in the same run, its acts checked against
+  that first state, written before them; a role's finding is opened
+  with `new`. `new` stays until read.

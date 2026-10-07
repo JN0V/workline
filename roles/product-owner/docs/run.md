@@ -24,18 +24,22 @@ this order
    its act was drafted, and those read again for a changed need
    ([tracking](tracking.md)); then those an act was proposed on only for
    a run's cap.
-2. **What came since the last run**, newest first: an issue opened since
-   — by a person, or by a role for a finding —, and one a person wrote
-   on, edited or reopened since it was read.
-3. **The catch-up**, oldest first: the issues never read from before —
-   those there at the role's first run, and those an import opened.
+2. **What a person waits on**, newest first: an issue a person opened
+   that the agent never read, whenever its state was written; a role's
+   finding opened since the last run; one a person wrote on, edited or
+   reopened since it was read.
+3. **The catch-up**, oldest first: the issues never read that an import
+   or a bot opened.
 4. **Then** those whose code changed since read, or on whose spec the
    reviewer left findings not given yet
    ([#128](https://github.com/JN0V/workline/issues/128)).
 
-A person's new issue is read at the first run that sees it with an
-agent, never behind the catch-up; one left by the cap, or by a run with
-no agent, stays ahead (`new` in its state until read).
+- **Never read by the agent**: its state has no `judged`, set only once
+  the agent's answer on it read.
+- **Opened by a person**: no key of an import or a finding in its body,
+  and its author not a bot.
+- A person's new issue is read at the first run that sees it with an
+  agent, never behind the catch-up.
 
 Each issue comes with:
 

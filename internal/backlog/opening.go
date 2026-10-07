@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -164,6 +165,20 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 	}
 	return o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
 }
+
+// ByPerson says whether a person opened an issue: not through Openings
+// (no key of a finding or an import in its body) and not by a bot — a
+// GitHub app's `[bot]` login, a GitLab project or group bot.
+func ByPerson(is forge.Issue) bool {
+	for _, m := range []string{"<!-- workline:import=", "<!-- workline:issue=", "<!-- workline:opened-by="} {
+		if strings.Contains(is.Body, m) {
+			return false
+		}
+	}
+	return !strings.HasSuffix(is.Author, "[bot]") && !gitlabBot.MatchString(is.Author)
+}
+
+var gitlabBot = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
 // OpenedBy is the role that opened an issue on a finding of its own
 // through Openings, or "".

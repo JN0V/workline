@@ -377,8 +377,11 @@ func Pre(runDir, repo string) int {
 			rest = append(rest, due{is, st, comments, notes})
 		case slices.Contains(capped, is.ID):
 			again = append(again, due{is, st, comments, notes})
-		case st.New:
-			fresh = append(fresh, due{is, st, comments, notes}) // opened since a run before, not read yet
+		case st.New, st.Judged == "" && backlog.ByPerson(is):
+			// Opened since a run before, or a person's issue the agent never
+			// read (`judged` is set only once its answer on it read), whenever
+			// its state was written: a person waits on it.
+			fresh = append(fresh, due{is, st, comments, notes})
 		case st.Judged == "":
 			never = append(never, due{is, st, comments, notes})
 		case backlog.PeopleComments(comments) != st.Comments, // someone wrote since it was read
@@ -410,8 +413,8 @@ func Pre(runDir, repo string) int {
 			fresh = append(fresh, d)
 		}
 	}
-	// What a person did since the last run is read newest first, the
-	// issues never read from before oldest first (ADR-0018, amended).
+	// What a person waits on is read newest first, what an import or a
+	// bot opened oldest first (ADR-0018, amended).
 	slices.SortStableFunc(fresh, func(a, b due) int { return b.is.ID - a.is.ID })
 	slices.SortStableFunc(never, func(a, b due) int { return a.is.ID - b.is.ID })
 	// What the order holds back (ADR-0028), with no agent: the first ready
@@ -518,9 +521,9 @@ func Pre(runDir, repo string) int {
 	}
 	again, fresh, never, changed, rest = pick(again), pick(fresh), pick(never), pick(changed), pick(rest)
 	slices.SortFunc(ahead, func(a, b due) int { return a.is.ID - b.is.ID })
-	// Then what a person did since the last run — an issue opened, written
-	// on, edited or reopened —, newest first; then those never read from
-	// before, oldest first; then those whose code changed since, or on
+	// Then what a person waits on — an issue they opened the agent never
+	// read, one written on, edited or reopened —, newest first; then what an
+	// import or a bot opened, never read, oldest first; then those whose code changed, or on
 	// whose spec the reviewer left findings. An issue with nothing new is
 	// not read again (ADR-0018, amended). Without an agent, nothing is
 	// read, and no issue is said to be.

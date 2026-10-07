@@ -873,8 +873,8 @@ see the role refine and split it.
   it; the acts done as ticked have their own fold and count.
 - **Tried**: conformance only — the run's order and report rebuilt as
   cases (`reads-a-new-issue-first`, `new-issue-acted-on-when-read`,
-  `new-issue-stays-first-past-the-cap`, `report-ticked-acts-apart`). **Not
-  tried**: a live run with an agent. #264 got its state from the engine
-  before this change, with no `new`: it stays in the catch-up unless
-  `new: true` is added to its state; issues opened from now on are read
-  first.
+  `new-issue-stays-first-past-the-cap`,
+  `persons-unread-issue-before-the-import-catch-up` — #264's case: a
+  person's issue whose state an older engine wrote, never read —,
+  `report-ticked-acts-apart`). **Not tried**: a live run with an agent;
+  the next gardening run should read #264 first.

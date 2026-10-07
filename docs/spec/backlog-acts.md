@@ -72,8 +72,8 @@ with no AI:
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
 lines of the code they name, in the order of
 [a run](../../roles/product-owner/docs/run.md) (ADR-0018, amended): a
-person's new issue (`new` in its state), reply (`comments`), edit (`body`)
-or reopening before the catch-up of those never read. An issue with nothing
+person's issue never read (no `judged`), reply (`comments`), edit (`body`)
+or reopening before the catch-up of what an import or a bot opened. An issue with nothing
 new is not read again, however old. An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
 against; the others are listed by title only. Each issue read gets `judged`
