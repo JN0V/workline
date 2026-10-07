@@ -38,6 +38,10 @@ type State struct {
 	Priority  int      `yaml:"priority,omitempty"` // the priority the role last set: another on the issue is a person's
 	Title     string   `yaml:"title,omitempty"`    // the title the role last set: another on the issue is a person's
 	Split     []int    `yaml:"split,omitempty"`    // the children the role split it into: it is not split again
+	// After are the blockers the role's split set on each child, among
+	// its siblings: the role's own links, taken off once a blocker closes
+	// (ADR-0028).
+	After map[int][]int `yaml:"after,flow,omitempty"`
 	Kept      []string `yaml:"kept,omitempty"`     // the evidence an announcement as obsolete rested on, kept open: not announced again for it
 	// Sections are its Need and Scope as last read or written (Basis): a
 	// person's change to them touches the issues built on it (ADR-0032).
@@ -105,11 +109,12 @@ func FormatState(s State) string {
 		Priority  int               `yaml:"priority,omitempty"`
 		Title     string            `yaml:"title,omitempty"`
 		Split     []int             `yaml:"split,flow,omitempty"`
+		After     map[int][]int     `yaml:"after,flow,omitempty"`
 		Kept      []string          `yaml:"kept,flow,omitempty"`
 		Sections  map[string]string `yaml:"sections,omitempty"`
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
 		Answered  string            `yaml:"answered,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept, s.Sections, s.Wrote, s.Answered})
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -185,7 +190,10 @@ type Proposal struct {
 	Milestone   string   `yaml:"milestone,omitempty"`
 	Title       string   `yaml:"title,omitempty"`           // an issue to open, or an issue's new title (rename)
 	Into        []Child  `yaml:"into,omitempty"`            // the children of a split
-	BlockedBy   []int    `yaml:"blocked-by,flow,omitempty"` // depend: the issues it waits on (ADR-0028)
+	BlockedBy   []int    `yaml:"blocked-by,flow,omitempty"` // depend: the issues it waits on; undepend: those taken off (ADR-0028)
+	// Native, the engine's: the blockers an undepend takes off the forge's
+	// own relation, the rest being in the engine's line; never the agent's.
+	Native []int `yaml:"native,flow,omitempty"`
 	Quote       *Quote   `yaml:"quote"`
 	Why         string   `yaml:"why"`
 	// Refining: the sections written, Need and Validation as drafts; Added,
@@ -271,7 +279,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "unready", "ask", "split", "rename", "depend"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "unready", "ask", "split", "rename", "depend", "undepend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -313,6 +321,7 @@ type Plan struct {
 	ticked   map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
 	said     []string        // what the report says of the boxes ticked
 	added    map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
+	dropped  map[int][]int   // the blockers this run's undepend acts take off
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -472,6 +481,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "close" {
 				p.Record.Closed = append(p.Record.Closed, Closing{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level})
 			}
+			if c.Do == "undepend" {
+				p.recordUndepend(c)
+			}
 		default:
 			s, ok := settings[c.Kind()]
 			if !ok {
@@ -483,11 +495,18 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "unready" {
 				s = Setting{Mode: Propose} // a ready issue is moved back by a person only (ADR-0032)
 			}
+			cleanup := c.Do == "undepend" && p.allClosed(c.BlockedBy)
+			switch {
+			case cleanup:
+				s = Setting{Mode: Act} // its blockers closed: the link's reason is gone, the engine's to take off (ADR-0028)
+			case c.Do == "undepend":
+				s = Setting{Mode: Propose} // a blocker still open: whether its reason is gone is a person's to say
+			}
 			d.Mode = s.Mode
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
 			}
-			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" {
+			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && !cleanup {
 				// Read again for a change to what it was built on: what the
 				// change asks of it is a person's to decide (ADR-0032).
 				d.Mode = Propose
@@ -565,6 +584,9 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				if c.Do == "depend" {
 					p.added[c.Issue] = append(p.added[c.Issue], c.BlockedBy...)
 				}
+				if c.Do == "undepend" {
+					p.recordUndepend(c)
+				}
 				p.recordDone(c)
 				p.recordDid(c)
 			}
@@ -604,8 +626,7 @@ func (p *Plan) opening(waits []Wait) {
 		if readied[id] && !slices.Contains(is.Labels, LabelReady) {
 			is.Labels = append(slices.Clone(is.Labels), LabelReady)
 		}
-		is.BlockedBy = append(slices.Clone(is.BlockedBy), p.added[id]...) // this run's, done
-		open = append(open, is)
+		open = append(open, p.asLeft(is))
 	}
 	var left []Wait
 	for _, w := range waits {
@@ -786,7 +807,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	if err != nil {
 		return err
 	}
-	p.open, p.seen, p.issues, p.ticked, p.added = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}
+	p.open, p.seen, p.issues, p.ticked, p.added, p.dropped = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}, map[int][]int{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is
@@ -884,6 +905,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkDepend(c); rule != "" {
 		return rule, why
 	}
+	if rule, why := p.checkUndepend(c); rule != "" {
+		return rule, why
+	}
 	if c.Do == "unready" {
 		is, ok := p.issues[c.Issue]
 		switch {
@@ -975,7 +999,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -1750,6 +1774,8 @@ func (p *Plan) ReportBody() string {
 				undo = fmt.Sprintf(" Close the issues opened from #%d to undo: its own text was left as it was.", d.Act.Issue)
 			case "depend":
 				undo = " Remove the link, or the line in its body, to undo."
+			case "undepend":
+				undo = ""
 			case "keep":
 				undo = ""
 			case "close":
@@ -1903,6 +1929,8 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("%s #%d back to refine (%s off, %s on): %s", map[bool]string{true: "Moved", false: "Move"}[done], c.Issue, LabelReady, LabelToRefine, strings.TrimSpace(c.Why))
 	case "depend":
 		return fmt.Sprintf("%s #%d as waiting on %s: %s", map[bool]string{true: "Marked", false: "Mark"}[done], c.Issue, issueList(c.BlockedBy), strings.TrimSpace(c.Why))
+	case "undepend":
+		return fmt.Sprintf("%s the link the role set from #%d to %s: %s", map[bool]string{true: "Took off", false: "Take off"}[done], c.Issue, issueList(c.BlockedBy), strings.TrimSpace(c.Why))
 	case "ask":
 		again := ""
 		if c.Round > 1 {

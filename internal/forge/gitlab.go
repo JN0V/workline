@@ -539,6 +539,34 @@ func (g *gitlab) AddBlocker(id, blocker int) (bool, error) {
 	return true, nil
 }
 
+// RemoveBlocker deletes id's is_blocked_by link to blocker; one not
+// there, or an instance without links, is left.
+func (g *gitlab) RemoveBlocker(id, blocker int) error {
+	out, err := g.api(path(Target{Kind: "issue", ID: id}) + "/links")
+	if errors.Is(err, errNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var links []struct {
+		IID  int    `json:"iid"`
+		Type string `json:"link_type"`
+		Link int    `json:"issue_link_id"`
+	}
+	if err := decode(out, &links); err != nil {
+		return err
+	}
+	for _, l := range links {
+		if l.IID == blocker && l.Type == "is_blocked_by" {
+			if _, err := g.api("-X", "DELETE", path(Target{Kind: "issue", ID: id})+"/links/"+strconv.Itoa(l.Link)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (g *gitlab) Comments(t Target) ([]string, error) {
 	notes, err := g.Notes(t)
 	return Bodies(notes), err

@@ -163,6 +163,10 @@ type Backlog interface {
 	// then writes a line in the body (ADR-0028). Adding one already there
 	// changes nothing.
 	AddBlocker(id, blocker int) (bool, error)
+	// RemoveBlocker takes blocker off what id waits on in the forge's own
+	// relation; one not there, or a forge without the relation, changes
+	// nothing. Only the role's own links are taken off (ADR-0028).
+	RemoveBlocker(id, blocker int) error
 	// Closers lists what closed an issue, as the forge links it: the pull
 	// or merge request, or the commit; nil when the forge does not say.
 	Closers(id int) ([]Closer, error)

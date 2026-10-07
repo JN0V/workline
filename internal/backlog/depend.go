@@ -280,8 +280,7 @@ func (p *Plan) waiting() string {
 		if closed[is.ID] {
 			continue
 		}
-		is.BlockedBy = append(slices.Clone(is.BlockedBy), p.added[is.ID]...) // this run's, done
-		open = append(open, is)
+		open = append(open, p.asLeft(is))
 	}
 	bl := ReadBacklog(open, p.Report)
 	if len(bl.Blocked) == 0 && len(bl.Cycles) == 0 {
@@ -317,6 +316,165 @@ func joinIDs(ids []int) string {
 		out = append(out, strconv.Itoa(n))
 	}
 	return strings.Join(out, ",")
+}
+
+// MarkedBlockers are the issues the engine's own line in a body names: the
+// role's, whoever set the forge's relation.
+func MarkedBlockers(body string) []int {
+	for _, l := range strings.Split(body, "\n") {
+		if strings.Contains(l, BlockedByMarker) {
+			return BodyBlockers(l)
+		}
+	}
+	return nil
+}
+
+// WithoutBlockers is a body with these blockers taken off the engine's
+// line: the line rewritten with those left, or taken out, with the blank
+// line before it, when none is. A person's own "Blocked by" line is left
+// as it is.
+func WithoutBlockers(body string, drop []int) string {
+	lines := strings.Split(body, "\n")
+	for i, l := range lines {
+		if !strings.Contains(l, BlockedByMarker) {
+			continue
+		}
+		ids := slices.DeleteFunc(BodyBlockers(l), func(n int) bool { return slices.Contains(drop, n) })
+		if len(ids) > 0 {
+			lines[i] = blockedByLine(ids)
+			return strings.Join(lines, "\n")
+		}
+		before := strings.TrimRight(strings.Join(lines[:i], "\n"), "\n")
+		after := strings.Join(lines[i+1:], "\n")
+		switch {
+		case strings.TrimSpace(after) == "":
+			return before
+		case before == "":
+			return strings.TrimLeft(after, "\n")
+		}
+		return before + "\n" + after
+	}
+	return body
+}
+
+// OwnBlockers are the blockers of an issue the role set, still among its
+// blockers: those its record keeps (a depend, a split's after) and those
+// the engine's line in its body names. A person's link, or line, is never
+// among them (ADR-0028).
+func (h *Hand) OwnBlockers(is forge.Issue) []int {
+	set := append(slices.Clone(h.Own[is.ID]), MarkedBlockers(is.Body)...)
+	var out []int
+	for _, b := range Blockers(is) {
+		if slices.Contains(set, b) {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// Stale are the links the role set whose reason is gone: each open issue
+// with its own blockers that are no longer open — closed, or gone from the
+// forge. A closed blocker holds nothing back; the engine takes the link
+// off, with no agent (ADR-0028).
+func (h *Hand) Stale(open []forge.Issue) map[int][]int {
+	isOpen := map[int]bool{}
+	for _, is := range open {
+		isOpen[is.ID] = true
+	}
+	out := map[int][]int{}
+	for _, is := range open {
+		for _, b := range h.OwnBlockers(is) {
+			if !isOpen[b] {
+				out[is.ID] = append(out[is.ID], b)
+			}
+		}
+	}
+	return out
+}
+
+// checkUndepend checks an undepend act (ADR-0028): the issue open, 1 to 5
+// blockers, each still one of its blockers — one gone already is left out
+// — and each set by the role: a person's link is never taken off. Native
+// says which are in the forge's own relation, the rest in the engine's
+// line.
+func (p *Plan) checkUndepend(c *Proposal) (rule, why string) {
+	if c.Do != "undepend" {
+		return "", ""
+	}
+	is, ok := p.issues[c.Issue]
+	if !ok || c.Issue == p.Report {
+		return "no-state", fmt.Sprintf("#%d is not an open issue", c.Issue)
+	}
+	if len(c.BlockedBy) == 0 || len(c.BlockedBy) > maxBlockers {
+		return "undepend-issue", fmt.Sprintf("a link is taken off 1 to %d blockers at a time (blocked-by)", maxBlockers)
+	}
+	have, own := Blockers(is), p.hand.OwnBlockers(is)
+	var left []int
+	for _, b := range c.BlockedBy {
+		switch {
+		case !slices.Contains(have, b):
+		case !slices.Contains(own, b):
+			return "undepend-theirs", fmt.Sprintf("#%d's link to #%d was not set by the role: a person's link is never taken off", c.Issue, b)
+		case !slices.Contains(left, b):
+			left = append(left, b)
+		}
+	}
+	if len(left) == 0 {
+		return "undepend-gone", fmt.Sprintf("#%d no longer waits on %s", c.Issue, issueList(c.BlockedBy))
+	}
+	c.BlockedBy, c.Native = left, nil
+	for _, b := range left {
+		if slices.Contains(is.BlockedBy, b) {
+			c.Native = append(c.Native, b)
+		}
+	}
+	return "", ""
+}
+
+// allClosed says whether every blocker an act names is closed, or closes
+// in this run: the link's reason is gone, and taking it off is the
+// engine's, not a person's.
+func (p *Plan) allClosed(ids []int) bool {
+	closing := p.closedInRun()
+	for _, b := range ids {
+		if p.open[b] && !closing[b] {
+			return false
+		}
+	}
+	return true
+}
+
+// recordUndepend takes the blockers an undepend took off out of the depend
+// the record keeps on that issue: a link the role took off is not one a
+// person did, should its blocker open again.
+func (p *Plan) recordUndepend(c Proposal) {
+	for i := range p.Record.Done {
+		d := &p.Record.Done[i]
+		if d.Issue != c.Issue || d.Act != "depend" {
+			continue
+		}
+		var keep []string
+		for _, f := range strings.Split(d.Set, ",") {
+			if n, err := strconv.Atoi(f); err != nil || !slices.Contains(c.BlockedBy, n) {
+				keep = append(keep, f)
+			}
+		}
+		d.Set = strings.Join(keep, ",")
+	}
+	p.Record.Done = slices.DeleteFunc(p.Record.Done, func(d Done) bool { return d.Act == "depend" && d.Set == "" })
+	p.dropped[c.Issue] = append(p.dropped[c.Issue], c.BlockedBy...)
+	p.Changed = true
+}
+
+// asLeft is an issue as this run leaves what it waits on: the links its
+// depend acts add, those its undepend acts take off.
+func (p *Plan) asLeft(is forge.Issue) forge.Issue {
+	is.BlockedBy = append(slices.Clone(is.BlockedBy), p.added[is.ID]...)
+	if drop := p.dropped[is.ID]; len(drop) > 0 {
+		is.BlockedBy = slices.DeleteFunc(is.BlockedBy, func(n int) bool { return slices.Contains(drop, n) })
+		is.Body = WithoutBlockers(is.Body, drop)
+	}
+	return is
 }
 
 // reaches says whether from waits, through the relations given, on to.

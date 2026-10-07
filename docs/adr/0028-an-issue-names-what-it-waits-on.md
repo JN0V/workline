@@ -1,6 +1,6 @@
 # ADR-0028: An issue names what it waits on; the order never offers it first
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-10-07 (a link taken off once its reason is gone)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0018 (the backlog's order, derived, never stored),
   ADR-0022 (a split's children), ADR-0026 (a kind of act has a mode and a
@@ -77,6 +77,37 @@ cycles.
   answers with an error, read as no native relation.
 - A project that moves from GitLab Free to Premium keeps its body lines,
   read as before; new relations go native.
-- Not decided now: removing a relation the role set once its reason is
-  gone; a dependency across projects (both forges allow it; the order
-  reads one project).
+- Not decided now: a dependency across projects (both forges allow it;
+  the order reads one project). Removing a relation the role set once its
+  reason is gone: decided below.
+
+## Amendment (2026-10-07): a link taken off once its reason is gone
+
+A link says an issue cannot start before another is done. Once that
+other is closed — done, not planned, a duplicate, gone — the link holds
+nothing back, yet stays: a "Blocked by" line that misleads on GitLab
+Free, a dependency on GitHub that a reader must check is closed. The role
+only added; nothing took off what it set.
+
+- **The role's own, told from a person's** by what it keeps, never by the
+  forge's author of a link (GitHub's API says none): the blockers of each
+  `depend` in its record, those a split set among its children in the
+  parent's state (`after`), and the engine's marked line in a body. A
+  person's link or line is never taken off.
+- **Its blocker closed**: the reason is gone, mechanically. The engine
+  takes the link off at the next run, with no agent, paused or not, at
+  every level (principle 4: no judgement in it, and it changes no order).
+  A blocker closed without delivering is said (`blocker-not-delivered`):
+  what waited on it may no longer stand, a person's to judge.
+- **Its blocker still open**: whether the reason is gone — the need
+  changed, the issue no longer needs what the blocker adds — is
+  judgement. The agent may propose `undepend`; it is always proposed, a
+  person ticks it (as `unready`, ADR-0032).
+- The record forgets the links it took off, so a blocker opened again is
+  not read as a person undoing the act.
+- A new forge operation, `RemoveBlocker` (`remove-blocker` for a plugged
+  forge, asked only for a link it said native).
+
+Left: the links a split set before this, and a `depend` the record
+dropped once all its blockers closed, are unknown to the role and stay;
+a dependency across projects.

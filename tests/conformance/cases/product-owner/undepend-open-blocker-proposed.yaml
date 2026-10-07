@@ -1,0 +1,28 @@
+case: product-owner/undepend-open-blocker-proposed
+about: The agent may say a link the role set no longer holds while its blocker is still open; that is judgement, so it is proposed in the report, never done by the role, whatever the level. A link a person set is never taken off, even proposed (ADR-0028).
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: enterprising}
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], blocked-by: [13], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], blocked-by: [15], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Name the columns", body: "A header row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 20
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\ndone:\n  - {issue: 12, act: depend, set: \"13\", level: enterprising}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: fake:undepend-open}
+expect:
+  findings: [{rule: undepend-theirs, where: "#14", message: "#14's link to #15 was not set by the role: a person's link is never taken off"}]
+  forge:
+    issues:
+      - {id: 12, blocked-by: [13]}
+      - {id: 14, blocked-by: [15]}
+      - {id: 20, body-contains: "- [ ] Take off the link the role set from #12 to #13: #12's need changed: it no longer reads #13's row count."}

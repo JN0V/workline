@@ -92,7 +92,11 @@ what would merely be nicer first; never two issues that wait on each
 other. The task says what each issue waits on already, a person's link
 included: propose only what is missing. A blocked issue is ordered after
 its blockers whatever its priority, and is never offered first to whoever
-builds next.
+builds next. A link the task says was "set by the role" that no longer
+holds while its blocker is open — the need changed, the issue no longer
+needs what the blocker adds — propose `undepend` with `blocked-by` and
+why: a person decides it. Never one a person set; a closed blocker's
+link the engine takes off itself.
 
 **A changed need.** An issue the task says is "read again for a
 change" was built on a text a person rewrote — its parent's Need or

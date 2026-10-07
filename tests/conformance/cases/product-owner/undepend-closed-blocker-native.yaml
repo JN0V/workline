@@ -1,0 +1,26 @@
+case: product-owner/undepend-closed-blocker-native
+about: A link the role set in the forge's own relation (GitHub's dependencies), its blocker now closed, has lost its reason — the wait is over — and the engine takes it off at the next run, with no agent; it is not read as a person undoing the act. A link a person set to a closed issue is left (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    dependencies: true
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", author: ann, insider: true, labels: [], blocked-by: [13], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", closed: true, reason: completed, labels: [], comments: []}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", author: ann, insider: true, labels: [], blocked-by: [15], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Name the columns", body: "A header row.", closed: true, reason: completed, labels: [], comments: []}
+      - id: 20
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\ndone:\n  - {issue: 12, act: depend, set: \"13\", level: normal}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: undone}, {rule: blocker-not-delivered}]
+  forge:
+    issues:
+      - {id: 12, blocked-by: []}
+      - {id: 14, blocked-by: [15]}
+      - {id: 20, body-contains: "- Took off the link the role set from #12 to #13: #13 is closed: the wait the role set is over."}
+      - {id: 20, body-lacks: "#14"}

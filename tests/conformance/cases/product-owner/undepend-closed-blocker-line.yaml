@@ -1,0 +1,18 @@
+case: product-owner/undepend-closed-blocker-line
+about: On a forge without the relation, the engine's own "Blocked by" line names a blocker now closed as not planned; the engine takes it out of the body at the next run, with no agent, keeps the body's digest so its own change is not read as a person's, and says the blocker was not delivered. A person's own line is left as it is (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.\n\nBlocked by #13. <!-- workline:blocked-by -->", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", closed: true, reason: not_planned, labels: [], comments: []}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.\n\nBlocked by #15.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Name the columns", body: "A header row.", closed: true, labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: blocker-not-delivered, where: "#12", message: "it waited on #13, closed as not planned"}]
+  forge:
+    issues:
+      - {id: 12, body-lacks: "Blocked by", body-contains: "A comma splits a cell.", comment-contains: "body: "}
+      - {id: 14, body-contains: "Add a JSON export.\n\nBlocked by #15."}

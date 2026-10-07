@@ -1,0 +1,22 @@
+case: product-owner/undepend-split-parent-closed
+about: A parent closed by a person while a child still waits on a sibling keeps the split's link the role's own, read from the parent's state; once the sibling closes, the engine takes the link off, with no agent (ADR-0028).
+given:
+  repo: backlog
+  forge:
+    dependencies: true
+    sub-issues: true
+    issues:
+      - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", closed: true, reason: completed, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\nafter: {12: [11]}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, comments: []}
+      - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", author: ann, insider: true, labels: [], parent: 9, blocked-by: [11], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 20
+        title: "Backlog — product owner"
+        body: "What the product owner did."
+        labels: []
+        comments: ["```yaml\ndone:\n  - {issue: 9, act: split, level: normal}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 12, blocked-by: []}

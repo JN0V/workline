@@ -1,6 +1,7 @@
 package backlog
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -72,14 +73,43 @@ func (p *Plan) recordDone(c Proposal) {
 }
 
 // findUndone reads what a person did to the acts the record keeps: those
-// undone, with their evidence, and those that still stand. An act whose
-// issue is closed, or whose value a person set to a third, is no longer
-// the role's to watch.
-func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []Done) (standing []Done, undone []Undo, err error) {
+// undone, with their evidence, and those that still stand; and the
+// blockers the role set on each open issue (own). An act whose issue is
+// closed, or whose value a person set to a third, is no longer the role's
+// to watch.
+func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []Done) (standing []Done, undone []Undo, own map[int][]int, err error) {
 	var all map[int]forge.Issue // read once, when a split is watched
+	own = map[int][]int{}
 	for _, d := range done {
 		is, isOpen := open[d.Issue]
 		if !isOpen {
+			if d.Act != "split" {
+				continue
+			}
+			// A parent closed while its children still wait on siblings:
+			// those links are still the role's own, read from its state
+			// until no child that waits is open (ADR-0028). A parent the
+			// forge no longer gives is let go; one whose state does not
+			// read is kept, read again at the next run.
+			st, err := splitState(f, role, d.Issue)
+			switch {
+			case errors.Is(err, forge.ErrUnreachable):
+				return nil, nil, nil, err
+			case err != nil:
+				continue
+			case st == nil:
+				standing = append(standing, d)
+				continue
+			}
+			waiting := false
+			for child, blockers := range st.After {
+				if _, ok := open[child]; ok {
+					own[child], waiting = append(own[child], blockers...), true
+				}
+			}
+			if waiting {
+				standing = append(standing, d)
+			}
 			continue
 		}
 		var evidence string
@@ -112,6 +142,9 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			now, left := Blockers(is), 0
 			for _, f := range strings.Split(d.Set, ",") {
 				b, err := strconv.Atoi(f)
+				if err == nil {
+					own[d.Issue] = append(own[d.Issue], b)
+				}
 				if _, isOpen := open[b]; err != nil || !isOpen {
 					continue
 				}
@@ -126,18 +159,20 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 				evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
 			}
 		case "split":
-			notes, err := f.Notes(forge.Target{Kind: "issue", ID: d.Issue})
+			st, err := splitState(f, role, d.Issue)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
-			st, found, err := ReadState(forge.Bodies(notes), role)
-			if !found || err != nil || len(st.Split) == 0 {
-				break // its children not recorded yet: watched again
+			if st == nil || len(st.Split) == 0 {
+				break // its children not recorded yet, or its state unread: watched again
+			}
+			for child, blockers := range st.After {
+				own[child] = append(own[child], blockers...)
 			}
 			if all == nil {
 				list, err := f.AllIssues()
 				if err != nil {
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				all = map[int]forge.Issue{}
 				for _, x := range list {
@@ -166,7 +201,24 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			standing = append(standing, d)
 		}
 	}
-	return standing, undone, nil
+	return standing, undone, own, nil
+}
+
+// splitState is a split parent's state as its comment holds it: empty
+// when it has none; nil when it does not read — never taken for none.
+func splitState(f forge.Backlog, role string, id int) (*State, error) {
+	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return nil, err
+	}
+	st, found, err := ReadState(forge.Bodies(notes), role)
+	switch {
+	case err != nil:
+		return nil, nil
+	case !found:
+		return &State{}, nil
+	}
+	return st, nil
 }
 
 func priorityName(n string) string {

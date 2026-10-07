@@ -36,7 +36,7 @@ const (
 
 // recordDid keeps an act the role decided to do alone, with today's day.
 func (p *Plan) recordDid(c Proposal) {
-	if c.Do == "keep" || c.From != "" || c.Ticked != "" {
+	if c.Do == "keep" || c.Do == "undepend" || c.From != "" || c.Ticked != "" {
 		return
 	}
 	now := time.Now().UTC()

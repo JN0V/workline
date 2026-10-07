@@ -1,7 +1,9 @@
 package backlog
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strconv"
@@ -117,7 +119,9 @@ type Evidence struct {
 	Parts     int
 	Closed    int      // the parts closed, or gone from the forge
 	Undone    []int    // the parts closed without delivering: not planned, a duplicate, gone
-	Unproved  []string // the Verification items no part delivered quotes
+	Unproved  []string // the Verification items no part delivered quotes, or whose test is not in the code
+	NoTest    []string // the tests a quoted item names that the code does not hold
+	TestUnread []string // the tests a quoted item names that could not be looked for, with why
 	Unread    []Part   // the parts whose closer the forge refused to say, with why
 	AllClosed bool
 }
@@ -125,8 +129,10 @@ type Evidence struct {
 // ReadEvidence writes a parent's report from its parts: what each became
 // and what closed it; each item of its Verification proved by a part
 // delivered that quotes it — in its own Verification, or in the text of
-// the pull request or commit that closed it — or said not proved.
-func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
+// the pull request or commit that closed it — and, when it names a test,
+// that test found in the code by tests (nil: not looked for); or said not
+// proved.
+func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinder) Evidence {
 	ev := Evidence{Parts: len(parts)}
 	var b strings.Builder
 	fmt.Fprintf(&b, "**The parts of this need**, as they close: kept up to date by the %s role, which never closes this issue — accepting the need is a person's.\n\n", strings.ReplaceAll(role, "-", " "))
@@ -176,9 +182,44 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string) Evidence {
 	if len(items) == 0 {
 		b.WriteString("\nThis issue has no Verification of its own: nothing to prove its parts against; a person judges from the parts alone.\n")
 	} else {
-		b.WriteString("\n**Its Verification**, each item against the parts delivered — proved when a part's Verification, or what closed it, quotes it:\n\n")
+		b.WriteString("\n**Its Verification**, each item against the parts delivered — proved when a part's Verification, or what closed it, quotes it, and a test it names is in the code:\n\n")
 		for _, item := range items {
-			if where := proof(item, parts); where != "" {
+			where := proof(item, parts)
+			if where != "" && tests != nil {
+				var in, missing, unread []string
+				for _, name := range TestNames(item) {
+					path, err := tests(name)
+					switch {
+					case err != nil:
+						unread = append(unread, "`"+name+"`")
+						if why := fmt.Sprintf("`%s` (%v)", name, err); !slices.Contains(ev.TestUnread, why) {
+							ev.TestUnread = append(ev.TestUnread, why)
+						}
+					case path == "":
+						missing = append(missing, "`"+name+"`")
+					case path == name || strings.HasPrefix(name, path+"::"):
+						in = append(in, "`"+name+"`") // a file, or a test in it, named by its path
+					default:
+						in = append(in, fmt.Sprintf("`%s` in %s", name, path))
+					}
+				}
+				switch {
+				case len(missing) > 0:
+					ev.Unproved = append(ev.Unproved, item)
+					ev.NoTest = append(ev.NoTest, missing...)
+					fmt.Fprintf(&b, "- %s: \"%s\" — %s, but the code holds no test %s: a test named is no proof until it is there.\n", notYet, item, where, strings.Join(missing, ", "))
+					continue
+				case len(unread) > 0:
+					// Never said missing when git could not say: not looked for.
+					ev.Unproved = append(ev.Unproved, item)
+					fmt.Fprintf(&b, "- %s: \"%s\" — %s, but the test %s could not be looked for in the code: not proved until it is read.\n", notYet, item, where, strings.Join(unread, ", "))
+					continue
+				}
+				if len(in) > 0 {
+					where += "; the test " + strings.Join(in, ", ") + ", read from the code"
+				}
+			}
+			if where != "" {
 				fmt.Fprintf(&b, "- Proved: \"%s\" — %s.\n", item, where)
 				continue
 			}
@@ -231,6 +272,104 @@ func proof(item string, parts []Part) string {
 		}
 	}
 	return ""
+}
+
+// TestFinder says where the code holds a test a Verification item names:
+// the file, or "" when it holds none; an error when it could not look,
+// never read as none (ADR-0029).
+type TestFinder func(name string) (string, error)
+
+// codeSpan is a Markdown code span: where an item names a test.
+var codeSpan = regexp.MustCompile("`([^`\n]+)`")
+
+// testFile is a path a test lives in, by the conventions of the common
+// languages: a tests or spec folder, a _test, .test, .spec or _spec file,
+// a test_ file.
+var testFile = regexp.MustCompile(`(?i)(^|/)(tests?|specs?|__tests__)/|(_test|\.test|\.spec|_spec)\.[a-z0-9]+$|(^|/)test_[^/]+$`)
+
+// testFunc is a test's own name: Go's and JUnit's TestX, Python's test_x,
+// JavaScript's and Java's testX.
+var testFunc = regexp.MustCompile(`^(Test[A-Z0-9_]\w*|test_\w+|test[A-Z]\w*)$`)
+
+// testBefore are the words that say the next code span names a test:
+// "test", "test case", "conformance case" — never "case" alone, prose's
+// "in that case".
+var testBefore = regexp.MustCompile(`(?i)\b(tests?|(test|conformance)\s+cases?)\s*$`)
+
+// TestNames are the tests a Verification item names, each in a code span:
+// a test file (a path, with ::name after it for one test in it), a test's
+// own name, or any name right after the word test, test case or
+// conformance case. The rest of
+// the item is prose, and names none.
+func TestNames(item string) []string {
+	var out []string
+	for _, m := range codeSpan.FindAllStringSubmatchIndex(item, -1) {
+		name := strings.TrimSpace(item[m[2]:m[3]])
+		path, _, _ := strings.Cut(name, "::")
+		switch {
+		case strings.ContainsAny(name, " \t"):
+		case testFile.MatchString(path), testFunc.MatchString(name), testBefore.MatchString(item[:m[0]]):
+			if !slices.Contains(out, name) {
+				out = append(out, name)
+			}
+		}
+	}
+	return out
+}
+
+// CodeTests finds a test in the repository at HEAD: a test file named by
+// its path, one test in it by path::name, or a name found as a word in a
+// test file (TestNames). The run's commit, never the working tree.
+func CodeTests(repo string) TestFinder {
+	// grep lists the files at HEAD holding a word, under path when given:
+	// none is git's exit 1, any other failure an error.
+	grep := func(word, path string) ([]string, error) {
+		args := []string{"-C", repo, "grep", "-l", "-w", "-F", "-e", word, "HEAD"}
+		if path != "" {
+			args = append(args, "--", ":(literal)"+path)
+		}
+		out, err := exec.Command("git", args...).Output()
+		var exit *exec.ExitError
+		switch {
+		case errors.As(err, &exit) && exit.ExitCode() == 1:
+			return nil, nil
+		case err != nil:
+			return nil, fmt.Errorf("git grep: %v", err)
+		}
+		var files []string
+		for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			files = append(files, strings.TrimPrefix(l, "HEAD:"))
+		}
+		return files, nil
+	}
+	return func(name string) (string, error) {
+		path, fn, two := strings.Cut(name, "::")
+		if testFile.MatchString(path) && (two || strings.Contains(path, "/") || strings.Contains(path, ".")) {
+			// A file, a blob — never a folder —, its path taken literally.
+			out, err := exec.Command("git", "-C", repo, "ls-tree", "HEAD", "--", ":(literal)"+path).Output()
+			info, file, _ := strings.Cut(strings.TrimRight(string(out), "\n"), "\t")
+			switch {
+			case err != nil:
+				return "", fmt.Errorf("git ls-tree: %v", err)
+			case file != path || !strings.Contains(info, " blob "):
+				return "", nil
+			case !two:
+				return path, nil
+			}
+			files, err := grep(fn, path)
+			if err != nil || len(files) == 0 {
+				return "", err
+			}
+			return path, nil
+		}
+		files, err := grep(name, "")
+		for _, p := range files {
+			if testFile.MatchString(p) {
+				return p, nil
+			}
+		}
+		return "", err
+	}
 }
 
 // closerName says what closed an issue as the forge names it.

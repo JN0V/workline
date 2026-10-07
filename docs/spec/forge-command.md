@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 55c1bc8
+checked: 9e31d4b
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -25,7 +25,7 @@ to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
 `-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
-`add-sub-issue`, `add-blocker`, `closers`, `trail`, `ensure-label`), nor a merge request's `base`.
+`add-sub-issue`, `add-blocker`, `remove-blocker`, `closers`, `trail`, `ensure-label`), nor a merge request's `base`.
 
 ## One request, one run
 
@@ -70,6 +70,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `set-title` | `id`, `title` | renames the issue | `{}` |
 | `add-sub-issue` | `parent`, `child` | makes `child` a sub-issue of `parent`, on a forge that has sub-issues; one already there changes nothing | `{native: true}`; `{native: false}` on a forge without them, and the engine lists the child in the parent's body (ADR-0022) |
 | `add-blocker` | `id`, `blocker` | records that `id` waits on `blocker` in the forge's own relation; one already there changes nothing | `{native: true}`; `{native: false}` on a forge without one, and the engine writes a line in the issue's body (ADR-0028); an error answered fails the act |
+| `remove-blocker` | `id`, `blocker` | takes `blocker` off what `id` waits on in the forge's own relation; one not there changes nothing. Asked only for a link the forge lists in `blocked-by` and the role set: its blocker closed, or a person ticked taking it off (ADR-0028) | `{}`; an error answered fails the act |
 | `closers` | `id` | what closed the issue, as the forge links it | `{closers: [{kind, ref, text}]}` — `kind` `pull-request` (a pull or merge request) or `commit`, `ref` as the forge names it (`#20`, `!7`, a short commit), `text` its title and description or the commit's message; an error answered: the closer said "not read" on the parent, never "by hand" (ADR-0029) |
 | `trail` | `id`, `label` | when the open issue last got the label, and the pull or merge requests and commits that name it | `{labeled, links: [{kind, ref, at}]}` — `labeled` and `at` RFC 3339 or `YYYY-MM-DD`, `kind` and `ref` as for `closers`; `labeled` left out, or an error answered: the forge does not say, and the issue is never said stuck for it (ADR-0031) |
 | `ensure-label` | `name`, `color`, `description` | creates the label when the project has none of that name | `{}` |

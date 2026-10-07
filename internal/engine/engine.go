@@ -1976,6 +1976,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.depend(d.Act.Issue, d.Act.BlockedBy, true)
+	case "undepend":
+		d := a.plan.Decision(a.index)
+		if d == nil || d.Mode != backlog.Act {
+			return nil
+		}
+		return a.undepend(d.Act)
 	case "handoff":
 		a.handoffs = append(a.handoffs, in.Value)
 		return intent.Write(filepath.Join(a.runDir, "out", "handoffs.yaml"), []intent.Intention{in})
@@ -2205,7 +2211,9 @@ func (a *applier) split(c backlog.Proposal) error {
 		}
 	}
 	// What a child waits on among its siblings (ADR-0028): opened, never
-	// read yet, so its state's digest is left.
+	// read yet, so its state's digest is left; the parent's state keeps
+	// them, the role's own links.
+	after := map[int][]int{}
 	for i, ch := range c.Into {
 		var blockers []int
 		for _, k := range ch.After {
@@ -2215,6 +2223,7 @@ func (a *applier) split(c backlog.Proposal) error {
 			if err := a.depend(ids[i], blockers, false); err != nil {
 				return err
 			}
+			after[ids[i]] = blockers
 		}
 	}
 	t := forge.Target{Kind: "issue", ID: c.Issue}
@@ -2239,9 +2248,46 @@ func (a *applier) split(c backlog.Proposal) error {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
 	}
 	st.Split = ids
+	if len(after) > 0 {
+		st.After = after
+	}
 	if body != "" {
 		st.Keep(body) // the engine's own change: not read again for it
 	}
+	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
+}
+
+// undepend takes off links the role set (ADR-0028): those the check found
+// in the forge's own relation, and the rest from the engine's line in the
+// body, whose new digest the issue's state gets.
+func (a *applier) undepend(c backlog.Proposal) error {
+	b := a.forge.(forge.Backlog)
+	for _, bl := range c.Native {
+		if err := b.RemoveBlocker(c.Issue, bl); err != nil {
+			return err
+		}
+	}
+	is, err := a.forge.Issue(c.Issue)
+	if err != nil {
+		return err
+	}
+	body := backlog.WithoutBlockers(is.Body, c.BlockedBy)
+	if body == is.Body {
+		return nil
+	}
+	if err := b.SetBody(c.Issue, body); err != nil {
+		return err
+	}
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return err
+	}
+	st, found, err := backlog.ReadState(comments, a.role)
+	if err != nil || !found {
+		return err // no state yet: the body is read as it is at its first
+	}
+	st.Keep(body)
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
 

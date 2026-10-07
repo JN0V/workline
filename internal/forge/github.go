@@ -329,6 +329,24 @@ func (g *github) AddBlocker(id, blocker int) (bool, error) {
 	return err == nil, err
 }
 
+// RemoveBlocker takes blocker off id's issue dependencies, by the
+// blocker's id; one not there, or a GitHub without them, is left.
+func (g *github) RemoveBlocker(id, blocker int) error {
+	have, err := g.blockedBy(id)
+	if errors.Is(err, errNotFound) {
+		return nil
+	}
+	if err != nil || !slices.Contains(have, blocker) {
+		return err
+	}
+	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/issues/%d", blocker), "--jq", ".id")
+	if err != nil {
+		return err
+	}
+	_, err = g.api("-X", "DELETE", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/dependencies/blocked_by/%s", id, strings.TrimSpace(string(out))))
+	return err
+}
+
 func (g *github) Comments(t Target) ([]string, error) {
 	notes, err := g.Notes(t)
 	return Bodies(notes), err

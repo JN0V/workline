@@ -2,6 +2,9 @@ package backlog
 
 import (
 	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -59,7 +62,7 @@ func TestProofIsAQuote(t *testing.T) {
 
 func TestCloserNotReadIsSaid(t *testing.T) {
 	part := Part{ID: 11, Issue: forge.Issue{Closed: true, Reason: "completed", Title: "Keep the last row"}, Unread: errors.New("the forge refused closers: unknown operation")}
-	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner")
+	ev := ReadEvidence(forge.Issue{ID: 9}, []Part{part}, "product-owner", nil)
 	if !strings.Contains(ev.Body, "| #11 Keep the last row | closed as completed | not read: the forge did not say |") || strings.Contains(ev.Body, "by hand") {
 		t.Errorf("a closer the forge refused to say is said not read, never by hand:\n%s", ev.Body)
 	}
@@ -68,5 +71,69 @@ func TestCloserNotReadIsSaid(t *testing.T) {
 	}
 	if len(ev.Unread) != 1 || ev.Unread[0].ID != 11 {
 		t.Errorf("Unread = %v, want #11", ev.Unread)
+	}
+}
+
+func TestTestNames(t *testing.T) {
+	cases := []struct {
+		item string
+		want []string
+	}{
+		{"`TestWriteRows` passes", []string{"TestWriteRows"}},
+		{"the test `keeps-the-last-row` and `src/export/csv_test.go::TestQuote`", []string{"keeps-the-last-row", "src/export/csv_test.go::TestQuote"}},
+		{"`tests/export.spec.ts` and `test_quote` cover it", []string{"tests/export.spec.ts", "test_quote"}},
+		{"conformance case `parent-x` passes", []string{"parent-x"}},
+		{"in that case `WriteRows` returns; the spec `x` says so", nil},
+		{"`WriteRows` keeps the last row; `make check` is green", nil},
+		{"A test writes three rows.", nil},
+	}
+	for _, c := range cases {
+		if got := TestNames(c.item); !slices.Equal(got, c.want) {
+			t.Errorf("TestNames(%q) = %q, want %q", c.item, got, c.want)
+		}
+	}
+}
+
+func TestCodeTestsReadsHead(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	if err := os.MkdirAll(filepath.Join(dir, "tests", "export"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tests", "export", "rows_test.go"), []byte("package export\n\nfunc TestRows(t *testing.T) {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// A name in code that is no test: never found as one.
+	if err := os.WriteFile(filepath.Join(dir, "cols.go"), []byte("package export\n\n// TestCols is no test.\nfunc TestCols() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "test"}} {
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+	}
+	find := CodeTests(dir)
+	for name, want := range map[string]string{
+		"tests/export/rows_test.go":          "tests/export/rows_test.go",
+		"tests/export/rows_test.go::TestRows": "tests/export/rows_test.go",
+		"tests/export/rows_test.go::TestNope": "", // the file there, the test not
+		"TestRows":                           "tests/export/rows_test.go",
+		"tests/export":                       "", // a folder, no test file
+		"tests/export/cols_test.go":          "",
+		"TestCols":                           "",
+	} {
+		if got, err := find(name); got != want || err != nil {
+			t.Errorf("CodeTests(%q) = %q, %v; want %q", name, got, err, want)
+		}
+	}
+}
+
+func TestCodeTestsUnreadIsNotMissing(t *testing.T) {
+	find := CodeTests(t.TempDir()) // not a repository: git fails
+	for _, name := range []string{"TestWriteRows", "src/export/csv_test.go"} {
+		if path, err := find(name); err == nil {
+			t.Errorf("CodeTests(%q) = %q, no error: a git that failed is read as a test missing", name, path)
+		}
 	}
 }

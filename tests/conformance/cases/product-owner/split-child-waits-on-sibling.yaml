@@ -1,5 +1,5 @@
 case: product-owner/split-child-waits-on-sibling
-about: A split's child that names a sibling in `after` waits on it — the forge's relation where it has one, a line in its body elsewhere (here the latter) — so the second part is never offered before the first (ADR-0028).
+about: A split's child that names a sibling in `after` waits on it — the forge's relation where it has one, a line in its body elsewhere (here the latter) — so the second part is never offered before the first; the parent's state keeps the link as the role's own (ADR-0028).
 given:
   repo: backlog
   forge:
@@ -10,6 +10,6 @@ expect:
   status: pass
   forge:
     issues:
-      - {id: 9, comment-contains: "split: [10, 11]"}
+      - {id: 9, comment-contains: ["split: [10, 11]", "after: {11: [10]}"]}
       - {id: 10, body-lacks: "Blocked by"}
       - {id: 11, body-contains: "Blocked by #10. <!-- workline:blocked-by -->"}

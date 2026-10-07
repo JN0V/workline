@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 55c1bc8
+checked: 6de6c6b
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -35,7 +35,8 @@ The contract of its acts is
    big to be one need split into 2 to 6, each with its four sections
    (`split`), a child naming the siblings it waits on (`after`); a title
    that says nothing renamed (`rename`); what an issue waits on
-   (`depend`, ADR-0028). The task
+   (`depend`, ADR-0028), and a link it set that no longer holds
+   (`undepend`, always proposed to a person). The task
    shows what was asked or proposed to the reporter and what they
    answered, and the rounds spent.
 3. The engine checks each one when it applies it — never as not planned,
@@ -49,7 +50,10 @@ The contract of its acts is
    body —,
    what an issue waits on written in the forge's own relation (GitHub's
    dependencies, GitLab's `is_blocked_by` on Premium), else a line
-   `Blocked by #12.` in its body, never a cycle, a person's link kept,
+   `Blocked by #12.` in its body, never a cycle, a person's link kept;
+   a link the role set whose blocker closed taken off by the engine,
+   with no agent — the role's own told from a person's by its record
+   and the engine's line —,
    at most `moved-percent-max` of the open issues moved a run (20% at
    `normal`, 10% `cautious`, 30% `enterprising`) — and does it,
    proposes it, or drops it, by the kind's mode and cap (`acts`). One
@@ -110,7 +114,10 @@ edited in place as its parts move (ADR-0029): each part open, closed as
 completed with the pull request or commit that closed it, or closed
 without delivering (not planned, a duplicate, gone); each item of its
 Verification proved where a part delivered quotes it, in its own
-Verification or in what closed it, or "not proved". Once all its parts
+Verification or in what closed it — and, when it names a test, that test
+found in the code at the run's commit —, or "not proved"
+(`proof-test-missing` when the test is not there, `proof-test-unread`
+when git could not say). Once all its parts
 are closed, the comment, a finding (`parent-to-accept`) and the report's
 "To accept" ask a person to accept it by closing it; the role never
 does, and an agent's closing of a parent is dropped.

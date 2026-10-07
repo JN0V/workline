@@ -1,6 +1,6 @@
 # ADR-0029: A parent is accepted by a person, from what its parts delivered
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-10-07 (a test named as proof, read from the code)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0022 (a split keeps the need in its parent), ADR-0026
   (a kind of act has a mode per level), ADR-0028 (`next-ready`);
@@ -74,5 +74,31 @@ item not proved, and a person judges those.
   only for parents its listing counts; GitLab one GraphQL query a page.
 - A part in another repository (GitHub allows it) is left out.
 - Not decided now: an agent drafting which items look proved, if live
-  use shows parents whose items are proved in other words; a test named
-  as proof, read from the code.
+  use shows parents whose items are proved in other words. A test named
+  as proof, read from the code: decided below.
+
+## Amendment (2026-10-07): a test named as proof, read from the code
+
+An item of a Verification often names its proof: "`TestWriteRows`
+passes", "the case `parent-x`". A part quoting it proved the item, yet
+the test was taken on trust: a part could quote a test nobody wrote.
+
+- **What names a test**: a code span in the item holding a test file's
+  path (a tests or spec folder, a `_test`, `.test`, `.spec` or `_spec`
+  file, a `test_` file), `path::name`, a test's own name (`TestX`,
+  `test_x`, `testX`), or any name right after the words "test", "test
+  case" or "conformance case" — never "case" alone, prose's "in that
+  case".
+  The rest of the item is prose.
+- **Read from the code** at the run's commit, with git alone: the file
+  there; the name a word in a test file. The comment says where.
+- **Not there**: the item is not proved, whatever quotes it; the comment
+  says which test is missing, and a finding (`proof-test-missing`). Git
+  failing is not a test missing: "could not be looked for"
+  (`proof-test-unread`), and the item is not proved either.
+  Mechanical, no agent (principle 4).
+- Whether the test passes is not read: that is CI's, on the pull request
+  that closed the part, and its link is on the comment already.
+
+Left: a test named in prose, outside a code span; a test in another
+repository.

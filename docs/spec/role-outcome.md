@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 3bc3de5
+checked: 9e31d4b
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -89,6 +89,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `split` | break an issue too big to be one need into 2 to 6 issues, each with its four sections, opened through the one way and linked to it — a sub-issue, a GitLab task, or a task list in its body; never split twice (docs/spec/backlog-acts.md, "Splitting") | forge |
 | `rename` | set an issue's title; a title a person set after the role's is kept (docs/spec/backlog-acts.md, "Renaming") | forge |
 | `depend` | name the open issues an issue waits on (`blocked-by`): the forge's own relation, or a line in its body; never a cycle, a person's link kept (docs/spec/backlog-acts.md, "What an issue waits on"; ADR-0028) | forge |
+| `undepend` | take off a link the role set (`blocked-by`), its blocker still open: always proposed to a person; a closed blocker's link the engine takes off itself, a person's never (ADR-0028) | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else | report |
 | `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, claim}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
