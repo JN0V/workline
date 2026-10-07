@@ -762,3 +762,18 @@ Sonnet. Details of the reviewer's side in roles/reviewer/docs/tried.md.
   on #12; offline, the task of one issue 14.7k characters, two 25.8k.
 - **Side effects**: the planted runs paused the role on the sandbox
   (three runs nobody answered); a comment on the report resumed it.
+
+## 2026-10-07 — an import's plan sees a closed issue, live on GitHub, no agent
+
+A clone of JN0V/workline-sandbox, `IMPORT-163.md` written again from the
+bodies of #33, #34 and #35 and committed locally, not pushed;
+`workline issues import IMPORT-163.md --forge github --ai none`, without
+`--apply`: the forge read, nothing written.
+
+- **Seen**: the task given to the agent lists "#34 Keep the import's log
+  for a week — closed as completed; line 13" under "The closed issues
+  opened from these lines", its text found in the file; #33 and #35 among
+  the open issues.
+- **Not tried**: a real agent's answer to it — whether it answers the
+  line `held`, #34, rather than proposing it again; the engine would
+  leave #34 closed either way.

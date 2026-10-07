@@ -401,3 +401,36 @@ func (m Mapped) say() string {
 	}
 	return m.State
 }
+
+// ClosedImport is a closed issue an import opened from a file, and the
+// lines of the file that hold its item.
+type ClosedImport struct {
+	Issue    forge.Issue
+	From, To int
+	Lines    string // as a skip names them: "12", or "12-14"
+}
+
+// ClosedImports lists the closed issues opened from file by an import
+// whose item lies in its lines from to to (ADR-0018, amended): the plan of
+// an import sees them, so an item a closed issue holds is answered, not
+// proposed again. An issue's item is found by its text in the file as it
+// reads, else by the lines its body says it was opened from.
+func ClosedImports(all []forge.Issue, file string, lines []string, from, to int) []ClosedImport {
+	var out []ClosedImport
+	for _, is := range all {
+		if !is.Closed || !strings.Contains(is.Body, "<!-- workline:import="+file+":") {
+			continue
+		}
+		text, _, _ := strings.Cut(is.Body, "\n\nOpened from `"+file+"`")
+		a, b, _, ok := LocateIn(lines, text)
+		if !ok {
+			var path string
+			path, a, b, ok = Imported(is.Body)
+			ok = ok && path == file
+		}
+		if ok && a <= to && b >= from {
+			out = append(out, ClosedImport{Issue: is, From: a, To: b, Lines: span(a, b)})
+		}
+	}
+	return out
+}

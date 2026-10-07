@@ -93,7 +93,7 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	if os.Getenv("WORKLINE_EVENT") == "import" {
-		return preImport(runDir, repo, role, open)
+		return preImport(runDir, repo, role, b, open)
 	}
 	head, err := exec.Command("git", "-C", repo, "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
@@ -1069,7 +1069,7 @@ func fail(err error) int {
 // command importing it cut them — to tell its items still to do, each to
 // open as an issue, its text quoted (docs/spec/backlog-acts.md, "Importing
 // a file"). The file's format is the agent's to read, not pre's.
-func preImport(runDir, repo, role string, open []forge.Issue) int {
+func preImport(runDir, repo, role string, b forge.Backlog, open []forge.Issue) int {
 	input := func(name string) string {
 		data, _ := os.ReadFile(filepath.Join(runDir, "in", "input", name))
 		return strings.TrimSpace(string(data))
@@ -1090,8 +1090,19 @@ func preImport(runDir, repo, role string, open []forge.Issue) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "nothing left to read in " + file})
 	}
 	to = min(to, len(lines))
-	var b strings.Builder
-	fmt.Fprintf(&b, "Import: lines %d to %d of `%s`, of %d. Each item still to do becomes an issue.\n\n", from, to, file, len(lines))
+	// The closed issues it opened from this share: an item one holds is not
+	// opened again, and the plan says so (ADR-0018, amended).
+	all, err := b.AllIssues()
+	if errors.Is(err, forge.ErrUnreachable) {
+		fmt.Fprintln(os.Stderr, err)
+		return exitExternal
+	}
+	if err != nil {
+		return fail(err)
+	}
+	closed := backlog.ClosedImports(all, file, lines, from, to)
+	var t strings.Builder
+	fmt.Fprintf(&t, "Import: lines %d to %d of `%s`, of %d. Each item still to do becomes an issue.\n\n", from, to, file, len(lines))
 	var titles []string
 	for _, is := range open {
 		if is.Title != backlog.ReportTitle(role) {
@@ -1099,18 +1110,33 @@ func preImport(runDir, repo, role string, open []forge.Issue) int {
 		}
 	}
 	if len(titles) > 0 {
-		fmt.Fprintf(&b, "# The open issues, titles only\n\nAn item one of them already holds is not opened again.\n\n%s\n\n", strings.Join(titles, "\n"))
+		fmt.Fprintf(&t, "# The open issues, titles only\n\nAn item one of them already holds is not opened again.\n\n%s\n\n", strings.Join(titles, "\n"))
 	}
-	fmt.Fprintf(&b, "# `%s`, lines %d to %d\n\n```\n", file, from, to)
+	if len(closed) > 0 {
+		var held []string
+		for _, c := range closed {
+			why := "closed"
+			if c.Issue.Reason != "" {
+				why += " as " + strings.ReplaceAll(c.Issue.Reason, "_", " ")
+			}
+			at := "lines " + c.Lines
+			if c.From == c.To {
+				at = "line " + c.Lines
+			}
+			held = append(held, fmt.Sprintf("- #%d %s — %s; %s", c.Issue.ID, c.Issue.Title, why, at))
+		}
+		fmt.Fprintf(&t, "# The closed issues opened from these lines\n\nAn item one of them holds is not opened again: answer its lines with a `skip`, `held`, naming the issue. Reopening one is a person's.\n\n%s\n\n", strings.Join(held, "\n"))
+	}
+	fmt.Fprintf(&t, "# `%s`, lines %d to %d\n\n```\n", file, from, to)
 	for i := from; i <= to; i++ {
-		fmt.Fprintf(&b, "%5d  %s\n", i, lines[i-1])
+		fmt.Fprintf(&t, "%5d  %s\n", i, lines[i-1])
 	}
-	b.WriteString("```\n")
-	b.WriteString(elsewhere(lines, from, to))
+	t.WriteString("```\n")
+	t.WriteString(elsewhere(lines, from, to))
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("import\n"), 0o644); err != nil {
 		return fail(err)
 	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(b.String()), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(t.String()), 0o644); err != nil {
 		return fail(err)
 	}
 	return 0

@@ -38,6 +38,7 @@ on the sandbox (tried.md).
 | Issues put in the next releases' milestones | a copy of DomoticsCore |
 | A backlog file, whatever its form, opened as issues (`workline issues import`) | workline's BACKLOG.md, 30 issues, one call |
 | The import's map (ADR-0030): each item to its issue — opened, already open, closed — or its reason checked — done, the words quoted; not an item; past the cap —, what is left listed as not covered, its share flagged, the import ending for a person (exit 2) | JN0V/workline-sandbox, live on GitHub, the agent's answer planted (#33 to #35: opened, then already open, then #34 closed); DomoticsCore's roadmap without an agent, 32 shares, 560 paragraphs not covered; conformance `import-map*`, `import-flags-*`. Not with a real agent's answer yet |
+| The import's plan sees the closed issues an import opened from its share's lines — found by their text in the file, else by the lines their body names — each with how it was closed, for the agent to answer `held` rather than propose again (ADR-0018, amended) | JN0V/workline-sandbox on GitHub, read live without `--apply`, no agent: #34, closed as completed, listed at line 13 of `IMPORT-163.md` (tried.md); conformance `import-sees-a-closed-issue`. Not with a real agent |
 | An import split as in CI (#174): judged without `--apply` with a read token, its runs listed as pending; `workline apply --line`, with the write token and no agent, opens them; the map and the pending runs in `--summary` | JN0V/workline-sandbox on GitLab: a pipeline of two jobs started through the API (the judge with a `read_api` token, the apply with the write token), #30 and #31 opened; locally the same, #28 and #29, the import again mapping them already open; the answer planted, no agent; conformance `import-judged-then-applied`. Not in GitHub Actions; not with a real agent |
 | A true issue on the code a fix touched left alone; a look-alike left open | evaluation `keeps-a-planted-backlog`, 5 in 5 on Sonnet |
 | Refining: Scope and Verification from the code, Need and Validation drafted; the drafts accepted by a person, the issue moved to `ready` by the engine's check; a vague issue's reporter asked, the answer read, the issue refined | JN0V/workline-sandbox, live (#6, #7); DomoticsCore, live (#163, #167, #168, #171, #172) |
@@ -99,8 +100,8 @@ checked.
    record has no `did` until its next nightly run with this); a person's
    tick in the sample read as a verdict, if undoing proves too coarse. A
    file the agent was not shown named as a source. The one way to open issues is built (ADR-0018,
-   amended); left: its import's plan does not yet see a closed issue
-   (the engine leaves it closed, said, and the import's map names it).
+   amended); its import's plan sees a closed issue; left: a real agent's
+   answer to one.
    **The import's map, what is left** (ADR-0030): a real agent's import
    answered with `skip`s — DomoticsCore's roadmap again, the map read by
    the maintainer against its 56 issues, each reason agreed with, none

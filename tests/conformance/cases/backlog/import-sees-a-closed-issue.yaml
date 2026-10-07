@@ -1,0 +1,37 @@
+case: backlog/import-sees-a-closed-issue
+about: Importing a share of a file, the agent is given the closed issues an import opened from its lines — found by their text in the file, else by the lines their body names — so it answers that item as held rather than proposing it again; a closed issue from another share or another file is not listed, nor an open one (ADR-0018, amended).
+given:
+  repo: backlog
+  setup:
+    - |
+      cat > ROADMAP.md <<'MD'
+      # Roadmap
+
+      ## Next
+
+      ### Keep the last row
+      WriteRows stops one row short.
+
+      ### A JSON export
+      Wanted by the users.
+
+      ### Sort the columns
+      By name, then by type.
+
+      ## Later
+
+      - Name the file after the table.
+      MD
+      git add ROADMAP.md && git commit -qm 'docs: a roadmap'
+  forge:
+    issues:
+      - {id: 2, title: "Keep the last row", body: "### Keep the last row\nWriteRows stops one row short.\n\nOpened from `ROADMAP.md`, lines 5 to 6 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->", closed: true, reason: completed, labels: [], comments: []}
+      - {id: 3, title: "JSON export", body: "## Need\n\nA JSON export, refined since.\n\nOpened from `ROADMAP.md`, lines 8 to 9 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:1a2b3c4d5e6f -->", closed: true, reason: not_planned, labels: [], comments: []}
+      - {id: 4, title: "Name the file", body: "- Name the file after the table.\n\nOpened from `ROADMAP.md`, lines 16 to 16 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:2a3b4c5d6e7f -->", closed: true, reason: completed, labels: [], comments: []}
+      - {id: 5, title: "Sort the columns", body: "### Sort the columns\nBy name, then by type.\n\nOpened from `NOTES.md`, lines 1 to 2 by the product-owner role.\n\n<!-- workline:import=NOTES.md:3a4b5c6d7e8f -->", closed: true, reason: completed, labels: [], comments: []}
+      - {id: 6, title: "Sort by name", body: "### Sort the columns\nBy name, then by type.\n\nOpened from `ROADMAP.md`, lines 11 to 12 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:4a5b6c7d8e9f -->", labels: [], comments: []}
+run: {role: product-owner, event: import, input: {file: ROADMAP.md, from: "3", to: "13"}, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: "# The closed issues opened from these lines\n\nAn item one of them holds is not opened again: answer its lines with a `skip`, `held`, naming the issue. Reopening one is a person's.\n\n- #2 Keep the last row — closed as completed; lines 5-6\n- #3 JSON export — closed as not planned; lines 8-9\n\n", not-contains: ["#4 Name the file —", "#5 Sort the columns —", "#6 Sort by name —"]}

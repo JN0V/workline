@@ -145,6 +145,11 @@ judgement: the product owner reads the file, not a parser (principle 4).
   `LO-12`: capitals, a dash, a number), those of a table or a heading
   first, four an id at most. Which of them says the item is done is its
   judgement; an item without an id is read from its share alone.
+- The agent is given the open issues by title, and the closed issues an
+  import opened from the share's lines — found by their text in the file
+  as it reads, else by the lines their body says they came from — each
+  with how it was closed: an item one holds is answered `held`, not
+  opened again. Reopening one is a person's.
 - The agent proposes an `open` for each item still to do, or done in part:
 
   ```yaml

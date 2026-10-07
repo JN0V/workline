@@ -142,7 +142,8 @@ they answered since: the agent reads the answer first. Without an
 agent, otherwise, only the state comments are written. On `import`,
 `workline issues import <file>` has the agent read a committed file a
 share at a time — with the lines elsewhere in the file that name its
-items' ids, where a file often says what is done — and opens each item
+items' ids, where a file often says what is done, and the closed issues
+an import opened from the share's lines — and opens each item
 still to do as an issue quoting it, never twice (`open`); without `--apply`, it only says what it would open,
 and lists its runs for `workline apply`, in CI's job that holds the write
 token.
