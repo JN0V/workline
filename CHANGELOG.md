@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.22.0](https://github.com/JN0V/workline/compare/v0.21.0...v0.22.0) (2026-10-07)
+
+
+### Features
+
+* **documentalist:** flow headings are a setting, in any language ([#260](https://github.com/JN0V/workline/issues/260)) ([cf0fc8b](https://github.com/JN0V/workline/commit/cf0fc8be3645dabaa9703967e652aae59681f9f7))
+* **documentalist:** reader checks on user pages, when gardening ([#257](https://github.com/JN0V/workline/issues/257)) ([aeac4b6](https://github.com/JN0V/workline/commit/aeac4b680911c54b7793b707e0e665940ecc9daa))
+* **product-owner:** a report that opens with what to do ([#262](https://github.com/JN0V/workline/issues/262)) ([6fa012e](https://github.com/JN0V/workline/commit/6fa012e65491892cbfcae6f58c22af3f20852704))
+
 ## [0.21.0](https://github.com/JN0V/workline/compare/v0.20.0...v0.21.0) (2026-10-07)
 
 
