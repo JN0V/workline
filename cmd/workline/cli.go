@@ -25,7 +25,7 @@ func init() {
 		{name: "run-role", args: "<role> --event <event> [options]", about: "run one role on an event: prepare, propose, judge, apply", run: runRole},
 		{name: "route", args: "<event> [options]", about: "run the steps routing names for an event, in order", run: routeCmd},
 		{name: "apply", args: "<run-dir>... | --line <file> [options]", about: "apply runs judged with --no-apply, or resume a run stopped while applying", run: applyCmd},
-		{name: "review", args: "[options]", about: "have the reviewer review this branch before it is pushed", run: reviewCmd},
+		{name: "review", args: "[options]", about: "have the reviewer review this branch before it is pushed, or a spec before it is built", run: reviewCmd},
 		{name: "gate", args: "<name> [options]", about: "run a gate declared in .workline/config.yaml", run: gateCmd},
 		{name: "item", args: "ready <id> [options]", about: "move a work item to ready, once its Need, Verification, Validation and Scope are written", run: itemCmd},
 		{name: "issues", args: "[list] | show <n>|!<n> | import <file> [options]", about: "read the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},

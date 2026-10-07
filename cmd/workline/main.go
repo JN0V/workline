@@ -7,7 +7,7 @@
 //	                  [--input name=value]... [--input-file name=path]... [--no-apply] [--json]
 //	                  [--sarif <file>] [--code-quality <file>] [--summary <file>]
 //	workline route <event> [same options as run-role, but --input-file]
-//	workline review [--base <ref>] [--lenses all|<lens,...>] [--repo <dir>] [--ai ...] [--json]
+//	workline review [--base <ref> | --spec <file> | --issue <n>] [--lenses all|<lens,...>] [--repo <dir>] [--ai ...] [--json]
 //	workline item ready <id> [--repo <dir>] [--forge ...] [--json]
 //	workline issues [list] [--repo <dir>] | show <n>|!<n> [--repo <dir>]   (the local forge)
 //	workline apply <run-dir>... | --line <route result> [--json] [--summary <file>]
@@ -240,6 +240,8 @@ func reviewCmd(args []string) int {
 	repo := fs.String("repo", ".", "repository to review")
 	base := fs.String("base", "", "where the change starts: the branch it goes into (default: the reviewer's `base` setting, main)")
 	lenses := fs.String("lenses", "", "all (the default on a machine), or the lenses to ask, separated by commas")
+	spec := fs.String("spec", "", "review this spec file before it is built, through the spec lenses, not the code (#128)")
+	issue := fs.String("issue", "", "review this issue, by its number, as a spec before it is built (#128)")
 	ai := fs.String("ai", "", "agent: none, claude, claude:<model>@<effort>, cmd:<command>, fake:<file> (default: the project's `ai` setting, else yours)")
 	roles := fs.String("roles", os.Getenv("WORKLINE_ROLES"), "folder holding the roles (default: the roles built into this binary)")
 	forgeSpec := fs.String("forge", "", "forge the issues for what lies outside the change go to (default: the project's `forge` setting)")
@@ -267,7 +269,27 @@ func reviewCmd(args []string) int {
 	if *lenses != "" {
 		inputs["lenses"] = *lenses
 	}
-	res := engine.Run(engine.Options{Repo: root, RolesDir: absRoles, Role: "reviewer", Event: "review", AI: *ai, DefaultAI: userDefaultAI(),
+	// A spec, not code: the reviewer's spec event, its input the file,
+	// relative to the repository, or the issue's number (#128).
+	event := "review"
+	if *spec != "" || *issue != "" {
+		if *spec != "" && *issue != "" || *base != "" {
+			fmt.Fprintln(os.Stderr, "workline: --spec, --issue and --base each name what is reviewed: give one")
+			return 64
+		}
+		event = "spec"
+		if *issue != "" {
+			inputs["issue"] = strings.TrimPrefix(*issue, "#")
+		} else {
+			rel, err := specPath(root, *spec)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "workline:", err)
+				return 64
+			}
+			inputs["spec"] = rel
+		}
+	}
+	res := engine.Run(engine.Options{Repo: root, RolesDir: absRoles, Role: "reviewer", Event: event, AI: *ai, DefaultAI: userDefaultAI(),
 		Inputs: inputs, Forge: *forgeSpec})
 	if err := wlreport.Write(root, wlreport.FromRole("reviewer", res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
@@ -284,6 +306,29 @@ func reviewCmd(args []string) int {
 		}
 	}
 	return exitFor(res.Status)
+}
+
+// specPath is a spec file given on the command line, from the current
+// folder, as a path in the repository: the reviewer reads it there.
+func specPath(root, file string) (string, error) {
+	abs, err := filepath.Abs(file)
+	if err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(abs); err != nil {
+		return "", fmt.Errorf("the spec: %v", err)
+	}
+	if r, err := filepath.EvalSymlinks(root); err == nil {
+		root = r
+	}
+	if a, err := filepath.EvalSymlinks(abs); err == nil {
+		abs = a
+	}
+	rel, err := filepath.Rel(root, abs)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("the spec %s lies outside the repository %s: the reviewer reads it against the code there", file, root)
+	}
+	return filepath.ToSlash(rel), nil
 }
 
 // reviewTokens prints what each call of a review used: the lenses' and

@@ -68,7 +68,8 @@ func TestReadLensFrontMatter(t *testing.T) {
 		{"---\njudge:\n  question: Asked?\n---\n**Lens.**\n", "**Lens.**\n", "Asked?", ""},
 		{"---\njudge:\n  question: Asked?\n---", "", "Asked?", ""},
 		{"---\njudge:\n  question: Asked?\n", "", "", "not closed"},
-		{"---\njudge: {reads: code}\n---\n", "", "", "only `tests`"},
+		{"---\njudge: {reads: lint}\n---\n", "", "", "only `tests`"},
+		{"---\nsubject: plan\n---\n", "", "", "only `spec`"},
 	} {
 		os.WriteFile(filepath.Join(dir, "l.md"), []byte(c.text), 0o644)
 		l, err := readLens(t.TempDir(), "l")

@@ -6,7 +6,10 @@ mission: A change is reviewed before it merges — what it breaks found, quoted 
 #         base..HEAD: every lens, for the author's agent to fix before pushing.
 # merge-request: on the forge, the commits not reviewed yet, one lens a push:
 #         a safety net; opt-in in the project's routing (ADR-0020).
-events: [review, merge-request]
+# spec:   a spec before it is built (#128): a file (--input spec=<file>) or
+#         an issue by its number (--input issue=<n>), every spec lens;
+#         `workline review --spec` or `--issue` on a machine.
+events: [review, merge-request, spec]
 
 requires: [git]
 
@@ -102,3 +105,8 @@ settings:
   # reports them; once spent, nothing more is asked, said, and the commits
   # are not recorded as reviewed. The call that crosses it is paid. 0: no cap.
   ai-max-tokens: 200000
+  # The lenses a spec is read through (#128), lenses/<lens>.md holding
+  # `subject: spec`: every one each run, together when lenses-together.
+  spec-lenses: [ambiguous, unverifiable, out-of-scope, contradicted]
+  # Lines of the spec the lenses and each judge are given; past them, cut, said.
+  spec-lines-max: 300
