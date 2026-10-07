@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: f041e4f
+checked: 35ad2e5
 verified: agent:claude-code
 ---
 # Troubleshooting
