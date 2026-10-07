@@ -1,7 +1,7 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
 checked: beb53f8
-judged: 5ddf061
+judged: a8574a5
 verified: agent:documentalist
 ---
 # Setting up workline in CI
