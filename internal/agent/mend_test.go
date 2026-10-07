@@ -108,3 +108,24 @@ func TestMendHash(t *testing.T) {
 		t.Errorf("in a list: %q %v", got, err)
 	}
 }
+
+// A title opening on a quoted phrase and going on after it, as a spec lens
+// wrote it on workline-sandbox#43 (#128): the reader refuses the whole
+// answer; mended, the title reads as written, its quotes kept.
+func TestMendQuotedThenMore(t *testing.T) {
+	answer := "- finding:\n    lens: ambiguous\n    severity: nit\n    title: \"Idle for 60 minutes\" boundary is unclear\n    why: 'it' can be read two ways\n    cause:\n      path: \"#43\"\n      quote: \"so a session should last 60 minutes idle\"\n"
+	f, mended := finding(t, answer)
+	if f["title"] != `"Idle for 60 minutes" boundary is unclear` || f["why"] != `'it' can be read two ways` || len(mended) != 1 {
+		t.Errorf("title %q, why %q, mended %v", f["title"], f["why"], mended)
+	}
+	// One quoted text whose inner quotes were left unescaped is asked
+	// again, not mended: its outer quotes are not the agent's words.
+	broken := "- note: \"it returns `\"one hour\"` when unset.\"\n"
+	if got, said := Mend(broken); got != broken || said != nil {
+		t.Errorf("a quoted text with inner quotes was mended: %q, %v", got, said)
+	}
+	// One that reads is left as it is: a quoted value and a comment.
+	if got, said := Mend("- note: \"a\" # said\n"); got != "- note: \"a\" # said\n" || said != nil {
+		t.Errorf("a quoted value with a comment was mended: %q, %v", got, said)
+	}
+}
