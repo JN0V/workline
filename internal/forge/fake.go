@@ -438,6 +438,24 @@ func (f *Fake) AddBlocker(id, blocker int) (bool, error) {
 	})
 }
 
+func (f *Fake) RemoveBlocker(id, blocker int) error {
+	s, err := f.load()
+	if err != nil {
+		return err
+	}
+	if it, err := s.item(Target{Kind: "issue", ID: id}); err != nil || !slices.Contains(it.BlockedBy, blocker) {
+		return err
+	}
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil {
+			return err
+		}
+		it.BlockedBy = slices.DeleteFunc(it.BlockedBy, func(n int) bool { return n == blocker })
+		return nil
+	})
+}
+
 func (f *Fake) Closers(id int) ([]Closer, error) {
 	s, err := f.load()
 	if err != nil {

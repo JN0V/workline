@@ -28,7 +28,7 @@ func TestSplitWatchedWhileAPartIsOpen(t *testing.T) {
 	}
 	f := &forge.Fake{Path: path}
 	open := map[int]forge.Issue{1: {ID: 1}, 2: {ID: 2}}
-	standing, undone, err := findUndone(f, "product-owner", open, []Done{{Issue: 1, Act: "split"}, {Issue: 2, Act: "split"}})
+	standing, undone, _, err := findUndone(f, "product-owner", open, []Done{{Issue: 1, Act: "split"}, {Issue: 2, Act: "split"}})
 	if err != nil {
 		t.Fatal(err)
 	}

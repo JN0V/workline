@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -165,6 +166,42 @@ func Pre(runDir, repo string) int {
 	capped := backlog.CappedByRole(b, role, open)   // an act proposed only for the cap
 	now := time.Now()
 	var all []forge.Issue                                    // every issue, open and closed, read once when a parent needs its parts
+	// A link the role set whose blocker closed (ADR-0028): its reason is
+	// gone, and the engine takes it off, with no agent, paused or not; a
+	// person's link is left. A blocker closed without delivering is said:
+	// what waited on it may need a person's look.
+	stale := hand.Stale(open)
+	if len(stale) > 0 {
+		if all, err = b.AllIssues(); errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		} else if err != nil {
+			return fail(err)
+		}
+	}
+	for _, id := range slices.Sorted(maps.Keys(stale)) {
+		var says []string
+		for _, bl := range stale[id] {
+			how := "closed"
+			i := slices.IndexFunc(all, func(is forge.Issue) bool { return is.ID == bl })
+			switch {
+			case i < 0:
+				how = "gone from the forge"
+			case all[i].Reason == "not_planned":
+				how = "closed as not planned"
+			case all[i].Reason == "duplicate":
+				how = "closed as a duplicate"
+			}
+			says = append(says, fmt.Sprintf("#%d is %s", bl, how))
+			if how != "closed" {
+				findings = append(findings, verdict.Finding{Rule: "blocker-not-delivered", Level: "warn", Where: fmt.Sprintf("#%d", id),
+					Message: fmt.Sprintf("it waited on #%d, %s: the link the role set is taken off; whether #%d still stands without it is a person's to say", bl, how, id)})
+			}
+		}
+		fallback = append(fallback, intent.Intention{Kind: "undepend", Value: map[string]any{
+			"issue": id, "blocked-by": stale[id], "own": true,
+			"why": strings.Join(says, ", ") + ": the wait the role set is over."}})
+	}
 	judgedPass := os.Getenv("WORKLINE_JUDGED") == "answered" // the engine asked pre's questions to a judge
 	asked := false                                           // a question for the judge written: the judge first
 	notesOf := map[int][]forge.Note{}                        // each issue's comments, for what waits on a person
@@ -459,7 +496,7 @@ func Pre(runDir, repo string) int {
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 			review = specFindings(d.is, d.st, d.comments, r)
 		}
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, front[d.is.ID]+review)
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, hand.OwnBlockers(d.is), front[d.is.ID]+review)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
@@ -672,7 +709,7 @@ func readJudged(runDir string, id int) (backlog.Judged, bool) {
 
 // writeIssue gives one issue to the agent: what the engine knows of it, its
 // body, its last comments, the engine's own left out.
-func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string, isOpen map[int]bool, change string) {
+func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st *backlog.State, notes []forge.Note, files []string, isOpen map[int]bool, own []int, change string) {
 	comments := forge.Bodies(notes)
 	fmt.Fprintf(b, "## #%d %s\n\n", is.ID, is.Title)
 	if len(is.Labels) > 0 {
@@ -734,9 +771,12 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 			if isOpen[n] {
 				state = "open"
 			}
+			if slices.Contains(own, n) {
+				state += ", set by the role"
+			}
 			said = append(said, fmt.Sprintf("#%d (%s)", n, state))
 		}
-		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing\n", strings.Join(said, ", "))
+		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing; an undepend only takes off a link set by the role\n", strings.Join(said, ", "))
 	}
 	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)

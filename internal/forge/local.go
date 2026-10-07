@@ -461,6 +461,10 @@ func (l *Local) AddSubIssue(parent, child int) (bool, error) { return false, nil
 // says what an issue waits on (ADR-0028).
 func (l *Local) AddBlocker(id, blocker int) (bool, error) { return false, nil }
 
+// RemoveBlocker: no relation, nothing to take off; the body's line is the
+// caller's.
+func (l *Local) RemoveBlocker(id, blocker int) error { return nil }
+
 func (l *Local) SetMilestone(id int, title string) error {
 	return l.change(Target{Kind: "issue", ID: id}, func(it *LocalItem) { it.Milestone = title })
 }

@@ -71,6 +71,9 @@ type Hand struct {
 	// than closings; Standing, those still watched (ADR-0026).
 	Undone   []Undo
 	Standing []Done
+	// Own are the blockers the role set on each open issue, as its record
+	// keeps them: a depend's, a split's after (ADR-0028).
+	Own map[int][]int
 }
 
 // Paused says whether the role pauses: max runs in a row nobody answered
@@ -198,7 +201,7 @@ func ReadHand(f forge.Backlog, role string, open []forge.Issue) (*Hand, error) {
 		}
 	}
 	if h.Broken == nil {
-		if h.Standing, h.Undone, err = findUndone(f, role, byID, h.Record.Done); err != nil {
+		if h.Standing, h.Undone, h.Own, err = findUndone(f, role, byID, h.Record.Done); err != nil {
 			return nil, err
 		}
 	}

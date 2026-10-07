@@ -72,11 +72,13 @@ func (p *Plan) recordDone(c Proposal) {
 }
 
 // findUndone reads what a person did to the acts the record keeps: those
-// undone, with their evidence, and those that still stand. An act whose
-// issue is closed, or whose value a person set to a third, is no longer
-// the role's to watch.
-func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []Done) (standing []Done, undone []Undo, err error) {
+// undone, with their evidence, and those that still stand; and the
+// blockers the role set on each open issue (own). An act whose issue is
+// closed, or whose value a person set to a third, is no longer the role's
+// to watch.
+func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []Done) (standing []Done, undone []Undo, own map[int][]int, err error) {
 	var all map[int]forge.Issue // read once, when a split is watched
+	own = map[int][]int{}
 	for _, d := range done {
 		is, isOpen := open[d.Issue]
 		if !isOpen {
@@ -112,6 +114,9 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			now, left := Blockers(is), 0
 			for _, f := range strings.Split(d.Set, ",") {
 				b, err := strconv.Atoi(f)
+				if err == nil {
+					own[d.Issue] = append(own[d.Issue], b)
+				}
 				if _, isOpen := open[b]; err != nil || !isOpen {
 					continue
 				}
@@ -128,16 +133,19 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 		case "split":
 			notes, err := f.Notes(forge.Target{Kind: "issue", ID: d.Issue})
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			st, found, err := ReadState(forge.Bodies(notes), role)
 			if !found || err != nil || len(st.Split) == 0 {
 				break // its children not recorded yet: watched again
 			}
+			for child, blockers := range st.After {
+				own[child] = append(own[child], blockers...)
+			}
 			if all == nil {
 				list, err := f.AllIssues()
 				if err != nil {
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				all = map[int]forge.Issue{}
 				for _, x := range list {
@@ -166,7 +174,7 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			standing = append(standing, d)
 		}
 	}
-	return standing, undone, nil
+	return standing, undone, own, nil
 }
 
 func priorityName(n string) string {

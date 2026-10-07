@@ -290,6 +290,13 @@ func (c *command) AddBlocker(id, blocker int) (bool, error) {
 	return a.Native, err
 }
 
+// RemoveBlocker asks remove-blocker: called only for a link the forge
+// shows in its own relation, which add-blocker said native; a refusal
+// fails the act, loud.
+func (c *command) RemoveBlocker(id, blocker int) error {
+	return c.call("remove-blocker", map[string]any{"id": id, "blocker": blocker}, nil)
+}
+
 // Closers asks closers: what closed the issue, each {kind, ref, text}
 // (docs/spec/forge-command.md); a refusal is returned, and the parent's
 // report says the closer was not read.
