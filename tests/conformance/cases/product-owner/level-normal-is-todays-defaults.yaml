@@ -22,5 +22,6 @@ expect:
       - {id: 9, title: "The CSV export drops the last row", labels: [workline:priority/1]}
       - {id: 10, comment-contains: "split: [13, 14]"}
       - {id: 11, comment-contains: "sources: [src/export/csv.go]"}
-      - {id: 15, title: "Backlog — product owner", body-contains: "Autonomy: **normal** — sources: act, 10 a run (level); close-duplicate: act, 3 a run (level); close-obsolete: act, 3 a run (level); milestone: act, 10 a run (level); order: act, 10 a run (level); refine: act, 5 a run (level); ready: act, 5 a run (level); ask: act, 3 a run (level); split: act, 2 a run (level); depend: act, 5 a run (level); rename: act, 5 a run (level); open: act, 30 a run (level)."}
-      - {id: 15, body-lacks: "## Proposed"}
+      - {id: 15, title: "Backlog — product owner", body-contains: "- sources: act, 10 a run (level)\n- close-duplicate: act, 3 a run (level)\n- close-obsolete: act, 3 a run (level)\n- milestone: act, 10 a run (level)\n- order: act, 10 a run (level)\n- refine: act, 5 a run (level)\n- ready: act, 5 a run (level)\n- ask: act, 3 a run (level)\n- split: act, 2 a run (level)\n- depend: act, 5 a run (level)\n- rename: act, 5 a run (level)\n- open: act, 30 a run (level)"}
+      - {id: 15, body-contains: "<details><summary>Autonomy: normal — what the role does alone, and what it proposes</summary>"}
+      - {id: 15, body-lacks: "## To decide"}

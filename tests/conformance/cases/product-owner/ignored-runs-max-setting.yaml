@@ -21,4 +21,4 @@ expect:
   no-findings: [{rule: paused}]
   forge:
     issues:
-      - {id: 10, body-contains: "Runs since a person last answered: 4; at 5, the role pauses.", comment-contains: "ignored: 4"}
+      - {id: 10, body-contains: "- **Answer before the next run, or the role pauses**: nobody answered its last 4 runs (it pauses at 5).", comment-contains: "ignored: 4"}

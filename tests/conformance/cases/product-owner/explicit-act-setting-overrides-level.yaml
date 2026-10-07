@@ -20,6 +20,6 @@ expect:
     issues:
       - {id: 9, title: "The CSV export drops the last row", labels: []}
       - {id: 10, comment-lacks: "split:"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "split: propose (level); depend: propose (level); rename: act, 5 a run (setting); open"}
+      - {id: 13, title: "Backlog — product owner", body-contains: "- split: propose (level)\n- depend: propose (level)\n- rename: act, 5 a run (setting)\n- open"}
       - {id: 13, body-contains: "Renamed #9 from \"bug\""}
-      - {id: 13, body-contains: "- [ ] Split #10 into 2 issues"}
+      - {id: 13, body-contains: "**#10 Export fixes**\n\n- [ ] Split it into 2 issues"}

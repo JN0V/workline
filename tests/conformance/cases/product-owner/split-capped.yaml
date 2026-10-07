@@ -17,5 +17,5 @@ expect:
     issues:
       - {id: 11, title: "Keep the last row"}
       - {id: 12, title: "Quote commas"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "- [ ] Split #10 into 2 issues: \"Export as JSON\", \"Export as XML\"."}
+      - {id: 13, title: "Backlog — product owner", body-contains: "**#10 More formats**\n\n- [ ] Split it into 2 issues, each linked to it: \"Export as JSON\", \"Export as XML\"."}
       - {id: 14, absent: true}

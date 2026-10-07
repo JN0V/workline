@@ -15,4 +15,4 @@ expect:
       - {id: 9, labels: [workline:ready]}
       - {id: 10, labels: [workline:to-refine]}
       - {id: 11, labels: []}
-      - {id: 12, title: "Backlog — product owner", body-contains: "- [ ] Move #11 to ready"}
+      - {id: 12, title: "Backlog — product owner", body-contains: "**#11 Rows lost, from outside**\n\n- [ ] Label it `workline:ready`: offered to whoever builds next."}

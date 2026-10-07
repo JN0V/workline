@@ -24,4 +24,4 @@ expect:
     issues:
       - {id: 9, title: "bug"}
       - {id: 10, body-contains: "ticked by @zed, outside the project", comment-contains: "act: rename"}
-      - {id: 10, body-contains: "- [ ] Rename #9 to"}
+      - {id: 10, body-contains: "**#9 bug**\n\n- [ ] Rename it to"}

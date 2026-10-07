@@ -22,4 +22,4 @@ expect:
   forge:
     issues:
       - {id: 9, closed: false}
-      - {id: 10, body-contains: "- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n- [ ] Close #9 as obsolete", comment-lacks: "issue: 8"}
+      - {id: 10, body-contains: "- [ ] Close #7 as obsolete: the loop. The engine cannot do this one: do it yourself, then tick it to clear it. <!-- workline:proposal=7/close-obsolete -->\n\n**#9 Last row missing**\n\n- [ ] Announce it obsolete, on the issue: closed at a later run if nobody writes on it and a second judge agrees. src/export/csv.go says", comment-lacks: "issue: 8"}
