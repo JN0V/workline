@@ -18,7 +18,7 @@ run: {role: documentalist, event: schedule, ai: none}
 expect:
   status: pass
   findings:
-    - {rule: flow-without-diagram, where: docs/guide.md, message: "heading at line 3 explains how it works"}
+    - {rule: flow-without-diagram, where: docs/guide.md, message: "heading at line 3 names a flow (\"how it works\""}
     - {rule: flow-without-diagram, where: docs/roles/seller.md, message: "reader.flow"}
   no-findings:
     - {rule: flow-without-diagram, where: docs/drawn.md}

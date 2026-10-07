@@ -27,8 +27,10 @@ type Reader struct {
 	// reached from one, link after link through user pages.
 	Navigation []string `json:"navigation"`
 	// Flow: pages that explain a flow and need a diagram, beside any page
-	// with a "How it works" heading.
+	// with a heading holding one of FlowHeadings (as words, any case): a
+	// project writes them in its own language.
 	Flow           []string `json:"flow"`
+	FlowHeadings   []string `json:"flow-headings"`
 	ParagraphWords int      `json:"paragraph-words"`
 	CellWords      int      `json:"cell-words"`
 }
@@ -68,7 +70,7 @@ func ReaderChecks(t Tree, r Reader) []Problem {
 		if r.CellWords > 0 {
 			out = append(out, longCells(p, lines, r.CellWords)...)
 		}
-		if why := explainsFlow(p, lines, r.Flow); why != "" && !hasDiagram(lines) {
+		if why := explainsFlow(p, lines, r.Flow, r.FlowHeadings); why != "" && !hasDiagram(lines) {
 			out = append(out, Problem{Rule: "flow-without-diagram", Where: p, Key: "flow-without-diagram " + p,
 				Message: fmt.Sprintf("%s, and holds no diagram: open it with one — a few blocks, a few words each — and keep the detail in the text below", why)})
 		}
@@ -272,16 +274,27 @@ func longCells(p string, lines []line, max int) []Problem {
 		Message: fmt.Sprintf("%d table cell(s) over %d words: %s; keep one short sentence and a link, the detail on the page it links to", len(at), max, strings.Join(at, ", "))}}
 }
 
-var howItWorks = regexp.MustCompile(`(?i)\bhow it works\b`)
-
-// explainsFlow says why a page explains a flow, or "" when it does not.
-func explainsFlow(p string, lines []line, flow []string) string {
+// explainsFlow says why a page explains a flow, or "" when it does not: a
+// page of `reader.flow`, or a heading holding one of `reader.flow-headings`
+// as words, whatever their case and alphabet.
+func explainsFlow(p string, lines []line, flow, headings []string) string {
 	if matchAny(flow, p) {
 		return "it explains a flow (`reader.flow`)"
 	}
+	var res []*regexp.Regexp
+	for _, h := range headings {
+		if h = strings.TrimSpace(h); h != "" {
+			res = append(res, regexp.MustCompile(`(?i)(?:^|[^\pL\pN])`+regexp.QuoteMeta(h)+`(?:$|[^\pL\pN])`))
+		}
+	}
 	for _, l := range lines {
-		if l.heading > 0 && howItWorks.MatchString(l.text) {
-			return fmt.Sprintf("its heading at line %d explains how it works", l.n)
+		if l.heading == 0 {
+			continue
+		}
+		for i, re := range res {
+			if re.MatchString(l.text) {
+				return fmt.Sprintf("its heading at line %d names a flow (%q, `reader.flow-headings`)", l.n, strings.TrimSpace(headings[i]))
+			}
 		}
 	}
 	return ""

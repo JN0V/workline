@@ -82,7 +82,8 @@ settings:
     pages: ["README.md", "docs/**"]
     skip: ["docs/spec/**", "docs/specs/**"]
     navigation: ["README.md"]        # where a reader starts; every user page is reached from one
-    flow: []                          # pages explaining a flow, which need a diagram (with any "How it works")
+    flow: []                          # pages explaining a flow, which need a diagram
+    flow-headings: ["how it works"]   # a heading holding one, as words, any case, explains a flow too; in the docs' language
     paragraph-words: 80               # a paragraph, or a list item, over it is a wall of prose
     cell-words: 30                    # a table cell holds one short sentence and a link
   duplicates:
