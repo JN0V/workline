@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.19.0](https://github.com/JN0V/workline/compare/v0.18.0...v0.19.0) (2026-10-07)
+
+
+### Features
+
+* **reviewer:** a facet given the change alone, measured and left off ([#242](https://github.com/JN0V/workline/issues/242)) ([d740401](https://github.com/JN0V/workline/commit/d7404013b189378190086c1ef56856bfae63b2e6))
+* **reviewer:** a full review within a token budget, its cost said ([#236](https://github.com/JN0V/workline/issues/236)) ([71bc2d3](https://github.com/JN0V/workline/commit/71bc2d3f58b4c3a776b5a339ad2e14f99e81943e))
+* **reviewer:** a judge reads the functions the cause reaches ([#237](https://github.com/JN0V/workline/issues/237)) ([4a0a453](https://github.com/JN0V/workline/commit/4a0a453501dc5fb7c96ead32b266e334ba638595))
+* **reviewer:** check a change against its issue and its author's claims ([#240](https://github.com/JN0V/workline/issues/240)) ([2254c08](https://github.com/JN0V/workline/commit/2254c08eef9696f4960dfa77f3554cf45405768f))
+* **reviewer:** put a decision to a person as a question ([#241](https://github.com/JN0V/workline/issues/241)) ([1b01829](https://github.com/JN0V/workline/commit/1b01829239657c1e7c8bb94e11abc16047acc08c))
+
+
+### Bug Fixes
+
+* **agent:** count a prompt's tokens at the ratio measured on code ([#238](https://github.com/JN0V/workline/issues/238)) ([432beef](https://github.com/JN0V/workline/commit/432beef14b54eb628a2ca31b7a7c31c7a666f7ed))
+* **reviewer:** a removal's exposed lines count as the change ([#231](https://github.com/JN0V/workline/issues/231)) ([803afd1](https://github.com/JN0V/workline/commit/803afd1e1070856807e8cb1685db2ebcb76ce4cf))
+* **reviewer:** judge each finding on a line by its own lens ([#234](https://github.com/JN0V/workline/issues/234)) ([cb21292](https://github.com/JN0V/workline/commit/cb21292c468653834741385914a3f0c955738ce3))
+
 ## [0.18.0](https://github.com/JN0V/workline/compare/v0.17.0...v0.18.0) (2026-10-06)
 
 
