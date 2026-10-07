@@ -126,5 +126,5 @@ comment. Gardening only regenerates derived blocks.
   [its claims](docs/judge-claims.md): what backs a word taken out.
 - [At the push, the release and the adoption](docs/push.md).
 
-**Status**: beta, used on workline and DomoticsCore in CI;
+**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and DomoticsCore in CI;
 [docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).

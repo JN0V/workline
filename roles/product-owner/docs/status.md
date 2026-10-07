@@ -25,6 +25,25 @@ ordering included, the reviewer not enabled: its roadmap imported, 56
 issues), refining tried live there and on JN0V/workline-sandbox, ordering
 on the sandbox (tried.md).
 
+## To leave beta
+
+Beta until the three criteria of
+[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
+hold:
+
+1. **Nothing buildable in Missing**: nearly. What is left is mostly tries
+   on real use; the forge's native rank (deferred by ADR-0018) and the
+   items "if live use asks" are to park as issues.
+2. **The main issue validated on real use**: open. The maintainer has not
+   yet read the report
+   ([#110](https://github.com/JN0V/workline/issues/110)) against
+   [#164](https://github.com/JN0V/workline/issues/164)'s and
+   [#165](https://github.com/JN0V/workline/issues/165)'s Validation.
+3. **AI verdicts measured**: in part. `keeps-a-planted-backlog` passed 5
+   in 5 on Sonnet; closing as obsolete, refining, splitting and renaming
+   are not measured; a real week's sample of its acts is not yet read
+   (Missing 5).
+
 ## Built and tried with a real agent
 
 | What | Tried on |

@@ -8,7 +8,8 @@ verified: agent:claude-code
 Each role does one job, reads only what it needs, and works without AI
 ([principles](PRINCIPLES.md)). Its page says what it does and does not do,
 its events, every setting with its default, what it writes, what it costs
-and where it stands.
+and where it stands: planned, beta or built, by
+[written criteria](adr/0036-a-roles-status-is-earned-by-written-criteria.md).
 
 | Role | Does | Runs on | Page |
 |---|---|---|---|
