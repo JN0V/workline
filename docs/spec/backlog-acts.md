@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 7ae4307
+checked: c9c9aba
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -809,7 +809,7 @@ order (`backlog.ReportBody`):
 | Part | What it says |
 |---|---|
 | What to do | the proposals to decide and the changes to check, counted; the parents to accept; one run before the pause, "answer before the next run, or the role pauses" (within N runs when more are left); **Paused** and its box to resume; `ignored-runs-max: 0` said; the acts done alone, to check; a level suggested |
-| To decide | each proposal a box ("The person's hand"), grouped under its issue — number and title — saying in plain words what a tick does and why (`backlog.offer`): "Set its priority to 3 (now: …)", "Add Need and Validation to it (Need and Validation as drafts for you to correct)", then a short why that does not say the act again; when the issue was read again for a change, the change beside its title; an issue to open says the import opens it; a proposal recorded without its act says it is drafted when the agent next reads it, and once ticked is a line saying who ticked it, no box; then the kinds back to propose, with their evidence and a box each |
+| To decide | each proposal a box ("The person's hand"), grouped under its issue — number and title — saying in plain words what a tick does and why (`backlog.offer`): "Set its priority to 3 (now: …)", "Add Need and Validation to it (Need and Validation as drafts for you to correct)", then a short why that does not say the act again; when the issue was read again for a change, the change beside its title; an issue to open says the import opens it; one the engine cannot do — its reporter's rounds spent, a slip with nowhere to go — is a line "For you to settle", no box; a proposal recorded without its act says it is drafted when the agent next reads it, and once ticked is a line saying who ticked it, no box; then the kinds back to propose, with their evidence and a box each |
 | To check | each change with an issue it touches not read again ("A changed need"): a box — the issue and the sections a person rewrote, or the file's lines, the day found — and under it each open issue it touches: how, read again or not |
 | To accept | each open parent whose parts are all closed, recorded (`to-accept`) so the report is rewritten when that list changes ("A parent and its parts") |
 | Boxes ticked | what the run read of the boxes ticked since the last |
@@ -917,7 +917,7 @@ report's body and who ticked each (ADR-0025):
 | A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
 | A person of the project, the box of a changed need (`changed/<issue>`; `changed-lines/<issue>` for the lines it was imported from, a change of its own) | Checked: it leaves the report and the record, said under "Boxes ticked"; nothing done to its issues |
 | A person of the project, a proposal an older engine recorded with its line alone, no act kept (`Undrafted`) | Its issue read first at the next run with an agent, the agent asked to write that act; the act it drafts is done as their yes, whatever its mode or cap, said "Ticked by". No agent, paused, or past `issues-per-run`: kept with who ticked it (`agreed`), a line in the report, no box. The agent drafting none: said (`tick-not-drafted`, warn), it leaves the report |
-| A person of the project, an issue to open, rounds spent, a slip with nowhere to go | Not done: the report says to do it by hand; the proposal leaves it |
+| A person of the project, an issue to open | Not done: opened when the import runs again; the proposal leaves the report |
 | Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
 
 A proposal recorded without its act and not ticked has its issue read again first, as one proposed for a cap: the agent decides it anew, and the old line leaves the record. A proposal ticked, done or dropped, leaves the record: a box still ticked
