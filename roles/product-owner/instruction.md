@@ -6,7 +6,8 @@ need, bug or task someone meant to do. For each one still to do, or done
 only in part, propose `open`: a short title, and the item's text quoted as
 the file has it — all of it, headings and lines under it, without the line
 numbers; the issue's body is that quote, nothing else. An item the file
-says is done, or an open issue already holds, is not opened — the file
+says is done, or an issue already holds, open or closed (the task
+lists the closed ones opened from the share), is not opened. The file
 may say so far from the item: the task gives the lines of the rest of
 the file that name the share's items, read them first. Text that is
 not an item — an introduction, a history, a table of what shipped, a

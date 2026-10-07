@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 3c2c426
+checked: 55c1bc8
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -145,6 +145,11 @@ judgement: the product owner reads the file, not a parser (principle 4).
   `LO-12`: capitals, a dash, a number), those of a table or a heading
   first, four an id at most. Which of them says the item is done is its
   judgement; an item without an id is read from its share alone.
+- The agent is given the open issues by title, and the closed issues an
+  import opened from the share's lines — found by their text in the file
+  as it reads, else by the lines their body says they came from — each
+  with how it was closed: an item one holds is answered `held`, not
+  opened again. Reopening one is a person's.
 - The agent proposes an `open` for each item still to do, or done in part:
 
   ```yaml
@@ -293,12 +298,13 @@ next run.
 Puts an open issue in the milestone of a release, created when none with
 that title is open. Ordering says nothing of an issue's truth: no quote,
 but its state must read as for any act. The task gives the last release
-tag and the milestones open; each issue says its own.
+tag and the milestones open, in the order below, each with its due date
+when it has one; each issue says its own.
 
 **What slipped** is moved by the engine, with or without an agent: an
 open issue whose milestone is named after a tag that exists is put in
-the nearest open milestone not released, in version order (`v1.9.0`
-before `v1.10.0`); with none left, the move is proposed in the report,
+the nearest open milestone not released, in the milestones' order (below);
+with none left, the move is proposed in the report,
 the issue left where it is. The engine's move comes first: an agent's
 milestone for the same issue in the same run is dropped.
 
@@ -319,8 +325,10 @@ taken off by one — is a person's: the act is dropped and the label kept
 must read, as for any act.
 
 **The backlog's order** is derived, never stored: the nearest milestone
-first (titles in version order; an issue in none after every one in
-one), then the priority (an issue with none after 4), then the lowest
+first (by its due date, GitHub's and GitLab's alike, a milestone with one
+before a milestone without; then by title, in version order, `v1.9.0`
+before `v1.10.0`; an issue in none after every one in one), then the
+priority (an issue with none after 4), then the lowest
 number (`backlog.Less`) — and an issue that waits on an open issue after
 it, whatever its labels ("What an issue waits on", below;
 `backlog.Order`). The task lists the issues not read in that order, each
@@ -784,7 +792,9 @@ its issue, which demotes its kind at the next run ("Trust"). Over the acts
 `did` keeps at the level in force, up to the week's end, 10 or more: more
 than one in ten undone suggests the level below; none undone at `normal`
 suggests `enterprising`; at `cautious`, the report's suggestion stands.
-The sample never changes the setting; a record that does not read is said
+The role's own report says the same suggestion, counted over every act
+`did` keeps at the level in force, beside the one from the proposals
+settled. The sample never changes the setting; a record that does not read is said
 (`acts-not-read`), the docs' sample written still.
 
 ### What is next, what is stuck

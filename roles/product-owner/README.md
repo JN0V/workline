@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 3c2c426
+checked: 55c1bc8
 verified: agent:claude-code
 ---
 # Product owner
@@ -151,7 +151,8 @@ roles:
   the weekly sample of the product owner's acts" — each with its day, the
   level it was done at, and whether a person undid it — for you to judge:
   undo one you find wrong on its issue. From the acts undone it may
-  suggest another level; it never changes the setting.
+  suggest another level — its report says it too, beside the one from
+  the proposals you settled; it never changes the setting.
 
 A person accepts drafts with the label `workline:accepted`, on one issue or
 many: the next run moves them to `ready`, with no agent.

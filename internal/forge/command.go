@@ -232,12 +232,25 @@ func (c *command) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body}, err
 }
 
-func (c *command) Milestones() ([]string, error) {
+// Milestones reads each milestone as its title alone, or as {title, due}.
+func (c *command) Milestones() ([]Milestone, error) {
 	var a struct {
-		Milestones []string `json:"milestones"`
+		Milestones []json.RawMessage `json:"milestones"`
 	}
-	err := c.call("milestones", nil, &a)
-	return a.Milestones, err
+	if err := c.call("milestones", nil, &a); err != nil {
+		return nil, err
+	}
+	var out []Milestone
+	for _, raw := range a.Milestones {
+		var m Milestone
+		if err := json.Unmarshal(raw, &m.Title); err != nil {
+			if err := json.Unmarshal(raw, &m); err != nil {
+				return nil, fmt.Errorf("milestones: %s is neither a title nor {title, due}", raw)
+			}
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 
 func (c *command) EnsureLabel(name, color, description string) error {

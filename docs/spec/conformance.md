@@ -182,7 +182,8 @@ a `PATH` without a tool, or with a fake one first.
   to `.git/forge-requests.jsonl`, for `files` to check, and answers as a
   small forge would; `FORGE_FAIL` makes it fail, `FORGE_REFUSE` refuse.
 - **Simulated forge.** A forge kept in a JSON file, holding issues, labels,
-  comments, merge requests and milestones; with `sub-issues: true`, it
+  comments, merge requests and milestones (`milestone-due` gives one its
+  due date, by title); with `sub-issues: true`, it
   links sub-issues as GitHub does, without, it has none; with
   `dependencies: true`, it keeps what an issue waits on (`blocked-by`) as
   GitHub does, without, it refuses the relation. It can be told to

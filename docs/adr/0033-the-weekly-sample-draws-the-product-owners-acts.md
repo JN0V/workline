@@ -64,6 +64,7 @@ changes the setting.
   standing.
 - The record grows by one line an act for five weeks: about 200 short
   lines at most, in one comment.
-- Left: the suggestion written in the role's own report too; a person's
+- Built since (2026-10-07): the suggestion written in the role's own
+  report too, beside the one from the proposals settled. Left: a person's
   tick in the sample read as a verdict, if undoing proves too coarse; a
   GitLab project's acts sampled live.

@@ -18,6 +18,8 @@ type FakeState struct {
 	Issues        []FakeItem `json:"issues"`
 	MergeRequests []FakeItem `json:"merge-requests"`
 	Milestones    []string   `json:"milestones,omitempty"`    // open milestones, by title
+	// MilestoneDue gives a milestone its due date, YYYY-MM-DD, by title.
+	MilestoneDue map[string]string `json:"milestone-due,omitempty"`
 	Labels        []FakeItem `json:"labels,omitempty"`        // labels defined, their name as id
 	SubIssues     bool       `json:"sub-issues,omitempty"`    // the forge has sub-issues, as GitHub
 	Dependencies  bool       `json:"dependencies,omitempty"`  // the forge has a blocked-by relation, as GitHub
@@ -139,7 +141,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 					children = append(children, c.ID)
 				}
 			}
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -153,7 +155,7 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 	}
 	var out []Issue
 	for _, it := range s.Issues {
-		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason})
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
@@ -343,12 +345,16 @@ func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {
 	return id, err
 }
 
-func (f *Fake) Milestones() ([]string, error) {
+func (f *Fake) Milestones() ([]Milestone, error) {
 	s, err := f.load()
 	if err != nil {
 		return nil, err
 	}
-	return s.Milestones, nil
+	var out []Milestone
+	for _, t := range s.Milestones {
+		out = append(out, Milestone{Title: t, Due: s.MilestoneDue[t]})
+	}
+	return out, nil
 }
 
 func (f *Fake) EnsureLabel(name, color, description string) error {
