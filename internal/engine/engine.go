@@ -1586,7 +1586,11 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 	// left for later: reported, and the line goes on.
 	if a.overBudget && v.Status == verdict.Pass && (line == nil || line.StopsAtFirst(o.Event)) {
 		v.Status = verdict.Human
-		v.Summary = "the task was over the role's context budget and nobody judged it: a person does (" + v.Summary + ")"
+		said := v.Summary
+		v.Summary = "the task was over the role's context budget and nobody judged it: a person does"
+		if said != "" {
+			v.Summary += " (" + said + ")"
+		}
 	}
 	a.verdict = v
 	return a, nil
