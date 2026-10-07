@@ -99,7 +99,7 @@ func Prompt(req Request) (system, user string, err error) {
 	if budget := req.Role.Context.Budget; budget > 0 {
 		chars := len(system) + len(user)
 		if tokens := Tokens(chars); tokens > budget {
-			return "", "", fmt.Errorf("prompt is about %d tokens (%d characters at %s), over the role's budget of %d", tokens, chars, TokensRatio, budget)
+			return "", "", fmt.Errorf("%w: about %d tokens (%d characters at %s), over the role's budget of %d", ErrOverBudget, tokens, chars, TokensRatio, budget)
 		}
 	}
 	return system, user, nil

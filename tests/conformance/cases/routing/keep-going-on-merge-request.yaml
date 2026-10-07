@@ -1,0 +1,11 @@
+case: routing/keep-going-on-merge-request
+about: fail-fast false on another event runs every step there too; the worst verdict wins, so a block anywhere still blocks the line.
+given:
+  repo: basic
+  config:
+    gates:
+      first: {checks: [{id: ok, run: "true", output: exit}]}
+      merge: {checks: [{id: tests, run: "false", output: exit}]}
+    routing: {events: {merge-request: ["gate:merge", "gate:first"]}, fail-fast: {merge-request: false}}
+run: {route: merge-request}
+expect: {status: block, steps: ["gate:merge", "gate:first"]}

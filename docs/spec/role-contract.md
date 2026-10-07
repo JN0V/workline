@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 9e31d4b
+checked: 50d152c
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -86,7 +86,13 @@ model:                          # what kind of thinking, never a model name
 context:
   knowledge: []                 # which knowledge/ files to load; none by default
   budget: 16000                 # tokens, estimated 711 + 0.82 a character
-                                # (agent.Tokens); the engine refuses a larger prompt
+                                # (agent.Tokens); the engine refuses a larger prompt:
+                                # the agent is not asked, the run goes on without it,
+                                # and says so (`prompt-over-budget`, a part's
+                                # `part-unanswered`), never an engine error; on a
+                                # gate's event the run then ends `human` (a part:
+                                # as the role treats a part not answered); on
+                                # schedule, reported only (ADR-0037)
 
 duties:
   reads: ["**"]                 # paths the role may read

@@ -93,7 +93,9 @@ who reads neither the log nor `line.json`:
 
 To keep the backlog too
 ([ADR-0018](adr/0018-the-product-owner.md)), add it to the schedule line;
-gardening then runs it after the documentalist:
+gardening then runs it after the documentalist, even when the
+documentalist blocks: the job fails all the same
+([ADR-0037](adr/0037-the-schedule-runs-every-step.md)).
 
 ```yaml
 routing:

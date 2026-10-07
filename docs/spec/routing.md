@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 3bc3de5
+checked: 886cdff
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -70,6 +70,9 @@ routing:
     schedule:      [documentalist]
     release:       [gate:release, documentalist]   # before the release tool tags
 
+  fail-fast:                            # per event; true unless set
+    schedule: false                     # every step runs, the worst verdict stands
+
   handoffs:                             # the only handoffs a role may ask for
     - {from: my-role, to: documentalist}  # a project's own role; none shipped asks
 ```
@@ -84,6 +87,12 @@ names the retired `release-manager` is refused, saying which tool to use.
 
 - Steps run in the listed order. The first step that ends in `block`,
   `human`, `blocked-external` or an error stops the sequence. It fails closed.
+- But on an event the routing sets `fail-fast: false` for, every step runs,
+  and the line takes the worst verdict: `block`, then `human`, then
+  `blocked-external` ([ADR-0037](../adr/0037-the-schedule-runs-every-step.md)).
+  The shipped line sets it for `schedule`, whose roles are upkeep, each on
+  its own: a documentalist that blocks does not keep the product owner
+  from the backlog. A role that does not pass runs no handoff either way.
 - A `handoff` intention is applied only if its edge is declared here. Anything
   else is refused, like any invalid intention.
 - A chain of handoffs is capped (`max-handoffs`, default 3). A loop stops with a

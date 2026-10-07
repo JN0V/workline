@@ -22,6 +22,11 @@ var ErrUnavailable = errors.New("agent unavailable")
 // can read. Its answer is dropped, as if it had proposed nothing.
 var ErrInvalidOutput = errors.New("agent answered without valid proposals")
 
+// ErrOverBudget means the prompt is over the role's context budget: the
+// agent was not asked. What the task held is judged by no one this run, a
+// finding for a person, never an error that stops the line.
+var ErrOverBudget = errors.New("prompt too large")
+
 // Request is everything an agent gets for one decision.
 type Request struct {
 	RunDir string

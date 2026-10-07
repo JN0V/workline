@@ -1,0 +1,10 @@
+case: engine/prompt-over-budget-is-a-finding
+about: "A task over the role's context budget is not put before the agent, and is no engine error: the run goes on as without an agent, and says what was not judged, for a person. A night's gardening once stopped on it, the product owner after it never run (2026-10-07)."
+given:
+  repo: basic
+run: {role: asks-too-much, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: prompt-over-budget, message: "the agent was not asked"}]
+  no-findings: [{rule: engine-error}]

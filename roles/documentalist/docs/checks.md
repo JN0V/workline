@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: 77a1623
+checked: 886cdff
 verified: agent:claude-code
 ---
 # Documentalist — the checks
@@ -209,7 +209,8 @@ turns one off with `enforce`.
   `identifier-gone`, `count-off`, `value-left` (after a fix, the judge),
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
   `no-sources` and `sources-by-name` (on `init`), `undocumented`,
-  `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks;
+  `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks,
+  `too-large-to-condense` and `too-large-to-split` (gardening);
   for a doc judged in
   parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,

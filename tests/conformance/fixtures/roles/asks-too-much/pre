@@ -1,0 +1,7 @@
+#!/bin/sh
+# A task of 4,000 characters: about 4,000 tokens, over the budget of 1,000.
+i=0
+while [ $i -lt 100 ]; do
+  echo "A line of the task, forty characters." >> "$WORKLINE_RUN_DIR/in/task.md"
+  i=$((i + 1))
+done

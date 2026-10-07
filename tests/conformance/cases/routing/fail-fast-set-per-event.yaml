@@ -1,0 +1,11 @@
+case: routing/fail-fast-set-per-event
+about: "A project sets fail-fast per event, and `fail-fast: {schedule: true}` stops its schedule at the first step that does not pass, as a gate's line does."
+given:
+  repo: basic
+  config:
+    gates:
+      docs: {checks: [{id: links, run: "false", output: exit}]}
+      backlog: {checks: [{id: issues, run: "true", output: exit}]}
+    routing: {events: {schedule: ["gate:docs", "gate:backlog"]}, fail-fast: {schedule: true}}
+run: {route: schedule}
+expect: {status: block, steps: ["gate:docs"]}

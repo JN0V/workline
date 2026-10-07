@@ -1003,25 +1003,35 @@ doc when its reader really gained something to know.
 		}
 	}
 	if task == "" && partsAsked == 0 && gardening {
-		if c := pickCondense(problems); c != nil {
-			task = writeCondenseTask(c, problems, tree)
+		for _, c := range condenseCandidates(problems) {
+			t := writeCondenseTask(c, problems, tree)
+			if len(t) > taskChars(s) {
+				findings = append(findings, tooLargeToRewrite("condense", c.Doc, len(t), taskChars(s)))
+				continue
+			}
+			task = t
 			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
 				return fail(err)
 			}
 			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("condense\n"), 0o644); err != nil {
 				return fail(err)
 			}
+			break
 		}
 	}
 	// A card too long holds more than one concept: split into cards.
 	if task == "" && partsAsked == 0 && gardening {
 		if c := pickSplit(problems); c != nil {
-			task = writeSplitTask(c, problems, tree)
-			if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
-				return fail(err)
-			}
-			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("split\n"), 0o644); err != nil {
-				return fail(err)
+			if t := writeSplitTask(c, problems, tree); len(t) > taskChars(s) {
+				findings = append(findings, tooLargeToRewrite("split", c.Doc, len(t), taskChars(s)))
+			} else {
+				task = t
+				if err := writeYAML(filepath.Join(runDir, "in", "condense.yaml"), c); err != nil {
+					return fail(err)
+				}
+				if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("split\n"), 0o644); err != nil {
+					return fail(err)
+				}
 			}
 		}
 	}

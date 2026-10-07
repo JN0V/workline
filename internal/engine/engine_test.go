@@ -55,3 +55,13 @@ func TestClaimsOneByOneMended(t *testing.T) {
 		t.Errorf("mended together: %q", got)
 	}
 }
+
+func TestOverBudgetSummary(t *testing.T) {
+	const head = "the task was over the role's context budget and nobody judged it: a person does"
+	if got := overBudgetSummary(""); got != head {
+		t.Errorf("empty: got %q", got)
+	}
+	if got := overBudgetSummary("docs to check"); got != head+" (docs to check)" {
+		t.Errorf("said: got %q", got)
+	}
+}
