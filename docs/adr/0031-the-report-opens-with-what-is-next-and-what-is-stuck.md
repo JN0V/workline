@@ -89,7 +89,7 @@ the role would pause sat mid-page, and a proposal read "Refine #83: Need
 they were to do.
 
 - **What to do opens it**: the proposals to decide and the changes to
-  check, counted, about a minute each; the parents to accept; one run
+  check, counted; the parents to accept; one run
   before the pause, "answer before the next run, or the role pauses";
   the acts done alone, to check.
 - **Then the actions**: To decide — each proposal under its issue's

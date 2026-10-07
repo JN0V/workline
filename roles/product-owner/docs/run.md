@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 8b7e871
+checked: 7ae4307
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -162,6 +162,9 @@ Each proposal in the report is a box
 - **Ticked by a person of the project** — the forge says who ticked it:
   GitHub's edit history, GitLab's system notes — it is done at the next
   run, as the record keeps it, with no agent.
+- **Recorded without its act** by an older engine: its issue is read
+  again first; ticked, the act the agent drafts then is done as that
+  person's yes — never handed back to them.
 - **Ticked by an outsider, a bot or nobody the forge names**, it is not,
   and the report says why.
 - **A kind back to `propose`** after a person undid one of its acts gets a

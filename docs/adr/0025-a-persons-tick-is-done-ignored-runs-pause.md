@@ -93,3 +93,21 @@ is a setting since ADR-0026: `ignored-runs-max`.)
 - The record grows by each proposal's content.
 - A backlog nobody reads stops costing tokens after three runs.
 - Not on every forge: one that does not say who ticked takes no tick.
+
+## Amendment (2026-10-07): a tick is never handed back
+
+On workline's own report, three refine proposals made on 2026-10-04 —
+before this decision was built, by an engine whose record kept a
+proposal's line alone — could not be done when ticked: the report told
+the person to do the work themselves. A person's tick is their yes; the
+work stays the role's.
+
+- **A proposal recorded without its act** has its issue read again first,
+  as one proposed for a cap: the agent decides it anew.
+- **Ticked**, the agent is asked to write that act; what it drafts is done
+  as the person's yes, whatever the kind's mode or cap. Until a run reads
+  the issue with an agent, the record keeps who ticked it (`agreed`) and
+  the report says so in a line, no box to tick again.
+- The agent drafting none is said (`tick-not-drafted`); the line leaves
+  the report.
+

@@ -831,8 +831,8 @@ then tried twice.
   record and open issues read from GitHub, nothing written): "What to do"
   first — 5 proposals to decide, "answer before the next run, or the role
   pauses", 1 act done alone —; the proposals under #83, #85, #87, #108
-  with their titles, "Add the sections Need and Validation to it —
-  drafted from its words, marked for you to correct"; #108's change said
+  with their titles, "Add Need and Validation to it (Need and
+  Validation as drafts for you to correct)"; #108's change said
   beside its title; the nine changes with nothing proposed in one folded
   line, no box. With `archived: [docs/BACKLOG.md]`: no change at all.
 - **JN0V/workline-sandbox**, `workline run-role product-owner --event
@@ -841,6 +841,13 @@ then tried twice.
   the box to set `rename` back to act; GitHub rendered the `<details>`
   folds and the task-list boxes. **Put back**: #5's body as it was; the
   record comment was left unchanged by the run.
+- **Why #83, #85, #87 had no act to do**: proposed on 2026-10-04 by an
+  engine before #152, when refine started at `propose` and the record
+  kept the line alone; carried since, their issues never read again —
+  nothing changed in them. Now read again first, and, ticked (as the
+  maintainer did), drafted then done (conformance
+  `tick-undrafted-drafted-then-done`, `tick-undrafted-waits-for-an-agent`,
+  `undrafted-proposal-read-again`).
 - **Not tried**: a box ticked inside the new layout live (the keys are
   unchanged, conformance only); GitLab's rendering of the folds; a real
   agent's run settling a change with nothing proposed (conformance
