@@ -12,8 +12,10 @@ roles:
       # does: they are docs too.
       docs: ["docs/**", "*.md", "roles/*/README.md", roles/documentalist/docs/checks.md,
         roles/documentalist/docs/tasks.md, roles/documentalist/docs/judge.md, roles/documentalist/docs/push.md,
-        roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/reviewer/docs/run.md,
-        roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md]
+        roles/documentalist/docs/cascades.md, roles/documentalist/docs/gardening.md,
+        roles/documentalist/docs/judge-claims.md,
+        roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
+        roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md]
       # Catching up its own docs, far behind: those whose sources do not fit
       # one call are judged in parts (ADR-0009), one doc a night (8 parts),
       # and a night spends at most 400k tokens.

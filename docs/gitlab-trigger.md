@@ -9,12 +9,14 @@ verified: agent:documentalist
 The GitLab template ([ci-gitlab.md](ci-gitlab.md)) runs on merge request
 events and pipeline schedules. Where an internal tool starts the jobs
 instead — the trigger API, the pipelines API, another pipeline — this page
-does the same with a plain script. The commands themselves:
-[triggers.md](triggers.md). Tried on a pipeline the API started
-(2026-10-06): the judging job of `garden`, without an agent, and its
-summary; `import`, both jobs, the engine of the branch and a planted
-answer; the other tasks, not yet. What follows is
-the template's commands under other rules.
+does the same with a plain script: the template's commands under other
+rules. The commands themselves: [triggers.md](triggers.md).
+
+Tried on a pipeline the API started (2026-10-06):
+
+- the judging job of `garden`, without an agent, and its summary;
+- `import`, both jobs, the engine of the branch and a planted answer;
+- the other tasks, not yet.
 
 ## Before CI: on your machine
 
@@ -45,7 +47,7 @@ none of them:
 
 | Variable | Value |
 |---|---|
-| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, ADR-0034), `import` |
+| `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
@@ -64,7 +66,7 @@ curl -fsS -X POST --form token="$TRIGGER_TOKEN" --form ref=main \
 
 ## The jobs, without the template
 
-`.gitlab-ci.yml`:
+### `.gitlab-ci.yml`
 
 ```yaml
 stages: [test, deploy]
@@ -94,7 +96,11 @@ workline:apply:
   script: [sh ci/workline-job.sh apply]
 ```
 
-`ci/workline-job.sh`, any runner with the engine, git and jq:
+### `ci/workline-job.sh`
+
+Any runner with the engine, git and jq. The agent is a choice: Claude
+here; for another, install it instead and set `ai` to a `cmd:`
+([usage](usage.md)).
 
 ```sh
 #!/bin/sh
@@ -102,7 +108,7 @@ set -eu
 step=$1; ai=none; sum="--summary workline-summary.md --summary workline-summary.html"   # what the job's page shows
 if [ "$step" = judge ]; then                      # reads the forge, writes nothing
   [ -z "${WORKLINE_GITLAB_READ_TOKEN:-}" ] || export GITLAB_TOKEN="$WORKLINE_GITLAB_READ_TOKEN"
-  if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+  if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then   # the agent: Claude here, one choice among others
     npm install -g --silent @anthropic-ai/claude-code && ai=claude
   fi
 else                                              # writes, with no AI key
@@ -137,22 +143,27 @@ esac
 exit "$status"
 ```
 
-`--summary` needs the first release after v0.16.0
-([ci.md](ci.md#what-a-job-shows)). The judging job exits with the verdict (1 block, 2 for a person, 3 the
-agent or forge unreachable: make 3 a warning with `allow_failure:
-{exit_codes: [3]}`, as the template does); the applying job still runs
-(`when: always`) and applies what passed, and the comment of a reviewer
-that blocks (#226). On `release`, a judging job that does not pass holds
-the release; the docs' fix goes to a merge request of its own (untried
-outside a release tool's merge request).
+### What the jobs do
+
+- `--summary` needs the first release after v0.16.0
+  ([ci.md](ci.md#what-a-job-shows)).
+- The judging job exits with the verdict: 1 block, 2 for a person, 3 the
+  agent or forge unreachable. Make 3 a warning with `allow_failure:
+  {exit_codes: [3]}`, as the template does.
+- The applying job still runs (`when: always`) and applies what passed,
+  and the comment of a reviewer that blocks
+  ([#226](https://github.com/JN0V/workline/issues/226)).
+- On `release`, a judging job that does not pass holds the release; the
+  docs' fix goes to a merge request of its own (untried outside a release
+  tool's merge request).
 
 ## Tokens and variables
 
 | Variable | Holds | Masked | Protected |
 |---|---|---|---|
-| `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#what-each-job-needs)) | yes | only if every triggered pipeline runs on a protected branch |
+| `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#gitlab-tokens)) | yes | only if every triggered pipeline runs on a protected branch |
 | `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner and the reviewer read the forge while judging; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
-| `CLAUDE_CODE_OAUTH_TOKEN` | `claude setup-token`, a Claude subscription; or set `ANTHROPIC_API_KEY` | yes | the same |
+| the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
 
 A merge request's source branch is rarely protected: a protected variable
 never reaches its pipeline. The trigger token acts as the user who owns it.

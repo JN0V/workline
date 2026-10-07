@@ -30,8 +30,10 @@ owner), then the project's `settings`.
 
 ## `.workline/config.yaml`
 
+### An example
+
 ```yaml
-ai: claude                  # the project's agent; none by default
+ai: claude                  # the project's agent, one choice: none (default), claude, cmd:<command>…
 forge: github               # github | gitlab | local | cmd:<command> | none (default)
 roles:
   committer:
@@ -44,42 +46,61 @@ roles:
       whole-chars: 25000                           # sources judged whole up to this (25000 at most); more docs vouched, more tokens
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
-      sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence (ADR-0005), and nothing vouched for before your tag
+      sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence, and nothing vouched for before your tag
   reviewer:
     settings:
       ai-findings: {correctness: block}   # a verified important finding blocks for these lenses; the others warn (one value, warn or block, sets every lens)
       judge-lines-max: 300                # lines of code a judge reads: the cause's function, then those it reaches, the rest named (200; 0: 31 lines around the cause)
-      diff-alone: true                    # one call more a run, given the change only, not the files nor the messages (#126; off by default, measured)
+      diff-alone: true                    # one call more a run, given the change only, not the files nor the messages (off by default, measured)
       spec-rounds: 3                      # on the forge: reviews of a spec in a row with a finding open, then a question to a person (5)
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge],
-    schedule: [documentalist, product-owner, reviewer]}   # the reviewer reads each spec the product owner refines; ready waits on it (#128)
+    schedule: [documentalist, product-owner, reviewer]}   # the reviewer reads each spec the product owner refines; ready waits on it
   handoffs: [{from: my-role, to: documentalist}]   # a role of your own (--roles); none shipped hands over
   max-handoffs: 3
-gates:                      # docs/spec/gates.md
+gates:                      # your own checks, as a step of the line
   merge:
     checks: [{id: secrets, run: "gitleaks detect --report-format sarif --report-path {out}/secrets.sarif", output: sarif, max: {error: 0}}]
-repos:                      # other repositories docs may depend on (docs/spec/multi-repo.md)
+repos:                      # other repositories docs may depend on
   api: {url: "https://github.com/acme/api.git", branch: main}
-release:                    # how the project's release tool works (ADR-0017)
+release:                    # how the project's release tool works
   branches: ["release/*"]   # its pull requests' branches; default: release-please's, releaser-pleaser's, release-plz's, changesets'
   tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
 ```
 
-A key the engine does not know blocks, with its line: an ignored setting is one
-someone believes in and nothing applies. So does a role retired, named in
-`roles:` or `routing:`: the release manager is gone, and the message names the
-release tool to use instead (ADR-0017). A commit written unquoted is a number
-to YAML when all digits (`after: 7515148`): a setting naming a commit reads it
-as written. One YAML reads otherwise than written — a leading zero
-(`0123456`, octal), an `e` between digits (`1234e56`, a float) — blocks,
-saying to quote it. A project's `settings` for a role are merged into the
-role's at every depth; a list replaces the default whole, a `null` removes
-it ([role-adapting.md](spec/role-adapting.md#settings)).
+Where the comments point:
 
-- **`whole-chars` above 25000 is refused**: its task would pass the
+- `sample`: the least independence its judge must have
+  ([ADR-0005](adr/0005-independence-takes-the-best-level-available.md));
+- `diff-alone`: measured in
+  [#126](https://github.com/JN0V/workline/issues/126);
+- the reviewer on `schedule`, `ready` waiting on its read:
+  [#128](https://github.com/JN0V/workline/issues/128);
+- `gates`: [gates](spec/gates.md); `repos`:
+  [multi-repo](spec/multi-repo.md); `release`: how the project's release
+  tool works ([ADR-0017](adr/0017-the-release-manager.md)).
+
+### What blocks
+
+- **A key the engine does not know**, with its line: an ignored setting is
+  one someone believes in and nothing applies.
+- **A role retired**, named in `roles:` or `routing:`: the release manager
+  is gone, and the message names the release tool to use instead
+  ([ADR-0017](adr/0017-the-release-manager.md)).
+- **A value YAML reads otherwise than written** — a leading zero
+  (`0123456`, octal), an `e` between digits (`1234e56`, a float) — saying
+  to quote it. A commit written unquoted is a number to YAML when all
+  digits (`after: 7515148`): a setting naming a commit reads it as written.
+- **`whole-chars` above 25000** is refused: its task would pass the
   documentalist's context budget, tokens estimated at 711 + 0.82 a
-  character (#235), and each doc's prompt would be refused instead.
+  character ([#235](https://github.com/JN0V/workline/issues/235)), and
+  each doc's prompt would be refused instead.
+
+### How settings merge
+
+A project's `settings` for a role are merged into the role's at every
+depth; a list replaces the default whole, a `null` removes it
+([role-adapting.md](spec/role-adapting.md#settings)).
 
 
 ## Your own config
@@ -90,7 +111,7 @@ Support/workline/config.yaml`), what you want wherever you work:
 | Key | |
 |---|---|
 | `ai` | your agent when a project does not say (`workline setup` writes it) |
-| `approve-push` | `true`: you approve each push (off by default, ADR-0011) |
+| `approve-push` | `true`: you approve each push (off by default, [ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)) |
 | `approve-push-via` | where you are asked, in order: `terminal`, `editor`, `dialog` |
 
 Beside it, in the same folder: `allowed-identities` (one address pattern a
@@ -107,19 +128,24 @@ rules) and `roles/<role>/<facet>` (your own facets).
 | `.git/workline/issues/<n>.md` | `forge: local`: an issue — title, state, labels, milestone in its front matter, then its body and comments — never committed; `workline issues` reads them. With no forge (`none`), an issue a role opens is refused, as every write that needs a forge; in CI (`CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes |
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
 | `.workline/off` | empty: the global hook skips this repository |
-| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push (ADR-0011); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
-| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking (ADR-0004) |
+| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
+| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
 | `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
 | `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
 
+### Runs
+
 Runs are kept in `.git/workline/runs/` (the last
-<!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree: each
-agent call with what it cost in `out/calls.jsonl` (a judge's too, when
-`pre` asked it; `for` names the part or the judge's question it answered), the agent's last answer
-as it came in `out/agent-answer.txt`, each refused answer in
-`out/refused-<n>.yaml` (as it came: `out/refused-<n>-answer.txt`), and the
-claims an accepted answer gave, judged and never applied, in
-`out/claims.yaml`.
+<!-- workline:derive runs-kept -->50<!-- workline:end -->), never in the working tree. Each holds:
+
+- each agent call with what it cost, in `out/calls.jsonl` (a judge's too,
+  when `pre` asked it; `for` names the part or the judge's question it
+  answered);
+- the agent's last answer as it came, in `out/agent-answer.txt`;
+- each refused answer in `out/refused-<n>.yaml` (as it came:
+  `out/refused-<n>-answer.txt`);
+- the claims an accepted answer gave, judged and never applied, in
+  `out/claims.yaml`.
 
 
 ## Environment
@@ -137,16 +163,21 @@ claims an accepted answer gave, judged and never applied, in
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
 | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
 
-The agent's own credentials are its own: Claude Code reads its login, or
-`CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) or `ANTHROPIC_API_KEY`;
-workline holds no key.
+The agent's own credentials are its own, and workline holds no key:
+whichever agent you chose reads its own. Claude Code, for one, reads its
+login, or `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) or
+`ANTHROPIC_API_KEY`; an agent run through `cmd:` reads whatever it needs.
 
-A role's `pre` and `post` receive `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`,
-`WORKLINE_AI`, `WORKLINE_ROLE`, `WORKLINE_BIN` and `WORKLINE_ROLES_DIR`
-(the folder of roles), `WORKLINE_FORGE` when a
-forge is given, `WORKLINE_TARGET` (`merge-request:12`) with a target too, and
-`WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
-`WORKLINE_PROPOSED_TASKS` with `--open-merge-request`. On a release tool's
-merge request, a role that runs on `release` gets `WORKLINE_EVENT=release`
-and `WORKLINE_RELEASE_BRANCH`, the branch (ADR-0017). A role run by a handoff
-receives the inputs `handoff-from` and `handoff-reason`.
+A role's `pre` and `post` receive:
+
+- always: `WORKLINE_RUN_DIR`, `WORKLINE_EVENT`, `WORKLINE_AI`,
+  `WORKLINE_ROLE`, `WORKLINE_BIN` and `WORKLINE_ROLES_DIR` (the folder of
+  roles);
+- `WORKLINE_FORGE` when a forge is given, `WORKLINE_TARGET`
+  (`merge-request:12`) with a target too;
+- `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
+  `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`;
+- on a release tool's merge request, for a role that runs on `release`:
+  `WORKLINE_EVENT=release` and `WORKLINE_RELEASE_BRANCH`, the branch
+  ([ADR-0017](adr/0017-the-release-manager.md));
+- run by a handoff: the inputs `handoff-from` and `handoff-reason`.

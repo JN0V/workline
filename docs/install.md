@@ -144,14 +144,14 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml),
   then add two pipeline schedules, gardening and the sample
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom); a [self-managed
-  instance](ci-gitlab.md#a-self-managed-gitlab)).
+  instance](ci-gitlab-self-managed.md)).
 - **Another forge** (Gitea, Forgejo…) or [none](ci-other-forges.md#no-forge): [ci-other-forges.md](ci-other-forges.md).
 
 What the templates need:
 
 | | GitHub | GitLab |
 |---|---|---|
-| the agent | secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | variable `CLAUDE_CODE_OAUTH_TOKEN`, masked, not protected |
+| the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected |
 | writing | a GitHub App: variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository` |
 | the history | `fetch-depth: 0`, set | `GIT_DEPTH: 0`, set |
 | the sample's judge | variable `WORKLINE_JUDGE` (optional) | the same, and `WORKLINE_TASK=sample` on its schedule |

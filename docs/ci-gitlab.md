@@ -35,58 +35,77 @@ pipelines instead (trigger API, pipelines API, another pipeline):
 
 GitLab gives every variable to every job: the template keeps the write
 token out of the judging jobs' commands, not out of their reach — and
-gardening's judge reads the open merge requests with it. The agent is
+gardening's judge (the scheduled run) reads the open merge requests with
+it. The agent is
 installed only in the judging jobs.
 
 ## gitlab.com
 
-1. **Include the template**: copy
-   [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)
-   to `ci/` and add to `.gitlab-ci.yml`:
+### 1. Include the template
 
-   ```yaml
-   stages: [test, deploy]
-   include: {local: ci/workline.gitlab-ci.yml}
-   ```
-2. **The variables**, Settings → CI/CD → Variables, **masked** and **not
-   protected** — GitLab gives a protected variable only to protected
-   branches, never to a merge request's:
-   - `WORKLINE_GITLAB_TOKEN`: a project access token — a bot user of this
-     project only ([ADR-0023](adr/0023-the-project-bot-keeps-a-gitlab-backlog.md)) —,
-     role Developer, scopes `api` and `write_repository`. One command makes
-     it and stores it, never shown (glab, logged in as a Maintainer):
+Copy [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml)
+to `ci/` and add to `.gitlab-ci.yml`:
 
-     ```sh
-     glab token create workline --repo <group/project> --access-level developer \
-       --scope api --scope write_repository --duration 8760h \
-       | glab variable set WORKLINE_GITLAB_TOKEN --masked --repo <group/project>
-     ```
+```yaml
+stages: [test, deploy]
+include: {local: ci/workline.gitlab-ci.yml}
+```
 
-     Or Settings → Access tokens → Add new token, the same role and scopes,
-     then the variable. It expires within a year: rotate it the same way
-     (`glab variable update`).
-   - Where project access tokens are not offered (GitLab documents them as
-     Premium on gitlab.com; one was made on a Free user's project,
-     2026-10-05): a personal access token, `api` and `write_repository`,
-     of an account made for the line, added to the project as Developer.
-     The job's own `CI_JOB_TOKEN` reaches no issue: it is never enough.
-   - `CLAUDE_CODE_OAUTH_TOKEN`, if you want Claude to judge
-     (`claude setup-token`). Unset, the jobs run with no agent; for
-     another, change the template's `--ai` to a `cmd:`.
-   - Anyone who may push a branch can read them from a pipeline they
-     change: people who may already write to the repository.
-3. **Gardening**: Build → Pipeline schedules → New schedule, nightly or
-   weekly, on main.
-4. **The [weekly sample](ci.md#the-weekly-sample)**: a second schedule,
-   weekly, with the variable `WORKLINE_TASK` set to `sample`.
-   - A schedule's variables need Settings → CI/CD → Variables, "Minimum
-     role to use pipeline variables", at **Maintainer**: a new gitlab.com
-     project allows no one, and setting the variable is refused (403, "not
-     authorized to set pipeline schedule variables").
-   - The judge: the variable `WORKLINE_JUDGE`, or the `sample.judge`
-     setting. Another week than the last whole one: set
-     `WORKLINE_SAMPLE_WEEK` (`2026-W40`) on the schedule, then play it.
-5. **Protect main**: merge requests only, pipelines must succeed.
+### 2. The variables
+
+Settings → CI/CD → Variables, **masked** and **not protected**: GitLab
+gives a protected variable only to protected branches, never to a merge
+request's. Anyone who may push a branch can read them from a pipeline they
+change: people who may already write to the repository.
+
+- **`WORKLINE_GITLAB_TOKEN`**: a project access token — a bot user of this
+  project only ([ADR-0023](adr/0023-the-project-bot-keeps-a-gitlab-backlog.md))
+  —, role Developer, scopes `api` and `write_repository`. One command makes
+  it and stores it, never shown (glab, logged in as a Maintainer):
+
+  ```sh
+  glab token create workline --repo <group/project> --access-level developer \
+    --scope api --scope write_repository --duration 8760h \
+    | glab variable set WORKLINE_GITLAB_TOKEN --masked --repo <group/project>
+  ```
+
+  Or Settings → Access tokens → Add new token, the same role and scopes,
+  then the variable. It expires within a year: rotate it the same way
+  (`glab variable update`).
+- **Where project access tokens are not offered** (GitLab documents them as
+  Premium on gitlab.com; one was made on a Free user's project,
+  2026-10-05): a personal access token, `api` and `write_repository`, of
+  an account made for the line, added to the project as Developer. The
+  job's own `CI_JOB_TOKEN` reaches no issue: it is never enough.
+- **The agent's credentials**, if you want an agent to judge. The template
+  installs Claude Code when `CLAUDE_CODE_OAUTH_TOKEN` is set (`claude
+  setup-token`); unset, the jobs run with no agent. For another agent,
+  change the template's `--ai` to a `cmd:`.
+
+### 3. Gardening
+
+Gardening is the scheduled run of the documentalist (and the product
+owner, when routed): Build → Pipeline schedules → New schedule, nightly or
+weekly, on main.
+
+### 4. The weekly sample
+
+The [weekly sample](ci.md#the-weekly-sample): a second schedule, weekly,
+with the variable `WORKLINE_TASK` set to `sample`.
+
+- A schedule's variables need Settings → CI/CD → Variables, "Minimum role
+  to use pipeline variables", at **Maintainer**: a new gitlab.com project
+  allows no one, and setting the variable is refused (403, "not authorized
+  to set pipeline schedule variables").
+- The judge: the variable `WORKLINE_JUDGE`, or the `sample.judge` setting.
+  Another week than the last whole one: set `WORKLINE_SAMPLE_WEEK`
+  (`2026-W40`) on the schedule, then play it.
+
+### 5. Protect main
+
+Merge requests only, pipelines must succeed.
+
+### When a schedule runs
 
 gitlab.com runs a schedule at its own interval, not at the minute written:
 a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
@@ -102,8 +121,10 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   judged without an agent, nothing applied or commented.
 - **A judge that fails**: the applying jobs still run (`when: always`),
   the pipeline failed by the judge's job.
-  - Gardening: what steps passed before one blocked is applied (#142).
-  - A merge request the reviewer holds still gets its comment (#226).
+  - Gardening: what steps passed before one blocked is applied
+    ([#142](https://github.com/JN0V/workline/issues/142)).
+  - A merge request the reviewer holds still gets its comment
+    ([#226](https://github.com/JN0V/workline/issues/226)).
   - An agent out of reach (3) warns (`allow_failure: {exit_codes: [3]}`),
     as on GitHub: a person judges what it would have.
 - **`workline:follow`**, on each push to the default branch: the
@@ -153,10 +174,11 @@ workline:import:judge:                     # the agent, a read token
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: test
   rules: [{if: $WORKLINE_IMPORT}]
+  variables: {AGENT: claude}               # one choice: claude, claude:<model>, cmd:<command>
   script:
     - export GITLAB_TOKEN=$WORKLINE_GITLAB_READ_TOKEN
-    - npm install -g --silent @anthropic-ai/claude-code
-    - workline issues import "$WORKLINE_IMPORT" --ai claude --forge gitlab --summary workline-summary.md --json > line.json
+    - npm install -g --silent @anthropic-ai/claude-code   # Claude's CLI; another agent, its own
+    - workline issues import "$WORKLINE_IMPORT" --ai "$AGENT" --forge gitlab --summary workline-summary.md --json > line.json
   artifacts: {when: always, paths: [line.json, .workline-runs/, workline-summary.md], expire_in: 1 day}
 workline:import:apply:                     # the write token, no agent
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
@@ -171,20 +193,6 @@ workline:import:apply:                     # the write token, no agent
 
 ## A self-managed GitLab
 
-As on gitlab.com, with what an instance of your own changes. **Not tried
-yet on one**: tell us what differs.
-
-- **The image**: jobs run in `ghcr.io/jn0v/workline:<version>`. Runners
-  that cannot reach ghcr.io pull it from your registry: copy it there
-  (`docker pull`, `docker tag`, `docker push`) and set `WORKLINE_IMAGE` to
-  its name, without the tag. The runners need the Docker executor.
-- **Your certificate authority**: the jobs add `CI_SERVER_TLS_CA_FILE`,
-  which the runner gives when the instance uses its own, to the image's
-  trusted ones: git and workline then accept the instance.
-- **The address**: workline talks to the API of the instance the job runs
-  on (`CI_API_V4_URL`); nothing to set, nothing to install.
-- **The agent** reaches out — Claude Code needs npm's registry and
-  Anthropic's API. Without that, set no `CLAUDE_CODE_OAUTH_TOKEN`: the docs
-  are listed for a person.
-- **Tokens**: project access tokens exist on every tier of a self-managed
-  instance.
+As on gitlab.com, with what an instance of your own changes — the image,
+your certificate authority, the address, the agent, tokens:
+[ci-gitlab-self-managed.md](ci-gitlab-self-managed.md). Not tried yet.
