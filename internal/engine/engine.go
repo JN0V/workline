@@ -625,6 +625,10 @@ func askParts(r *role.Role, o Options, ag agent.Agent, runDir string, tasks []st
 			err = callAgent(ag, req, "part", runDir, res)
 		}
 		switch {
+		case errors.Is(err, agent.ErrOverBudget):
+			// Over the context budget, this part alone: the others may fit.
+			unanswered("over-budget", err.Error())
+			continue
 		case errors.Is(err, agent.ErrUnavailable), errors.Is(err, errTokensSpent):
 			gone, goneKind = err.Error(), "unavailable"
 			if errors.Is(err, errTokensSpent) {
@@ -805,9 +809,12 @@ func callAgent(ag agent.Agent, req agent.Request, task, runDir string, res *Resu
 		res.capped = true
 		return errTokensSpent
 	}
-	res.AgentCalls++
 	start := time.Now()
 	call, err := ag.Propose(req)
+	if errors.Is(err, agent.ErrOverBudget) {
+		return err // refused before the call: nothing asked, nothing spent
+	}
+	res.AgentCalls++
 	call.Seconds = math.Round(time.Since(start).Seconds()*10) / 10
 	call.Task = task
 	if task == "part" {
@@ -1486,6 +1493,13 @@ func attempt(r *role.Role, o Options, ag agent.Agent, hasTask bool, tier, runDir
 		case err == nil:
 		case errors.Is(err, errTokensSpent):
 			a.askedAgent = false // not asked: no answer to refuse, none to ask again
+		case errors.Is(err, agent.ErrOverBudget):
+			// A task too large for the role's context is the role's to
+			// shrink, not a block of the line: the run goes on as without
+			// an agent, and what the task held waits for a person.
+			a.askedAgent = false
+			a.findings = append(a.findings, verdict.Finding{Rule: "prompt-over-budget", Level: "warn",
+				Message: err.Error() + ": the agent was not asked; what this task held is judged by no one this run, a person reads it (in/task.md of the run)"})
 		case errors.Is(err, agent.ErrUnavailable):
 			a.external = true
 			a.findings = append(a.findings, verdict.Finding{Rule: "agent-unavailable", Message: err.Error()})

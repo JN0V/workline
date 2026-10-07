@@ -86,7 +86,10 @@ model:                          # what kind of thinking, never a model name
 context:
   knowledge: []                 # which knowledge/ files to load; none by default
   budget: 16000                 # tokens, estimated 711 + 0.82 a character
-                                # (agent.Tokens); the engine refuses a larger prompt
+                                # (agent.Tokens); the engine refuses a larger prompt:
+                                # the agent is not asked, the run goes on without it,
+                                # and says so (`prompt-over-budget`, a part's
+                                # `part-unanswered`), never an engine error
 
 duties:
   reads: ["**"]                 # paths the role may read
