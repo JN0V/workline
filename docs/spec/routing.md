@@ -129,10 +129,14 @@ The reviewer (ADR-0020) is in no shipped line: a project adds it to its
 it on a machine before a push with `workline review`. On a merge request it
 reviews the commits not reviewed yet, one lens a push; with `--input
 lenses=all`, every lens. It never moves an item: `review` stays the
-machine's part, `validation` the person's.
+machine's part, `validation` the person's. Its `spec` event reads a spec
+before it is built — a file, or an issue by its number (`--input
+issue=<n>`) — so a line may route it (#128); on a machine, `workline
+review --spec` or `--issue`.
 
 ## Not in this version
 
 The developer and tester roles, which will consume `ready` items; the
-reviewer's review of a spec before an item goes `ready`; splitting an item
+reviewer's hold on `ready` while a finding on the spec is open (#128,
+part 2); splitting an item
 into sub-issues, which the product owner does not do yet.

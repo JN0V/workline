@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: ce2783e
+checked: beb53f8
 verified: agent:claude-code
 ---
 # Install

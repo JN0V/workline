@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 59f2c51
+checked: beb53f8
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -19,6 +19,7 @@ trigger token or another pipeline: [gitlab-trigger.md](gitlab-trigger.md).
 | before a push | the global `pre-push` hook, when the project routes `pre-push`; by hand: `workline route pre-push --ai none --input range=origin/main..HEAD` | never |
 | docs made suspect | `workline docs` (`--since <rev>`; `--review` with no agent) | yours |
 | a branch's code | `workline review` (`--base`, `--lenses`, `--json`) | yours |
+| a spec, before it is built | `workline review --spec <file>` or `--issue <n>` | yours |
 | gardening | `workline route schedule` (`--forge local --open-merge-request` keeps its merge requests as local branches) | yours |
 | the backlog | `workline run-role product-owner --event schedule --forge gitlab` | yours |
 | a roadmap file to issues | `workline issues import <file>`, then the same with `--apply`; in CI, `--json > line.json`, then `workline apply --line line.json` | yours |

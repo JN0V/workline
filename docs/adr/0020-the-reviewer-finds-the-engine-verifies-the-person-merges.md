@@ -1,7 +1,8 @@
 # ADR-0020: The reviewer finds, the engine verifies, the person merges
 
 - **Status:** accepted; the code subject built (local, merge request), the
-  spec subject and the developer's loop to come (roles/reviewer/docs/status.md)
+  spec subject on a machine (#128); on the forge and the developer's loop to
+  come (roles/reviewer/docs/status.md)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -35,7 +36,7 @@ before the push; and on the merge request, a safety net.
 
 | | code | spec |
 |---|---|---|
-| on the machine | `workline review`: base..HEAD (main..HEAD by default), every lens; the findings in the terminal and as JSON, for the author's agent to fix before pushing | a file, or an issue by its number |
+| on the machine | `workline review`: base..HEAD (main..HEAD by default), every lens; the findings in the terminal and as JSON, for the author's agent to fix before pushing | `workline review --spec <file>` or `--issue <n>`: every spec lens (amended, #128) |
 | on the merge request | the commits not reviewed yet, one lens a push, every lens once when it becomes ready; warns at first | after the product owner refines an issue: `ready` only once no important finding is open |
 
 **The same pipeline in every cell.**
@@ -111,7 +112,7 @@ machine, and once on the merge request when it becomes ready
 the gates do; its tests lens checks that a test covers each behaviour the
 change adds or changes.
 
-**Spec review** (next). Its input is a file or an issue's number; on the
+**Spec review** (on a machine since #128, see Amendment). Its input is a file or an issue's number; on the
 forge it runs after the product owner refines an issue, which goes `ready`
 only once no important finding is open: a loop between the product owner
 and the reviewer, five rounds at most, then a question to a person.
@@ -338,3 +339,35 @@ merge-request line; on in workline's own repository.
 - **Rejected**: the facet as one more lens in the shared call (it would
   read the files); its own judge question (a judge reads the code, the
   facet's narrow view is no reason to judge it otherwise).
+
+## Amendment (2026-10-07, #128: a spec on a machine)
+
+- **The spec column, on a machine.** `workline review --spec <file>` or
+  `--issue <n>` runs the reviewer's `spec` event (`--input spec=` or
+  `issue=`): the file as it reads in the working tree, or the issue's
+  body from the forge, up to `spec-lines-max`.
+- **Lenses of its own** (`spec-lenses`, `subject: spec` in their front
+  matter, refused under `lenses` and the reverse): ambiguous,
+  unverifiable, out of scope, contradicted by the code; borrowed from the
+  requirements smells and ISO/IEC/IEEE 29148's unambiguous and
+  verifiable (docs/research/code-review.md). Together in one call (#147).
+- **The same pipeline**: each cause found again in the spec (`file:line`,
+  `#12:line` of the body), a symptom in the code at HEAD; the important
+  ones judged by their lens's question (#223); a `decision` for an open
+  point (#126); the verdict by `ai-findings`. Every finding is the spec's
+  author's: none goes to an issue.
+- **The code it names** (`needs: code`): the code files and the functions
+  the spec names, up to `code-lines-max`; none, the contradicted lens not
+  asked. Its judge (`reads: code`) is shown the function the symptom lies
+  in and those it reaches (#127).
+- **No record**: a spec is read whole each run.
+- **Seam for the forge** (part 2): the `spec` event takes an issue's
+  number, so a line can route it after the product owner's refine; the
+  hold on `ready`, the answers and the five rounds are not built.
+- **Cost** (roles/reviewer/docs/tried.md): the lenses' prompt 9k
+  characters on #128's own body, 13k on a spec naming one Go file; at
+  most the spec and 600 lines of code. Tried on workline-sandbox#43: both
+  planted defects found and verified, 22.5k tokens.
+- **Rejected**: the code lenses on a spec (they read a diff); the spec in
+  the code review's call (paid on every push); the PO's refine reading
+  the findings now (part 2).
