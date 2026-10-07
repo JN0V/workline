@@ -2,6 +2,9 @@ package backlog
 
 import (
 	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -87,6 +90,36 @@ func TestTestNames(t *testing.T) {
 	for _, c := range cases {
 		if got := TestNames(c.item); !slices.Equal(got, c.want) {
 			t.Errorf("TestNames(%q) = %q, want %q", c.item, got, c.want)
+		}
+	}
+}
+
+func TestCodeTestsReadsHead(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	if err := os.MkdirAll(filepath.Join(dir, "tests", "export"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tests", "export", "rows_test.go"), []byte("package export\n\nfunc TestRows(t *testing.T) {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "test"}} {
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+	}
+	find := CodeTests(dir)
+	for name, want := range map[string]string{
+		"tests/export/rows_test.go":          "tests/export/rows_test.go",
+		"tests/export/rows_test.go::TestRows": "tests/export/rows_test.go",
+		"TestRows":                           "tests/export/rows_test.go",
+		"tests/export":                       "", // a folder, no test file
+		"tests/export/cols_test.go":          "",
+		"TestCols":                           "",
+	} {
+		if got, err := find(name); got != want || err != nil {
+			t.Errorf("CodeTests(%q) = %q, %v; want %q", name, got, err, want)
 		}
 	}
 }

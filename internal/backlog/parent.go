@@ -192,7 +192,9 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 					switch {
 					case err != nil:
 						unread = append(unread, "`"+name+"`")
-						ev.TestUnread = append(ev.TestUnread, fmt.Sprintf("`%s` (%v)", name, err))
+						if why := fmt.Sprintf("`%s` (%v)", name, err); !slices.Contains(ev.TestUnread, why) {
+							ev.TestUnread = append(ev.TestUnread, why)
+						}
 					case path == "":
 						missing = append(missing, "`"+name+"`")
 					case path == name || strings.HasPrefix(name, path+"::"):
@@ -324,7 +326,7 @@ func CodeTests(repo string) TestFinder {
 	grep := func(word, path string) ([]string, error) {
 		args := []string{"-C", repo, "grep", "-l", "-w", "-F", "-e", word, "HEAD"}
 		if path != "" {
-			args = append(args, "--", path)
+			args = append(args, "--", ":(literal)"+path)
 		}
 		out, err := exec.Command("git", args...).Output()
 		var exit *exec.ExitError
@@ -343,11 +345,13 @@ func CodeTests(repo string) TestFinder {
 	return func(name string) (string, error) {
 		path, fn, two := strings.Cut(name, "::")
 		if testFile.MatchString(path) && (two || strings.Contains(path, "/") || strings.Contains(path, ".")) {
-			out, err := exec.Command("git", "-C", repo, "ls-tree", "--name-only", "HEAD", "--", path).Output()
+			// A file, a blob — never a folder —, its path taken literally.
+			out, err := exec.Command("git", "-C", repo, "ls-tree", "HEAD", "--", ":(literal)"+path).Output()
+			info, file, _ := strings.Cut(strings.TrimRight(string(out), "\n"), "\t")
 			switch {
 			case err != nil:
 				return "", fmt.Errorf("git ls-tree: %v", err)
-			case strings.TrimSpace(string(out)) != path:
+			case file != path || !strings.Contains(info, " blob "):
 				return "", nil
 			case !two:
 				return path, nil

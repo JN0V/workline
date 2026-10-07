@@ -1,6 +1,7 @@
 package backlog
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -87,10 +88,18 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			}
 			// A parent closed while its children still wait on siblings:
 			// those links are still the role's own, read from its state
-			// until no child that waits is open (ADR-0028).
+			// until no child that waits is open (ADR-0028). A parent the
+			// forge no longer gives is let go; one whose state does not
+			// read is kept, read again at the next run.
 			st, err := splitState(f, role, d.Issue)
-			if err != nil {
+			switch {
+			case errors.Is(err, forge.ErrUnreachable):
 				return nil, nil, nil, err
+			case err != nil:
+				continue
+			case st == nil:
+				standing = append(standing, d)
+				continue
 			}
 			waiting := false
 			for child, blockers := range st.After {
@@ -154,8 +163,8 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			if err != nil {
 				return nil, nil, nil, err
 			}
-			if len(st.Split) == 0 {
-				break // its children not recorded yet: watched again
+			if st == nil || len(st.Split) == 0 {
+				break // its children not recorded yet, or its state unread: watched again
 			}
 			for child, blockers := range st.After {
 				own[child] = append(own[child], blockers...)
@@ -196,14 +205,17 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 }
 
 // splitState is a split parent's state as its comment holds it: empty
-// when it has none, or it does not read.
+// when it has none; nil when it does not read — never taken for none.
 func splitState(f forge.Backlog, role string, id int) (*State, error) {
 	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
 	if err != nil {
 		return nil, err
 	}
 	st, found, err := ReadState(forge.Bodies(notes), role)
-	if !found || err != nil {
+	switch {
+	case err != nil:
+		return nil, nil
+	case !found:
 		return &State{}, nil
 	}
 	return st, nil
