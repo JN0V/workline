@@ -1,0 +1,46 @@
+case: product-owner/ready-released-once-the-spec-is-answered
+about: "With the reviewer after the product owner in the line (#128), the hold lifts once the reviewer read the body as it is and found no important finding open: the engine moves the issue to ready, with no agent; one it read before the body changed stays; a person's workline:accepted is their yes to the issue as it reads, the rounds spent included."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "Rows lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nSessions feel right to the users.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: d424ff914f28\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=d424ff914f28 round=2 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 10
+        title: Rows lost again
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=111111111111 round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 11
+        title: Rows lost, put to a person
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:accepted]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: b9528f775bfa\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**Question for a person**\n\n<!-- workline:spec-review body=b9528f775bfa round=5 open=1 in=Need stopped -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 10, labels: [workline:to-refine]}
+      - {id: 11, labels: [workline:ready]}
+      - {id: 12, title: "Backlog — product owner", body-contains: "Moved #9 to ready: the reviewer read its spec (round 2): no important finding open"}
+      - {id: 12, body-contains: "Moved #11 to ready"}

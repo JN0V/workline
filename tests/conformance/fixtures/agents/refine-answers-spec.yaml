@@ -1,0 +1,8 @@
+# The product owner answers the reviewer's findings on #9's spec: a
+# Verification of its own rewritten, a Scope that is a person's.
+- refine:
+    issue: 9
+    verification: "A test writes three rows and reads three lines back."
+    scope: "WriteRows in src/export/csv.go."
+    sources: [src/export/csv.go]
+    why: "The reviewer found the Verification proves nothing, the Scope vague."

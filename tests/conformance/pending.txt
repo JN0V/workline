@@ -1,2 +1,8 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+product-owner/ready-held-while-a-spec-finding-is-open
+product-owner/ready-released-once-the-spec-is-answered
+product-owner/refine-answers-the-spec-findings
+reviewer/spec-on-the-forge-reads-a-refined-issue
+reviewer/spec-read-as-it-is-not-read-again
+reviewer/spec-sixth-round-asks-a-person

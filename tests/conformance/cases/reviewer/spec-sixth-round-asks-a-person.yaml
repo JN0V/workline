@@ -1,0 +1,32 @@
+case: reviewer/spec-sixth-round-asks-a-person
+about: "Five reviews in a row left an important finding open on an issue's spec, the product owner answering between them (#128): the sixth round asks no agent; the comment puts a question to a person — accept it, settle it, or start the rounds again — keeps the last review's findings under it, and its record stops the reviewer reading it; an issue whose body it read as it is waits for nothing."
+given:
+  repo: reviewed
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nanswered: 5\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec — 1 findings on the spec.\n\n**Holds it from ready**: 1 important finding open, round 5 of 5.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | out-of-scope | `#4:3` | Important: The Need asks for the README, the Scope leaves it out |\n\nThe reviewer never edits the issue nor moves it: the product owner answers, a person decides.\n\n<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 6
+        title: Read already
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=b9528f775bfa round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: spec-rounds-spent, where: "#4"}]
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["**Question for a person**", "after 5 rounds", "workline:accepted", "The last review (round 5)", "The Need asks for the README", "<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need stopped -->"]
+      - {id: 6, comment-lacks: "stopped"}
