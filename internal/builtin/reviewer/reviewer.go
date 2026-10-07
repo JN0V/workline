@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
@@ -60,6 +61,7 @@ type Settings struct {
 	DiffAlone       bool     `json:"diff-alone"`          // ask the diff-alone facet too, apart, given the change only
 	SpecLenses      []string `json:"spec-lenses"`         // the lenses a spec is read through (#128)
 	SpecLinesMax    int      `json:"spec-lines-max"`      // lines of a spec the lenses are given; the rest cut, said
+	SpecRounds      int      `json:"spec-rounds"`         // on the forge: reviews in a row with a finding open, then a person (#128)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -164,7 +166,7 @@ func Pre(runDir, repo string) int {
 		return settle(runDir, repo, s)
 	case os.Getenv("WORKLINE_PARTS") == "answered":
 		return readLenses(runDir, repo, s)
-	case os.Getenv("WORKLINE_EVENT") == specEvent:
+	case os.Getenv("WORKLINE_EVENT") == specEvent, os.Getenv("WORKLINE_EVENT") == gardening:
 		return prepareSpec(runDir, repo, s)
 	}
 	return prepare(runDir, repo, s)
@@ -1191,6 +1193,12 @@ func settle(runDir, repo string, s Settings) int {
 	if onForge {
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, len(fallback))}})
 	}
+	if sp := st.Spec; sp != nil && sp.Issue > 0 && s.ForgeWrites {
+		// On the forge (#128): one comment on the issue, its record read
+		// back by the product owner's ready.
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"issue": sp.Issue, "sticky": backlog.SpecKey,
+			"body": specComment(v, specRecord(st, v), s.SpecRounds)}})
+	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}
@@ -1388,29 +1396,7 @@ func summary(v Review, issues, failed, unjudged int) string {
 func summaryComment(v Review, issues int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
-	// A decision is not a row of the table: it is asked apart (#126).
-	rows := slices.DeleteFunc(slices.Clone(v.Findings), func(f verdict.Finding) bool { return f.Rule == "decision" })
-	if len(rows) > 0 {
-		// What holds the merge request first, said so: the author reads it
-		// before the warnings (#226).
-		blocks := func(f verdict.Finding) bool { return status([]verdict.Finding{f}) == verdict.Block }
-		sort.SliceStable(rows, func(i, j int) bool { return blocks(rows[i]) && !blocks(rows[j]) })
-		b.WriteString("| | | Where | Finding |\n|---|---|---|---|\n")
-		for _, f := range rows {
-			where := f.Where
-			if where != "" {
-				where = "`" + where + "`"
-			}
-			holds := "warns"
-			if blocks(f) {
-				holds = "**blocks**"
-			}
-			fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", holds, f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
-		}
-		b.WriteString("\n")
-	} else {
-		b.WriteString("No finding on the commits reviewed.\n\n")
-	}
+	b.WriteString(findingsTable(v, "No finding on the commits reviewed."))
 	if len(v.Questions) > 0 {
 		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the change leaves to a person; a reply here is enough, the reviewer does not wait for it.\n\n")
 		for _, q := range v.Questions {
@@ -1423,6 +1409,32 @@ func summaryComment(v Review, issues int) string {
 	}
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes, a person merges.\n\n")
 	b.WriteString(v.Record.String())
+	return b.String()
+}
+
+// findingsTable is the findings as a table, what blocks first (#226), the
+// decisions left out: they are asked apart (#126); none, empty.
+func findingsTable(v Review, empty string) string {
+	var b strings.Builder
+	rows := slices.DeleteFunc(slices.Clone(v.Findings), func(f verdict.Finding) bool { return f.Rule == "decision" })
+	if len(rows) == 0 {
+		return empty + "\n\n"
+	}
+	blocks := func(f verdict.Finding) bool { return status([]verdict.Finding{f}) == verdict.Block }
+	sort.SliceStable(rows, func(i, j int) bool { return blocks(rows[i]) && !blocks(rows[j]) })
+	b.WriteString("| | | Where | Finding |\n|---|---|---|---|\n")
+	for _, f := range rows {
+		where := f.Where
+		if where != "" {
+			where = "`" + where + "`"
+		}
+		holds := "warns"
+		if blocks(f) {
+			holds = "**blocks**"
+		}
+		fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", holds, f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
+	}
+	b.WriteString("\n")
 	return b.String()
 }
 
@@ -1514,13 +1526,16 @@ func committerSettings(repo string) (committer.Settings, error) {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err
 	}
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("settings: %w", err)
+	}
+	if s.SpecRounds < 1 || s.SpecRounds > 20 {
+		return s, fmt.Errorf("settings: spec-rounds: %d is not a number from 1 to 20", s.SpecRounds)
 	}
 	if slices.Contains(s.Lenses, alone) {
 		return s, fmt.Errorf("settings: lenses names %q, a facet asked apart by its own setting, diff-alone", alone)

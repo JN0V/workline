@@ -24,6 +24,7 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -113,6 +114,13 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(fmt.Errorf("settings: %v", err))
 	}
+	// The reviewer after the role in a line reads each spec before it is
+	// ready (#128): its findings given to the agent, ready held on them.
+	line, err := routing.Load(repo)
+	if err != nil {
+		return fail(err)
+	}
+	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
 	var task strings.Builder
 	var fallback []intent.Intention
 	var findings []verdict.Finding
@@ -220,6 +228,13 @@ func Pre(runDir, repo string) int {
 			// it to ready if its sections are there, with no agent.
 			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
 				"issue": is.ID, "why": "its drafts accepted by a person (" + backlog.LabelAccepted + ")", "own": true}})
+		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
+			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, false)) == 0 {
+			// The reviewer read its spec as it is and found no important
+			// finding open: the hold lifts, and the engine moves it to
+			// ready, with no agent (#128).
+			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
+				"issue": is.ID, "why": fmt.Sprintf("the reviewer read its spec (round %d): no important finding open", r.Round), "own": true}})
 		}
 		switch {
 		case !found:
@@ -315,6 +330,10 @@ func Pre(runDir, repo string) int {
 			again = append(again, due{is, st, comments, notes})
 		case st.Judged == "":
 			never = append(never, due{is, st, comments, notes})
+		case cfg.SpecReview && backlog.SpecOpen(is, comments) != nil && backlog.SpecOpen(is, comments).Round != st.Answered:
+			// The reviewer's findings on its spec, not given yet: answered
+			// at this refine (#128).
+			changed = append(changed, due{is, st, comments, notes})
 		case sourcesChanged(repo, st),
 			backlog.PeopleComments(comments) != st.Comments,         // someone wrote since it was read
 			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
@@ -436,7 +455,11 @@ func Pre(runDir, repo string) int {
 		wasRead[d.is.ID] = true
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, front[d.is.ID])
+		review := ""
+		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
+			review = specFindings(d.is, d.st, d.comments, r)
+		}
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, front[d.is.ID]+review)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
@@ -444,6 +467,9 @@ func Pre(runDir, repo string) int {
 		}
 		read := *d.st
 		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
+		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
+			read.Answered = r.Round
+		}
 		read.Keep(d.is.Body)
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
@@ -1146,4 +1172,27 @@ func elsewhere(lines []string, from, to int) string {
 		return ""
 	}
 	return "\n# What the rest of the file says of this share's items\n\nThe lines outside the share that name an id the share holds. An item they say is done, merged or dropped is not opened.\n\n" + b.String()
+}
+
+// specFindings tells the agent the reviewer's findings open on an issue's
+// spec (#128): what holds it from ready, and how it answers them — the
+// sections it may rewrite, its own; a person's asked of its reporter.
+func specFindings(is forge.Issue, st *backlog.State, comments []string, r *backlog.SpecReview) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "The reviewer's findings on its spec, round %d: %d important open, in %s. It stays out of ready until none is open. ", r.Round, r.Open, strings.Join(r.In, ", "))
+	mine := backlog.Revisable(is, st, r)
+	if len(mine) > 0 {
+		fmt.Fprintf(&b, "Answer them with a `refine` giving the whole new text of the sections they lie in that are yours to rewrite: %s. ", strings.Join(mine, ", "))
+	}
+	if theirs := slices.DeleteFunc(slices.Clone(r.In), func(n string) bool { return slices.Contains(mine, n) }); len(theirs) > 0 {
+		fmt.Fprintf(&b, "%s: a person's, never rewritten: `ask` its reporter. ", strings.Join(theirs, ", "))
+	}
+	b.WriteString("The reviewer reads the spec again after your answer.\n")
+	for i := len(comments) - 1; i >= 0; i-- {
+		if strings.Contains(comments[i], backlog.SpecMarker) {
+			fmt.Fprintf(&b, "\n> %s\n", strings.ReplaceAll(clip(marker.ReplaceAllString(comments[i], ""), bodyMax), "\n", "\n> "))
+			break
+		}
+	}
+	return b.String()
 }

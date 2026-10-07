@@ -44,6 +44,10 @@ type Config struct {
 	IgnoredMax   int                // runs nobody answered before the role pauses; 0 never
 	NextMax      int                // the ready issues the report lists first; 0 none (ADR-0031)
 	StuckDays    int                // the days an issue waits on a person before the report says it stuck
+	// SpecReview: the project's line runs the reviewer after the role, so
+	// ready is held while the reviewer's important findings on the spec are
+	// open (#128); set by the caller, from the routing.
+	SpecReview bool
 }
 
 // ReadConfig reads the role's settings: the level, the acts, the moved
