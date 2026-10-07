@@ -792,3 +792,31 @@ written.
 - **Not tried**: GitLab's `due_date` live; a slipped issue moved by date
   live (conformance only); the task's list of milestones with their dates
   live (the run asked no agent: nothing to read).
+
+## 2026-10-07 — a link taken off, a test read as proof, live on GitHub, no agent
+
+JN0V/workline-sandbox, the engine of the branch, `workline run-role
+product-owner --event schedule --forge github --ai none` on a clone, twice.
+Set up by hand: #44 — which #46 waits on by the role's `depend`, kept in
+the record — closed as completed; a parent #47 ("`TestIdleSignOut`
+passes.", "The test `TestIdleWarns` tells the user.") with one sub-issue
+#48, closed as completed, quoting both; a test file holding
+`TestIdleSignOut` committed in the clone only, never pushed.
+
+- **Run 1**: #46's dependency on #44 deleted from GitHub; the report:
+  "Took off the link the role set from #46 to #44: #44 is closed: the wait
+  the role set is over." #29's link to #28 — closed, set by the split of
+  #27 before the parent's state kept `after` — left: the role cannot tell
+  it its own. #47 and #48 given their state.
+- **Run 2**: #47's comment: "Proved: … the test `TestIdleSignOut` in
+  src/auth/idle_test.go, read from the code" and "**Not proved**: … but
+  the code holds no test `TestIdleWarns`"; findings `proof-test-missing`
+  and `parent-to-accept` (1 item not proved).
+- **Put back**: #44 reopened, #46's dependency on #44 added again, the
+  report's body and record comment written back as they were, #47 and #48
+  deleted, the clone's commit dropped.
+- **Not tried**: GitLab — a Premium link deleted, or the engine's line
+  taken out of a body there (conformance only); a plugged forge's
+  `remove-blocker`; a real agent proposing `undepend` on a link whose
+  blocker is open, and a person ticking it live (conformance only); a
+  split's `after` kept and taken off live (conformance only).

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 55c1bc8
+checked: 13d335d
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -519,6 +519,17 @@ person unlinked is no longer one. An issue whose state lists a split
   of what closed it, case, spaces, `` ` ``, `*`, `_` and the final
   punctuation aside, said with where; "not proved" otherwise ("not proved yet" while a part is open). A parent
   without a Verification is said to have none.
+- **A test named as proof** (ADR-0029, amended): an item that names a
+  test in a code span — a test file by its path (`tests/…`, `…_test.go`,
+  `….spec.ts`, `test_….py`), one test in it as `path::name`, a test's own
+  name (`TestX`, `test_x`, `testX`), or any name right after the word
+  "test" or "case" (`backlog.TestNames`) — is proved only when the code
+  at the run's commit holds it too: the file there, the name a word in a
+  test file (`backlog.CodeTests`, `git grep` at `HEAD`); the comment says
+  where. A test the code does not hold leaves the item not proved, its
+  quote said, and a finding `proof-test-missing` (warn) names it: a name
+  is no proof until it is there. Whether the test passes is CI's, not
+  read here.
 - **All its parts closed**: the comment asks a person to accept the need
   by closing the parent, or to reopen a part or open one for what is
   missing, naming first the parts not delivered and the items not proved;
@@ -573,9 +584,46 @@ An issue that cannot start before another is done names it (ADR-0028):
   the split, from 1 (`after: [1]`); checked with the split (`split-after`:
   a place out of range, itself, or a cycle among them), written once the
   children are opened, as `depend` writes it.
-- **The role only adds.** A relation a person set — a link, their own
-  line — is read and kept, never removed; one the role set and a person
-  took off, its blocker still open, is an act undone ("Trust").
+- **The role takes off only its own.** A relation a person set — a link,
+  their own line — is read and kept, never removed; one the role set and
+  a person took off, its blocker still open, is an act undone ("Trust").
+  The role's own are told from a person's by what it keeps: the blockers
+  of each `depend` in its record (`done`), those a split set among its
+  children in the parent's state (`after: {12: [11]}`), and the engine's
+  marked line in a body (`Hand.OwnBlockers`). The task marks them "set by
+  the role".
+
+```yaml
+- undepend: {issue: 14, blocked-by: [13], why: "#14 no longer reads #13's row count"}
+```
+
+A link the role set whose reason is gone is taken off (ADR-0028,
+amended):
+
+- **Its blocker closed** — completed, not planned, a duplicate, or gone
+  from the forge: the wait is over. At each run, with no agent, paused or
+  not, `pre` proposes the engine's own `undepend` for each such link
+  (`Hand.Stale`); it is done whatever the level, never capped nor read as
+  a sample's act. A blocker closed without delivering — not planned, a
+  duplicate, gone — is said (`blocker-not-delivered`, warn): whether the
+  issue still stands without it is a person's to say.
+- **Its blocker still open**, the agent judging it no longer holds: an
+  `undepend` always proposed in the report, a person ticks it.
+- **Checked**: the issue open, 1 to 5 blockers, each still one of its
+  blockers — one gone already left out, none left drops it
+  (`undepend-gone`) — and each the role's own; a person's drops it
+  (`undepend-theirs`). No quote.
+- **Taken off** through `RemoveBlocker` for those in the forge's relation
+  (GitHub's `DELETE …/dependencies/blocked_by/{id}`, GitLab's link
+  deleted; a plugged forge's `remove-blocker`, asked only for a link it
+  keeps), and out of the engine's line for the rest — the line taken out
+  when none is left, the state given the body's digest. The record's
+  `done` loses them: a blocker opened again is not read as a person
+  taking the link off.
+
+Not done: a relation across projects; a split's links set before the
+parent's state kept them (`after`), and a `depend` the record dropped
+once all its blockers closed, both unknown to the role and left.
 
 ### The order, and what waits
 
@@ -716,6 +764,7 @@ The other levels change these (role.yaml, `levels`):
 | ask | act 2, 2 rounds | act 3, 3 rounds | act 5, 3 rounds |
 | split | propose | act 2 | act 4 |
 | depend | propose | act 5 | act 10 |
+| undepend | propose; a closed blocker's: the engine's, done | propose; done | propose; done |
 | rename | propose | act 5 | act 10 |
 | open (import) | act 30 | act 30 | act 30 |
 
@@ -893,7 +942,7 @@ and in the report:
 A title, priority or milestone a person set to a third value is theirs:
 the act is no longer watched, and demotes nothing. An act whose issue is
 closed is no longer watched; a split, once each child is closed or gone
-from the forge (deleted, moved); a depend, once each blocker it added is closed. A move
+from the forge (deleted, moved); a depend, once each blocker it added is closed — the link then taken off by the engine ("What an issue waits on"). A move
 the engine made itself (a slip) and an act a person ticked are not the
 role's choice, and are not watched. The record keeps the newest 200.
 Changing the level never lifts a demotion.

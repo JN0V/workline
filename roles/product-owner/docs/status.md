@@ -12,7 +12,7 @@ issue to `ready` and talks with its reporter until it is, splits a need
 into sub-issues — then says on the parent, as they close, what each
 delivered and which of its Verification is proved, for a person to
 accept — and renames a vague title, orders the backlog
-— an issue that waits on another after it, never offered first — and
+— an issue that waits on another after it, never offered first, a link it set taken off once its blocker closes — and
 moves what slipped, opens its report with what is next and what is
 stuck, flags the issues built on a need a person rewrote — its parts
 read again, every act on them proposed, a ready one moved back to
@@ -56,8 +56,10 @@ on the sandbox (tried.md).
 | The person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
 
 | A parent and its parts (ADR-0029): one comment on the parent, with no agent, edited in place and not at all when unchanged — each part open, closed as completed with the commit, pull or merge request that closed it, or not delivered; each Verification item proved by a quote or "not proved"; all closed, a person asked to accept by closing it, the report's "To accept"; the role never closes a parent; a parent never offered first | JN0V/workline-sandbox on GitHub (#30: a commit, a part not planned, a real agent's run; #10, #27) and on GitLab (#25: a commit, merge request !4; #5, #16), live; conformance `parent-*`, `forge/gitlab-parent-closers` |
+| A test named as proof read from the code (ADR-0029, amended): an item naming a test in a code span — a test file, `path::name`, `TestX`, or a name after "test" or "case" — proved only when the code at the run's commit holds it, the file said; one not there leaves the item not proved, `proof-test-missing` | JN0V/workline-sandbox on GitHub, no agent (#47, #48 made for it, deleted after: one test found in a commit of the clone, one missing); conformance `parent-test-named-read-from-code`. Not on GitLab |
 
 | What an issue waits on (ADR-0028): `depend` and a split's child's `after` written in GitHub's dependencies, or a marked `Blocked by #n.` line in the body on GitLab Free; read back with a person's links and lines; a blocked issue ordered after its open blockers, never `next-ready`; a closed blocker unblocking; the report's "Waiting" | JN0V/workline-sandbox on GitHub (#29 after #28 by a split, #26 and #29 on #25) and on GitLab (#23, #24 on #22, a body line; #22 closed then reopened), live; cycles, a person's link kept, the level, an undo in conformance (`depend-*`, `backlog/*blocker*`, `cycle-*`, `undo-depend-demotes`) |
+| A link the role set taken off once its reason is gone (ADR-0028, amended): its own told from a person's by its record, a split's `after` in the parent's state and the engine's marked line; a closed blocker's link taken off by the engine with no agent, `blocker-not-delivered` when it closed without delivering; one whose blocker is open proposed by the agent (`undepend`), done on a person's tick; a person's never | JN0V/workline-sandbox on GitHub, no agent (#46's dependency on #44, #44 closed then reopened, the link put back; #29's to #28, a split's from before, left); conformance `undepend-*`, `split-child-waits-on-sibling`. Not on GitLab live; not with a real agent's `undepend` |
 
 | The report opens with what is next and what is stuck (ADR-0031), no agent: the first `next-max` ready issues of the order waiting on nothing, with milestone and priority; each issue waiting on a person past `stuck-days` — ready with no pull request nor commit since the label, its reporter not answering, a proposal unticked, an announcement due and unjudged —, with since when; an issue once; rebuilt each run, the report rewritten when it changed | JN0V/workline-sandbox on GitHub (report #5: Next #7, #6; #6's label day read from the timeline) and on GitLab (report #10: the label days of #6, #13, #15 from its label events, #15's question from its note's day), live; workline itself without applying (Next #79; #65, #91, #92 asked today; #83, #85, #87 proposed); conformance `report-*` |
 
@@ -113,11 +115,14 @@ checked.
    priority, tried in conformance only.
 7. **A parent, what is left** (ADR-0029): an agent drafting which
    Verification items look proved in other words, if live use asks; a
-   test named as proof, read from the code; a part of another repository;
+   test named in prose, outside a code span; a test named as proof read
+   live on GitLab; a part of another repository;
    a plugged forge's `closers` tried.
 8. **What an issue waits on, what is left** (ADR-0028): a GitLab Premium
-   link tried live; a relation across projects; removing a link the role
-   set once its reason is gone; the Forgejo sample's `add-blocker`; the
+   link tried live; a relation across projects; a link taken off on
+   GitLab live, and a real agent's `undepend` ticked live; the links a
+   split set before the parent's state kept `after`, unknown to the role;
+   the Forgejo sample's `add-blocker` and `remove-blocker`; the
    developer role taking the `next-ready` issue (#117).
 9. **Next and stuck, what is left** (ADR-0031): an issue truly stuck
    past 14 days seen live (the sandboxes' days are all this week's); the

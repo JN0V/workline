@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 55c1bc8
+checked: 13d335d
 verified: agent:claude-code
 ---
 # Product owner
@@ -54,8 +54,8 @@ At `autonomy: normal`, the default:
 
 | | Acts |
 |---|---|
-| Alone | names an issue's code; sets milestones and priorities, at most 20% of the open issues moved a run; closes a duplicate, its original quoted; announces an obsolete issue, closes it a week later on silence and a second judge's yes; refines to `ready`, Need and Validation as drafts; asks the reporter what is missing; splits a need too big, then says on it what each part delivered ([ADR-0029](../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)); renames a vague title; says what an issue waits on; imports a roadmap file as issues |
-| Proposed | moves past the 20%; an outsider's issue made `ready`; the issues built on a Need, a Scope or a roadmap line a person changed, a ready one back to refine included ([ADR-0032](../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)); at `cautious`, what sets direction: milestones, priorities, duplicates, splits, titles, dependencies, the drafts |
+| Alone | names an issue's code; sets milestones and priorities, at most 20% of the open issues moved a run; closes a duplicate, its original quoted; announces an obsolete issue, closes it a week later on silence and a second judge's yes; refines to `ready`, Need and Validation as drafts; asks the reporter what is missing; splits a need too big, then says on it what each part delivered ([ADR-0029](../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)); renames a vague title; says what an issue waits on, and takes off a link it set once its blocker closes ([ADR-0028](../../docs/adr/0028-an-issue-names-what-it-waits-on.md)); imports a roadmap file as issues |
+| Proposed | moves past the 20%; an outsider's issue made `ready`; the issues built on a Need, a Scope or a roadmap line a person changed, a ready one back to refine included ([ADR-0032](../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)); a link it set taken off while its blocker is open; at `cautious`, what sets direction: milestones, priorities, duplicates, splits, titles, dependencies, the drafts |
 | Left to a person | a draft made final (`workline:accepted`); a split need accepted, by closing it; a box ticked; closing as not planned; undoing an act |
 
 ## A spec read before ready
@@ -140,11 +140,13 @@ roles:
   `workline:draft`, `workline:obsolete`, `workline:ready`); milestones;
   sections written; a comment to an outsider reporter; sub-issues or tasks;
   GitHub's dependencies or GitLab's `is_blocked_by` links (Premium), else a
-  line `Blocked by #12.` in the body.
+  line `Blocked by #12.` in the body — a link it set taken off once its
+  blocker closes.
 - On a split need: one comment, edited in place, listing its parts — open,
   closed as completed with the pull request or commit that closed it, or
   not delivered — and each item of its Verification, proved where a part
-  delivered quotes it, or not proved. Accept the need by closing it.
+  delivered quotes it and a test it names is in the code, or not proved.
+  Accept the need by closing it.
 - `--json`, `--sarif`, `--code-quality` like any role.
 - Each week, with the docs' sample (`workline sample --apply`, no agent):
   one in ten of the acts it did alone that week, on the issue "workline:
