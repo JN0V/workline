@@ -2180,7 +2180,7 @@ func (a *applier) split(c backlog.Proposal) error {
 	closed := map[int]bool{} // children closed already: left as they are
 	for _, ch := range c.Into {
 		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.SplitKey(c.Issue, ch.Title), Title: strings.TrimSpace(ch.Title),
-			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head})
+			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head, Wrote: backlog.Sections})
 		if err != nil {
 			return err
 		}
