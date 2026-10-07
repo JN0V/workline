@@ -65,7 +65,16 @@ func (p *Plan) whatToDo(decide, checks, did int) string {
 	if checks > 0 {
 		items = append(items, fmt.Sprintf("**%s to check** (*To check*): what an issue was built on changed; read it, then tick its box.", plural(checks, "change")))
 	}
-	if decide+checks+accept == 0 && !paused {
+	settle := 0
+	for _, q := range p.Record.Proposed {
+		if q.Proposal != nil && !q.Doable() && q.Proposal.Do != "open" {
+			settle++
+		}
+	}
+	if settle > 0 {
+		items = append(items, fmt.Sprintf("**%s for you to settle** (*To decide*): what the role cannot do — a reporter it stopped writing to, a slip with nowhere to go.", plural(settle, "issue")))
+	}
+	if decide+checks+accept+settle == 0 && !paused {
 		items = append(items, "**Nothing waits on you.** Below: what is next, and what the role did.")
 	}
 	if accept > 0 {
