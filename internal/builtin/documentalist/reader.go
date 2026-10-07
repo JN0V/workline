@@ -96,10 +96,17 @@ func unlinkedRefs(t Tree, p string, lines []line) []Problem {
 	n := 0
 	var hidden hiddenText
 	for _, l := range lines {
-		if l.code || refLink.MatchString(l.text) { // a link's definition is the link
+		if l.code || l.heading > 0 { // a code span ends with its paragraph
+			hidden.span = 0
+		}
+		if l.code {
 			continue
 		}
-		text := wholeLink.ReplaceAllString(hidden.strip(l.text), " ")
+		text := hidden.strip(l.text)
+		if refLink.MatchString(l.text) { // a link's definition is the link
+			continue
+		}
+		text = wholeLink.ReplaceAllString(text, " ")
 		var refs []string
 		refs = append(refs, adrRef.FindAllString(text, -1)...)
 		for _, m := range issueRef.FindAllStringSubmatch(text, -1) {
@@ -321,11 +328,15 @@ func unreachable(t Tree, r Reader, pages []string) []Problem {
 	for len(queue) > 0 {
 		p := queue[0]
 		queue = queue[1:]
+		var hidden hiddenText // a link in a comment or a code span is not one a reader clicks
 		for _, l := range scan(t.Docs[p]) {
+			if l.code || l.heading > 0 {
+				hidden.span = 0
+			}
 			if l.code {
 				continue
 			}
-			for _, target := range linkTargets(codeSpan.ReplaceAllString(l.text, "")) {
+			for _, target := range linkTargets(hidden.strip(l.text)) {
 				if scheme.MatchString(target) {
 					continue
 				}

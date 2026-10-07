@@ -1,5 +1,5 @@
 case: documentalist/reader-references-unlinked
-about: "When gardening, a user page naming a decision record, a doc or an issue without a link — `ADR-0003`, `docs/tech/auth.md`, `#12` as plain text — is reported, once a page, with the lines (#193). A link, a link's definition, and a name in a code span (an example) or an HTML comment, even over several lines, are not; nor a decision record's own bare citations: records are not user pages."
+about: "When gardening, a user page naming a decision record, a doc or an issue without a link — `ADR-0003`, `docs/tech/auth.md`, `#12` as plain text — is reported, once a page, with the lines (#193). A link, a link's definition, and a name in a code span (an example) or an HTML comment, even over several lines, are not — a code span left open ends with its paragraph; nor a decision record's own bare citations: records are not user pages."
 given:
   repo: documented
   setup:
@@ -22,6 +22,12 @@ given:
       two lines #8` is an example too.
 
       [auth]: tech/auth.md
+
+      A stray ` backtick
+      ```
+      code
+      ```
+      And ADR-0006 after the fence is named.
       DOC
       printf '# 1. Go\n\nSupersedes nothing; see ADR-0002 and #3.\n' > docs/adr/0001-go.md
       git add . && git commit -qm 'docs: a guide'
@@ -30,7 +36,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: reference-unlinked, where: docs/guide.md, message: "3 decision, doc or issue named without a link: line 3 `ADR-0003`, line 3 `#12`, line 3 `docs/tech/auth.md`"}
+    - {rule: reference-unlinked, where: docs/guide.md, message: "4 decision, doc or issue named without a link: line 3 `ADR-0003`, line 3 `#12`, line 3 `docs/tech/auth.md`, line 17 `ADR-0006`"}
   no-findings:
     - {rule: reference-unlinked, where: docs/adr/0001-go.md}
     - {rule: reference-unlinked, where: README.md}
