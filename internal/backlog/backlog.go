@@ -1770,6 +1770,9 @@ func (p *Plan) ReportBody() string {
 	if level, why := p.Record.Measure.Suggest(); level != "" {
 		fmt.Fprintf(&b, "\n**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)
 	}
+	if level, why := SuggestFromRecord(p.Record); level != "" {
+		fmt.Fprintf(&b, "\n**Suggested** from the acts done alone: `autonomy: %s` — %s. Set it in the project's settings if you agree; the role never changes it.\n", level, why)
+	}
 	switch r, max := p.Record, p.config.IgnoredMax; {
 	case max == 0:
 		fmt.Fprintf(&b, "\n**Never paused** (ignored-runs-max: 0): the agent is asked on every run, though nobody answered the last %d.\n", r.Ignored)

@@ -784,7 +784,9 @@ its issue, which demotes its kind at the next run ("Trust"). Over the acts
 `did` keeps at the level in force, up to the week's end, 10 or more: more
 than one in ten undone suggests the level below; none undone at `normal`
 suggests `enterprising`; at `cautious`, the report's suggestion stands.
-The sample never changes the setting; a record that does not read is said
+The role's own report says the same suggestion, counted over every act
+`did` keeps at the level in force, beside the one from the proposals
+settled. The sample never changes the setting; a record that does not read is said
 (`acts-not-read`), the docs' sample written still.
 
 ### What is next, what is stuck

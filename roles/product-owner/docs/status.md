@@ -61,7 +61,7 @@ on the sandbox (tried.md).
 
 | A changed need (ADR-0032): a person's rewrite of an issue's Need or Scope found with no agent against what its state kept; its parts read again first with the text as it was and as it is, every act on them proposed (`need-changed`); `unready`, back to refine, always proposed, done on a person's tick; the issues waiting on it — and, its Scope changed, those on the same code — listed; the report's "Changed needs", a box to tick once checked; the same change flagged once | JN0V/workline-sandbox on GitHub (#10's Need rewritten: #12, #13 read again, a planted answer; #13 moved back to refine by a tick), live, no agent called; an imported file's lines changed, the tick on a change, an edit outside the sections in conformance (`changed-*`, `unchanged-need-flags-nothing`, `unready-ticked-moves-back`) |
 
-| The weekly sample of its acts (ADR-0033): each act done alone kept in the record with its day and level (`did`), a tick's and a slip's left out; `workline sample --apply` drawing one in ten of a week's onto their own tracking issue, each with its issue, kind, day, level and whether a person undid it; the level the acts undone suggest — none at `normal` suggests `enterprising`, more than one in ten the level below —, the setting untouched | JN0V/workline-sandbox on GitHub (three acts planted on #33, #35; #35's rename undone by hand; tracking issue #37, #33's order drawn, a rerun editing the comment in place), live, no agent called; conformance `acts-*`, `sample-*` (product-owner) |
+| The weekly sample of its acts (ADR-0033): each act done alone kept in the record with its day and level (`did`), a tick's and a slip's left out; `workline sample --apply` drawing one in ten of a week's onto their own tracking issue, each with its issue, kind, day, level and whether a person undid it; the level the acts undone suggest — none at `normal` suggests `enterprising`, more than one in ten the level below —, the setting untouched; the same suggestion in the role's own report, beside the one from the proposals settled, counted over every act the record keeps at the level | JN0V/workline-sandbox on GitHub (three acts planted on #33, #35; #35's rename undone by hand; tracking issue #37, #33's order drawn, a rerun editing the comment in place), live, no agent called; conformance `acts-*`, `sample-*`, `report-suggests-from-the-acts-done-alone` (product-owner; the report's suggestion in conformance only) |
 | A spec read before ready (#128, ADR-0020): with the reviewer after it in the line, `ready` held while the reviewer has not read the body as it is, a finding is open, or the rounds are spent — the agent's, an accepted draft's, a tick's alike; the findings given at the next refine, its own sections rewritten (`wrote`), a person's asked of the reporter; released by the engine with no agent; `workline:accepted` a person's yes | JN0V/workline-sandbox on GitHub: #44 held, answered, released (planted); #45 held at the sixth round, released by the label (planted); #46 refined by a real agent, read by the reviewer, released; #12 held, its reporter asked the reviewer's question by a real agent (tried.md); conformance `ready-held-while-a-spec-finding-is-open`, `ready-released-once-the-spec-is-answered`, `refine-answers-the-spec-findings` |
 
 Conformance: tests/conformance/cases/product-owner and backlog. GitHub's
@@ -87,9 +87,8 @@ checked.
    outsider or a bot tried live (one account on each sandbox); a
    proposal of a real agent's run ticked, not one planted; the pause
    reached by three real runs; a tick on a plugged forge.
-4. **Autonomy, what is left** (ADR-0026): the sample's suggestion
-   written in the role's own report too, beside the one from the proposals
-   settled at cautious; a rename by a real
+4. **Autonomy, what is left** (ADR-0026): the acts' suggestion seen
+   live in the role's own report; a rename by a real
    agent undone, `ready` taken off and a split's child closed live;
    `workline init`'s question on a terminal; an undone split on GitLab,
    which keeps no reason for a closing.
