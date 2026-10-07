@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: adaa2ea
+checked: 7c8f8f0
 verified: agent:claude-code
 ---
 # Product owner — what it writes
