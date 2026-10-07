@@ -38,6 +38,10 @@ budget (a doc too long first, then an agent's entry point, a section): bring
 it within budget by moving whole parts into a new doc, and linking to it.
 
 - One doc a run.
+- A doc whose task would not fit the role's context budget is not given
+  to the agent (`too-large-to-condense`): a person moves its parts out,
+  and the next doc over its budget is condensed. A card too large to split
+  is reported the same way (`too-large-to-split`).
 - A history doc — a changelog, a decision record, a tried or research
   record — is never the task: moving its parts away rewrites the record;
   its budget stays reported, for a person.

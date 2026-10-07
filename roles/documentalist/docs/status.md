@@ -61,6 +61,11 @@ hold:
   a gardening task waits while its pull request is open. On a copy of
   DomoticsCore with #109 open: the docs judged whole wait, the parts go.
 - **A cap on a run's tokens** (`ai-max-tokens`): conformance only.
+- **A doc too large to condense or split** (`too-large-to-condense`,
+  `too-large-to-split`): reported for a person, the next doc condensed.
+  Replayed on a copy of workline at 14f0db4, a recording agent: the task
+  that stopped the night of 2026-10-07 is not built, the next doc is the
+  task (tried.md, 2026-10-07).
 - **`checked` earned by what was read** (ADR-0014, step 0): a doc whose
   sources did not all go whole into its task is told `checked` cannot move,
   and a fix moving it is refused (`checked-unread`), on every task the

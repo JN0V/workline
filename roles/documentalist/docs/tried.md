@@ -803,3 +803,17 @@ were counted: both left out now. docs/BACKLOG.md and
 docs/backlog-parked.md, archived, are skipped by workline's config. The
 pages flagged hold 139k characters: about 115k tokens estimated, four
 pages a task of 40k characters, for the agent part (#256); no agent run.
+
+On 2026-10-07, the gardening night stopped at the documentalist, the
+product owner after it never run: its second round's task, condensing
+docs/spec/backlog-acts.md, was 66,852 characters with the doc whole,
+numbered (about 61k tokens, the role's budget 48k); the engine refused
+the prompt as an engine error, which blocked. The doc had grown from 51k
+to 58k characters that day (#249, #253, #262), and condensing never
+checked a task's size. Replayed on a clone at 14f0db4 with the run's
+artifact and a recording agent, no tokens: the same 66,852 characters.
+With the fix, the doc is reported (`too-large-to-condense`) and
+docs/spec/conformance.md condensed instead; the product owner ran after
+the documentalist (`fail-fast` off on schedule, ADR-0037). A prompt
+over the budget, whatever the role, is now a `prompt-over-budget`
+finding, the run going on without the agent.

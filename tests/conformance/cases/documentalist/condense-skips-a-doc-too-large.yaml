@@ -1,0 +1,16 @@
+case: documentalist/condense-skips-a-doc-too-large
+about: "When gardening, a doc over its budget whose task would not fit the role's context budget is not given to the agent: it is reported, for a person, and the next doc over its budget is condensed. workline's docs/spec/backlog-acts.md, 58,000 characters, made a prompt the engine refused, and the night's line stopped on it (2026-10-07)."
+given:
+  repo: untidy
+  setup:
+    - "git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"
+    - "printf '# A long doc\\n\\n' > docs/a-long.md && for i in $(seq 1 900); do echo \"Line $i of a doc far over its budget, too long to give whole.\"; done >> docs/a-long.md && git add docs/a-long.md && git commit -qm 'docs: a long doc'"
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-part"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: condense}]
+  applied: [patch]
+  findings: [{rule: too-large-to-condense, where: docs/a-long.md}]
+  files:
+    docs/sessions.md: {contains: "(cards/signing-out.md)"}

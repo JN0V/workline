@@ -70,25 +70,39 @@ The card as it is now, with its line numbers:
 	return b.String()
 }
 
-// pickCondense chooses the one doc a gardening run condenses: the first with
-// the strongest budget problem. One doc a run keeps each change reviewable.
-// A history doc is never chosen: moving its parts away rewrites the record
-// (WaterMeter's CHANGELOG.md, chosen and refused two nights running, ADR-0014
-// step 4); its budget is reported, for a person.
-func pickCondense(problems []Problem) *condenseTask {
+// condenseCandidates are the docs a gardening run may condense, the first
+// with the strongest budget problem first: the run takes the first whose
+// task fits. One doc a run keeps each change reviewable. A history doc is
+// never one: moving its parts away rewrites the record (WaterMeter's
+// CHANGELOG.md, chosen and refused two nights running, ADR-0014 step 4);
+// its budget is reported, for a person.
+func condenseCandidates(problems []Problem) []*condenseTask {
+	var out []*condenseTask
+	seen := map[string]bool{}
 	for _, rule := range condensable {
 		for _, p := range problems {
 			if p.Rule != rule {
 				continue
 			}
 			doc, _, _ := strings.Cut(p.Where, "#")
-			if isHistory(doc) {
+			if isHistory(doc) || seen[doc] {
 				continue
 			}
-			return &condenseTask{Doc: doc, Keys: []string{p.Key}}
+			seen[doc] = true
+			out = append(out, &condenseTask{Doc: doc, Keys: []string{p.Key}})
 		}
 	}
-	return nil
+	return out
+}
+
+// tooLargeToRewrite says why a doc was not given to the agent whole, to be
+// condensed or split: its task would not fit the role's context budget
+// (workline's docs/spec/backlog-acts.md, 58,000 characters, 2026-10-07).
+// The doc's budget problems stay, for a person, who moves whole parts of
+// it out by hand.
+func tooLargeToRewrite(kind, doc string, chars, max int) verdict.Finding {
+	return verdict.Finding{Rule: "too-large-to-" + kind, Where: doc, Level: "warn",
+		Message: fmt.Sprintf("not given to the agent to %s: its task would be %d characters, over the %d a task holds to fit the role's context budget; a person moves whole parts of it into docs of their own", kind, chars, max)}
 }
 
 // writeCondenseTask writes the question for the agent: the doc with its line
