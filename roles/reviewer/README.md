@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 3bc3de5
+checked: 604ed00
 verified: agent:claude-code
 ---
 # Reviewer
@@ -264,8 +264,9 @@ routing:
   — accept it as it reads (`workline:accepted`), settle it and set
   `workline:ready`, or delete the comment for five rounds more — and the
   reviewer stops reading it.
-- **A review not whole** (a lens failed, the tokens spent) records no
-  body: read again at the next run, ready still held.
+- **A review not whole** (a lens failed, the tokens spent) keeps the
+  last record, its body unread: read again at the next run, the rounds
+  counted as before, ready still held.
 - **In CI**: judged, then applied; the reviewer reads what an earlier run
   refined, so a round takes two nights. `forge-writes: false` writes no
   comment: ready then stays held, `spec-not-reviewed`.
