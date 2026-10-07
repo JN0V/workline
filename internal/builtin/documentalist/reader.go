@@ -49,8 +49,11 @@ func userPages(t Tree, r Reader) []string {
 // not set is said, never skipped silently.
 func ReaderChecks(t Tree, r Reader) []Problem {
 	var out []Problem
-	for name, v := range map[string]int{"paragraph-words": r.ParagraphWords, "cell-words": r.CellWords} {
-		if v <= 0 {
+	for _, set := range []struct {
+		name string
+		v    int
+	}{{"paragraph-words", r.ParagraphWords}, {"cell-words", r.CellWords}} {
+		if name, v := set.name, set.v; v <= 0 {
 			out = append(out, Problem{Rule: "setting-missing", Key: "setting-missing reader." + name,
 				Message: fmt.Sprintf("reader.%s is not set, so this size was not checked; set it, or turn the rule off with `enforce`", name)})
 		}
@@ -77,8 +80,8 @@ func ReaderChecks(t Tree, r Reader) []Problem {
 
 var (
 	// A link, its text included: what it says is linked; the end of one
-	// whose text began on the line above; a code span, an example.
-	wholeLink = regexp.MustCompile("!?\\[[^\\]]*\\]\\([^)]*\\)|\\[[^\\]]*\\]\\[[^\\]]*\\]|\\]\\([^)]*\\)|<[a-z]+://[^>]*>|https?://\\S+|<!--.*?-->|`[^`]*`")
+	// whose text began on the line above.
+	wholeLink = regexp.MustCompile(`!?\[[^\]]*\]\([^)]*\)|\[[^\]]*\]\[[^\]]*\]|\]\([^)]*\)|<[a-z]+://[^>]*>|https?://\S+`)
 	adrRef    = regexp.MustCompile(`\bADR[- ]?\d+\b`)
 	issueRef  = regexp.MustCompile(`(?:^|[\s(,;:])(#\d+)\b`)
 	docRef    = regexp.MustCompile(`[\w./-]*\w\.md\b`)
@@ -91,11 +94,12 @@ var (
 func unlinkedRefs(t Tree, p string, lines []line) []Problem {
 	var found []string
 	n := 0
+	var hidden hiddenText
 	for _, l := range lines {
-		if l.code {
+		if l.code || refLink.MatchString(l.text) { // a link's definition is the link
 			continue
 		}
-		text := wholeLink.ReplaceAllString(l.text, " ")
+		text := wholeLink.ReplaceAllString(hidden.strip(l.text), " ")
 		var refs []string
 		refs = append(refs, adrRef.FindAllString(text, -1)...)
 		for _, m := range issueRef.FindAllStringSubmatch(text, -1) {
@@ -125,6 +129,71 @@ func unlinkedRefs(t Tree, p string, lines []line) []Problem {
 	}
 	return []Problem{{Rule: "reference-unlinked", Where: p, Key: "reference-unlinked " + p, Size: n,
 		Message: fmt.Sprintf("%d decision, doc or issue named without a link: %s%s; make each a link the reader can follow", n, strings.Join(found, ", "), more)}}
+}
+
+// hiddenText takes out of prose, line after line, what a reader does not
+// read as a reference: HTML comments and code spans (examples), either of
+// which may run over several lines. A code span ends with its paragraph.
+type hiddenText struct {
+	comment bool
+	span    int // the backticks the open code span closes with; 0 when none is open
+}
+
+func (h *hiddenText) strip(text string) string {
+	if strings.TrimSpace(text) == "" {
+		h.span = 0
+	}
+	var out strings.Builder
+	for text != "" {
+		switch {
+		case h.comment:
+			i := strings.Index(text, "-->")
+			if i < 0 {
+				return out.String()
+			}
+			text, h.comment = text[i+3:], false
+		case h.span > 0:
+			i := closingRun(text, h.span)
+			if i < 0 {
+				return out.String()
+			}
+			text, h.span = text[i+h.span:], 0
+		default:
+			c, b := strings.Index(text, "<!--"), strings.IndexByte(text, '`')
+			switch {
+			case c < 0 && b < 0:
+				out.WriteString(text)
+				return out.String()
+			case c >= 0 && (b < 0 || c < b):
+				out.WriteString(text[:c] + " ")
+				text, h.comment = text[c+4:], true
+			default:
+				out.WriteString(text[:b] + " ")
+				n := len(text[b:]) - len(strings.TrimLeft(text[b:], "`"))
+				text, h.span = text[b+n:], n
+			}
+		}
+	}
+	return out.String()
+}
+
+// closingRun is where a run of exactly n backticks starts in text, or -1.
+func closingRun(text string, n int) int {
+	for i := 0; i < len(text); {
+		if text[i] != '`' {
+			i++
+			continue
+		}
+		j := i
+		for j < len(text) && text[j] == '`' {
+			j++
+		}
+		if j-i == n {
+			return i
+		}
+		i = j
+	}
+	return -1
 }
 
 var (
