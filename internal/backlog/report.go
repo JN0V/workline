@@ -60,7 +60,7 @@ func (p *Plan) whatToDo(decide, checks, did int) string {
 	}
 	accept := len(p.Record.ToAccept)
 	if decide > 0 {
-		items = append(items, fmt.Sprintf("**%s to decide** (*To decide*), about a minute each: tick a box to agree, and the role does it at its next run; leave it unticked to say no.", plural(decide, "proposal")))
+		items = append(items, fmt.Sprintf("**%s to decide** (*To decide*): tick a box to agree, and the role does it at its next run; leave it unticked to say no.", plural(decide, "proposal")))
 	}
 	if checks > 0 {
 		items = append(items, fmt.Sprintf("**%s to check** (*To check*): what an issue was built on changed; read it, then tick its box.", plural(checks, "change")))
@@ -112,11 +112,16 @@ func (p *Plan) toDecide() (string, int) {
 			line = offer(*q.Proposal)
 		case q.Proposal != nil && q.Proposal.Do == "open", q.Key != "":
 			line = strings.TrimSuffix(line, ".") + ". Opened when the import runs again, or open it yourself."
-		default:
-			line = strings.TrimSuffix(plainLine(line), ".") + ". The engine cannot do this one: do it yourself, then tick it to clear it."
+		case q.Undrafted():
+			line = plainLine(line) + " Drafted when the agent next reads it."
 		}
 		box := "- [ ] " + line + " " + TickMarker(q.TickKey())
-		n++
+		if q.Agreed != "" {
+			// Ticked already: nothing left to decide, only to say.
+			box = fmt.Sprintf("- Ticked by %s: %s It is drafted, then done, at the next run that reads it with an agent.", q.Agreed, plainLine(q.Line))
+		} else {
+			n++
+		}
 		if q.Issue == 0 {
 			opens = append(opens, box)
 			continue
@@ -144,7 +149,7 @@ func (p *Plan) toDecide() (string, int) {
 	if b.Len() == 0 {
 		return "", 0
 	}
-	return "\n## To decide\n\nTick a box to agree: the engine does it at its next run, as written. Leave it unticked to say no, or do it yourself.\n" + b.String(), n
+	return "\n## To decide\n\nTick a box to agree: the engine does it at its next run, as written. Leave it unticked to say no.\n" + b.String(), n
 }
 
 // backToAct is the boxes that set a kind of act back to act, after a
@@ -307,12 +312,9 @@ func addSections(added []string) string {
 			drafts = append(drafts, n)
 		}
 	}
-	what := fmt.Sprintf("Add the section %s to it", and(added))
-	if len(added) > 1 {
-		what = fmt.Sprintf("Add the sections %s to it", and(added))
-	}
+	what := fmt.Sprintf("Add %s to it", and(added))
 	if len(drafts) > 0 {
-		what += fmt.Sprintf(" — %s drafted from its words, marked for you to correct", and(drafts))
+		what += fmt.Sprintf(" (%s as drafts for you to correct)", and(drafts))
 	}
 	return what + "."
 }
@@ -332,10 +334,7 @@ func plainLine(line string) string {
 	for _, n := range strings.Split(m[1], ", ") {
 		added = append(added, strings.TrimSuffix(n, " (draft)"))
 	}
-	if m[2] == "" {
-		return addSections(added)
-	}
-	return addSections(added) + " Why: " + m[2]
+	return addSections(added) // its reason, recorded with it, said the same again
 }
 
 // and joins names as a sentence says them: "Need", "Need and Scope",

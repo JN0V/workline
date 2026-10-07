@@ -18,4 +18,4 @@ expect:
       - {id: 9, body-contains: "Some rows are lost.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [workline:to-refine], comment-contains: "sources: [src/export/csv.go]"}
       - {id: 9, body-lacks: "## Need"}
       - {id: 13, title: "Backlog — product owner", body-contains: "Refined #9: Verification, Scope."}
-      - {id: 13, body-contains: "**#9 Rows lost**\n\n- [ ] Add the sections Need and Validation to it — Need and Validation drafted from its words, marked for you to correct. Why: The issue says what is wrong, not how it will be proved. <!-- workline:proposal=9/refine -->"}
+      - {id: 13, body-contains: "**#9 Rows lost**\n\n- [ ] Add Need and Validation to it (Need and Validation as drafts for you to correct). Why: The issue says what is wrong, not how it will be proved. <!-- workline:proposal=9/refine -->"}

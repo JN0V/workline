@@ -16,10 +16,10 @@ given:
         title: "Backlog — product owner"
         body: "An older report."
         labels: []
-        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\n  - {issue: 8, act: close-obsolete, line: 'Close #8 as obsolete: the loop'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop', proposal: {do: close, issue: 7, reason: obsolete, quote: {path: src/export/csv.go, text: the loop}, why: The loop reaches the last row.}}\n  - {issue: 8, act: close-obsolete, line: 'Close #8 as obsolete: the loop'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
 run: {role: product-owner, event: schedule, ai: fake:close-obsolete-nine}
 expect:
   forge:
     issues:
       - {id: 9, closed: false}
-      - {id: 10, body-contains: "- [ ] Close #7 as obsolete: the loop. The engine cannot do this one: do it yourself, then tick it to clear it. <!-- workline:proposal=7/close-obsolete -->\n\n**#9 Last row missing**\n\n- [ ] Announce it obsolete, on the issue: closed at a later run if nobody writes on it and a second judge agrees. src/export/csv.go says", comment-lacks: "issue: 8"}
+      - {id: 10, body-contains: "**#7 Export drops the last row**\n\n- [ ] Close it as obsolete: src/export/csv.go says `the loop` — The loop reaches the last row. <!-- workline:proposal=7/close-obsolete -->\n\n**#9 Last row missing**\n\n- [ ] Announce it obsolete, on the issue: closed at a later run if nobody writes on it and a second judge agrees. src/export/csv.go says", comment-lacks: "issue: 8"}

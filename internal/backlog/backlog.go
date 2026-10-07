@@ -7,6 +7,7 @@ package backlog
 import (
 	"crypto/sha256"
 	"fmt"
+	"maps"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -163,6 +164,10 @@ type Pending struct {
 	// Since is the day it was first proposed, YYYY-MM-DD: the report says
 	// it stuck past stuck-days (ADR-0031).
 	Since string `yaml:"since,omitempty"`
+	// Agreed is who of the project ticked it, kept for one recorded
+	// without its act (Undrafted): drafted, then done, at the next run
+	// that reads its issue with an agent (ADR-0025, amended).
+	Agreed string `yaml:"agreed,omitempty"`
 }
 
 // Closing is one issue the role closed.
@@ -318,14 +323,15 @@ type Plan struct {
 	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
 	settings  map[string]Setting
 	config    Config
-	bodies    []string        // their bodies, to find an import again
-	seen      map[string]bool // the imports this run decided
-	read      []int           // the issues this run read
-	hand      *Hand           // what people did on the report since the last run
-	ticked    map[string]bool // the proposals ticked this run decided, done or dropped: they leave the report
-	said      []string        // what the report says of the boxes ticked
-	added     map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
-	dropped   map[int][]int   // the blockers this run's undepend acts take off
+	bodies    []string          // their bodies, to find an import again
+	seen      map[string]bool   // the imports this run decided
+	read      []int             // the issues this run read
+	hand      *Hand             // what people did on the report since the last run
+	ticked    map[string]bool   // the proposals ticked this run decided, done or dropped: they leave the report
+	agreed    map[string]string // the proposals recorded without their act, ticked by a person and read again this run: the agent's act on them is theirs
+	said      []string          // what the report says of the boxes ticked
+	added     map[int][]int     // the blockers this run's depend acts add, for the next act's cycle check
+	dropped   map[int][]int     // the blockers this run's undepend acts take off
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -454,6 +460,13 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				dropped(c, "once-a-run", c.Do+": one an issue a run; the first that passed its check is kept")
 			}
 			continue
+		}
+		if who, ok := p.agreed[c.key()]; ok && c.Ticked == "" {
+			// A proposal recorded without its act, ticked: the act the
+			// agent drafted now is the person's yes.
+			c.Ticked = who
+			delete(p.agreed, c.key())
+			p.ticked[c.key()] = true
 		}
 		once := c.Do == "split" || c.Do == "rename"
 		if !once {
@@ -600,6 +613,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			p.Decisions = append(p.Decisions, *extra)
 		}
 	}
+	for _, key := range slices.Sorted(maps.Keys(p.agreed)) {
+		// Ticked, read again, and the agent drafted no such act: the
+		// person is told, the box leaves the report.
+		p.ticked[key], p.Changed = true, true
+		p.said = append(p.said, fmt.Sprintf("- %s, ticked by %s: read again, the agent found nothing of it to draft now; its box leaves the report.", key, p.agreed[key]))
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "tick-not-drafted", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
+			Message: fmt.Sprintf("%s was ticked by %s, recorded without its act; read again, the agent drafted none", key, p.agreed[key])})
+	}
 	p.keepProposed()
 	p.settleChanges()
 	p.pause()
@@ -693,9 +714,31 @@ func (p *Plan) readTicks() {
 			p.said = append(p.said, fmt.Sprintf("- %s set back to act by %s.", kind, t.Who()))
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "back-to-act", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
 				Message: fmt.Sprintf("%s set back to act by %s's tick in the report", kind, t.Who())})
+		case q != nil && q.Undrafted() && slices.Contains(p.read, q.Issue):
+			p.agreed[t.Key] = t.Who() // read again this run: the act drafted is done
+		case q != nil && q.Undrafted():
+			// Kept with who ticked it: the box is not asked again.
+			for k := range p.Record.Proposed {
+				if r := &p.Record.Proposed[k]; r.TickKey() == t.Key && r.Agreed != t.Who() {
+					r.Agreed, p.Changed = t.Who(), true
+				}
+			}
 		case q != nil && !q.Doable():
 			p.Changed, p.ticked[t.Key] = true, true
 			p.said = append(p.said, fmt.Sprintf("- Ticked by %s, not something the engine does — do it by hand: %s", t.Who(), q.Line))
+		}
+	}
+}
+
+// readAgreed has the proposals recorded without their act, ticked at an
+// earlier run and kept with who ticked them, done once their issue is read
+// again: the act the agent drafts is that person's yes.
+func (p *Plan) readAgreed() {
+	for _, q := range p.Record.Proposed {
+		if q.Agreed != "" && q.Undrafted() && slices.Contains(p.read, q.Issue) {
+			if _, ok := p.agreed[q.TickKey()]; !ok {
+				p.agreed[q.TickKey()] = q.Agreed
+			}
 		}
 	}
 }
@@ -775,7 +818,7 @@ func (p *Plan) keepProposed() {
 		case p.ticked[key]:
 			settled = true // a person's tick, done or said why not
 			m.Ticked++
-		case q.Capped && slices.Contains(p.read, q.Issue):
+		case (q.Capped || q.Undrafted()) && slices.Contains(p.read, q.Issue):
 			settled = true // read again: the agent decided it anew, or not at all
 		case settled && !q.Capped:
 			m.Other++
@@ -813,6 +856,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 		return err
 	}
 	p.open, p.seen, p.issues, p.ticked, p.added, p.dropped = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}, map[int][]int{}
+	p.agreed = map[string]string{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is
@@ -873,6 +917,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 			Message: fmt.Sprintf("%s: %s is back to propose until a person sets it to act", u.Evidence, u.Act)})
 	}
 	p.readTicks()
+	p.readAgreed()
 	return nil
 }
 
@@ -1949,7 +1994,7 @@ func CappedByRole(f forge.Backlog, role string, open []forge.Issue) []int {
 	}
 	var ids []int
 	for _, q := range r.Proposed {
-		if q.Capped && q.Issue > 0 {
+		if (q.Capped || q.Undrafted()) && q.Issue > 0 {
 			ids = append(ids, q.Issue)
 		}
 	}

@@ -14,7 +14,7 @@ given:
         title: "Backlog — product owner"
         body: "## Proposed\n\n- [ ] Close #7 as obsolete: the loop <!-- workline:proposal=7/close-obsolete -->\n"
         labels: []
-        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop'}\nignored: 3\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop', proposal: {do: close, issue: 7, reason: obsolete, quote: {path: src/export/csv.go, text: the loop}, why: The loop reaches the last row.}}\nignored: 3\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   agent-calls: 1
