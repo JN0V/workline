@@ -1,0 +1,21 @@
+case: documentalist/reader-flow-headings-of-the-project
+about: "A project names the headings that explain a flow in its docs' language (`reader.flow-headings`), matched as words in any case and alphabet (#193): with `[fonctionnement]`, a page headed \"Fonctionnement du panier\" needs a diagram; \"How it works\", no longer listed, does not, nor a word that only holds the heading (\"Dysfonctionnements\")."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {reader: {flow-headings: [fonctionnement]}}}}
+  setup:
+    - |
+      printf '# Boutique\n\n[Panier](docs/panier.md), [guide](docs/guide.md), [incidents](docs/incidents.md).\n' > README.md
+      printf '# Panier\n\n## Fonctionnement du panier\n\nLa commande part vers l’entrepôt.\n' > docs/panier.md
+      printf '# Guide\n\n## How it works\n\nThe order goes to the warehouse.\n' > docs/guide.md
+      printf '# Incidents\n\n## Dysfonctionnements connus\n\nAucun.\n' > docs/incidents.md
+      git add . && git commit -qm 'docs: pages'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: flow-without-diagram, where: docs/panier.md, message: "heading at line 3 names a flow (\"fonctionnement\""}
+  no-findings:
+    - {rule: flow-without-diagram, where: docs/guide.md}
+    - {rule: flow-without-diagram, where: docs/incidents.md}
