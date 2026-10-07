@@ -28,5 +28,5 @@ expect:
     issues:
       - id: 4
         comments: 2
-        comment-contains: ["**Question for a person**", "after 5 rounds", "workline:accepted", "The last review (round 5)", "The Need asks for the README", "<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need stopped -->"]
+        comment-contains: ["**Question for a person**", "after 5 rounds", "the reviewer 5 rounds more", "workline:accepted", "The last review (round 5)", "The Need asks for the README", "<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need stopped -->"]
       - {id: 6, comment-lacks: "stopped"}

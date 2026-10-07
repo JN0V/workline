@@ -117,11 +117,11 @@ func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, i
 		rec := *w.prior
 		rec.Stopped = true
 		v := Review{Subject: "spec", Spec: where, Status: verdict.Pass,
-			Summary: fmt.Sprintf("%s: %d important findings still open after %d rounds: put to a person, not read again", where, rec.Open, rec.Round),
+			Summary: fmt.Sprintf("%s: %d important %s still open after %d rounds: put to a person, not read again", where, rec.Open, plural(rec.Open, "finding", "findings"), rec.Round),
 			Findings: []verdict.Finding{{Rule: "spec-rounds-spent", Where: where, Level: "warn",
-				Message: fmt.Sprintf("its spec answered %d times, %d important findings still open: a question for a person, on the issue; ready stays held until they decide", rec.Round, rec.Open)}}}
+				Message: fmt.Sprintf("its spec answered %d times, %d important %s still open: a question for a person, on the issue; ready stays held until they decide", rec.Round, rec.Open, plural(rec.Open, "finding", "findings"))}}}
 		if s.ForgeWrites {
-			fallback := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec)}}}
+			fallback := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec, s.SpecRounds)}}}
 			if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 				return nil, nil, fail(err), false
 			}
@@ -171,7 +171,7 @@ func specComment(v Review, r backlog.SpecReview, rounds int) string {
 		b.WriteString("Not read whole: the reviewer reads it again at the next run; ready waits.\n\n")
 	case r.Open > 0:
 		fmt.Fprintf(&b, "**Holds it from ready**: %d important %s open, round %d of %d. The product owner answers at its next refine, rewriting what is its own in %s; the reviewer then reads the spec again. A person may accept the issue as it reads with `%s`.\n\n",
-			r.Open, map[bool]string{true: "finding", false: "findings"}[r.Open == 1], r.Round, rounds, strings.Join(r.In, ", "), backlog.LabelAccepted)
+			r.Open, plural(r.Open, "finding", "findings"), r.Round, rounds, strings.Join(r.In, ", "), backlog.LabelAccepted)
 	default:
 		b.WriteString("No important finding open: the product owner may move it to ready.\n\n")
 	}
@@ -190,12 +190,12 @@ func specComment(v Review, r backlog.SpecReview, rounds int) string {
 
 // stopComment is the comment once the rounds are spent: a question to a
 // person, the last review's findings kept under it.
-func stopComment(w waiting, r backlog.SpecReview) string {
+func stopComment(w waiting, r backlog.SpecReview, rounds int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer**, its spec — %d important %s still open after %d rounds between the product owner and the reviewer.\n\n",
-		r.Open, map[bool]string{true: "finding", false: "findings"}[r.Open == 1], r.Round)
-	fmt.Fprintf(&b, "**Question for a person**: is the spec good enough to build? Accept it as it reads with `%s`; or settle the findings below yourself, editing the spec, then set `%s`; or delete this comment to give the product owner and the reviewer %s more. Until then the reviewer does not read it again, and it is not moved to ready.\n\n",
-		backlog.LabelAccepted, backlog.LabelReady, "the same rounds")
+		r.Open, plural(r.Open, "finding", "findings"), r.Round)
+	fmt.Fprintf(&b, "**Question for a person**: is the spec good enough to build? Accept it as it reads with `%s`; or settle the findings below yourself, editing the spec, then set `%s`; or delete this comment to give the product owner and the reviewer %d rounds more. Until then the reviewer does not read it again, and it is not moved to ready.\n\n",
+		backlog.LabelAccepted, backlog.LabelReady, rounds)
 	if prev := lastFindings(w.before); prev != "" {
 		fmt.Fprintf(&b, "The last review (round %d):\n\n%s\n\n", r.Round, prev)
 	}
