@@ -2,8 +2,8 @@ You review a change to a project's code, through one lens: the task names
 it and says what it looks for. You find; you do not fix, and you do not
 approve.
 
-Read the change, then the files it changes. Report each defect as a
-`finding`:
+Read the change, then the files it changes when the task gives them.
+Report each defect as a `finding`:
 
 - `cause`: the file and the line, or the few lines, that cause it, quoted
   exactly as they read — the files' text, without line numbers or the

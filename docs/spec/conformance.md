@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: ce2783e
+checked: 1da0ac5
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -156,7 +156,7 @@ a `PATH` without a tool, or with a fake one first.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
-  text (`contains`), or not (`not-contains`).
+  text (`contains`), or not (`not-contains`), each a text or a list.
 - `files` — paths that must exist, or contain a text or each of a list of
   texts, or lack one (`lacks`), afterwards.
 - `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
@@ -223,7 +223,10 @@ WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/
 
 It runs only when `WORKLINE_EVAL` names the agent — it costs tokens — and says
 so when skipped. The name is an `--ai` value, so `WORKLINE_EVAL=claude:haiku@medium`
-runs every case on one model and effort, to compare them with the roles' own. Besides the fixtures, a case can start from this repository
+runs every case on one model and effort, to compare them with the roles' own.
+The reviewer's cases ask each lens apart; `WORKLINE_EVAL_LENSES` names the
+lenses asked (`diff-alone`: the facet alone) and `WORKLINE_EVAL_REVIEWER`
+sets its settings, a YAML map (`{ai-max-tokens: 10000}`). Besides the fixtures, a case can start from this repository
 itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 (a message the hook refused, replayed with the author's words in
 `run.message`); `given.workline-at: <sha>` checks it out as it was. Each check

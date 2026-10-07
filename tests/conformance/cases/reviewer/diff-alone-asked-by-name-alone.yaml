@@ -1,0 +1,13 @@
+case: reviewer/diff-alone-asked-by-name-alone
+about: "`--lenses diff-alone` asks the facet alone, whatever its setting (#126): one call holding the change only, then its judges."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {diff-alone: false}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: diff-alone}, ai: "fake:review-diff-alone-only"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-diff-alone}, {task: judge, for: judge/01}]
+  summary: "lenses: diff-alone"
+  findings: [{rule: diff-alone, where: "calc/calc.go:11"}]

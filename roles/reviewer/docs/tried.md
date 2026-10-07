@@ -580,3 +580,56 @@ a person**, its cause quoted from #41; nothing judged, nothing opened.
 - **Not tried**: on a merge request in CI (the released engine runs
   there); a lens marking a true defect as a decision; five runs
   (ADR-0014).
+
+## 2026-10-06 — the diff alone (#126)
+
+Offline first, no tokens: a recording agent (each lens answering nothing),
+this branch's engine, the facet on (`--lenses …,diff-alone`).
+
+| Prompt | Characters | Tokens (711 + 0.82 a character) |
+|---|---|---|
+| #146's review at `5be9afd`, the lenses together | 88,280 | 73.1k |
+| #146's review, the diff-alone facet | 64,198 | 53.4k |
+| the evaluation's twelve cases, a lens apart (average) | 5,378 to 5,552 | 5.1k to 5.3k |
+| the evaluation's twelve cases, the diff-alone facet (average) | 4,777 (4,444 to 5,152) | 4.6k |
+
+- **Its size is the change's**: on #146 the diff is 60k characters
+  (53k with no line around the hunks): cheap on a small change, a third
+  more on a large review.
+
+**The measure**, one run, real: the twelve cases of
+tests/evaluation/cases/reviewer, the facet alone (`WORKLINE_EVAL_LENSES=
+diff-alone`), `ai-max-tokens: 10000` a case, one case at a time, a stop
+past 15k a case or 120k in all; Sonnet finding, Opus judging (`model`).
+Rows in results.tsv.
+
+| | #90's step 1 (three lenses apart) | The diff-alone facet alone |
+|---|---|---|
+| Planted defects shown on the change | correctness 3/3, edge cases 2/3 (the third sent outside, since #224 on the change), tests 3/3 | 10/11: correctness 3/3, edge cases 2/3, tests 3/3 |
+| Raised by the lens of the defect's kind | 3, 2, 2 | — (one facet): 5 important, 4 verified, one not judged; 4 nits (the three tests defects, a negative `Return`) |
+| Important findings shown, nothing planted | 2 (one true) | 0 |
+| Nits shown, nothing planted | 9 | 1, true (the checkout's test omits a bad coupon) |
+| Clean changes | one important finding on the rename | nothing |
+| Tokens in / out | 275k / 26k | 77.2k / 4.9k (17 calls) |
+
+- **Missed**: the empty cart's mean, its answer not reading twice (a
+  finding holding two kinds): `lens-failed`, not a miss of the facet's
+  reading. A second important finding on the coupon defect left
+  unjudged, the case's 10k spent.
+- **Nothing added**: every defect it showed, the lenses showed too (step
+  1, and #224 for the guard). Its worth would be a defect the context
+  explains away; no case plants one.
+- **Decided**: `diff-alone: false` by default; on, it costs one call the
+  change's size each run.
+- **The unread answer, not explained**: its text went with the test's
+  folder. Not a cut (0.9k tokens out for both answers, no cap) and not a
+  fence (read already); the two errors, `line 1: did not find expected
+  key` then `proposal 2 holds 2 kinds`, say a YAML shape the model wrote
+  wrong. **Fixed**: the evaluation now prints a part's unread answers in
+  its log; no mend written without the answer to test it on.
+- **Haiku named, ours**: Sonnet answered the clean rename with `[]`, 16
+  tokens; Claude Code's own small call on the side wrote more, and the
+  engine named the model writing most. **Fixed**: the model asked is
+  named when it is among those used (`TestClaudeAnswer`); the row stays
+  as written. Not tried: five runs (ADR-0014); the facet beside the lenses in one
+  run (each measured apart); a merge request in CI.

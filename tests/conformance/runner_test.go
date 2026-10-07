@@ -118,7 +118,7 @@ type caseFile struct {
 		Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
 		RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
 		CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
-		RunFiles    map[string]map[string]string `yaml:"run-files"`     // a file of the run folder -> a text it holds
+		RunFiles    map[string]map[string]texts  `yaml:"run-files"`     // a file of the run folder -> a text it holds, or a list of them
 		Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
 		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
 		Summary     string                       `yaml:"summary"`       // a text the result's summary holds
@@ -602,7 +602,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 			p = append(p, fmt.Sprintf("no run folder keeps %s", name))
 			continue
 		}
-		if text, ok := want["contains"]; ok {
+		for _, text := range want["contains"] {
 			held := false
 			for _, f := range found {
 				data, _ := os.ReadFile(f)
@@ -612,7 +612,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 				p = append(p, fmt.Sprintf("%s does not hold %q", name, text))
 			}
 		}
-		if text, ok := want["not-contains"]; ok {
+		for _, text := range want["not-contains"] {
 			for _, f := range found {
 				if data, _ := os.ReadFile(f); strings.Contains(string(data), text) {
 					p = append(p, fmt.Sprintf("%s holds %q", name, text))
@@ -973,4 +973,20 @@ func mapped(name string, want []map[string]string, got []map[string]any) []strin
 		}
 	}
 	return p
+}
+
+// texts is a text, or a list of them: what a run file holds, or does not.
+type texts []string
+
+func (t *texts) UnmarshalYAML(n *yaml.Node) error {
+	if n.Kind == yaml.ScalarNode {
+		*t = texts{n.Value}
+		return nil
+	}
+	var l []string
+	if err := n.Decode(&l); err != nil {
+		return err
+	}
+	*t = l
+	return nil
 }

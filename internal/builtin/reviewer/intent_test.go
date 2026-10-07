@@ -40,7 +40,7 @@ func TestLensesInTurnPassOver(t *testing.T) {
 	s := Settings{Lenses: []string{"correctness", "intent", "claims"}, LensesPerPush: 1}
 	skip := map[string]string{"intent": "no issue"}
 	for runs, want := range []string{"correctness", "claims", "claims", "correctness"} {
-		got, err := lenses(t.TempDir(), s, Record{Runs: runs}, skip)
+		got, _, err := lenses(t.TempDir(), s, Record{Runs: runs}, skip)
 		if err != nil || len(got) != 1 || got[0] != want {
 			t.Errorf("runs %d: %v %v, want %s", runs, got, err, want)
 		}

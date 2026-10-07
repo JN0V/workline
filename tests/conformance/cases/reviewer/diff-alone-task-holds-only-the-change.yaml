@@ -1,0 +1,17 @@
+case: reviewer/diff-alone-task-holds-only-the-change
+about: "The diff-alone facet (#126) is a call of its own, after the lenses, its task holding the change and nothing else: not the files it changes whole, not the commit messages the lenses are given as testimony."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {diff-alone: true}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-diff-alone"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: part, for: 2-diff-alone}, {task: judge, for: judge/01}]
+  summary: "lenses: correctness, edge-cases, tests, claims, diff-alone"
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["average over the count", "package calc"]}
+    in/parts/2-diff-alone/task.md:
+      contains: ["# Lens: diff-alone", "-\treturn total / len(values)", "+\treturn total / (len(values) - 1)"]
+      not-contains: ["average over the count", "package calc", "strconv.Atoi", "## The files it changes", "## Lens: correctness"]

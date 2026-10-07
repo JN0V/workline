@@ -84,6 +84,11 @@ settings:
   # Every lens a run asks, in one call: the change and its files given
   # once, each finding naming its lens (#147). false: a call each, apart.
   lenses-together: true
+  # The diff-alone facet (lenses/diff-alone.md, #126): a call of its own,
+  # each run, given the change only, not the files nor what the author
+  # says; its findings quoted and judged as a lens's. `--lenses
+  # diff-alone` asks it alone, whatever this says.
+  diff-alone: false
   # What the author says, the lenses' testimony (#126): the messages of the
   # commits reviewed, whole, and the merge request's title and body.
   testimony-lines-max: 80

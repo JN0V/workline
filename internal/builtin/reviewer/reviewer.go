@@ -57,7 +57,14 @@ type Settings struct {
 	IssueLinesMax   int      `json:"issue-lines-max"`     // lines of the issues the change closes the lenses are given, all together
 	TestimonyLines  int      `json:"testimony-lines-max"` // lines of what the author says (commit messages, the merge request) the lenses are given
 	QuestionsMax    int      `json:"questions-max"`       // decisions put to a person a run; the rest counted
+	DiffAlone       bool     `json:"diff-alone"`          // ask the diff-alone facet too, apart, given the change only
 }
+
+// alone is the facet given the change only, apart from the lenses (#126):
+// what the change says by itself, which a reader holding the files and
+// the author's words explains away. Its text is lenses/diff-alone.md; its
+// findings are a lens's, quoted, judged and routed alike.
+const alone = "diff-alone"
 
 // Finding is one defect a lens reported, once its quotes were found again.
 type Finding struct {
@@ -95,6 +102,7 @@ type state struct {
 	Commits    []string          `json:"commits"`
 	Lenses     []string          `json:"lenses"`
 	Together   bool              `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
+	Alone      bool              `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
 	Record     Record            `json:"record"`
 	Advisories []verdict.Finding `json:"advisories,omitempty"`
 	Issues     []ClosedIssue     `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
@@ -270,11 +278,11 @@ func prepare(runDir, repo string, s Settings) int {
 			st.Skipped = append(st.Skipped, fmt.Sprintf("%s (%s)", l, why))
 		}
 	}
-	st.Lenses, err = lenses(runDir, s, rec, skip)
+	st.Lenses, st.Alone, err = lenses(runDir, s, rec, skip)
 	if err != nil {
 		return fail(err)
 	}
-	if len(st.Lenses) == 0 {
+	if len(st.Lenses) == 0 && !st.Alone {
 		return final(runDir, review(st, nil, "no lens asked can review this change: not asked: "+strings.Join(st.Skipped, ", ")))
 	}
 	st.Together = s.LensesTogether && len(st.Lenses) > 1
@@ -331,10 +339,12 @@ func recordOnly(runDir string, s Settings, st state) int {
 
 // lenses are the lenses this run asks: every one on a machine, or when the
 // run is told `lenses=all`; on a merge request, the next in turn. A lens
-// in skip, which has nothing to read in this change, is never asked.
-func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]string, error) {
+// in skip, which has nothing to read in this change, is never asked. With
+// them, the diff-alone facet, when its setting is on; a run told which
+// lenses to ask asks it only when it names it, whatever its setting.
+func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]string, bool, error) {
 	if len(s.Lenses) == 0 {
-		return nil, fmt.Errorf("settings: no lenses")
+		return nil, false, fmt.Errorf("settings: no lenses")
 	}
 	var usable []string
 	for _, l := range s.Lenses {
@@ -345,23 +355,28 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]st
 	asked := input(runDir, "lenses")
 	switch {
 	case asked == "all":
-		return usable, nil
+		return usable, s.DiffAlone, nil
 	case asked != "":
 		var out []string
+		named := false
 		for _, l := range strings.Split(asked, ",") {
 			l = strings.TrimSpace(l)
-			if !slices.Contains(s.Lenses, l) {
-				return nil, fmt.Errorf("lens %q: not one of %s", l, strings.Join(s.Lenses, ", "))
+			if l == alone {
+				named = true
+				continue
 			}
-			if slices.Contains(usable, l) {
+			if !slices.Contains(s.Lenses, l) {
+				return nil, false, fmt.Errorf("lens %q: not one of %s, %s", l, strings.Join(s.Lenses, ", "), alone)
+			}
+			if slices.Contains(usable, l) && !slices.Contains(out, l) {
 				out = append(out, l)
 			}
 		}
-		return out, nil
+		return out, named, nil
 	case os.Getenv("WORKLINE_EVENT") != "merge-request":
-		return usable, nil
+		return usable, s.DiffAlone, nil
 	case len(usable) == 0:
-		return nil, nil
+		return nil, s.DiffAlone, nil
 	}
 	// In turn over every lens, one with nothing to read passed over: the
 	// same run count names the same place in the turn whatever this
@@ -373,7 +388,7 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]st
 			out = append(out, l)
 		}
 	}
-	return out, nil
+	return out, s.DiffAlone, nil
 }
 
 // unasked are the lenses this change gives nothing to read, each with why:
@@ -428,8 +443,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 	}
 	floor := ""
 	if s.FinderFloor { // a floor on candidates, never on what is shown; from the size of what is read
-		kb := float64(len(diff)+code.Len()) / 1024
-		n := min(int(math.Floor(math.Sqrt(kb)+1)), 10)
+		n := candidatesFor(len(diff) + code.Len())
 		each := ""
 		if st.Together {
 			each = " for each lens"
@@ -459,6 +473,15 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		}
 		return os.WriteFile(filepath.Join(dir, "task.md"), []byte(task), 0o644)
 	}
+	if st.Alone {
+		task, err := aloneTask(repo, s, st, files)
+		if err != nil {
+			return err
+		}
+		if err := write(partName(st, alone), task); err != nil {
+			return err
+		}
+	}
 	if st.Together {
 		// One call, the change given once: the lenses' questions differ,
 		// what they read does not (#147).
@@ -476,6 +499,35 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 		}
 	}
 	return nil
+}
+
+// aloneTask is the diff-alone facet's question (#126): its text and the
+// change, as a diff with three lines around each hunk, up to
+// diff-lines-max; nothing else, not the files it changes whole, not what
+// the author says, not the issue it closes. Its own call: the lenses'
+// shared material is what it must not hold.
+func aloneTask(repo string, s Settings, st state, files []string) (string, error) {
+	l, err := readLens(repo, alone)
+	if err != nil {
+		return "", err
+	}
+	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, files...)...)
+	if err != nil {
+		return "", err
+	}
+	diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
+	floor := ""
+	if s.FinderFloor {
+		floor = fmt.Sprintf("\nLook for at least %d candidates before you stop; then give only those whose cause you can quote, important or nit as each deserves.\n", candidatesFor(len(diff)))
+	}
+	return fmt.Sprintf("# Lens: %s\n\n%s\n%s\n## The change\n\n```diff\n%s```\n", alone, strings.TrimSpace(l.Text), floor, diff), nil
+}
+
+// candidatesFor is the finder floor for what a lens reads, from its size in
+// bytes: one, and one more as the square root of its kilobytes grows, up
+// to ten.
+func candidatesFor(size int) int {
+	return min(int(math.Floor(math.Sqrt(float64(size)/1024)+1)), 10)
 }
 
 // lensText is what a lens asks: the project's own (.workline/roles/reviewer/
@@ -567,6 +619,9 @@ func readLenses(runDir, repo string, s Settings) int {
 			asked = append(asked, []string{lens})
 		}
 	}
+	if st.Alone {
+		asked = append(asked, []string{alone})
+	}
 	for _, ls := range asked {
 		dir := lensDir(runDir, st, ls[0])
 		which := fmt.Sprintf("the %s lens", ls[0])
@@ -648,7 +703,7 @@ func readLenses(runDir, repo string, s Settings) int {
 			*list = append(*list, f)
 		}
 	}
-	if unavailable > 0 && unavailable == len(st.Lenses) {
+	if unavailable > 0 && unavailable == len(facets(st)) {
 		v := review(st, nil, "the agent could not be reached: only the rules ran")
 		v.Status = verdict.BlockedExternal
 		if code := final(runDir, v); code != exitNothing {
@@ -1061,7 +1116,7 @@ func settle(runDir, repo string, s Settings) int {
 	}
 	related, outside := regroup(c.Related), regroup(c.Outside)
 	v := review(st, nil, "")
-	v.Lenses, v.Change, v.Complete = st.Lenses, related, len(c.Failed) == 0
+	v.Lenses, v.Change, v.Complete = facets(st), related, len(c.Failed) == 0
 	var fallback []intent.Intention
 	onForge := mergeRequest() != nil && s.ForgeWrites
 	for _, f := range related {
@@ -1379,12 +1434,28 @@ func lensDir(runDir string, st state, lens string) string {
 }
 
 // partName is the part a lens is asked in: its own, or, the lenses asked
-// together, the one part holding them all.
+// together, the one part holding them all; the diff-alone facet's after
+// the lenses'.
 func partName(st state, lens string) string {
+	n := len(st.Lenses)
 	if st.Together {
+		n = 1
+	}
+	switch {
+	case lens == alone:
+		return fmt.Sprintf("%d-%s", n+1, alone)
+	case st.Together:
 		return "1-lenses"
 	}
 	return fmt.Sprintf("%d-%s", slices.Index(st.Lenses, lens)+1, lens)
+}
+
+// facets are what a run asked: its lenses, then the diff-alone facet.
+func facets(st state) []string {
+	if st.Alone {
+		return append(slices.Clone(st.Lenses), alone)
+	}
+	return st.Lenses
 }
 
 // lensNamed is the lens a finding names, written as the lenses are named,
@@ -1422,9 +1493,12 @@ func settings(runDir string) (Settings, error) {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return s, fmt.Errorf("settings: %w", err)
 	}
+	if slices.Contains(s.Lenses, alone) {
+		return s, fmt.Errorf("settings: lenses names %q, a facet asked apart by its own setting, diff-alone", alone)
+	}
 	for lens := range s.AIFindings.ByLens {
-		if !slices.Contains(s.Lenses, lens) {
-			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v", lens, s.Lenses)
+		if !slices.Contains(s.Lenses, lens) && lens != alone {
+			return s, fmt.Errorf("settings: ai-findings names %q, not one of the lenses %v nor %s", lens, s.Lenses, alone)
 		}
 	}
 	return s, nil

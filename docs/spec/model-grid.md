@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 0f7a5a5
+checked: 1da0ac5
 verified: agent:claude-code
 judged-in-parts: fa1d682
 ---
@@ -91,7 +91,9 @@ it is the part a script cannot be trusted with.
 
 The engine logs which step answered, so a run on a fallback is visible, not silent.
 Each call records the tier and effort asked and the exact model that answered,
-as the agent reports it (`claude-haiku-4-5-20251001`, not `haiku`): an alias
+as the agent reports it (`claude-haiku-4-5-20251001`, not `haiku`); of
+several models a call used, the one asked, else the one writing most (an
+agent's small model on the side is not the one answering): an alias
 moves to a newer generation on its own, and a score is only worth something
 next to the model that earned it.
 

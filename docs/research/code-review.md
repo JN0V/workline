@@ -107,6 +107,7 @@ CodeRabbit's incremental review among the caps and caches (ci-and-forge.md,
 | A finding floor on candidates only, its value to be measured (#90) | BMAD-METHOD's formula |
 | An intent lens: the change against the issue it closes, what it asks and what its Scope leaves out (#126) | the intent finder above; Qodo's ticket compliance |
 | The commit messages and the pull request's body given as claims, each contradicted one a finding quoting the claim and the line (#126) | the author's account as claims to contest, above |
+| A facet given the diff and nothing else, in a call of its own, its findings judged like the others; off by default, as it found nothing the lenses missed on #90's cases (#126) | the diff-only finder above |
 | Important and Nit, pre-existing apart | Claude Code Review |
 | Skip what is not code, and what was reviewed already | the plugin; CodeRabbit's incremental review |
 | Never drop silently: each finding dropped is said, with why | BMAD-METHOD's triage, verified at each finding's line |

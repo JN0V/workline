@@ -82,6 +82,20 @@ func TestClaudeAnswer(t *testing.T) {
 		call.TokensIn != 6509 || call.TokensCached != 6000 || call.TokensOut != 940 {
 		t.Errorf("got %+v, %+v, %v", r, call, ok)
 	}
+	// Sonnet asked and answering "[]" in 10 tokens, the side Haiku writing
+	// 40: Sonnet answered (the evaluation's clean rename, #126).
+	short := Call{Asked: "sonnet"}
+	claudeAnswer([]byte(`{"result":"[]","modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":300,"outputTokens":40},
+		"claude-sonnet-5-5":{"inputTokens":4000,"outputTokens":10}}}`), &short)
+	if short.Model != "claude-sonnet-5-5" || short.TokensOut != 50 {
+		t.Errorf("a short answer: %+v", short)
+	}
+	// No model asked by name: the one writing the most.
+	free := Call{}
+	claudeAnswer([]byte(`{"result":"[]","modelUsage":{"claude-haiku-4-5-20251001":{"outputTokens":40},"claude-sonnet-5-5":{"outputTokens":10}}}`), &free)
+	if free.Model != "claude-haiku-4-5-20251001" {
+		t.Errorf("no model asked: %+v", free)
+	}
 	if _, ok := claudeAnswer([]byte("- ok: 1"), &call); ok {
 		t.Error("plain text read as Claude's JSON")
 	}
