@@ -1,0 +1,27 @@
+case: reviewer/spec-on-the-forge-reads-a-refined-issue
+about: "On the forge, in the gardening line after the product owner (#128), the reviewer reads the first issue in the backlog's order the product owner keeps whose four sections are written and which is not ready — a ready one and one lacking a section skipped — as a spec; what it finds goes to one comment on that issue, which says what holds it from ready and hides a record the product owner reads back: the body read, the round, the important findings open and the sections they lie in."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - {id: 3, title: "Already ready", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\ncalc/calc.go", labels: [workline:ready], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - {id: 5, title: "No scope yet", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.", labels: [workline:to-refine], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings: [{rule: out-of-scope, where: "#4:3", message: "verified"}]
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["**Holds it from ready**: 1 important finding open, round 1 of 5", "The Need asks for the README", "<!-- workline:spec-review body=5c971ac44520 round=1 open=1 in=Need -->", "<!-- workline:sticky=reviewer/spec -->"]
+      - {id: 3, comments: 1}
+      - {id: 5, comments: 1}

@@ -1,0 +1,41 @@
+case: product-owner/ready-held-while-a-spec-finding-is-open
+about: "With the reviewer after the product owner in the line (#128), ready waits on the reviewer's read of the spec: held while an important finding is open on the body as it is, while the reviewer has not read it yet, and once the rounds are spent and put to a person; each said. The findings open are given to the agent, with the sections it may rewrite."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "Rows lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nSessions feel right to the users.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: d424ff914f28\nwrote: {Verification: cb1c26c09a46}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#9:11` | Important: The Verification proves nothing |\n\n<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 11
+        title: Rows lost, settled by nobody
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**Question for a person**\n\n<!-- workline:spec-review body=b9528f775bfa round=5 open=1 in=Need stopped -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  findings:
+    - {rule: spec-findings-open, where: "#9", message: "1 important finding of the reviewer open"}
+    - {rule: spec-not-reviewed, where: "#10"}
+    - {rule: spec-rounds-spent, where: "#11"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:to-refine]}
+      - {id: 11, labels: [workline:to-refine]}
+  run-files:
+    in/task.md: {contains: ["The reviewer's findings on its spec, round 1: 1 important open, in Verification", "yours to rewrite: Verification", "The Verification proves nothing"]}

@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -29,6 +30,14 @@ type Spec struct {
 	Path  string `json:"path"`            // the file, or the issue: `#4`
 	Title string `json:"title,omitempty"` // an issue's title
 	Text  string `json:"text"`            // the file, or the issue's body: where quotes are found again
+	// On the forge (#128): the issue read after the product owner's
+	// refine, the digest of its body as read, and the round this is.
+	Issue  int    `json:"issue,omitempty"`
+	Digest string `json:"digest,omitempty"`
+	Round  int    `json:"round,omitempty"`
+	// Prior is the record the last review left, carried as it was when
+	// this one is not whole.
+	Prior *backlog.SpecReview `json:"prior,omitempty"`
 }
 
 // heading names the spec where the lenses and the judge read it.
@@ -47,8 +56,23 @@ func prepareSpec(runDir, repo string, s Settings) int {
 		return fail(fmt.Errorf("the code a spec is read against: %v", err))
 	}
 	head = strings.TrimSpace(head)
-	sp, cut, err := readSpec(repo, input(runDir, "spec"), input(runDir, "issue"), s.SpecLinesMax)
-	if err != nil {
+	var sp Spec
+	var cut int
+	file, issue := input(runDir, "spec"), input(runDir, "issue")
+	if os.Getenv("WORKLINE_EVENT") == gardening && file == "" && issue == "" {
+		// On the forge, after the product owner: the issue it refined that
+		// waits on a review, one a run (#128).
+		got, _, code, ok := specOnForge(runDir, repo, s)
+		if !ok {
+			return code
+		}
+		sp, cut = *got, 0
+		if lines := strings.Split(strings.TrimRight(strings.ReplaceAll(sp.Text, "\r\n", "\n"), "\n"), "\n"); s.SpecLinesMax > 0 && len(lines) > s.SpecLinesMax {
+			sp.Text, cut = strings.Join(lines[:s.SpecLinesMax], "\n"), len(lines)-s.SpecLinesMax
+		} else {
+			sp.Text = strings.Join(lines, "\n")
+		}
+	} else if sp, cut, err = readSpec(repo, file, issue, s.SpecLinesMax); err != nil {
 		return fail(err)
 	}
 	st := state{Head: head, From: head, Base: head, Spec: &sp}

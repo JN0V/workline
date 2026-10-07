@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 79ecb95
+checked: 3c2c426
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -14,7 +14,8 @@ The contract of its acts is
 1. `pre` gives the agent a share of the open issues (`issues-per-run`):
    those an act was proposed on only for a run's cap first, then those
    never read, then those whose code changed, that someone commented on
-   or edited, or reopened after it closed them, since read; each with its
+   or edited, or reopened after it closed them, or on whose spec the
+   reviewer left findings open, not given yet (#128), since read; each with its
    state comment (its sources, the commit it was last confirmed and read at),
    who opened it — a workline role's issue named as that role's draft to
    refine —, which of its four sections it has, and the code it names —
@@ -40,7 +41,9 @@ The contract of its acts is
 3. The engine checks each one when it applies it — never as not planned,
    the quote found again, the issue's state readable, no section a person
    wrote rewritten, `ready` only when the four sections are there and none
-   a draft, an outsider's issue proposed, a priority or a title a person
+   a draft — and, with the reviewer after it in the line, once the
+   reviewer read the spec as it is with no important finding open, which
+   then moves it with no agent (#128) —, an outsider's issue proposed, a priority or a title a person
    set kept, an issue split once, its children opened through the one way
    and linked to it — a sub-issue, a GitLab task, else a task list in its
    body —,

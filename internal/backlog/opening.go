@@ -40,6 +40,7 @@ type Opening struct {
 	Sources []string // the code it is about, for the keeper's state
 	Commit  string   // the commit it was seen at
 	Triage  bool     // a role's finding: labelled needs-triage, capped, said once when found after it was closed
+	Wrote   []string // the sections the role wrote in its body, recorded in the keeper's state (#128)
 }
 
 // Openings is the one way every role opens an issue (ADR-0018): a stable
@@ -111,7 +112,7 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 		if err != nil || slices.ContainsFunc(comments, func(c string) bool { return strings.Contains(c, StateMarker(Keeper)) }) {
 			return StillOpen, is.ID, err
 		}
-		return StillOpen, is.ID, o.finish(t, op)
+		return StillOpen, is.ID, o.finish(t, op, is.Body)
 	case is != nil && (is.Reason == "not_planned" || is.Reason == "duplicate" || !op.Triage):
 		return Settled, is.ID, nil
 	case is != nil:
@@ -139,13 +140,13 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 		o.opened++
 	}
 	o.issues = append(o.issues, forge.Issue{ID: id, Title: op.Title, Body: body + "\n\n" + forge.Marker(op.Key)})
-	return Opened, id, o.finish(forge.Target{Kind: "issue", ID: id}, op)
+	return Opened, id, o.finish(forge.Target{Kind: "issue", ID: id}, op, body+"\n\n"+forge.Marker(op.Key))
 }
 
 // finish gives an issue just opened its label, for a finding, and the
 // keeper's state: written last, so a run stopped before is completed when
 // resumed (Open).
-func (o *Openings) finish(t forge.Target, op Opening) error {
+func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 	if op.Triage {
 		if err := o.b.EnsureLabel(LabelTriage, "ededed", "Opened by a workline role: a person or the product owner takes it from here"); err != nil {
 			return err
@@ -155,6 +156,12 @@ func (o *Openings) finish(t forge.Target, op Opening) error {
 		}
 	}
 	st := State{Sources: op.Sources, Confirmed: op.Commit}
+	for _, name := range op.Wrote {
+		if st.Wrote == nil {
+			st.Wrote = map[string]string{}
+		}
+		st.Wrote[name] = SectionDigest(body, name)
+	}
 	return o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
 }
 

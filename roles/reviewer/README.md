@@ -1,6 +1,6 @@
 ---
-sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, routing.default.yaml]
-checked: beb53f8
+sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
+checked: 604ed00
 verified: agent:claude-code
 ---
 # Reviewer
@@ -8,14 +8,14 @@ verified: agent:claude-code
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
-  when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in<br/>workline review --spec, --issue:<br/>a spec before it is built"]
+  when["<b>When</b><br/>workline review, before you push<br/>each push to a merge request,<br/>in CI, opt-in<br/>workline review --spec, --issue:<br/>a spec before it is built<br/>gardening, after the product owner,<br/>opt-in: an issue it refined"]
   reads["<b>Reads</b><br/>the commits not reviewed yet<br/>what they change<br/>the files they change<br/>the issue it closes<br/>what its author says<br/>a spec: the file or the issue,<br/>the code it names"]
   role(["Reviewer"])
   alone["<b>Alone</b><br/>rules on the comments added<br/>finds what the change breaks,<br/>what its issue asks and it leaves out,<br/>what its author claims and it contradicts,<br/>what the change says by itself (diff-alone, off),<br/>in a spec: what is ambiguous, unverifiable,<br/>out of scope, contradicted by the code,<br/>each cause quoted, the important ones judged<br/>outside the change: an issue"]
   proposed["<b>Proposed</b><br/>the findings on the change,<br/>for the author to fix"]
   asked["<b>Asked</b><br/>a choice the change leaves open:<br/>a question for a person,<br/>not a defect, never judged"]
   person["<b>Left to a person</b><br/>fix, approve, merge:<br/>it never approves"]
-  out["<b>Lands in</b><br/>the terminal and out/review.json<br/>one summary comment<br/>issues, needs-triage"]
+  out["<b>Lands in</b><br/>the terminal and out/review.json<br/>one summary comment<br/>issues, needs-triage<br/>on a refined issue: one comment,<br/>ready held while a finding is open"]
   when --> role
   reads --> role
   role --> alone --> out
@@ -34,7 +34,9 @@ the engine and checked by a judge — and asks a person what only a person
 decides; rules on the comments the change adds (a bug's story, an
 internal code), with no agent. Reads a spec before it is built too, a
 file or an issue: what is ambiguous, unverifiable, out of its scope, or
-contradicted by the code (#128, [below](#a-spec)).
+contradicted by the code (#128, [below](#a-spec)); on the forge, after
+the product owner refines an issue, its findings hold the issue from
+`ready` ([below](#a-spec-on-the-forge)).
 **Does not**: approve, change the code, merge, or review docs and other
 files that are not code (`ignore`): the author fixes, the person merges
 (ADR-0020). A finding outside the change becomes an issue, never a comment
@@ -45,6 +47,7 @@ on the merge request.
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
 | `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens (#128) |
+| `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens (#128) |
 
 **Outputs**: on a machine, the findings and `out/review.json` for your
 agent to fix; on a merge request, one summary comment edited each run, the
@@ -61,12 +64,13 @@ off: one call more, the change's size (about 4.6k tokens on the
 evaluation's cases, 53k on #146's). A spec (#128): one call, 9k to
 13k characters measured (#128's body; a spec naming a Go file), at most
 the spec and `code-lines-max` lines of code; on workline-sandbox#43,
-22.5k tokens with two judges.
+22.5k tokens with two judges. On the forge, one spec a run: 19.2k and
+23.3k tokens on the sandbox, three and four judges (docs/tried.md).
 Caps:
 `ai-max-tokens` (200000 a run), `diff-lines-max`, `code-lines-max`,
 `judge-lines-max`, `tests-lines-max`, `testimony-lines-max`,
 `issue-lines-max`, `findings-max`, `issues-max`, `questions-max`,
-`lenses-per-push`.
+`lenses-per-push`, `spec-rounds`.
 **Without AI**: the rules alone; the change is left for a person
 (`not-reviewed`).
 **Status**: beta, released in v0.9.0; [docs/status.md](docs/status.md).
@@ -228,8 +232,46 @@ it is built (#128), the reviewer's `spec` event (`--input spec=<file>` or
   finding judged, a no dropped; what the lenses find warns
   (`ai-findings`, by lens too); an open point only a person settles is a
   `decision`. No record is kept: a spec is read whole each run.
-- **Not yet** (#128, part 2): on the forge, after the product owner
-  refines an issue, `ready` held while an important finding is open.
+
+## A spec on the forge
+
+Opt-in, off by default: the reviewer after the product owner in the
+gardening line (#128, ADR-0020):
+
+```yaml
+routing:
+  events: {schedule: [documentalist, product-owner, reviewer]}
+```
+
+- **Which issue**: one a run, the first in the backlog's order the
+  product owner keeps (its state comment), not `workline:ready`, its four
+  sections written (drafts too), its body not read as it is. None: no
+  agent asked.
+- **What it writes**: one comment on the issue, edited each review: what
+  holds it from ready, the findings, the questions for a person, and a
+  hidden record (`workline:spec-review`): the body's digest, the round,
+  the important findings open and the sections they lie in. A nit or a
+  decision holds nothing; a finding its judge refused is dropped.
+- **The hold** is the product owner's: its `ready` waits until the
+  reviewer read the body as it is and no important finding is open, then
+  the engine moves it, with no agent
+  ([backlog acts](../../docs/spec/backlog-acts.md#refining-to-ready)).
+- **The answer**: the product owner's next refine rewrites the sections
+  the findings lie in that are its own; a person's, it asks the reporter.
+  The body changed, the reviewer reads it again: one round more.
+- **Five rounds** (`spec-rounds`): reviews in a row that leave a finding
+  open. The sixth asks no agent: the comment puts a question to a person
+  — accept it as it reads (`workline:accepted`), settle it and set
+  `workline:ready`, or delete the comment for five rounds more — and the
+  reviewer stops reading it.
+- **A review not whole** (a lens failed, the tokens spent) keeps the
+  last record, its body unread: read again at the next run, the rounds
+  counted as before, ready still held.
+- **In CI**: judged, then applied; the reviewer reads what an earlier run
+  refined, so a round takes two nights. `forge-writes: false` writes no
+  comment: ready then stays held, `spec-not-reviewed`.
+- **Without AI**: nothing read, nothing written; ready held. The sixth
+  round's question needs no agent.
 
 ## The budget
 
@@ -298,6 +340,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `ai-max-tokens` | `200000` | tokens a run may spend, in and out, all calls; the call crossing it is paid; `0`: no cap |
 | `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through (#128) |
 | `spec-lines-max` | `300` | lines of a spec the lenses and each judge are given; the rest cut, said |
+| `spec-rounds` | `5` | on the forge: reviews in a row leaving a finding open, then a question to a person (1 to 20) |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}`, a lens not named warning, of findings on one line, a verified one from a blocking lens leading |

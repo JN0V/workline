@@ -9,7 +9,10 @@ mission: A change is reviewed before it merges — what it breaks found, quoted 
 # spec:   a spec before it is built (#128): a file (--input spec=<file>) or
 #         an issue by its number (--input issue=<n>), every spec lens;
 #         `workline review --spec` or `--issue` on a machine.
-events: [review, merge-request, spec]
+# schedule: on the forge, in the gardening line after the product owner
+#         (opt-in): the issue it refined that waits on a spec review, one
+#         a run; ready is held while an important finding is open (#128).
+events: [review, merge-request, spec, schedule]
 
 requires: [git]
 
@@ -110,3 +113,7 @@ settings:
   spec-lenses: [ambiguous, unverifiable, out-of-scope, contradicted]
   # Lines of the spec the lenses and each judge are given; past them, cut, said.
   spec-lines-max: 300
+  # On the forge (#128): reviews in a row that leave an important finding
+  # open, the product owner answering between them; the next is a
+  # question to a person, on the issue, and the reviewer stops reading it.
+  spec-rounds: 5

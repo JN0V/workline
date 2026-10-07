@@ -42,6 +42,13 @@ type State struct {
 	// Sections are its Need and Scope as last read or written (Basis): a
 	// person's change to them touches the issues built on it (ADR-0032).
 	Sections map[string]string `yaml:"sections,omitempty"`
+	// Wrote are the sections the role wrote, each the digest of its text:
+	// another text there is a person's (SectionDigest). Answered is the
+	// review of its spec the role was last given, by the digest of the
+	// body that review read (#128): a review restarting at round 1 is
+	// another review, never taken for one answered.
+	Wrote    map[string]string `yaml:"wrote,omitempty"`
+	Answered string            `yaml:"answered,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -100,7 +107,9 @@ func FormatState(s State) string {
 		Split     []int             `yaml:"split,flow,omitempty"`
 		Kept      []string          `yaml:"kept,flow,omitempty"`
 		Sections  map[string]string `yaml:"sections,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept, s.Sections})
+		Wrote     map[string]string `yaml:"wrote,omitempty"`
+		Answered  string            `yaml:"answered,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.Kept, s.Sections, s.Wrote, s.Answered})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -186,6 +195,10 @@ type Proposal struct {
 	Need         string   `yaml:"need,omitempty"`
 	Validation   string   `yaml:"validation,omitempty"`
 	Added        []string `yaml:"added,omitempty"`
+	// Revise, the engine's: the sections with text this refine may rewrite,
+	// to answer the reviewer's findings on the spec (#128) — the role's own
+	// only (Revisable); never taken from the agent.
+	Revise []string `yaml:"revise,omitempty"`
 	Questions    string   `yaml:"questions,omitempty"` // asking the reporter; for an outsider's refine, what it still needs
 	// The engine's, for the conversation with the reporter: the round this
 	// comment would be, and whether a refine is proposed to the reporter in
@@ -862,7 +875,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if rule, why := p.checkAgreed(f, role, c); rule != "" {
 		return rule, why
 	}
-	if rule, why := p.checkRefining(repo, role, c); rule != "" {
+	if rule, why := p.checkRefining(f, repo, role, c); rule != "" {
 		return rule, why
 	}
 	if rule, why := p.checkSplitRename(repo, c); rule != "" {
@@ -937,6 +950,13 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return "priority-kept", "its priority was set by a person (a label the role did not set, or took off): it is kept"
 		case len(set) == 1 && set[0] == c.Priority:
 			return "priority-same", fmt.Sprintf("it has priority %d already", c.Priority)
+		}
+	}
+	if c.Do == "ready" && p.config.SpecReview {
+		// The reviewer reads the spec first (#128): held while it has not
+		// read the body as it is, or an important finding is open.
+		if rule, why := SpecHold(p.issues[c.Issue], comments); rule != "" {
+			return rule, why
 		}
 	}
 	if c.Do == "ask" || c.ToReporter {
@@ -1046,7 +1066,7 @@ func (p *Plan) checkKeep(f forge.Backlog, repo, role string, st *State, c *Propo
 // checkRefining checks a refine, a ready or an ask against the issue as it
 // is: what refining would add, whether it is ready, whether its reporter
 // was asked already.
-func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) {
+func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (rule, why string) {
 	is, ok := p.issues[c.Issue]
 	switch {
 	case c.Do != "refine" && c.Do != "ready" && c.Do != "ask":
@@ -1071,6 +1091,17 @@ func (p *Plan) checkRefining(repo, role string, c *Proposal) (rule, why string) 
 		// proposed to its reporter in a comment until they, or a person of
 		// the project, agree. A role's finding is the line's own draft.
 		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == ""
+		// Answering the reviewer's findings on its spec (#128): the role
+		// rewrites the sections they lie in that are still its own.
+		c.Revise = nil
+		if p.config.SpecReview && !c.ToReporter && f != nil {
+			comments, err := f.Comments(forge.Target{Kind: "issue", ID: c.Issue})
+			if err != nil {
+				return "no-state", err.Error()
+			}
+			st, _, _ := ReadState(comments, role)
+			c.Revise = Revisable(is, st, SpecOpen(is, comments))
+		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
 		if len(added) == 0 {
@@ -1240,6 +1271,8 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 		}
 		old, ok := have[name]
 		switch {
+		case ok && strings.TrimSpace(old) != "" && slices.Contains(c.Revise, name) && squeeze(old) != squeeze(text):
+			body = fill(body, name, text) // the role's own, rewritten to answer the reviewer (#128)
 		case ok && strings.TrimSpace(old) != "":
 			kept = append(kept, name)
 			continue

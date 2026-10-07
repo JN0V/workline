@@ -664,3 +664,28 @@ workline-sandbox#43, "A session lasts 60 minutes idle": a Need saying
   together. The decision was left out of the replay.
 - **Not tried**: a real run after the fixes; the spec lenses on a spec
   with nothing wrong (false findings).
+
+## 2026-10-07 — a spec on the forge (#128), JN0V/workline-sandbox
+
+The gardening line on the sandbox's clone, `schedule: [product-owner,
+reviewer]`, the forge GitHub; Sonnet finding, Opus judging.
+
+- **Offline, recording agent**: the lenses' prompt 7.6k characters on
+  #12, a split child naming `src/auth/token.go` (about 7k tokens).
+- **Planted answers**: #44 (Need and Validation a person's) refined, read:
+  its Verification "Sessions feel right to the users." found, verified,
+  the comment saying the hold, round 1; the product owner's answer read
+  at round 2, nothing open; released the next run. #45: a round-5 record
+  planted; the sixth round asked a person with no agent, `stopped`.
+- **Real, two runs, 72.5k tokens in all** (`ai-max-tokens` 45000 then
+  30000 on each role):
+  - run 1, 30.5k: the reviewer read #12, refined before: the refresh rule
+    never defined, verified; two nits; two findings refused by the judge;
+    one decision put to a person. 16.7k in, 2.5k out, three judges.
+  - run 2, 42.0k: #46, refined in the same run, read: four important
+    findings, all refused by the judge, three nits shown; nothing open,
+    released the next run with no agent. 20.0k in, 3.4k out, four judges.
+- **A round's cost**: one lens call (6.1k tokens in) and a judge for each
+  important finding (3.4k to 3.6k each): 19.2k and 23.3k a review here.
+- **Not tried**: GitLab; CI, judged then applied (a round over two
+  nights); a sixth round reached by real runs.

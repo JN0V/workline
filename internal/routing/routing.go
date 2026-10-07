@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/JN0V/workline"
 	"github.com/JN0V/workline/internal/role"
@@ -65,6 +66,19 @@ func (c *Config) Allowed(from, to string) bool {
 	}
 	for _, e := range *c.Handoffs {
 		if e.From == from && e.To == to {
+			return true
+		}
+	}
+	return false
+}
+
+// Follows reports whether a line runs role then after role first, in the
+// same event's steps: the reviewer after the product owner reads the specs
+// it refined (#128).
+func (c *Config) Follows(first, then string) bool {
+	for _, steps := range c.Events {
+		i := slices.Index(steps, first)
+		if i >= 0 && slices.Contains(steps[i+1:], then) {
 			return true
 		}
 	}

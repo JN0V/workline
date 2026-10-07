@@ -1,0 +1,30 @@
+case: reviewer/spec-read-as-it-is-not-read-again
+about: "On the forge (#128), an issue whose body the reviewer read as it is — its record holding the body's digest — is not read again, nor one whose rounds stopped: nothing waits, no agent is asked, nothing is written."
+given:
+  repo: reviewed
+  forge:
+    issues:
+      - id: 6
+        title: Read already
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "No important finding open.\n\n<!-- workline:spec-review body=b9528f775bfa round=1 open=0 in= -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 7
+        title: Stopped
+        body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\ncalc/calc.go"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**Question for a person**\n\n<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need stopped -->\n\n<!-- workline:sticky=reviewer/spec -->"
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "no refined issue waits on a spec review"
+  forge:
+    issues:
+      - {id: 6, comments: 2}
+      - {id: 7, comments: 2}

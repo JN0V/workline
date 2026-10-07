@@ -62,7 +62,9 @@ says which it has, and which are drafts. Propose `refine` with those it
 lacks: `scope` and `sources` (the files, 1 to 5, from the code given),
 `verification` from the code and its tests; `need` and `validation` only
 from the issue's own words — they are drafts, the reporter's to make
-theirs; the engine marks them so, write the text alone. A section it has is never rewritten. When the issue does not say
+theirs; the engine marks them so, write the text alone. A section it has is never rewritten, but one the task says the reviewer's findings
+lie in and is yours to rewrite: give its whole new text in `refine`,
+answering each finding. When the issue does not say
 enough to draft its need, propose `ask` instead: `questions`, short, for
 its reporter. When the four sections are there and neither Need nor
 Validation is a draft, propose `ready`: the engine checks it.

@@ -1,0 +1,36 @@
+case: product-owner/spec-review-restarting-not-taken-as-answered
+about: "The review a product owner answered is kept by the body that review read, not by its round (#128): a new review that restarts at round 1, on a body changed since, is read again and given to the agent, though round 1 was answered before; a review already given, the same body, is not read again for it."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "Rows lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nSessions feel right to the users.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: d424ff914f28\nanswered: aaaaaaaaaaaa\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | unverifiable | `#9:11` | Important: The Verification proves nothing |\n\n<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 10
+        title: Rows lost again
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 7d6b5529bb37\nanswered: 7d6b5529bb37\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=7d6b5529bb37 round=1 open=1 in=Verification -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  forge:
+    issues:
+      - {id: 9, comment-contains: "answered: d424ff914f28"}
+      - {id: 10, comment-contains: "answered: 7d6b5529bb37"}
+  run-files:
+    in/task.md: {contains: "The reviewer's findings on its spec, round 1"}
+    in/issues-read: {contains: "9", not-contains: "10"}

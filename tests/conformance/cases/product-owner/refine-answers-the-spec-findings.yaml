@@ -1,0 +1,30 @@
+case: product-owner/refine-answers-the-spec-findings
+about: "The reviewer's findings open on a spec are answered at the product owner's next refine (#128): the issue read again for them; a section they lie in that is still the role's own — its text as the role wrote it — rewritten, a person's kept, said; the state records the sections written and the review answered, by the body it read, so the reviewer, not the product owner, reads it next."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "Rows lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nSessions feel right to the users.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: d424ff914f28\nwrote: {Verification: cb1c26c09a46}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=d424ff914f28 round=1 open=2 in=Verification,Scope -->\n\n<!-- workline:sticky=reviewer/spec -->"
+run: {role: product-owner, event: schedule, ai: fake:refine-answers-spec}
+expect:
+  findings: [{rule: section-kept, where: "#9", message: "Scope"}]
+  forge:
+    issues:
+      - id: 9
+        body-contains: "## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        body-lacks: "Sessions feel right"
+        comment-contains: ["answered: d424ff914f28", "Verification: "]
+        comment-lacks: "cb1c26c09a46"
+  run-files:
+    in/task.md: {contains: ["yours to rewrite: Verification", "Scope: a person's, never rewritten"]}

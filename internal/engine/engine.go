@@ -2180,7 +2180,7 @@ func (a *applier) split(c backlog.Proposal) error {
 	closed := map[int]bool{} // children closed already: left as they are
 	for _, ch := range c.Into {
 		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.SplitKey(c.Issue, ch.Title), Title: strings.TrimSpace(ch.Title),
-			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head})
+			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head, Wrote: backlog.Sections})
 		if err != nil {
 			return err
 		}
@@ -2328,7 +2328,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 			if err := b.SetBody(c.Issue, body); err != nil {
 				return err
 			}
-			if err := keepBody(f, role, t, body, nil); err != nil {
+			if err := keepBody(f, role, t, body, nil, nil); err != nil {
 				return err
 			}
 		}
@@ -2352,13 +2352,14 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 	if err := f.Label(t, labels, nil); err != nil {
 		return err
 	}
-	return keepBody(f, role, t, body, c.Sources)
+	return keepBody(f, role, t, body, c.Sources, added)
 }
 
 // keepBody records in an issue's state the body the engine left, so only a
-// person's change has it read again, and the files its scope names when it
-// had none.
-func keepBody(f forge.Forge, role string, t forge.Target, body string, sources []string) error {
+// person's change has it read again, the files its scope names when it
+// had none, and the sections it wrote, so a text there is told from a
+// person's (#128).
+func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, wrote []string) error {
 	b := f.(forge.Backlog)
 	comments, err := b.Comments(t)
 	if err != nil {
@@ -2370,6 +2371,12 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources [
 	}
 	if len(st.Sources) == 0 {
 		st.Sources = sources
+	}
+	for _, name := range wrote {
+		if st.Wrote == nil {
+			st.Wrote = map[string]string{}
+		}
+		st.Wrote[name] = backlog.SectionDigest(body, name)
 	}
 	st.Keep(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)
@@ -2811,6 +2818,13 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if err != nil {
 		return nil, err
 	}
+	// The reviewer after the role in a line: ready waits on its spec
+	// review (#128).
+	line, err := routing.Load(st.Repo)
+	if err != nil {
+		return nil, err
+	}
+	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
 	// The issues pre found waiting on a person, for the report's opening
 	// (ADR-0031).
 	var waits []backlog.Wait

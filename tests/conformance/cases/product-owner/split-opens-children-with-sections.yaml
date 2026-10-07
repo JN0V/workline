@@ -1,5 +1,5 @@
 case: product-owner/split-opens-children-with-sections
-about: A need too big for one issue is split — each child opened through the one way with its own four sections, Need and Validation as drafts, a line naming its parent, labelled to refine, its own state; the parent's text is kept and its state lists the children; the report says how to undo it.
+about: A need too big for one issue is split — each child opened through the one way with its own four sections, Need and Validation as drafts, a line naming its parent, labelled to refine, its own state recording the sections the role wrote (#128); the parent's text is kept and its state lists the children; the report says how to undo it.
 given:
   repo: backlog
   forge:
@@ -12,5 +12,6 @@ expect:
       - {id: 9, title: "Export fixes", body-contains: "The export drops its last row, and a comma splits a cell.", comment-contains: "split: [10, 11]"}
       - {id: 10, title: "Keep the last row in the CSV export", body-contains: "Part of #9.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nEvery row exported, so a report counts what was sold.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe maintainer opens an export of a known day.\n\n## Scope\n\nWriteRows in src/export/csv.go.\n\nOpened from #9 by the product-owner role.", labels: [workline:to-refine, workline:draft], comment-contains: "sources: [src/export/csv.go]"}
       - {id: 11, title: "Quote commas in exported cells", body-contains: "## Verification\n\nA test writes a row holding a comma and reads it back whole.", labels: [workline:to-refine, workline:draft]}
+      - {id: 11, comment-contains: ["wrote:", "Verification: ", "Scope: "]}
       - {id: 12, title: "Backlog — product owner", body-contains: "Split #9 into 2 issues: \"Keep the last row in the CSV export\", \"Quote commas in exported cells\"."}
       - {id: 12, body-contains: "Close the issues opened from #9 to undo"}
