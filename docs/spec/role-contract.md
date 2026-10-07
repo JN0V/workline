@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 8bc0ea1
+checked: b6b0f6e
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -228,7 +228,8 @@ token), **apply** (trusted, no AI key).
    which the reader refuses, is read whole, its quotes kept, when the
    answer does not read for that reason (#128), never a line of a block
    scalar; one closing on the quote it opened with, its inner quotes
-   unescaped, is asked again. A plain value
+   unescaped, is asked again. An answer holding both slips has each
+   mended in turn. A plain value
    followed on its line by ` #…`, which the reader would drop as a
    comment, is read whole, as written, when it is free text — several
    words, or a `#` stuck to what follows (`#20`) — while a single word
