@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: da83e77
+checked: b855512
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -525,9 +525,10 @@ person unlinked is no longer one. An issue whose state lists a split
   name (`TestX`, `test_x`, `testX`), or any name right after the words
   "test", "test case" or "conformance case" — never "case" alone, prose's
   "in that case" (`backlog.TestNames`) — is proved only when the code
-  at the run's commit holds it too: the file there, the name a word in a
-  test file (`backlog.CodeTests`, `git grep` at `HEAD`); the comment says
-  where. A test the code does not hold leaves the item not proved, its
+  at the run's commit holds it too: the file there, a file and never a
+  folder, its path taken literally; the name a word in a test file
+  (`backlog.CodeTests`, `git grep` at `HEAD`) — found, not proved
+  declared as a test there; the comment says where. A test the code does not hold leaves the item not proved, its
   quote said, and a finding `proof-test-missing` (warn) names it: a name
   is no proof until it is there. A git that failed is never read as a
   test missing: the item is not proved, "could not be looked for", and
@@ -594,8 +595,9 @@ An issue that cannot start before another is done names it (ADR-0028):
   of each `depend` in its record (`done`), those a split set among its
   children in the parent's state (`after: {12: [11]}`), and the engine's
   marked line in a body (`Hand.OwnBlockers`) — a closed parent's state
-  still read while a child that waits is open. The task marks them "set
-  by the role".
+  still read while a child that waits is open, kept watched when it does
+  not read, let go once the forge no longer gives the parent. The task
+  marks them "set by the role".
 
 ```yaml
 - undepend: {issue: 14, blocked-by: [13], why: "#14 no longer reads #13's row count"}
