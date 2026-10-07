@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: 35ad2e5
+checked: 77a1623
 verified: agent:claude-code
 ---
 # Documentalist — the checks
@@ -186,9 +186,10 @@ finding a page, with its lines:
 - `paragraph-too-long`: a paragraph, or a list item, over
   `reader.paragraph-words` (80).
 - `cell-too-long`: a table cell over `reader.cell-words` (30).
-- `flow-without-diagram`: a page of `reader.flow`, or with a "How it
-  works" heading, with no diagram (a Mermaid, PlantUML, Graphviz or D2
-  block, or an image).
+- `flow-without-diagram`: a page of `reader.flow`, or with a heading
+  holding one of `reader.flow-headings` ("how it works"; as words, any
+  case, in the docs' language), with no diagram (a Mermaid, PlantUML,
+  Graphviz or D2 block, or an image).
 - `page-unreachable`: no link reaches it from `reader.navigation`
   (`README.md`), through user pages; a link to a folder reaches its
   README, one in an HTML comment nothing. With no such entry,
