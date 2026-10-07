@@ -82,6 +82,25 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 	for _, d := range done {
 		is, isOpen := open[d.Issue]
 		if !isOpen {
+			if d.Act != "split" {
+				continue
+			}
+			// A parent closed while its children still wait on siblings:
+			// those links are still the role's own, read from its state
+			// until no child that waits is open (ADR-0028).
+			st, err := splitState(f, role, d.Issue)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			waiting := false
+			for child, blockers := range st.After {
+				if _, ok := open[child]; ok {
+					own[child], waiting = append(own[child], blockers...), true
+				}
+			}
+			if waiting {
+				standing = append(standing, d)
+			}
 			continue
 		}
 		var evidence string
@@ -131,12 +150,11 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 				evidence = fmt.Sprintf("#%d's label %s taken off by a person; the role had moved it to ready", d.Issue, LabelReady)
 			}
 		case "split":
-			notes, err := f.Notes(forge.Target{Kind: "issue", ID: d.Issue})
+			st, err := splitState(f, role, d.Issue)
 			if err != nil {
 				return nil, nil, nil, err
 			}
-			st, found, err := ReadState(forge.Bodies(notes), role)
-			if !found || err != nil || len(st.Split) == 0 {
+			if len(st.Split) == 0 {
 				break // its children not recorded yet: watched again
 			}
 			for child, blockers := range st.After {
@@ -175,6 +193,20 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 		}
 	}
 	return standing, undone, own, nil
+}
+
+// splitState is a split parent's state as its comment holds it: empty
+// when it has none, or it does not read.
+func splitState(f forge.Backlog, role string, id int) (*State, error) {
+	notes, err := f.Notes(forge.Target{Kind: "issue", ID: id})
+	if err != nil {
+		return nil, err
+	}
+	st, found, err := ReadState(forge.Bodies(notes), role)
+	if !found || err != nil {
+		return &State{}, nil
+	}
+	return st, nil
 }
 
 func priorityName(n string) string {
