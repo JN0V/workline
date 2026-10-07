@@ -22,42 +22,8 @@ A software factory for AI-assisted development:
   between ([principles](docs/PRINCIPLES.md)).
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
-pull requests and nightly gardening of workline and DomoticsCore;
+pull requests and nightly gardening of workline and of another project;
 <!-- workline:derive conformance-cases -->548<!-- workline:end --> conformance cases green in CI.
-
-## The roles
-
-| Role | What it does for you | Status |
-|---|---|---|
-| [**Committer**](roles/committer/README.md) | checks each commit's message, the secrets it adds and its author; with an agent, rewrites a refused message | built |
-| [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name: finds the suspect ones, fixes them on the merge request and by gardening | built |
-| [**Reviewer**](roles/reviewer/README.md) | reads a change's code before a person does and says what it breaks; never approves | beta |
-| [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order; a person still accepts | beta |
-| [Judge](roles/judge/role.yaml) | answers one yes-or-no question a role's check cannot, from another context or model; asked by the other roles, never on an event of its own | built |
-| [Auditor](roles/auditor/role.yaml) | re-checks a sample of every role's acts (docs today): `workline sample` asks it each week, a verdict per act; widening to every role: [#205](https://github.com/JN0V/workline/issues/205) | built (docs) |
-| Inspector | will read a merge request's static analysis: only the findings it adds, posted on it, explained by an AI that never changes the verdict ([#202](https://github.com/JN0V/workline/issues/202)); SonarQube read, not rerun ([#203](https://github.com/JN0V/workline/issues/203)) | planned |
-| Security | will add scanners as gates and a security lens to the reviewer; a pentest later, on an authorised staging only ([#204](https://github.com/JN0V/workline/issues/204)) | planned |
-| Process engineer | will read the line's measures, the auditor's verdicts first, and propose fixes as issues ([#89](https://github.com/JN0V/workline/issues/89), [ADR-0019](docs/adr/0019-the-line-evaluates-itself.md), a draft) | planned |
-| Tester | will write an issue's tests from its Verification, red first, kept from the developer ([#206](https://github.com/JN0V/workline/issues/206)) | planned |
-| Architect | will read specs for structure and keep architecture rules as gates ([#207](https://github.com/JN0V/workline/issues/207)) | planned |
-| UX | for projects with a user interface: accessibility tools as gates, flows read against the need ([#208](https://github.com/JN0V/workline/issues/208)) | planned |
-| PM | will map the product, watch similar ones and suggest functions; to design with the maintainer ([#209](https://github.com/JN0V/workline/issues/209)) | planned |
-| Developer | will take a ready issue and open the pull request, last ([#117](https://github.com/JN0V/workline/issues/117)) | planned |
-
-What each role does and does not, its settings and costs: its page, or
-[all the roles](docs/roles.md). Checking that a commit holds one change is
-planned ([#192](https://github.com/JN0V/workline/issues/192)). Why these
-roles, in this order: the [roles panorama](docs/research/roles-panorama.md).
-
-## Documentation
-
-| Start here | Use it | Go further |
-|---|---|---|
-| [Install](docs/install.md) — your machine, then CI | [Roles](docs/roles.md) — what each does and not, its settings | [Principles](docs/PRINCIPLES.md) |
-| [Quickstart](docs/quickstart.md) — ten minutes, on your machine | [Usage](docs/usage.md) — commands, options, exit codes | [Role contract](docs/spec/role-contract.md) — what a role is |
-| [Concepts](docs/concepts.md) — the words used everywhere | [Configuration](docs/config.md) — settings, files, variables | [Decisions](docs/adr/) · [Research](docs/research/) |
-| [Troubleshooting](docs/troubleshooting.md) | [CI](docs/ci.md) — [GitHub](docs/ci-github.md), [GitLab](docs/ci-gitlab.md), [other forges, none](docs/ci-other-forges.md) | [Backlog](https://github.com/JN0V/workline/issues) |
-| [Contributing](CONTRIBUTING.md) — build, test, commits | [Any trigger](docs/triggers.md) · [GitLab, started by a tool](docs/gitlab-trigger.md) · [Only a part](docs/parts.md) | |
 
 ## Get started
 
@@ -70,6 +36,42 @@ roles, in this order: the [roles panorama](docs/research/roles-panorama.md).
 - **Add CI**: the GitHub or GitLab templates ([install](docs/install.md#in-ci)).
 - Step by step, in ten minutes: [the quickstart](docs/quickstart.md).
 
+## Documentation
+
+| Start here | Use it | Go further |
+|---|---|---|
+| [Install](docs/install.md) — your machine, then CI | [Roles](docs/roles.md) — what each does and not, its settings | [Principles](docs/PRINCIPLES.md) |
+| [Quickstart](docs/quickstart.md) — ten minutes, on your machine | [Usage](docs/usage.md) — commands, options, exit codes | [Role contract](docs/spec/role-contract.md) — what a role is |
+| [Concepts](docs/concepts.md) — the words used everywhere | [Configuration](docs/config.md) — settings, files, variables | [Decisions](docs/adr/) · [Research](docs/research/) |
+| [Troubleshooting](docs/troubleshooting.md) | [CI](docs/ci.md) — [GitHub](docs/ci-github.md), [GitLab](docs/ci-gitlab.md), [other forges, none](docs/ci-other-forges.md) | [Backlog](https://github.com/JN0V/workline/issues) |
+| [Contributing](CONTRIBUTING.md) — build, test, commits | [Any trigger](docs/triggers.md) · [GitLab, started by a tool](docs/gitlab-trigger.md) · [Only a part](docs/parts.md) | |
+
+## The roles
+
+| Role | What it does for you | Status |
+|---|---|---|
+| [**Committer**](roles/committer/README.md) | checks each commit's message, the secrets it adds and its author | built |
+| [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name | built |
+| [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | beta |
+| [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | beta |
+| [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | built |
+| [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts (the docs' today) | built (docs) |
+| [Inspector](https://github.com/JN0V/workline/issues/202) | will post the static-analysis findings a merge request adds | planned |
+| [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
+| [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
+| [Tester](https://github.com/JN0V/workline/issues/206) | will write an issue's tests first, kept from the developer | planned |
+| [Architect](https://github.com/JN0V/workline/issues/207) | will read specs for structure and keep architecture rules | planned |
+| [UX](https://github.com/JN0V/workline/issues/208) | will check accessibility and flows, for projects with a user interface | planned |
+| [PM](https://github.com/JN0V/workline/issues/209) | will map the product and suggest functions | planned |
+| [Developer](https://github.com/JN0V/workline/issues/117) | will take a ready issue and open the pull request, last | planned |
+
+- What each role does and does not, its settings and costs: its page, or
+  [all the roles](docs/roles.md).
+- A planned role links to its issue, which holds its design.
+- The auditor widening to every role: [#205](https://github.com/JN0V/workline/issues/205).
+- Why these roles, in this order: the
+  [roles panorama](docs/research/roles-panorama.md).
+
 ## Where it runs
 
 - One routing says which roles each event runs: `routing.default.yaml` as
@@ -80,78 +82,81 @@ roles, in this order: the [roles panorama](docs/research/roles-panorama.md).
   applies, with the write token and no AI key.
 - Forges: GitHub and GitLab built in; none (`forge: local`, kept in the
   clone); any other through a command (`cmd:`, a Forgejo and Gitea sample,
-  untried on a live instance) —
-  [ADR-0016](docs/adr/0016-writes-go-where-the-project-lives.md).
+  untried on a live instance).
 
 ```mermaid
 flowchart LR
-  machine["Your machine<br/>git hooks, workline review"]
-  mr["The merge request<br/>judged in CI"]
-  main["main<br/>schedules, releases"]
-  issues["The issues<br/>the backlog"]
+  machine["Your machine"]
+  mr["The merge request"]
+  main["main"]
+  issues["The issues"]
   machine -- git push --> mr
   mr -- a person merges --> main
-  main -- gardening opens, follow rebuilds --> mr
-  main -- the product owner keeps --> issues
+  main -- gardening --> mr
+  main -- the product owner --> issues
   mr -- a finding outside the change --> issues
 ```
 
+Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
+
 ### Your machine
 
-| When | Event | Roles | Agent |
-|---|---|---|---|
-| `git commit` | `commit-msg`, the global hook | committer | yours, to rewrite a refused message |
-| `git push` | `pre-push`, the global hook, once `workline init` routes it | committer, documentalist: counts the docs made suspect | never |
-| `workline review` | `review` | reviewer, before you push | yours |
-| `workline review --spec <file>`, `--issue <n>` | `spec` | reviewer: a spec before it is built (#128) | yours |
-| `workline docs` | | documentalist: judges the docs made suspect, you keep or drop each fix | yours |
+| When | Roles | Agent |
+|---|---|---|
+| `git commit` (the global hook) | committer | yours, to rewrite a refused message |
+| `git push` (the global hook, once `workline init` routes it) | committer; documentalist, counting the docs made suspect | never |
+| `workline review` | reviewer, before you push | yours |
+| `workline review --spec <file>`, `--issue <n>` | reviewer, on a spec before it is built | yours |
+| `workline docs` | documentalist: fixes the docs made suspect, you keep or drop each | yours |
 
 ### The merge request
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it (`merge-request`) | committer, every commit; documentalist, the docs it made suspect; reviewer, opt-in ([ADR-0020](docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)) | the docs' fix committed to its branch; one summary comment; findings in code scanning (SARIF) or GitLab's Code Quality; the job's summary ([ADR-0035](docs/adr/0035-the-engine-writes-the-jobs-summary.md)) |
-| a release tool's (release-please…) | held as the release: the documentalist on the docs due ([ADR-0017](docs/adr/0017-the-release-manager.md)) | the docs' fix in a merge request of its own |
-| a fork's | judged with no agent | on GitHub, a comment ([workline-fork.yml](ci/github/workline-fork.yml)); on GitLab, nothing |
+| each push to it | committer; documentalist; reviewer, opt-in | the docs' fix on its branch; one summary comment; the findings in the forge's code-scanning view; the job's summary |
+| a release tool's (release-please…) | documentalist, on the docs due at the release | the docs' fix in a merge request of its own |
+| a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
-Templates: [GitHub Actions](ci/github/workline.yml),
-[GitLab CI](ci/gitlab/workline.gitlab-ci.yml). The review is on the merge
-request, a person merges ([ADR-0011](docs/adr/0011-the-review-is-on-the-merge-request-not-the-push.md)).
+- The review is on the merge request; a person merges.
+- Templates: [GitHub Actions](ci/github/workline.yml) and
+  [its fork job](ci/github/workline-fork.yml),
+  [GitLab CI](ci/gitlab/workline.gitlab-ci.yml). Setting up:
+  [CI](docs/ci.md).
 
 ### main: schedules and releases
 
-| When | Command | Roles | Writes |
-|---|---|---|---|
-| gardening, nightly or weekly | `workline route schedule` | documentalist; product owner, opt-in | one merge request per task ([ADR-0006](docs/adr/0006-gardening-opens-one-merge-request-per-task.md)); the issues |
-| the weekly sample | `workline sample` | auditor, on one in ten docs vouched for; the product owner's acts drawn for a person, no agent | one issue a sample, a comment a week; a merge request putting back a `checked` found false |
-| each push to main | `workline follow` | the engine, no agent: the documentalist's release fix rebuilt on main's new tip; one a person committed to is left alone ([ADR-0034](docs/adr/0034-the-release-fix-follows-its-base.md)) | its merge request, force-pushed |
-| before your release tool tags | `workline route release` | documentalist, on the docs due at the release | a non-zero exit holds the release; the fix on `workline/documentalist/release` |
+| When | Roles | Writes |
+|---|---|---|
+| gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task; the issues |
+| the weekly sample (`workline sample`) | auditor: a second look at one doc in ten the documentalist confirmed; the product owner's acts, drawn for a person | one issue, a comment a week; a merge request undoing a wrong confirmation |
+| each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip | its merge request, force-pushed |
+| before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |
 
-Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
-[sample](ci/github/workline-sample.yml), `follow` in
-[workline.yml](ci/github/workline.yml); on GitLab, two pipeline schedules
-and a push to the default branch, all in the same
-[template](ci/gitlab/workline.gitlab-ci.yml). workline cuts no
-releases: it runs before your release tool.
+- workline cuts no releases: it runs before your release tool.
+- Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
+  [sample](ci/github/workline-sample.yml), `follow` in
+  [workline.yml](ci/github/workline.yml); on GitLab, two pipeline
+  schedules and a push to the default branch, all in the same
+  [template](ci/gitlab/workline.gitlab-ci.yml).
+- Each command in detail: [usage](docs/usage.md#commands).
 
 ### The issues
 
 | Who | What |
 |---|---|
-| product owner, on gardening's `schedule` | reads a share of the open issues against the code: duplicates, obsolete issues, refines to `ready`, splits, orders; its report is one issue, "Backlog — product owner" ([ADR-0018](docs/adr/0018-the-product-owner.md)) |
+| product owner, on gardening | reads a share of the open issues against the code: duplicates, obsolete, refined to `ready`, split, ordered; one report issue |
 | `workline issues import <file>` | a roadmap file to issues |
 | reviewer | a finding outside the change: an issue, `needs-triage` |
-| documentalist | the code disagrees with a doc the code follows (a decision): an issue |
+| documentalist | the code disagrees with a decision a doc records: an issue |
 | a person | accepts: the label `workline:accepted`, a parent closed |
-
-Each role, from a hook, a script or a CI job: [triggers.md](docs/triggers.md).
 
 ## Gates
 
 - A gate is a checkpoint before merging or releasing: it runs your tools
   and gives a verdict by rules, never by asking a model.
-- Your tools, your thresholds: any command; its exit code, or its SARIF
-  results counted against a `max` set before it runs.
+- Your tools, your thresholds: any command; its exit code, or its results
+  in SARIF (the common format of static-analysis tools) counted against a
+  `max` set before it runs.
 - Three outcomes for each check: **pass**, **finding**, or **error** — a
   tool missing, crashed or unreadable fails the gate, never passes it
   (an `optional` check is still reported).
@@ -166,9 +171,9 @@ gates:
       - {id: deps, run: "osv-scanner scan --format sarif --output {out}/deps.sarif .", output: sarif, max: {error: 0}}
 ```
 
-- SonarQube, where a team runs it: its quality gate will be read, never
-  rerun ([#203](https://github.com/JN0V/workline/issues/203)).
 - Everything else: [the gates spec](docs/spec/gates.md).
-- Not built yet: only a merge request's new findings, posted on it
-  ([#202](https://github.com/JN0V/workline/issues/202)); other outputs (k6 or benchmark JSON); baselines with
-  an expiry date.
+- Not built yet: a merge request's new findings only, posted on it
+  ([#202](https://github.com/JN0V/workline/issues/202)); a SonarQube
+  quality gate read, never rerun
+  ([#203](https://github.com/JN0V/workline/issues/203)); other outputs
+  (k6 or benchmark JSON); baselines with an expiry date.
