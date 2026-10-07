@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.21.0](https://github.com/JN0V/workline/compare/v0.20.0...v0.21.0) (2026-10-07)
+
+
+### Features
+
+* **product-owner:** take off its own links, read tests named as proof ([#253](https://github.com/JN0V/workline/issues/253)) ([735bff3](https://github.com/JN0V/workline/commit/735bff34290bfa6a2d11136c12557eb699b92109))
+* **product-owner:** three buildable leftovers ([#249](https://github.com/JN0V/workline/issues/249)) ([a8574a5](https://github.com/JN0V/workline/commit/a8574a5b69dab03b9741721c243cac0a81fc55f3))
+
 ## [0.20.0](https://github.com/JN0V/workline/compare/v0.19.0...v0.20.0) (2026-10-07)
 
 
