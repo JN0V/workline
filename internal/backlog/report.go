@@ -116,7 +116,11 @@ func (p *Plan) toDecide() (string, int) {
 			line = plainLine(line) + " Drafted when the agent next reads it."
 		}
 		box := "- [ ] " + line + " " + TickMarker(q.TickKey())
-		if q.Agreed != "" {
+		if q.Proposal != nil && !q.Doable() && q.Proposal.Do != "open" {
+			// A person's to settle — its reporter's rounds spent, a slip
+			// with nowhere to go: no box a tick could not do.
+			box = "- For you to settle: " + line
+		} else if q.Agreed != "" {
 			// Ticked already: nothing left to decide, only to say.
 			box = fmt.Sprintf("- Ticked by %s: %s It is drafted, then done, at the next run that reads it with an agent.", q.Agreed, plainLine(q.Line))
 		} else {
