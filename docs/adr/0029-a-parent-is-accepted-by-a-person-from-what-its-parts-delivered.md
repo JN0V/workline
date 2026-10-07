@@ -86,12 +86,16 @@ the test was taken on trust: a part could quote a test nobody wrote.
 - **What names a test**: a code span in the item holding a test file's
   path (a tests or spec folder, a `_test`, `.test`, `.spec` or `_spec`
   file, a `test_` file), `path::name`, a test's own name (`TestX`,
-  `test_x`, `testX`), or any name right after the word "test" or "case".
+  `test_x`, `testX`), or any name right after the words "test", "test
+  case" or "conformance case" — never "case" alone, prose's "in that
+  case".
   The rest of the item is prose.
 - **Read from the code** at the run's commit, with git alone: the file
   there; the name a word in a test file. The comment says where.
 - **Not there**: the item is not proved, whatever quotes it; the comment
-  says which test is missing, and a finding (`proof-test-missing`).
+  says which test is missing, and a finding (`proof-test-missing`). Git
+  failing is not a test missing: "could not be looked for"
+  (`proof-test-unread`), and the item is not proved either.
   Mechanical, no agent (principle 4).
 - Whether the test passes is not read: that is CI's, on the pull request
   that closed the part, and its link is on the comment already.

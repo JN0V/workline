@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 13d335d
+checked: da83e77
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -522,14 +522,17 @@ person unlinked is no longer one. An issue whose state lists a split
 - **A test named as proof** (ADR-0029, amended): an item that names a
   test in a code span — a test file by its path (`tests/…`, `…_test.go`,
   `….spec.ts`, `test_….py`), one test in it as `path::name`, a test's own
-  name (`TestX`, `test_x`, `testX`), or any name right after the word
-  "test" or "case" (`backlog.TestNames`) — is proved only when the code
+  name (`TestX`, `test_x`, `testX`), or any name right after the words
+  "test", "test case" or "conformance case" — never "case" alone, prose's
+  "in that case" (`backlog.TestNames`) — is proved only when the code
   at the run's commit holds it too: the file there, the name a word in a
   test file (`backlog.CodeTests`, `git grep` at `HEAD`); the comment says
   where. A test the code does not hold leaves the item not proved, its
   quote said, and a finding `proof-test-missing` (warn) names it: a name
-  is no proof until it is there. Whether the test passes is CI's, not
-  read here.
+  is no proof until it is there. A git that failed is never read as a
+  test missing: the item is not proved, "could not be looked for", and
+  `proof-test-unread` (warn) says why. Whether the test passes is CI's,
+  not read here.
 - **All its parts closed**: the comment asks a person to accept the need
   by closing the parent, or to reopen a part or open one for what is
   missing, naming first the parts not delivered and the items not proved;
@@ -590,8 +593,9 @@ An issue that cannot start before another is done names it (ADR-0028):
   The role's own are told from a person's by what it keeps: the blockers
   of each `depend` in its record (`done`), those a split set among its
   children in the parent's state (`after: {12: [11]}`), and the engine's
-  marked line in a body (`Hand.OwnBlockers`). The task marks them "set by
-  the role".
+  marked line in a body (`Hand.OwnBlockers`) — a closed parent's state
+  still read while a child that waits is open. The task marks them "set
+  by the role".
 
 ```yaml
 - undepend: {issue: 14, blocked-by: [13], why: "#14 no longer reads #13's row count"}

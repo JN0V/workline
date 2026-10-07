@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 13d335d
+checked: da83e77
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -116,7 +116,8 @@ without delivering (not planned, a duplicate, gone); each item of its
 Verification proved where a part delivered quotes it, in its own
 Verification or in what closed it — and, when it names a test, that test
 found in the code at the run's commit —, or "not proved"
-(`proof-test-missing` when the test is not there). Once all its parts
+(`proof-test-missing` when the test is not there, `proof-test-unread`
+when git could not say). Once all its parts
 are closed, the comment, a finding (`parent-to-accept`) and the report's
 "To accept" ask a person to accept it by closing it; the role never
 does, and an agent's closing of a parent is dropped.
