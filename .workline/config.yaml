@@ -41,6 +41,8 @@ roles:
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
   product-owner:
     settings:
+      # The week's trial of ADR-0038: at most five issues read a night.
+      issues-per-run: 5
       # The backlog file the issues were imported from, archived since: the
       # issues are the source, an edit to it flags none of them (ADR-0032).
       archived: [docs/BACKLOG.md]
