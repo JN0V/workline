@@ -286,7 +286,7 @@ func oneLineEach(said []string) string {
 
 const (
 	lineMax = 120
-	perLine = 3 // findings on an issue's line, each 35 characters at least
+	perLine = 3 // findings on an issue's line, the rest counted
 )
 
 // short is a text on one line of n characters at most, cut at a word, its
