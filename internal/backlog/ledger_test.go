@@ -16,16 +16,26 @@ func TestInert(t *testing.T) {
 	if got := Inert(in); got != want {
 		t.Errorf("Inert:\n%q\nwant\n%q", got, want)
 	}
-	// Inline code at a line's start opens no block; nor does an indented
-	// fence: the lines after are escaped still.
-	for _, in := range []string{"```x```\n/close", "    ```\n/close", "````\n```\n/close"} {
-		if got := Inert(in); !strings.HasSuffix(got, "\n\\/close") && in != "````\n```\n/close" {
-			t.Errorf("Inert(%q) = %q, the quick action left", in, got)
+	for _, c := range []struct{ in, want string }{
+		// Inline code at a line's start opens no block.
+		{"```x```\n/close", "```x```\n\\/close"},
+		// A fence indented four spaces, or by a tab, is no fence.
+		{"    ```\n/close", "    ```\n\\/close"},
+		{"\t```\n/close", "\t```\n\\/close"},
+		// Indented three spaces, it is one.
+		{"   ```\n/close\n```", "   ```\n/close\n```"},
+		// A fence with an info string opens a block; one whose info
+		// string holds a backtick does not.
+		{"```go\n/close\n```\n/close", "```go\n/close\n```\n\\/close"},
+		{"```go`\n/close", "```go`\n\\/close"},
+		// A shorter fence, or an indented one, inside a block closes
+		// nothing.
+		{"````\n```\n/close\n````\n/close", "````\n```\n/close\n````\n\\/close"},
+		{"```\n    ```\n/close\n```\n/close", "```\n    ```\n/close\n```\n\\/close"},
+	} {
+		if got := Inert(c.in); got != c.want {
+			t.Errorf("Inert(%q) = %q, want %q", c.in, got, c.want)
 		}
-	}
-	// A shorter fence inside a longer one closes nothing.
-	if got := Inert("````\n```\n/close\n````\n/close"); got != "````\n```\n/close\n````\n\\/close" {
-		t.Errorf("nested fences: %q", got)
 	}
 }
 

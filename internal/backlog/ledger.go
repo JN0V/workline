@@ -634,7 +634,7 @@ func Inert(text string) string {
 	for i, l := range lines {
 		t := strings.TrimSpace(l)
 		n := len(t) - len(strings.TrimLeft(t, "`"))
-		indent := len(l) - len(strings.TrimLeft(l, " "))
+		indent := len(strings.ReplaceAll(l[:len(l)-len(strings.TrimLeft(l, " \t"))], "\t", "    "))
 		switch {
 		case indent > 3:
 			// Indented code, or a line inside a fenced block: never a
