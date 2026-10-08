@@ -1,7 +1,9 @@
 case: product-owner/changed-import-lines-read-again
-about: "A commit changes the lines of an imported file an issue was opened from (its import= key): that issue is read again with the lines as they were when it was last read and as they are now; an issue imported from lines no commit changed is not, though they moved. Read again with nothing proposed, the change needs no person: no box, a folded line (ADR-0032)."
+about: "A commit changes the lines of an imported file an issue was opened from (its import= key): that issue is read again with the lines as they were when it was last read and as they are now; an issue imported from lines no commit changed is not, though they moved. The change is said in the summary (ADR-0032)."
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {changed-needs: true}}}
   setup:
     - |
       cat > ROADMAP.md <<'MD'
@@ -44,5 +46,4 @@ expect:
     in/task.md: {contains: "Was:\n> 1. **Keep the last row.** WriteRows stops one row short.\n>    It loses data on every export.\nNow:\n> 1. **Keep the last row.** WriteRows stops one row short.\n>    It loses data on every export,\n>    and the header too.\n", not-contains: "## #5"}
   forge:
     issues:
-      - {id: 6, title: "Backlog — product owner", body-contains: "<details><summary>1 issue whose source changed was read again: nothing to change</summary>\n\n- #4 Keep the last row — `ROADMAP.md`, lines 7 to 9, which it was opened from, changed.\n", body-lacks: "proposal=changed-lines/4"}
-      - {id: 6, body-contains: "- **Nothing waits on you.**", comment-lacks: "path: ROADMAP.md"}
+      - {id: 6, absent: true}

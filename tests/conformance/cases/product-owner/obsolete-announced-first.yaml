@@ -1,16 +1,18 @@
 case: product-owner/obsolete-announced-first
-about: An issue the code made obsolete is not closed at once — it is announced on the issue, to its reporter, the code quoted and the day from which it may be closed, with the label workline:obsolete; the report lists it and how to keep it open (ADR-0024).
+about: An issue the code made obsolete is not closed at once — it is announced on the issue, to its reporter, the code quoted and the day from which it may be closed, with the label workline:obsolete; the summary lists it (ADR-0024).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {close-obsolete: {mode: act}}}}}
   forge:
     issues:
       - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: zed, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:close-obsolete}
 expect:
+  findings: [{rule: done, where: "#7", message: "Announced #7 as obsolete, to be closed at a run from"}]
   forge:
     issues:
       - {id: 7, closed: false, comments: 2, labels: [workline:obsolete], comment-contains: "@zed, this issue looks obsolete"}
       - {id: 7, comment-contains: "for i := 0; i < len(rows); i++ {"}
       - {id: 7, comment-contains: "<!-- workline:product-owner/obsolete -->"}
-      - {id: 8, title: "Backlog — product owner", body-contains: "Announced #7 as obsolete, to be closed at a run from"}
-      - {id: 8, body-contains: "take the label workline:obsolete off"}
+      - {id: 8, absent: true}

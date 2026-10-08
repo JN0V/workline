@@ -1,0 +1,21 @@
+case: product-owner/persons-unread-issue-before-the-import-catch-up
+about: An issue a person opened that the agent never read counts as new, though its state was written before and holds no `new` (an engine before, or a run before the last) — read newest first, ahead of the catch-up of issues an import opened; one a bot opened waits with the catch-up.
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 2}}}
+  forge:
+    issues:
+      - {id: 3, title: "Export drops the last row", body: "The export drops the last row.\n\n<!-- workline:import=BACKLOG.md:0a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 4, title: "Rows lost", body: "Some rows are lost.\n\n<!-- workline:import=BACKLOG.md:1a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "A tester role", body: "A role that writes the tests a need asks for.", author: ann, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Bump a dependency", body: "Bump the CSV library.", author: "renovate[bot]", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "10\n3", not-contains: "12"}
+  forge:
+    issues:
+      - {id: 10, comment-contains: "judged: d8c4dff"}
+      - {id: 4, comment-lacks: "judged: d8c4dff"}
+      - {id: 12, comment-lacks: "judged: d8c4dff"}

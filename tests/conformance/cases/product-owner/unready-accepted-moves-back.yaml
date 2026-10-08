@@ -1,0 +1,19 @@
+case: product-owner/unready-accepted-moves-back
+about: "Moving a ready issue back to refine is always proposed, never done by the role; a person of the project accepts it — workline:accepted —, and the next run takes workline:ready off, puts workline:to-refine on and tells the issue why, with no agent (ADR-0032, ADR-0038)."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 11
+        title: "Keep the last row in the CSV export"
+        body: "Part of #9."
+        labels: [workline:ready, workline:proposed, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: unready\n    line: 'Move #11 back to refine (workline:ready off, workline:to-refine on): #9 now asks for JSON.'\n    proposal: {do: unready, issue: 11, why: '#9 now asks for JSON.'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: done-as-accepted, where: "#11", message: "Moved #11 back to refine"}]
+  forge:
+    issues:
+      - {id: 11, labels: [workline:accepted, workline:to-refine], comment-contains: "Moved back to refine: #9 now asks for JSON.\n\nBy the product-owner role, @dev having accepted it."}

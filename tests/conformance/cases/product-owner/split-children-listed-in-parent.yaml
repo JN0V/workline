@@ -2,6 +2,8 @@ case: product-owner/split-children-listed-in-parent
 about: On a forge without sub-issues, a split lists its children as a task list in the parent's body, after its text, which stays; the parent is not read again for the engine's own change.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {split: {mode: act}}}}}
   forge:
     issues:
       - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}

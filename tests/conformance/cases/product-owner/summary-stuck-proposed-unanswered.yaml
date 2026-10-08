@@ -1,0 +1,25 @@
+case: product-owner/summary-stuck-proposed-unanswered
+about: "The summary says stuck a proposal no person answered for more than stuck-days, from the day it was first proposed, kept on its issue; one with no day yet gets the run's, and is not stuck yet (ADR-0031, ADR-0038)."
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {close-obsolete: {mode: act}}}}}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Backlog — product owner"
+        body: "An older report."
+        labels: []
+        comments: ["```yaml\nproposed:\n  - {issue: 7, act: close-obsolete, line: 'Close #7 as obsolete: the loop', since: '2026-01-01'}\n  - {issue: 9, act: rename, line: 'Rename #9 to Keep every row'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: stuck, where: "#7", message: "`close-obsolete` proposed on it since 2026-01-01 ("}]
+  no-findings: [{rule: stuck, where: "#9"}]
+  forge:
+    issues:
+      - {id: 7, labels: [workline:proposed], comment-contains: "since: \"2026-01-01\""}
+      - {id: 9, labels: [workline:proposed], comment-contains: "**Proposes**: Rename #9 to Keep every row"}
+      - {id: 10, closed: true}

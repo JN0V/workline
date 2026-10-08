@@ -2,6 +2,8 @@ case: product-owner/split-and-rename-once-a-run
 about: Two splits, or two renames, of one issue in a run — each checked against the state before either is applied — keep the first that passes its check (one with two children of one title, or the title it has, does not); the next is dropped and said.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {rename: {mode: act}, split: {mode: act}}}}}
   forge:
     issues:
       - {id: 9, title: "Export fixes", body: "Rows lost, commas split cells.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
@@ -13,5 +15,5 @@ expect:
       - {id: 9, title: "Export fixes, rows and commas", comment-contains: "split: [10, 11]"}
       - {id: 10, title: "Keep the last row"}
       - {id: 11, title: "Quote commas"}
-      - {id: 12, title: "Backlog — product owner"}
+      - {id: 12, absent: true}
       - {id: 13, absent: true}

@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/pathglob"
@@ -52,6 +51,25 @@ func Basis(body string) map[string]string {
 func (s *State) Keep(body string) {
 	s.Body = BodyDigest(body)
 	s.Sections = Basis(body)
+	s.Deleted = DeletedSections(s, body)
+}
+
+// DeletedSections are the sections the role wrote (State.Wrote) that a
+// person took out of the body since — the heading gone, or its text —,
+// with those the state holds already: each a "no" for that section, never
+// written again (ADR-0038).
+func DeletedSections(s *State, body string) []string {
+	if s == nil {
+		return nil
+	}
+	out := slices.Clone(s.Deleted)
+	have := work.Sections(body)
+	for _, name := range Sections {
+		if s.Wrote[name] != "" && strings.TrimSpace(have[name]) == "" && !slices.Contains(out, name) {
+			out = append(out, name)
+		}
+	}
+	return out
 }
 
 // Rewritten are the watched sections a person rewrote since the state was
@@ -287,100 +305,20 @@ func LinesChange(repo, path string, from, to int, opened, base, head string) (wa
 	return show(base, from, to), show(head, nfrom, nto), nfrom, nto, true, nil
 }
 
-// readChanges settles the changes the record holds — ticked seen by a
-// person of the project, or none of their issues open any more — then
-// adds those this run found, a change found again kept with its day; an
-// issue read again for one has every act on it proposed (ADR-0032).
+// readChanges reads the changes this run found — a file archived since
+// aside —: an issue read again for one has every act on it proposed
+// (ADR-0032). They are said in the job's summary when found; nothing of
+// them is kept (ADR-0038).
 func (p *Plan) readChanges(found []Change) {
 	p.changedFor = map[int]Change{}
-	var kept []Change
-	for _, c := range p.Record.Changes {
-		if t, ok := p.hand.Tick(c.Key()); ok && t.Person() {
-			p.Changed = true
-			p.said = append(p.said, fmt.Sprintf("- The change to #%d checked by %s: it leaves the report.", c.Issue, t.Who()))
-			continue
-		}
-		if !p.open[c.Issue] && !slices.ContainsFunc(c.Touch, func(t Touch) bool { return p.open[t.Issue] }) {
-			p.Changed = true
-			continue
-		}
-		if c.Path != "" && pathglob.Any(p.config.Archived, c.Path) {
-			p.Changed = true // its file archived since: no longer a source
-			continue
-		}
-		kept = append(kept, c)
-	}
-	today := time.Now().UTC().Format(dateLayout)
 	for _, c := range found {
 		if c.Path != "" && pathglob.Any(p.config.Archived, c.Path) {
 			continue
 		}
-		c.Was, c.Now = "", ""
 		for _, t := range c.Touch {
 			if _, ok := p.changedFor[t.Issue]; t.Read && !ok {
 				p.changedFor[t.Issue] = c // read with each change; the first names them
 			}
 		}
-		i := slices.IndexFunc(kept, func(k Change) bool { return k.Key() == c.Key() })
-		if i < 0 {
-			c.Since = today
-			kept = append(kept, c)
-			p.Changed = true
-			continue
-		}
-		c.Since = kept[i].Since
-		if !sameChange(kept[i], c) {
-			kept[i], p.Changed = c, true
-		}
 	}
-	p.Record.Changes = kept
-}
-
-// sameChange says whether two changes say the same in the report.
-func sameChange(a, b Change) bool {
-	return a.Issue == b.Issue && slices.Equal(a.What, b.What) && a.Path == b.Path && a.Lines == b.Lines &&
-		a.Since == b.Since && slices.Equal(a.Touch, b.Touch)
-}
-
-// settleChanges settles, with no person, the changes the record holds
-// whose every open issue touched was read again with the change and has
-// nothing proposed: there is nothing to check, so no box (ADR-0032). They
-// leave the record; this run's report says them in a line, folded.
-func (p *Plan) settleChanges() {
-	var kept []Change
-	for _, c := range p.Record.Changes {
-		if p.nothingToCheck(c) {
-			p.Rechecked, p.Changed = append(p.Rechecked, c), true
-			continue
-		}
-		kept = append(kept, c)
-	}
-	p.Record.Changes = kept
-}
-
-// nothingToCheck says whether every open issue a change touches was read
-// again with it and has no proposal waiting.
-func (p *Plan) nothingToCheck(c Change) bool {
-	touched := 0
-	for _, t := range c.Touch {
-		if !p.open[t.Issue] {
-			continue
-		}
-		touched++
-		if !t.Read || len(p.proposedOn(t.Issue)) > 0 {
-			return false
-		}
-	}
-	return touched > 0
-}
-
-// proposedOn are the proposals waiting on an issue.
-func (p *Plan) proposedOn(id int) []Pending {
-	var out []Pending
-	for _, q := range p.Record.Proposed {
-		if q.Issue == id && q.Key == "" {
-			out = append(out, q)
-		}
-	}
-	return out
 }

@@ -15,6 +15,7 @@ roles:
         roles/documentalist/docs/cascades.md, roles/documentalist/docs/gardening.md,
         roles/documentalist/docs/judge-claims.md,
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
+        roles/product-owner/docs/settings.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md]
       # The user pages (AGENTS.md, "Writing user docs"): the role pages too,
       # but their status and the archived backlog; each role page opens
@@ -41,6 +42,8 @@ roles:
         runs-kept: "sed -n 's/^const keepRuns = \\([0-9]*\\)$/\\1/p' internal/engine/engine.go"
   product-owner:
     settings:
+      # The week's trial of ADR-0038: at most five issues read a night.
+      issues-per-run: 5
       # The backlog file the issues were imported from, archived since: the
       # issues are the source, an edit to it flags none of them (ADR-0032).
       archived: [docs/BACKLOG.md]

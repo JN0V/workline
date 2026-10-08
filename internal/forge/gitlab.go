@@ -580,6 +580,7 @@ func (g *gitlab) Notes(t Target) ([]Note, error) {
 		return nil, err
 	}
 	found, err := pages[struct {
+		ID      int    `json:"id"`
 		Body    string `json:"body"`
 		System  bool   `json:"system"`
 		Created string `json:"created_at"`
@@ -599,7 +600,7 @@ func (g *gitlab) Notes(t Target) ([]Note, error) {
 		if err != nil {
 			return nil, err
 		}
-		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username), Created: n.Created})
+		all = append(all, Note{Body: n.Body, Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username), Created: n.Created, ID: strconv.Itoa(n.ID)})
 	}
 	return all, nil
 }
@@ -659,6 +660,75 @@ func (g *gitlab) Trail(id int, label string) (Trail, error) {
 		tr.Links = append(tr.Links, l)
 	}
 	return tr, nil
+}
+
+// LabelEvents reads the issue's label events, each with its user: a
+// project or group access token's is a bot's; a person of the project by
+// their access level (ADR-0038).
+func (g *gitlab) LabelEvents(id int) ([]LabelEvent, error) {
+	out, err := g.api("--paginate", path(Target{Kind: "issue", ID: id})+"/resource_label_events?per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	found, err := pages[struct {
+		Action  string `json:"action"`
+		Created string `json:"created_at"`
+		Label   *struct {
+			Name string `json:"name"`
+		} `json:"label"`
+		User *struct {
+			Username string `json:"username"`
+		} `json:"user"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	var events []LabelEvent
+	for _, e := range found {
+		if e.Label == nil {
+			continue // a label deleted since
+		}
+		ev := LabelEvent{Label: e.Label.Name, Added: e.Action == "add", Note: Note{Created: e.Created}}
+		if e.User != nil {
+			ev.Author, ev.Bot = e.User.Username, botName.MatchString(e.User.Username)
+			if ev.Insider, err = g.insider(ev.Author); err != nil {
+				return nil, err
+			}
+		}
+		events = append(events, ev)
+	}
+	return events, nil
+}
+
+// React awards an emoji to an issue's note; GitLab answers 404 "Award
+// Emoji Name has already been taken" for one there already: done.
+func (g *gitlab) React(id int, note, emoji string) error {
+	if note == "" {
+		return nil
+	}
+	_, err := g.api("-X", "POST", fmt.Sprintf("%s/notes/%s/award_emoji", path(Target{Kind: "issue", ID: id}), note), "-f", "name="+emoji)
+	if errors.Is(err, errNotFound) {
+		return nil
+	}
+	return err
+}
+
+// scopedLabels: GitLab's `key::value` labels (ADR-0038).
+func (g *gitlab) scopedLabels() bool { return true }
+
+// labelFilter is the project's issue list filtered on the label.
+func (g *gitlab) labelFilter(label string) string {
+	out, err := g.api("projects/:id")
+	if err != nil {
+		return ""
+	}
+	var p struct {
+		Web string `json:"web_url"`
+	}
+	if json.Unmarshal(out, &p) != nil || p.Web == "" {
+		return ""
+	}
+	return p.Web + "/-/issues?label_name[]=" + url.QueryEscape(label)
 }
 
 // Close closes an issue; a duplicate through GitLab's own quick action,
@@ -1050,47 +1120,4 @@ func (g *gitlab) SetMilestone(id int, title string) error {
 	}
 	_, err = g.api("-X", "PUT", path(Target{Kind: "issue", ID: id}), "-f", fmt.Sprintf("milestone_id=%d", n))
 	return err
-}
-
-// taskNote is GitLab's system note for a box ticked or unticked in a
-// description — "marked the checklist item **…** as completed" (formerly
-// "the task"), written whether the box was ticked on the page or the
-// description edited through the API; the item's markdown escaped, its
-// hidden comments' text kept.
-var taskNote = regexp.MustCompile(`(?s)^marked the (?:checklist item|task) \*\*(.*)\*\* as (completed|incomplete)$`)
-
-// escaped is a character GitLab's note escaped: `\#`, `\=`, `\-`.
-var escaped = regexp.MustCompile(`\\(.)`)
-
-// Ticks reads the boxes ticked from the issue's system notes, each with
-// its author, of the project by their access level.
-func (g *gitlab) Ticks(id int) ([]Tick, error) {
-	out, err := g.api("--paginate", path(Target{Kind: "issue", ID: id})+"/notes?sort=asc&order_by=created_at&per_page=100")
-	if err != nil {
-		return nil, err
-	}
-	found, err := pages[struct {
-		Body   string `json:"body"`
-		System bool   `json:"system"`
-		Author struct {
-			Username string `json:"username"`
-		} `json:"author"`
-	}](out)
-	if err != nil {
-		return nil, err
-	}
-	var ticks []Tick
-	for _, n := range found {
-		m := taskNote.FindStringSubmatch(strings.TrimSpace(n.Body))
-		if !n.System || m == nil {
-			continue
-		}
-		in, err := g.insider(n.Author.Username)
-		if err != nil {
-			return nil, err
-		}
-		ticks = append(ticks, Tick{Item: escaped.ReplaceAllString(m[1], "$1"), Done: m[2] == "completed",
-			Note: Note{Author: n.Author.Username, Insider: in, Bot: botName.MatchString(n.Author.Username)}})
-	}
-	return ticks, nil
 }

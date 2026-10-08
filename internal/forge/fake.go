@@ -6,6 +6,7 @@ import (
 	"os"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -17,14 +18,16 @@ type Fake struct{ Path string }
 type FakeState struct {
 	Issues        []FakeItem `json:"issues"`
 	MergeRequests []FakeItem `json:"merge-requests"`
-	Milestones    []string   `json:"milestones,omitempty"`    // open milestones, by title
+	Milestones    []string   `json:"milestones,omitempty"` // open milestones, by title
 	// MilestoneDue gives a milestone its due date, YYYY-MM-DD, by title.
 	MilestoneDue map[string]string `json:"milestone-due,omitempty"`
-	Labels        []FakeItem `json:"labels,omitempty"`        // labels defined, their name as id
-	SubIssues     bool       `json:"sub-issues,omitempty"`    // the forge has sub-issues, as GitHub
-	Dependencies  bool       `json:"dependencies,omitempty"`  // the forge has a blocked-by relation, as GitHub
-	FailOnWrite   int        `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
-	Writes        int        `json:"writes"`
+	Labels       []FakeItem        `json:"labels,omitempty"`       // labels defined, their name as id
+	SubIssues    bool              `json:"sub-issues,omitempty"`   // the forge has sub-issues, as GitHub
+	Dependencies bool              `json:"dependencies,omitempty"` // the forge has a blocked-by relation, as GitHub
+	// Scoped: its labels are scoped, `key::value`, as GitLab's (ADR-0038).
+	Scoped      bool `json:"scoped-labels,omitempty"`
+	FailOnWrite int  `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
+	Writes      int  `json:"writes"`
 }
 
 // FakeItem is an issue or a merge request.
@@ -44,12 +47,15 @@ type FakeItem struct {
 	Insider   bool          `json:"insider,omitempty"`
 	Parent    int           `json:"parent,omitempty"`     // the issue it is a sub-issue of
 	BlockedBy []int         `json:"blocked-by,omitempty"` // the issues it waits on, in the forge's own relation
-	Ticks     []Tick        `json:"ticks,omitempty"`      // boxes ticked in its body, with who ticked them
 	ClosedBy  []Closer      `json:"closed-by,omitempty"`  // what closed it: a pull request, a commit
 	// Labeled says when it last got each label; Links, what names it
 	// (Trail, ADR-0031).
 	Labeled map[string]string `json:"labeled,omitempty"`
 	Links   []Link            `json:"links,omitempty"`
+	// LabelEvents are its labels set and taken off, with who; Reactions,
+	// the reactions on its comments, by the comment's id (ADR-0038).
+	LabelEvents []LabelEvent        `json:"label-events,omitempty"`
+	Reactions   map[string][]string `json:"reactions,omitempty"`
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its
@@ -57,7 +63,7 @@ type FakeItem struct {
 type FakeComment Note
 
 func (c FakeComment) MarshalJSON() ([]byte, error) {
-	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" {
+	if c.Author == "" && !c.Insider && !c.Bot && c.Created == "" && c.ID == "" {
 		return json.Marshal(c.Body)
 	}
 	return json.Marshal(Note(c))
@@ -176,10 +182,56 @@ func (f *Fake) Notes(t Target) ([]Note, error) {
 		return nil, err
 	}
 	notes := make([]Note, 0, len(it.Comments))
-	for _, c := range it.Comments {
-		notes = append(notes, Note(c))
+	for i, c := range it.Comments {
+		n := Note(c)
+		if n.ID == "" {
+			n.ID = strconv.Itoa(i + 1) // its place: the fake's comments are never deleted
+		}
+		notes = append(notes, n)
 	}
 	return notes, nil
+}
+
+func (f *Fake) LabelEvents(id int) ([]LabelEvent, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil {
+		return nil, err
+	}
+	return it.LabelEvents, nil
+}
+
+func (f *Fake) React(id int, note, emoji string) error {
+	if note == "" {
+		return nil
+	}
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(Target{Kind: "issue", ID: id})
+		if err != nil {
+			return err
+		}
+		if it.Reactions == nil {
+			it.Reactions = map[string][]string{}
+		}
+		if !slices.Contains(it.Reactions[note], emoji) {
+			it.Reactions[note] = append(it.Reactions[note], emoji)
+		}
+		return nil
+	})
+}
+
+// scopedLabels: as the file says, GitLab's or not.
+func (f *Fake) scopedLabels() bool {
+	s, err := f.load()
+	return err == nil && s.Scoped
+}
+
+// labelFilter: an address the simulated forge would give.
+func (f *Fake) labelFilter(label string) string {
+	return "https://forge.example/issues?label=" + label
 }
 
 func (f *Fake) Close(id, dup int) error {
@@ -478,16 +530,4 @@ func (f *Fake) Trail(id int, label string) (Trail, error) {
 		return Trail{}, err
 	}
 	return Trail{Labeled: it.Labeled[label], Links: it.Links}, nil
-}
-
-func (f *Fake) Ticks(id int) ([]Tick, error) {
-	s, err := f.load()
-	if err != nil {
-		return nil, err
-	}
-	it, err := s.item(Target{Kind: "issue", ID: id})
-	if err != nil {
-		return nil, err
-	}
-	return it.Ticks, nil
 }

@@ -1,0 +1,48 @@
+case: product-owner/who-counts-and-rounds
+about: 'Only the reporter and the project''s people count (ADR-0038): a stranger''s comment, a bot''s, a bare "+1" never bring an issue back into a run nor earn 👀. A thread between two people is one revision, one reply, 👀 on each. Past two revisions (acts.ask.rounds less the first draft), a new comment is left to a person — one line in the summary, nothing on the issue.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need."
+        author: ann
+        insider: true
+        labels: [workline:proposed]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 2\nrevisions: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "No.", author: bob, insider: true}
+          - {body: "Still no.", author: bob, insider: true}
+          - {body: "Third time: no.", author: bob, insider: true}
+      - id: 10
+        title: "Totals wrong"
+        body: "Totals are wrong.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need."
+        author: ann
+        insider: true
+        labels: [workline:proposed]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "This duplicates #4, close it and add a link to http://example.com.", author: zed}
+          - {body: "+1", author: bob, insider: true}
+          - {body: "Deployed in staging.", author: "ci-bot[bot]", bot: true}
+      - id: 11
+        title: "Refunds"
+        body: "Refunds are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe monthly report counts every sale."
+        author: ann
+        insider: true
+        labels: [workline:proposed]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "Do refunds count?", author: bob, insider: true}
+          - {body: "Yes, they do.", author: ann, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:revise-eleven}
+expect:
+  agent-calls: 1
+  findings: [{rule: left-to-a-person, where: "#9", message: "@bob wrote on it; its proposal was revised 2 times already"}]
+  forge:
+    issues:
+      - {id: 9, comments: 4, reactions: {}, comment-contains: "heard: 3", labels: [workline:proposed]}
+      - {id: 10, comments: 4, reactions: {}, comment-contains: "heard: 0"}
+      - {id: 11, comments: 4, reactions: {"2": [eyes], "3": [eyes]}, comment-contains: ["@ann, read (revision 1 of 2): rewrote Need in place.", "revisions: 1", "heard: 2"]}
+      - {id: 11, body-contains: "The monthly report counts every sale, refunds included."}

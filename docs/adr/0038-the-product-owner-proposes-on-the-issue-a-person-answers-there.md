@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — decided, not built yet; a week's trial first
+- **Status:** accepted — built (amended below); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -62,7 +62,8 @@
 
 - An outsider's issue is never moved to `ready` alone (ADR-0021 stands).
 - An act done alone and undone by a person (`ready` taken off…) still
-  demotes that kind, as ADR-0026.
+  demotes that kind, as ADR-0026 — amended below: on that issue first,
+  everywhere after `undone-max`.
 
 ### Shown on the issue, through forge labels
 
@@ -97,7 +98,8 @@
 - **Reused, not new**: ADR-0021's bounded loop (`acts.ask.rounds`),
   extended to the project's own issues, with a revision count per issue.
 - **GitLab**: scoped labels replace each other; `proposed` gone with
-  `accepted` set is a yes, `proposed` gone alone is "not now".
+  `accepted` set is a yes, `proposed` gone alone is "not now". Amended
+  below: on the Free plan they do not, and `accepted` present is the yes.
 
 ### Who counts
 
@@ -161,3 +163,35 @@
   read), rounds spent (silence).
 - Settings that tune what is now off stay, read only when a kind is
   turned back on.
+
+## Amendment (2026-10-08): built, two answers decided by the maintainer
+
+**`workline:accepted` present is the yes, on every plan.** GitLab Free
+keeps both scoped labels
+([checked](../research/surfacing-proposals.md#checked-on-the-sandboxes)):
+the role takes `proposed` off itself; either spelling of `accepted` is a
+yes.
+
+**An act undone is a proposal on that issue first.** Undone by a person,
+that kind is proposed on that issue only; once undone `undone-max` times
+across the open issues (3, from 1 to 20), on every issue. One undo never
+switches `normal` off.
+
+**What building it settled**:
+
+- **One comment per issue**: the state comment, what the role did and
+  proposes on top, the state folded.
+- **The ticks and the pause go with the report**: no global memory;
+  `ignored-runs-max` is said no longer read.
+- **Off by default**: `changed-needs`, `weekly-sample` (reading every
+  issue's state when on), the other kinds by their mode.
+- **GitLab labels**: `workline::proposed`, `workline::accepted`.
+- **Revise**: one revision a run, however many comments; a comment on an
+  issue with no proposal is context.
+- **Slowing down**: `proposals-max` (10).
+- **`enterprising`** raises the caps; `ready` never has a draft.
+- **Reading order** (from [#270](https://github.com/JN0V/workline/pull/270)):
+  answers, then a person's new issues newest first, the catch-up last.
+- **No quick action**: a line starting with `/` is escaped, every role.
+- **Migration**: an old report's proposals, acts, undos and closings move
+  to their issues; its pause, ticks, measure and changes are dropped.

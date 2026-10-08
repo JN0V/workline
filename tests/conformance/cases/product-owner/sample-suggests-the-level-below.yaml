@@ -3,16 +3,19 @@ about: More than one in ten of the acts the product owner did alone at enterpris
 given:
   repo: vouched
   config:
-    roles:
-      product-owner:
-        settings: {autonomy: enterprising}
+    roles: {product-owner: {settings: {weekly-sample: true, autonomy: enterprising}}}
   forge:
     issues:
-      - id: 5
-        title: "Backlog — product owner"
-        body: "What the product owner did."
-        labels: []
-        comments: ["```yaml\nundone:\n  - {issue: 21, act: rename, evidence: '#21 renamed back by a person'}\n  - {issue: 24, act: rename, evidence: '#24 renamed back by a person'}\nmeasure: {level: enterprising}\ndid:\n  - {issue: 20, act: rename, level: enterprising, day: \"2026-01-12\", line: 'Renamed #20'}\n  - {issue: 21, act: rename, level: enterprising, day: \"2026-01-13\", line: 'Renamed #21'}\n  - {issue: 22, act: rename, level: enterprising, day: \"2026-01-14\", line: 'Renamed #22'}\n  - {issue: 23, act: rename, level: enterprising, day: \"2026-01-15\", line: 'Renamed #23'}\n  - {issue: 24, act: rename, level: enterprising, day: \"2026-01-16\", line: 'Renamed #24'}\n  - {issue: 25, act: rename, level: enterprising, day: \"2026-01-17\", line: 'Renamed #25'}\n  - {issue: 26, act: rename, level: enterprising, day: \"2026-01-18\", line: 'Renamed #26'}\n  - {issue: 27, act: rename, level: enterprising, day: \"2026-01-12\", line: 'Renamed #27'}\n  - {issue: 28, act: rename, level: enterprising, day: \"2026-01-13\", line: 'Renamed #28'}\n  - {issue: 29, act: rename, level: enterprising, day: \"2026-01-14\", line: 'Renamed #29'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-12', line: 'Renamed #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 21, "title": "Issue 21", "body": "Issue 21.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-13', line: 'Renamed #21'}\nundone:\n- {act: rename, evidence: '#21 renamed back by a person'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 22, "title": "Issue 22", "body": "Issue 22.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-14', line: 'Renamed #22'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 23, "title": "Issue 23", "body": "Issue 23.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-15', line: 'Renamed #23'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 24, "title": "Issue 24", "body": "Issue 24.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-16', line: 'Renamed #24'}\nundone:\n- {act: rename, evidence: '#24 renamed back by a person'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 25, "title": "Issue 25", "body": "Issue 25.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-17', line: 'Renamed #25'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 26, "title": "Issue 26", "body": "Issue 26.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-18', line: 'Renamed #26'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 27, "title": "Issue 27", "body": "Issue 27.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-12', line: 'Renamed #27'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 28, "title": "Issue 28", "body": "Issue 28.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-13', line: 'Renamed #28'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
+      - {"id": 29, "title": "Issue 29", "body": "Issue 29.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: enterprising, day: '2026-01-14', line: 'Renamed #29'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
 run: {sample: [--week, 2026-W03, --judge, none], then: apply}
 expect:
   status: pass
@@ -20,6 +23,6 @@ expect:
     - {rule: acts-suggest, message: "autonomy: normal"}
   forge:
     issues:
-      - {id: 7, comment-contains: "**Suggested**: `autonomy: normal` — 2 of the 10 acts done alone at enterprising were undone (more than 10%). Set it in the project's settings if you agree; the sample never changes it."}
+      - {id: 31, comment-contains: "**Suggested**: `autonomy: normal` — 2 of the 10 acts done alone at enterprising were undone (more than 10%). Set it in the project's settings if you agree; the sample never changes it."}
   files:
     .workline/config.yaml: {contains: "autonomy: enterprising"}

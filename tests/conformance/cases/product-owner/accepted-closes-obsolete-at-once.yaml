@@ -1,0 +1,24 @@
+case: product-owner/accepted-closes-obsolete-at-once
+about: A closing as obsolete proposed on an issue and accepted by a person of the project — workline:accepted — is closed at the next run, its quote found again; not announced, no second judge asked; the person's yes is named on the issue.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {close-obsolete: {mode: propose, max: 3}}
+  forge:
+    issues:
+      - id: 7
+        title: "Export drops the last row"
+        body: "The export drops the last row."
+        labels: [workline:proposed, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: close-obsolete\n    line: 'Close #7 as obsolete: the loop'\n    proposal: {do: close, issue: 7, reason: obsolete, quote: {path: src/export/csv.go, text: 'for i := 0; i < len(rows); i++ {'}, why: WriteRows now loops to the last row., announce: true, until: '2026-10-12'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: done-as-accepted, where: "#7", message: "Closed #7 as obsolete"}]
+  forge:
+    issues:
+      - {id: 7, closed: true, labels: [workline:accepted], comment-contains: ["@dev having accepted it (workline:accepted)", "closed: close-obsolete"]}

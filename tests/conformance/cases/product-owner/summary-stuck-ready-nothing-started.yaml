@@ -1,0 +1,20 @@
+case: product-owner/summary-stuck-ready-nothing-started
+about: "The summary says stuck an issue ready for more than stuck-days with no pull request nor commit linked to it since it got the label, from the day the forge says it got it; a link older than the label started nothing (ADR-0031)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {next-max: 0}
+  forge:
+    issues:
+      - {id: 20, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready], labeled: {"workline:ready": "2026-01-01T09:00:00Z"}, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 21, title: "Export in XML", body: "Add an XML export.", labels: [workline:ready], labeled: {"workline:ready": "2026-01-01T09:00:00Z"}, links: [{kind: pull-request, ref: "#30", at: "2026-02-01T09:00:00Z"}], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 22, title: "Export in YAML", body: "Add a YAML export.", labels: [workline:ready], labeled: {"workline:ready": "2026-03-01T09:00:00Z"}, links: [{kind: pull-request, ref: "#31", at: "2026-01-15T09:00:00Z"}], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: stuck, where: "#20", message: "ready since 2026-01-01 ("}
+    - {rule: stuck, where: "#22", message: "ready since 2026-03-01 ("}
+  no-findings: [{rule: stuck, where: "#21"}]

@@ -1,0 +1,30 @@
+case: product-owner/proposed-taken-off-sets-aside
+about: 'A person taking workline:proposed off an issue, without workline:accepted, says "not now" for that issue only (ADR-0038) — with no agent, its proposals are dropped, the label is not put back, its comment says it is set aside until it changes; nothing is demoted elsewhere. A label a bot took off is no answer: put back.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost."
+        author: ann
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: ready\n    line: 'Move #9 to ready'\n    since: \"2026-10-01\"\n    proposal: {do: ready, issue: 9, why: It is clear.}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 10
+        title: "Totals wrong"
+        body: "Totals are wrong."
+        author: ann
+        insider: true
+        labels: []
+        label-events: [{label: workline:proposed, added: false, author: "tidy[bot]", bot: true, created: "2026-10-08T07:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: ready\n    line: 'Move #10 to ready'\n    since: \"2026-10-01\"\n    proposal: {do: ready, issue: 10, why: It is clear.}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: set-aside, where: "#9"}]
+  no-findings: [{rule: set-aside, where: "#10"}, {rule: demoted, where: ""}]
+  forge:
+    issues:
+      - {id: 9, labels: [], comment-contains: ["Set aside by a person: nothing more is proposed here until the issue changes.", "aside: "], comment-lacks: "act: ready"}
+      - {id: 10, labels: [workline:proposed], comment-contains: "act: ready"}

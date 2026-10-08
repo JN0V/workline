@@ -1,0 +1,15 @@
+case: product-owner/first-run-reads-nothing-new
+about: On the role's first run on a backlog — no state comment on any issue — every issue gets its state, and none is read before the next run; a person's issue opened later is read in the run that first sees it (ADR-0018, amended).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 3, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: []}
+      - {id: 4, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 0
+  forge:
+    issues:
+      - {id: 3, comments: 1, comment-contains: "confirmed: d8c4dff", comment-lacks: "judged:"}
+      - {id: 4, comments: 1, comment-lacks: "judged:"}

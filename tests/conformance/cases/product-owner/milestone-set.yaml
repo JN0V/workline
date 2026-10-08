@@ -2,15 +2,16 @@ case: product-owner/milestone-set
 about: An issue put in a release's milestone is, the milestone created when it is not open yet, with no quote needed; a milestone with no title is refused.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {milestone: {mode: act}}}}}
   forge:
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 12, title: "Gone", body: "Something gone.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:milestones}
 expect:
-  findings: [{rule: milestone-title, where: "#12"}]
+  findings: [{rule: milestone-title, where: "#12"}, {rule: done, where: "#9", message: "Put #9 in the milestone \"v1.1.0\""}]
   forge:
     issues:
       - {id: 9, milestone: v1.1.0}
       - {id: 12, comments: 1}
-      - {id: 13, body-contains: "Put #9 in the milestone \"v1.1.0\""}

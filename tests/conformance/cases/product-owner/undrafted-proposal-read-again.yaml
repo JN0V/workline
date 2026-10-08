@@ -1,5 +1,5 @@
 case: product-owner/undrafted-proposal-read-again
-about: "A proposal an older engine recorded with its line alone, no act kept, nobody ticking it: its issue is read again first, though nothing changed, and the agent decides it anew — the old line leaves the report, never a box nobody can have done (ADR-0025, amended)."
+about: "A proposal an older engine recorded on its report with its line alone, no act kept: moved to its issue, which is read again first, though nothing changed, and the agent decides it anew — the old line leaves the issue's state (ADR-0025, amended; ADR-0038)."
 given:
   repo: backlog
   forge:
@@ -17,4 +17,5 @@ expect:
     in/task.md: {contains: "## #9 Rows lost"}
   forge:
     issues:
-      - {id: 10, body-lacks: "proposal=9/refine", comment-lacks: "act: refine"}
+      - {id: 9, comment-lacks: "act: refine", labels: []}
+      - {id: 10, closed: true}

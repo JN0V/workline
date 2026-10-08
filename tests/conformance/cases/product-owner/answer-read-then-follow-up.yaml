@@ -4,7 +4,7 @@ given:
   repo: backlog
   forge:
     issues:
-      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: When are rows lost?\n\n<!-- workline:product-owner/ask -->", "Every time I export."]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: When are rows lost?\n\n<!-- workline:product-owner/ask -->", {body: "Every time I export.", author: ann, insider: true}]}
 run: {role: product-owner, event: schedule, ai: fake:ask-after-answer}
 expect:
   run-files:

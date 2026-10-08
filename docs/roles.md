@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
-checked: 886cdff
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # The roles
@@ -16,7 +16,7 @@ and where it stands: planned, beta or built, by
 | Committer | checks each commit's message, secrets and author | `commit-msg`, `pre-push`, `merge-request` | [committer](../roles/committer/README.md) |
 | Documentalist | keeps the docs true to the code they name | `pre-push`, `merge-request`, `schedule`, `release`, `init` | [documentalist](../roles/documentalist/README.md) |
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
-| Product owner | keeps the open issues true to the code, refined and in order | `schedule` (opt-in), `import`, the weekly sample | [product owner](../roles/product-owner/README.md) |
+| Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
 | Auditor | re-checks a weekly sample of the docs the documentalist confirmed | `workline sample` | [auditor](../roles/auditor/role.yaml) |
 

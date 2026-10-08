@@ -2,6 +2,8 @@ case: product-owner/changed-import-lines-unread-said
 about: "An imported issue whose lines git cannot follow — the commit it was opened at gone, after a force-push or beyond a shallow clone — is said in a warning, never read as unchanged (ADR-0032; principle 12)."
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {changed-needs: true}}}
   setup:
     - |
       printf '# Roadmap\n\n1. **Keep the last row.**\n' > ROADMAP.md

@@ -1,5 +1,5 @@
 case: product-owner/proposals-kept-until-settled
-about: A proposal stays in the report from run to run until a person settles it — its issue closed, here #8 — and the run's own proposals are added to it.
+about: A proposal stays on its issue from run to run until a person settles it — its issue closed, here #8 — and the run's own proposals are added on theirs; the old report's proposals move to their issues once.
 given:
   repo: backlog
   config:
@@ -22,4 +22,7 @@ expect:
   forge:
     issues:
       - {id: 9, closed: false}
-      - {id: 10, body-contains: "**#7 Export drops the last row**\n\n- [ ] Close it as obsolete: src/export/csv.go says `the loop` — The loop reaches the last row. <!-- workline:proposal=7/close-obsolete -->\n\n**#9 Last row missing**\n\n- [ ] Announce it obsolete, on the issue: closed at a later run if nobody writes on it and a second judge agrees. src/export/csv.go says", comment-lacks: "issue: 8"}
+      - {id: 7, labels: [workline:proposed], comment-contains: "**Proposes**: Close it as obsolete: src/export/csv.go says `the loop` — The loop reaches the last row."}
+      - {id: 9, labels: [workline:proposed], comment-contains: "**Proposes**: Announce it obsolete, on the issue: closed at a later run if nobody writes on it and a second judge agrees. src/export/csv.go says"}
+      - {id: 8, comment-lacks: "close-obsolete"}
+      - {id: 10, closed: true}

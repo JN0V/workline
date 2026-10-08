@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 50d152c
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -147,10 +147,10 @@ The weekly sample of the docs the documentalist confirmed (moved their
     `documentalist-step-0`;
   - opens a merge request putting back a `checked` found false;
   - with no forge, writes nothing and says so.
-- **The product owner's acts**: on a project with its report, `--apply`
-  also draws one in ten of the acts it did alone that week, from its
-  record, onto the issue "workline: the weekly sample of the product
-  owner's acts", each with its day, level and whether a person undid it,
+- **The product owner's acts**: on a project that turns them on
+  (`weekly-sample: true`), `--apply` also draws one in ten of the acts it
+  did alone that week, from each issue's state, onto the issue "workline:
+  the weekly sample of the product owner's acts", each with its day, level and whether a person undid it,
   and the level they suggest
   ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
 - Exits 2 when a doc is left for a person; `--summary` as for `route`.

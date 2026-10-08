@@ -1,0 +1,15 @@
+case: product-owner/summary-next-milestones-by-due-date
+about: "The backlog's order ranks milestones by their due date, then their title: the summary's next lists the issue of v2.0, due first, before the one of v1.0, due later, and that of v0.9, which has no date, last — with no agent."
+given:
+  repo: backlog
+  forge:
+    milestones: [v0.9, v1.0, v2.0]
+    milestone-due: {v1.0: "2026-12-15", v2.0: "2026-11-30"}
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", milestone: v0.9, labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", milestone: v1.0, labels: [workline:ready, workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", milestone: v2.0, labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, summary: true}
+expect:
+  agent-calls: 0
+  summary-file: ["next-ready #14 (info)", "next-ready #13 (info)", "next-ready #12 (info)"]

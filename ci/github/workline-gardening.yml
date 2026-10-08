@@ -88,8 +88,8 @@ jobs:
     needs: judge
     if: always() && needs.judge.outputs.proposed == 'true'
     runs-on: ubuntu-latest
-    # issues: the product owner's acts (comments, closings, milestones) and
-    # its report issue.
+    # issues: the product owner's acts (comments, labels, closings,
+    # reactions) on each issue.
     permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app

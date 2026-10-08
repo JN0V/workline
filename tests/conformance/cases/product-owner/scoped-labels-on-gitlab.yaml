@@ -1,0 +1,24 @@
+case: product-owner/scoped-labels-on-gitlab
+about: 'On a forge with scoped labels (GitLab), the role''s labels are workline::proposed and workline::accepted (ADR-0038); the plan may not make them exclusive (GitLab Free keeps both), so accepted present is the yes, and the role takes proposed off itself; workline:accepted, unscoped, is a yes too.'
+given:
+  repo: backlog
+  forge:
+    scoped-labels: true
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 10
+        title: "Totals"
+        body: "## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD."
+        author: ann
+        insider: true
+        labels: [workline::proposed, workline::accepted]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline::proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:refine-nine-again}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline::proposed], comment-contains: ["label `workline::accepted` to agree", "take `workline::proposed` off"]}
+      - {id: 10, labels: [workline:ready], body-lacks: "workline:draft"}
+    labels:
+      - {id: 1, title: workline::accepted}
+      - {id: 2, title: workline::proposed}

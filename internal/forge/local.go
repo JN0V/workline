@@ -282,11 +282,18 @@ func (l *Local) Comments(t Target) ([]string, error) {
 func (l *Local) Notes(t Target) ([]Note, error) {
 	comments, err := l.Comments(t)
 	notes := make([]Note, 0, len(comments))
-	for _, c := range comments {
-		notes = append(notes, Note{Body: c, Insider: true})
+	for i, c := range comments {
+		notes = append(notes, Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1)})
 	}
 	return notes, err
 }
+
+// LabelEvents: the local forge keeps no history: it does not say who set
+// a label.
+func (l *Local) LabelEvents(id int) ([]LabelEvent, error) { return nil, nil }
+
+// React: the local forge has no reactions; nothing to do.
+func (l *Local) React(id int, note, emoji string) error { return nil }
 
 // Close closes an issue; the local forge keeps no reason, the engine's
 // comment says it.
@@ -475,13 +482,3 @@ func (l *Local) Closers(id int) ([]Closer, error) { return nil, nil }
 // Trail: the local forge keeps no history, nor links: it does not say
 // when an issue got a label (ADR-0031).
 func (l *Local) Trail(id int, label string) (Trail, error) { return Trail{}, nil }
-
-// Ticks: the local forge keeps no history; a box ticked in the clone is a
-// person of the project's, as its comments are.
-func (l *Local) Ticks(id int) ([]Tick, error) {
-	it, err := l.Item("issue", id)
-	if err != nil {
-		return nil, err
-	}
-	return TicksBetween("", it.Body, Note{Insider: true}), nil
-}

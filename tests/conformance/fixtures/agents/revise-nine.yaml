@@ -1,0 +1,5 @@
+- refine:
+    issue: 9
+    need: "The monthly report counts every sale."
+    validation: "Ann opens the CSV of a known day and counts its rows."
+    why: "Bob asked that the Validation name the CSV of a known day."

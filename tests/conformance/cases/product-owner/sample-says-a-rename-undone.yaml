@@ -1,18 +1,16 @@
 case: product-owner/sample-says-a-rename-undone
-about: An act drawn that a person undid — a title renamed back, as the role's record says it found — is said undone in the weekly sample, with the evidence the record keeps.
+about: An act drawn that a person undid — a title renamed back, as its issue's state says the role found — is said undone in the weekly sample, with the evidence the state keeps.
 given:
   repo: vouched
+  config:
+    roles: {product-owner: {settings: {weekly-sample: true}}}
   forge:
     issues:
-      - id: 5
-        title: "Backlog — product owner"
-        body: "What the product owner did."
-        labels: []
-        comments: ["```yaml\nundone:\n  - {issue: 21, act: rename, evidence: '#21 renamed back to \"bug\" by a person; the role had set \"The CSV export drops the last row\"'}\nmeasure: {level: normal}\ndid:\n  - {issue: 21, act: rename, level: normal, day: \"2026-01-15\", line: 'Renamed #21 to \"The CSV export drops the last row\"'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+      - {"id": 21, "title": "Issue 21", "body": "Issue 21.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: normal, day: '2026-01-15', line: 'Renamed #21 to \"The CSV export drops the last row\"'}\nundone:\n- {act: rename, evidence: '#21 renamed back to \"bug\" by a person; the role had set \"The CSV export drops the last row\"'}\n```\n\n<!-- workline:sticky=product-owner/state -->"], "closed": true}
 run: {sample: [--week, 2026-W03, --judge, none], then: apply}
 expect:
   status: pass
   forge:
     issues:
-      - {id: 7, title: "workline: the weekly sample of the product owner's acts", comment-contains: "| #21 | rename | 2026-01-15 | normal | **undone**: #21 renamed back to \"bug\" by a person; the role had set \"The CSV export drops the last row\" |"}
-      - {id: 7, comment-contains: "1 act done alone at normal in the acts the record keeps, 1 undone"}
+      - {id: 23, title: "workline: the weekly sample of the product owner's acts", comment-contains: "| #21 | rename | 2026-01-15 | normal | **undone**: #21 renamed back to \"bug\" by a person; the role had set \"The CSV export drops the last row\" |"}
+      - {id: 23, comment-contains: "1 act done alone at normal in the acts the issues keep, 1 undone"}

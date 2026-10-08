@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: c24603b
+checked: a59e5e6
 judged: a8574a5
 verified: agent:documentalist
 ---
@@ -113,15 +113,13 @@ roles:
 What it does, its acts and settings: [its page](../roles/product-owner/README.md).
 In short:
 
-- its acts and proposals go to one issue, "Backlog — product owner", which
-  opens with what you have to do — the boxes to tick, a warning a run
-  before it pauses —, then what is next and what is stuck past
-  `stuck-days` (14)
-  ([ADR-0031](adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md);
-  changing: [ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md));
+- what it proposes goes on each issue: the label `workline:proposed`
+  (GitLab: `workline::proposed`) and its one comment there; a saved
+  filter on the label is what waits on you; the night's summary is in
+  the job's summary ([ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md));
 - it refines issues to `ready`, drafts labelled `workline:draft`; the label
-  `workline:accepted`, on one issue or many from the list, moves them to
-  `ready` at the next run, with no agent;
+  `workline:accepted`, on one issue or many from the list, is your yes:
+  done at the next run, with no agent; a comment asks it to revise;
 - an outsider's issue gets the sections proposed in a comment; the same
   label agrees for the project, and a reply `agreed`, by its reporter or a
   person of the project, has them written
@@ -185,8 +183,9 @@ roles:
   refused, YAML reading it as another number.
 - **The week** is the last whole one; for another (`--week 2026-W40`),
   each forge page says how.
-- **The product owner's acts**, on a project that runs it
-  ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):
+- **The product owner's acts**, on a project that turns them on
+  (`weekly-sample: true`;
+  [ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):
   one in ten of those it did alone in the week, onto the issue "workline:
   the weekly sample of the product owner's acts" — each with its day, its
   level, and whether a person undid it — for you to judge; undo one you

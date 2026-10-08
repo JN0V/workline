@@ -364,7 +364,7 @@ func WithoutBlockers(body string, drop []int) string {
 // blockers: those its record keeps (a depend, a split's after) and those
 // the engine's line in its body names. A person's link, or line, is never
 // among them (ADR-0028).
-func (h *Hand) OwnBlockers(is forge.Issue) []int {
+func (h *Ledger) OwnBlockers(is forge.Issue) []int {
 	set := append(slices.Clone(h.Own[is.ID]), MarkedBlockers(is.Body)...)
 	var out []int
 	for _, b := range Blockers(is) {
@@ -379,7 +379,7 @@ func (h *Hand) OwnBlockers(is forge.Issue) []int {
 // with its own blockers that are no longer open — closed, or gone from the
 // forge. A closed blocker holds nothing back; the engine takes the link
 // off, with no agent (ADR-0028).
-func (h *Hand) Stale(open []forge.Issue) map[int][]int {
+func (h *Ledger) Stale(open []forge.Issue) map[int][]int {
 	isOpen := map[int]bool{}
 	for _, is := range open {
 		isOpen[is.ID] = true
@@ -411,7 +411,7 @@ func (p *Plan) checkUndepend(c *Proposal) (rule, why string) {
 	if len(c.BlockedBy) == 0 || len(c.BlockedBy) > maxBlockers {
 		return "undepend-issue", fmt.Sprintf("a link is taken off 1 to %d blockers at a time (blocked-by)", maxBlockers)
 	}
-	have, own := Blockers(is), p.hand.OwnBlockers(is)
+	have, own := Blockers(is), p.ledger.OwnBlockers(is)
 	var left []int
 	for _, b := range c.BlockedBy {
 		switch {
@@ -466,7 +466,6 @@ func (p *Plan) recordUndepend(c Proposal) {
 	}
 	p.Record.Done = slices.DeleteFunc(p.Record.Done, func(d Done) bool { return d.Act == "depend" && d.Set == "" })
 	p.dropped[c.Issue] = append(p.dropped[c.Issue], c.BlockedBy...)
-	p.Changed = true
 }
 
 // asLeft is an issue as this run leaves what it waits on: the links its

@@ -21,7 +21,7 @@ const (
 	ItemWouldOpen   = "would-open"   // without --apply: would be opened
 	ItemAlreadyOpen = "already-open" // an open issue held it before the import
 	ItemClosed      = "closed"       // a closed issue holds it: not opened again
-	ItemPastCap     = "past-cap"     // proposed in the report, past the cap of open; the import run again opens it
+	ItemPastCap     = "past-cap"     // not opened, past the cap of open; the import run again opens it
 	ItemDone        = "done"         // judged done, the words that say so quoted
 	ItemNotItem     = "not-item"     // not a requirement: an introduction, a history, a heading
 )
@@ -42,7 +42,7 @@ type Skip struct {
 type ImportOpen struct {
 	Title   string
 	Quote   Quote
-	Capped  bool // proposed in the report, past the cap of open
+	Capped  bool // not opened, past the cap of open
 	Dropped bool // refused by the engine, a finding saying why
 	// Opening is what opening it did, as the run recorded it: the issue
 	// that holds it, and whether it was opened then.
@@ -193,7 +193,7 @@ func Cover(repo, file string, lines []string, shares []ImportShare, before, afte
 			case o.Dropped:
 				continue // refused, a finding saying why: not covered
 			case o.Capped:
-				m.State, m.Why = ItemPastCap, "proposed in the report: the import run again opens it"
+				m.State, m.Why = ItemPastCap, "past the cap of a run: the import run again opens it"
 			case !applied:
 				m.State = ItemWouldOpen
 			default:

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -164,6 +165,20 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 	}
 	return o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
 }
+
+// ByPerson says whether a person opened an issue: not through Openings
+// (no key of a finding or an import on a line of its own in its body, as
+// Openings writes it — one quoted or inside a sentence is a person's text)
+// and not by a bot — a GitHub app's `[bot]` login, a GitLab project or
+// group bot. A person's new issue is read before an import's catch-up
+// (ADR-0018, amended).
+func ByPerson(is forge.Issue) bool {
+	return !openedKey.MatchString(is.Body) && !strings.HasSuffix(is.Author, "[bot]") && !gitlabBot.MatchString(is.Author)
+}
+
+var openedKey = regexp.MustCompile(`(?m)^<!-- workline:(import|issue|opened-by)=[^\n]*-->[ \t\r]*$`)
+
+var gitlabBot = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
 
 // OpenedBy is the role that opened an issue on a finding of its own
 // through Openings, or "".

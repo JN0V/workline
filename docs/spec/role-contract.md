@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 50d152c
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -274,8 +274,8 @@ token), **apply** (trusted, no AI key).
    depends on them, then what only informs — whatever order the agent used,
    and each one is recorded in `out/run.yaml` (`applied:`) as it succeeds.
    A role that keeps a backlog comes here with no intention too, when its
-   `pre` did not end the run: its report is read — a box ticked, a closing
-   undone (docs/spec/backlog-acts.md).
+   `pre` did not end the run: each issue's state is read — a person's
+   answer, an act undone — and written back (docs/spec/backlog-acts.md).
    A run that blocks applies nothing, but the kinds its role names in
    `on-block`, of its intentions: what only says why it blocks, the
    reviewer's summary comment and the record in it (#226). The run still

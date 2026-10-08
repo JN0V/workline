@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 886cdff
+checked: a59e5e6
 judged: cd97f28
 verified: agent:documentalist
 -->
@@ -144,7 +144,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | Who | What |
 |---|---|
-| product owner, on gardening | reads a share of the open issues against the code: duplicates, obsolete, refined to `ready`, split, ordered; one report issue |
+| product owner, on gardening | reads a share of the open issues against the code: completes them, readies the evident ones, proposes the rest on each issue, `workline:proposed` |
 | `workline issues import <file>` | a roadmap file to issues |
 | reviewer | a finding outside the change: an issue, `needs-triage` |
 | documentalist | the code disagrees with a decision a doc records: an issue |

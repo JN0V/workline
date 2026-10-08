@@ -2,6 +2,8 @@ case: product-owner/obsolete-closed-after-silence-and-judge
 about: An issue announced obsolete, its days passed, nobody having written and its label still there, is closed — as completed, never not planned — once a second judge, asked apart, agrees; the closing says the judge and its independence, and takes the label off (ADR-0024).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {close-obsolete: {mode: act}}}}}
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   forge:
     issues:
@@ -15,9 +17,9 @@ given:
           - "@zed, this issue looks obsolete.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nquote: {path: src/export/csv.go, text: \"for i := 0; i < len(rows); i++ {\"}\nwhy: WriteRows now loops to the last row.\ncommit: d8c4dff\nannounced: \"2026-01-01\"\n```\n</details>\n\n<!-- workline:product-owner/obsolete -->"
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
+  findings: [{rule: done, where: "#7", message: "Closed #7 as obsolete, announced on 2026-01-01: nobody wrote since, a second judge agreed"}]
   calls: [{agent: fake, task: judge, model: judge-yes}]
   forge:
     issues:
       - {id: 7, closed: true, reason: completed, labels: [], comment-contains: "Announced on 2026-01-01; nobody wrote since, and a second judge agreed — yes:"}
       - {id: 7, comment-contains: "independence: model"}
-      - {id: 8, title: "Backlog — product owner", body-contains: "Closed #7 as obsolete, announced on 2026-01-01: nobody wrote since, a second judge agreed"}

@@ -1,7 +1,9 @@
 case: product-owner/changed-need-flags-blocked-and-sharing
-about: "A person rewrites an issue's Scope: an issue waiting on it, and one naming the same code, are listed in the report under the change, flagged for a person, nothing written to them; one on other code is not — with no agent, the change's sections kept so it flags once (ADR-0032)."
+about: "A person rewrites an issue's Scope: an issue waiting on it, and one naming the same code, are listed in the summary under the change, flagged for a person, nothing written to them; one on other code is not — with no agent, the change's sections kept so it flags once (ADR-0032)."
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {changed-needs: true}}}
   forge:
     issues:
       - {id: 9, title: "Export in JSON", body: "## Need\n\nA JSON export.\n\n## Scope\n\nsrc/export/json.go, a new file beside the CSV writer.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsections:\n  Need: A JSON export.\n  Scope: WriteRows in src/export/csv.go.\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
@@ -15,9 +17,7 @@ expect:
     - {rule: need-changed, where: "#9", message: "a person rewrote its Scope: #13 (waits, listed for a person), #14 (sources, listed for a person)"}
   forge:
     issues:
-      - {id: 16, title: "Backlog — product owner", body-contains: "## To check\n\nWhat these issues were built on changed, and the role could not read them all again. Check each against the change, then tick its box: it leaves this page.\n\n- [ ] #9 Export in JSON: a person rewrote its Scope (found "}
-      - {id: 16, body-contains: "  - #13 Stream the JSON export — waits on it; not read by the role: check it yourself.\n  - #14 Slow export — names the same code, src/export/csv.go; not read by the role: check it yourself.\n"}
-      - {id: 16, body-lacks: "#15 A better README —"}
+      - {id: 16, absent: true}
       - {id: 13, comments: 1, labels: [workline:ready]}
       - {id: 14, comments: 1}
       - {id: 9, comment-contains: "Scope: src/export/json.go, a new file beside the CSV writer."}

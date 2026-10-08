@@ -1,29 +1,18 @@
-# Product owner — where it stands (2026-10-07)
+# Product owner — where it stands (2026-10-08)
 
-**In one line:** it keeps a backlog on GitHub, and on GitLab as on GitHub
-(its members told from outsiders, a bot's token), for real — reads it a share a
-run, closes duplicates, announces what the code made obsolete and closes
-it a week later on silence and a second judge's yes, names an issue's
-code, sets milestones, finds a closing a person undid, does what a
-person of the project ticks in its report and pauses when nobody answers, goes as far
-as its autonomy level says — cautious, normal or enterprising — and
-demotes a kind of act a person undid, refines an
-issue to `ready` and talks with its reporter until it is, splits a need
-into sub-issues — then says on the parent, as they close, what each
-delivered and which of its Verification is proved, for a person to
-accept — and renames a vague title, orders the backlog
-— an issue that waits on another after it, never offered first, a link it set taken off once its blocker closes — and
-moves what slipped, opens its report with what a person has to do —
-then what is next and what is stuck, the rest folded —, flags the issues built on a need a person rewrote — its parts
-read again, every act on them proposed, a ready one moved back to
-refine only on a person's tick —, has a share of what it did alone drawn
-each week for a person to judge, with the level it suggests, holds an
-issue from `ready` while the reviewer's findings on its spec are open and
-answers them (opt-in, #128), and keeps the one way every role opens an issue —
-nightly in DomoticsCore's CI (v0.9.0 there since its #201, refining and
-ordering included, the reviewer not enabled: its roadmap imported, 56
-issues), refining tried live there and on JN0V/workline-sandbox, ordering
-on the sandbox (tried.md).
+**In one line:** refocused by
+[ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+— it completes issues (sources, drafts, a question to the reporter),
+closes an evident duplicate and readies an evident issue alone, proposes
+the rest on each issue with the label `workline:proposed` and one comment
+edited in place, and reads a person's answer there: `workline:accepted`,
+a comment to revise, the label taken off, a closing. No report issue: the
+first run moves an old report's record to the issues and closes it; the
+night's summary is the CI job's. Milestones, priorities, splits, renames,
+links, obsolete issues, changed needs, the weekly sample are off by
+default, their code kept. Built and tried on both sandboxes with planted
+answers (tried.md, 2026-10-08); a week's trial on workline and the
+maintainer's GitLab project, at most five issues a night, is next.
 
 ## To leave beta
 
@@ -34,11 +23,11 @@ hold:
 1. **Nothing buildable in Missing**: nearly. What is left is mostly tries
    on real use; the forge's native rank (deferred by ADR-0018) and the
    items "if live use asks" are to park as issues.
-2. **The main issue validated on real use**: open. The maintainer has not
-   yet read the report
-   ([#110](https://github.com/JN0V/workline/issues/110)) against
-   [#164](https://github.com/JN0V/workline/issues/164)'s and
-   [#165](https://github.com/JN0V/workline/issues/165)'s Validation.
+2. **The main issue validated on real use**: open. The maintainer found
+   the report ([#110](https://github.com/JN0V/workline/issues/110))
+   unreadable; ADR-0038 replaced it with proposals on each issue. Its
+   week's trial measures them: accepted unchanged, edited, revised, set
+   aside, ignored.
 3. **AI verdicts measured**: in part. `keeps-a-planted-backlog` passed 5
    in 5 on Sonnet; closing as obsolete, refining, splitting and renaming
    are not measured; a real week's sample of its acts is not yet read
@@ -48,6 +37,7 @@ hold:
 
 | What | Tried on |
 |---|---|
+| Proposals on each issue (ADR-0038): `workline:proposed` (GitLab `workline::proposed`) and one comment of the role, created once then edited in place, saying what it did, proposes and wants; `workline:accepted` a yes, the role taking `proposed` off itself (both kept on GitLab Free); a person's comment read as "revise" — 👀, the role's own drafts rewritten in place, one line in reply, two revisions at most —; `proposed` taken off a "not now" for that issue; a report's record moved to the issues and the report closed; no line of its text starting with `/` | JN0V/workline-sandbox on GitHub (#50; report #5 moved, closed; #2, #3 set aside) and on GitLab (#33, `/close` and `/label` escaped in a body and a note edit, not run; report #10 moved, closed; #7 set aside), live, planted answers, no paid agent (tried.md); conformance `proposal-*`, `accepted-*`, `revise-*`, `who-counts-*`, `proposed-taken-off-*`, `report-moves-*`, `no-quick-action-*`, `scoped-labels-*`, `undone-*`, `outsider-evidence-*`, `deleted-section-*` |
 | A duplicate closed, its original quoted, with GitHub's own reason | JN0V/workline-sandbox, live (#3 → #2) |
 | A closing a person undid found at the next run, that act back to propose, the report saying so; the person's comment read | the same (#3 reopened) |
 | An issue the code solved proposed as obsolete, the code quoted | the sandbox (#4); a copy of DomoticsCore, 8 of 38, all right |
@@ -72,7 +62,7 @@ hold:
 
 | Obsolete announced, then closed (ADR-0024): a comment to the reporter quoting the code and the label `workline:obsolete`; at a run `days` later, nobody having written and the label still there, a second judge of another model asked apart, the issue closed as completed with its yes and level; a reply keeps it open for good on that quote | JN0V/workline-sandbox on GitHub (#14 closed, #4 kept) and on GitLab (#19 closed, #20 kept), live, the delay set to 0; label removal, exempt labels, a judge's no, the cap in conformance (`obsolete-*`) |
 | Autonomy levels (ADR-0026): `cautious` doing what checks facts — sources, Scope and Verification — and proposing what sets direction — a duplicate, milestones, priorities, Need and Validation drafts, a split —; `enterprising` closing, moving and refining whole; each kind's mode and where it comes from in the task and the report. An act a person undid found at the next run with no agent — a priority put back, a title renamed back — and its kind demoted whatever the level | JN0V/workline-sandbox on GitHub, live (#15–#19 cautious, #20–#24 enterprising; the rename planted); `ready` taken off, a split's child closed as not planned, `ignored-runs-max`, init's question in conformance |
-| The person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
+| *Removed by ADR-0038, with the report issue:* the person's hand (ADR-0025): a box in the report ticked by a person of the project — who ticked it read from GitHub's edit history, GitLab's system notes — done at the next run as the record keeps it, no agent; an outsider's, a bot's or an unknown author's tick said, not done; a kind back to propose set back to act by a tick; three runs nobody answered pause the agent, a person's act resumes it | JN0V/workline-sandbox on GitHub (#7 renamed, `close-duplicate` back to act, a paused run asking no agent) and on GitLab (#14 renamed), live, planted, no agent; the rest in conformance (`tick-*`, `back-to-act-by-a-tick`, `*-pause`, `paused-*`, `person-acts-resumes`) |
 
 | A parent and its parts (ADR-0029): one comment on the parent, with no agent, edited in place and not at all when unchanged — each part open, closed as completed with the commit, pull or merge request that closed it, or not delivered; each Verification item proved by a quote or "not proved"; all closed, a person asked to accept by closing it, the report's "To accept"; the role never closes a parent; a parent never offered first | JN0V/workline-sandbox on GitHub (#30: a commit, a part not planned, a real agent's run; #10, #27) and on GitLab (#25: a commit, merge request !4; #5, #16), live; conformance `parent-*`, `forge/gitlab-parent-closers` |
 | A test named as proof read from the code (ADR-0029, amended): an item naming a test in a code span — a test file, `path::name`, `TestX`, or a name after "test", "test case" or "conformance case" — proved only when the code at the run's commit holds it, the file said; one not there leaves the item not proved, `proof-test-missing`; git failing said apart, `proof-test-unread` | JN0V/workline-sandbox on GitHub, no agent (#47, #48 made for it, deleted after: one test found in a commit of the clone, one missing); conformance `parent-test-named-read-from-code`. Not on GitLab |
@@ -80,8 +70,8 @@ hold:
 | What an issue waits on (ADR-0028): `depend` and a split's child's `after` written in GitHub's dependencies, or a marked `Blocked by #n.` line in the body on GitLab Free; read back with a person's links and lines; a blocked issue ordered after its open blockers, never `next-ready`; a closed blocker unblocking; the report's "Waiting" | JN0V/workline-sandbox on GitHub (#29 after #28 by a split, #26 and #29 on #25) and on GitLab (#23, #24 on #22, a body line; #22 closed then reopened), live; cycles, a person's link kept, the level, an undo in conformance (`depend-*`, `backlog/*blocker*`, `cycle-*`, `undo-depend-demotes`) |
 | A link the role set taken off once its reason is gone (ADR-0028, amended): its own told from a person's by its record, a split's `after` in the parent's state and the engine's marked line; a closed blocker's link taken off by the engine with no agent, `blocker-not-delivered` when it closed without delivering; one whose blocker is open proposed by the agent (`undepend`), done on a person's tick; a person's never | JN0V/workline-sandbox on GitHub, no agent (#46's dependency on #44, #44 closed then reopened, the link put back; #29's to #28, a split's from before, left); conformance `undepend-*`, `split-child-waits-on-sibling`. Not on GitLab live; not with a real agent's `undepend` |
 
-| The report opens with what is next and what is stuck (ADR-0031), no agent: the first `next-max` ready issues of the order waiting on nothing, with milestone and priority; each issue waiting on a person past `stuck-days` — ready with no pull request nor commit since the label, its reporter not answering, a proposal unticked, an announcement due and unjudged —, with since when; an issue once; rebuilt each run, the report rewritten when it changed | JN0V/workline-sandbox on GitHub (report #5: Next #7, #6; #6's label day read from the timeline) and on GitLab (report #10: the label days of #6, #13, #15 from its label events, #15's question from its note's day), live; workline itself without applying (Next #79; #65, #91, #92 asked today; #83, #85, #87 proposed); conformance `report-*` |
-| The report opens with what to do (ADR-0031, amended): the proposals to decide and the changes to check counted, the pause warned a run ahead, each proposal under its issue's title in plain words, the rest folded; a change read again with nothing proposed settled with no box; a file `archived` flags nothing (ADR-0032, amended); a ticked proposal an older engine recorded without its act drafted, then done (ADR-0025, amended) | #110's real record rendered locally; JN0V/workline-sandbox on GitHub (report #5, `--ai none`, put back), live (tried.md); conformance `changed-*`, `archived-*`, `report-*`, `*undrafted*`. Not on GitLab; the drafting of an old tick not with a real agent |
+| *Said in the job's summary since ADR-0038:* what is next and what is stuck (ADR-0031), no agent: the first `next-max` ready issues of the order waiting on nothing, with milestone and priority; each issue waiting on a person past `stuck-days` — ready with no pull request nor commit since the label, its reporter not answering, a proposal unticked, an announcement due and unjudged —, with since when; an issue once; rebuilt each run, the report rewritten when it changed | JN0V/workline-sandbox on GitHub (report #5: Next #7, #6; #6's label day read from the timeline) and on GitLab (report #10: the label days of #6, #13, #15 from its label events, #15's question from its note's day), live; workline itself without applying (Next #79; #65, #91, #92 asked today; #83, #85, #87 proposed); conformance `report-*` |
+| *Removed by ADR-0038, with the report issue:* the report's top, what to do (ADR-0031, amended): the proposals to decide and the changes to check counted, the pause warned a run ahead, each proposal under its issue's title in plain words, the rest folded; a change read again with nothing proposed settled with no box; a file `archived` flags nothing (ADR-0032, amended); a ticked proposal an older engine recorded without its act drafted, then done (ADR-0025, amended) | #110's real record rendered locally; JN0V/workline-sandbox on GitHub (report #5, `--ai none`, put back), live (tried.md); conformance `changed-*`, `archived-*`, `report-*`, `*undrafted*`. Not on GitLab; the drafting of an old tick not with a real agent |
 
 | A changed need (ADR-0032): a person's rewrite of an issue's Need or Scope found with no agent against what its state kept; its parts read again first with the text as it was and as it is, every act on them proposed (`need-changed`); `unready`, back to refine, always proposed, done on a person's tick; the issues waiting on it — and, its Scope changed, those on the same code — listed; each issue not read a box under "To check"; the same change flagged once | JN0V/workline-sandbox on GitHub (#10's Need rewritten: #12, #13 read again, a planted answer; #13 moved back to refine by a tick), live, no agent called; an imported file's lines changed, the tick on a change, an edit outside the sections in conformance (`changed-*`, `unchanged-need-flags-nothing`, `unready-ticked-moves-back`) |
 
@@ -107,10 +97,13 @@ checked.
    for; the label taken off, an exempt label, a judge's no tried live; 7
    days and 3 a run measured. (The weekly sample draws these closings
    with the other acts: ADR-0033.)
-3. **The person's hand, what is left** (ADR-0025): a tick by an
-   outsider or a bot tried live (one account on each sandbox); a
-   proposal of a real agent's run ticked, not one planted; the pause
-   reached by three real runs; a tick on a plugged forge.
+3. **Answers on the issue, what is left** (ADR-0038): the week's trial
+   on workline and the maintainer's GitLab project, measured; a real
+   agent's revision after a comment; a comment by an outsider and a bot
+   live (one account on each sandbox); `workline:accepted` set by a bot
+   read as the project's; the Forgejo sample's `label-events` and
+   `react`; an outsider's proposal labelled `workline:proposed` (its
+   comment to the reporter is the proposal today).
 4. **Autonomy, what is left** (ADR-0026): the acts' suggestion seen
    live in the role's own report; a rename by a real
    agent undone, `ready` taken off and a split's child closed live;

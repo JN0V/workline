@@ -125,17 +125,23 @@ func Pre(runDir, repo string) int {
 	var task strings.Builder
 	var fallback []intent.Intention
 	var findings []verdict.Finding
+	for _, name := range cfg.Gone {
+		findings = append(findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
+			Message: name + " is no longer read: the role keeps no report, and never pauses (ADR-0038); take it off the project's settings"})
+	}
 	judged := 0
 	tracked := trackedFiles(repo)
 	var code []string // the files the issues name, given once each
 	var others []string
-	var readIDs []string                            // the issues read, for the plan (backlog.Decide)
-	var again, never, changed, rest []due           // again: an act proposed only for the cap, read first
-	reopened := backlog.ClosedByRole(b, role, open) // closed by the role, open again
-	// The person's hand (ADR-0025): a box a person of the project ticked
-	// in the report is done as the record holds it, with no agent; runs
-	// nobody answered pause the role, no agent asked, until a person does.
-	hand, err := backlog.ReadHand(b, role, open)
+	var readIDs []string // the issues read, for the plan (backlog.Decide)
+	// answered: a person's comment on an issue waiting on them, read first;
+	// again: an act proposed only for the cap; then the issues never read,
+	// a person's newest first, an import's or a bot's oldest first.
+	var answered, again, never, catchUp, changed, rest []due
+	// What the role holds, read from each open issue's state (ADR-0038):
+	// its proposals, its acts a person may undo, the old report's record
+	// the first time.
+	ledger, err := backlog.ReadLedger(b, role, open)
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
 		return exitExternal
@@ -143,17 +149,8 @@ func Pre(runDir, repo string) int {
 	if err != nil {
 		return fail(err)
 	}
-	for _, q := range hand.Ticked() {
-		t, _ := hand.Tick(q.TickKey())
-		fallback = append(fallback, intent.Intention{Kind: q.Proposal.Do, Value: map[string]any{
-			"issue": q.Issue, "reason": q.Proposal.Reason, "ticked": t.Who(), "own": true,
-			"why": "ticked in the report by " + t.Who()}})
-	}
-	paused := hand.Paused(cfg.IgnoredMax)
-	if paused {
-		findings = append(findings, verdict.Finding{Rule: "paused", Level: "warn", Where: fmt.Sprintf("#%d", hand.Report),
-			Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered: no agent is asked until a person ticks a box, writes on the report or undoes a closing", hand.Record.Ignored)})
-	}
+	answers := map[int]*backlog.Answer{} // a person's comments read as "revise", for the plan
+	revisions := backlog.RevisionsMax(cfg.Acts)
 	milestones, err := b.Milestones()
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
@@ -163,14 +160,19 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	next := backlog.NextMilestone(repo, milestones) // where an issue that slipped goes
-	capped := backlog.CappedByRole(b, role, open)   // an act proposed only for the cap
+	var capped []int                                // an act proposed only for the cap, or recorded without its act: read again
+	for _, q := range ledger.Record.Proposed {
+		if (q.Capped || q.Undrafted()) && q.Issue > 0 {
+			capped = append(capped, q.Issue)
+		}
+	}
 	now := time.Now()
-	var all []forge.Issue                                    // every issue, open and closed, read once when a parent needs its parts
+	var all []forge.Issue // every issue, open and closed, read once when a parent needs its parts
 	// A link the role set whose blocker closed (ADR-0028): its reason is
-	// gone, and the engine takes it off, with no agent, paused or not; a
-	// person's link is left. A blocker closed without delivering is said:
-	// what waited on it may need a person's look.
-	stale := hand.Stale(open)
+	// gone, and the engine takes it off, with no agent; a person's link is
+	// left. A blocker closed without delivering is said: what waited on it
+	// may need a person's look.
+	stale := ledger.Stale(open)
 	if len(stale) > 0 {
 		if all, err = b.AllIssues(); errors.Is(err, forge.ErrUnreachable) {
 			fmt.Fprintln(os.Stderr, err)
@@ -205,20 +207,13 @@ func Pre(runDir, repo string) int {
 	judgedPass := os.Getenv("WORKLINE_JUDGED") == "answered" // the engine asked pre's questions to a judge
 	asked := false                                           // a question for the judge written: the judge first
 	notesOf := map[int][]forge.Note{}                        // each issue's comments, for what waits on a person
-	var waits []backlog.Wait                                 // the issues waiting on a person, for the report (ADR-0031)
+	var waits []backlog.Wait                                 // the issues waiting on a person, for the summary (ADR-0031)
 	for _, is := range open {
 		if is.Title == backlog.ReportTitle(role) {
 			continue
 		}
-		notes, err := b.Notes(forge.Target{Kind: "issue", ID: is.ID})
+		notes := ledger.Notes[is.ID]
 		comments := forge.Bodies(notes)
-		if errors.Is(err, forge.ErrUnreachable) {
-			fmt.Fprintln(os.Stderr, err)
-			return exitExternal
-		}
-		if err != nil {
-			return fail(err)
-		}
 		notesOf[is.ID] = notes
 		st, found, err := backlog.ReadState(comments, role)
 		// Only the text as last proposed, not answered since — an answer
@@ -251,6 +246,26 @@ func Pre(runDir, repo string) int {
 				"scope": lp.Scope, "sources": lp.Sources, "own": true, "agreed": agreed,
 				"why": fmt.Sprintf("the text proposed to its reporter, agreed to by @%s (%s) in a reply.", agreed, whose)}})
 		}
+		who, closing := "", false // who accepted it; a closing it proposed, accepted
+		if found && err == nil && backlog.Accepted(is) {
+			// A person of the project labelled it workline:accepted: their
+			// yes to what the role proposes on it, done as its state holds
+			// it, with no agent (ADR-0038).
+			var werr error
+			if who, werr = acceptedBy(b, is); errors.Is(werr, forge.ErrUnreachable) {
+				fmt.Fprintln(os.Stderr, werr)
+				return exitExternal
+			}
+			for _, q := range st.Proposed {
+				if q.Doable() && !ledger.Aside[is.ID] {
+					c := q.Proposal
+					closing = closing || c.Do == "close"
+					fallback = append(fallback, intent.Intention{Kind: c.Do, Value: map[string]any{
+						"issue": is.ID, "reason": c.Reason, "ticked": who, "own": true,
+						"why": "accepted by " + who + " (" + backlog.AcceptedLabel(b) + ")"}})
+				}
+			}
+		}
 		if found && err == nil && backlog.Accepted(is) && p != nil {
 			// A refined text proposed to an outsider, agreed to by a person
 			// of the project with the label: the engine writes what the body
@@ -258,13 +273,13 @@ func Pre(runDir, repo string) int {
 			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
 				"issue": is.ID, "need": p.Need, "verification": p.Verification, "validation": p.Validation,
 				"scope": p.Scope, "sources": p.Sources, "own": true,
-				"why": "the text proposed to its reporter, agreed to by a person (" + backlog.LabelAccepted + ")"}})
+				"why": "the text proposed to its reporter, agreed to by a person (" + backlog.AcceptedLabel(b) + ")"}})
 		}
-		if found && err == nil && backlog.Accepted(is) {
+		if found && err == nil && backlog.Accepted(is) && !closing {
 			// A person accepted its drafts, with the label: the engine moves
 			// it to ready if its sections are there, with no agent.
 			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
-				"issue": is.ID, "why": "its drafts accepted by a person (" + backlog.LabelAccepted + ")", "own": true}})
+				"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
 			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, false)) == 0 {
 			// The reviewer read its spec as it is and found no important
@@ -277,6 +292,13 @@ func Pre(runDir, repo string) int {
 		case !found:
 			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 				"issue": is.ID, "sticky": "state", "body": backlog.FormatState(backlog.State{Confirmed: commit})}})
+			if backlog.ByPerson(is) && len(ledger.States) > 0 {
+				// A person's issue opened since the role's last run: read in
+				// this one, its first state written before any act on it
+				// (ADR-0018, amended). On a backlog the role never ran on,
+				// every issue waits its turn.
+				never = append(never, due{is, &backlog.State{Confirmed: commit}, comments, notes})
+			}
 			continue
 		case err != nil:
 			findings = append(findings, verdict.Finding{Rule: "state-broken", Where: fmt.Sprintf("#%d", is.ID),
@@ -348,9 +370,6 @@ func Pre(runDir, repo string) int {
 				fallback = append(fallback, intent.Intention{Kind: "keep", Value: map[string]any{
 					"issue": is.ID, "why": "a second judge did not agree — " + j.Says(), "say": true, "own": true}})
 			}
-		case paused:
-			findings = append(findings, verdict.Finding{Rule: "judge-unavailable", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
-				Message: "announced obsolete, due, and nobody wrote: not closed without a second judge, none asked while the role is paused; it waits"})
 		case os.Getenv("WORKLINE_AI") == "none":
 			findings = append(findings, verdict.Finding{Rule: "judge-unavailable", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
 				Message: "announced obsolete, due, and nobody wrote: not closed without a second judge (no agent); it waits for a run with one"})
@@ -367,25 +386,61 @@ func Pre(runDir, repo string) int {
 				"issue": is.ID, "milestone": next, "from": is.Milestone, "own": true,
 				"why": fmt.Sprintf("slipped: %s is released (its tag exists).", is.Milestone)}})
 		}
+		// Who counts (ADR-0038): its reporter's and the project's people's
+		// comments, never a bot's, a stranger's or a "+1"; those the role
+		// has not read yet.
+		counted := backlog.Counted(notes, is)
+		heard := backlog.Heard(st, len(counted))
+		var fresh []forge.Note
+		if heard < len(counted) {
+			fresh = counted[heard:]
+		}
+		aside := ledger.Aside[is.ID] || (st.Aside != "" && st.Aside == backlog.BodyDigest(is.Body) && len(fresh) == 0)
+		d := due{is, st, comments, notes}
 		switch {
-		case agreed != "":
-			// Agreed to: written this run, not read again for that reply.
-			rest = append(rest, due{is, st, comments, notes})
+		case agreed != "" || backlog.Accepted(is):
+			// Agreed to, or accepted: done this run, not read again for it.
+			rest = append(rest, d)
+		case aside:
+			// Set aside by a person: nothing proposed until it changes.
+			rest = append(rest, d)
+		case st.Label != "" && len(fresh) > 0 && st.Revisions >= revisions:
+			// Its drafts revised as many times as allowed: a person's from
+			// here; said once, nothing more on the issue (ADR-0038).
+			findings = append(findings, verdict.Finding{Rule: "left-to-a-person", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
+				Message: fmt.Sprintf("@%s wrote on it; its proposal was revised %d times already: left to a person, nothing more written on it", fresh[len(fresh)-1].Author, st.Revisions)})
+			left := *st
+			n := len(counted)
+			left.Heard = &n
+			fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
+				"issue": is.ID, "sticky": "state", "update-only": true, "body": backlog.FormatState(left)}})
+			rest = append(rest, d)
+		case st.Label != "" && len(fresh) > 0:
+			// A person's comment on its proposal: "revise" — read first,
+			// the drafts rewritten in place, 👀 on each, one line in reply.
+			var ids []string
+			for _, n := range fresh {
+				ids = append(ids, n.ID)
+			}
+			answers[is.ID] = &backlog.Answer{Notes: ids, Who: fresh[len(fresh)-1].Author, Revision: st.Revisions + 1}
+			answered = append(answered, d)
 		case slices.Contains(capped, is.ID):
-			again = append(again, due{is, st, comments, notes})
+			again = append(again, d)
+		case st.Judged == "" && backlog.ByPerson(is):
+			never = append(never, d)
 		case st.Judged == "":
-			never = append(never, due{is, st, comments, notes})
+			catchUp = append(catchUp, d)
 		case cfg.SpecReview && backlog.SpecOpen(is, comments) != nil && backlog.SpecOpen(is, comments).Body != st.Answered:
 			// The reviewer's findings on its spec, not given yet: answered
 			// at this refine (#128).
-			changed = append(changed, due{is, st, comments, notes})
+			changed = append(changed, d)
 		case sourcesChanged(repo, st),
-			backlog.PeopleComments(comments) != st.Comments,         // someone wrote since it was read
-			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // someone changed its body
-			slices.Contains(reopened, is.ID):
-			changed = append(changed, due{is, st, comments, notes})
+			len(fresh) > 0, // a person wrote since it was read
+			st.Body != "" && backlog.BodyDigest(is.Body) != st.Body, // a person changed its body
+			st.Closed != "": // a person reopened what the role closed
+			changed = append(changed, d)
 		default:
-			rest = append(rest, due{is, st, comments, notes})
+			rest = append(rest, d)
 		}
 	}
 	if asked {
@@ -393,12 +448,9 @@ func Pre(runDir, repo string) int {
 	}
 	// What the order holds back (ADR-0028), with no agent: the first ready
 	// issue offered, those waiting on an open one, the cycles.
-	report, isOpen := 0, map[int]bool{}
+	report, isOpen := ledger.Report, map[int]bool{}
 	for _, is := range open {
 		isOpen[is.ID] = true
-		if is.Title == backlog.ReportTitle(role) {
-			report = is.ID
-		}
 	}
 	bl := backlog.ReadBacklog(open, report)
 	for _, c := range bl.Cycles {
@@ -409,18 +461,16 @@ func Pre(runDir, repo string) int {
 		findings = append(findings, verdict.Finding{Rule: "waiting", Level: "info", Where: fmt.Sprintf("#%d", id),
 			Message: fmt.Sprintf("waits on %s, open: ordered after it, never offered first", issueRefs(bl.Waiting[id]))})
 	}
-	if bl.Next != nil {
-		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", bl.Next.ID),
-			Message: "the first ready issue in the backlog's order, waiting on no open issue: the next to build"})
-	}
-	// What waits on a person (ADR-0031), with no agent: a reporter's
-	// answer, from the day of the last round; a ready issue nothing
-	// started, from the day the forge says it got the label — those in
-	// Next aside, listed there. A day the forge does not say is said.
 	first := map[int]bool{}
 	for _, is := range backlog.Next(open, report, cfg.NextMax) {
 		first[is.ID] = true
+		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
+			Message: "next to build, ready and waiting on no open issue: " + is.Title + " — " + backlog.Place(is)})
 	}
+	// What waits on a person (ADR-0031), with no agent: a reporter's
+	// answer, from the day of the last round; a ready issue nothing
+	// started, from the day the forge says it got the label — those
+	// next aside. A day the forge does not say is said.
 	unknown := func(id int, what string) {
 		findings = append(findings, verdict.Finding{Rule: "stuck-unknown", Level: "info", Where: fmt.Sprintf("#%d", id),
 			Message: "the forge does not say " + what + ": not said stuck, whatever it waits"})
@@ -457,29 +507,24 @@ func Pre(runDir, repo string) int {
 			waits = append(waits, *w)
 		}
 	}
-	if data, err := yaml.Marshal(waits); err != nil {
-		return fail(err)
-	} else if err := os.WriteFile(filepath.Join(runDir, "in", "waits.yaml"), data, 0o644); err != nil {
-		return fail(err)
+	// What is stuck, for the job's summary (ADR-0031, ADR-0038): each
+	// issue waiting on a person past stuck-days, an announcement due.
+	board := backlog.MakeBoard(open, report, waits, ledger.Record.Proposed, cfg, now)
+	for _, w := range board.Stuck {
+		findings = append(findings, verdict.Finding{Rule: "stuck", Level: "info", Where: fmt.Sprintf("#%d", w.Issue), Message: board.StuckLine(w)})
 	}
 	// What open issues were built on that changed (ADR-0032), with no
-	// agent: a person's rewrite of an issue's Need or Scope, the lines of
-	// a file an issue was imported from. The parts of the issue changed,
-	// and the issue imported, are read first, with the change; the others
-	// it touches are listed in the report for a person.
-	found, front, rebase, unread := changesFound(repo, open, report, slices.Concat(again, never, changed, rest), cfg.Archived)
-	findings = append(findings, unread...)
-	// A proposal an older engine recorded without its act, ticked by a
-	// person of the project: its issue read first, the agent asked to draft
-	// that act now; it is done as their yes (ADR-0025, amended).
-	for _, q := range hand.Record.Proposed {
-		who := q.Agreed
-		if t, ok := hand.Tick(q.TickKey()); ok && t.Person() {
-			who = t.Who()
-		}
-		if who != "" && q.Undrafted() {
-			front[q.Issue] += fmt.Sprintf("A person of the project, %s, ticked this proposal in the report, recorded before its act was: \"%s\". Write that act now (`%s`), whole, with its text: it is done as their yes.\n", who, q.Line, q.Act)
-		}
+	// agent, when the project turns it on (`changed-needs`): a person's
+	// rewrite of an issue's Need or Scope, the lines of a file an issue
+	// was imported from. The parts of the issue changed, and the issue
+	// imported, are read first, with the change.
+	var found []backlog.Change
+	var rebase []due
+	front := map[int]string{}
+	if cfg.ChangedNeeds {
+		var unread []verdict.Finding
+		found, front, rebase, unread = changesFound(repo, open, report, slices.Concat(answered, again, never, catchUp, changed, rest), cfg.Archived)
+		findings = append(findings, unread...)
 	}
 	var ahead []due
 	pick := func(list []due) []due {
@@ -493,13 +538,29 @@ func Pre(runDir, repo string) int {
 		}
 		return left
 	}
-	again, never, changed, rest = pick(again), pick(never), pick(changed), pick(rest)
+	again, never, catchUp, changed, rest = pick(again), pick(never), pick(catchUp), pick(changed), pick(rest)
 	slices.SortFunc(ahead, func(a, b due) int { return a.is.ID - b.is.ID })
-	// Then those never read, then those whose code changed since; an issue
-	// whose code did not change is not read again (ADR-0018). Without an
-	// agent, nothing is read, and no issue is said to be.
-	toRead := slices.Concat(ahead, again, never, changed)
-	if os.Getenv("WORKLINE_AI") == "none" || paused {
+	// A person's issue never read, newest first: what a person just asked
+	// for is not left behind the catch-up of an import (ADR-0018,
+	// amended); an import's or a bot's, oldest first.
+	slices.SortFunc(never, func(a, b due) int { return b.is.ID - a.is.ID })
+	// The order of a run's reading: a person's answer, what a change asks
+	// for, an act proposed only for the cap, a person's new issue, what
+	// changed since it was read, then the catch-up. An issue whose code
+	// did not change is not read again (ADR-0018). Without an agent,
+	// nothing is read, and no issue is said to be. Past proposals-max
+	// issues waiting on a person, only their answers are read: the role
+	// slows down rather than piling up proposals (ADR-0038).
+	toRead := slices.Concat(answered, ahead, again, never, changed, catchUp)
+	if waiting := ledger.Waiting(open); waiting >= cfg.ProposalsMax {
+		findings = append(findings, verdict.Finding{Rule: "proposals-waiting", Level: "warn",
+			Message: fmt.Sprintf("%d issues wait on a person's answer (proposals-max: %d): only those answered are read until fewer wait", waiting, cfg.ProposalsMax)})
+		for _, d := range toRead[len(answered):] {
+			rest = append(rest, d)
+		}
+		toRead = answered
+	}
+	if os.Getenv("WORKLINE_AI") == "none" {
 		toRead = nil
 	}
 	wasRead := map[int]bool{}
@@ -516,14 +577,21 @@ func Pre(runDir, repo string) int {
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 			review = specFindings(d.is, d.st, d.comments, r)
 		}
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, hand.OwnBlockers(d.is), front[d.is.ID]+review)
+		if a := answers[d.is.ID]; a != nil {
+			review += revise(d.is, d.st, a, revisions)
+		}
+		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
 		for _, f := range files {
 			if !slices.Contains(code, f) {
 				code = append(code, f)
 			}
 		}
 		read := *d.st
-		read.Judged, read.Comments = commit, backlog.PeopleComments(d.comments)
+		counted := len(backlog.Counted(d.notes, d.is))
+		read.Judged, read.Comments, read.Heard = commit, 0, &counted
+		if answers[d.is.ID] != nil {
+			read.Revisions++
+		}
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 			read.Answered = r.Body
 		}
@@ -531,7 +599,18 @@ func Pre(runDir, repo string) int {
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
 			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 	}
-	// The issues read again with the change, said in the report; the
+	// An answer not read this run waits for the next: no 👀, no reply.
+	for id := range answers {
+		if !wasRead[id] {
+			delete(answers, id)
+		}
+	}
+	if data, err := yaml.Marshal(answers); err != nil {
+		return fail(err)
+	} else if err := os.WriteFile(filepath.Join(runDir, "in", "answers.yaml"), data, 0o644); err != nil {
+		return fail(err)
+	}
+	// The issues read again with the change, said in the summary; the
 	// sections of an issue not read kept now, so a change flags once — after
 	// the agent's answer when it was given an issue to read for it.
 	given := false
@@ -571,19 +650,14 @@ func Pre(runDir, repo string) int {
 		}
 	}
 	if judged == 0 {
-		// No task.md: the agent is not asked; the state comments are written,
-		// the boxes ticked read, an act a person undid recorded (ADR-0026).
-		if len(fallback) > 0 || len(found) > 0 || len(hand.Ticks) > 0 || len(hand.Demoted(open)) > len(hand.Record.Propose) {
+		// No task.md: the agent is not asked; the state comments are
+		// written, a person's answers and acts undone read (ADR-0038).
+		if len(fallback) > 0 || len(found) > 0 || len(ledger.Signs) > 0 {
 			return writeFindings(runDir, findings)
-		}
-		if opening(open, report, waits, hand, cfg, now) {
-			// Nothing else to write, but the report's opening is out of
-			// date: the engine rewrites it, with no agent (ADR-0031).
-			return write(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge; the report's next and stuck rewritten", Findings: findings})
 		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
-	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, hand.Demoted(open)))
+	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, ledger.Demoted(cfg.UndoneMax)))
 	// An issue not read in this run, on the same code as one read, is given
 	// whole: it may be the original a duplicate is closed against, and a
 	// duplicate's original is quoted (ADR-0018).
@@ -622,24 +696,37 @@ func Pre(runDir, repo string) int {
 	return writeFindings(runDir, findings)
 }
 
-// opening says whether the report is to be rewritten for its opening
-// alone: what is next and what is stuck no longer reads as its body says,
-// a proposal has no day yet, or there is no report and the opening lists
-// an issue (ADR-0031). As the engine reads it when nothing else is done.
-func opening(open []forge.Issue, report int, waits []backlog.Wait, hand *backlog.Hand, cfg backlog.Config, now time.Time) bool {
-	if slices.ContainsFunc(hand.Record.Proposed, func(q backlog.Pending) bool { return q.Since == "" }) {
-		return true
+// acceptedBy names who labelled an issue workline:accepted, as the forge's
+// label events say: "@name", or "a person of the project" when the forge
+// does not say.
+func acceptedBy(b forge.Backlog, is forge.Issue) (string, error) {
+	events, err := b.LabelEvents(is.ID)
+	if err != nil {
+		if errors.Is(err, forge.ErrUnreachable) {
+			return "", err
+		}
+		events = nil
 	}
-	b := backlog.MakeBoard(open, report, waits, hand.Record.Proposed, cfg, now)
-	if report == 0 {
-		return !b.Empty()
-	}
-	for _, is := range open {
-		if is.ID == report {
-			return !strings.Contains(is.Body, b.Text())
+	for i := len(events) - 1; i >= 0; i-- {
+		if e := events[i]; e.Added && backlog.Accepted(forge.Issue{Labels: []string{e.Label}}) && e.Author != "" {
+			return "@" + e.Author, nil
 		}
 	}
-	return false
+	return "a person of the project", nil
+}
+
+// revise tells the agent a person commented on what the role proposes on
+// an issue (ADR-0038): which comments, the revision it is, and how it
+// answers — its own drafts rewritten whole, a person's sections kept.
+func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) string {
+	mine := backlog.Own(is, st)
+	var b strings.Builder
+	fmt.Fprintf(&b, "A person of the project commented on what you proposed on it (@%s, the last comments below): revision %d of %d. Read them as asking you to revise: ", a.Who, a.Revision, max)
+	if len(mine) > 0 {
+		fmt.Fprintf(&b, "give a `refine` with the whole new text of the sections that are still yours (%s), answering them; ", strings.Join(mine, ", "))
+	}
+	b.WriteString("propose again what still stands, changed as they ask, and nothing they turned down. A section a person wrote or deleted is theirs: never written. When they ask for nothing you can change, say why in a `note`.\n")
+	return b.String()
 }
 
 // evidence reads a parent's parts — every issue listed once a run, into
@@ -813,7 +900,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		fmt.Fprintf(b, "Written to its reporter: %d of %d times; %s.\n", e.Rounds, rounds, answer)
 	}
 	if !is.Insider && !backlog.Accepted(is) && backlog.OpenedBy(is.Body) == "" {
-		fmt.Fprintf(b, "Its reporter is outside the project: a `refine` is proposed to them in a comment, not written in the body; `why` says what you understood of the issue; a `split`, a `rename` or `ready` is proposed to the project in the report.\n")
+		fmt.Fprintf(b, "Its reporter is outside the project: a `refine` is proposed to them in a comment, not written in the body; `why` says what you understood of the issue; a `split`, a `rename` or `ready` is proposed to the project on the issue.\n")
 	}
 	if change != "" {
 		b.WriteString(change)
@@ -1047,7 +1134,7 @@ func modes(cfg backlog.Config, demoted []string) string {
 	for _, m := range cfg.Modes(demoted) {
 		fmt.Fprintf(&b, "- %s: %s\n", m.Kind, m.Say())
 	}
-	b.WriteString("\n`act`: done by the engine once checked. `propose`: written in the report for a person to tick, never done by the role — propose only what you would do. `off`: dropped — do not write it.\n\n")
+	b.WriteString("\n`act`: done by the engine once checked. `propose`: proposed on the issue for a person to accept, never done by the role — propose only what you would do. `off`: dropped — do not write it.\n\n")
 	return b.String()
 }
 

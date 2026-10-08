@@ -1,6 +1,6 @@
 ---
 sources: [internal/agent, internal/engine/engine.go]
-checked: 50d152c
+checked: a59e5e6
 verified: agent:claude-code
 judged-in-parts: fa1d682
 ---

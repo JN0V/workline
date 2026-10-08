@@ -5,18 +5,18 @@ given:
   config:
     roles:
       product-owner:
-        settings: {moved-percent-max: 100}
+        settings: {moved-percent-max: 100, acts: {order: {mode: act}}}
   forge:
     issues:
       - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [bug, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\npriority: 3\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 10, title: "Slow export", body: "The export is slow.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:order-two}
 expect:
+  findings: [{rule: done, where: "#9", message: "Set #9's priority to 1"}]
   forge:
     issues:
       - {id: 9, labels: [bug, workline:priority/1], comment-contains: "priority: 1"}
       - {id: 10, labels: [workline:priority/2], comment-contains: "priority: 2"}
-      - {id: 11, title: "Backlog — product owner", body-contains: "Set #9's priority to 1"}
     labels:
       - {id: 1, title: workline:priority/1}
       - {id: 2, title: workline:priority/2}

@@ -1,0 +1,23 @@
+case: product-owner/undone-max-demotes-the-kind
+about: 'A kind of act undone undone-max times across the issues — three by default, counted from the issues'' states, no record of the backlog anywhere — is proposed on every issue, said in the summary and to the agent (ADR-0038, amended).'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "A", body: "A.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: x, day: \"2026-10-01\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "B", body: "B.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: x, day: \"2026-10-01\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "C", body: "C.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nundone:\n  - {act: ready, evidence: x, day: \"2026-10-01\"}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: demoted, message: "ready: undone 3 times or more across the issues"}
+    - {rule: proposed, where: "#9"}
+    - {rule: proposed, where: "#10"}
+  run-files:
+    in/task.md: {contains: "- ready: propose (demoted)"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:proposed]}
+      - {id: 10, labels: [workline:proposed]}

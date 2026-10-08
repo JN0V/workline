@@ -1,0 +1,23 @@
+case: product-owner/summary-next-first-ready-in-order
+about: "The summary says what is next: the first next-max ready issues in the backlog's order, each with its milestone and priority; an issue waiting on an open one is left out, as one past next-max — with no agent (ADR-0031)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {next-max: 2}
+  forge:
+    milestones: [v1.0]
+    issues:
+      - {id: 12, title: "Quote commas in exported cells", body: "A comma splits a cell.", labels: [workline:ready, workline:priority/1], blocked-by: [13], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Keep the last row in the CSV export", body: "The export drops its last row.", labels: [workline:ready, workline:priority/3], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Export in JSON", body: "Add a JSON export.", milestone: v1.0, labels: [workline:ready, workline:priority/2], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Export in XML", body: "Add an XML export.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 16, title: "Slow export", body: "The export is slow.", labels: [workline:priority/1], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, summary: true}
+expect:
+  agent-calls: 0
+  summary-file: ["next-ready #14 (info): next to build, ready and waiting on no open issue: Export in JSON — milestone v1.0, priority 2", "next-ready #13 (info): next to build, ready and waiting on no open issue: Keep the last row in the CSV export — no milestone, priority 3"]
+  no-findings:
+    - {rule: next-ready, where: "#15"}
+    - {rule: next-ready, where: "#12"}

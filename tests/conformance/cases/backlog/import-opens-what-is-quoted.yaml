@@ -26,9 +26,9 @@ given:
 run: {role: product-owner, event: import, input: {file: ROADMAP.md, from: "1", to: "13"}, ai: fake:import-roadmap}
 expect:
   status: pass
-  findings: [{rule: no-quote, where: "Skip empty rows"}, {rule: already-open, where: "Skip empty rows, again"}]
+  findings: [{rule: no-quote, where: "Skip empty rows"}, {rule: already-open, where: "Skip empty rows, again"}, {rule: done, where: "Keep the last row", message: "Opened \"Keep the last row\""}]
   forge:
     issues:
       - {id: 4, title: "Keep the last row", body-contains: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\nOpened from `ROADMAP.md`, lines 7 to 8 by the product-owner role.", comment-contains: "sources: []"}
-      - {id: 5, title: "Backlog — product owner", body-contains: "Opened \"Keep the last row\""}
+      - {id: 5, absent: true}
       - {id: 6, absent: true}

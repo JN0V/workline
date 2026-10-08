@@ -6,7 +6,6 @@ package forge
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -30,8 +29,8 @@ type Issue struct {
 	// MilestoneDue is its milestone's due date, YYYY-MM-DD, when it has
 	// one: the backlog's order ranks milestones by it (Milestone).
 	MilestoneDue string `json:"milestone-due,omitempty"`
-	Author    string   `json:"author,omitempty"`    // who opened it
-	Insider   bool     `json:"insider,omitempty"`   // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
+	Author       string `json:"author,omitempty"`  // who opened it
+	Insider      bool   `json:"insider,omitempty"` // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
 	// BlockedBy are the issues it waits on in the forge's own relation
 	// (GitHub's dependencies, GitLab's is_blocked_by), open or closed, as
 	// Issues gives them; a line in its body says the rest (ADR-0028).
@@ -67,7 +66,22 @@ type Note struct {
 	Insider bool   `json:"insider,omitempty"` // its author is a person of the project, as Issue.Insider
 	Bot     bool   `json:"bot,omitempty"`     // its author is a bot: a token's user, an app
 	Created string `json:"created,omitempty"` // when it was written, RFC 3339 or YYYY-MM-DD; "" when the forge does not say
+	// ID is the forge's own id of the comment, to put a reaction on it
+	// (React); "" when the forge does not say.
+	ID string `json:"id,omitempty"`
 }
+
+// LabelEvent is a label set on an issue, or taken off, with who did it
+// and when (ADR-0038): Author, Insider and Bot as a Note's; Created, when.
+type LabelEvent struct {
+	Label string `json:"label"`
+	Added bool   `json:"added,omitempty"` // set; false: taken off
+	Note
+}
+
+// Eyes is the reaction the role puts on a comment it read: 👀, as the
+// forges name it.
+const Eyes = "eyes"
 
 // Trail is what a forge says of an open issue since it got a label: when
 // it last got it, and the pull or merge requests and commits that name
@@ -82,14 +96,6 @@ type Link struct {
 	Kind string `json:"kind"`         // pull-request (a GitHub pull request, a GitLab merge request) or commit
 	Ref  string `json:"ref"`          // how the forge names it: "#20", "!7", a short commit
 	At   string `json:"at,omitempty"` // when it named the issue, RFC 3339 or YYYY-MM-DD
-}
-
-// Tick is a box of a task list ticked, or unticked, in an issue's body,
-// with who did it: a person's yes in a report (ADR-0025).
-type Tick struct {
-	Item string `json:"item"`           // the item's text, as the forge gives it: its hidden markers' text in it
-	Done bool   `json:"done,omitempty"` // ticked; false: unticked
-	Note        // its author: Author, Insider, Bot; no author and not Insider when the forge does not say
 }
 
 // Bodies is the text of each note, in order.
@@ -170,9 +176,6 @@ type Backlog interface {
 	// Closers lists what closed an issue, as the forge links it: the pull
 	// or merge request, or the commit; nil when the forge does not say.
 	Closers(id int) ([]Closer, error)
-	// Ticks lists the boxes ticked and unticked in an issue's body, oldest
-	// first, with who did each; nil when the forge does not say.
-	Ticks(id int) ([]Tick, error)
 	// Trail says when an open issue last got a label, and what pull or
 	// merge requests and commits name it; an empty Labeled when the
 	// forge does not say (ADR-0031).
@@ -180,6 +183,30 @@ type Backlog interface {
 	// EnsureLabel creates a label when the project has none of that name,
 	// so a person finds it in the forge's list to set.
 	EnsureLabel(name, color, description string) error
+	// LabelEvents lists the labels set on an issue and taken off, oldest
+	// first, with who did each and when; nil when the forge does not say
+	// (ADR-0038).
+	LabelEvents(id int) ([]LabelEvent, error)
+	// React puts a reaction (Eyes) on a comment of an issue, by the note's
+	// ID; one there already changes nothing, nor does a forge without
+	// reactions (ADR-0038).
+	React(id int, note, emoji string) error
+}
+
+// ScopedLabels says whether f's labels are scoped, `key::value`, as
+// GitLab's: the product owner's own labels are named so there (ADR-0038).
+func ScopedLabels(f any) bool {
+	s, ok := f.(interface{ scopedLabels() bool })
+	return ok && s.scopedLabels()
+}
+
+// LabelFilter is the address of f's open issues bearing label, a person's
+// saved filter; "" when the forge has no such page.
+func LabelFilter(f any, label string) string {
+	if l, ok := f.(interface{ labelFilter(string) string }); ok {
+		return l.labelFilter(label)
+	}
+	return ""
 }
 
 // MergeRequest is where a merge request comes from and where it goes.
@@ -235,29 +262,3 @@ func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
 // Every forge workline speaks keeps a backlog.
 var _ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
-
-// taskLine is a task list's item in a body: `- [ ] text`, `* [x] text`.
-var taskLine = regexp.MustCompile(`(?m)^\s*[-*+] \[([ xX])\] (.*?)\s*$`)
-
-// TaskItems maps each task list item of a body to whether it is ticked.
-func TaskItems(body string) map[string]bool {
-	out := map[string]bool{}
-	for _, m := range taskLine.FindAllStringSubmatch(body, -1) {
-		out[m[2]] = m[1] != " "
-	}
-	return out
-}
-
-// TicksBetween are the boxes a version of a body ticked or unticked from
-// the one before ("" for none), each given to who wrote that version.
-func TicksBetween(before, after string, who Note) []Tick {
-	was := TaskItems(before)
-	var out []Tick
-	for _, m := range taskLine.FindAllStringSubmatch(after, -1) {
-		item, done := m[2], m[1] != " "
-		if prev, ok := was[item]; (ok && prev != done) || (!ok && done) {
-			out = append(out, Tick{Item: item, Done: done, Note: who})
-		}
-	}
-	return out
-}

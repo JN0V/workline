@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 50d152c
+checked: a59e5e6
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -72,7 +72,7 @@ refuses. The catalogue is closed and belongs to the engine:
 |---|---|---|
 | `commit-message` | replace the message being written | locally |
 | `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), which may create a file (`--- /dev/null`) or delete one (`+++ /dev/null`), or `{file, content}` to replace one file; limited to `duties.writes` | locally, as a merge request of its own (`--open-merge-request`), or as a commit on the merge request run on (`--push-to-merge-request`) |
-| `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened); `issue: n` puts it on that issue instead | forge |
+| `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened); `issue: n` puts it on that issue instead; a line starting with `/` is escaped, never a GitLab quick action (ADR-0038) | forge |
 | `label` | add or remove labels | forge |
 | `issue` | report a problem without fixing it: found outside the task, or one only people can settle (code disagreeing with a spec); `{title, body, sticky: true}` keeps one issue on the forge, its body rewritten on each run (with `update-only: true`, never opened); `{title, body, at: {path, text}}` opens one once, through the one way every role shares (docs/spec/backlog-acts.md, "Opening issues"): the engine keys it from the line `at` quotes (else its title), looks in the issues open and closed, opens none for a subject held, at most `issues-max` a run, labelled `needs-triage`, the role named, with the product owner's state comment naming the file and the commit (ADR-0018) | forge (`forge: local` keeps it in the clone); refused without one |
 | `close` | close an issue as a duplicate (`duplicate-of`) or obsolete, its evidence quoted from a file or an issue; never as not planned; done, proposed or dropped by the engine — obsolete announced on the issue first, closed by the engine days later on silence and a second judge's yes (docs/spec/backlog-acts.md, ADR-0024) | forge |
@@ -84,8 +84,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there; on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
-| `unready` | move a ready issue back to refine (`workline:ready` off, `workline:to-refine` on), the issue told why; always proposed, done once a person ticks it (docs/spec/backlog-acts.md, "Refining to ready"; ADR-0032) | forge |
-| `ask` | ask an issue's reporter what is missing; again only after an answer, never the same question, three rounds then the report (ADR-0021) | forge |
+| `unready` | move a ready issue back to refine (`workline:ready` off, `workline:to-refine` on), the issue told why; always proposed, done once a person accepts it (docs/spec/backlog-acts.md, "Refining to ready"; ADR-0032) | forge |
+| `ask` | ask an issue's reporter what is missing; again only after an answer, never the same question, three rounds then a person, on the issue (ADR-0021) | forge |
 | `split` | break an issue too big to be one need into 2 to 6 issues, each with its four sections, opened through the one way and linked to it — a sub-issue, a GitLab task, or a task list in its body; never split twice (docs/spec/backlog-acts.md, "Splitting") | forge |
 | `rename` | set an issue's title; a title a person set after the role's is kept (docs/spec/backlog-acts.md, "Renaming") | forge |
 | `depend` | name the open issues an issue waits on (`blocked-by`): the forge's own relation, or a line in its body; never a cycle, a person's link kept (docs/spec/backlog-acts.md, "What an issue waits on"; ADR-0028) | forge |

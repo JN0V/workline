@@ -1,12 +1,12 @@
 case: product-owner/state-given-without-ai
-about: Without an agent, an issue with no state comment gets one, at the commit the run is on; one that has it is left as it is, and the report issue is not judged — only rewritten with what is next and what is stuck (ADR-0031).
+about: Without an agent, an issue with no state comment gets one, at the commit the run is on; one that has it is left as it is; an old report issue is not judged, but closed, what it recorded moved to the issues (ADR-0038).
 given:
   repo: backlog
   forge:
     issues:
       - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: []}
       - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 13, title: "Backlog — product owner", body: "What the product owner did.", labels: [], comments: []}
+      - {id: 13, title: "Backlog — product owner", body: "What the product owner did.", labels: [], comments: ["```yaml\n{}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]}
 run: {role: product-owner, event: schedule, ai: none}
 expect:
   status: pass
@@ -15,4 +15,4 @@ expect:
     issues:
       - {id: 7, comments: 1, comment-contains: "confirmed: "}
       - {id: 12, comments: 1, comment-contains: "confirmed: 0000000", comment-lacks: "judged:"}
-      - {id: 13, comment-lacks: "sticky=product-owner/state", body-contains: "## Stuck"}
+      - {id: 13, closed: true, comment-lacks: "sticky=product-owner/state"}

@@ -2,6 +2,8 @@ case: product-owner/obsolete-judge-disagrees-kept
 about: An announced issue due for closing whose second judge says no is kept open — its label taken off, the judge's reason said on the issue, the evidence recorded so it is not announced again for it (ADR-0024).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {close-obsolete: {mode: act}}}}}
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
   forge:
     issues:

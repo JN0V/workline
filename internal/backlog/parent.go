@@ -115,15 +115,15 @@ func (p Part) Delivered() bool {
 
 // Evidence is a parent's report, as the engine writes it.
 type Evidence struct {
-	Body      string
-	Parts     int
-	Closed    int      // the parts closed, or gone from the forge
-	Undone    []int    // the parts closed without delivering: not planned, a duplicate, gone
-	Unproved  []string // the Verification items no part delivered quotes, or whose test is not in the code
-	NoTest    []string // the tests a quoted item names that the code does not hold
+	Body       string
+	Parts      int
+	Closed     int      // the parts closed, or gone from the forge
+	Undone     []int    // the parts closed without delivering: not planned, a duplicate, gone
+	Unproved   []string // the Verification items no part delivered quotes, or whose test is not in the code
+	NoTest     []string // the tests a quoted item names that the code does not hold
 	TestUnread []string // the tests a quoted item names that could not be looked for, with why
-	Unread    []Part   // the parts whose closer the forge refused to say, with why
-	AllClosed bool
+	Unread     []Part   // the parts whose closer the forge refused to say, with why
+	AllClosed  bool
 }
 
 // ReadEvidence writes a parent's report from its parts: what each became
@@ -386,35 +386,6 @@ func closerName(c forge.Closer) string {
 // cell is a text fit for a table's cell: one line, no column mark.
 func cell(s string) string {
 	return strings.ReplaceAll(squeeze(s), "|", `\|`)
-}
-
-// readToAccept finds the open parents whose parts are all closed, and
-// records them: the report is rewritten when they change, not otherwise.
-func (p *Plan) readToAccept() {
-	var ids []int
-	for _, id := range sortedIDs(p.issues) {
-		parts := Parts(p.issues[id])
-		if id != p.Report && len(parts) > 0 && !slices.ContainsFunc(parts, func(n int) bool { return p.open[n] }) {
-			ids = append(ids, id)
-		}
-	}
-	if !slices.Equal(ids, p.Record.ToAccept) {
-		p.Record.ToAccept, p.Changed = ids, true
-	}
-}
-
-// toAccept is the report's part on the parents whose parts are all closed:
-// for a person to accept, by closing them (ADR-0029).
-func (p *Plan) toAccept() string {
-	var lines []string
-	for _, id := range p.Record.ToAccept {
-		is := p.issues[id]
-		lines = append(lines, fmt.Sprintf("- #%d %s: its %d parts are closed; what each delivered, and what is not proved, is on the issue. Close it to accept the need, or reopen a part.", id, is.Title, len(Parts(is))))
-	}
-	if len(lines) == 0 {
-		return ""
-	}
-	return "\n## To accept\n\nNeeds split into parts, every part closed: a person accepts each by closing it; the role never does.\n\n" + strings.Join(lines, "\n") + "\n"
 }
 
 // sortedIDs are the numbers of the issues given, lowest first.

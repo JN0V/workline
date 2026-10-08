@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: 886cdff
+checked: a59e5e6
 judged: a8574a5
 verified: agent:documentalist
 ---
@@ -129,8 +129,7 @@ workline init      # routes pre-push; proposes each doc's sources, for you to re
   reads a branch before you push it.
 - `--human-po yes` says a person is the project's Product Owner: the
   product owner role then proposes what sets direction rather than doing it
-  ([ADR-0026](adr/0026-the-product-owners-autonomy-is-a-level.md);
-  changing: [ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+  ([ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
 
 Step by step, in ten minutes: [the quickstart](quickstart.md).
 

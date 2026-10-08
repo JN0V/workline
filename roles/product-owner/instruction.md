@@ -26,8 +26,8 @@ requirement maybe lost. Nothing else is proposed when importing.
 engine knows of it — the code it is about (`sources`) and the commit it
 was last found true at. It says first what you may do in this run: each
 kind of act's mode. An `off` kind is dropped: do not write it. A
-`propose` kind goes to the report for a person to tick: propose only
-what you would do. A refine whose Need and Validation drafts are
+`propose` kind is proposed on its issue for a person to accept: propose
+only what you would do. A refine whose Need and Validation drafts are
 proposed still writes Scope and Verification.
 
 Propose a `close` for an issue only when the evidence settles it:
@@ -121,7 +121,16 @@ yet: write nothing more to them. **An outsider's issue** (the task says
 its reporter is outside the project): a `refine` is proposed to them in a
 comment, not written in the body; its `why` says what you understood of
 the issue, in a sentence, and its `questions` what you still need, if
-anything; a `split` or a `rename` of it goes to the project's report.
+anything; a `split` or a `rename` of it is proposed to the project on
+the issue.
+
+**A person's comment on what you proposed.** The task says when a person
+of the project, or the reporter, commented on an issue since you
+proposed on it: read their comments as asking you to revise. Give a
+`refine` with the whole new text of the sections the task says are still
+yours, changed as they ask; propose again what still stands, nothing they
+turned down. A section a person wrote, edited or deleted is theirs: never
+write it. When nothing they ask is yours to change, say why in a `note`.
 
 Put an issue in the milestone of the release it belongs to (`milestone`),
 when it has none or slipped — only one the code given shows still true;

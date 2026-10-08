@@ -1,14 +1,14 @@
 case: product-owner/rounds-capped-then-person
-about: Its reporter written to three times (acts.ask.rounds), each answered, a fourth question is not asked — it is proposed to a person in the report, to settle with the reporter.
+about: Its reporter written to three times (acts.ask.rounds), each answered, a fourth question is not asked — it is proposed to a person on the issue, to settle with the reporter.
 given:
   repo: backlog
   forge:
     issues:
-      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: When?\n\n<!-- workline:product-owner/ask -->", "Always.", "@ann, thank you; to refine this issue, still: Which export?\n\n<!-- workline:product-owner/ask=2 -->", "CSV.", "@ann, thank you; to refine this issue, still: Which rows?\n\n<!-- workline:product-owner/ask=3 -->", "Some."]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@ann, to refine this issue: When?\n\n<!-- workline:product-owner/ask -->", {body: "Always.", author: ann, insider: true}, "@ann, thank you; to refine this issue, still: Which export?\n\n<!-- workline:product-owner/ask=2 -->", {body: "CSV.", author: ann, insider: true}, "@ann, thank you; to refine this issue, still: Which rows?\n\n<!-- workline:product-owner/ask=3 -->", {body: "Some.", author: ann, insider: true}]}
 run: {role: product-owner, event: schedule, ai: fake:ask-a-fourth-time}
 expect:
   findings: [{rule: asks-spent, where: "#9"}]
   forge:
     issues:
       - {id: 9, comments: 7}
-      - {id: 10, title: "Backlog — product owner", body-contains: "Settle #9 with its reporter, written to 3 times already"}
+      - {id: 9, labels: [workline:proposed], comment-contains: "Settle #9 with its reporter, written to 3 times already"}

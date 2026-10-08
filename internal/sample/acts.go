@@ -1,22 +1,23 @@
 package sample
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// The product owner's acts in the weekly sample (ADR-0033): one in ten of
-// those it did alone in the week, drawn from the record on its report, as
-// the docs are, and written on a tracking issue of their own for a person
-// to judge — an act found wrong is undone on its issue, which puts that
-// kind back to propose (ADR-0026). Drawn with the forge and no AI, in the
-// job holding the forge's token: --apply.
+// The product owner's acts in the weekly sample (ADR-0033), when the
+// project turns it on (the product owner's `weekly-sample`, off by
+// default since ADR-0038): one in ten of those it did alone in the week,
+// drawn from each issue's state, as the docs are, and written on a
+// tracking issue of their own for a person to judge — an act found wrong
+// is undone on its issue, which has that kind proposed there. Drawn with
+// the forge and no AI, in the job holding the forge's token: --apply.
 
 // ActsIssueTitle is the tracking issue of the product owner's acts.
 const ActsIssueTitle = "workline: the weekly sample of the product owner's acts"
@@ -26,10 +27,10 @@ const productOwner = "product-owner"
 
 const actsIntro = `Each week, one in ten of the acts the product owner did alone — closing,
 renaming, splitting, moving to ` + "`ready`" + `, ordering… — is drawn from the record on
-its report, with the day and the autonomy level each was done at, for a
-person to judge (ADR-0033). An act you find wrong: undo it on its issue —
-reopen it, rename it back, take the label off — and the role puts that kind
-of act back to propose at its next run (ADR-0026).
+each issue's state, with the day and the autonomy level each was done at,
+for a person to judge (ADR-0033). An act you find wrong: undo it on its
+issue — reopen it, rename it back, take the label off — and the role
+proposes that kind of act on that issue from its next run (ADR-0038).
 
 A comment a week, below, with the level the acts done alone suggest. The
 sample never changes the setting.
@@ -38,13 +39,12 @@ Written by ` + "`workline sample --apply`" + `, with no AI.`
 
 // ActsRead is what the sample drew of the product owner's acts.
 type ActsRead struct {
-	Issue  int     `json:"issue"`  // the tracking issue written
-	Report int     `json:"report"` // the product owner's report the record was read from
-	Level  string  `json:"level"`  // the level in force at its last run
-	Week   int     `json:"week"`   // the acts done alone in the week
-	Drawn  []Drawn `json:"drawn"`
-	// Counted are the acts done alone at Level that the record keeps, up to
-	// the week's end; Undone, those a person undid.
+	Issue int     `json:"issue"` // the tracking issue written
+	Level string  `json:"level"` // the level of its last act done alone
+	Week  int     `json:"week"`  // the acts done alone in the week
+	Drawn []Drawn `json:"drawn"`
+	// Counted are the acts done alone at Level the issues keep, up to the
+	// week's end; Undone, those a person undid.
 	Counted int    `json:"counted"`
 	Undone  int    `json:"undone"`
 	Suggest string `json:"suggest,omitempty"`
@@ -58,19 +58,14 @@ type Drawn struct {
 }
 
 // applyActs draws the week's acts of the product owner and writes them on
-// their tracking issue; nothing when the project has no report.
-func applyActs(res *Result, f forge.Forge) error {
+// their tracking issue, when the project turned it on; nothing when no
+// issue keeps an act of the role's.
+func applyActs(res *Result, repo string, f forge.Forge) error {
 	b, ok := f.(forge.Backlog)
-	if !ok {
-		return nil // a forge with no issues to read has no report either
+	if !ok || !actsOn(repo) {
+		return nil // a forge with no issues has no acts either
 	}
 	acts, err := backlog.ReadActs(b, productOwner)
-	if errors.Is(err, backlog.ErrRecordBroken) {
-		// The role's own run says it too; the docs' sample stands.
-		res.Status = verdict.Human
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "acts-not-read", Message: err.Error() + "; no act of the product owner drawn this week, for a person to repair"})
-		return nil
-	}
 	if err != nil || acts == nil {
 		return err
 	}
@@ -79,7 +74,7 @@ func applyActs(res *Result, f forge.Forge) error {
 		return err
 	}
 	first, end := from.Format("2006-01-02"), to.Format("2006-01-02")
-	r := &ActsRead{Report: acts.Report, Level: acts.Level, Drawn: []Drawn{}}
+	r := &ActsRead{Level: acts.Level, Drawn: []Drawn{}}
 	var week []int // the places in the record of the week's acts
 	var keys []string
 	for i, d := range acts.Did {
@@ -148,16 +143,27 @@ func actsReport(week, first, last string, r *ActsRead) string {
 			}
 		}
 	}
-	fmt.Fprintf(&b, "\n%s at %s in the acts the record keeps, %d undone, up to %s (report #%d). ", actsWords(r.Counted), r.Level, r.Undone, last, r.Report)
+	fmt.Fprintf(&b, "\n%s at %s in the acts the issues keep, %d undone, up to %s. ", actsWords(r.Counted), r.Level, r.Undone, last)
 	switch {
 	case r.Suggest != "":
 		fmt.Fprintf(&b, "**Suggested**: `autonomy: %s` — %s. Set it in the project's settings if you agree; the sample never changes it.\n", r.Suggest, r.Why)
 	case r.Level == backlog.Cautious:
-		b.WriteString("At cautious, the role does alone only what checks facts: its report suggests a level from the proposals a person settled.\n")
+		b.WriteString("At cautious, the role does alone only what checks facts: nothing to suggest a level from.\n")
 	case r.Counted < backlog.SuggestAfter:
 		fmt.Fprintf(&b, "Too few acts done alone at %s to suggest a level: %d, at least %d.\n", r.Level, r.Counted, backlog.SuggestAfter)
 	default:
 		fmt.Fprintf(&b, "No other level suggested.\n")
 	}
 	return b.String()
+}
+
+// actsOn says whether the project turned the sample of the product
+// owner's acts on: its `weekly-sample` setting (ADR-0038: off by default).
+func actsOn(repo string) bool {
+	cfg, err := role.LoadProjectConfig(repo)
+	if err != nil || cfg == nil {
+		return false
+	}
+	on, _ := cfg.Roles[productOwner].Settings["weekly-sample"].(bool)
+	return on
 }

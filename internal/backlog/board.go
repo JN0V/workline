@@ -10,7 +10,8 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 )
 
-// The report opens with what is next and what is stuck (ADR-0031): the
+// What is next and what is stuck (ADR-0031), said in the job's summary
+// (ADR-0038): the
 // first ready issues of the order, and each issue waiting on a person past
 // a number of days, with since when — rebuilt at every run from the forge,
 // nothing of it stored but the day a proposal was first made.
@@ -28,7 +29,7 @@ const (
 const (
 	WaitsReady    = "ready"    // ready, nothing started since
 	WaitsAsked    = "asked"    // its reporter's answer
-	WaitsProposed = "proposed" // a person's tick on a proposal of the report
+	WaitsProposed = "proposed" // a person's answer to a proposal on the issue
 	WaitsObsolete = "obsolete" // a second judge, its announcement due
 )
 
@@ -148,7 +149,7 @@ func Offered(is forge.Issue, open map[int]bool) bool {
 	return slices.Contains(is.Labels, LabelReady) && len(Waiting(is, open)) == 0 && len(Parts(is)) == 0
 }
 
-// Board is the report's opening: what is next and what is stuck.
+// Board is what is next and what is stuck, for the job's summary.
 type Board struct {
 	NextMax   int
 	StuckDays int
@@ -204,43 +205,24 @@ func MakeBoard(open []forge.Issue, report int, waits []Wait, proposed []Pending,
 // Empty says whether the board lists no issue.
 func (b Board) Empty() bool { return len(b.Next) == 0 && len(b.Stuck) == 0 }
 
-// Text is the board as the report opens with it.
-func (b Board) Text() string {
-	var s strings.Builder
-	if b.NextMax > 0 {
-		fmt.Fprintf(&s, "\n## Next\n\nWhere to start: the first ready issues in the backlog's order, waiting on no open issue (at most %d, the setting `next-max`).\n\n", b.NextMax)
-		if len(b.Next) == 0 {
-			fmt.Fprintf(&s, "None: no issue bearing `%s` waits on nothing.\n", LabelReady)
+// StuckLine says what a stuck issue waits on, since when, and what to do,
+// as the job's summary says it (ADR-0031; ADR-0038).
+func (b Board) StuckLine(w Wait) string {
+	since := fmt.Sprintf("%s (%s)", w.Since, plural(Days(w.Since, b.now), "day"))
+	switch w.Waits {
+	case WaitsReady:
+		return fmt.Sprintf("ready since %s; no pull request nor commit names it since: take it, or take `%s` off", since, LabelReady)
+	case WaitsAsked:
+		return fmt.Sprintf("its reporter written to on %s; no answer since", since)
+	case WaitsProposed:
+		if w.Issue == 0 {
+			return fmt.Sprintf("%s — proposed since %s; not answered", strings.TrimSuffix(w.Line, "."), since)
 		}
-		for i, is := range b.Next {
-			fmt.Fprintf(&s, "%d. #%d %s — %s\n", i+1, is.ID, is.Title, Place(is))
-		}
+		return fmt.Sprintf("`%s` proposed on it since %s; not answered", w.Act, since)
+	case WaitsObsolete:
+		return fmt.Sprintf("announced obsolete, its delay past since %s; no second judge closed or kept it: close it, or take `%s` off", since, LabelObsolete)
 	}
-	s.WriteString("\n## Stuck\n\n")
-	if len(b.Stuck) == 0 {
-		fmt.Fprintf(&s, "Nothing has waited on a person for more than %s (the setting `stuck-days`).\n", plural(b.StuckDays, "day"))
-		return s.String()
-	}
-	fmt.Fprintf(&s, "Waiting on a person for more than %s (the setting `stuck-days`), since the day given. An issue announced obsolete waits on a second judge from the day its delay ended.\n\n", plural(b.StuckDays, "day"))
-	for _, w := range b.Stuck {
-		since := fmt.Sprintf("%s (%s)", w.Since, plural(Days(w.Since, b.now), "day"))
-		who := fmt.Sprintf("#%d %s", w.Issue, b.titles[w.Issue])
-		switch w.Waits {
-		case WaitsReady:
-			fmt.Fprintf(&s, "- %s — ready since %s; no pull request nor commit names it since: take it, or take `%s` off.\n", who, since, LabelReady)
-		case WaitsAsked:
-			fmt.Fprintf(&s, "- %s — its reporter written to on %s; no answer since.\n", who, since)
-		case WaitsProposed:
-			if w.Issue == 0 {
-				fmt.Fprintf(&s, "- %s — proposed here since %s; not ticked, not settled.\n", strings.TrimSuffix(w.Line, "."), since)
-				continue
-			}
-			fmt.Fprintf(&s, "- %s — `%s` proposed here since %s; not ticked, not settled.\n", who, w.Act, since)
-		case WaitsObsolete:
-			fmt.Fprintf(&s, "- %s — announced obsolete, its delay past since %s; no second judge closed or kept it: close it, or take `%s` off.\n", who, since, LabelObsolete)
-		}
-	}
-	return s.String()
+	return "waits on a person since " + since
 }
 
 // plural says a count of a thing: "1 day", "14 days".

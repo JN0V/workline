@@ -1,5 +1,5 @@
 case: product-owner/archived-source-flags-nothing
-about: "A file the project archived — no longer a source, the setting `archived` naming it — flags nothing when its lines change: the issue imported from it is not read again for it, and a change the record kept from it leaves the report (ADR-0032)."
+about: "A file the project archived — no longer a source, the setting `archived` naming it — flags nothing when its lines change: the issue imported from it is not read again for it (ADR-0032)."
 given:
   repo: backlog
   config:
@@ -50,4 +50,5 @@ expect:
   agent-calls: 0
   forge:
     issues:
-      - {id: 6, body-lacks: "ROADMAP.md", comment-lacks: "path: ROADMAP.md"}
+      - {id: 6, closed: true}
+      - {id: 4, comment-lacks: "path: ROADMAP.md"}

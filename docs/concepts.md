@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: 50d152c
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Concepts
@@ -93,7 +93,7 @@ best available, said in the verdict
 - People state the need and accept the result; workline never merges,
   never approves.
 - What a role cannot settle is written where a person looks — an issue, a
-  comment, the report — with what to do.
+  comment, a label — with what to do.
 - A **parent** — a need the product owner split into parts, each an issue
   — is never closed by a role: as its parts close, a comment on it says
   what each delivered and which items of its Verification are proved, and

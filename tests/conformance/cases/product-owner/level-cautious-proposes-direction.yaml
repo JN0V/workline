@@ -1,5 +1,5 @@
 case: product-owner/level-cautious-proposes-direction
-about: At autonomy cautious — a person is the Product Owner — the acts that set direction are proposed in the report, not done (a duplicate closed, a rename, a priority, a split), and those that check facts are done (sources named); the report and the task say each kind's mode, from the level.
+about: "At autonomy cautious — a person is the Product Owner — the role notes and proposes (ADR-0038): a duplicate is proposed on its issue, not closed, the code named all the same; the kinds off by default stay off; the task says each kind's mode, from the level."
 given:
   repo: backlog
   config:
@@ -17,16 +17,12 @@ run: {role: product-owner, event: schedule, ai: fake:level-acts}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: "- split: propose (level)\n- depend: propose (level)\n- rename: propose (level)\n"}
+    in/task.md: {contains: "- sources: act, 10 a run (level)\n- close-duplicate: propose (level)\n- close-obsolete: off (level)\n- milestone: off (level)\n- order: off (level)\n- refine: act, 5 a run, Need and Validation drafts proposed (level)\n- ready: propose (level)\n- ask: act, 2 a run (level)\n- split: off (level)\n- depend: off (level)\n- rename: off (level)\n- open: act, 30 a run (level)"}
+  findings:
+    - {rule: proposed, where: "#12", message: "Close it as a duplicate of #7"}
   forge:
     issues:
-      - {id: 12, closed: false}
+      - {id: 12, closed: false, labels: [workline:proposed], comment-contains: "**Proposes**: Close it as a duplicate of #7"}
       - {id: 9, title: "bug", labels: []}
       - {id: 10, comment-lacks: "split:"}
       - {id: 11, comment-contains: "sources: [src/export/csv.go]"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "- sources: act, 10 a run (level)\n- close-duplicate: propose (level)\n- close-obsolete: act, 3 a run (level)\n- milestone: propose (level)\n- order: propose (level)\n- refine: act, 5 a run, Need and Validation drafts proposed (level)\n- ready: act, 5 a run (level)\n- ask: act, 2 a run (level)\n- split: propose (level)\n- depend: propose (level)\n- rename: propose (level)\n- open: act, 30 a run (level)"}
-      - {id: 13, body-contains: "<details><summary>Autonomy: cautious — what the role does alone, and what it proposes</summary>"}
-      - {id: 13, body-contains: "**#12 Last row missing in CSV**\n\n- [ ] Close it as a duplicate of #7"}
-      - {id: 13, body-contains: "- [ ] Rename it to \"The CSV export drops the last row\""}
-      - {id: 13, body-contains: "**#9 bug**\n\n- [ ] Set its priority to 1 (now: no priority, no milestone)."}
-      - {id: 13, body-contains: "- [ ] Split it into 2 issues"}

@@ -1,5 +1,5 @@
 case: product-owner/explicit-act-setting-overrides-level
-about: A kind the project sets wins over the level, field by field — at cautious, rename set to act is done, its cap still the level's — and the others keep the level's mode; the report says which comes from the setting.
+about: "A kind the project sets wins over the level, field by field — at cautious, rename set to act is done, its cap the role's — and the others keep the level's mode; the task says which comes from the setting."
 given:
   repo: backlog
   config:
@@ -16,10 +16,10 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:level-acts}
 expect:
   status: pass
+  run-files:
+    in/task.md: {contains: "- split: off (level)\n- depend: off (level)\n- rename: act, 5 a run (setting)\n- open"}
+  findings: [{rule: done, where: "#9", message: "Renamed #9 from \"bug\""}]
   forge:
     issues:
       - {id: 9, title: "The CSV export drops the last row", labels: []}
       - {id: 10, comment-lacks: "split:"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "- split: propose (level)\n- depend: propose (level)\n- rename: act, 5 a run (setting)\n- open"}
-      - {id: 13, body-contains: "Renamed #9 from \"bug\""}
-      - {id: 13, body-contains: "**#10 Export fixes**\n\n- [ ] Split it into 2 issues"}

@@ -36,11 +36,10 @@ given:
           - "**Question for a person**\n\n<!-- workline:spec-review body=b9528f775bfa round=5 open=1 in=Need stopped -->\n\n<!-- workline:sticky=reviewer/spec -->"
 run: {role: product-owner, event: schedule, ai: none}
 expect:
+  findings: [{rule: done, where: "#9", message: "Moved #9 to ready: the reviewer read its spec (round 2): no important finding open"}, {rule: done-as-accepted, where: "#11", message: "Moved #11 to ready"}]
   agent-calls: 0
   forge:
     issues:
       - {id: 9, labels: [workline:ready]}
       - {id: 10, labels: [workline:to-refine]}
       - {id: 11, labels: [workline:ready]}
-      - {id: 12, title: "Backlog — product owner", body-contains: "Moved #9 to ready: the reviewer read its spec (round 2): no important finding open"}
-      - {id: 12, body-contains: "Moved #11 to ready"}

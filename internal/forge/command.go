@@ -320,16 +320,31 @@ func (c *command) Trail(id int, label string) (Trail, error) {
 	return a, err
 }
 
-// Ticks reads the answer to ticks: the boxes ticked in the issue's body,
-// each {item, done, author, insider, bot} (docs/spec/forge-command.md); a
-// forge that refuses the operation does not say who ticked: nil.
-func (c *command) Ticks(id int) ([]Tick, error) {
+// LabelEvents asks label-events: the labels set on the issue and taken
+// off, each {label, added, author, insider, bot, created}, oldest first
+// (docs/spec/forge-command.md); a forge that refuses the operation does
+// not say: nil.
+func (c *command) LabelEvents(id int) ([]LabelEvent, error) {
 	var a struct {
-		Ticks []Tick `json:"ticks"`
+		Events []LabelEvent `json:"events"`
 	}
-	err := c.call("ticks", map[string]any{"id": id}, &a)
+	err := c.call("label-events", map[string]any{"id": id}, &a)
 	if err != nil && !errors.Is(err, ErrUnreachable) {
 		return nil, nil
 	}
-	return a.Ticks, err
+	return a.Events, err
+}
+
+// React asks react: a reaction on a comment, by its id
+// (docs/spec/forge-command.md); a forge that refuses it has none: nothing
+// done, nothing failed.
+func (c *command) React(id int, note, emoji string) error {
+	if note == "" {
+		return nil
+	}
+	err := c.call("react", map[string]any{"id": id, "note": note, "emoji": emoji}, nil)
+	if err != nil && !errors.Is(err, ErrUnreachable) {
+		return nil
+	}
+	return err
 }

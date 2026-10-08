@@ -8,8 +8,9 @@ import (
 
 // How far the role goes (ADR-0026): one setting, `autonomy`, a preset of
 // the acts' modes and caps the role ships (role.yaml, `levels`); a kind the
-// project sets wins over it, field by field; a kind demoted by a person's
-// undoing stays proposed whatever the level, until a person's tick.
+// project sets wins over it, field by field; a kind a person undid on an
+// issue is proposed there from then on, and everywhere once undone
+// undone-max times (ADR-0038, amended).
 
 // The autonomy levels, from the least to the most the role does alone.
 const (
@@ -21,9 +22,6 @@ const (
 // AutonomyLevels are the autonomy levels a project may pick.
 var AutonomyLevels = []string{Cautious, Normal, Enterprising}
 
-// IgnoredRunsMax bounds `ignored-runs-max`; 0 never pauses.
-const IgnoredRunsMax = 20
-
 // byLevel is the setting the engine adds beside a role's own: its settings
 // as the level alone gives them (role.ByLevel).
 const byLevel = "by-level"
@@ -32,7 +30,7 @@ const byLevel = "by-level"
 const (
 	FromLevel   = "level"   // the autonomy level's preset
 	FromSetting = "setting" // the project set this kind itself
-	FromDemoted = "demoted" // a person undid one of its acts: proposed until a tick sets it back
+	FromDemoted = "demoted" // undone undone-max times across the issues: proposed everywhere
 )
 
 // Config is how far the role goes in a run, read from its settings.
@@ -41,9 +39,21 @@ type Config struct {
 	Acts         map[string]Setting // each kind's mode and cap, the project's laid over the level's
 	Origins      map[string]string  // each kind's: level or setting
 	MovedPercent int                // the share of the open issues a run moves
-	IgnoredMax   int                // runs nobody answered before the role pauses; 0 never
-	NextMax      int                // the ready issues the report lists first; 0 none (ADR-0031)
-	StuckDays    int                // the days an issue waits on a person before the report says it stuck
+	NextMax      int                // the ready issues the job's summary lists first; 0 none (ADR-0031)
+	StuckDays    int                // the days an issue waits on a person before the summary says it stuck
+	// UndoneMax: the acts of a kind a person undoes, across the issues,
+	// before that kind is proposed everywhere; ProposalsMax, the issues
+	// waiting on a person before the role reads only those answered
+	// (ADR-0038).
+	UndoneMax    int
+	ProposalsMax int
+	// ChangedNeeds: a person's change to a Need or a Scope, or to an
+	// imported file's lines, flags the issues built on it (ADR-0032); off
+	// unless set (ADR-0038).
+	ChangedNeeds bool
+	// Gone are the settings the project still sets that the role no
+	// longer reads: said, never silently ignored.
+	Gone []string
 	// Archived are the files no longer a source, as globs: an issue
 	// imported from one is not flagged when its lines change (ADR-0032).
 	Archived []string
@@ -54,11 +64,13 @@ type Config struct {
 }
 
 // ReadConfig reads the role's settings: the level, the acts, the moved
-// share, the runs before a pause, and what the report lists first. A level or a number out of range is an
-// error, never read as a default (principle 12).
+// share, what the summary lists first, the undoing and the proposals
+// waiting. A level or a number out of range is an error, never read as a
+// default (principle 12).
 func ReadConfig(settings map[string]any) (Config, error) {
 	c := Config{Level: Normal, Acts: Settings(settings), Origins: map[string]string{},
-		MovedPercent: MovedPercent(settings), IgnoredMax: 3, NextMax: NextMax, StuckDays: StuckDays}
+		MovedPercent: MovedPercent(settings), NextMax: NextMax, StuckDays: StuckDays,
+		UndoneMax: UndoneMax, ProposalsMax: ProposalsMax}
 	if v, ok := settings["autonomy"]; ok && v != nil {
 		s, _ := v.(string)
 		if !slices.Contains(AutonomyLevels, s) {
@@ -67,17 +79,23 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		c.Level = s
 	}
 	if v, ok := settings["ignored-runs-max"]; ok && v != nil {
-		n, isNumber := whole(v)
-		if !isNumber || n < 0 || n > IgnoredRunsMax {
-			return c, fmt.Errorf("ignored-runs-max: %v is not a number from 0 (never pause) to %d", v, IgnoredRunsMax)
+		// The pause lived on the report, gone (ADR-0038): a project still
+		// setting it is told, never silently ignored (principle 12).
+		c.Gone = append(c.Gone, "ignored-runs-max")
+	}
+	if v, ok := settings["changed-needs"]; ok && v != nil {
+		b, isBool := v.(bool)
+		if !isBool {
+			return c, fmt.Errorf("changed-needs: %v is not true or false", v)
 		}
-		c.IgnoredMax = n
+		c.ChangedNeeds = b
 	}
 	for _, b := range []struct {
 		name     string
 		min, max int
 		to       *int
-	}{{"next-max", 0, NextMaxLimit, &c.NextMax}, {"stuck-days", 1, StuckDaysLimit, &c.StuckDays}} {
+	}{{"next-max", 0, NextMaxLimit, &c.NextMax}, {"stuck-days", 1, StuckDaysLimit, &c.StuckDays},
+		{"undone-max", 1, UndoneMaxLimit, &c.UndoneMax}, {"proposals-max", 1, ProposalsMaxLimit, &c.ProposalsMax}} {
 		if v, ok := settings[b.name]; ok && v != nil {
 			n, isNumber := whole(v)
 			if !isNumber || n < b.min || n > b.max {
@@ -185,32 +203,4 @@ func ModesLine(modes []KindMode) string {
 		parts = append(parts, m.Kind+": "+m.Say())
 	}
 	return strings.Join(parts, "; ")
-}
-
-// SuggestAfter is the proposals a person settled at a level before the
-// report suggests another; SuggestTicked, the share ticked, in percent,
-// past which a cautious role is told it could do more alone.
-const (
-	SuggestAfter  = 10
-	SuggestTicked = 80
-)
-
-// Measure is what a person did with the proposals at the level in force:
-// the report suggests another level from it, never changes the setting.
-type Measure struct {
-	Level  string `yaml:"level"`
-	Ticked int    `yaml:"ticked,omitempty"` // proposals a person of the project ticked: done as proposed
-	Other  int    `yaml:"other,omitempty"`  // proposals settled otherwise: their issue closed, or opened by hand
-}
-
-// Suggest is the level the report suggests, and why; "" when none.
-func (m *Measure) Suggest() (string, string) {
-	if m == nil {
-		return "", ""
-	}
-	total := m.Ticked + m.Other
-	if m.Level == Cautious && total >= SuggestAfter && m.Ticked*100 > SuggestTicked*total {
-		return Normal, fmt.Sprintf("%d of the %d proposals settled at cautious were ticked as proposed (more than %d%%)", m.Ticked, total, SuggestTicked)
-	}
-	return "", ""
 }
