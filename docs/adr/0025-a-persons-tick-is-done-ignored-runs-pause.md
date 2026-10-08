@@ -1,6 +1,7 @@
 # ADR-0025: A person's tick in the report is done; runs nobody answers pause the role
 
-- **Status:** accepted
+- **Status:** accepted; partly superseded by [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+  (the report's ticks and the pause)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0018 ("a box ticked there is read only from someone
   with write access"; "only the person sets it to act again"; "after

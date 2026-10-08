@@ -1,6 +1,7 @@
 # ADR-0026: The product owner's autonomy is a level; ignored runs are a setting
 
-- **Status:** accepted
+- **Status:** accepted; partly superseded by [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+  (one autonomy axis)
 - **Date:** 2026-10-05
 - **Decided by:** the project's author, after a round table (analyst,
   product manager, architect, developer, UX designer, test architect)

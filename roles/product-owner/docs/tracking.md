@@ -42,7 +42,8 @@ issue". A split need is never the one offered: its parts are.
 ## Next and Stuck
 
 After what a person has to do, the report says **Next** and **Stuck**
-([ADR-0031](../../../docs/adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md)),
+([ADR-0031](../../../docs/adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md);
+changing: [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)),
 rebuilt at every run with or without an agent, nothing of them stored.
 
 - **Next**: the first `next-max` (5) ready issues of the order waiting on

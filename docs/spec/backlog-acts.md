@@ -716,7 +716,7 @@ reporter, of the project, outside it, a bot.
 
 ## Autonomy and caps
 
-How far the role goes is one setting, `autonomy` (ADR-0026): `cautious`,
+How far the role goes is one setting, `autonomy` (ADR-0026; changing: ADR-0038): `cautious`,
 `normal` (the default) or `enterprising`, a preset of each kind's mode and
 cap. `normal` is the role's defaults:
 
@@ -803,7 +803,7 @@ the run.
 
 One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
 a page for a person: what they have to do first, then what the run did,
-the long parts folded (`<details>`), nothing left out (ADR-0031). In
+the long parts folded (`<details>`), nothing left out (ADR-0031; changing: ADR-0038). In
 order (`backlog.ReportBody`):
 
 | Part | What it says |
@@ -902,7 +902,7 @@ report is rewritten once a run.
 Each proposal is a box, its line ending with a hidden key,
 `<!-- workline:proposal=<issue>/<kind> -->` (an issue to open: its text's
 key). At each run, acts or not, the engine reads the boxes ticked in the
-report's body and who ticked each (ADR-0025):
+report's body and who ticked each (ADR-0025; changing: ADR-0038):
 
 | Forge | Who ticked it |
 |---|---|

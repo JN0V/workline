@@ -30,8 +30,10 @@ choice is unclear, it is settled against this page.
 12. **Fail loud, never pass silently.** A check that did not run, a setting
     that is missing, an outside service that failed: each is said, and none is
     read as a pass.
-13. **Borrow before building.** Look for what exists — in the words the
-    ecosystem uses — and build only what is missing.
+13. **Borrow before building, and while running.** Look for what the
+    forge or ecosystem has, in their words: use it; if it fits partly,
+    complete it; replace it only when it cannot be, and say why. A role
+    brings judgment, not screens the forge has.
 14. **Automatic where it can be, written where it cannot.** What the
     machine can do, it does, without being asked. What needs a person is
     written where they look — what to do, why, and how — never left in a

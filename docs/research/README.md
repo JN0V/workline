@@ -17,6 +17,7 @@ stars and dates were checked against the GitHub API that day.
 | [ci-and-forge.md](ci-and-forge.md) | Running the documentalist in CI on GitHub: models, protected main, a bot's commits, forks; a bot writing GitLab issues: tokens, roles, who is of the project |
 | [release-manager.md](release-manager.md) | Focused: release PR vs tag vs direct, where versions live, what stays human |
 | [product-owner.md](product-owner.md) | Focused: what forges, bots and AI triage tools do for a backlog — stale bots closing on silence included — and what a product owner role would add |
+| [surfacing-proposals.md](surfacing-proposals.md) | Focused: where backlog bots show acts and proposals, how a person says yes, no or "change this", and what each forge records and notifies |
 | [self-evaluation.md](self-evaluation.md) | Focused: how automation and agents are judged in production, and how systems that improve their own agents keep people in control |
 | [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
 | [code-review.md](code-review.md) | Focused: how AI code reviewers find, verify and post findings, and what a reviewer role takes from them; what reviews a spec before it is built |

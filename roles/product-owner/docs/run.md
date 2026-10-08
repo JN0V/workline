@@ -157,7 +157,8 @@ import opened from the share's lines.
 ## The report's boxes, and the pause
 
 Each proposal in the report is a box
-([ADR-0025](../../../docs/adr/0025-a-persons-tick-is-done-ignored-runs-pause.md)):
+([ADR-0025](../../../docs/adr/0025-a-persons-tick-is-done-ignored-runs-pause.md);
+changing: [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
 
 - **Ticked by a person of the project** — the forge says who ticked it:
   GitHub's edit history, GitLab's system notes — it is done at the next
