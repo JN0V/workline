@@ -869,6 +869,20 @@ written and when it is edited.
 **The job's summary** (ADR-0035) says the run, one finding an issue:
 `done` and `done-as-accepted`, `proposed`, `set-aside`,
 `left-to-a-person`, `next-ready`, `stuck`, `demoted`, `report-closed`.
+It groups them (`report.Summary`): one heading a group — done alone,
+done as a person accepted, proposed, left to a person (`left-to-a-person`,
+`asks-spent`), set aside, next, stuck —, under it one line an issue, its
+findings joined and cut at 120 characters, the issue linked to its page
+(`forge.IssuePages`); 10 issues a group, then "and N more"; the groups
+waiting on a person link the filter on the label (`forge.LabelFilter`).
+The other findings follow, a line each.
+
+**Judged, not applied** (`--no-apply`, CI's first job): the engine
+decides the plan (`backlog.Decide`, reading the forge only), keeps it in
+the run folder (`out/acts.yaml`) and says it, headed "to do alone, once
+applied", "to propose, once applied"; `workline apply` does that plan,
+not another. A forge that cannot be read then is said (`plan-unread`,
+warn), and the apply decides.
 
 **The first run after a report issue**: the record on an open issue
 titled "Backlog — product owner" is read once — its proposals, acts done

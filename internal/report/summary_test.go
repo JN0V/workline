@@ -1,6 +1,7 @@
 package report
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -44,5 +45,34 @@ func TestHTMLSummaryEscapesAndNests(t *testing.T) {
 		"</li><li>to apply: 2 runs, by the job that holds the write token (<code>workline apply</code>)</li></ul>\n</section>\n"
 	if got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
+	var fs []verdict.Finding
+	for i := 1; i <= 12; i++ {
+		fs = append(fs, verdict.Finding{Rule: "proposed", Level: "info", Where: fmt.Sprintf("#%d", i), Message: "Label it ready."})
+	}
+	fs = append(fs,
+		verdict.Finding{Rule: "done", Level: "info", Where: "#3", Message: "Named the code #3 is about: a.go."},
+		verdict.Finding{Rule: "done", Level: "info", Where: "#3", Message: "Refined #3: Scope. " + strings.Repeat("why ", 40)},
+		verdict.Finding{Rule: "sources-unknown", Where: "#4", Message: "no file"})
+	s := Summary{Title: "apply", Status: verdict.Pass, Findings: fs, Issues: "https://f/issues/", Waiting: "https://f/issues?label=p"}
+	got := s.Markdown()
+	for _, want := range []string{
+		"- **done alone** (1)\n  - [#3](https://f/issues/3): Named the code #3 is about: a.go.; Refined #3: Scope. why why",
+		"- **proposed, waiting on a person** (12), [all that wait on a person](https://f/issues?label=p)\n  - [#1](https://f/issues/1): Label it ready.\n",
+		"  - [#10](https://f/issues/10): Label it ready.\n  - and 2 more: [all that wait on a person](https://f/issues?label=p)\n",
+		"- sources-unknown #4: no file\n",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the summary lacks %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "#11](") || strings.Count(got, "why") > 30 {
+		t.Errorf("a group or a line not capped:\n%s", got)
+	}
+	if !strings.Contains(s.HTML(), `<ul><li><a href="https://f/issues/3">#3</a>: Named`) {
+		t.Errorf("no third level nor link in the HTML:\n%s", s.HTML())
 	}
 }

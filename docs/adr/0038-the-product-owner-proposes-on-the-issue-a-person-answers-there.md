@@ -189,6 +189,10 @@ switches `normal` off.
 - **Revise**: one revision a run, however many comments; a comment on an
   issue with no proposal is context.
 - **Slowing down**: `proposals-max` (10).
+- **The night's summary**, grouped, one line an issue linked, 10 a group
+  then "and N more" and the filter: the judging job decides the plan,
+  reading only, and says it; the applying job does that plan
+  ([backlog-acts.md](../spec/backlog-acts.md#on-the-issue)).
 - **`enterprising`** raises the caps; `ready` never has a draft.
 - **Reading order** (from [#270](https://github.com/JN0V/workline/pull/270)):
   answers, then a person's new issues newest first, the catch-up last.

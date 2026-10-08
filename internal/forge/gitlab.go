@@ -731,6 +731,21 @@ func (g *gitlab) labelFilter(label string) string {
 	return p.Web + "/-/issues?label_name[]=" + url.QueryEscape(label)
 }
 
+// issuePages is the address of the project's issues.
+func (g *gitlab) issuePages() string {
+	out, err := g.api("projects/:id")
+	if err != nil {
+		return ""
+	}
+	var p struct {
+		Web string `json:"web_url"`
+	}
+	if json.Unmarshal(out, &p) != nil || p.Web == "" {
+		return ""
+	}
+	return p.Web + "/-/issues/"
+}
+
 // Close closes an issue; a duplicate through GitLab's own quick action,
 // which closes it and links the original.
 func (g *gitlab) Close(id, dup int) error {

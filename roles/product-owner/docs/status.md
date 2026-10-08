@@ -103,7 +103,13 @@ checked.
    live (one account on each sandbox); `workline:accepted` set by a bot
    read as the project's; the Forgejo sample's `label-events` and
    `react`; an outsider's proposal labelled `workline:proposed` (its
-   comment to the reporter is the proposal today).
+   comment to the reporter is the proposal today). The night's summary
+   grouped and linked, the judging job saying what the applying one will
+   do, and a body's footer kept out of its sections (seen on
+   [#261](https://github.com/JN0V/workline/issues/261)'s Scope): in
+   conformance only (`summary-judged-says-what-will-be-done`,
+   `summary-applied-does-what-the-judge-said`,
+   `refine-leaves-a-footer-out`), next seen on a real night.
 4. **Autonomy, what is left** (ADR-0026): the acts' suggestion seen
    live in the role's own report; a rename by a real
    agent undone, `ready` taken off and a split's child closed live;

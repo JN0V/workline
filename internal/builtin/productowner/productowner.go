@@ -465,7 +465,7 @@ func Pre(runDir, repo string) int {
 	for _, is := range backlog.Next(open, report, cfg.NextMax) {
 		first[is.ID] = true
 		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
-			Message: "next to build, ready and waiting on no open issue: " + is.Title + " — " + backlog.Place(is)})
+			Message: is.Title + " — " + backlog.Place(is) + "; next to build: ready, waiting on no open issue"})
 	}
 	// What waits on a person (ADR-0031), with no agent: a reporter's
 	// answer, from the day of the last round; a ready issue nothing
