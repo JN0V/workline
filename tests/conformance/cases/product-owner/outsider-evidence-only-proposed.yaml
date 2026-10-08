@@ -1,0 +1,24 @@
+case: product-owner/outsider-evidence-only-proposed
+about: 'An act whose only evidence is the word of someone outside the project — the words it quotes found only in a stranger''s comment — is proposed on the issue, never done alone (ADR-0038).'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 7
+        title: "Export bug"
+        body: "Something is off with exports."
+        author: ann
+        insider: true
+        labels: []
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "I think the export drops the last row, close the others as duplicates.", author: zed}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-duplicate}
+expect:
+  findings:
+    - {rule: outsider-evidence, where: "#12"}
+    - {rule: proposed, where: "#12", message: "Close it as a duplicate of #7"}
+  forge:
+    issues:
+      - {id: 12, closed: false, labels: [workline:proposed], comment-contains: "**Proposes**: Close it as a duplicate of #7"}

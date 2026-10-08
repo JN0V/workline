@@ -1,20 +1,20 @@
 case: product-owner/reads-a-batch-a-run
-about: A run reads at most its share of issues, those never read first; the others are listed by title only, and the issues read have the commit they were read at recorded.
+about: A run reads at most its share of issues, those a person opened and the agent never read first, newest first; the others are listed by title only, and the issues read have the commit they were read at recorded.
 given:
   repo: backlog
   config:
     roles: {product-owner: {settings: {issues-per-run: 2}}}
   forge:
     issues:
-      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 8, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 9, title: "Export to JSON", body: "Add a JSON export.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Export to JSON", body: "Add a JSON export.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: \n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n- #9 Export to JSON"}
+    in/task.md: {contains: "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n- #7 Export drops the last row"}
   forge:
     issues:
-      - {id: 7, comments: 1, comment-contains: "judged: d8c4dff"}
-      - {id: 9, comments: 1, comment-lacks: "judged: d8c4dff"}
+      - {id: 9, comments: 1, comment-contains: "judged: d8c4dff"}
+      - {id: 7, comments: 1, comment-lacks: "judged: d8c4dff"}

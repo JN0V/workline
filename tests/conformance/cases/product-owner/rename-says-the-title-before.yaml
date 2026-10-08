@@ -1,0 +1,15 @@
+case: product-owner/rename-says-the-title-before
+about: "With rename turned on (off by default, ADR-0038), each rename is said with the title before it, to set it back: in the summary and in the role's comment on the issue."
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {rename: {mode: act}}}}}
+  forge:
+    issues:
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:rename-nine}
+expect:
+  findings: [{rule: done, where: "#9", message: "Renamed #9 from \"bug\" to \"The CSV export drops the last row\": The title says nothing of the problem."}]
+  forge:
+    issues:
+      - {id: 9, title: "The CSV export drops the last row", comment-contains: "Renamed #9 from \"bug\" to \"The CSV export drops the last row\""}

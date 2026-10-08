@@ -1,5 +1,5 @@
 case: product-owner/capped-act-read-again
-about: An act proposed only because the run's cap was reached has its issue read again at the next run — first, before an issue never read — though nothing changed on it; read again, the proposal leaves the report, decided anew or not. A proposal left to a person by its mode is neither read again nor dropped for that.
+about: An act proposed only because the run's cap was reached has its issue read again at the next run — first, before an issue never read — though nothing changed on it; read again, the proposal is settled, decided anew or not. A proposal left to a person by its mode is neither read again nor dropped for that.
 given:
   repo: backlog
   config:
@@ -22,4 +22,5 @@ expect:
     in/task.md: {contains: "## #9 Rows lost\n\nSections", not-contains: "## #12 Never read\n\nSections"}
   forge:
     issues:
-      - {id: 11, comment-contains: "Close #10 as obsolete", comment-lacks: "Refine #9"}
+      - {id: 10, labels: [workline:proposed], comment-contains: "Close #10 as obsolete"}
+      - {id: 9, comment-lacks: "Refine #9"}

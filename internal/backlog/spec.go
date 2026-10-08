@@ -130,6 +130,26 @@ func SectionDigest(body, name string) string {
 	return BodyDigest(work.Sections(body)[name])
 }
 
+// Own are the sections of a body still the role's own — a draft no person
+// accepted, or a text as the role wrote it (the state's `wrote`) —: those
+// it rewrites to answer a person's comment on its proposal (ADR-0038). A
+// person's section, edited or deleted, is never among them.
+func Own(is forge.Issue, st *State) []string {
+	have := work.Sections(is.Body)
+	var out []string
+	for _, name := range Sections {
+		text, ok := have[name]
+		switch {
+		case !ok || strings.TrimSpace(text) == "":
+		case slices.Contains(drafted, name) && strings.Contains(text, DraftMarker) && !Accepted(is):
+			out = append(out, name)
+		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
 // Revisable are the sections of a body the role may rewrite to answer the
 // reviewer's findings (#128): those the findings lie in that are still the
 // role's own — a draft no person accepted, or a text as the role wrote it

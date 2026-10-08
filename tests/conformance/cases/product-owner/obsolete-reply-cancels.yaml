@@ -1,7 +1,9 @@
 case: product-owner/obsolete-reply-cancels
-about: Anyone writing on an issue announced obsolete keeps it open — its label taken off, the evidence recorded in its state so it is not announced again for it, nothing more said to them; no judge is asked (ADR-0024).
+about: Anyone writing on an issue announced obsolete keeps it open — its label taken off, the evidence recorded in its state so it is not announced again for it, nothing more said to them; no judge is asked, nor the agent for a stranger's word (ADR-0024, ADR-0038).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {close-obsolete: {mode: act}}}}}
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
   forge:
     issues:
@@ -16,8 +18,8 @@ given:
           - {author: ann, body: "Still happens with an empty file."}
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
-  calls: [{agent: fake, model: proposes-nothing}]
+  findings: [{rule: done, where: "#7", message: "Kept #7 open, announced obsolete on 2026-01-01: @ann wrote on it after it was announced obsolete."}]
+  agent-calls: 0
   forge:
     issues:
       - {id: 7, closed: false, labels: [], comments: 3, comment-contains: "kept: ['src/export/csv.go:b2a6ba892dee']"}
-      - {id: 8, title: "Backlog — product owner", body-contains: "Kept #7 open, announced obsolete on 2026-01-01: @ann wrote on it after it was announced obsolete."}

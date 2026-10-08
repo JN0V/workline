@@ -1,11 +1,11 @@
 case: product-owner/depend-mode-per-level
-about: At autonomy cautious, `depend` sets direction and is proposed in the report, a box to tick, nothing written on the forge; the task says its mode, from the level (ADR-0028, ADR-0026).
+about: "`depend` is off by default at every level (ADR-0038); a project turning it on to propose has it proposed on the issue, nothing written on the forge; the task says its mode, from the setting (ADR-0028)."
 given:
   repo: backlog
   config:
     roles:
       product-owner:
-        settings: {autonomy: cautious}
+        settings: {autonomy: cautious, acts: {depend: {mode: propose}}}
   forge:
     dependencies: true
     issues:
@@ -15,8 +15,7 @@ run: {role: product-owner, event: schedule, ai: fake:depend-one}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: "- depend: propose (level)\n"}
+    in/task.md: {contains: "- depend: propose (setting)\n"}
   forge:
     issues:
-      - {id: 12, blocked-by: [], body-lacks: "Blocked by"}
-      - {id: 14, title: "Backlog — product owner", body-contains: "- [ ] Mark it as waiting on #13: ordered after, never offered first. Why: "}
+      - {id: 12, blocked-by: [], body-lacks: "Blocked by", labels: [workline:proposed], comment-contains: "**Proposes**: Mark it as waiting on #13: ordered after, never offered first. Why: "}

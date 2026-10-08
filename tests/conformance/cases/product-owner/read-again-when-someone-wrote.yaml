@@ -1,13 +1,13 @@
 case: product-owner/read-again-when-someone-wrote
-about: An issue already read is read again when a person commented since, though its code did not change; the number of people's comments read is recorded.
+about: An issue already read is read again when a person of the project, or its reporter, commented since, though its code did not change; the comments that count read are recorded (ADR-0038).
 given:
   repo: backlog
   forge:
     issues:
-      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "Still happens with 1.2, and the header goes too."]}
+      - {id: 7, title: "Export drops the last row", body: "The export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", {body: "Still happens with 1.2, and the header goes too.", author: ann, insider: true}]}
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   agent-calls: 1
   forge:
     issues:
-      - {id: 7, comment-contains: "judged: d8c4dff\ncomments: 1"}
+      - {id: 7, comment-contains: "heard: 1"}

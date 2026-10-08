@@ -1,7 +1,9 @@
 case: product-owner/changed-need-reads-its-parts-again
-about: "A person rewrites a parent's Need: at the next run each open part is read again, the Need as it was and as it is given beside it; every act the agent proposes on a part goes to the report — back to refine included —, nothing is written to them, and the report lists the parts under the change, each with what is proposed (ADR-0032)."
+about: "A person rewrites a parent's Need: at the next run each open part is read again, the Need as it was and as it is given beside it; every act the agent proposes on a part is proposed on it — back to refine included —, nothing else is written to them, and the summary lists the parts under the change (ADR-0032)."
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {changed-needs: true, acts: {order: {mode: act}}}}}
   forge:
     sub-issues: true
     issues:
@@ -17,9 +19,7 @@ expect:
     in/task.md: {contains: "Read again for a change: #9, which it is a part of, had its Need rewritten by a person. Every act you propose on it goes to a person, never done: say what the change asks of it — `unready` to move it back to refine when it no longer fits, a `refine` for what it lacks, or nothing.\nWas:\n> ## Need\n>\n> Every row exported as CSV, so a report counts what was sold.\nNow:\n> ## Need\n>\n> Every row exported as JSON, so another tool reads it.\n"}
   forge:
     issues:
-      - {id: 11, labels: [workline:ready], comments: 1}
-      - {id: 12, labels: [workline:ready], comments: 1}
-      - {id: 13, title: "Backlog — product owner", body-contains: "**#11 Keep the last row in the CSV export** — read again because #9 Export fixes, which it is a part of, had its Need rewritten by a person (found ", body-lacks: "proposal=changed/9"}
-      - {id: 13, body-contains: "**#12 Quote commas in exported cells** — read again because #9 Export fixes, which it is a part of, had its Need rewritten by a person (found ", comment-contains: "how: part"}
-      - {id: 13, body-contains: "- [ ] Move it back to refine: `workline:ready` off, `workline:to-refine` on. Why: #9 now asks for a JSON export"}
+      - {id: 11, labels: [workline:ready, workline:proposed], comments: 1, comment-contains: "**Proposes**: Move it back to refine: `workline:ready` off, `workline:to-refine` on. Why: #9 now asks for a JSON export"}
+      - {id: 12, labels: [workline:ready, workline:proposed], comments: 1}
+      - {id: 13, absent: true}
       - {id: 9, comment-contains: "Need: Every row exported as JSON, so another tool reads it."}

@@ -2,6 +2,8 @@ case: product-owner/persons-link-kept
 about: What a person set an issue to wait on — a link on the forge, a "Blocked by" line of their own in the body — is read and kept; the role only adds what is missing, and the agent is told what the issue waits on already (ADR-0028).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {depend: {mode: act}}}}}
   forge:
     dependencies: true
     issues:

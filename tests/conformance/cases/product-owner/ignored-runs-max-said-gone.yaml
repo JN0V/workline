@@ -1,0 +1,15 @@
+case: product-owner/ignored-runs-max-said-gone
+about: The role no longer pauses after runs nobody answered (ADR-0038); a project still setting ignored-runs-max is told the setting is not read, never silently ignored, and the role runs.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {ignored-runs-max: 0}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  findings: [{rule: setting-gone, message: "ignored-runs-max is no longer read"}]

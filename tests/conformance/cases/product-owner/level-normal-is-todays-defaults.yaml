@@ -1,5 +1,5 @@
 case: product-owner/level-normal-is-todays-defaults
-about: With no autonomy set, the level is normal and the acts are the role's defaults as they were — a duplicate closed, a title renamed, a priority set, a need split, sources named — the report saying the level and each kind's mode, from the level.
+about: "At autonomy normal, the default, the role completes and closes an evident duplicate alone; the kinds off by default — rename, order, split — are dropped, not proposed (ADR-0038); the task says each kind's mode, from the level."
 given:
   repo: backlog
   config:
@@ -16,12 +16,12 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:level-acts}
 expect:
   status: pass
+  run-files:
+    in/task.md: {contains: "- sources: act, 10 a run (level)\n- close-duplicate: act, 3 a run (level)\n- close-obsolete: off (level)\n- milestone: off (level)\n- order: off (level)\n- refine: act, 5 a run (level)\n- ready: act, 5 a run (level)\n- ask: act, 3 a run (level)\n- split: off (level)\n- depend: off (level)\n- rename: off (level)\n- open: act, 30 a run (level)"}
   forge:
     issues:
       - {id: 12, closed: true, reason: duplicate}
-      - {id: 9, title: "The CSV export drops the last row", labels: [workline:priority/1]}
-      - {id: 10, comment-contains: "split: [13, 14]"}
+      - {id: 9, title: "bug", labels: []}
+      - {id: 10, comment-lacks: "split:"}
       - {id: 11, comment-contains: "sources: [src/export/csv.go]"}
-      - {id: 15, title: "Backlog — product owner", body-contains: "- sources: act, 10 a run (level)\n- close-duplicate: act, 3 a run (level)\n- close-obsolete: act, 3 a run (level)\n- milestone: act, 10 a run (level)\n- order: act, 10 a run (level)\n- refine: act, 5 a run (level)\n- ready: act, 5 a run (level)\n- ask: act, 3 a run (level)\n- split: act, 2 a run (level)\n- depend: act, 5 a run (level)\n- rename: act, 5 a run (level)\n- open: act, 30 a run (level)"}
-      - {id: 15, body-contains: "<details><summary>Autonomy: normal — what the role does alone, and what it proposes</summary>"}
-      - {id: 15, body-lacks: "## To decide"}
+      - {id: 13, absent: true}

@@ -1,7 +1,9 @@
 case: product-owner/order-capped-to-a-fifth
-about: A run moves at most a fifth of the open issues — put in a milestone or ordered, counted together, an issue moved twice counted once; past it, the moves are proposed in the report. Milestones are applied before priorities.
+about: With milestone and order turned on, a run moves at most a fifth of the open issues — put in a milestone or ordered, counted together, an issue moved twice counted once; past it, the moves are proposed on their issue. Milestones are applied before priorities.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {milestone: {mode: act}, order: {mode: act}}}}}
   forge:
     issues:
       - {id: 1, title: "Issue 1", body: "Something 1.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
@@ -20,8 +22,6 @@ expect:
   forge:
     issues:
       - {id: 1, milestone: v1.1.0, labels: [workline:priority/2]}
-      - {id: 2, labels: []}
-      - {id: 3, labels: []}
+      - {id: 2, labels: [workline:proposed], comment-contains: "**Proposes**: Set its priority to 1"}
+      - {id: 3, labels: [workline:proposed], comment-contains: "**Proposes**: Set its priority to 3"}
       - {id: 4, milestone: v1.1.0}
-      - {id: 11, title: "Backlog — product owner", body-contains: "**#3 Issue 3**\n\n- [ ] Set its priority to 3"}
-      - {id: 11, body-contains: "**#2 Issue 2**\n\n- [ ] Set its priority to 1"}

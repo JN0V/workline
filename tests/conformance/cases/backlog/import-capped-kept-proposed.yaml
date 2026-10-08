@@ -1,5 +1,5 @@
 case: backlog/import-capped-kept-proposed
-about: Importing past the cap of `open`, an item is proposed, the finding naming its title; it stays in the report at the next share, until an open issue holds its text.
+about: Importing past the cap of `open`, an item is not opened, the finding naming its title; the import opens it when it runs again — no report keeps it (ADR-0038), and an earlier report is closed.
 given:
   repo: backlog
   setup:
@@ -40,4 +40,4 @@ expect:
     issues:
       - {id: 3, title: "Keep the last row"}
       - {id: 4, absent: true}
-      - {id: 1, body-contains: "**Issues to open**\n\n- [ ] Open \"Sort the columns\", from ROADMAP.md. Opened when the import runs again, or open it yourself. <!-- workline:proposal=import=ROADMAP.md:aaaaaaaaaaaa -->\n- [ ] Open \"Skip empty rows, again\", from ROADMAP.md.", comment-lacks: "Name the file"}
+      - {id: 1, closed: true}

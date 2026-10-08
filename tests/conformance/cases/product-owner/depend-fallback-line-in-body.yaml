@@ -2,6 +2,8 @@ case: product-owner/depend-fallback-line-in-body
 about: On GitLab Free, which refuses `is_blocked_by` for its license, a `depend` act is a line in the issue's body, under the engine's marker, after its text; its state takes the body's digest, so the engine's own line is not read as a person's change (ADR-0028).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {depend: {mode: act}}}}}
   forge:
     members:
       - {username: ann, access_level: 30}

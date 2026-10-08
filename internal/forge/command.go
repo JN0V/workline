@@ -348,17 +348,3 @@ func (c *command) React(id int, note, emoji string) error {
 	}
 	return err
 }
-
-// Ticks reads the answer to ticks: the boxes ticked in the issue's body,
-// each {item, done, author, insider, bot} (docs/spec/forge-command.md); a
-// forge that refuses the operation does not say who ticked: nil.
-func (c *command) Ticks(id int) ([]Tick, error) {
-	var a struct {
-		Ticks []Tick `json:"ticks"`
-	}
-	err := c.call("ticks", map[string]any{"id": id}, &a)
-	if err != nil && !errors.Is(err, ErrUnreachable) {
-		return nil, nil
-	}
-	return a.Ticks, err
-}

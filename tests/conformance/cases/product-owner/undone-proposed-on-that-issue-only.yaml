@@ -1,0 +1,20 @@
+case: product-owner/undone-proposed-on-that-issue-only
+about: 'A person undoing an act the role did alone — workline:ready taken off — sets that kind back to a proposal on that issue only (ADR-0038, amended): found at the next run, kept in its state; another issue''s ready is still done alone. Undone undone-max times across the issues, the kind is proposed everywhere.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 000000000000\ndone:\n  - {act: ready, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "## Need\n\nA.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: undone, where: "#9", message: "#9's label workline:ready taken off by a person"}
+    - {rule: undone-here, where: "#9"}
+    - {rule: proposed, where: "#9", message: "Label it `workline:ready`"}
+    - {rule: done, where: "#10", message: "Moved #10 to ready"}
+  no-findings: [{rule: demoted, where: ""}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:proposed], comment-contains: ["undone:", "act: ready", "**Proposes**: Label it `workline:ready`"]}
+      - {id: 10, labels: [workline:ready]}

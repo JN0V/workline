@@ -1,12 +1,11 @@
 case: product-owner/parent-all-children-closed-asks-person
-about: Once every part of a parent is closed, its comment asks a person to accept it by closing it, a finding says so, and the report lists it under "To accept"; the role leaves it open and sets no label (ADR-0029).
+about: Once every part of a parent is closed, its comment asks a person to accept it by closing it, and a finding says so in the summary; the role leaves it open and sets no label (ADR-0029).
 given:
   repo: backlog
   forge:
     sub-issues: true
     issues:
       - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nsplit: [11, 12]\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 10, title: "Backlog — product owner", body: "What the product owner did.", labels: [], comments: []}
       - {id: 11, title: "Keep the last row in the CSV export", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: pull-request, ref: "#20", text: "fix(export): write the last row"}]}
       - {id: 12, title: "Quote commas in exported cells", body: "Part of #9.", labels: [], parent: 9, closed: true, reason: completed, closed-by: [{kind: commit, ref: "1a2b3c4", text: "fix(export): quote commas, closes #12"}]}
 run: {role: product-owner, event: schedule, ai: none}
@@ -17,5 +16,3 @@ expect:
     issues:
       - {id: 9, closed: false, labels: [], comment-contains: "**All 2 parts are closed: for a person to accept.** Close this issue as completed to accept the need"}
       - {id: 9, comment-contains: "| #12 Quote commas in exported cells | closed as completed | commit 1a2b3c4 |"}
-      - {id: 10, body-contains: "## To accept"}
-      - {id: 10, body-contains: "- #9 Export fixes: its 2 parts are closed"}

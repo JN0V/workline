@@ -1,0 +1,16 @@
+case: product-owner/no-quick-action-in-the-roles-text
+about: 'GitLab runs a quick action at a line''s start when a comment or a description is written or edited (ADR-0038): every line of the role''s own text that starts with `/` is escaped — in its comment, its proposed drafts, the sections it writes in a body — and shows as the `/` it was.'
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine-slash}
+expect:
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:proposed], comment-contains: ["\\/close\nEvery row exported", "  \\/label ~bug", "\\/unlabel ~workline::proposed"], comment-lacks: "\n/"}

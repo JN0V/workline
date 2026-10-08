@@ -6,7 +6,6 @@ package forge
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -99,14 +98,6 @@ type Link struct {
 	At   string `json:"at,omitempty"` // when it named the issue, RFC 3339 or YYYY-MM-DD
 }
 
-// Tick is a box of a task list ticked, or unticked, in an issue's body,
-// with who did it: a person's yes in a report (ADR-0025).
-type Tick struct {
-	Item string `json:"item"`           // the item's text, as the forge gives it: its hidden markers' text in it
-	Done bool   `json:"done,omitempty"` // ticked; false: unticked
-	Note        // its author: Author, Insider, Bot; no author and not Insider when the forge does not say
-}
-
 // Bodies is the text of each note, in order.
 func Bodies(notes []Note) []string {
 	out := make([]string, 0, len(notes))
@@ -185,9 +176,6 @@ type Backlog interface {
 	// Closers lists what closed an issue, as the forge links it: the pull
 	// or merge request, or the commit; nil when the forge does not say.
 	Closers(id int) ([]Closer, error)
-	// Ticks lists the boxes ticked and unticked in an issue's body, oldest
-	// first, with who did each; nil when the forge does not say.
-	Ticks(id int) ([]Tick, error)
 	// Trail says when an open issue last got a label, and what pull or
 	// merge requests and commits name it; an empty Labeled when the
 	// forge does not say (ADR-0031).
@@ -274,29 +262,3 @@ func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
 // Every forge workline speaks keeps a backlog.
 var _ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
-
-// taskLine is a task list's item in a body: `- [ ] text`, `* [x] text`.
-var taskLine = regexp.MustCompile(`(?m)^\s*[-*+] \[([ xX])\] (.*?)\s*$`)
-
-// TaskItems maps each task list item of a body to whether it is ticked.
-func TaskItems(body string) map[string]bool {
-	out := map[string]bool{}
-	for _, m := range taskLine.FindAllStringSubmatch(body, -1) {
-		out[m[2]] = m[1] != " "
-	}
-	return out
-}
-
-// TicksBetween are the boxes a version of a body ticked or unticked from
-// the one before ("" for none), each given to who wrote that version.
-func TicksBetween(before, after string, who Note) []Tick {
-	was := TaskItems(before)
-	var out []Tick
-	for _, m := range taskLine.FindAllStringSubmatch(after, -1) {
-		item, done := m[2], m[1] != " "
-		if prev, ok := was[item]; (ok && prev != done) || (!ok && done) {
-			out = append(out, Tick{Item: item, Done: done, Note: who})
-		}
-	}
-	return out
-}

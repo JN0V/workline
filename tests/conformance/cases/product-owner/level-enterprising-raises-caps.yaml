@@ -1,5 +1,5 @@
 case: product-owner/level-enterprising-raises-caps
-about: At autonomy enterprising, the caps are raised — five duplicates closed in a run where normal closes three — and the report says so, from the level.
+about: At autonomy enterprising, the caps are raised — five duplicates closed in a run where normal closes three — and the task says so, from the level.
 given:
   repo: backlog
   config:
@@ -18,6 +18,8 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:close-five-duplicates}
 expect:
   no-findings: [{rule: act-cap}]
+  run-files:
+    in/task.md: {contains: "- close-duplicate: act, 5 a run (level)\n- close-obsolete: off (level)\n- milestone: off (level)\n- order: off (level)\n- refine: act, 10 a run (level)\n- ready: act, 10 a run (level)\n- ask: act, 5 a run (level)"}
   forge:
     issues:
       - {id: 8, closed: true}
@@ -25,5 +27,3 @@ expect:
       - {id: 10, closed: true}
       - {id: 11, closed: true}
       - {id: 12, closed: true}
-      - {id: 13, title: "Backlog — product owner", body-contains: "- sources: act, 10 a run (level)\n- close-duplicate: act, 5 a run (level)\n- close-obsolete: act, 5 a run (level)\n- milestone: act, 10 a run (level)\n- order: act, 15 a run (level)\n- refine: act, 10 a run (level)\n- ready: act, 10 a run (level)\n- ask: act, 5 a run (level)\n- split: act, 4 a run (level)\n- depend: act, 10 a run (level)\n- rename: act, 10 a run (level)\n- open: act, 30 a run (level)"}
-      - {id: 13, body-contains: "<details><summary>Autonomy: enterprising — what the role does alone, and what it proposes</summary>"}

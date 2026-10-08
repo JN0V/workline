@@ -1,16 +1,16 @@
 case: product-owner/outsider-text-to-reporter-title-to-project
-about: On an outsider's issue, the refined text is proposed to its reporter in a comment (ADR-0021), while a rename — how the backlog names it — is proposed to the project in the report (ADR-0022); neither is done, the reporter written to once.
+about: On an outsider's issue, the refined text is proposed to its reporter in a comment (ADR-0021), while a rename — how the backlog names it — is proposed to the project on the issue, in the role's own comment (ADR-0022, ADR-0038); neither is done, the reporter written to once.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {rename: {mode: act}}}}}
   forge:
     issues:
       - {id: 9, title: "bug", body: "The export loses the last row.", author: zed, insider: false, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:refine-and-rename-an-outsider}
 expect:
-  findings: [{rule: reporter-outside, where: "#9"}]
+  findings: [{rule: reporter-outside, where: "#9"}, {rule: proposed, where: "#9", message: "Rename it to \"The CSV export drops the last row\""}]
   forge:
     issues:
       - {id: 9, title: "bug", body-lacks: "## Need", comments: 2}
-      - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=1 -->", comment-lacks: "The CSV export drops the last row\""}
-      - {id: 10, title: "Backlog — product owner", body-contains: "Proposed to #9's reporter (an outsider)"}
-      - {id: 10, body-contains: "**#9 bug**\n\n- [ ] Rename it to \"The CSV export drops the last row\""}
+      - {id: 9, labels: [workline:to-refine, workline:proposed], comment-contains: ["<!-- workline:product-owner/proposal=1 -->", "**Proposes**: Rename it to \"The CSV export drops the last row\""]}

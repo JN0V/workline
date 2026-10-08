@@ -1,0 +1,26 @@
+case: product-owner/accepted-by-insider-applies
+about: A person of the project labels an issue workline:accepted; at the next run the engine does what its state proposes, as recorded, with no agent, says who accepted it, and the proposal leaves the issue's state, its label workline:proposed taken off.
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    issues:
+      - id: 9
+        title: "bug"
+        body: "The export loses the last row."
+        author: ann
+        insider: true
+        labels: [workline:proposed, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: rename\n    line: 'Rename #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing.'\n    proposal: {do: rename, issue: 9, title: The CSV export drops the last row, why: '\"bug\" says nothing.'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: done-as-accepted, where: "#9", message: "Renamed #9 from \"bug\" to \"The CSV export drops the last row\": \"bug\" says nothing. Accepted by @dev."}]
+  forge:
+    issues:
+      - {id: 9, title: "The CSV export drops the last row", labels: [workline:accepted], comment-lacks: "proposal:"}

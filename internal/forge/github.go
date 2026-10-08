@@ -620,85 +620,9 @@ func (g *github) SetMilestone(id int, title string) error {
 	return err
 }
 
-// ticksQuery reads an issue body's versions, each with who wrote it: GitHub
-// keeps no event for a box ticked, its edit history does (userContentEdits,
-// each node the whole body as that edit left it, newest first: `first`
-// is the newest, `last` the oldest).
-const ticksQuery = `query($owner: String!, $name: String!, $number: Int!) {
-  repository(owner: $owner, name: $name) { issue(number: $number) {
-    userContentEdits(first: 100) { totalCount nodes { editedAt diff editor { login __typename } } } } } }`
-
-// Ticks reads the boxes ticked from the body's edit history: each version
-// against the one before, given to its editor. Only who has write access
-// edits a body they did not write (GitHub's roles); the editor is a person
-// of the project when GitHub gives them write, maintain or admin.
-func (g *github) Ticks(id int) ([]Tick, error) {
-	out, err := g.api("graphql", "-f", "query="+ticksQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
-	if err != nil {
-		return nil, err
-	}
-	var v struct {
-		Data struct {
-			Repository struct {
-				Issue struct {
-					Edits struct {
-						Total int `json:"totalCount"`
-						Nodes []struct {
-							EditedAt string  `json:"editedAt"`
-							Diff     *string `json:"diff"`
-							Editor   *struct {
-								Login string `json:"login"`
-								Type  string `json:"__typename"`
-							} `json:"editor"`
-						} `json:"nodes"`
-					} `json:"userContentEdits"`
-				} `json:"issue"`
-			} `json:"repository"`
-		} `json:"data"`
-	}
-	if err := decode(out, &v); err != nil {
-		return nil, err
-	}
-	edits := v.Data.Repository.Issue.Edits
-	nodes := edits.Nodes
-	// Oldest first: GitHub gives them newest first, and two edits in the
-	// same second keep that order reversed.
-	slices.Reverse(nodes)
-	sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].EditedAt < nodes[j].EditedAt })
-	var ticks []Tick
-	// Older versions not read, or one deleted from the history: the next
-	// version is only what the later ones are read against, its boxes
-	// nobody's — never a tick credited to whoever edited after the gap.
-	before, gap := "", edits.Total > len(nodes)
-	for _, n := range nodes {
-		if n.Diff == nil {
-			gap = true
-			continue
-		}
-		if gap {
-			before, gap = *n.Diff, false
-			continue
-		}
-		who := Note{}
-		if n.Editor != nil {
-			who.Author, who.Bot = n.Editor.Login, n.Editor.Type == "Bot"
-			if !who.Bot {
-				if who.Insider, err = g.writer(who.Author); err != nil {
-					// A token that may not read permissions: who ticked is
-					// not known, and the tick is no yes — said, not failed.
-					who = Note{}
-				}
-			}
-		}
-		ticks = append(ticks, TicksBetween(before, *n.Diff, who)...)
-		before = *n.Diff
-	}
-	return ticks, nil
-}
-
 // LabelEvents reads the issue's events, labeled and unlabeled, each with
 // its actor: an app's (a user of type Bot) is a bot's; a person's write
-// access read once each, as a tick's (ADR-0038).
+// access read once each, as a commenter's (ADR-0038).
 func (g *github) LabelEvents(id int) ([]LabelEvent, error) {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/events?per_page=100", id),
 		"--jq", `.[] | select(.event == "labeled" or .event == "unlabeled") | {label: .label.name, added: (.event == "labeled"), author: (.actor.login // ""), bot: (.actor.type == "Bot"), created: .created_at}`)

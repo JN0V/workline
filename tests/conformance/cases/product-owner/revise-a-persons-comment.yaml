@@ -1,0 +1,26 @@
+case: product-owner/revise-a-persons-comment
+about: 'A comment of a person of the project on an issue waiting on them is "revise" (ADR-0038): the issue is read first, the agent told so; the role rewrites its own drafts in place — never a section a person made theirs —, puts 👀 on the comment, replies in one line, and counts the revision; the label stays on.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe monthly report counts every sale.\n\n## Verification\n\nMine: a test writes three rows.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:draft, workline:proposed]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nheard: 0\nwrote: {Verification: aaaaaaaaaaaa}\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "The Validation should name the CSV of a known day.", author: bob, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:revise-nine}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: ["revision 1 of 2", "the sections that are still yours (Need, Validation)"]}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline:proposed], reactions: {"2": [eyes]}}
+      - {id: 9, body-contains: "## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nAnn opens the CSV of a known day and counts its rows.", body-lacks: "Ann opens a known day."}
+      - {id: 9, body-contains: "## Verification\n\nMine: a test writes three rows."}
+      - {id: 9, comment-contains: ["@bob, read (revision 1 of 2): rewrote Validation in place.", "revisions: 1", "heard: 1"]}

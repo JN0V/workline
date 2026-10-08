@@ -482,13 +482,3 @@ func (l *Local) Closers(id int) ([]Closer, error) { return nil, nil }
 // Trail: the local forge keeps no history, nor links: it does not say
 // when an issue got a label (ADR-0031).
 func (l *Local) Trail(id int, label string) (Trail, error) { return Trail{}, nil }
-
-// Ticks: the local forge keeps no history; a box ticked in the clone is a
-// person of the project's, as its comments are.
-func (l *Local) Ticks(id int) ([]Tick, error) {
-	it, err := l.Item("issue", id)
-	if err != nil {
-		return nil, err
-	}
-	return TicksBetween("", it.Body, Note{Insider: true}), nil
-}

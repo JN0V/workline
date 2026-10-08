@@ -1,5 +1,5 @@
 case: product-owner/obsolete-capped
-about: Announcements and closings as obsolete share one cap a run, the engine's closings first — past it, an announcement is proposed in the report; an issue announced already is not announced again (ADR-0024).
+about: Announcements and closings as obsolete share one cap a run, the engine's closings first — past it, an announcement is proposed on its issue; an issue announced already is not announced again (ADR-0024).
 given:
   repo: backlog
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
@@ -25,5 +25,4 @@ expect:
   forge:
     issues:
       - {id: 7, closed: true}
-      - {id: 9, closed: false, labels: [], comments: 1}
-      - {id: 10, title: "Backlog — product owner", body-contains: "**#9 Last row missing**\n\n- [ ] Announce it obsolete, on the issue"}
+      - {id: 9, closed: false, labels: [workline:proposed], comments: 1, comment-contains: "**Proposes**: Announce it obsolete, on the issue"}

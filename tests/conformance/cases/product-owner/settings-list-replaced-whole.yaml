@@ -1,12 +1,12 @@
 case: product-owner/settings-list-replaced-whole
-about: A list a project sets replaces the role's whole, while the map around it keeps its other defaults — exempt [wontfix] drops pinned, and close-obsolete still acts (role contract, "Settings").
+about: A list a project sets replaces the role's whole, while the map around it keeps its other defaults — exempt [wontfix] drops pinned, and close-obsolete, turned on, keeps its days and cap (role contract, "Settings").
 given:
   repo: backlog
   config:
     roles:
       product-owner:
         settings:
-          acts: {close-obsolete: {exempt: [wontfix]}}
+          acts: {close-obsolete: {mode: act, exempt: [wontfix]}}
   forge:
     issues:
       - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: zed, labels: [pinned], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}

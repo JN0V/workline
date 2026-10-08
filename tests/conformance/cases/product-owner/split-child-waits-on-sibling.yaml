@@ -2,6 +2,8 @@ case: product-owner/split-child-waits-on-sibling
 about: A split's child that names a sibling in `after` waits on it — the forge's relation where it has one, a line in its body elsewhere (here the latter) — so the second part is never offered before the first; the parent's state keeps the link as the role's own (ADR-0028).
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {split: {mode: act}}}}}
   forge:
     issues:
       - {id: 9, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}

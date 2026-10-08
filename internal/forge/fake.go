@@ -47,7 +47,6 @@ type FakeItem struct {
 	Insider   bool          `json:"insider,omitempty"`
 	Parent    int           `json:"parent,omitempty"`     // the issue it is a sub-issue of
 	BlockedBy []int         `json:"blocked-by,omitempty"` // the issues it waits on, in the forge's own relation
-	Ticks     []Tick        `json:"ticks,omitempty"`      // boxes ticked in its body, with who ticked them
 	ClosedBy  []Closer      `json:"closed-by,omitempty"`  // what closed it: a pull request, a commit
 	// Labeled says when it last got each label; Links, what names it
 	// (Trail, ADR-0031).
@@ -531,16 +530,4 @@ func (f *Fake) Trail(id int, label string) (Trail, error) {
 		return Trail{}, err
 	}
 	return Trail{Labeled: it.Labeled[label], Links: it.Links}, nil
-}
-
-func (f *Fake) Ticks(id int) ([]Tick, error) {
-	s, err := f.load()
-	if err != nil {
-		return nil, err
-	}
-	it, err := s.item(Target{Kind: "issue", ID: id})
-	if err != nil {
-		return nil, err
-	}
-	return it.Ticks, nil
 }

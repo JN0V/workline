@@ -8,9 +8,8 @@ given:
       - {id: 12, title: "Gone", body: "Something gone.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:sources-named}
 expect:
-  findings: [{rule: sources-unknown, where: "#12"}]
+  findings: [{rule: sources-unknown, where: "#12"}, {rule: done, where: "#9", message: "Named the code #9 is about: src/export/csv.go."}]
   forge:
     issues:
       - {id: 9, comments: 1, comment-contains: "sources: [src/export/csv.go]\nconfirmed: d8c4dff\nbody: ", comment-lacks: "judged:"}
       - {id: 12, comments: 1, comment-contains: "sources: [README.md]\nconfirmed: d8c4dff\njudged:"}
-      - {id: 13, title: "Backlog — product owner", body-contains: "Named the code #9 is about: src/export/csv.go."}

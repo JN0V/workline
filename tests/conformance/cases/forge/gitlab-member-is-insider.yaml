@@ -14,4 +14,4 @@ expect:
   forge:
     issues:
       - {id: 9, body-contains: "## Need", comment-lacks: "proposal=1"}
-      - {id: 9, labels: [workline:to-refine, workline:draft]}
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline::proposed]}

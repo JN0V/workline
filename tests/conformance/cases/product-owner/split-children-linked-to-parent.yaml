@@ -2,6 +2,8 @@ case: product-owner/split-children-linked-to-parent
 about: On a forge with sub-issues, each child of a split is linked to its parent natively, and the parent's body is left as it is.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {split: {mode: act}}}}}
   forge:
     sub-issues: true
     issues:

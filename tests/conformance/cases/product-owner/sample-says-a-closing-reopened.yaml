@@ -2,14 +2,11 @@ case: product-owner/sample-says-a-closing-reopened
 about: An act drawn that a person undid since — a closing whose issue is open again — is said undone in the weekly sample, with what shows it; with fewer than ten acts done alone at the level, no level is suggested, and the sample says why.
 given:
   repo: vouched
+  config:
+    roles: {product-owner: {settings: {weekly-sample: true}}}
   forge:
     issues:
-      - {id: 20, title: "Rows lost on Windows", body: "Not the same bug.", labels: []}
-      - id: 5
-        title: "Backlog — product owner"
-        body: "What the product owner did."
-        labels: []
-        comments: ["```yaml\nclosed:\n  - {issue: 20, act: close-duplicate, level: normal}\nmeasure: {level: normal}\ndid:\n  - {issue: 20, act: close-duplicate, level: normal, day: \"2026-01-14\", line: 'Closed #20 as a duplicate of #7'}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+      - {"id": 20, "title": "Rows lost on Windows", "body": "Not the same bug.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: close-duplicate, level: normal, day: '2026-01-14', line: 'Closed #20 as a duplicate of #7'}\nclosed: close-duplicate\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {sample: [--week, 2026-W03, --judge, none], then: apply}
 expect:
   status: pass

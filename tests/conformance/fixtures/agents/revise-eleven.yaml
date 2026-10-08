@@ -1,0 +1,4 @@
+- refine:
+    issue: 11
+    need: "The monthly report counts every sale, refunds included."
+    why: "Bob and Ann agreed refunds count."

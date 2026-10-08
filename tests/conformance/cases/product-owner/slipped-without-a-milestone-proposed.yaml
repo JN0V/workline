@@ -1,7 +1,9 @@
 case: product-owner/slipped-without-a-milestone-proposed
-about: An issue whose milestone is released, with no open milestone left to move it to, is proposed in the report for a person to place, and left where it is.
+about: An issue whose milestone is released, with no open milestone left to move it to, is proposed on the issue for a person to place, and left where it is.
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {milestone: {mode: act}}}}}
   setup: ["git tag v1.0.0"]
   forge:
     milestones: [v1.0.0]
@@ -13,5 +15,4 @@ expect:
   forge:
     issues:
       - {id: 9, milestone: v1.0.0}
-      - {id: 10, title: "Backlog — product owner", body-contains: "- For you to settle: Move #9 out of the milestone \"v1.0.0\""}
-      - {id: 10, body-contains: "- **1 issue for you to settle** (*To decide*)", body-lacks: "Nothing waits on you"}
+      - {id: 9, labels: [workline:proposed], comment-contains: "**Proposes**: Move #9 out of the milestone \"v1.0.0\""}

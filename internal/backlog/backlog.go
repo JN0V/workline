@@ -7,7 +7,6 @@ package backlog
 import (
 	"crypto/sha256"
 	"fmt"
-	"maps"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -57,6 +56,25 @@ type State struct {
 	// Deleted are the sections the role wrote that a person took out of
 	// the body: a "no" for each, never written again (ADR-0038).
 	Deleted []string `yaml:"deleted,flow,omitempty"`
+	// What the role holds on this issue, in place of a report (ADR-0038):
+	// the acts it proposes here; those it did alone a person may undo;
+	// those a person undid — proposed here from then on —; what it did,
+	// each with its day; the kind of act it closed it with, should it open
+	// again.
+	Proposed []Pending `yaml:"proposed,omitempty"`
+	Done     []Done    `yaml:"done,omitempty"`
+	Undone   []Undo    `yaml:"undone,omitempty"`
+	Did      []Did     `yaml:"did,omitempty"`
+	Closed   string    `yaml:"closed,omitempty"`
+	// Label is the label the role put on it while it waits on a person
+	// (workline:proposed); Aside, the body's digest when a person took it
+	// off: nothing proposed until the issue changes.
+	Label string `yaml:"label,omitempty"`
+	Aside string `yaml:"aside,omitempty"`
+	// Heard are the comments of its reporter and the project's people the
+	// role read; Revisions, the times it revised its drafts for them.
+	Heard     *int `yaml:"heard,omitempty"`
+	Revisions int  `yaml:"revisions,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -119,43 +137,125 @@ func FormatState(s State) string {
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
 		Answered  string            `yaml:"answered,omitempty"`
 		Deleted   []string          `yaml:"deleted,flow,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Deleted})
-	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
+		Proposed  []Pending         `yaml:"proposed,omitempty"`
+		Done      []Done            `yaml:"done,omitempty"`
+		Undone    []Undo            `yaml:"undone,omitempty"`
+		Did       []Did             `yaml:"did,omitempty"`
+		Closed    string            `yaml:"closed,omitempty"`
+		Label     string            `yaml:"label,omitempty"`
+		Aside     string            `yaml:"aside,omitempty"`
+		Heard     *int              `yaml:"heard,omitempty"`
+		Revisions int               `yaml:"revisions,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Deleted,
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions})
+	// A fence in a text the agent wrote would end the block early.
+	block := "```yaml\n" + string(unfenced(data)) + "```"
+	say := s.say()
+	if say == "" {
+		return "What workline knows of this issue; edited by the engine, not by hand.\n\n" + block
+	}
+	return Inert(say) + "\n\n<details><summary>What workline knows of this issue, edited by the engine</summary>\n\n" + block + "\n\n</details>"
 }
 
-// Record is what the role did, kept on its report issue.
+// unfenced is a YAML document with every fence (```) in its texts made
+// ''': one the agent wrote would end the block it is kept in early.
+func unfenced(data []byte) []byte {
+	if !strings.Contains(string(data), "```") {
+		return data
+	}
+	var n yaml.Node
+	if yaml.Unmarshal(data, &n) != nil {
+		return data
+	}
+	var walk func(*yaml.Node)
+	walk = func(n *yaml.Node) {
+		if n.Kind == yaml.ScalarNode {
+			n.Value = strings.ReplaceAll(n.Value, "```", "'''")
+		}
+		for _, c := range n.Content {
+			walk(c)
+		}
+	}
+	walk(&n)
+	out, err := yaml.Marshal(&n)
+	if err != nil {
+		return data
+	}
+	return out
+}
+
+// say is what the role's one comment on an issue tells a person, above its
+// state (ADR-0038): what it did there last, what it proposes, what it
+// wants from them — a few lines; "" when it has nothing to say.
+func (s State) say() string {
+	var lines []string
+	if n := len(s.Did); n > 0 {
+		day := s.Did[n-1].Day
+		var did []string
+		for _, d := range s.Did {
+			if d.Day == day && d.Line != "" {
+				did = append(did, d.Line)
+			}
+		}
+		if len(did) > 0 {
+			lines = append(lines, fmt.Sprintf("**The product owner**, on %s: %s", day, strings.Join(did, " ")))
+		}
+	}
+	for _, q := range s.Proposed {
+		line := q.Line
+		if q.Proposal != nil {
+			line = offer(*q.Proposal)
+		}
+		lines = append(lines, "- **Proposes**: "+line)
+	}
+	for _, q := range s.Proposed {
+		if c := q.Proposal; c != nil && c.Do == "refine" && !c.ToReporter {
+			lines = append(lines, fold("The sections it proposes", drafts(*c)))
+		}
+	}
+	switch {
+	case s.Aside != "":
+		lines = append(lines, "Set aside by a person: nothing more is proposed here until the issue changes.")
+	case s.Label != "":
+		accepted := strings.Replace(s.Label, "proposed", "accepted", 1)
+		lines = append(lines, fmt.Sprintf("**Your answer**: label `%s` to agree — what it proposes is done at its next run, its drafts become yours, and the issue moves to ready once complete; comment to have it revise; take `%s` off for not now; close the issue if it should not exist.", accepted, s.Label))
+	}
+	return strings.Join(lines, "\n\n")
+}
+
+// drafts says the sections a refine would write, each under its name.
+func drafts(c Proposal) string {
+	given := map[string]string{"Need": c.Need, "Verification": c.Verification, "Validation": c.Validation, "Scope": c.Scope}
+	var b strings.Builder
+	for _, name := range Sections {
+		if text := strings.TrimSpace(given[name]); text != "" && (len(c.Added) == 0 || slices.Contains(c.Added, name)) {
+			fmt.Fprintf(&b, "**%s**\n\n%s\n\n", name, strings.ReplaceAll(text, "```", "'''"))
+		}
+	}
+	return strings.TrimSpace(b.String())
+}
+
+// Record is what the role holds on the backlog, read from each issue's
+// state (Ledger) and written back to each at the end of a run (Persist):
+// never kept in one place (ADR-0038).
 type Record struct {
 	Closed  []Closing `yaml:"closed,omitempty"`
 	Wrong   []Closing `yaml:"wrong,omitempty"`        // closings found wrong: their issue open again
-	Propose []string  `yaml:"propose,flow,omitempty"` // kinds of act back to propose, until the person says
+	Propose []string  `yaml:"propose,flow,omitempty"` // kinds of act proposed on every issue: undone too often (UndoneMax)
 	// Done are the role's own acts a person may undo, other than closings:
 	// a rename, a priority, a milestone, ready, a split (ADR-0026); Undone,
 	// those a person undid, with what shows it.
 	Done     []Done    `yaml:"done,omitempty"`
 	Undone   []Undo    `yaml:"undone,omitempty"`
-	Proposed []Pending `yaml:"proposed,omitempty"` // acts proposed, kept until their issue is closed or proposed again
-	// The person's hand (ADR-0025): the runs in a row whose report proposed
-	// something and that nobody answered, and the comments of people of the
-	// project on the report when last read.
-	Ignored  int `yaml:"ignored,omitempty"`
-	Comments int `yaml:"comments,omitempty"`
-	// Measure is what people did with the proposals at the level in force,
-	// for the report to suggest another (ADR-0026).
-	Measure *Measure `yaml:"measure,omitempty"`
-	// ToAccept are the open parents whose parts are all closed, as the
-	// report lists them for a person to accept (ADR-0029).
-	ToAccept []int `yaml:"to-accept,flow,omitempty"`
-	// Changes are what open issues were built on that changed, kept until
-	// a person ticks each seen or its issues are closed (ADR-0032).
-	Changes []Change `yaml:"changes,omitempty"`
-	// Did are the acts the role did alone, with their day and level, for
-	// the weekly sample to draw (ADR-0033).
+	Proposed []Pending `yaml:"proposed,omitempty"` // acts proposed, kept until their issue is closed, set aside or proposed again
+	// Did are the acts the role did, with their day and level, for its
+	// comment on each issue and the weekly sample (ADR-0033).
 	Did []Did `yaml:"did,omitempty"`
 }
 
-// Pending is an act proposed to a person, as the report says it.
+// Pending is an act proposed to a person, on its issue.
 type Pending struct {
-	Issue int    `yaml:"issue"`
+	Issue int    `yaml:"issue,omitempty"` // left out in the issue's own state
 	Act   string `yaml:"act"`
 	Line  string `yaml:"line"`
 	Key   string `yaml:"key,omitempty"` // an issue to open: the text it would be opened from (ImportKey)
@@ -163,15 +263,12 @@ type Pending struct {
 	// a person by its mode: its issue is read again at the next run.
 	Capped bool `yaml:"capped,omitempty"`
 	// Proposal is what the engine would do, as decided: done as it says
-	// when a person of the project ticks its box (ADR-0025).
+	// when a person of the project labels the issue workline:accepted
+	// (ADR-0038).
 	Proposal *Proposal `yaml:"proposal,omitempty"`
-	// Since is the day it was first proposed, YYYY-MM-DD: the report says
-	// it stuck past stuck-days (ADR-0031).
+	// Since is the day it was first proposed, YYYY-MM-DD: the job's summary
+	// says it stuck past stuck-days (ADR-0031).
 	Since string `yaml:"since,omitempty"`
-	// Agreed is who of the project ticked it, kept for one recorded
-	// without its act (Undrafted): drafted, then done, at the next run
-	// that reads its issue with an agent (ADR-0025, amended).
-	Agreed string `yaml:"agreed,omitempty"`
 }
 
 // Closing is one issue the role closed.
@@ -230,6 +327,9 @@ type Proposal struct {
 	// (Agreement), never taken from the agent.
 	Agreed string `yaml:"agreed,omitempty"`
 	Spent  bool   `yaml:"spent,omitempty"` // the rounds spent: proposed to a person
+	// Hearsay, the engine's: the words it quotes are only in a comment by
+	// someone outside the project — proposed, never done alone (ADR-0038).
+	Hearsay bool `yaml:"hearsay,omitempty"`
 	// Ordering: the priority set (1 to 4); a milestone left because it is
 	// released (From, the engine's); and, the engine's, the issue's
 	// priority and milestone before the run, written in the report.
@@ -315,30 +415,30 @@ type Plan struct {
 	Decisions []Decision        `yaml:"decisions"`
 	Findings  []verdict.Finding `yaml:"findings"`
 	Record    Record            `yaml:"record"`
-	Report    int               `yaml:"report"`  // the report issue, 0 when none is open yet
-	Changed   bool              `yaml:"changed"` // the record changed: wrong closings found, proposals settled
-	// Opening is what the report opens with, what is next and what is
-	// stuck, as this run reads it (ADR-0031): kept with the plan so a
-	// resumed run writes the same, never in the record.
-	Opening string `yaml:"opening,omitempty"`
-	// Rechecked are the changes this run settled with no person: every
-	// issue they touch read again with them, nothing proposed on any
-	// (ADR-0032). The report says them once, in a line, folded.
-	Rechecked []Change     `yaml:"rechecked,omitempty"`
-	open      map[int]bool // the open issues, read once
-	issues    map[int]forge.Issue
-	judged    map[int]Judged // the second judge's answers on the issues announced obsolete
-	settings  map[string]Setting
-	config    Config
-	bodies    []string          // their bodies, to find an import again
-	seen      map[string]bool   // the imports this run decided
-	read      []int             // the issues this run read
-	hand      *Hand             // what people did on the report since the last run
-	ticked    map[string]bool   // the proposals ticked this run decided, done or dropped: they leave the report
-	agreed    map[string]string // the proposals recorded without their act, ticked by a person and read again this run: the agent's act on them is theirs
-	said      []string          // what the report says of the boxes ticked
-	added     map[int][]int     // the blockers this run's depend acts add, for the next act's cycle check
-	dropped   map[int][]int     // the blockers this run's undepend acts take off
+	// Report is an earlier engine's report issue, still open: its record
+	// moved to the issues, and Moved, it is closed at the end of the run
+	// (ADR-0038).
+	Report int  `yaml:"report,omitempty"`
+	Moved  bool `yaml:"moved,omitempty"`
+	// Visit are the open issues with a state, written back at the end of
+	// the run (Persist); SetAside, those a person took workline:proposed
+	// off; Answers, a person's comments read as "revise" on each.
+	Visit    []int           `yaml:"visit,flow,omitempty"`
+	SetAside map[int]bool    `yaml:"set-aside,omitempty"`
+	Answers  map[int]*Answer `yaml:"answers,omitempty"`
+	open     map[int]bool    // the open issues, read once
+	issues   map[int]forge.Issue
+	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
+	settings map[string]Setting
+	config   Config
+	bodies   []string        // their bodies, to find an import again
+	seen     map[string]bool // the imports this run decided
+	read     []int           // the issues this run read
+	ledger   *Ledger         // what the role holds, read from the issues
+	ticked   map[string]bool // the proposals a person accepted this run decided, done or dropped: settled
+	added    map[int][]int   // the blockers this run's depend acts add, for the next act's cycle check
+	dropped  map[int][]int   // the blockers this run's undepend acts take off
+	hearsay  bool            // the last quote found was only in an outsider's comment
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
@@ -417,17 +517,16 @@ func MovedPercent(settings map[string]any) int {
 // read: a proposal made only for a cap is dropped once its issue was read
 // again, decided again or not. A run moves at most cfg.MovedPercent of the
 // open issues (milestone and order). judged holds the second judge's
-// answers on the issues announced obsolete (ADR-0024); waits, the issues
-// pre found waiting on a person, for the report's opening (ADR-0031);
-// changes, what open issues were built on that pre found changed, and the
-// issues it read again for them (ADR-0032).
-func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged, waits []Wait, changes []Change) (*Plan, error) {
+// answers on the issues announced obsolete (ADR-0024); changes, what open
+// issues were built on that pre found changed, and the issues it read
+// again for them (ADR-0032); answers, a person's comments pre read as
+// "revise" (ADR-0038).
+func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged, changes []Change, answers map[int]*Answer) (*Plan, error) {
 	settings, movedPercent := cfg.Acts, cfg.MovedPercent
-	p := &Plan{read: read, judged: judged, settings: settings, config: cfg}
+	p := &Plan{read: read, judged: judged, settings: settings, config: cfg, Answers: answers}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}
-	p.readToAccept()
 	p.readChanges(changes)
 	dropped := func(c Proposal, rule, msg string) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: rule, Where: c.where(), Message: msg})
@@ -450,11 +549,12 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 	for _, i := range indexes {
 		c := closes[i]
 		if c.Ticked != "" {
-			// A box a person of the project ticked: the act as the record
-			// holds it, checked again against the forge's tick.
+			// A proposal a person of the project accepted, by the label on
+			// its issue: the act as its state holds it, checked again
+			// against the forge's label.
 			var why string
 			if c, why = p.tickedAct(c); why != "" {
-				dropped(c, "not-ticked", why)
+				dropped(c, "not-accepted", why)
 				p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c})
 				continue
 			}
@@ -468,12 +568,12 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			}
 			continue
 		}
-		if who, ok := p.agreed[c.key()]; ok && c.Ticked == "" {
-			// A proposal recorded without its act, ticked: the act the
-			// agent drafted now is the person's yes.
-			c.Ticked = who
-			delete(p.agreed, c.key())
-			p.ticked[c.key()] = true
+		if c.Ticked == "" && p.aside(c.Issue) && c.Do != "keep" && !(c.Do == "undepend" && p.allClosed(c.BlockedBy)) && !(c.Do == "milestone" && c.From != "") {
+			// A person took workline:proposed off, without a yes: not now,
+			// on that issue, until it changes (ADR-0038).
+			dropped(c, "set-aside", "a person took "+p.ledger.States[c.Issue].labelOr()+" off this issue: nothing is proposed nor done on it until it changes")
+			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c})
+			continue
 		}
 		once := c.Do == "split" || c.Do == "rename"
 		if !once {
@@ -491,9 +591,6 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 		switch {
 		case why != "":
 			dropped(c, mode, why)
-			if c.Ticked != "" {
-				p.said = append(p.said, fmt.Sprintf("- %s's box, ticked by %s, not done: %s.", c.where(), c.Ticked, why))
-			}
 		case c.Ticked != "":
 			// Their yes: done, whatever its mode, a kind back to propose or a
 			// cap — a person decided it, not the role.
@@ -508,6 +605,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if c.Do == "undepend" {
 				p.recordUndepend(c)
 			}
+			p.recordDid(c)
 		default:
 			s, ok := settings[c.Kind()]
 			if !ok {
@@ -529,6 +627,20 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			d.Mode = s.Mode
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
+			}
+			if d.Mode == Act && c.Do != "keep" && !cleanup && slices.Contains(p.ledger.UndoneOn(c.Issue), c.Kind()) {
+				// A person undid an act of this kind on this issue: proposed
+				// here from then on (ADR-0038, amended).
+				d.Mode = Propose
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "undone-here", Level: "info", Where: c.where(),
+					Message: fmt.Sprintf("a person undid a %s of the role's on this issue: proposed here, not done", c.Kind())})
+			}
+			if d.Mode == Act && c.Hearsay {
+				// Its only evidence is the word of someone outside the
+				// project: proposed, never done alone (ADR-0038).
+				d.Mode = Propose
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "outsider-evidence", Where: c.where(),
+					Message: "the words it quotes are only in a comment by someone outside the project: proposed, not done"})
 			}
 			if ch, ok := p.changedFor[c.Issue]; ok && d.Mode == Act && c.Do != "keep" && !cleanup {
 				// Read again for a change to what it was built on: what the
@@ -553,7 +665,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				d.Mode, c.Spent = Propose, true
 				d.Act = c
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "asks-spent", Where: c.where(),
-					Message: fmt.Sprintf("its reporter was written to %d times (acts.ask.rounds): what is left is proposed to a person in the report", rounds)})
+					Message: fmt.Sprintf("its reporter was written to %d times (acts.ask.rounds): what is left is proposed to a person on the issue", rounds)})
 			}
 			if d.Mode == Act && c.Announced != "" && s.Max > 0 && done[c.Kind()] >= s.Max {
 				// The engine's closing after an announcement: it stays
@@ -591,7 +703,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 					}
 					d.Act = c
 					p.Findings = append(p.Findings, verdict.Finding{Rule: "drafts-proposed", Level: "info", Where: c.where(),
-						Message: "Need and Validation drafts proposed in the report, not written (acts.refine.drafts: propose)"})
+						Message: "Need and Validation drafts proposed on the issue, not written (acts.refine.drafts: propose)"})
 				}
 			}
 			if d.Mode == Act {
@@ -620,174 +732,84 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			p.Decisions = append(p.Decisions, *extra)
 		}
 	}
-	for _, key := range slices.Sorted(maps.Keys(p.agreed)) {
-		// Ticked, read again, and the agent drafted no such act: the
-		// person is told, the box leaves the report.
-		p.ticked[key], p.Changed = true, true
-		p.said = append(p.said, fmt.Sprintf("- %s, ticked by %s: read again, the agent found nothing of it to draft now; its box leaves the report.", key, p.agreed[key]))
-		p.Findings = append(p.Findings, verdict.Finding{Rule: "tick-not-drafted", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
-			Message: fmt.Sprintf("%s was ticked by %s, recorded without its act; read again, the agent drafted none", key, p.agreed[key])})
-	}
 	p.keepProposed()
-	p.settleChanges()
-	p.pause()
-	p.opening(waits)
+	p.summary()
 	return p, nil
 }
 
-// opening reads the report's opening as this run leaves the backlog — its
-// closings out, its ready acts in, an issue kept open no longer waiting on
-// a judge — and has the report rewritten when it no longer says it, or,
-// with no report yet, when it lists an issue (ADR-0031).
-func (p *Plan) opening(waits []Wait) {
-	closed := p.closedInRun()
-	kept, readied := map[int]bool{}, map[int]bool{}
+// summary says, in the job's summary, what the run did alone and what it
+// proposed, issue by issue (ADR-0038); what waits on a person is a filter
+// on workline:proposed.
+func (p *Plan) summary() {
 	for _, d := range p.Decisions {
 		switch {
-		case d.Mode == Act && d.Act.Do == "keep":
-			kept[d.Act.Issue] = true
-		case d.Mode == Act && d.Act.Do == "ready":
-			readied[d.Act.Issue] = true
+		case d.Mode == Act && d.Act.Ticked != "":
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "done-as-accepted", Level: "info", Where: d.Act.where(),
+				Message: strings.TrimSpace(describe(d.Act, "Closed")) + " Accepted by " + d.Act.Ticked + "."})
+		case d.Mode == Act:
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "done", Level: "info", Where: d.Act.where(),
+				Message: strings.TrimSpace(describe(d.Act, "Closed"))})
+		case d.Mode == Propose:
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "proposed", Level: "info", Where: d.Act.where(),
+				Message: strings.TrimSpace(offer(d.Act))})
 		}
 	}
-	var open []forge.Issue
-	for _, id := range sortedIDs(p.issues) {
-		is := p.issues[id]
-		if closed[id] {
-			continue
-		}
-		if readied[id] && !slices.Contains(is.Labels, LabelReady) {
-			is.Labels = append(slices.Clone(is.Labels), LabelReady)
-		}
-		open = append(open, p.asLeft(is))
+	for _, id := range sortedKeys(p.SetAside) {
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "set-aside", Level: "info", Where: fmt.Sprintf("#%d", id),
+			Message: "a person took the role's label off, without accepting: nothing is proposed on it until it changes"})
 	}
-	var left []Wait
-	for _, w := range waits {
-		if !(w.Waits == WaitsObsolete && kept[w.Issue]) && !(w.Waits == WaitsReady && readied[w.Issue]) {
-			left = append(left, w)
-		}
-	}
-	b := MakeBoard(open, p.Report, left, p.Record.Proposed, p.config, time.Now())
-	p.Opening = b.Text()
-	switch {
-	case p.Report != 0 && !strings.Contains(p.issues[p.Report].Body, p.Opening):
-		p.Changed = true
-	case p.Report == 0 && !b.Empty():
-		p.Changed = true
+	if p.Report != 0 && p.Moved {
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "report-closed", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
+			Message: "the old report's record moved to each issue's state; the report is closed: what waits on a person bears " + LabelProposed + " (GitLab: workline::proposed)"})
 	}
 }
 
-// tickedAct is the act a ticked intention stands for: the proposal the
-// record holds under its key, which a person of the project ticked, as the
-// forge says; or why it is not done.
+// aside says whether an issue was set aside by a person — workline:proposed
+// taken off without a yes — and has not changed since: nothing is proposed
+// nor done on it (ADR-0038).
+func (p *Plan) aside(id int) bool {
+	if p.SetAside[id] {
+		return true
+	}
+	st := p.ledger.States[id]
+	return st != nil && st.Aside != "" && st.Aside == BodyDigest(p.issues[id].Body) && p.Answers[id] == nil
+}
+
+// labelOr is the label the role set, or its usual name.
+func (s *State) labelOr() string {
+	if s != nil && s.Label != "" {
+		return s.Label
+	}
+	return LabelProposed
+}
+
+// tickedAct is the act an accepted intention stands for: the proposal the
+// issue's state holds under its key, its issue bearing workline:accepted,
+// as the forge says; or why it is not done.
 func (p *Plan) tickedAct(c Proposal) (Proposal, string) {
 	key := c.key()
-	t, ok := p.hand.Tick(key)
-	if !ok || !t.Person() || t.Who() != c.Ticked {
-		return c, "not ticked by a person of the project in the report, as the forge says"
+	if !Accepted(p.issues[c.Issue]) {
+		return c, "its issue does not bear " + LabelAccepted + ", as the forge says"
 	}
-	for _, q := range p.hand.Record.Proposed {
-		if q.TickKey() == key && q.Doable() {
+	for _, q := range p.Record.Proposed {
+		if q.ID() == key && q.Doable() {
 			act := *q.Proposal
 			act.Ticked = c.Ticked
 			p.ticked[key] = true
 			return act, ""
 		}
 	}
-	return c, "no such proposal in the report's record"
-}
-
-// readTicks reads the boxes ticked in the report that are not a proposal
-// to do: a kind set back to act by a person of the project; a tick that is
-// not a person of the project's, or that the engine cannot do, said.
-func (p *Plan) readTicks() {
-	for _, t := range p.hand.Ticks {
-		var q *Pending
-		for k := range p.hand.Record.Proposed {
-			if p.hand.Record.Proposed[k].TickKey() == t.Key {
-				q = &p.hand.Record.Proposed[k]
-			}
-		}
-		kind, toAct := strings.CutPrefix(t.Key, KeyAct)
-		switch {
-		case !t.Person():
-			p.Changed = true // the report rewritten: the box unticked, the reason said
-			p.said = append(p.said, fmt.Sprintf("- A box (%s) not done: %s; only a person of the project's tick is a yes.", t.Key, t.why()))
-			p.Findings = append(p.Findings, verdict.Finding{Rule: "tick-ignored", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
-				Message: fmt.Sprintf("the box %s: %s; not done", t.Key, t.why())})
-		case toAct && slices.Contains(p.Record.Propose, kind):
-			p.Changed = true
-			p.Record.Propose = slices.DeleteFunc(p.Record.Propose, func(k string) bool { return k == kind })
-			p.said = append(p.said, fmt.Sprintf("- %s set back to act by %s.", kind, t.Who()))
-			p.Findings = append(p.Findings, verdict.Finding{Rule: "back-to-act", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
-				Message: fmt.Sprintf("%s set back to act by %s's tick in the report", kind, t.Who())})
-		case q != nil && q.Undrafted() && slices.Contains(p.read, q.Issue):
-			p.agreed[t.Key] = t.Who() // read again this run: the act drafted is done
-		case q != nil && q.Undrafted():
-			// Kept with who ticked it: the box is not asked again.
-			for k := range p.Record.Proposed {
-				if r := &p.Record.Proposed[k]; r.TickKey() == t.Key && r.Agreed != t.Who() {
-					r.Agreed, p.Changed = t.Who(), true
-				}
-			}
-		case q != nil && !q.Doable():
-			p.Changed, p.ticked[t.Key] = true, true
-			p.said = append(p.said, fmt.Sprintf("- Ticked by %s, not something the engine does — do it by hand: %s", t.Who(), q.Line))
-		}
+	if c.Do == "ready" {
+		return c, "" // the drafts accepted: ready, as the engine checks it
 	}
-}
-
-// readAgreed has the proposals recorded without their act, ticked at an
-// earlier run and kept with who ticked them, done once their issue is read
-// again: the act the agent drafts is that person's yes.
-func (p *Plan) readAgreed() {
-	for _, q := range p.Record.Proposed {
-		if q.Agreed != "" && q.Undrafted() && slices.Contains(p.read, q.Issue) {
-			if _, ok := p.agreed[q.TickKey()]; !ok {
-				p.agreed[q.TickKey()] = q.Agreed
-			}
-		}
-	}
-}
-
-// pause counts the runs nobody answered: one that read issues with an
-// agent, its report holding a proposal,
-// and since which no person ticked a box, wrote on the report, undid a
-// closing or settled a proposal. After PauseAfter, the role pauses — no
-// agent asked — until a person does (ADR-0025).
-func (p *Plan) pause() {
-	r := &p.Record
-	if r.Comments != p.hand.Comments {
-		r.Comments, p.Changed = p.hand.Comments, true
-	}
-	max := p.config.IgnoredMax
-	switch {
-	case len(p.hand.Signs) > 0:
-		if r.Ignored > 0 {
-			r.Ignored, p.Changed = 0, true
-		}
-	case len(p.hand.Record.Proposed) > 0 && len(p.read) > 0 && (max == 0 || r.Ignored < max):
-		r.Ignored++ // counted when it never pauses too: the report says how many
-		p.Changed = true
-		if r.Ignored == max {
-			p.Findings = append(p.Findings, verdict.Finding{Rule: "paused", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
-				Message: fmt.Sprintf("%d runs in a row proposed something and nobody answered (ignored-runs-max): no agent is asked from the next run until a person ticks a box, writes on the report or undoes an act", max)})
-		}
-	}
-	if max == 0 {
-		where := ""
-		if p.Report > 0 {
-			where = fmt.Sprintf("#%d", p.Report)
-		}
-		p.Findings = append(p.Findings, verdict.Finding{Rule: "never-paused", Level: "warn", Where: where,
-			Message: fmt.Sprintf("ignored-runs-max is 0: the role never pauses, and asks its agent on every run though nobody answers (%d runs in a row so far)", r.Ignored)})
-	}
+	return c, "no such proposal in its issue's state"
 }
 
 // keepProposed carries over the acts proposed by earlier runs whose issue
-// is still open — or, for an issue to open, that no open issue holds yet —
-// and that this run did not decide again, then adds this run's: a proposal
-// stays in the report until a person settles it.
+// is still open and not set aside, that this run did not decide again nor
+// a person accept, then adds this run's: a proposal stays on its issue
+// until a person settles it. An issue to open (an import's, past its cap)
+// is not kept: the import finds it again.
 func (p *Plan) keepProposed() {
 	decided := map[string]bool{}
 	for _, d := range p.Decisions {
@@ -795,136 +817,108 @@ func (p *Plan) keepProposed() {
 			decided[d.Act.key()] = true
 		}
 	}
-	// What people do with the proposals, measured at the level in force:
-	// the report suggests another level from it (ADR-0026).
-	m := p.Record.Measure
-	if m == nil || m.Level != p.config.Level {
-		m = &Measure{Level: p.config.Level} // written with the report, when there is one to write
-		p.Record.Measure = m
-	}
 	// The day each was first proposed: kept while it stays, carried to the
-	// same act decided again; one the record has none for gets today's.
-	today := time.Now().UTC().Format(dateLayout)
+	// same act decided again; one with none gets today's.
 	since := map[string]string{}
 	for _, q := range p.Record.Proposed {
-		since[q.TickKey()] = q.Since
+		since[q.ID()] = q.Since
 	}
 	var kept []Pending
 	for _, q := range p.Record.Proposed {
 		if q.Since == "" {
-			q.Since, p.Changed = today, true
+			q.Since = today()
 		}
-		key, settled := q.Key, false
-		if key == "" {
-			key, settled = fmt.Sprintf("%d/%s", q.Issue, q.Act), !p.open[q.Issue]
-		} else {
-			marker := forge.Marker(key)
-			settled = slices.ContainsFunc(p.bodies, func(b string) bool { return strings.Contains(b, marker) })
-		}
+		key := q.ID()
+		settled := q.Key != "" || q.Issue <= 0 || !p.open[q.Issue] || p.SetAside[q.Issue]
 		switch {
 		case p.ticked[key]:
-			settled = true // a person's tick, done or said why not
-			m.Ticked++
+			settled = true // a person's yes, done or said why not
+		case Accepted(p.issues[q.Issue]):
+			settled = true // a yes to the issue: its proposals are done, or left
 		case (q.Capped || q.Undrafted()) && slices.Contains(p.read, q.Issue):
 			settled = true // read again: the agent decided it anew, or not at all
-		case settled && !q.Capped:
-			m.Other++
-			p.Changed = true
 		}
 		if !settled && !decided[key] {
 			kept = append(kept, q)
 		}
 	}
 	for _, d := range p.Decisions {
-		if d.Mode == Propose {
+		if d.Mode == Propose && d.Act.Do != "open" && d.Act.Issue > 0 {
 			act := d.Act
 			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close"), Capped: d.Capped, Proposal: &act}
-			if d.Act.Do == "open" {
-				q.Key = d.Act.key()
-			}
-			if q.Since = since[q.TickKey()]; q.Since == "" {
-				q.Since = today
+			if q.Since = since[q.ID()]; q.Since == "" {
+				q.Since = today()
 			}
 			kept = append(kept, q)
 		}
 	}
-	if len(kept) != len(p.Record.Proposed) {
-		p.Changed = true
-	}
 	p.Record.Proposed = kept
 }
 
-// readRecord finds the report issue and what it records, and looks for
-// wrong closings: an issue the role closed, open again, puts that kind of
-// act back to propose.
+// readRecord reads what the role holds from each open issue's state, and
+// an earlier engine's report the first time; it looks for wrong closings
+// — an issue the role closed, open again — and the acts a person undid:
+// each proposed on its issue from then on, and a kind undone too often
+// proposed everywhere (ADR-0038, amended).
 func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	open, err := f.Issues()
 	if err != nil {
 		return err
 	}
 	p.open, p.seen, p.issues, p.ticked, p.added, p.dropped = map[int]bool{}, map[string]bool{}, map[int]forge.Issue{}, map[string]bool{}, map[int][]int{}, map[int][]int{}
-	p.agreed = map[string]string{}
 	for _, is := range open {
 		p.open[is.ID] = true
 		p.issues[is.ID] = is
 		p.bodies = append(p.bodies, is.Body)
-		if is.Title == ReportTitle(role) {
-			p.Report = is.ID
-		}
 	}
-	if p.hand, err = ReadHand(f, role, open); err != nil {
+	if p.ledger, err = ReadLedger(f, role, open); err != nil {
 		return err
 	}
-	if p.Report == 0 {
-		return nil
+	p.Report = p.ledger.Report
+	p.Visit = sortedKeys(p.ledger.States)
+	p.SetAside = map[int]bool{}
+	for id := range p.ledger.Aside {
+		p.SetAside[id] = true
 	}
-	if err := p.hand.Broken; err != nil {
-		// What it did cannot be read: nothing is done, everything proposed.
-		p.Findings = append(p.Findings, verdict.Finding{Rule: "record-broken", Where: fmt.Sprintf("#%d", p.Report),
-			Message: "the record of what the role did does not read (" + err.Error() + "); every act is proposed until it is repaired"})
-		p.Record = Record{Propose: []string{"close-duplicate", "close-obsolete"}}
-		p.hand = &Hand{Report: p.Report}
-		return nil
+	if p.Report != 0 {
+		if err := p.ledger.Broken; err != nil {
+			// What the old report recorded cannot be read: it stays open,
+			// for a person; nothing of it moves.
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "record-broken", Level: "warn", Where: fmt.Sprintf("#%d", p.Report),
+				Message: "the old report's record does not read (" + err.Error() + "): it is left open, nothing of it moved to the issues"})
+		} else {
+			p.Moved = true
+		}
 	}
-	p.Record = p.hand.Record
-	p.Record.Proposed = slices.Clone(p.hand.Record.Proposed)
-	p.Record.Propose = slices.Clone(p.hand.Record.Propose)
-	isOpen := p.open
+	p.Record = p.ledger.Record
+	p.Record.Proposed = slices.Clone(p.ledger.Record.Proposed)
 	var kept []Closing
 	for _, c := range p.Record.Closed {
-		if !isOpen[c.Issue] {
+		if !p.open[c.Issue] {
 			kept = append(kept, c)
 			continue
 		}
-		p.Changed = true
 		p.Record.Wrong = append(p.Record.Wrong, c)
-		if !slices.Contains(p.Record.Propose, c.Act) {
-			p.Record.Propose = append(p.Record.Propose, c.Act)
-		}
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "wrong-closing", Where: fmt.Sprintf("#%d", c.Issue),
-			Message: fmt.Sprintf("closed by the role (%s), open again: %s is back to propose until a person sets it to act", c.Act, c.Act)})
+			Message: fmt.Sprintf("closed by the role (%s), open again: %s is proposed on it from now on", c.Act, c.Act)})
 	}
 	p.Record.Closed = kept
-	// Any other act of the role's a person undid: that kind back to
-	// propose, as a closing reopened (ADR-0026).
-	if len(p.hand.Standing) != len(p.Record.Done) {
-		p.Changed = true
-	}
-	p.Record.Done = slices.Clone(p.hand.Standing)
-	for _, u := range p.hand.Undone {
-		p.Changed = true
+	// Any other act of the role's a person undid: that kind proposed on
+	// its issue, as a closing reopened (ADR-0026; ADR-0038, amended).
+	p.Record.Done = slices.Clone(p.ledger.Standing)
+	for _, u := range p.ledger.Undone {
 		if u.Day == "" {
-			u.Day = time.Now().UTC().Format(dateLayout)
+			u.Day = today()
 		}
 		p.Record.Undone = append(p.Record.Undone, u)
-		if !slices.Contains(p.Record.Propose, u.Act) {
-			p.Record.Propose = append(p.Record.Propose, u.Act)
-		}
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "undone", Where: fmt.Sprintf("#%d", u.Issue),
-			Message: fmt.Sprintf("%s: %s is back to propose until a person sets it to act", u.Evidence, u.Act)})
+			Message: fmt.Sprintf("%s: %s is proposed on #%d from now on", u.Evidence, u.Act, u.Issue)})
 	}
-	p.readTicks()
-	p.readAgreed()
+	p.Record.Propose = demoted(p.Record.Undone, p.Record.Wrong, p.config.UndoneMax)
+	for _, kind := range p.Record.Propose {
+		p.Findings = append(p.Findings, verdict.Finding{Rule: "demoted", Level: "warn",
+			Message: fmt.Sprintf("%s: undone %d times or more across the issues (undone-max): proposed on every issue until the undone acts are fewer", kind, max(p.config.UndoneMax, 1))})
+	}
 	return nil
 }
 
@@ -1019,9 +1013,16 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return "no-state", err.Error()
 	}
 	st, found, err := ReadState(comments, role)
-	if !found {
+	switch {
+	case !found && slices.Contains(p.read, c.Issue):
+		// A person's issue opened since the role's last run, read in this
+		// one: pre wrote its first state, applied before any act
+		// (ADR-0018, amended).
+		st, err = &State{}, nil
+	case !found:
 		return "no-state", "the issue has no state comment yet: it is not acted on before the engine has one"
-	} else if err != nil {
+	}
+	if err != nil {
 		return "state-broken", "the issue's state comment does not read (" + err.Error() + "): nothing is written on it"
 	}
 	if c.Do == "order" {
@@ -1062,9 +1063,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
 		return "no-quote", "no quote: an act cites the code or the issue it rests on"
 	}
+	p.hearsay = false
 	if !p.found(f, repo, *c.Quote) {
 		return "no-quote", fmt.Sprintf("the quote %q is not found where it says", c.Quote.Text)
 	}
+	c.Hearsay = p.hearsay
 	if c.Reason == "obsolete" {
 		return p.checkObsolete(f, repo, role, st, c)
 	}
@@ -1186,6 +1189,15 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			c.Refused = DeletedSections(st, is.Body)
 			if p.config.SpecReview && !c.ToReporter {
 				c.Revise = Revisable(is, st, SpecOpen(is, comments))
+			}
+			if p.Answers[c.Issue] != nil && !c.ToReporter {
+				// A person's comment on its proposal: the role rewrites
+				// its own sections, never a person's (ADR-0038).
+				for _, name := range Own(is, st) {
+					if !slices.Contains(c.Revise, name) {
+						c.Revise = append(c.Revise, name)
+					}
+				}
 			}
 		}
 		_, added, kept := Refine(is.Body, *c, role)
@@ -1348,7 +1360,7 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	body = strings.TrimRight(body, " \r\n")
 	var added, kept []string
 	for _, name := range Sections {
-		text := strings.TrimSpace(given[name])
+		text := Inert(strings.TrimSpace(given[name])) // no quick action run on GitLab when the body is written
 		if text == "" || slices.Contains(c.Refused, name) {
 			continue
 		}
@@ -1405,7 +1417,22 @@ const (
 
 // Accepted says whether a person accepted an issue's drafts, by its label
 // — read on the issue, never taken from a proposal.
-func Accepted(is forge.Issue) bool { return slices.Contains(is.Labels, LabelAccepted) }
+func Accepted(is forge.Issue) bool {
+	return slices.ContainsFunc(acceptedLabels, func(l string) bool { return slices.Contains(is.Labels, l) })
+}
+
+// ReadyRemoves are the labels an issue moved to ready loses: those of its
+// way there, and a person's yes, in either spelling, with the role's
+// proposal label (ADR-0038).
+func ReadyRemoves(is forge.Issue) []string {
+	out := []string{LabelToRefine, LabelDraft, LabelAccepted}
+	for _, l := range []string{scopedAccepted, LabelProposed, scopedProposed} {
+		if slices.Contains(is.Labels, l) {
+			out = append(out, l)
+		}
+	}
+	return out
+}
 
 // StripDrafts takes the draft lines out of a body: the drafts are a
 // person's once accepted.
@@ -1791,8 +1818,17 @@ func (p *Plan) found(f forge.Backlog, repo string, q Quote) bool {
 		if err != nil {
 			return false
 		}
-		comments, _ := f.Comments(forge.Target{Kind: "issue", ID: q.Issue})
-		where = append([]string{is.Title, is.Body}, comments...)
+		notes, _ := f.Notes(forge.Target{Kind: "issue", ID: q.Issue})
+		where = []string{is.Title, is.Body}
+		for _, n := range Counted(notes, *is) {
+			where = append(where, n.Body)
+		}
+		if !slices.ContainsFunc(where, func(w string) bool { return strings.Contains(squeeze(w), want) }) {
+			// Only in a comment by someone outside the project, a bot's
+			// or a stranger's: their word alone (ADR-0038).
+			p.hearsay = slices.ContainsFunc(forge.Bodies(notes), func(w string) bool { return strings.Contains(squeeze(w), want) })
+			return p.hearsay
+		}
 	}
 	for _, w := range where {
 		if strings.Contains(squeeze(w), want) {
@@ -1910,16 +1946,10 @@ func Comment(c Proposal, role string) string {
 	}
 	by := "Closed by the " + role + " role"
 	if c.Ticked != "" {
-		by += ", " + c.Ticked + " having ticked it in the report"
+		by += ", " + c.Ticked + " having accepted it (" + LabelAccepted + ")"
 	}
 	return fmt.Sprintf("%s\n\n%s %s\n\n%s. Reopen it to undo: a closing undone puts this kind of act back to a person.",
 		head, cite(*c.Quote), strings.TrimSpace(c.Why), by)
-}
-
-// FormatRecord is the body of the report's record comment.
-func FormatRecord(r Record) string {
-	data, _ := yaml.Marshal(r)
-	return "What the role did, read by the engine on its next run; not to be edited by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
 // Decision is what becomes of the act at index i, nil when it is none.
@@ -1986,73 +2016,3 @@ func LocateIn(lines []string, text string) (from, to int, original string, ok bo
 	return 0, 0, "", false
 }
 
-// PeopleComments counts an issue's comments that are not the engine's.
-func PeopleComments(comments []string) int {
-	n := 0
-	for _, c := range comments {
-		if !strings.Contains(c, "<!-- workline:") {
-			n++
-		}
-	}
-	return n
-}
-
-// CappedByRole lists the issues an act was proposed on only because a run's
-// cap was reached: they are read again, though nothing changed on them.
-func CappedByRole(f forge.Backlog, role string, open []forge.Issue) []int {
-	r := record(f, role, open)
-	if r == nil {
-		return nil
-	}
-	var ids []int
-	for _, q := range r.Proposed {
-		if (q.Capped || q.Undrafted()) && q.Issue > 0 {
-			ids = append(ids, q.Issue)
-		}
-	}
-	return ids
-}
-
-// record reads the role's record from its report issue; nil when there is
-// none or it does not read.
-func record(f forge.Backlog, role string, open []forge.Issue) *Record {
-	for _, is := range open {
-		if is.Title != ReportTitle(role) {
-			continue
-		}
-		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
-		if err != nil {
-			return nil
-		}
-		var r Record
-		if _, err := readBlock(comments, RecordMarker(role), &r); err != nil {
-			return nil
-		}
-		return &r
-	}
-	return nil
-}
-
-// ClosedByRole lists the issues the role's record says it closed, read from
-// its report issue's comments; nil when there is none or it does not read.
-func ClosedByRole(f forge.Backlog, role string, open []forge.Issue) []int {
-	for _, is := range open {
-		if is.Title != ReportTitle(role) {
-			continue
-		}
-		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
-		if err != nil {
-			return nil
-		}
-		var r Record
-		if _, err := readBlock(comments, RecordMarker(role), &r); err != nil {
-			return nil
-		}
-		var ids []int
-		for _, c := range r.Closed {
-			ids = append(ids, c.Issue)
-		}
-		return ids
-	}
-	return nil
-}

@@ -1,5 +1,5 @@
 case: product-owner/acts-recorded-with-day-and-level
-about: An act the role did alone is kept in its record with its kind, its issue, the autonomy level it was done at and the day, for the weekly sample to draw.
+about: An act the role did alone is kept in its issue's state with its kind, the autonomy level it was done at and the day, for its comment there and the weekly sample to draw (ADR-0038).
 given:
   repo: backlog
   forge:
@@ -12,4 +12,5 @@ expect:
   forge:
     issues:
       - {id: 12, closed: true}
-      - {id: 13, title: "Backlog — product owner", comment-contains: "did:\n    - issue: 12\n      act: close-duplicate\n      level: normal\n      day: \"20"}
+      - {id: 12, comment-contains: "did:\n    - act: close-duplicate\n      level: normal\n      day: \"20"}
+      - {id: 13, absent: true}

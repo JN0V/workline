@@ -971,11 +971,11 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if plan != nil {
 		res.Findings = append(res.Findings, plan.Findings...)
 		if err := report(f, r.Name, plan); errors.Is(err, forge.ErrUnreachable) {
-			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while writing the backlog report; resume with: workline apply %s", runDir)
+			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while writing back what the run left on the issues; resume with: workline apply %s", runDir)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 			return nil
 		} else if err != nil {
-			return fmt.Errorf("the backlog report: %w", err)
+			return fmt.Errorf("writing back the issues: %w", err)
 		}
 	}
 	res.Handoffs = ap.handoffs
@@ -1836,9 +1836,9 @@ func (a *applier) apply(in intent.Intention) error {
 				return errors.New("a sticky comment needs a key: {body, sticky: key}")
 			}
 			only, _ := m["update-only"].(bool)
-			return a.forge.Sticky(*target, body, forge.Marker("sticky="+a.role+"/"+key), !only)
+			return a.forge.Sticky(*target, backlog.Inert(body), forge.Marker("sticky="+a.role+"/"+key), !only)
 		}
-		return a.forge.Comment(*target, body, a.marker())
+		return a.forge.Comment(*target, backlog.Inert(body), a.marker())
 	case "label":
 		m, _ := in.Value.(map[string]any)
 		if err := a.needForge("label"); err != nil {
@@ -1872,7 +1872,7 @@ func (a *applier) apply(in intent.Intention) error {
 	case "close":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
-			return nil // proposed in the report, or dropped with a finding
+			return nil // proposed on the issue, or dropped with a finding
 		}
 		is := forge.Target{Kind: "issue", ID: d.Act.Issue}
 		switch {
@@ -1881,7 +1881,7 @@ func (a *applier) apply(in intent.Intention) error {
 		case d.Act.Announced != "":
 			// Closed after its announcement (ADR-0024): the label goes, so a
 			// reopening reads as the announcement kept open.
-			if err := a.forge.Comment(is, backlog.ClosingComment(d.Act, a.role), a.marker()); err != nil {
+			if err := a.forge.Comment(is, backlog.Inert(backlog.ClosingComment(d.Act, a.role)), a.marker()); err != nil {
 				return err
 			}
 			if err := a.forge.(forge.Backlog).Close(d.Act.Issue, 0); err != nil {
@@ -1889,7 +1889,7 @@ func (a *applier) apply(in intent.Intention) error {
 			}
 			return a.forge.Label(is, nil, []string{backlog.LabelObsolete})
 		}
-		if err := a.forge.Comment(is, backlog.Comment(d.Act, a.role), a.marker()); err != nil {
+		if err := a.forge.Comment(is, backlog.Inert(backlog.Comment(d.Act, a.role)), a.marker()); err != nil {
 			return err
 		}
 		return a.forge.(forge.Backlog).Close(d.Act.Issue, d.Act.DuplicateOf)
@@ -1974,16 +1974,16 @@ func (a *applier) apply(in intent.Intention) error {
 		}
 		return rename(a.forge, a.role, d.Act)
 	case "unready":
-		// Back to refine, a person having ticked it (ADR-0032): the issue
+		// Back to refine, a person having accepted it (ADR-0032): the issue
 		// told why, its labels moved.
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
 		t := forge.Target{Kind: "issue", ID: d.Act.Issue}
-		say := fmt.Sprintf("Moved back to refine: %s\n\nBy the %s role, %s having ticked it in the report. Put the label %s back to undo.",
+		say := fmt.Sprintf("Moved back to refine: %s\n\nBy the %s role, %s having accepted it. Put the label %s back to undo.",
 			strings.TrimSpace(d.Act.Why), a.role, d.Act.Ticked, backlog.LabelReady)
-		if err := a.forge.Comment(t, say, a.marker()); err != nil {
+		if err := a.forge.Comment(t, backlog.Inert(say), a.marker()); err != nil {
 			return err
 		}
 		return a.forge.Label(t, []string{backlog.LabelToRefine}, []string{backlog.LabelReady})
@@ -2036,7 +2036,7 @@ func (a *applier) announce(c backlog.Proposal) error {
 	days := backlog.Settings(a.settings)["close-obsolete"].Delay()
 	ann := backlog.Announcement{Quote: *c.Quote, Why: c.Why, Commit: head,
 		Announced: time.Now().Format("2006-01-02"), By: a.model}
-	return a.forge.Comment(t, backlog.AnnouncementComment(is.Author, c, a.role, ann, days), backlog.AnnounceMarker(a.role))
+	return a.forge.Comment(t, backlog.Inert(backlog.AnnouncementComment(is.Author, c, a.role, ann, days)), backlog.AnnounceMarker(a.role))
 }
 
 // keepOpen settles an issue's announcement as obsolete: kept open, its
@@ -2066,7 +2066,7 @@ func keepOpen(f forge.Forge, role string, c backlog.Proposal) error {
 	if !c.Say {
 		return nil
 	}
-	return f.Comment(t, backlog.KeptComment(c.Why), backlog.KeptMarker(role))
+	return f.Comment(t, backlog.Inert(backlog.KeptComment(c.Why)), backlog.KeptMarker(role))
 }
 
 // openings is the run's one way to open an issue (backlog.Openings), made
@@ -2202,7 +2202,7 @@ func (a *applier) split(c backlog.Proposal) error {
 	if err != nil {
 		return err
 	}
-	if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+	if err := b.EnsureLabel(backlog.AcceptedLabel(a.forge), "0e8a16", "A person accepted what the product owner proposes here: the next run does it, and moves the issue to ready"); err != nil {
 		return err
 	}
 	var ids, listed []int
@@ -2372,20 +2372,20 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 	t := forge.Target{Kind: "issue", ID: c.Issue}
 	switch c.Do {
 	case "ask":
-		return f.Comment(t, backlog.Ask(is.Author, c.Questions, c.Round), backlog.AskMarker(role, c.Round))
+		return f.Comment(t, backlog.Inert(backlog.Ask(is.Author, c.Questions, c.Round)), backlog.AskMarker(role, c.Round))
 	case "refine":
 		if !c.ToReporter {
 			break
 		}
 		// An outsider's issue: the text proposed to its reporter, nothing
 		// written in the body until they or a person of the project agree.
-		if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+		if err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", "A person accepted what the product owner proposes here: the next run does it, and moves the issue to ready"); err != nil {
 			return err
 		}
 		if err := f.Label(t, []string{backlog.LabelToRefine}, nil); err != nil {
 			return err
 		}
-		return f.Comment(t, backlog.ProposalComment(is.Author, c, role), backlog.ProposalMarker(role, c.Round))
+		return f.Comment(t, backlog.Inert(backlog.ProposalComment(is.Author, c, role)), backlog.ProposalMarker(role, c.Round))
 	case "ready":
 		accepted := backlog.Accepted(*is)
 		if missing := backlog.NotReady(is.Body, accepted); len(missing) > 0 {
@@ -2401,7 +2401,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 				return err
 			}
 		}
-		return f.Label(t, []string{backlog.LabelReady}, []string{backlog.LabelToRefine, backlog.LabelDraft, backlog.LabelAccepted})
+		return f.Label(t, []string{backlog.LabelReady}, backlog.ReadyRemoves(*is))
 	}
 	body, added, _ := backlog.Refine(is.Body, c, role)
 	if len(added) > 0 {
@@ -2414,7 +2414,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 		labels = append(labels, backlog.LabelDraft)
 		// The label a person accepts the drafts with, there to be picked
 		// from the forge's list.
-		if err := b.EnsureLabel(backlog.LabelAccepted, "0e8a16", "A person accepted the product owner's drafts: the next run moves the issue to ready"); err != nil {
+		if err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", "A person accepted what the product owner proposes here: the next run does it, and moves the issue to ready"); err != nil {
 			return err
 		}
 	}
@@ -2894,14 +2894,6 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		return nil, err
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
-	// The issues pre found waiting on a person, for the report's opening
-	// (ADR-0031).
-	var waits []backlog.Wait
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", "waits.yaml")); err == nil {
-		if err := yaml.Unmarshal(data, &waits); err != nil {
-			return nil, fmt.Errorf("in/waits.yaml: %v", err)
-		}
-	}
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change
@@ -2910,7 +2902,15 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 			return nil, fmt.Errorf("in/changes.yaml: %v", err)
 		}
 	}
-	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, waits, changes)
+	// A person's comments pre read as "revise", on the issues waiting on
+	// them (ADR-0038).
+	revise := map[int]*backlog.Answer{}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "answers.yaml")); err == nil {
+		if err := yaml.Unmarshal(data, &revise); err != nil {
+			return nil, fmt.Errorf("in/answers.yaml: %v", err)
+		}
+	}
+	p, err := backlog.Decide(b, st.Repo, role, cfg, closes, read, judged, changes, revise)
 	if err != nil {
 		return nil, err
 	}
@@ -2918,18 +2918,11 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	return p, os.WriteFile(file, data, 0o644)
 }
 
-// report writes the role's report issue, when the run did or proposes
-// something, or found a closing wrong: its body what the run did, its
-// record comment what the role did so far.
+// report writes back what the run leaves on each issue: its state, its
+// label workline:proposed, a person's comments read; and closes an old
+// report issue whose record moved to the issues (ADR-0038).
 func report(f forge.Forge, role string, p *backlog.Plan) error {
-	if !p.Changed && !slices.ContainsFunc(p.Decisions, func(d backlog.Decision) bool { return d.Mode != backlog.Off }) {
-		return nil
-	}
-	id, err := f.KeepIssue(backlog.ReportTitle(role), p.ReportBody(), true)
-	if err != nil || id == 0 {
-		return err
-	}
-	return f.Sticky(forge.Target{Kind: "issue", ID: id}, backlog.FormatRecord(p.Record), backlog.RecordMarker(role), true)
+	return p.Persist(f, role)
 }
 
 // overBudgetSummary is the summary of a gate's run whose task was over the

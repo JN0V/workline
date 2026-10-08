@@ -15,4 +15,4 @@ expect:
       - {id: 9, labels: [workline:ready], body-contains: "## Need\n\nThe monthly report counts every sale.", body-lacks: "workline:draft"}
       - {id: 9, comment-contains: "body: "}
       - {id: 10, labels: [workline:to-refine, workline:draft, workline:accepted]}
-      - {id: 11, labels: [workline:to-refine, workline:draft]}
+      - {id: 11, labels: [workline:to-refine, workline:draft, workline:proposed]}

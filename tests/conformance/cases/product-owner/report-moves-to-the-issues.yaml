@@ -1,0 +1,24 @@
+case: product-owner/report-moves-to-the-issues
+about: 'The first run after a report issue (ADR-0038): with no agent, the record on it is read once, each issue''s part moved to that issue''s state — a proposal with the label workline:proposed, an act a person may undo, an act done, the kind a closed issue was closed with —, then the report is closed with a link to the filter. Its pause, ticks and measure are not carried.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Totals wrong", body: "Totals are wrong.", author: ann, insider: true, labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Old dup", body: "Old.", closed: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 20
+        title: "Backlog — product owner"
+        body: "What the product owner did.\n\n- [x] Rename #9 <!-- workline:proposal=9/rename -->"
+        labels: []
+        comments: ["What the role did.\n\n```yaml\nclosed:\n  - {issue: 11, act: close-duplicate, level: normal}\ndone:\n  - {issue: 10, act: ready, level: normal}\nproposed:\n  - issue: 9\n    act: rename\n    line: 'Rename #9 to \"Rows lost in the CSV export\"'\n    since: \"2026-10-01\"\n    proposal: {do: rename, issue: 9, title: Rows lost in the CSV export, before: Rows lost, why: Vague.}\ndid:\n  - {issue: 10, act: ready, level: normal, day: \"2026-10-02\", line: 'Moved #10 to ready: clear.'}\nignored: 2\ncomments: 1\nmeasure: {level: normal, ticked: 3}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: report-closed, where: "#20"}]
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", labels: [workline:proposed], comment-contains: ["**Proposes**: Rename it to \"Rows lost in the CSV export\".", "act: rename", "label: workline:proposed"]}
+      - {id: 10, labels: [workline:ready], comment-contains: ["act: ready", "Moved #10 to ready: clear."]}
+      - {id: 11, comment-contains: "closed: close-duplicate"}
+      - {id: 20, closed: true, comment-contains: "keeps no report any more: what it proposes is on each issue, under its one comment there, and what waits on you is [the issues bearing `workline:proposed`](https://forge.example/issues?label=workline:proposed)"}

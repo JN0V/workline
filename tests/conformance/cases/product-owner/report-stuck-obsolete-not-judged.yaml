@@ -1,7 +1,9 @@
 case: product-owner/report-stuck-obsolete-not-judged
-about: "Stuck lists an issue announced obsolete whose delay has passed and that no second judge closed nor kept — here no agent ran —, from the day its delay ended (ADR-0031)."
+about: "The summary says stuck an issue announced obsolete whose delay has passed and that no second judge closed nor kept — here no agent ran —, from the day its delay ended (ADR-0031)."
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {close-obsolete: {mode: act}}}}}
   forge:
     issues:
       - id: 7
@@ -15,8 +17,7 @@ given:
 run: {role: product-owner, event: schedule, ai: none}
 expect:
   agent-calls: 0
-  findings: [{rule: judge-unavailable, where: "#7"}]
+  findings: [{rule: judge-unavailable, where: "#7"}, {rule: stuck, where: "#7", message: "announced obsolete, its delay past since 2026-01-08 ("}]
   forge:
     issues:
       - {id: 7, closed: false}
-      - {id: 8, title: "Backlog — product owner", body-contains: "- #7 Export drops the last row — announced obsolete, its delay past since 2026-01-08 ("}
