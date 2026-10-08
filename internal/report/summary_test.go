@@ -2,6 +2,7 @@ package report
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -83,8 +84,50 @@ func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
 	if got := short("says `"+strings.Repeat("code ", 40)+"` here", 50); strings.Count(got, "`")%2 != 0 || !strings.HasSuffix(got, "…`") {
 		t.Errorf("a code span left open: %q", got)
 	}
-	many := oneLineEach([]string{strings.Repeat("a ", 50), strings.Repeat("b ", 50), strings.Repeat("c ", 50), "d", "e"})
-	if n := len([]rune(many)); n > 150 || !strings.HasSuffix(many, "; and 2 more") {
-		t.Errorf("many findings on one line: %d characters, %q", n, many)
+	long := strings.Repeat("a ", 100)
+	for n, suffix := range map[int]string{1: "…", 3: "…", 4: "; and 1 more", 5: "; and 2 more"} {
+		l := oneLineEach(slices.Repeat([]string{long}, n))
+		if c := len([]rune(l)); c > lineMax+perLine || !strings.HasSuffix(l, suffix) || strings.Count(l, "…") != min(n, perLine) {
+			t.Errorf("%d findings on one line: %d characters, %q", n, c, l)
+		}
+	}
+}
+
+func TestEveryBacklogGroupHeaded(t *testing.T) {
+	var fs []verdict.Finding
+	for _, r := range []string{"done", "done-as-accepted", "proposed", "left-to-a-person", "asks-spent", "set-aside", "next-ready", "stuck"} {
+		fs = append(fs, verdict.Finding{Rule: r, Level: "info", Where: "#7", Message: r + " said"})
+	}
+	fs = append(fs, verdict.Finding{Rule: "done", Where: "", Message: "on no issue"})
+	for _, c := range []struct {
+		ahead          bool
+		issues, filter string
+		want           []string
+	}{
+		{false, "https://f/issues/", "https://f/q", []string{
+			"- **done alone** (2)\n  - [#7](https://f/issues/7): done said\n  - the backlog: on no issue\n",
+			"- **done, as a person accepted** (1)\n",
+			"- **proposed, waiting on a person** (1), [all that wait on a person](https://f/q)\n",
+			"- **left to a person, its rounds spent** (1), [all that wait on a person](https://f/q)\n  - [#7](https://f/issues/7): left-to-a-person said; asks-spent said\n",
+			"- **set aside by a person** (1)\n", "- **next to build** (1)\n", "- **stuck** (1)\n"}},
+		{true, "", "", []string{
+			"- **to do alone, once applied** (2)\n  - #7: done said\n",
+			"- **to do, as a person accepted** (1)\n",
+			"- **to propose, once applied** (1)\n  - #7: proposed said\n",
+			"- **left to a person, its rounds spent** (1)\n"}},
+	} {
+		s := Summary{Title: "t", Status: verdict.Pass, Findings: fs, Issues: c.issues, Waiting: c.filter}
+		if c.ahead {
+			s.Pending = 1
+		}
+		got := s.Markdown()
+		for _, w := range c.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("ahead %v: the summary lacks %q:\n%s", c.ahead, w, got)
+			}
+		}
+		if strings.Contains(got, " #7 (info)") {
+			t.Errorf("a grouped finding also listed alone:\n%s", got)
+		}
 	}
 }
