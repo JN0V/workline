@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: a59e5e6
+checked: f8fffea
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -53,7 +53,8 @@ revisions: 1                             # its drafts revised for a person's com
 ```
 
 The comment says, above the state, what the role did and proposes there,
-the state folded ("On the issue").
+the state folded ("On the issue"). The block's fence is longer than any
+run of backticks in it: a text holding a code fence is kept as written.
 
 Two carrying the marker, the last is read: on GitLab only a note's author
 edits it, so one another token wrote is left, and the state is written
