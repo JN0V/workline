@@ -11,5 +11,5 @@ expect:
     - "### workline apply"
     - "**block**"
     - "- engine-error: not a run that reached apply"
-    - "- runs-not-applied runs/first: 2 runs after it not applied"
+    - "- runs-not-applied runs/first (error): 2 runs after it not applied"
     - "workline apply runs/first runs/second runs/third"

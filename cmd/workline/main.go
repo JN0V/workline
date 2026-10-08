@@ -1184,22 +1184,36 @@ func applyCmd(args []string) int {
 		}
 	}
 	if len(dirs) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir>... | --line <route result> [--json]")
+		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir>... | --line <route result> [--json] [--summary <file>]")
 		return 64
 	}
 	res := engine.Resume(dirs[0])
-	for _, d := range dirs[1:] {
+	stopped := len(dirs) - 1 // the last run applied
+	for i, d := range dirs[1:] {
 		if res.Status != verdict.Pass {
+			stopped = i
 			break
 		}
 		next := engine.Resume(d)
 		res.Status, res.Summary, res.RunDir = next.Status, next.Summary, next.RunDir
 		res.Applied = append(res.Applied, next.Applied...)
+		res.Refused = append(res.Refused, next.Refused...)
 		res.Findings = append(res.Findings, next.Findings...)
 		res.Handoffs = append(res.Handoffs, next.Handoffs...)
 		if next.Issues != "" {
 			res.Issues, res.Waiting = next.Issues, next.Waiting
 		}
+	}
+	// The runs after the one that stopped are not applied: said, with the
+	// command that resumes them all, never left out of the job's page.
+	if left := dirs[stopped+1:]; len(left) > 0 {
+		runs := "runs"
+		if len(left) == 1 {
+			runs = "run"
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "runs-not-applied", Where: dirs[stopped], Level: "error",
+			Message: fmt.Sprintf("%d %s after it not applied; once it is fixed, resume with: workline apply %s",
+				len(left), runs, strings.Join(dirs[stopped:], " "))})
 	}
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
