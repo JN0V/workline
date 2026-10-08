@@ -337,10 +337,10 @@ func (l *Ledger) readReport(f forge.Backlog, role string, open map[int]forge.Iss
 		if !strings.Contains(notes[i].Body, RecordMarker(role)) {
 			continue
 		}
-		m := fenced.FindStringSubmatch(notes[i].Body)
-		if m == nil {
+		text, ok := yamlBlock(notes[i].Body)
+		if !ok {
 			l.Broken = fmt.Errorf("no YAML block")
-		} else if err := yaml.Unmarshal([]byte(m[1]), &old); err != nil {
+		} else if err := yaml.Unmarshal([]byte(text), &old); err != nil {
 			l.Broken = err
 		}
 		break
@@ -630,13 +630,19 @@ var slashLine = regexp.MustCompile(`(?m)^(\s*)/`)
 // edited (ADR-0038). The escape shows as the `/` it was.
 func Inert(text string) string {
 	lines := strings.Split(text, "\n")
-	fence := false
+	fence := 0 // the backticks of the fenced block the line is in; 0 outside
 	for i, l := range lines {
-		if strings.HasPrefix(strings.TrimSpace(l), "```") {
-			fence = !fence
+		t := strings.TrimSpace(l)
+		n := len(t) - len(strings.TrimLeft(t, "`"))
+		switch {
+		case fence == 0 && n >= 3:
+			fence = n
+			continue
+		case fence > 0 && n >= fence && strings.Trim(t, "`") == "":
+			fence = 0
 			continue
 		}
-		if !fence {
+		if fence == 0 {
 			lines[i] = slashLine.ReplaceAllString(l, `$1\/`)
 		}
 	}

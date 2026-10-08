@@ -98,11 +98,11 @@ func readBlock(comments []string, marker string, v any) (found bool, err error) 
 		if !strings.Contains(c, marker) {
 			continue
 		}
-		m := fenced.FindStringSubmatch(c)
-		if m == nil {
+		text, ok := yamlBlock(c)
+		if !ok {
 			return true, fmt.Errorf("no YAML block")
 		}
-		dec := yaml.NewDecoder(strings.NewReader(m[1]))
+		dec := yaml.NewDecoder(strings.NewReader(text))
 		dec.KnownFields(true)
 		return true, dec.Decode(v)
 	}
@@ -148,8 +148,10 @@ func FormatState(s State) string {
 		Revisions int               `yaml:"revisions,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions})
-	// A fence in a text the agent wrote would end the block early.
-	block := "```yaml\n" + string(unfenced(data)) + "```"
+	// A fence in a text the agent wrote must not end the block: the block's
+	// is longer than any run of backticks in it.
+	fence := fenceFor(string(data))
+	block := fence + "yaml\n" + string(data) + fence
 	say := s.say()
 	if say == "" {
 		return "What workline knows of this issue; edited by the engine, not by hand.\n\n" + block
@@ -157,32 +159,46 @@ func FormatState(s State) string {
 	return Inert(strings.ReplaceAll(say, "```", "'''")) + "\n\n<details><summary>What workline knows of this issue, edited by the engine</summary>\n\n" + block + "\n\n</details>"
 }
 
-// unfenced is a YAML document with every fence (```) in its texts made
-// ''': one the agent wrote would end the block it is kept in early.
-func unfenced(data []byte) []byte {
-	if !strings.Contains(string(data), "```") {
-		return data
-	}
-	var n yaml.Node
-	if yaml.Unmarshal(data, &n) != nil {
-		return data
-	}
-	var walk func(*yaml.Node)
-	walk = func(n *yaml.Node) {
-		if n.Kind == yaml.ScalarNode {
-			n.Value = strings.ReplaceAll(n.Value, "```", "'''")
-		}
-		for _, c := range n.Content {
-			walk(c)
+// fenceFor is a code fence longer than any run of backticks in text: three,
+// or one more than its longest run, so nothing in it closes the block.
+func fenceFor(text string) string {
+	n, run := 3, 0
+	for _, r := range text {
+		if r == '`' {
+			run++
+			n = max(n, run+1)
+		} else {
+			run = 0
 		}
 	}
-	walk(&n)
-	out, err := yaml.Marshal(&n)
-	if err != nil {
-		return data
-	}
-	return out
+	return strings.Repeat("`", n)
 }
+
+// yamlBlock is the text of the first YAML code block in a comment: its
+// fence three backticks or more, closed by the same at a line's start.
+func yamlBlock(c string) (string, bool) {
+	m := openYAML.FindStringSubmatchIndex(c)
+	if m == nil {
+		return "", false
+	}
+	fence := c[m[2]:m[3]]
+	rest := c[m[1]:]
+	for at := 0; ; {
+		k := strings.Index(rest[at:], fence)
+		if k < 0 {
+			return "", false
+		}
+		k += at
+		after := k + len(fence)
+		if (k == 0 || rest[k-1] == '\n') && (after == len(rest) || rest[after] != '`') {
+			return rest[:k], true
+		}
+		at = after
+	}
+}
+
+// openYAML opens a YAML code block: a fence of three backticks or more.
+var openYAML = regexp.MustCompile("(`{3,})yaml\n")
 
 // say is what the role's one comment on an issue tells a person, above its
 // state (ADR-0038): what it did there last, what it proposes, what it

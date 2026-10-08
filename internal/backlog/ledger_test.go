@@ -74,6 +74,29 @@ func TestDemoted(t *testing.T) {
 	}
 }
 
+// A text the agent wrote with a code fence is kept whole in the state: the
+// block's fence is longer, so nothing in it ends the block, and a draft
+// accepted later writes the text as proposed.
+func TestStateKeepsAFence(t *testing.T) {
+	v := "Run:\n\n```sh\ngo test ./...\n```\n\n````md\nfour\n````\n/close"
+	s := State{Confirmed: "abc", Label: LabelProposed, Proposed: []Pending{{Act: "refine", Line: "Refine.", Proposal: &Proposal{Do: "refine", Issue: 9, Verification: v}}}}
+	got := FormatState(s)
+	st, found, err := ReadState([]string{got + "\n\n" + StateMarker("product-owner")}, "product-owner")
+	if !found || err != nil || st.Proposed[0].Proposal.Verification != v {
+		t.Fatalf("read back: %v %v %+v\n%s", found, err, st, got)
+	}
+	// Escaped again as a comment written by the engine: the block, fenced,
+	// is left as it is.
+	if st, _, err := ReadState([]string{Inert(got) + "\n\n" + StateMarker("product-owner")}, "product-owner"); err != nil || st.Proposed[0].Proposal.Verification != v {
+		t.Errorf("a line inside the block escaped: %v\n%s", err, Inert(got))
+	}
+	// An older engine's block, three backticks, still reads.
+	old := "What workline knows.\n\n```yaml\nsources: []\nconfirmed: abc\n```\n\n" + StateMarker("product-owner")
+	if st, found, err := ReadState([]string{old}, "product-owner"); !found || err != nil || st.Confirmed != "abc" {
+		t.Errorf("an older block: %v %v %+v", found, err, st)
+	}
+}
+
 // A label's description fits GitHub's limit, 100 characters, in either
 // spelling.
 func TestProposedSaysFits(t *testing.T) {
