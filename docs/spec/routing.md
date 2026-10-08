@@ -114,9 +114,11 @@ The result lists the runs to apply, in the line's order (`pending`) — a
 step that went round, proposing a merge request a round, gives one run a
 round (docs/spec/role-contract.md, "Again");
 `workline apply --line <result>` applies them in the job that holds the token
-and no AI key, and stops at the first that does not pass. A role keeping a
-backlog decides its acts in the judging job, reading the forge only, and
-keeps that plan for the apply (docs/spec/backlog-acts.md, "On the issue").
+and no AI key, and stops at the first that does not pass, saying the runs
+left after it (`runs-not-applied`) and the command that resumes them. A role
+keeping a backlog decides its acts in the judging job, reading the forge
+only, and keeps that plan for the apply (docs/spec/backlog-acts.md, "On the
+issue").
 
 Applying runs no role, so a handoff proposed under `--no-apply` is recorded
 and not run: both steps say so (`handoff-deferred`), with the command that runs

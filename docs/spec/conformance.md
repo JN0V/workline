@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: a59e5e6
+checked: 1b41bbf
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -93,7 +93,8 @@ a `PATH` without a tool, or with a fake one first.
   `forge: gitlab`;
 - `cli: [<argument>...]` instead of `role` — `workline` with these
   arguments, as typed, in the repository: help, misuse; checked by `exit`,
-  `stdout` and `stderr` only;
+  `stdout`, `stderr`, and `summary-file` for the `workline-summary.md`
+  its arguments name;
 - `route: ready` with `item` — ask routing to move a work item;
 - `target` — the issue or merge request comments and labels go on
   (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
@@ -153,7 +154,8 @@ a `PATH` without a tool, or with a fake one first.
 - `sarif` / `code-quality` / `left-out` — with `reports`, results each report
   must hold, and the places neither may name.
 - `summary-file` / `summary-html` — with `summary`, texts the Markdown and
-  the HTML summary must hold, in this order.
+  the HTML summary must hold, in this order; with `cli`, the Markdown in
+  `workline-summary.md`.
 - `refused-kept` — how many refused answers the run folders keep.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
