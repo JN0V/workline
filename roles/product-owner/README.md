@@ -5,6 +5,12 @@ verified: agent:claude-code
 ---
 # Product owner
 
+> **Changing.** The role's design is being refocused
+> ([ADR-0038](../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
+> fewer acts on by default, one autonomy axis, proposals shown on each
+> issue with forge labels instead of a report issue. Until that is built,
+> the role still runs as this page describes.
+
 ```mermaid
 flowchart LR
   when["<b>When</b><br/>gardening (opt-in)<br/>importing a file<br/>the weekly sample"]
