@@ -1,6 +1,7 @@
 # ADR-0031: The report opens with what is next and what is stuck
 
-- **Status:** accepted
+- **Status:** accepted; partly superseded by [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+  (shown in the job's summary, no report issue)
 - **Date:** 2026-10-05
 - **Builds on:** ADR-0018 (the report issue; the order, derived, never
   stored), ADR-0021 (rounds written to a reporter), ADR-0024 (an

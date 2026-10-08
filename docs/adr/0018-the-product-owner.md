@@ -2,7 +2,8 @@
 
 - **Status:** proposed — the points under "Open" wait for the person;
   closing as obsolete built by ADR-0024, its default `act`; a tick, a
-  kind set back to act and the pause built by ADR-0025
+  kind set back to act and the pause built by ADR-0025; partly
+  superseded by [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md) (the report issue)
 - **Date:** 2026-10-03
 - **Builds on:** ADR-0014 (`checked` earned by what was read), ADR-0015
   (the weekly sample), ADR-0016 (writes go to the project's forge),
