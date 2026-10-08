@@ -144,8 +144,34 @@ it on a sandbox first.
 - **Loops**: a person's edit of a drafted section shrinks what the bot may
   rewrite, so it converges; a disagreement in comments does not, and
   needs a cap. A section a person deleted may be written again by the
-  next run (to verify in workline's code).
+  next run (verified, and fixed by ADR-0038).
 - **Labels nobody filters** rot like `needs-triage`; GitHub sends nothing
   for a label.
 - **"No" read too widely**: a proposal set aside on one issue taken as
   "never do this kind of act" turns a level off with one click.
+
+## Checked on the sandboxes
+
+Tried 2026-10-08 on gitlab.com/JN0V/workline-sandbox (Free plan) and
+github.com/JN0V/workline-sandbox, before building ADR-0038:
+
+- **GitLab quick actions**: an unknown `/word` at a line's start stays
+  text; a known one (`/label`, `/unlabel`) at a line's start runs and is
+  stripped, when a note is written **and when it is edited**, and a note
+  made only of commands is not stored. Mid-sentence, it stays text.
+  ([docs](https://docs.gitlab.com/user/project/quick_actions/))
+- **GitLab to-dos for a bot**: a project access token's user gets
+  `mentioned`, `directly_addressed` and `assigned` to-dos, readable with
+  its own token.
+- **GitHub's Actions bot**: a comment by `github-actions[bot]` with no
+  mention puts the thread unread for its subscribers, as any comment;
+  mentioning the bot does nothing (no inbox, no mention event).
+- **Scoped labels on GitLab Free do not replace each other**: with
+  `x::proposed` on, adding `x::accepted` keeps both; exclusion is a
+  Premium feature
+  ([docs](https://docs.gitlab.com/user/project/labels/#scoped-labels)).
+- **What the engine reads**: label events with actor and time (GitHub's
+  issue events; GitLab's `resource_label_events`, readable with the bot's
+  token); a comment author's rights (GitHub's `author_association`;
+  GitLab's `members/all`); 👀 on a comment (GitHub answers 200 for one
+  already there, GitLab 404 "Award Emoji Name has already been taken").

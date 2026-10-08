@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — decided, not built yet; a week's trial first
+- **Status:** accepted — built (amended below); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -62,7 +62,8 @@
 
 - An outsider's issue is never moved to `ready` alone (ADR-0021 stands).
 - An act done alone and undone by a person (`ready` taken off…) still
-  demotes that kind, as ADR-0026.
+  demotes that kind, as ADR-0026 — amended below: on that issue first,
+  everywhere after `undone-max`.
 
 ### Shown on the issue, through forge labels
 
@@ -97,7 +98,8 @@
 - **Reused, not new**: ADR-0021's bounded loop (`acts.ask.rounds`),
   extended to the project's own issues, with a revision count per issue.
 - **GitLab**: scoped labels replace each other; `proposed` gone with
-  `accepted` set is a yes, `proposed` gone alone is "not now".
+  `accepted` set is a yes, `proposed` gone alone is "not now". Amended
+  below: on the Free plan they do not, and `accepted` present is the yes.
 
 ### Who counts
 
@@ -161,3 +163,52 @@
   read), rounds spent (silence).
 - Settings that tune what is now off stay, read only when a kind is
   turned back on.
+
+## Amendment (2026-10-08): built, and two answers decided by the maintainer
+
+**`workline:accepted` present is the yes, on every plan.** GitLab Free
+keeps both scoped labels: setting `workline::accepted` does not take
+`workline::proposed` off
+([checked on the sandboxes](../research/surfacing-proposals.md#checked-on-the-sandboxes)). The role reads
+`accepted` present as the yes and takes `proposed` off itself, whatever
+the forge; either spelling of `accepted` is a yes.
+
+**An act undone is a proposal on that issue first.** A person undoing an
+act done alone — `ready` taken off, a closing reopened, a title put
+back — sets that kind back to a proposal on that issue only. The kind is
+proposed on every issue once undone `undone-max` times across the open
+issues (3 by default, 1 to 20), counted from their states: one undo
+never switches `normal` off.
+
+**What building it settled**, beyond the decision:
+
+- **One comment per issue** is the state comment the role already kept:
+  what it did, proposes and wants on top, its state folded below.
+- **The ticks and the pause go with the report**: they had no other
+  place, and no global memory is kept. A project still setting
+  `ignored-runs-max` is told it is no longer read.
+- **Off by default, by a setting each**: `changed-needs`,
+  `weekly-sample`; the other kinds by their mode. Turned on, the weekly
+  sample reads every issue's state, one forge call an issue.
+- **Labels on GitLab**: both scoped, `workline::proposed` and
+  `workline::accepted`, created by the role; elsewhere
+  `workline:proposed`, `workline:accepted`.
+- **Revise**: one revision a run, whatever the number of comments — a
+  thread between two people is one round. A comment on an issue with no
+  proposal is context, read as before, not a revision. An old state's
+  count of comments is taken as read.
+- **Slowing down**: `proposals-max` (10) issues waiting before the role
+  reads only those answered.
+- **`enterprising`** raises the caps; `ready` stays for issues with no
+  draft at every level.
+- **Reading order** (folding [#270](https://github.com/JN0V/workline/pull/270)): a person's answer first, then a
+  person's issue never read, newest first — one opened since the last run
+  read in the run that first sees it —, the catch-up of an import's or a
+  bot's issues last.
+- **Evidence from an outsider**: an act whose quote is found only in a
+  comment of someone outside the project is proposed.
+- **No quick action**: every line of text the engine writes on a forge
+  that starts with `/` is escaped, for every role.
+- **The migration** moves an old report's proposals, acts done and
+  undone, closings and acts to their issues; its pause, ticks, measure
+  and changes are dropped, the repo-wide demotion recomputed.
