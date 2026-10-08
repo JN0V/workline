@@ -127,7 +127,10 @@ func fenced(l, open string) string {
 		return open
 	}
 	for _, c := range []string{"`", "~"} {
-		if run := len(t) - len(strings.TrimLeft(t, c)); run >= 3 {
+		rest := strings.TrimLeft(t, c)
+		// A backtick fence's info string holds no backtick: "```x```" is
+		// inline code.
+		if run := len(t) - len(rest); run >= 3 && !(c == "`" && strings.Contains(rest, "`")) {
 			return strings.Repeat(c, run)
 		}
 	}

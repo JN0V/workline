@@ -83,4 +83,8 @@ func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
 	if got := short("says `"+strings.Repeat("code ", 40)+"` here", 50); strings.Count(got, "`")%2 != 0 || !strings.HasSuffix(got, "…`") {
 		t.Errorf("a code span left open: %q", got)
 	}
+	many := oneLineEach([]string{strings.Repeat("a ", 50), strings.Repeat("b ", 50), strings.Repeat("c ", 50), "d", "e"})
+	if n := len([]rune(many)); n > 150 || !strings.HasSuffix(many, "; and 2 more") {
+		t.Errorf("many findings on one line: %d characters, %q", n, many)
+	}
 }

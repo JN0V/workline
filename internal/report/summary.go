@@ -263,20 +263,24 @@ func (s Summary) issue(where string) string {
 	return where
 }
 
-// oneLineEach is an issue's findings in a group on one line of about lineMax
-// characters: each cut to its share, none left out.
+// oneLineEach is an issue's findings in a group on one line of lineMax
+// characters at most: the first perLine, each cut to its share, then how
+// many more.
 func oneLineEach(said []string) string {
-	share := max(lineMax/len(said), shareMin)
+	shown := said[:min(len(said), perLine)]
 	var out []string
-	for _, t := range said {
-		out = append(out, short(t, share))
+	for _, t := range shown {
+		out = append(out, short(t, lineMax/len(shown)))
+	}
+	if more := len(said) - len(shown); more > 0 {
+		out = append(out, fmt.Sprintf("and %d more", more))
 	}
 	return strings.Join(out, "; ")
 }
 
 const (
-	lineMax  = 120
-	shareMin = 40
+	lineMax = 120
+	perLine = 3 // findings on an issue's line, each 40 characters at least
 )
 
 // short is a text on one line, cut at a word past n characters; a code
