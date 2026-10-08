@@ -30,8 +30,8 @@ type Issue struct {
 	// MilestoneDue is its milestone's due date, YYYY-MM-DD, when it has
 	// one: the backlog's order ranks milestones by it (Milestone).
 	MilestoneDue string `json:"milestone-due,omitempty"`
-	Author    string   `json:"author,omitempty"`    // who opened it
-	Insider   bool     `json:"insider,omitempty"`   // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
+	Author       string `json:"author,omitempty"`  // who opened it
+	Insider      bool   `json:"insider,omitempty"` // its author is a person of the project (GitHub: owner, member, collaborator; GitLab: Planner or above); false when the forge does not say
 	// BlockedBy are the issues it waits on in the forge's own relation
 	// (GitHub's dependencies, GitLab's is_blocked_by), open or closed, as
 	// Issues gives them; a line in its body says the rest (ADR-0028).
@@ -67,7 +67,22 @@ type Note struct {
 	Insider bool   `json:"insider,omitempty"` // its author is a person of the project, as Issue.Insider
 	Bot     bool   `json:"bot,omitempty"`     // its author is a bot: a token's user, an app
 	Created string `json:"created,omitempty"` // when it was written, RFC 3339 or YYYY-MM-DD; "" when the forge does not say
+	// ID is the forge's own id of the comment, to put a reaction on it
+	// (React); "" when the forge does not say.
+	ID string `json:"id,omitempty"`
 }
+
+// LabelEvent is a label set on an issue, or taken off, with who did it
+// and when (ADR-0038): Author, Insider and Bot as a Note's; Created, when.
+type LabelEvent struct {
+	Label string `json:"label"`
+	Added bool   `json:"added,omitempty"` // set; false: taken off
+	Note
+}
+
+// Eyes is the reaction the role puts on a comment it read: 👀, as the
+// forges name it.
+const Eyes = "eyes"
 
 // Trail is what a forge says of an open issue since it got a label: when
 // it last got it, and the pull or merge requests and commits that name
@@ -180,6 +195,30 @@ type Backlog interface {
 	// EnsureLabel creates a label when the project has none of that name,
 	// so a person finds it in the forge's list to set.
 	EnsureLabel(name, color, description string) error
+	// LabelEvents lists the labels set on an issue and taken off, oldest
+	// first, with who did each and when; nil when the forge does not say
+	// (ADR-0038).
+	LabelEvents(id int) ([]LabelEvent, error)
+	// React puts a reaction (Eyes) on a comment of an issue, by the note's
+	// ID; one there already changes nothing, nor does a forge without
+	// reactions (ADR-0038).
+	React(id int, note, emoji string) error
+}
+
+// ScopedLabels says whether f's labels are scoped, `key::value`, as
+// GitLab's: the product owner's own labels are named so there (ADR-0038).
+func ScopedLabels(f any) bool {
+	s, ok := f.(interface{ scopedLabels() bool })
+	return ok && s.scopedLabels()
+}
+
+// LabelFilter is the address of f's open issues bearing label, a person's
+// saved filter; "" when the forge has no such page.
+func LabelFilter(f any, label string) string {
+	if l, ok := f.(interface{ labelFilter(string) string }); ok {
+		return l.labelFilter(label)
+	}
+	return ""
 }
 
 // MergeRequest is where a merge request comes from and where it goes.

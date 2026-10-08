@@ -138,11 +138,11 @@ func TestGitLabWho(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []Note{
-		{Body: "state <!-- workline:k -->", Author: "owner", Insider: true},
-		{Body: "agreed", Author: "guest"},
-		{Body: "ok", Author: "plan", Insider: true},
-		{Body: "done", Author: "project_1_bot_0a1b", Insider: true, Bot: true},
-		{Body: "me too", Author: "gone"},
+		{Body: "state <!-- workline:k -->", Author: "owner", Insider: true, ID: "1"},
+		{Body: "agreed", Author: "guest", ID: "3"},
+		{Body: "ok", Author: "plan", Insider: true, ID: "4"},
+		{Body: "done", Author: "project_1_bot_0a1b", Insider: true, Bot: true, ID: "5"},
+		{Body: "me too", Author: "gone", ID: "6"},
 	}
 	if fmt.Sprint(notes) != fmt.Sprint(want) {
 		t.Fatalf("notes:\n%+v\nwant\n%+v", notes, want)
@@ -165,6 +165,60 @@ func TestGitLabWho(t *testing.T) {
 	members = false
 	if _, err := (&gitlab{repo: t.TempDir()}).Issue(3); err == nil || !strings.Contains(err.Error(), "members") {
 		t.Fatalf("members refused: %v", err)
+	}
+}
+
+// A person's answer on an issue (ADR-0038): who set or took off a label,
+// and when, from its label events; 👀 on a note, once — GitLab's 404 for
+// an emoji already awarded is done, not a failure.
+func TestGitLabAnswers(t *testing.T) {
+	var got []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		switch {
+		case p == "/members/all":
+			json.NewEncoder(w).Encode([]map[string]any{{"username": "owner", "access_level": 50, "state": "active"}})
+		case p == "/issues/3/resource_label_events":
+			json.NewEncoder(w).Encode([]map[string]any{
+				{"action": "add", "created_at": "2026-10-08T08:36:31Z", "label": map[string]any{"name": "workline::proposed"}, "user": map[string]any{"username": "project_1_bot_0a1b"}},
+				{"action": "remove", "created_at": "2026-10-09T07:00:00Z", "label": map[string]any{"name": "workline::proposed"}, "user": map[string]any{"username": "owner"}},
+				{"action": "add", "created_at": "2026-10-09T07:01:00Z", "label": nil, "user": map[string]any{"username": "owner"}},
+			})
+		case r.Method == "POST" && p == "/issues/3/notes/12/award_emoji" && len(got) > 0:
+			http.Error(w, `{"message":"404 Award Emoji Name has already been taken"}`, http.StatusNotFound)
+		case r.Method == "POST" && p == "/issues/3/notes/12/award_emoji":
+			body, _ := io.ReadAll(r.Body)
+			form, _ := url.ParseQuery(string(body))
+			got = append(got, "POST "+p+" "+form.Get("name"))
+			w.Write([]byte(`{"name": "eyes"}`))
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "secret")
+	g := &gitlab{repo: t.TempDir()}
+	events, err := g.LabelEvents(3)
+	want := []LabelEvent{
+		{Label: "workline::proposed", Added: true, Note: Note{Author: "project_1_bot_0a1b", Bot: true, Created: "2026-10-08T08:36:31Z"}},
+		{Label: "workline::proposed", Note: Note{Author: "owner", Insider: true, Created: "2026-10-09T07:00:00Z"}},
+	}
+	if err != nil || fmt.Sprint(events) != fmt.Sprint(want) {
+		t.Fatalf("label events: %+v %v\nwant %+v", events, err, want)
+	}
+	for range 2 {
+		if err := g.React(3, "12", Eyes); err != nil {
+			t.Fatalf("react: %v", err)
+		}
+	}
+	if len(got) != 1 || got[0] != "POST /issues/3/notes/12/award_emoji eyes" {
+		t.Fatalf("react: %q", got)
+	}
+	if !ScopedLabels(g) || ScopedLabels(&github{}) {
+		t.Fatal("GitLab's labels are scoped, GitHub's are not")
 	}
 }
 

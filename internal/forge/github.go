@@ -356,7 +356,7 @@ func (g *github) Comments(t Target) ([]string, error) {
 // issue's; an app's comment (a user of type Bot) is a bot's.
 func (g *github) Notes(t Target) ([]Note, error) {
 	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments?per_page=100", t.ID),
-		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at}")
+		"--jq", ".[] | {body: (.body // \"\"), author: .user.login, association: .author_association, bot: (.user.type == \"Bot\"), created: .created_at, id: (.id | tostring)}")
 	if err != nil {
 		return nil, err
 	}
@@ -694,6 +694,48 @@ func (g *github) Ticks(id int) ([]Tick, error) {
 		before = *n.Diff
 	}
 	return ticks, nil
+}
+
+// LabelEvents reads the issue's events, labeled and unlabeled, each with
+// its actor: an app's (a user of type Bot) is a bot's; a person's write
+// access read once each, as a tick's (ADR-0038).
+func (g *github) LabelEvents(id int) ([]LabelEvent, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/events?per_page=100", id),
+		"--jq", `.[] | select(.event == "labeled" or .event == "unlabeled") | {label: .label.name, added: (.event == "labeled"), author: (.actor.login // ""), bot: (.actor.type == "Bot"), created: .created_at}`)
+	if err != nil {
+		return nil, err
+	}
+	events, err := lines[LabelEvent](out)
+	if err != nil {
+		return nil, err
+	}
+	for i := range events {
+		if e := &events[i]; e.Author != "" && !e.Bot {
+			if e.Insider, err = g.writer(e.Author); err != nil {
+				e.Author = "" // who it was is not known: never taken for a person's
+			}
+		}
+	}
+	return events, nil
+}
+
+// React puts a reaction on an issue's comment; GitHub answers 200 for one
+// there already.
+func (g *github) React(id int, note, emoji string) error {
+	if note == "" {
+		return nil
+	}
+	_, err := g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%s/reactions", note), "-f", "content="+emoji)
+	return err
+}
+
+// labelFilter is the repository's issue list filtered on the label.
+func (g *github) labelFilter(label string) string {
+	out, err := g.api("repos/{owner}/{repo}", "--jq", ".html_url")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out)) + "/issues?q=" + url.QueryEscape(fmt.Sprintf("is:open label:%q", label))
 }
 
 // writer says whether login may write to the repository: a person of the

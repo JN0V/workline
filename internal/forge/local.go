@@ -282,11 +282,18 @@ func (l *Local) Comments(t Target) ([]string, error) {
 func (l *Local) Notes(t Target) ([]Note, error) {
 	comments, err := l.Comments(t)
 	notes := make([]Note, 0, len(comments))
-	for _, c := range comments {
-		notes = append(notes, Note{Body: c, Insider: true})
+	for i, c := range comments {
+		notes = append(notes, Note{Body: c, Insider: true, ID: strconv.Itoa(i + 1)})
 	}
 	return notes, err
 }
+
+// LabelEvents: the local forge keeps no history: it does not say who set
+// a label.
+func (l *Local) LabelEvents(id int) ([]LabelEvent, error) { return nil, nil }
+
+// React: the local forge has no reactions; nothing to do.
+func (l *Local) React(id int, note, emoji string) error { return nil }
 
 // Close closes an issue; the local forge keeps no reason, the engine's
 // comment says it.
