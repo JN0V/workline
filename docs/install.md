@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: 2b82821
+checked: 1b41bbf
 judged: a8574a5
 verified: agent:documentalist
 ---

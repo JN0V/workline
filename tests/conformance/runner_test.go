@@ -122,7 +122,7 @@ type caseFile struct {
 		Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
 		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
 		Summary     string                       `yaml:"summary"`       // a text the result's summary holds
-		SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order
+		SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order; with cli, workline-summary.md
 		SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
 		Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
 		NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
@@ -478,6 +478,9 @@ func runCLI(c *caseFile, repo string, env []string) []string {
 		if !strings.Contains(stderr.String(), text) {
 			p = append(p, fmt.Sprintf("stderr lacks %q:\n%s", text, stderr.String()))
 		}
+	}
+	if len(c.Expect.SummaryFile) > 0 { // the arguments name it, as CI's templates do
+		p = append(p, compareSummaryFile(c.Expect.SummaryFile, filepath.Join(repo, "workline-summary.md"))...)
 	}
 	return p
 }

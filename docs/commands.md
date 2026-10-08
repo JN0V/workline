@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 2b82821
+checked: 1b41bbf
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -31,7 +31,10 @@ step runs and the worst verdict stands (`fail-fast`,
   applying;
 - `--line` takes the runs a `route --no-apply --json` or
   `issues import --json` result lists as `pending`;
-- `--summary`, as for `route`.
+- stops at the first run that does not pass, and says the runs left after
+  it (`runs-not-applied`), with the command that resumes them;
+- `--summary`, as for `route`: what was done on each issue, what failed,
+  what was left.
 
 ### workline gate
 

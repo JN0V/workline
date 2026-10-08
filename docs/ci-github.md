@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 2b82821
+checked: 1b41bbf
 judged: a8574a5
 verified: agent:documentalist
 ---
@@ -92,8 +92,9 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
   or the `sample.judge` setting; for another week than the last whole one,
   run the workflow by hand (Actions → workline sample → Run workflow) with
   its `week` input (`2026-W40`).
-- **The summary**: the job's summary page (`$GITHUB_STEP_SUMMARY`); a
-  fork's pull request gets it as a comment
+- **The summary**: each job's summary page (`$GITHUB_STEP_SUMMARY`), the
+  applying job's saying what it did and what failed; a fork's pull request
+  gets the judge's as a comment
   ([what a job shows](ci.md#what-a-job-shows)).
 
 ## Importing a file

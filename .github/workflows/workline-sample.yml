@@ -89,4 +89,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
-          workline sample --apply sample.json --forge github
+          status=0
+          workline sample --apply sample.json --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

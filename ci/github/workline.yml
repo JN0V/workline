@@ -160,7 +160,10 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
-          workline apply --line line.json
+          status=0
+          workline apply --line line.json --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
   follow:
     if: github.event_name == 'push'
