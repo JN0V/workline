@@ -634,8 +634,14 @@ func Inert(text string) string {
 	for i, l := range lines {
 		t := strings.TrimSpace(l)
 		n := len(t) - len(strings.TrimLeft(t, "`"))
+		indent := len(l) - len(strings.TrimLeft(l, " "))
 		switch {
-		case fence == 0 && n >= 3:
+		case indent > 3:
+			// Indented code, or a line inside a fenced block: never a
+			// fence (CommonMark).
+		case fence == 0 && n >= 3 && !strings.Contains(t[n:], "`"):
+			// A fence opens only with no backtick after it: "```x```" is
+			// inline code, its line text like any other.
 			fence = n
 			continue
 		case fence > 0 && n >= fence && strings.Trim(t, "`") == "":
