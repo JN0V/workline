@@ -75,4 +75,12 @@ func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
 	if !strings.Contains(s.HTML(), `<ul><li><a href="https://f/issues/3">#3</a>: Named`) {
 		t.Errorf("no third level nor link in the HTML:\n%s", s.HTML())
 	}
+	for _, l := range strings.Split(got, "\n") {
+		if strings.HasPrefix(l, "  - [#3]") && len([]rune(l)) > 160 {
+			t.Errorf("an issue's line not cut to its share: %d characters", len([]rune(l)))
+		}
+	}
+	if got := short("says `"+strings.Repeat("code ", 40)+"` here", 50); strings.Count(got, "`")%2 != 0 || !strings.HasSuffix(got, "…`") {
+		t.Errorf("a code span left open: %q", got)
+	}
 }

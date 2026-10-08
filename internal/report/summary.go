@@ -213,7 +213,7 @@ func (s Summary) findings(b *strings.Builder, indent string, fs []verdict.Findin
 			if _, ok := said[f.Where]; !ok {
 				order = append(order, f.Where)
 			}
-			said[f.Where] = append(said[f.Where], short(message(f)))
+			said[f.Where] = append(said[f.Where], message(f))
 		}
 		if len(order) == 0 {
 			continue
@@ -240,7 +240,7 @@ func (s Summary) findings(b *strings.Builder, indent string, fs []verdict.Findin
 				fmt.Fprintf(b, "%s  - %s\n", indent, more)
 				break
 			}
-			fmt.Fprintf(b, "%s  - %s: %s\n", indent, s.issue(where), strings.Join(said[where], "; "))
+			fmt.Fprintf(b, "%s  - %s: %s\n", indent, s.issue(where), oneLineEach(said[where]))
 		}
 	}
 	for i, f := range fs {
@@ -263,21 +263,40 @@ func (s Summary) issue(where string) string {
 	return where
 }
 
-// short is a text on one line, cut at a word past shortMax characters.
-func short(t string) string {
+// oneLineEach is an issue's findings in a group on one line of about lineMax
+// characters: each cut to its share, none left out.
+func oneLineEach(said []string) string {
+	share := max(lineMax/len(said), shareMin)
+	var out []string
+	for _, t := range said {
+		out = append(out, short(t, share))
+	}
+	return strings.Join(out, "; ")
+}
+
+const (
+	lineMax  = 120
+	shareMin = 40
+)
+
+// short is a text on one line, cut at a word past n characters; a code
+// span the cut leaves open is closed.
+func short(t string, n int) string {
 	t = oneLine(t)
 	r := []rune(t)
-	if len(r) <= shortMax {
+	if len(r) <= n {
 		return t
 	}
-	cut := string(r[:shortMax])
+	cut := string(r[:n])
 	if i := strings.LastIndex(cut, " "); i > len(cut)/2 {
 		cut = cut[:i]
 	}
-	return strings.TrimRight(cut, " ,;:.") + "…"
+	cut = strings.TrimRight(cut, " ,;:.") + "…"
+	if strings.Count(cut, "`")%2 == 1 {
+		cut += "`"
+	}
+	return cut
 }
-
-const shortMax = 120
 
 // finding is a finding's bullet: its rule, where, level and message.
 func finding(f verdict.Finding) string {

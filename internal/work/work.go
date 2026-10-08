@@ -115,20 +115,23 @@ var (
 )
 
 // fenced is the fence open after line l, given the one open before it:
-// "" outside fenced code.
+// "" outside fenced code. As CommonMark: a fence opens with three or more
+// backticks or tildes, an info string after them; it closes on a line of
+// the same character alone, as long as the opening one at least.
 func fenced(l, open string) string {
 	t := strings.TrimSpace(l)
-	for _, f := range []string{"```", "~~~"} {
-		if strings.HasPrefix(t, f) {
-			switch {
-			case open == "":
-				return f
-			case strings.HasPrefix(open, f[:1]):
-				return ""
-			}
+	if open != "" {
+		if len(t) >= len(open) && strings.Trim(t, open[:1]) == "" {
+			return ""
+		}
+		return open
+	}
+	for _, c := range []string{"`", "~"} {
+		if run := len(t) - len(strings.TrimLeft(t, c)); run >= 3 {
+			return strings.Repeat(c, run)
 		}
 	}
-	return open
+	return ""
 }
 
 // NoResponse is what an issue form writes for a field left empty.
