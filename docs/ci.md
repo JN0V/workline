@@ -117,7 +117,8 @@ In short:
   opens with what you have to do — the boxes to tick, a warning a run
   before it pauses —, then what is next and what is stuck past
   `stuck-days` (14)
-  ([ADR-0031](adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md));
+  ([ADR-0031](adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md);
+  changing: [ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md));
 - it refines issues to `ready`, drafts labelled `workline:draft`; the label
   `workline:accepted`, on one issue or many from the list, moves them to
   `ready` at the next run, with no agent;

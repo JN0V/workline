@@ -45,7 +45,8 @@ Adopts this repository; run it again to do what is left.
 - Asks whether a person is the project's Product Owner (`--human-po
   yes|no` answers with no terminal): yes sets the product owner to
   `autonomy: cautious`
-  ([ADR-0026](adr/0026-the-product-owners-autonomy-is-a-level.md)),
+  ([ADR-0026](adr/0026-the-product-owners-autonomy-is-a-level.md);
+  changing: [ADR-0038](adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)),
   unless the project set a level.
 
 ## workline doctor

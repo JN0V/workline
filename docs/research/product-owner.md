@@ -293,7 +293,7 @@ In the ecosystem's words: *dependency dashboard*, *checkbox*, *task list*,
 | GitLab | a system note per box, "marked the checklist item **…** as completed" (or "incomplete"), written for a tick on the page and for a description changed through the API alike, the item's markdown escaped (`\#`, `\=`) and a hidden comment's text kept without its `<!--`/`-->` — read live on gitlab.com; a box added already ticked writes none | the note's author | — |
 | [Dependabot](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/troubleshoot-dependency-security/dependabot-updates-stopped) | — | — | pauses a repository where a pull request of its stayed open 90 days and no person merged or closed one, changed its config or ran it; no pull request opened while paused; any of those resumes it |
 
-**Decision** (ADR-0025): a box in the report carries a hidden key; a
+**Decision** (ADR-0025; changed by ADR-0038): a box in the report carries a hidden key; a
 person of the project's tick — by the forge's own record of who ticked it
 — is done at the next run, as the record keeps the act; a bot's, an
 outsider's or an unknown author's is said and not done, stricter than
@@ -346,7 +346,7 @@ reads that day from the tracker's own history, not from a copy it keeps.
 A link counts when it is newer than the state: #79 shows an older
 reference that started nothing.
 
-**Decision** (ADR-0031): the report opens with **Next** — the first N
+**Decision** (ADR-0031; changed by ADR-0038): the report opens with **Next** — the first N
 ready issues of the order, waiting on nothing — and **Stuck** — each
 issue waiting on a person past D days, with since when —, rebuilt from
 the forge's dates at each run, nothing stored but the day a proposal
