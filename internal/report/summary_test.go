@@ -81,13 +81,13 @@ func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
 			t.Errorf("an issue's line not cut to its share: %d characters", len([]rune(l)))
 		}
 	}
-	if got := short("says `"+strings.Repeat("code ", 40)+"` here", 50); strings.Count(got, "`")%2 != 0 || !strings.HasSuffix(got, "…`") {
+	if got := short("says `"+strings.Repeat("code ", 40)+"` here", 50); strings.Count(got, "`")%2 != 0 || !strings.HasSuffix(got, "…`") || len([]rune(got)) > 50 {
 		t.Errorf("a code span left open: %q", got)
 	}
 	long := strings.Repeat("a ", 100)
 	for n, suffix := range map[int]string{1: "…", 3: "…", 4: "; and 1 more", 5: "; and 2 more"} {
 		l := oneLineEach(slices.Repeat([]string{long}, n))
-		if c := len([]rune(l)); c > lineMax+perLine || !strings.HasSuffix(l, suffix) || strings.Count(l, "…") != min(n, perLine) {
+		if c := len([]rune(l)); c > lineMax || !strings.HasSuffix(l, suffix) || strings.Count(l, "…") != min(n, perLine) {
 			t.Errorf("%d findings on one line: %d characters, %q", n, c, l)
 		}
 	}

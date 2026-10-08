@@ -263,9 +263,9 @@ func (s Summary) issue(where string) string {
 	return where
 }
 
-// oneLineEach is an issue's findings in a group on one line of about
-// lineMax characters — a cut's "…" and a code span closed aside: the first
-// perLine, each cut to its share, then how many more.
+// oneLineEach is an issue's findings in a group on one line of at most
+// lineMax characters: the first perLine, each cut to its share, then how
+// many more.
 func oneLineEach(said []string) string {
 	shown := said[:min(len(said), perLine)]
 	budget := lineMax - 2*(len(shown)-1) // "; " between
@@ -286,18 +286,18 @@ func oneLineEach(said []string) string {
 
 const (
 	lineMax = 120
-	perLine = 3 // findings on an issue's line, each about 35 characters at least
+	perLine = 3 // findings on an issue's line, each 35 characters at least
 )
 
-// short is a text on one line, cut at a word past n characters; a code
-// span the cut leaves open is closed.
+// short is a text on one line of n characters at most, cut at a word, its
+// "…" and a code span the cut leaves open closed counted in.
 func short(t string, n int) string {
 	t = oneLine(t)
 	r := []rune(t)
 	if len(r) <= n {
 		return t
 	}
-	cut := string(r[:n])
+	cut := string(r[:max(n-2, 1)])
 	if i := strings.LastIndex(cut, " "); i > len(cut)/2 {
 		cut = cut[:i]
 	}
