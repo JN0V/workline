@@ -1,6 +1,8 @@
 package report
 
 import (
+	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -44,5 +46,88 @@ func TestHTMLSummaryEscapesAndNests(t *testing.T) {
 		"</li><li>to apply: 2 runs, by the job that holds the write token (<code>workline apply</code>)</li></ul>\n</section>\n"
 	if got != want {
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
+	var fs []verdict.Finding
+	for i := 1; i <= 12; i++ {
+		fs = append(fs, verdict.Finding{Rule: "proposed", Level: "info", Where: fmt.Sprintf("#%d", i), Message: "Label it ready."})
+	}
+	fs = append(fs,
+		verdict.Finding{Rule: "done", Level: "info", Where: "#3", Message: "Named the code #3 is about: a.go."},
+		verdict.Finding{Rule: "done", Level: "info", Where: "#3", Message: "Refined #3: Scope. " + strings.Repeat("why ", 40)},
+		verdict.Finding{Rule: "sources-unknown", Where: "#4", Message: "no file"})
+	s := Summary{Title: "apply", Status: verdict.Pass, Findings: fs, Issues: "https://f/issues/", Waiting: "https://f/issues?label=p"}
+	got := s.Markdown()
+	for _, want := range []string{
+		"- **done alone** (1)\n  - [#3](https://f/issues/3): Named the code #3 is about: a.go.; Refined #3: Scope. why why",
+		"- **proposed, waiting on a person** (12), [all that wait on a person](https://f/issues?label=p)\n  - [#1](https://f/issues/1): Label it ready.\n",
+		"  - [#10](https://f/issues/10): Label it ready.\n  - and 2 more: [all that wait on a person](https://f/issues?label=p)\n",
+		"- sources-unknown #4: no file\n",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the summary lacks %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "#11](") || strings.Count(got, "why") > 30 {
+		t.Errorf("a group or a line not capped:\n%s", got)
+	}
+	if !strings.Contains(s.HTML(), `<ul><li><a href="https://f/issues/3">#3</a>: Named`) {
+		t.Errorf("no third level nor link in the HTML:\n%s", s.HTML())
+	}
+	for _, l := range strings.Split(got, "\n") {
+		if strings.HasPrefix(l, "  - [#3]") && len([]rune(l)) > 160 {
+			t.Errorf("an issue's line not cut to its share: %d characters", len([]rune(l)))
+		}
+	}
+	if got := short("says `"+strings.Repeat("code ", 40)+"` here", 50); strings.Count(got, "`")%2 != 0 || !strings.HasSuffix(got, "…`") || len([]rune(got)) > 50 {
+		t.Errorf("a code span left open: %q", got)
+	}
+	long := strings.Repeat("a ", 100)
+	for n, suffix := range map[int]string{1: "…", 3: "…", 4: "; and 1 more", 5: "; and 2 more"} {
+		l := oneLineEach(slices.Repeat([]string{long}, n))
+		if c := len([]rune(l)); c > lineMax || !strings.HasSuffix(l, suffix) || strings.Count(l, "…") != min(n, perLine) {
+			t.Errorf("%d findings on one line: %d characters, %q", n, c, l)
+		}
+	}
+}
+
+func TestEveryBacklogGroupHeaded(t *testing.T) {
+	var fs []verdict.Finding
+	for _, r := range []string{"done", "done-as-accepted", "proposed", "left-to-a-person", "asks-spent", "set-aside", "next-ready", "stuck"} {
+		fs = append(fs, verdict.Finding{Rule: r, Level: "info", Where: "#7", Message: r + " said"})
+	}
+	fs = append(fs, verdict.Finding{Rule: "done", Where: "", Message: "on no issue"})
+	for _, c := range []struct {
+		ahead          bool
+		issues, filter string
+		want           []string
+	}{
+		{false, "https://f/issues/", "https://f/q", []string{
+			"- **done alone** (2)\n  - [#7](https://f/issues/7): done said\n  - the backlog: on no issue\n",
+			"- **done, as a person accepted** (1)\n",
+			"- **proposed, waiting on a person** (1), [all that wait on a person](https://f/q)\n",
+			"- **left to a person, its rounds spent** (1), [all that wait on a person](https://f/q)\n  - [#7](https://f/issues/7): left-to-a-person said; asks-spent said\n",
+			"- **set aside by a person** (1)\n", "- **next to build** (1)\n", "- **stuck** (1)\n"}},
+		{true, "", "", []string{
+			"- **to do alone, once applied** (2)\n  - #7: done said\n",
+			"- **to do, as a person accepted** (1)\n",
+			"- **to propose, once applied** (1)\n  - #7: proposed said\n",
+			"- **left to a person, its rounds spent** (1)\n"}},
+	} {
+		s := Summary{Title: "t", Status: verdict.Pass, Findings: fs, Issues: c.issues, Waiting: c.filter}
+		if c.ahead {
+			s.Pending = 1
+		}
+		got := s.Markdown()
+		for _, w := range c.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("ahead %v: the summary lacks %q:\n%s", c.ahead, w, got)
+			}
+		}
+		if strings.Contains(got, " #7 (info)") {
+			t.Errorf("a grouped finding also listed alone:\n%s", got)
+		}
 	}
 }

@@ -85,7 +85,13 @@ type Result struct {
 	// its own (ADR-0013's amendment).
 	Pending      []string `json:"pending,omitempty"`
 	MergeRequest int      `json:"merge-request,omitempty"` // the merge request the patches went to
-	maxTokens    int      // the role's ai-max-tokens: what the run may spend; 0, no cap
+	// Issues and Waiting are a role keeping a backlog's links, for the
+	// job's summary (ADR-0038): the address of the forge's issues, an
+	// issue's number after it making its page; the saved filter of what
+	// waits on a person, workline:proposed.
+	Issues    string `json:"issues,omitempty"`
+	Waiting   string `json:"waiting,omitempty"`
+	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
 	proposed     []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
 	capped       bool     // a call was refused, the run having spent maxTokens
 	partRefused  []string // what the parts answered and may not: refused with them
@@ -272,6 +278,11 @@ func run(o Options, res *Result) error {
 	res.maxTokens = intSetting(r.MergedSettings(cfg), "ai-max-tokens")
 	if o.Forge == "" {
 		o.Forge = cfg.Forge
+	}
+	if slices.ContainsFunc(r.Intentions, func(k string) bool { return slices.Contains(backlog.Kinds, k) }) {
+		if f, err := forge.Open(o.Forge, o.Repo); err == nil {
+			links(f, res) // its summary names issues: each linked to its page
+		}
 	}
 	releaseFrom := releaseRequest(r, &o, res)
 	env := scriptEnv(runDir, r.Name, o)
@@ -520,6 +531,14 @@ func run(o Options, res *Result) error {
 		for _, in := range intents {
 			if in.Kind == "handoff" {
 				res.Findings = append(res.Findings, deferred(r.Name, in.Value))
+			}
+		}
+		// A role keeping a backlog decides its acts now, as the job that
+		// applies them will do them: the summary says what will be done
+		// alone and what proposed (ADR-0038). Reading only.
+		if keeps && !onBlock {
+			if err := planAhead(r, settings, st, runDir, intents, res); err != nil {
+				return err
 			}
 		}
 		// Judged here, the fix is not on the release pull request: it waits.
@@ -970,6 +989,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	if plan != nil {
 		res.Findings = append(res.Findings, plan.Findings...)
+		links(f, res)
 		if err := report(f, r.Name, plan); errors.Is(err, forge.ErrUnreachable) {
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while writing back what the run left on the issues; resume with: workline apply %s", runDir)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
@@ -2916,6 +2936,38 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	}
 	data, _ := yaml.Marshal(p)
 	return p, os.WriteFile(file, data, 0o644)
+}
+
+// planAhead decides a run's acts on the backlog when it is judged and not
+// applied (NoApply), reading the forge only: the plan is kept in the run
+// folder, so the job that applies does what the judge's summary says. A
+// forge that cannot be read is said; the apply decides then.
+func planAhead(r *role.Role, settings map[string]any, st runState, runDir string, intents []intent.Intention, res *Result) error {
+	f, err := forge.Open(st.Forge, st.Repo)
+	if err != nil {
+		return err
+	}
+	plan, err := planActs(f, r, settings, st, runDir, intents)
+	if errors.Is(err, forge.ErrUnreachable) {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "plan-unread", Level: "warn",
+			Message: "the backlog could not be read to say what will be done and proposed (" + err.Error() + "): the job that applies decides it"})
+		return nil
+	}
+	if err != nil || plan == nil {
+		return err
+	}
+	res.Findings = append(res.Findings, plan.Findings...)
+	return nil
+}
+
+// links gives the job's summary the forge's addresses: each issue's page,
+// the saved filter of what waits on a person (ADR-0038).
+func links(f forge.Forge, res *Result) {
+	if f == nil || res.Issues != "" {
+		return
+	}
+	res.Issues = forge.IssuePages(f)
+	res.Waiting = forge.LabelFilter(f, backlog.ProposedLabel(f))
 }
 
 // report writes back what the run leaves on each issue: its state, its

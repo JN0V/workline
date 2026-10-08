@@ -32,12 +32,16 @@ type Summary struct {
 	Refused        []string
 	Pending        int // runs judged and not applied yet
 	NothingToApply bool
+	// Issues and Waiting link the issues a backlog's findings name, and the
+	// saved filter of what waits on a person (engine.Result's).
+	Issues, Waiting string
 }
 
 // Step is one step of a line: its verdict, and the findings it made.
 type Step struct {
 	Name, Status, Text string
 	Findings           []verdict.Finding
+	ToApply            bool // judged, not applied: its acts are what will be done
 }
 
 type stepCall struct {
@@ -57,6 +61,10 @@ func LineSummary(title string, r *line.Result) Summary {
 		}
 		if st.Result != nil {
 			step.Text, step.Findings = st.Result.Summary, st.Result.Findings
+			step.ToApply = st.Result.ToApply || len(st.Result.Pending) > 0
+			if st.Result.Issues != "" {
+				s.Issues, s.Waiting = st.Result.Issues, st.Result.Waiting
+			}
 			for _, c := range st.Result.Calls {
 				s.Calls = append(s.Calls, stepCall{st.Name, c})
 			}
@@ -75,7 +83,8 @@ func LineSummary(title string, r *line.Result) Summary {
 
 // RoleSummary is the summary of one role's run, or of runs applied.
 func RoleSummary(title, role string, r *engine.Result) Summary {
-	s := Summary{Title: title, Status: r.Status, Text: r.Summary, Findings: r.Findings, Applied: r.Applied, Refused: r.Refused}
+	s := Summary{Title: title, Status: r.Status, Text: r.Summary, Findings: r.Findings, Applied: r.Applied, Refused: r.Refused,
+		Issues: r.Issues, Waiting: r.Waiting}
 	for _, c := range r.Calls {
 		s.Calls = append(s.Calls, stepCall{role, c})
 	}
@@ -128,13 +137,9 @@ func (s Summary) Markdown() string {
 			b.WriteString(" — " + oneLine(st.Text))
 		}
 		b.WriteString("\n")
-		for _, f := range st.Findings {
-			b.WriteString("  " + finding(f))
-		}
+		s.findings(&b, "  ", st.Findings, st.ToApply)
 	}
-	for _, f := range s.Findings {
-		b.WriteString(finding(f))
-	}
+	s.findings(&b, "", s.Findings, s.Pending > 0)
 	for _, r := range s.Reads {
 		fmt.Fprintf(&b, "- read, %s: %s\n", r[0], r[1])
 	}
@@ -170,6 +175,137 @@ func (s Summary) Markdown() string {
 	}
 	b.WriteString("\n")
 	return b.String()
+}
+
+// A group of a backlog's findings, one line an issue under its heading
+// (ADR-0038): what was done or will be, what waits on a person.
+type group struct {
+	rules       []string
+	done, ahead string // the heading once applied, and when judged only
+	waiting     bool   // linked to the saved filter of what waits on a person
+}
+
+var groups = []group{
+	{[]string{"done"}, "done alone", "to do alone, once applied", false},
+	{[]string{"done-as-accepted"}, "done, as a person accepted", "to do, as a person accepted", false},
+	{[]string{"proposed"}, "proposed, waiting on a person", "to propose, once applied", true},
+	{[]string{"left-to-a-person", "asks-spent"}, "left to a person, its rounds spent", "left to a person, its rounds spent", true},
+	{[]string{"set-aside"}, "set aside by a person", "set aside by a person", false},
+	{[]string{"next-ready"}, "next to build", "next to build", false},
+	{[]string{"stuck"}, "stuck", "stuck", false},
+}
+
+// groupMax is how many issues a group lists; "and N more" after.
+const groupMax = 10
+
+// findings writes a list of findings: a backlog's grouped first, one line
+// an issue, linked, the rest a bullet each, in their order.
+func (s Summary) findings(b *strings.Builder, indent string, fs []verdict.Finding, ahead bool) {
+	grouped := map[int]bool{}
+	for _, g := range groups {
+		var order []string
+		said := map[string][]string{}
+		for i, f := range fs {
+			if !contains(g.rules, f.Rule) {
+				continue
+			}
+			grouped[i] = true
+			if _, ok := said[f.Where]; !ok {
+				order = append(order, f.Where)
+			}
+			said[f.Where] = append(said[f.Where], message(f))
+		}
+		if len(order) == 0 {
+			continue
+		}
+		head := g.done
+		if ahead {
+			head = g.ahead
+		}
+		filter := ""
+		if g.waiting && s.Waiting != "" {
+			filter = "[all that wait on a person](" + s.Waiting + ")"
+		}
+		fmt.Fprintf(b, "%s- **%s** (%d)", indent, head, len(order))
+		if filter != "" {
+			b.WriteString(", " + filter)
+		}
+		b.WriteString("\n")
+		for i, where := range order {
+			if i == groupMax {
+				more := fmt.Sprintf("and %d more", len(order)-groupMax)
+				if filter != "" {
+					more += ": " + filter
+				}
+				fmt.Fprintf(b, "%s  - %s\n", indent, more)
+				break
+			}
+			fmt.Fprintf(b, "%s  - %s: %s\n", indent, s.issue(where), oneLineEach(said[where]))
+		}
+	}
+	for i, f := range fs {
+		if !grouped[i] {
+			b.WriteString(indent + finding(f))
+		}
+	}
+}
+
+var issueRef = regexp.MustCompile(`^#(\d+)$`)
+
+// issue is where a finding is, linked to its page when it is an issue.
+func (s Summary) issue(where string) string {
+	if m := issueRef.FindStringSubmatch(where); m != nil && s.Issues != "" {
+		return "[" + where + "](" + s.Issues + m[1] + ")"
+	}
+	if where == "" {
+		return "the backlog"
+	}
+	return where
+}
+
+// oneLineEach is an issue's findings in a group on one line of at most
+// lineMax characters: the first perLine, each cut to its share, then how
+// many more.
+func oneLineEach(said []string) string {
+	shown := said[:min(len(said), perLine)]
+	budget := lineMax - 2*(len(shown)-1) // "; " between
+	more := ""
+	if n := len(said) - len(shown); n > 0 {
+		more = fmt.Sprintf("and %d more", n)
+		budget -= len(more) + 2
+	}
+	var out []string
+	for _, t := range shown {
+		out = append(out, short(t, budget/len(shown)))
+	}
+	if more != "" {
+		out = append(out, more)
+	}
+	return strings.Join(out, "; ")
+}
+
+const (
+	lineMax = 120
+	perLine = 3 // findings on an issue's line, the rest counted
+)
+
+// short is a text on one line of n characters at most, cut at a word, its
+// "…" and a code span the cut leaves open closed counted in.
+func short(t string, n int) string {
+	t = oneLine(t)
+	r := []rune(t)
+	if len(r) <= n {
+		return t
+	}
+	cut := string(r[:max(n-2, 1)])
+	if i := strings.LastIndex(cut, " "); i > len(cut)/2 {
+		cut = cut[:i]
+	}
+	cut = strings.TrimRight(cut, " ,;:.") + "…"
+	if strings.Count(cut, "`")%2 == 1 {
+		cut += "`"
+	}
+	return cut
 }
 
 // finding is a finding's bullet: its rule, where, level and message.
@@ -213,6 +349,7 @@ func contains(l []string, s string) bool {
 var (
 	bold = regexp.MustCompile(`\*\*(.+?)\*\*`)
 	code = regexp.MustCompile("`([^`]+)`")
+	link = regexp.MustCompile(`\[([^\]]+)\]\((https?://[^)\s]+)\)`)
 )
 
 // HTML renders the summary's Markdown as a page a browser shows, for a CI
@@ -221,7 +358,7 @@ var (
 func (s Summary) HTML() string {
 	var b strings.Builder
 	inline := func(t string) string {
-		t = html.EscapeString(t)
+		t = link.ReplaceAllString(html.EscapeString(t), `<a href="$2">$1</a>`)
 		return code.ReplaceAllString(bold.ReplaceAllString(t, "<strong>$1</strong>"), "<code>$1</code>")
 	}
 	depth := 0
@@ -233,10 +370,9 @@ func (s Summary) HTML() string {
 	b.WriteString("<section>\n")
 	for _, l := range strings.Split(strings.TrimRight(s.Markdown(), "\n"), "\n") {
 		d, item := 0, ""
-		if x, ok := strings.CutPrefix(l, "  - "); ok {
-			d, item = 2, x
-		} else if x, ok := strings.CutPrefix(l, "- "); ok {
-			d, item = 1, x
+		trimmed := strings.TrimLeft(l, " ")
+		if x, ok := strings.CutPrefix(trimmed, "- "); ok {
+			d, item = (len(l)-len(trimmed))/2+1, x
 		}
 		switch {
 		case d > depth:

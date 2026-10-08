@@ -1,0 +1,30 @@
+case: product-owner/summary-judged-says-what-will-be-done
+about: "Judged and not applied (--no-apply, CI's first job), the job's summary still says the night (ADR-0038): what will be done alone, what proposed, what is next, one line an issue linked to its page, grouped, the filter of what waits on a person linked; the forge is only read."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", body: "WriteRows loses rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 20, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:level-acts, no-apply: true, summary: true}
+expect:
+  status: pass
+  summary-file:
+    - "**pass** — judged, not applied"
+    - "- **to do alone, once applied** (1)\n  - [#11](https://forge.example/issues/11): Named the code #11 is about: src/export/csv.go."
+    - "- **to propose, once applied** (1), [all that wait on a person](https://forge.example/issues?label=workline:proposed)\n  - [#12](https://forge.example/issues/12): Close it as a duplicate of #7"
+    - "- **next to build** (1)\n  - [#20](https://forge.example/issues/20): Export in JSON — no milestone, no priority; next to build"
+  summary-html:
+    - "<li><strong>to propose, once applied</strong> (1), <a href=\"https://forge.example/issues?label=workline:proposed\">all that wait on a person</a><ul><li><a href=\"https://forge.example/issues/12\">#12</a>: Close it as a duplicate of #7"
+  forge:
+    issues:
+      - {id: 12, closed: false, labels: [], comments: 1}
+      - {id: 11, comment-lacks: "sources: [src/export/csv.go]"}

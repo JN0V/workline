@@ -234,6 +234,9 @@ func (f *Fake) labelFilter(label string) string {
 	return "https://forge.example/issues?label=" + label
 }
 
+// issuePages: the address of the simulated forge's issues.
+func (f *Fake) issuePages() string { return "https://forge.example/issues/" }
+
 func (f *Fake) Close(id, dup int) error {
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(Target{Kind: "issue", ID: id})

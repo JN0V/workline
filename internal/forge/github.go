@@ -662,6 +662,15 @@ func (g *github) labelFilter(label string) string {
 	return strings.TrimSpace(string(out)) + "/issues?q=" + url.QueryEscape(fmt.Sprintf("is:open label:%q", label))
 }
 
+// issuePages is the address of the repository's issues.
+func (g *github) issuePages() string {
+	out, err := g.api("repos/{owner}/{repo}", "--jq", ".html_url")
+	if err != nil || strings.TrimSpace(string(out)) == "" {
+		return ""
+	}
+	return strings.TrimSpace(string(out)) + "/issues/"
+}
+
 // writer says whether login may write to the repository: a person of the
 // project, as an author association of owner, member or collaborator.
 func (g *github) writer(login string) (bool, error) {

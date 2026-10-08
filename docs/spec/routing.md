@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 886cdff
+checked: 87a41be
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -114,7 +114,9 @@ The result lists the runs to apply, in the line's order (`pending`) — a
 step that went round, proposing a merge request a round, gives one run a
 round (docs/spec/role-contract.md, "Again");
 `workline apply --line <result>` applies them in the job that holds the token
-and no AI key, and stops at the first that does not pass.
+and no AI key, and stops at the first that does not pass. A role keeping a
+backlog decides its acts in the judging job, reading the forge only, and
+keeps that plan for the apply (docs/spec/backlog-acts.md, "On the issue").
 
 Applying runs no role, so a handoff proposed under `--no-apply` is recorded
 and not run: both steps say so (`handoff-deferred`), with the command that runs
@@ -127,7 +129,9 @@ On a forge, the state of a work item is a label (`workline:ready`,
 is the `state:` line of the item's file in `.workline/work/<id>.md`, whose
 `## Need`, `## Verification`, `## Validation` and `## Scope` sections
 `workline item ready <id>` checks before moving it — `### ` headings too,
-as an issue form writes them, a field left `_No response_` empty. Either way, a state changes only through the
+as an issue form writes them, a field left `_No response_` empty, a
+footer after the last section left out (docs/spec/backlog-acts.md, "A
+body's footer"). Either way, a state changes only through the
 engine, one transition at a time, and each transition is logged. *Built so far:
 the move to `ready`, and its check; transitions are not logged yet.*
 

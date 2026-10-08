@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 17ca434
+checked: 2b82821
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -32,13 +32,22 @@ action, on a comment or an edit.
 ## In the CI job's summary
 
 Each night ([ADR-0035](../../../docs/adr/0035-the-engine-writes-the-jobs-summary.md)),
-read-only, one line an issue:
+read-only, grouped, one line an issue linked to its page:
 
-- `done`, `done-as-accepted`: what it did alone, and on your yes;
-- `proposed`: what waits on you;
-- `set-aside`, `left-to-a-person`: your "not now", the rounds spent;
-- `next-ready`: the first ready issues of the order;
-- `stuck`: what waits on a person past `stuck-days`.
+- **done alone**, **done, as a person accepted**: what it did alone, and
+  on your yes;
+- **proposed, waiting on a person**: what waits on you;
+- **left to a person**, **set aside by a person**: the rounds spent, your
+  "not now";
+- **next to build**: the first ready issues of the order;
+- **stuck**: what waits on a person past `stuck-days`.
+
+Each group lists 10 issues, then "and N more"; the waiting groups link
+the saved filter on `workline:proposed`.
+
+The judging job, which writes nothing (`--no-apply`), decides the acts
+already and says them: "to do alone, once applied", "to propose, once
+applied". The applying job does exactly that plan.
 
 `--json`, `--sarif`, `--code-quality` like any role.
 

@@ -17,7 +17,7 @@ given:
 run: {role: product-owner, event: schedule, ai: none, summary: true}
 expect:
   agent-calls: 0
-  summary-file: ["next-ready #14 (info): next to build, ready and waiting on no open issue: Export in JSON — milestone v1.0, priority 2", "next-ready #13 (info): next to build, ready and waiting on no open issue: Keep the last row in the CSV export — no milestone, priority 3"]
+  summary-file: ["- **next to build** (2)\n  - [#14](https://forge.example/issues/14): Export in JSON — milestone v1.0, priority 2; next to build: ready, waiting on no open issue\n  - [#13](https://forge.example/issues/13): Keep the last row in the CSV export — no milestone, priority 3; next to build"]
   no-findings:
     - {rule: next-ready, where: "#15"}
     - {rule: next-ready, where: "#12"}

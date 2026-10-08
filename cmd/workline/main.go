@@ -1197,6 +1197,9 @@ func applyCmd(args []string) int {
 		res.Applied = append(res.Applied, next.Applied...)
 		res.Findings = append(res.Findings, next.Findings...)
 		res.Handoffs = append(res.Handoffs, next.Handoffs...)
+		if next.Issues != "" {
+			res.Issues, res.Waiting = next.Issues, next.Waiting
+		}
 	}
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("apply", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)

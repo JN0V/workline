@@ -1,0 +1,31 @@
+case: product-owner/summary-applied-does-what-the-judge-said
+about: "The acts a judged run decided are kept in its folder: the job that applies does them as the judge's summary said, and adds to the page what was done alone and what was proposed (ADR-0038)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", body: "WriteRows loses rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:level-acts, no-apply: true, summary: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 1
+  summary-file:
+    - "- **to do alone, once applied** (1)\n  - [#11](https://forge.example/issues/11)"
+    - "- **to propose, once applied** (1)"
+    - "### workline apply"
+    - "- **done alone** (1)\n  - [#11](https://forge.example/issues/11): Named the code #11 is about: src/export/csv.go."
+    - "- **proposed, waiting on a person** (1), [all that wait on a person](https://forge.example/issues?label=workline:proposed)\n  - [#12](https://forge.example/issues/12): Close it as a duplicate of #7"
+  run-files:
+    out/acts.yaml: {contains: "mode: propose"}
+  forge:
+    issues:
+      - {id: 12, closed: false, labels: [workline:proposed], comment-contains: "**Proposes**: Close it as a duplicate of #7"}
+      - {id: 11, comment-contains: "sources: [src/export/csv.go]"}

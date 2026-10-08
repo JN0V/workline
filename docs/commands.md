@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: a59e5e6
+checked: 2b82821
 verified: agent:claude-code
 ---
 # The commands, in detail
