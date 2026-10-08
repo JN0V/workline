@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 51beb76
+checked: 10299ab
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -435,8 +435,9 @@ what it can and asks for the rest:
 
 A body's footer belongs to no section (`work.Footer`): what a tool or a
 person appends after the last section is not the Scope's text. It is,
-outside fenced code (CommonMark's fences: a line of three or more
-backticks or tildes alone closes one opened with as many or fewer):
+outside fenced code (CommonMark's fences: three or more backticks or
+tildes open one, a backtick fence's info string holding no backtick; a
+line of the same character alone, as long or longer, closes it):
 
 - from a **thematic break** (`---`, `***`, `___`, CommonMark's, a blank
   line above it, so not a heading's underline) after the last heading, to
@@ -873,8 +874,9 @@ written and when it is edited.
 It groups them (`report.Summary`): one heading a group — done alone,
 done as a person accepted, proposed, left to a person (`left-to-a-person`,
 `asks-spent`), set aside, next, stuck —, under it one line an issue, its
-findings joined, each cut at a word to its share of 120 characters (40
-at least; a code span the cut leaves open closed), the issue linked to its page
+first three findings joined, each cut at a word to its share of 120
+characters (a code span the cut leaves open closed), then "and N more";
+the issue linked to its page
 (`forge.IssuePages`); 10 issues a group, then "and N more"; the groups
 waiting on a person link the filter on the label (`forge.LabelFilter`).
 The other findings follow, a line each.
