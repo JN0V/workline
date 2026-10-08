@@ -88,7 +88,7 @@ Each measure's story is in tried.md.
    CI, judged then applied (a round takes two nights, untried).
 2. **The developer's loop** (#117): a handoff to the developer, five rounds,
    then `human`; `judge-at-least: model` for the developer's merge requests,
-   `context` for a person's, told apart by the author (#81).
+   `context` for a person's, told apart by the author.
 3. **Measured** (#90): step 1 done, once, Sonnet finding and Opus judging
    (tried.md, 2026-10-06): correctness found 3 of 3 with nothing false
    shown; edge cases found 3 of 3 but one was sent outside the change
@@ -100,7 +100,7 @@ Each measure's story is in tried.md.
    lenses in doubt. Not measured yet: the
    finder floor's worth (a run with `finder-floor: false`), five runs a
    case (ADR-0014).
-4. **Inline comments** on the forge's own review (#81: the bot's identity).
+4. **Inline comments** on the forge's own review (#277).
 5. **Every lens once when a merge request becomes ready**, from the
    templates (`--input lenses=all` exists; no template passes it yet).
 6. **The tests lens outside the change**: a test missing for code the

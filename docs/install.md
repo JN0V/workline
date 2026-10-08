@@ -70,8 +70,9 @@ Run it again to change an answer; `--yes` takes the defaults; `--hooks`,
 Claude logs in with a subscription or an API key; workline calls `claude -p`
 with that login and holds no key of its own.
 
-Other agents built in (Codex, OpenCode…) are planned:
-[#86](https://github.com/JN0V/workline/issues/86).
+Other agents built in (Codex, OpenCode…) are parked until a project needs
+one; `cmd:` runs any of them meanwhile
+([#86](https://github.com/JN0V/workline/issues/86)).
 
 - The answer goes to `ai:` in `~/.config/workline/config.yaml` (macOS:
   `~/Library/Application Support/workline/config.yaml`), for all your
