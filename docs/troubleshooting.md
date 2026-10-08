@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 886cdff
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -73,23 +73,24 @@ gardening proposes again when fewer wait.
 
 ## The product owner paused, or does nothing
 
-- `paused`: `ignored-runs-max` runs in a row (3) proposed something and
-  nobody answered. Tick a box in the report issue, write on it, or undo an
-  act: the next run asks the agent again. `ignored-runs-max: 0` never
-  pauses, said in every report.
+- `proposals-waiting`: more issues wait on your answer than
+  `proposals-max` (10): it reads only those you answered. Answer some —
+  `workline:accepted`, a comment, the label taken off.
+- `setting-gone`: `ignored-runs-max` is no longer read; take it off.
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - An issue refined never goes ready, the reviewer after it in the line
   ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads one issue a run, none
   without an agent or with `forge-writes: false`; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
-- A kind of act stays `propose` after a person undid one; the report offers
-  a box to set it back to `act`.
+- A kind of act stays proposed on an issue where a person undid one, and
+  on every issue once undone `undone-max` times (`demoted`).
 - A file the issues were imported from, archived since, flags them each
   time it is edited: name it in `archived`
   ([ADR-0032](adr/0032-a-changed-need-flags-the-issues-built-on-it.md)).
-- `autonomy: cautious` proposes what sets direction: see the report.
-- The report's Stuck is empty though issues wait: `stuck-unknown` says
+- `autonomy: cautious` notes and proposes: see the issues bearing
+  `workline:proposed`.
+- Nothing said stuck though issues wait: `stuck-unknown` says
   which issues the forge gives no day for — the local forge keeps none, a
   plugged forge may refuse `trail` or give comments without `created`.
 - `lines-unread`: an issue imported from a file, whose lines cannot be

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 50d152c
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -14,7 +14,11 @@ it. This page is the contract; the acts built are closing, naming an
 issue's sources, putting it in a milestone, ordering it, opening one from
 a file, refining one to ready — and back —, splitting one — and
 reporting on a parent as its parts close —, renaming it, naming what it
-waits on, and flagging the issues built on a need that changed.
+waits on, and flagging the issues built on a need that changed. Since
+ADR-0038, what the role proposes, and a person's answer, are on each
+issue ("On the issue", "A person's answers"); milestones, ordering,
+splitting, renaming, what an issue waits on, closing as obsolete and a
+changed need are off by default, their code kept.
 
 ## The issue's state
 
@@ -25,7 +29,7 @@ issue, marked `<!-- workline:sticky=product-owner/state -->`:
 sources: [src/export/csv.go#WriteRows]   # what the issue is about, in the code
 confirmed: 1a8e5a4                       # the commit it was last found true at
 judged: 1a8e5a4                          # the commit the role last read it at
-comments: 2                              # people's comments when it was read
+heard: 2                                 # the comments that count it read (A person's answers); `comments`, an older engine's count
 body: 3f9a1c0e2b7d                       # a digest of its body, when last read or written
 priority: 2                              # the priority the role last set (Ordering)
 title: The CSV export drops the last row  # the title the role last set (Renaming)
@@ -36,7 +40,20 @@ sections:                                # its Need and Scope as last read or wr
   Scope: WriteRows in src/export/csv.go.
 wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready)
 answered: 3f9a1c0e2b7d                   # the review of its spec last given to the agent, by the body it read
+deleted: [Validation]                    # sections the role wrote and a person deleted: never written again
+proposed:                                # the acts proposed on it, each as decided, since a day (On the issue)
+  - {act: rename, line: 'Rename #9 to …', since: '2026-10-08', proposal: {do: rename, issue: 9, title: …}}
+done: [{act: ready, level: normal}]      # its acts done alone a person may undo (Trust)
+undone: [{act: rename, evidence: …, day: '2026-10-08'}]  # its acts a person undid: that kind proposed here
+did: [{act: refine, level: normal, day: '2026-10-08', line: …}]  # what the role did, its day; `yes` when a person's
+closed: close-duplicate                  # the kind it was closed with: open again, undone
+label: workline:proposed                 # the label the role put on it while it waits on a person
+aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: nothing proposed until it changes
+revisions: 1                             # its drafts revised for a person's comments
 ```
+
+The comment says, above the state, what the role did and proposes there,
+the state folded ("On the issue").
 
 Two carrying the marker, the last is read: on GitLab only a note's author
 edits it, so one another token wrote is left, and the state is written
@@ -70,15 +87,21 @@ with no AI:
 ## Reading
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name: first those an act was proposed on only
-because a run's cap was reached — though nothing changed on them, the act
-is decided again, and the proposal leaves the report once its issue is
-read —, then those never read, then those with
-something new since they were read — a commit touched their sources, a
-person commented (`comments` counts people's comments read), a person
-changed its body (`body`), or a person reopened what the role closed —
-except the issues read again for a change to what they were built on,
-read before all ("A changed need", below). An issue with nothing new is not read again,
+lines of the code they name (ADR-0018, amended by ADR-0038), in this
+order: an issue waiting on a person that they commented on ("A person's
+answers"); one read again for a change to what it was built on ("A
+changed need"); one an act was proposed on only because a run's cap was
+reached — the act decided again, the proposal settled once its issue is
+read —; a person's issue never read, newest first (`backlog.ByPerson`: no
+import or finding key on a line of its own, no bot author), one opened
+since the role's last run read in the run that first sees it, its first
+state written before any act; then those with something new since they
+were read — a commit touched their sources, a person who counts commented
+(`heard`), a person changed its body (`body`), a person reopened what the
+role closed (`closed`), the reviewer's spec findings —; last, the
+catch-up of an import's or a bot's issues never read, oldest first. Past
+`proposals-max` issues waiting on a person, only the first are read. One
+set aside by a person is not read until it changes. An issue with nothing new is not read again,
 however old (ADR-0018). An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
 against; the others are listed by title only. Each issue read gets `judged`
@@ -87,9 +110,9 @@ read, none is.
 
 ### A changed need
 
-A person's change to what open issues were built on flags them
-(ADR-0032), as a requirements tool marks a link suspect; with no agent,
-at every run:
+Off by default; `changed-needs: true` turns it on (ADR-0038). A
+person's change to what open issues were built on flags them (ADR-0032),
+as a requirements tool marks a link suspect; with no agent, at every run:
 
 - **An issue's Need or Scope rewritten by a person.** The state keeps
   both as the engine last read or wrote them (`sections`), the engine's
@@ -110,9 +133,8 @@ at every run:
   as no change.
 - **Not a file archived**: `archived`, a list of paths or globs, names
   the files no longer a source — a roadmap whose items became issues,
-  kept for its history. A change to their lines flags nothing; a change
-  the record held from one leaves it. A value that is not a list of
-  paths stops the run (principle 12).
+  kept for its history. A change to their lines flags nothing. A value
+  that is not a list of paths stops the run (principle 12).
 
 What a change touches (`backlog.Touched`), none twice, in this order:
 
@@ -120,13 +142,13 @@ What a change touches (`backlog.Touched`), none twice, in this order:
 |---|---|
 | an open part of the issue (`backlog.Parts`) | read first, before the issues proposed for a cap, the sections as they were and as they are given beside it |
 | the issue imported from the lines | read first, the lines as they were and as they are |
-| an open issue waiting on it (`backlog.Blockers`) | listed in the report, not read |
-| its Scope rewritten: an open issue whose sources share a file with its own | listed in the report, not read |
+| an open issue waiting on it (`backlog.Blockers`) | listed in the job's summary, not read |
+| its Scope rewritten: an open issue whose sources share a file with its own | listed in the job's summary, not read |
 
 Every act the agent proposes on an issue read for a change is proposed,
 not done (`need-changed`, info), `keep` aside: what the change asks of it
 is a person's to decide. A part past `issues-per-run`, or every part
-without an agent or while paused, is listed instead of read. Nothing is
+without an agent, is listed instead of read. Nothing is
 written to an issue touched. The changed issue's state keeps its new
 sections at that run — after the agent's answer when a part was given
 to it —, an issue imported its new `judged`: the same change flags once.
@@ -175,8 +197,8 @@ judgement: the product owner reads the file, not a parser (principle 4).
   no agent called, each opening checked against the forge's issues
   then, as with `--apply`. The map stays the judge's,
   "would be opened"; the import run again maps them open.
-  `open` is capped per share (`acts.open.max`): past it, an item is
-  proposed in the report, and the import run again opens it.
+  `open` is capped per share (`acts.open.max`): past it, an item is not
+  opened (`act-cap`), and the import run again opens it.
 
 ### The map: every item to its issue, or why not
 
@@ -205,7 +227,7 @@ goes to:
 | `#n, already open` | an open issue held its text before the import (its marker), or the agent named it (`held`) |
 | `#n, closed` | a closed issue holds its text: not opened again |
 | would be opened | without `--apply` |
-| past the cap | proposed in the report; the import run again opens it |
+| past the cap | not opened; the import run again opens it |
 | done | the words that say so, quoted |
 | not an item | why |
 
@@ -276,8 +298,8 @@ Closing as completed, never as not planned: the code did the work, and
 not planned is a person's no, which every role's opening reads as such.
 `keep` is never held back by a mode nor a cap; the agent may propose it
 too, on an issue announced. In `propose`, the agent's act and the
-engine's closing are written in the report for a person, nothing is
-announced.
+engine's closing are proposed on the issue for a person, nothing is
+announced; accepted, it is closed at once.
 
 ## Naming its sources
 
@@ -309,7 +331,7 @@ when it has one; each issue says its own.
 **What slipped** is moved by the engine, with or without an agent: an
 open issue whose milestone is named after a tag that exists is put in
 the nearest open milestone not released, in the milestones' order (below);
-with none left, the move is proposed in the report,
+with none left, the move is proposed on the issue,
 the issue left where it is. The engine's move comes first: an agent's
 milestone for the same issue in the same run is dropped.
 
@@ -392,9 +414,9 @@ what it can and asks for the rest:
   does not say is outside.
 - **`unready`** moves a ready issue back to refine: `workline:ready`
   off, `workline:to-refine` on, a comment telling the issue why and who
-  ticked it. It is **always proposed**, whatever the level or the
+  accepted it. It is **always proposed**, whatever the level or the
   settings — a ready issue is moved back by a person only (ADR-0032) —,
-  done when a person of the project ticks it; one not `workline:ready`
+  done when a person of the project accepts it (`workline:accepted`); one not `workline:ready`
   is dropped (`unready-not-ready`). No quote; the state must read.
 
   ```yaml
@@ -425,7 +447,7 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   in, and `stopped` once the rounds are spent.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
-  a ticked box — and at every level: `spec-not-reviewed` (no record, or
+  a proposal accepted — and at every level: `spec-not-reviewed` (no record, or
   one for another body: a refine in the same run changes it),
   `spec-findings-open`, `spec-rounds-spent`. A person's
   `workline:accepted` lifts it; `workline:ready` set by hand is theirs.
@@ -500,14 +522,14 @@ A parent is accepted by a person, from what its parts delivered
 GitHub's sub-issues of the same repository, listed for the parents its
 listing counts; GitLab's tasks, one GraphQL query), the task list under
 `## Sub-issues` in its body (`- [ ] #13`, a person's included) — one rule
-for the comment, the report and the order (`backlog.Parts`); a part a
+for the comment, the summary and the order (`backlog.Parts`); a part a
 person unlinked is no longer one. An issue whose state lists a split
 (`backlog.SplitInto`) is still never closed by the role.
 
 - **Ready** means what it means on any issue; a parent is refined as any.
   It is never the first ready issue offered (`next-ready`): its parts are
   what is built.
-- **Its comment**, at every run, with or without an agent, paused or not,
+- **Its comment**, at every run, with or without an agent,
   on every open parent whose state reads: one comment marked
   `<!-- workline:sticky=<role>/parts -->`, edited in place, and not edited
   at all when its text is the same (`Sticky` compares first). A table of
@@ -542,10 +564,10 @@ person unlinked is no longer one. An issue whose state lists a split
 - **All its parts closed**: the comment asks a person to accept the need
   by closing the parent, or to reopen a part or open one for what is
   missing, naming first the parts not delivered and the items not proved;
-  a finding `parent-to-accept` (info) says it, and the report lists it
-  under "To accept". The role never closes a parent nor labels it: a
-  `close` on one, a duplicate or an announcement as obsolete, is dropped
-  (`parent-accepted-by-a-person`) unless a person ticked it. The agent's
+  a finding `parent-to-accept` (info) says it in the job's summary. The
+  role never closes a parent nor labels it: a `close` on one, a duplicate
+  or an announcement as obsolete, is dropped
+  (`parent-accepted-by-a-person`) unless a person accepted it. The agent's
   task marks a parent's parts, open or closed.
 
 ## Renaming
@@ -583,7 +605,7 @@ An issue that cannot start before another is done names it (ADR-0028):
   errors has none), and every line of a body starting with "Blocked by"
   (case aside, a colon allowed) followed by issue references, a person's
   own line included (`backlog.Blockers`).
-- **Checked**: the issue and each blocker open, not the report, not the
+- **Checked**: the issue and each blocker open, not an old report, not the
   issue itself, 1 to 5 (`depend-issue`); only the blockers not there
   already are written, none left drops it (`depend-same`); one that would
   close a cycle with the relations there and those this run set is
@@ -597,9 +619,9 @@ An issue that cannot start before another is done names it (ADR-0028):
   their own line — is read and kept, never removed; one the role set and
   a person took off, its blocker still open, is an act undone ("Trust").
   The role's own are told from a person's by what it keeps: the blockers
-  of each `depend` in its record (`done`), those a split set among its
+  of each `depend` in the issue's state (`done`), those a split set among its
   children in the parent's state (`after: {12: [11]}`), and the engine's
-  marked line in a body (`Hand.OwnBlockers`) — a closed parent's state
+  marked line in a body (`Ledger.OwnBlockers`) — a closed parent's state
   still read while a child that waits is open, kept watched when it does
   not read, let go once the forge no longer gives the parent. The task
   marks them "set by the role".
@@ -612,14 +634,14 @@ A link the role set whose reason is gone is taken off (ADR-0028,
 amended):
 
 - **Its blocker closed** — completed, not planned, a duplicate, or gone
-  from the forge: the wait is over. At each run, with no agent, paused or
-  not, `pre` proposes the engine's own `undepend` for each such link
-  (`Hand.Stale`); it is done whatever the level, never capped nor read as
+  from the forge: the wait is over. At each run, with no agent, `pre`
+  proposes the engine's own `undepend` for each such link
+  (`Ledger.Stale`); it is done whatever the level, never capped nor read as
   a sample's act. A blocker closed without delivering — not planned, a
   duplicate, gone — is said (`blocker-not-delivered`, warn): whether the
   issue still stands without it is a person's to say.
 - **Its blocker still open**, the agent judging it no longer holds: an
-  `undepend` always proposed in the report, a person ticks it.
+  `undepend` always proposed on the issue, done when a person accepts it.
 - **Checked**: the issue open, 1 to 5 blockers, each still one of its
   blockers — one gone already left out, none left drops it
   (`undepend-gone`) — and each the role's own; a person's drops it
@@ -628,12 +650,12 @@ amended):
   (GitHub's `DELETE …/dependencies/blocked_by/{id}`, GitLab's link
   deleted; a plugged forge's `remove-blocker`, asked only for a link it
   keeps), and out of the engine's line for the rest — the line taken out
-  when none is left, the state given the body's digest. The record's
+  when none is left, the state given the body's digest. The state's
   `done` loses them: a blocker opened again is not read as a person
   taking the link off.
 
 Not done: a relation across projects; a split's links set before the
-parent's state kept them (`after`), and a `depend` the record dropped
+parent's state kept them (`after`), and a `depend` the state dropped
 once all its blockers closed, both unknown to the role and left.
 
 ### The order, and what waits
@@ -648,14 +670,13 @@ its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
 `workline:ready` that waits on no open issue and has no parts
 (`backlog.Offered`, `backlog.NextReady`) — to whoever builds next, person
-or developer role (#117); the report lists the first `next-max` of them
-under "Next" ("The report").
+or developer role (#117); the job's summary lists the first `next-max`
+of them ("What is next, what is stuck").
 
 Every run, with or without an agent, says it in its findings:
-`next-ready` (info) the issue offered first, `waiting` (info) each issue
+`next-ready` (info) the issues offered first, `waiting` (info) each issue
 waiting on an open one, `dependency-cycle` (warn) each cycle, "#12 waits
-on #14, #14 waits on #12". The report says the issues waiting and the
-cycles too, under "Waiting".
+on #14, #14 waits on #12".
 
 Split and rename on an issue opened by someone without write access are
 proposed, not done (`reporter-outside`), as moving it to ready — to the
@@ -675,7 +696,7 @@ issue's comments are the record; the state does not copy them.
 |---|---|
 | A person commented after the last round (a comment not ending with an engine marker: one quoting the engine's is a person's) | Dropped: `already-asked`, or `already-proposed` for a text; nothing written |
 | No question the act holds — each from the sentence before it (". " or "! " then a capital; "e.g. Which" cuts too) or its list item's line (one starting with a capital) to its `?`, the bullet, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | Dropped: `asked-before` |
-| Rounds before it under `acts.ask.rounds` (three) | Proposed in the report: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
+| Rounds before it under `acts.ask.rounds` (three) | Proposed on the issue: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
 
 A later round thanks the reporter ("thank you; to refine this issue,
 still: …"). The agent is given the conversation in order — the engine's
@@ -710,53 +731,56 @@ reads it" — the block read back, the agent's fences turned to `'''` so none en
   split, a rename stay the label's. The plan checks the agreement again
   on the forge, and that the sections are those proposed (`not-agreed`).
 
-Any other reply is read as an answer — the agent may propose a revised
-text, a round. Each comment is given to the agent with who wrote it: the
-reporter, of the project, outside it, a bot.
+Any other reply of the reporter's, or of a person of the project, is read
+as an answer — the agent may propose a revised text, a round; a
+stranger's or a bot's brings nothing back ("A person's answers"). Each
+comment is given to the agent with who wrote it: the reporter, of the
+project, outside it, a bot.
 
 ## Autonomy and caps
 
-How far the role goes is one setting, `autonomy` (ADR-0026; changing: ADR-0038): `cautious`,
-`normal` (the default) or `enterprising`, a preset of each kind's mode and
-cap. `normal` is the role's defaults:
+How far the role goes is one setting, `autonomy` (ADR-0038, replacing
+ADR-0026's table): `cautious`, `normal` (the default) or `enterprising`,
+a preset of each kind's mode and cap. `normal` is the role's defaults:
 
 ```yaml
 autonomy: normal
-ignored-runs-max: 3                         # runs nobody answered, then a pause; 0 never
-next-max: 5                                 # the ready issues the report opens with, 0 to 20; 0 none
+issues-per-run: 8
+proposals-max: 10                           # issues waiting on a person, then only answers read; 1 to 100
+undone-max: 3                               # acts of a kind undone across the issues, then proposed everywhere; 1 to 20
+next-max: 5                                 # the ready issues the summary lists, 0 to 20; 0 none
 stuck-days: 14                              # an issue waiting on a person longer is said stuck, 1 to 365
+changed-needs: false                        # "A changed need"
+weekly-sample: false                        # "The weekly sample of its acts"
 acts:
   open: {mode: act, max: 30}
   sources: {mode: act, max: 10}
   refine: {mode: act, max: 5}
   ready: {mode: act, max: 5}
-  ask: {mode: act, max: 3, rounds: 3}       # rounds: written to a reporter, then a person
-  split: {mode: act, max: 2}
-  depend: {mode: act, max: 5}
-  rename: {mode: act, max: 5}
-  milestone: {mode: act, max: 10}
-  order: {mode: act, max: 10}
+  ask: {mode: act, max: 3, rounds: 3}       # rounds: written to a reporter, or revisions, then a person
   close-duplicate: {mode: act, max: 3}      # act | propose | off
-  close-obsolete:  {mode: act, max: 3, days: 7, exempt: [pinned, security]}
+  milestone: {mode: off, max: 10}           # off by default, the code kept (ADR-0038)
+  order: {mode: off, max: 10}
+  close-obsolete: {mode: off, max: 3, days: 7, exempt: [pinned, security]}
+  split: {mode: off, max: 2}
+  rename: {mode: off, max: 5}
+  depend: {mode: off, max: 5}
 ```
 
 - `act`: done, up to `max` a run; past it, proposed.
-- `propose`: written in the report issue for a person, not done.
+- `propose`: proposed on its issue for a person to accept, not done.
 - `off`: dropped.
 
-A run moves at most a share of the open issues, the report issue left
-out: `moved-percent-max` (20, a fifth, by default; rounded up, one at
+With `milestone` or `order` on, a run moves at most a share of the open
+issues: `moved-percent-max` (20, a fifth, by default; rounded up, one at
 least). Milestones — the engine's slips included — and priorities count
 together, an issue moved twice once; past the share, a move is proposed
 (`moved-cap`). Milestones are applied before priorities.
 
-Closing as obsolete is `act` by default since it announces first, and
-closes only on silence and a second judge's yes (ADR-0024; ADR-0018: a
-quote proves the text is there, not that the issue is solved). Its `max`
-counts announcements and closings together, the engine's closings first;
-a closing past it stays announced and is closed at a later run. Neither
-counts in the moved share: a closing takes an issue out of the backlog,
-it does not reorder it.
+Closing as obsolete, turned on as `act`, announces first, and closes only
+on silence and a second judge's yes (ADR-0024). Its `max` counts
+announcements and closings together, the engine's closings first; a
+closing past it stays announced and is closed at a later run.
 
 ### The levels
 
@@ -765,188 +789,154 @@ The other levels change these (role.yaml, `levels`):
 | Setting | cautious | normal | enterprising |
 |---|---|---|---|
 | sources | act 10 | act 10 | act 10 |
-| close-duplicate | propose | act 3 | act 5 |
-| close-obsolete (announced first) | act 3, 14 days | act 3, 7 days | act 5, 7 days |
-| milestone | propose | act 10 | act 10 |
-| order | propose | act 10 | act 15 |
-| moved-percent-max | 10 | 20 | 30 |
 | refine | act 5, Need and Validation drafts proposed (`drafts: propose`) | act 5 | act 10 |
-| ready (the engine's check, never a draft) | act 5 | act 5 | act 10 |
 | ask | act 2, 2 rounds | act 3, 3 rounds | act 5, 3 rounds |
-| split | propose | act 2 | act 4 |
-| depend | propose | act 5 | act 10 |
-| undepend | propose; a closed blocker's: the engine's, done | propose; done | propose; done |
-| rename | propose | act 5 | act 10 |
+| ready (the engine's check: four sections, no draft) | propose | act 5 | act 10 |
+| close-duplicate | propose | act 3 | act 5 |
+| undepend | propose; a closed blocker's: the engine's, done | the same | the same |
 | open (import) | act 30 | act 30 | act 30 |
 
-`cautious` is for a project whose Product Owner is a person (`workline
-init` asks): the acts that check facts are done, those that set direction
-proposed. A refine there writes Scope and Verification and proposes the
-Need and Validation drafts in the report (`drafts-proposed`) — unless a
-person's already: agreed to in a reply, accepted by the label, or
-proposed to an outsider in a comment. The level sets what is done with
-what is read, not how much is read: `issues-per-run`, `code-lines-max`
-and other roles' `issues-max` are their own.
+`cautious` notes and proposes: the code named, Scope and Verification
+written, the Need and Validation drafts proposed on the issue
+(`drafts-proposed`) — unless a person's already: agreed to in a reply,
+accepted by the label, or proposed to an outsider in a comment.
+`normal` completes and moves an evident issue to `ready` alone;
+`enterprising` does the same, more a run. The level sets what is done with
+what is read, not how much is read.
 
 **Precedence**: the level, then a kind the project sets, field by field
-(`acts: {rename: {mode: act}}` at `cautious` keeps the level's cap); then
-a kind demoted ("Trust"), proposed whatever the level until a person's
-tick; then a person's tick on one act ("The person's hand"). The task
-given to the agent lists each kind's mode and where it comes from —
-`level`, `setting` (differs from the level's) or `demoted` —, and so does
-the report, folded, one kind a line. A level the role does not have,
-`ignored-runs-max` outside 0 to 20, `next-max` outside 0 to 20,
-`stuck-days` outside 1 to 365, or `archived` not a list of paths, stops
-the run.
+(`acts: {rename: {mode: act}}` at `cautious` keeps the role's cap); then
+the issue: one set aside gets nothing, one where a person undid that kind
+gets a proposal (`undone-here`); then a kind undone `undone-max` times,
+proposed everywhere (`demoted`); then a person's yes on one act
+(`workline:accepted`), done whatever its mode or cap. The task given to
+the agent lists each kind's mode and where it comes from — `level`,
+`setting` (differs from the level's) or `demoted`. A level the role does
+not have, a number out of its bounds, `changed-needs` not true or false,
+or `archived` not a list of paths, stops the run; `ignored-runs-max`, no
+longer read, is said (`setting-gone`).
 
-## The report
+## On the issue
 
-One issue, kept in place (`KeepIssue`, title "Backlog — product owner"),
-a page for a person: what they have to do first, then what the run did,
-the long parts folded (`<details>`), nothing left out (ADR-0031; changing: ADR-0038). In
-order (`backlog.ReportBody`):
+No report issue (ADR-0038). Each issue holds what the role holds of it,
+in its state ("The issue's state"), and shows it in the same comment, the
+state folded under it (`backlog.FormatState`):
 
-| Part | What it says |
-|---|---|
-| What to do | the proposals to decide, the changes to check and what only a person settles, counted; the parents to accept; one run before the pause, "answer before the next run, or the role pauses" (within N runs when more are left); **Paused** and its box to resume; `ignored-runs-max: 0` said; the acts done alone, to check; a level suggested |
-| To decide | each proposal a box ("The person's hand"), grouped under its issue — number and title — saying in plain words what a tick does and why (`backlog.offer`): "Set its priority to 3 (now: …)", "Add Need and Validation to it (Need and Validation as drafts for you to correct)", then a short why that does not say the act again; when the issue was read again for a change, the change beside its title; an issue to open says the import opens it; one the engine cannot do — its reporter's rounds spent, a slip with nowhere to go — is a line "For you to settle", no box; a proposal recorded without its act says it is drafted when the agent next reads it, and once ticked is a line saying who ticked it, no box; then the kinds back to propose, with their evidence and a box each |
-| To check | each change with an issue it touches not read again ("A changed need"): a box — the issue and the sections a person rewrote, or the file's lines, the day found — and under it each open issue it touches: how, read again or not |
-| To accept | each open parent whose parts are all closed, recorded (`to-accept`) so the report is rewritten when that list changes ("A parent and its parts") |
-| Boxes ticked | what the run read of the boxes ticked since the last |
-| Next, Stuck | "What is next, what is stuck", below |
-| folded | the issues waiting on an open one and each cycle; what the run did alone, each closing with its quote and how to undo it — a rename with the title it had, a split with its children's titles, to close; an announcement with the day it may close and how to keep it open; an issue kept open, and why — and each issue it moved with its priority and milestone as they were, to put the order back; the changes settled with no person; each kind's mode; how the page works |
+- what the role did there on the last day it acted, a line an act — "Accepted by @x"
+  when it was a person's yes;
+- each act it proposes there, in plain words (`backlog.offer`), and a
+  refine's drafts, folded;
+- while the issue waits on a person: how to answer — `workline:accepted`,
+  a comment, the label taken off, a closing;
+- once set aside: that nothing more is proposed until the issue changes.
 
-A change ("A changed need") stays in the record (`changes`) until a
-person of the project ticks it checked, none of its issues is open, or
-every open issue it touches was read again with it and has no proposal
-waiting: then it needs no person — no box, it leaves the record, and that
-run's report says it in one folded line (`rechecked`, kept with the
-plan). A change whose issues have proposals waiting has no box of its
-own: their proposals are its answer, the change said beside their issue.
-A proposal stays there from run to run until a person
-settles it — its issue closed — or a run decides it again. An issue to
-open past the cap stays there until an open issue holds its text: an
-import run again opens it. Its own engine
-comment (`<!-- workline:sticky=product-owner/acts -->`) records the
-closings done, the kinds dropped back to `propose`, the proposals — each
-with its line, the act as decided (`proposal`) and the day it was first
-proposed (`since`) —, the runs nobody
-answered (`ignored`), the comments of people of the project on the
-report (`comments`), the role's own acts a person may undo (`done`, each
-with the value before and the one set, and the level it was done at;
-closings in `closed`, with their level) and those undone (`undone`, with
-their evidence and the day a run found them), what people did with the proposals at the level in
-force (`measure`: ticked, settled otherwise), and the acts it did alone
-(`did`: each act a run decided to do alone, with its kind, issue, level,
-day and a line; for 35 days, at most 200; a person's tick and a slip
-moved by the engine left out), for the weekly sample. From it the report may
-suggest another level — at `cautious`, more than 80% of 10 proposals
-settled or more ticked as proposed suggests `normal` —; it never changes
-the setting.
+Written at the end of each run (`Plan.Persist`), edited in place, never a
+new comment: one mail when it is created, none after. A comment with
+nothing to say is the state alone, as before.
+
+**The label.** `workline:proposed` (on a forge with scoped labels,
+GitLab: `workline::proposed`), created once, is on an open issue while it
+waits on a person: a proposal in its state, or a draft of the role's in
+its body and not ready. Taken off when it no longer waits, when it is
+closed, and when a person accepts. A label a bot took off, as the forge's
+label events say, is put back.
+
+**No quick action.** Every line of text the engine writes on a forge
+that starts with `/`, outside fenced code — in a comment, a note's edit,
+a section written in a body — is escaped (`backlog.Inert`): GitLab runs a
+quick action at a line's start when a comment or a description is
+written and when it is edited.
+
+**The job's summary** (ADR-0035) says the run, one finding an issue:
+`done` and `done-as-accepted`, `proposed`, `set-aside`,
+`left-to-a-person`, `next-ready`, `stuck`, `demoted`, `report-closed`.
+
+**The first run after a report issue**: the record on an open issue
+titled "Backlog — product owner" is read once — its proposals, acts done
+and undone, closings found wrong, closings, acts with their day —, each
+issue's part written to that issue's state, unless it holds one already;
+then the report is closed, a comment linking to the filter on the label
+(`forge.LabelFilter`). Its pause, ticks, measure and changes are not
+carried. A record that does not read leaves the report open, said
+(`record-broken`).
 
 ### The weekly sample of its acts
 
-`workline sample --apply`, after the docs' sample, reads the record of a
-project with a report (ADR-0033): of the acts in `did` whose day falls in
-the week sampled, one in ten, rounded up, drawn the same on a rerun, goes
-to the tracking issue "workline: the weekly sample of the product owner's
+Off by default; `weekly-sample: true` turns it on (ADR-0033, ADR-0038).
+`workline sample --apply`, after the docs' sample, reads every issue's
+state, open and closed — one forge call an issue — for the acts done
+alone (`did`, a person's yes left out): of those whose day falls in the
+week sampled, one in ten, rounded up, drawn the same on a rerun, goes to
+the tracking issue "workline: the weekly sample of the product owner's
 acts", a comment a week, for a person to judge — each with its issue,
 kind, day, level, and, when a person undid it since, what shows it (a
-closing reopened, the record's `undone`); an undo counts against one act,
-the newest of its issue and kind done by the day it was found. An act found wrong is undone on
-its issue, which demotes its kind at the next run ("Trust"). Over the acts
-`did` keeps at the level in force, up to the week's end, 10 or more: more
-than one in ten undone suggests the level below; none undone at `normal`
-suggests `enterprising`; at `cautious`, the report's suggestion stands.
-The role's own report says the same suggestion, counted over every act
-`did` keeps at the level in force, beside the one from the proposals
-settled. The sample never changes the setting; a record that does not read is said
-(`acts-not-read`), the docs' sample written still.
+closing reopened, the state's `undone`); an undo counts against one act,
+the newest of its issue and kind done by the day it was found. Over the
+acts done alone at the level of the last one, up to the week's end, 10 or
+more: more than one in ten undone suggests the level below; none undone
+at `normal` suggests `enterprising`. The sample never changes the
+setting.
 
 ### What is next, what is stuck
 
-After what to do, the report says two lists (ADR-0031), computed by the engine at
-every run, with or without an agent, from the forge as it is — nothing of
-them stored:
+The job's summary says two lists (ADR-0031), computed by `pre` at every
+run, with or without an agent, from the forge as it is — nothing of them
+stored:
 
-- **Next**: the first `next-max` (5) issues of the order
-  (`backlog.Order`) the first ready issue offered would be taken from
-  (`backlog.Next`): bearing `workline:ready`, waiting on no open issue, no
-  parts; each with its milestone and priority. At 0, no Next.
-- **Stuck**: each issue waiting on a person for more than `stuck-days`
-  (14) days, with the day it started and how long:
+- **Next** (`next-ready`): the first `next-max` (5) issues of the order
+  (`backlog.Order`): bearing `workline:ready`, waiting on no open issue,
+  no parts; each with its milestone and priority. At 0, none.
+- **Stuck** (`stuck`): each issue waiting on a person for more than
+  `stuck-days` (14) days, with the day it started and how long:
 
 | Waits on | Since | Read from |
 |---|---|---|
 | someone to start it: `workline:ready`, no pull or merge request nor commit naming it since | the day it last got the label | the forge's `Trail`: GitHub's timeline, GitLab's label events and "mentioned in" notes, a plugged forge's `trail` |
 | its reporter: the last round written to them, no person's comment after it ("The conversation with the reporter") | that round's day | the comment's `created`, as the forge gives it |
-| a person's tick: a proposal of this report, unticked, unsettled | the day first proposed | the record's `since`, carried to the same act decided again; one recorded before, the day first read |
+| a person's answer: a proposal on the issue | the day first proposed | the state's `since`, carried to the same act decided again |
 | a second judge: announced obsolete, due, neither closed nor kept | the day its delay ended | the announcement's `announced` and `close-obsolete.days` — listed once due, whatever `stuck-days` |
 
 A link older than the label started nothing. An issue appears once, in
 its first list: one in Next is not stuck; one waiting for two reasons is
-said for the first in the table's order. Only the ready issues offered,
-those in Next aside, are asked their trail. An issue whose day the forge does not say — the local
-forge keeps none, a plugged one may refuse `trail`, a comment without
-its day — is not said stuck, and the run says so (`stuck-unknown`, info;
+said for the first in the table's order. An issue whose day the forge does
+not say is not said stuck, and the run says so (`stuck-unknown`, info;
 warn when the forge failed to answer).
 
-A run that writes nothing else still rewrites the report when its
-opening no longer reads as the report's body says, a proposal has no day
-yet, or, with no report open, when Next or Stuck lists an issue; how long
-an issue has waited changes with the day, so while one is stuck the
-report is rewritten once a run.
+## A person's answers
 
-## The person's hand
+At each run, acts or not, with or without an agent, the engine reads on
+each open issue what a person did since the last (ADR-0038):
 
-Each proposal is a box, its line ending with a hidden key,
-`<!-- workline:proposal=<issue>/<kind> -->` (an issue to open: its text's
-key). At each run, acts or not, the engine reads the boxes ticked in the
-report's body and who ticked each (ADR-0025; changing: ADR-0038):
-
-| Forge | Who ticked it |
+| A person | The engine |
 |---|---|
-| GitHub | the editor of the body's version that ticked it (`userContentEdits`, the hundred newest; after a gap — older versions, one deleted — the next version ticks nothing); of the project when GitHub gives them write, maintain or admin — a token that may not read that: nobody known; a user of type Bot is a bot |
-| GitLab | the author of the system note "marked the checklist item … as completed"; of the project from the Planner role (ADR-0023) |
-| local | a person of the project, unnamed: whoever works in the clone |
-| plugged | its `ticks` operation (docs/spec/forge-command.md); one it refuses: nobody known |
+| labels it `workline:accepted` (either spelling; GitLab Free keeps it beside `workline::proposed`) | each act its state proposes, as recorded, done whatever its mode or cap — a closing as obsolete closed at once, no announcement nor second judge —, said "Accepted by @x" (the label's last setter, from the forge's label events; "a person of the project" when it does not say); its drafts made theirs and the issue moved to ready when complete; `workline:proposed` taken off by the role |
+| comments, being its reporter or of the project, on an issue waiting on them | "revise": the issue read first, the agent told so; a `refine` rewrites the sections still the role's own (`backlog.Own`: a draft, or a text as the role wrote it), never a person's; 👀 on each comment read (`React`; GitLab's "already taken" is done); one line in reply (`<!-- workline:product-owner/reply=<id> -->`); `revisions` counted — one a run, whatever the comments; at `acts.ask.rounds` less one, a new comment is left to a person (`left-to-a-person`), nothing written |
+| takes `workline:proposed` off, without a yes | "not now": its proposals dropped, `aside` kept in its state with its body's digest; nothing proposed nor done on it (`set-aside`) until its body changes or a counted comment comes; never a demotion |
+| edits its body | read again; a section edited is theirs; a section the role wrote and they deleted (`deleted`) is never written again |
+| closes it | its proposals settled; never reopened |
 
-| Ticked by | What the engine does |
-|---|---|
-| A person of the project, a proposal it can do | Done as the record holds it, never as an intention says (`not-ticked`), whatever its mode or cap; checked again as any act, dropped and said when it no longer holds. A closing as obsolete is closed at once, no announcement nor second judge, naming who ticked it |
-| A person of the project, the box of a kind back to propose | That kind back to `act` (`back-to-act`); the settings untouched |
-| A person of the project, the box of a changed need (`changed/<issue>`; `changed-lines/<issue>` for the lines it was imported from, a change of its own) | Checked: it leaves the report and the record, said under "Boxes ticked"; nothing done to its issues |
-| A person of the project, a proposal an older engine recorded with its line alone, no act kept (`Undrafted`) | Its issue read first at the next run with an agent, the agent asked to write that act; the act it drafts is done as their yes, whatever its mode or cap, said "Ticked by". No agent, paused, or past `issues-per-run`: kept with who ticked it (`agreed`), a line in the report, no box. The agent drafting none: said (`tick-not-drafted`, warn), it leaves the report |
-| A person of the project, an issue to open | Not done: opened when the import runs again; the proposal leaves the report |
-| Outside the project, a bot, or nobody the forge names | Nothing done (`tick-ignored`, the reason said in the report, under "Boxes ticked"); the box unticked when the report is rewritten |
+**Who counts**: the reporter and the project's people — GitHub's author
+association of owner, member or collaborator; GitLab's members from the
+Planner role (ADR-0023) — never a bot, an author the forge does not name,
+nor a bare "+1" (`backlog.Counted`). Only their comments bring an issue
+back into a run (`heard`); a stranger's is given to the agent as context
+when the issue is read for another reason. An act whose quote is found
+only in a comment of someone who does not count is proposed, never done
+alone (`outsider-evidence`).
 
-A proposal recorded without its act and not ticked has its issue read again first, as one proposed for a cap: the agent decides it anew, and the old line leaves the record. A proposal ticked, done or dropped, leaves the record: a box still ticked
-whose proposal the record no longer holds is nothing.
-
-**Paused.** A run that read issues with an agent while the report held a
-proposal is ignored when, since the last run, no person of the project
-ticked a box or wrote on the report, no closing was undone and no
-proposal's issue was closed. After `ignored-runs-max` in a row (3 by
-default, 1 to 20), the report says **Paused**, with a box to resume; the
-next runs ask no agent (`paused`: nothing read, no second judge) until a
-person does one of those. At 0 the role never pauses: every run's
-findings (`never-paused`) and the report say so, with the runs nobody
-answered.
+**Slowing down**: past `proposals-max` issues waiting on a person, a run
+reads only the issues answered (`proposals-waiting`). Silence is never a
+yes.
 
 ## Trust
 
-A closing is wrong when its issue is open again. At the next run of the
-role, acts or not, the engine reads the issues it closed; one open again
-puts that kind of act back to `propose`, whatever the settings say, with a
-finding `wrong-closing`, and is read again; the report says so, with a
-box to set it back to `act`, its closings still closed and those reopened
-beside it. Only a person of the project's tick sets it back ("The
-person's hand").
+A closing is wrong when its issue is open again: the closed issue's state
+keeps the kind it was closed with (`closed`); found open at a later run,
+that is an act undone (`wrong-closing`), the issue read again.
 
-Any other act of the role's a person undoes demotes its kind the same
-way (ADR-0026), found at the next run — with or without an agent — from
-the record's `done` and the forge, the evidence in the finding `undone`
-and in the report:
+Any other act of the role's a person undoes is found the same way, at the
+next run — with or without an agent — from its issue's `done` and the
+forge, the evidence in the finding `undone`:
 
 | Act | Undone when |
 |---|---|
@@ -957,10 +947,14 @@ and in the report:
 | split | a child listed in the parent's state is closed as not planned (GitHub; GitLab keeps no reason) |
 | depend | a blocker it added, still open, is no longer among the issue's blockers: the link or the line taken off |
 
-A title, priority or milestone a person set to a third value is theirs:
-the act is no longer watched, and demotes nothing. An act whose issue is
-closed is no longer watched; a split, once each child is closed or gone
-from the forge (deleted, moved); a depend, once each blocker it added is closed — the link then taken off by the engine ("What an issue waits on"). A move
-the engine made itself (a slip) and an act a person ticked are not the
-role's choice, and are not watched. The record keeps the newest 200.
-Changing the level never lifts a demotion.
+An act undone is kept in its issue's state (`undone`): that kind is
+proposed on that issue from then on (`undone-here`, ADR-0038, amended).
+Undone `undone-max` times (3) across the open issues' states, closings
+reopened included, the kind is proposed on every issue (`demoted`) until
+fewer are. A title, priority or milestone a person set to a third value
+is theirs: the act is no longer watched. An act whose issue is closed is
+no longer watched; a split, once each child is closed or gone from the
+forge; a depend, once each blocker it added is closed — the link then
+taken off by the engine ("What an issue waits on"). A move the engine
+made itself (a slip) and an act a person accepted are not the role's
+choice, and are not watched.

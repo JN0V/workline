@@ -1,204 +1,122 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 886cdff
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Product owner
 
-> **Changing** ([ADR-0038](../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
-> fewer acts, one autonomy axis, proposals on each issue with labels, no
-> report issue. Until built, the role runs as this page says.
-
 ```mermaid
 flowchart LR
-  when["<b>When</b><br/>gardening (opt-in)<br/>importing a file<br/>the weekly sample"]
+  when["<b>When</b><br/>gardening (opt-in)<br/>importing a file"]
   role(["Product owner"])
-  alone["<b>Alone</b><br/>orders, refines, splits,<br/>closes a duplicate"]
-  proposed["<b>Proposed</b><br/>a box in its report"]
-  person["<b>Left to a person</b><br/>a Need made final<br/>accepting a result"]
-  out["<b>Lands in</b><br/>the issues<br/>one report issue"]
+  alone["<b>Alone</b><br/>names the code,<br/>completes, readies<br/>an evident issue"]
+  proposed["<b>Proposed</b><br/>on the issue,<br/>label workline:proposed"]
+  person["<b>You answer there</b><br/>accept, comment,<br/>take the label off, close"]
   when --> role
-  role --> alone --> out
-  role --> proposed --> out
-  role --> person
+  role --> alone
+  role --> proposed --> person
 ```
 
 For people: what the role does and how to set it. The AI never reads this
-file. All roles: [docs/roles.md](../../docs/roles.md). What a run does,
-step by step: [docs/run.md](docs/run.md).
+file. All roles: [docs/roles.md](../../docs/roles.md). A run, step by
+step: [docs/run.md](docs/run.md).
 
-**Does**: keeps a project's backlog — its open issues — true to the code
-and in order, between the need a person states and the result they accept
-([ADR-0018](../../docs/adr/0018-the-product-owner.md)). A run reads a
-share of the open issues against the code, acts within caps and
-proposes the rest (below); it also keeps the one way every role opens an
-issue.
+**Does**: keeps a project's open issues true to the code and ready to
+build, between the need a person states and the result they accept
+([ADR-0018](../../docs/adr/0018-the-product-owner.md)). What it proposes
+is on each issue; you answer there
+([ADR-0038](../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
 
 **Does not**:
 
 - write code or docs (`writes: []`: the forge's issues only);
 - write the Need or Validation of a person's issue as final;
-- close as "not planned", or close a split need: a person accepts it;
-- undo a person's priority, title or link;
-- act alone on an issue whose need changed, or move a ready issue back to
-  refine without a person's tick;
-- move an issue to `ready` while a section is missing or a draft — nor,
-  with the reviewer after it in the line, while the reviewer has not read
-  its spec as it is or an important finding is open
-  ([below](#a-spec-read-before-ready));
-- at `autonomy: cautious`, do what sets direction: it proposes it instead.
+- rewrite a section a person wrote, edited or deleted;
+- move an outsider's issue to `ready`, nor one with a draft left;
+- close as "not planned", or reopen an issue;
+- keep a report issue, or any memory outside the issues.
 
 ## When
 
 | Event | Fired by | Does |
 |---|---|---|
-| `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, acts and proposes |
-| `import` | `workline issues import <file>` | opens each item still to do in a file as an issue, then maps every item to its issue |
+| `schedule` | CI gardening, with `product-owner` in the `schedule` line | reads `issues-per-run` open issues, completes and proposes |
+| `import` | `workline issues import <file>` | opens each item still to do in a file as an issue ([the command](../../docs/commands.md#workline-issues-import)) |
 
-- **`import`**: `--apply` opens the issues; in CI, judged without
-  `--apply`, then `workline apply --line`. The map gives every item its
-  issue or the reason it has none, and lists what is left with neither,
-  for a person (exit 2) ([the command](../../docs/commands.md#workline-issues-import)).
+## On each issue
 
-## Alone, proposed, left to a person
+- **Its one comment**, created once, then edited in place: what it did,
+  what it proposes, what it wants from you; what it knows of the issue,
+  folded.
+- **The label `workline:proposed`** (GitLab: `workline::proposed`) while
+  the issue waits on you: its drafts, or a proposal.
+- **What waits on you** is a saved filter on that label.
+- **The night's summary** is in the CI job's summary: done, proposed,
+  left to a person, next, stuck.
+
+## How you answer
+
+| You want | You do | Next run |
+|---|---|---|
+| yes | label `workline:accepted` (bulk from the list) | does what it proposed, makes the drafts yours, moves it to `ready`; takes its label off |
+| revise | a plain comment | 👀 on it, rewrites its own drafts in place, replies in one line |
+| correct it yourself | edit the body | the sections you edited are yours, never rewritten |
+| not now | take `workline:proposed` off | proposes nothing more on that issue until it changes |
+| it should not exist | close it | never reopens it |
+
+- **Silence is never a yes.** Past `proposals-max` issues waiting, the
+  role reads only those you answered.
+- **Three rounds at most** (the draft, two revisions), then one line
+  "left to a person" in the summary, nothing more on the issue.
+- **Who counts**: the reporter and the project's people. A bot's, a
+  stranger's or a "+1" comment never brings an issue back.
+- Accepting many issues from the list is quick: read what you accept.
+
+## Alone or proposed
 
 At `autonomy: normal`, the default:
 
-**Alone**:
-
-- names an issue's code;
-- sets milestones and priorities, at most 20% of the open issues moved a
-  run;
-- closes a duplicate, its original quoted;
-- announces an obsolete issue, closes it a week later on silence and a
-  second judge's yes;
-- refines to `ready`, Need and Validation as drafts; asks the reporter
-  what is missing;
-- splits a need too big, then says on it what each part delivered
-  ([ADR-0029](../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md));
-- renames a vague title;
-- says what an issue waits on, and takes off a link it set once its
-  blocker closes
-  ([ADR-0028](../../docs/adr/0028-an-issue-names-what-it-waits-on.md));
-- imports a roadmap file as issues.
-
-**Proposed**, a box in its report for a person to tick:
-
-- moves past the 20%; an outsider's issue made `ready`;
-- the issues built on a Need, a Scope or a roadmap line a person changed,
-  a ready one back to refine included
-  ([ADR-0032](../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md));
-- a link it set taken off while its blocker is open;
-- at `cautious`, what sets direction: milestones, priorities, duplicates,
-  splits, titles, dependencies, the drafts.
-
-**Left to a person**: a draft made final (`workline:accepted`); a split
-need accepted, by closing it; a box ticked; closing as not planned;
-undoing an act.
-
-## A spec read before ready
-
-Opt-in: the reviewer after the product owner in the gardening line
-(`schedule: [documentalist, product-owner, reviewer]`,
-[#128](https://github.com/JN0V/workline/issues/128),
-[ADR-0020](../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)).
-The reviewer reads one refined issue a run and keeps its findings in a
-comment on it ([reviewer](../reviewer/docs/spec.md#on-the-forge)).
-
-- **Held**: `ready` waits — the agent's, an accepted draft's, a ticked
-  box's alike, at every autonomy level — while the reviewer has not read
-  the body as it is (`spec-not-reviewed`), an important finding is open
-  (`spec-findings-open`), or its rounds are spent (`spec-rounds-spent`).
-- **Answered**: the next run reads the issue again and gives the agent
-  the findings; a `refine` rewrites the sections they lie in that are the
-  role's own — a draft, or a text as the role wrote it (the state's
-  `wrote`) —, never a person's: for those it asks the reporter.
-- **Released**: once the reviewer read the body as it is and found no
-  important finding open, the engine moves it to ready, with no agent.
-- **A person decides** at any round: `workline:accepted` lifts the hold,
-  `workline:ready` set by hand is theirs.
+- **Alone**: names an issue's code; completes it — Scope and Verification
+  from the code, Need and Validation as drafts; asks its reporter what is
+  missing; closes an evident duplicate; moves an evident issue to
+  `ready` (four sections, none a draft).
+- **Proposed** on the issue: past a cap a run; an outsider's issue to
+  `ready`; an act whose only evidence is a stranger's comment.
+- **Undone by you** (`workline:ready` taken off, a closing reopened…):
+  that kind is proposed on that issue from then on; undone `undone-max`
+  times across the issues, on every issue.
 
 ## Settings
 
 Under `roles: {product-owner: {settings: …}}` in `.workline/config.yaml`
-([config reference](../../docs/config.md)). Each act's `mode` is `act`
-(done, up to `max` a run), `propose` (a box in the report, for a person) or
-`off`. The defaults are the `normal` level; `autonomy` lays another level
-under the project's own settings, which win field by field:
+([config reference](../../docs/config.md)); every key, with the off-by-default
+acts: [docs/settings.md](docs/settings.md).
 
-| Key | `normal` (default) | `cautious` | `enterprising` |
-|---|---|---|---|
-| `issues-per-run` | `8` | | |
-| `code-lines-max` | `1500` | | |
-| `ignored-runs-max` | `3` (1 to 20; 0 never pauses) | | |
-| `next-max` | `5` (0 to 20; 0 lists none) | | |
-| `stuck-days` | `14` (1 to 365) | | |
-| `archived` | `[]`: files no longer a source, whose changes flag nothing | | |
-| `moved-percent-max` | `20` | `10` | `30` |
-| `acts.open` | act, max 30 | | |
-| `acts.sources` | act, max 10 | | |
-| `acts.milestone` | act, max 10 | propose | |
-| `acts.order` | act, max 10 | propose | max 15 |
-| `acts.close-duplicate` | act, max 3 | propose | max 5 |
-| `acts.close-obsolete` | act, max 3, `days: 7`, `exempt: [pinned, security]` | `days: 14` | max 5 |
-| `acts.refine` | act, max 5 | `drafts: propose` | max 10 |
-| `acts.ready` | act, max 5 | | max 10 |
-| `acts.ask` | act, max 3, `rounds: 3` | max 2, `rounds: 2` | max 5 |
-| `acts.split` | act, max 2 | propose | max 4 |
-| `acts.rename` | act, max 5 | propose | max 10 |
-| `acts.depend` | act, max 5 | propose | max 10 |
-
-An empty cell is the `normal` value. `cautious` suits a project whose
-Product Owner is a person (`workline init` asks): it keeps the acts that
-check facts and proposes those that set direction. A kind a person undid
-goes back to `propose`, whatever the level.
+| Key | Default | Says |
+|---|---|---|
+| `autonomy` | `normal` | `cautious` notes and proposes; `enterprising` does more a run |
+| `issues-per-run` | `8` | issues read a run |
+| `proposals-max` | `10` | issues waiting on you before the role slows down |
+| `undone-max` | `3` | acts of a kind undone before it is proposed everywhere |
 
 ```yaml
 roles:
   product-owner:
-    settings:
-      autonomy: cautious
-      acts: {close-duplicate: {mode: propose}}
+    settings: {autonomy: cautious, issues-per-run: 5}
 ```
-
-## Outputs
-
-- **One report issue**, "Backlog — product owner": first what you have to
-  do — the proposals to tick, the changes to check —, then what is next,
-  what is stuck and what it did, folded.
-- **On each issue it reads**: a state comment, labels, milestones,
-  sections, links to what it waits on.
-- **On a split need**: one comment listing its parts and what they proved.
-- **Each week**: a sample of its acts, for a person to judge.
-- `--json`, `--sarif`, `--code-quality` like any role.
-
-A person accepts drafts with the label `workline:accepted`, on one issue or
-many: the next run moves them to `ready`, with no agent. Every output in
-detail: [what it writes](docs/outputs.md).
 
 ## Cost
 
 - **One call a run** (standard tier, context budget 120k tokens,
   estimated): 45k to 62k tokens in for four issues on a real backlog, up
   to 97.6k with their code; `issues-per-run` and `code-lines-max` size it.
-- A closing as obsolete asks a second judge of another model.
-- A split need's report costs no tokens: one or two forge calls a part
-  closed.
-- **Paused** after three runs in a row with nobody answering
-  (`ignored-runs-max`): no agent is asked until a person ticks a box,
-  writes on the report or undoes an act.
+- A person's answer, an accepted proposal, an undo: read with no agent.
 
 ## Without AI
 
-Nothing is judged, but:
-
-- each issue taken gets its state comment;
-- accepted drafts (`workline:accepted`), ticked boxes and an `agreed`
-  reply are still done;
-- an issue whose milestone was released moves to the next;
-- the backlog's order and what waits are still said, the report's Next and
-  Stuck rebuilt, a split need's parts reported, and a changed need's
-  issues listed for a person.
+Nothing is judged, but each issue gets its state, accepted proposals and
+an `agreed` reply are still done, labels follow your answers, and the
+summary says what is next and stuck.
 
 **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), nightly on workline's own issues and in the CI of
 another project of its author's; [docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).

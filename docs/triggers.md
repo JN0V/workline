@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 886cdff
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -98,7 +98,7 @@ Before your release tool tags; a non-zero exit holds it.
 `workline sample --out sample.json` (agent, writes nothing; `--week
 2026-W40`), then `workline sample --apply sample.json --forge gitlab`
 (token, no agent), which also draws the product owner's acts of the week
-from its report
+from the issues, when turned on
 ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
 
 ### Import
@@ -180,7 +180,8 @@ comment of a reviewer that blocks (`artifacts: when: always`,
   for a person, the reviewer's summary), edited on each run; doc fixes
   committed to its branch (`Workline-Role: documentalist`); gardening's
   merge requests on `workline/<role>/<task>`; a release's fix on
-  `workline/<role>/release`; issues (the product owner's report, "Backlog —
-  product owner"; the sample's tracking issues, the docs' and the product
-  owner's acts'; a reviewer's finding outside
+  `workline/<role>/release`; issues (the product owner's comment and
+  label `workline:proposed` on each issue it proposes on; the sample's
+  tracking issues, the docs' and the product owner's acts'; a reviewer's
+  finding outside
   the change, `needs-triage`) and labels.

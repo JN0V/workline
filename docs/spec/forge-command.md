@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 9e31d4b
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -25,7 +25,7 @@ to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
 `-bot` or `[bot]`, Forgejo saying nothing of bots; not yet the backlog's other operations (`issues`,
 `close`, `milestones`, `set-milestone`, `set-body`, `set-title`,
-`add-sub-issue`, `add-blocker`, `remove-blocker`, `closers`, `trail`, `ensure-label`), nor a merge request's `base`.
+`add-sub-issue`, `add-blocker`, `remove-blocker`, `closers`, `trail`, `ensure-label`, `label-events`, `react`), nor a merge request's `base`, nor a comment's `id`.
 
 ## One request, one run
 
@@ -61,8 +61,9 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `issue` | `id` | reads an issue | `{id, title, body, labels: [names], closed}` |
 | `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, milestone-due, author, insider, blocked-by, children}]}` — `milestone-due` its milestone's due date, `YYYY-MM-DD`, left out when it has none; `insider` true when the author has write access to the project; left out, the author is taken for an outsider; `blocked-by` the issues it waits on in the forge's own relation, left out on a forge without one: a "Blocked by" line in the body says it (ADR-0028); `children` its sub-issues, open or closed, left out on a forge without them: the task list under `## Sub-issues` in the body says them (ADR-0029) |
 | `all-issues` | | lists the issues open and closed, merge requests left out: a subject a role found is looked for in both | `{issues: [{id, title, body, labels, closed, reason}]}` — `reason` why it was closed, when the forge keeps one: `completed`, `not_planned` or `duplicate`; a command that does not know it answers an error, and the issue is not opened |
-| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot, created}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user, `created` when it was written (RFC 3339 or `YYYY-MM-DD`), left out when the forge does not say: a question to a reporter is then never said stuck (ADR-0031; changing: ADR-0038); a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021) |
-| `ticks` | `id` | the boxes ticked and unticked in the issue's body, oldest first, with who did each | `{ticks: [{item, done, author, insider, bot}]}` — `item` the box's text, its hidden markers' text in it; an error answered: nobody known, a box ticked there is not taken for a yes (ADR-0025) |
+| `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot, created, id}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user, `created` when it was written (RFC 3339 or `YYYY-MM-DD`), left out when the forge does not say: a question to a reporter is then never said stuck (ADR-0031); `id` the forge's own, for `react`, left out: no reaction; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021), nor brings an issue back (ADR-0038) |
+| `label-events` | `id` | the labels set on the issue and taken off, oldest first, with who did each and when | `{events: [{label, added, author, insider, bot, created}]}` — `added` false for one taken off; an error answered: the forge does not say, and a label taken off is read as a person's (ADR-0038) |
+| `react` | `id`, `note`, `emoji` | puts the reaction (`eyes`) on the issue's comment with that id; one there already changes nothing | `{}`; an error answered: no reaction, nothing failed (ADR-0038) |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
 | `milestones` | | lists the open milestones | `{milestones: [titles]}`, or `{milestones: [{title, due}]}` — `due` a due date, `YYYY-MM-DD`, what the backlog's order ranks milestones by first |
 | `set-milestone` | `id`, `milestone` | puts the issue in the open milestone with this title, creating it when there is none | `{}` |

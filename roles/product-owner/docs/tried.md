@@ -853,3 +853,45 @@ then tried twice.
   agent's run settling a change with nothing proposed (conformance
   `changed-import-lines-read-again`, `changed-read-nothing-proposed-settles`).
 
+
+## 2026-10-08 — ADR-0038 on both sandboxes, planted answers
+
+The engine of the branch, `workline run-role product-owner --event
+schedule`, on a clone of JN0V/workline-sandbox; on GitLab, the project
+named by `CI_API_V4_URL` and `CI_PROJECT_PATH`, glab's token (JN0V's own,
+not the project's bot). The agent was none, or `fake:` with an answer
+written for it: no paid agent was called. A trial issue made on each,
+labelled `test:adr-0038`.
+
+- **The old report moved**: GitHub #5 and GitLab #10, the first run with
+  no agent. Each issue's part of the record moved to its state — acts
+  done, a closing on a closed issue —, the reports closed with a link to
+  the filter on the label. Found and fixed on the way: GitHub refuses a
+  label description over 100 characters (422; now a test); `issue: 0`
+  written in each moved act (now left out); the old record's closings
+  found wrong were not carried (now undone on their issue).
+- **Every issue with drafts labelled**: 11 on GitHub, 7 on GitLab. On
+  GitHub this went past `proposals-max` (10): the next run read only the
+  answered issues, as built. Workline's own backlog has 7 issues with
+  drafts and no proposal in #110's record: under the cap.
+- **Completing**: #50 (GitHub) and #33 (GitLab) refined, the label
+  `workline:proposed` / `workline::proposed` set, created on GitLab, the
+  role's comment saying what it did and what it wants. A Validation
+  ending with a line `/close` — and, at the revision, `/label ~bug` —
+  written escaped: on GitLab the issue stayed open, no label came, at
+  the description's edit as at the note's.
+- **Revise**: JN0V's comment on each, read the next run. 👀 on it — on
+  GitLab, where JN0V had put 👀 first, the 404 "already taken" read as
+  done —, the Validation rewritten in place, the Need kept, one line in
+  reply mentioning JN0V, `revisions: 1`, `heard: 1` in the state.
+- **Yes**: `workline:accepted` (GitLab: `workline::accepted`, kept beside
+  `workline::proposed` on the Free plan) — the next run with no agent
+  took the draft lines out, moved the issue to ready, took both labels
+  off; the summary said "Accepted by @JN0V", read from the label events.
+- **Not now**: `workline:proposed` taken off GitHub #2, #3 and GitLab #7
+  by hand; the next run wrote `aside` in their states, the comment saying
+  it, the label not put back.
+- **Not tried live**: a comment by an outsider or a bot (one account on
+  each sandbox: conformance `who-counts-and-rounds`); a third revision
+  left to a person (conformance); a real agent revising; an undo found
+  live; the week's trial itself. The trial issues were closed after.

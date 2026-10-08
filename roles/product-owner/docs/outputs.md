@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: c24603b
+checked: a59e5e6
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -8,61 +8,50 @@ verified: agent:claude-code
 Part of [the product owner](../README.md). What a run does, step by step:
 [run.md](run.md).
 
-## The report
+## On each issue
 
-One report issue, "Backlog — product owner", rewritten at each run; what
-to do first, what the role did after, the long parts folded:
+- **One comment**, created once, then edited in place
+  ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
+  - what it did there last, and when;
+  - what it proposes, in plain words; drafts it proposes, folded;
+  - what it wants from you, while the issue waits on you;
+  - set aside, when you took its label off;
+  - what it knows of the issue, folded: what it read, wrote, did,
+    proposed, and what you undid.
+- **Labels**: `workline:proposed` (GitLab: `workline::proposed`) while it
+  waits on you; `workline:draft`, `workline:to-refine`, `workline:ready`.
+- **Sections** written in the body, Need and Validation as drafts; to an
+  outsider, a comment proposing them instead.
+- **A reply in one line** to your comments, 👀 on each.
+- **On a split need**: one comment listing its parts and what they
+  proved ([tracking](tracking.md#a-parent-and-its-parts)).
 
-- **What to do**: how many proposals to decide and changes to check;
-  what only you can settle; the needs to accept; a warning a run before the
-  role pauses, or the box that resumes it.
-- **To decide**: each proposal under the issue it is on, saying in plain
-  words what a tick does and why — done at the next run when a person of
-  the project ticks it; why the issue was read again, when a change was
-  the reason.
-- **To check**: a change to what an issue was built on that the role
-  could not read again; tick it once checked.
-- **To accept**: the split needs whose parts are all closed.
-- **Next**: the first `next-max` ready issues in the backlog's order that
-  wait on nothing, never a split need, each with its milestone and
-  priority.
-- **Stuck**: each issue waiting on a person for more than `stuck-days`,
-  with since when:
-  - ready with no pull request nor commit naming it since;
-  - its reporter not answering;
-  - a proposal of the report unticked;
-  - an announcement as obsolete past its delay with no second judge.
-- **Folded**: the issues waiting on another; what the role did alone and
-  how to undo each; the issues read again after a change with nothing to
-  change, in one line; the autonomy, kind by kind; how the page works.
+No line of its own text starts with `/`: GitLab would run it as a quick
+action, on a comment or an edit.
 
-## On the issues
+## In the CI job's summary
 
-- **On each issue it reads**:
-  - a state comment;
-  - labels (`workline:priority/N`, `workline:draft`, `workline:obsolete`,
-    `workline:ready`); milestones; sections written;
-  - a comment to an outsider reporter; sub-issues or tasks;
-  - GitHub's dependencies or GitLab's `is_blocked_by` links (Premium),
-    else a line `Blocked by #12.` in the body — a link it set taken off
-    once its blocker closes.
-- **On a split need**: one comment, edited in place, listing its parts —
-  open, closed as completed with the pull request or commit that closed
-  it, or not delivered — and each item of its Verification, proved where a
-  part delivered quotes it and a test it names is in the code, or not
-  proved. Accept the need by closing it.
-- `--json`, `--sarif`, `--code-quality` like any role.
-- A person accepts drafts with the label `workline:accepted`, on one issue
-  or many: the next run moves them to `ready`, with no agent.
+Each night ([ADR-0035](../../../docs/adr/0035-the-engine-writes-the-jobs-summary.md)),
+read-only, one line an issue:
+
+- `done`, `done-as-accepted`: what it did alone, and on your yes;
+- `proposed`: what waits on you;
+- `set-aside`, `left-to-a-person`: your "not now", the rounds spent;
+- `next-ready`: the first ready issues of the order;
+- `stuck`: what waits on a person past `stuck-days`.
+
+`--json`, `--sarif`, `--code-quality` like any role.
+
+## Where to look
+
+- **What waits on you**: a saved filter on `workline:proposed` (GitLab: a
+  label subscription or a board works too).
+- **What it did**: the job's summary, and the comment on each issue.
 
 ## The weekly sample
 
-With the docs' sample (`workline sample --apply`, no agent): one in ten of
-the acts it did alone that week, on the issue "workline: the weekly sample
-of the product owner's acts".
-
-- Each with its day, the level it was done at, and whether a person undid
-  it — for you to judge: undo one you find wrong on its issue.
-- From the acts undone it may suggest another level — its report says it
-  too, beside the one from the proposals you settled; it never changes the
-  setting.
+Off by default (`weekly-sample`). Turned on, with the docs' sample
+(`workline sample --apply`, no agent): one in ten of the acts it did alone
+that week, read from each issue's state, on the issue "workline: the
+weekly sample of the product owner's acts", each with its day, level and
+whether a person undid it; a level suggested, never set.
