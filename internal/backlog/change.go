@@ -52,6 +52,25 @@ func Basis(body string) map[string]string {
 func (s *State) Keep(body string) {
 	s.Body = BodyDigest(body)
 	s.Sections = Basis(body)
+	s.Deleted = DeletedSections(s, body)
+}
+
+// DeletedSections are the sections the role wrote (State.Wrote) that a
+// person took out of the body since — the heading gone, or its text —,
+// with those the state holds already: each a "no" for that section, never
+// written again (ADR-0038).
+func DeletedSections(s *State, body string) []string {
+	if s == nil {
+		return nil
+	}
+	out := slices.Clone(s.Deleted)
+	have := work.Sections(body)
+	for _, name := range Sections {
+		if s.Wrote[name] != "" && strings.TrimSpace(have[name]) == "" && !slices.Contains(out, name) {
+			out = append(out, name)
+		}
+	}
+	return out
 }
 
 // Rewritten are the watched sections a person rewrote since the state was

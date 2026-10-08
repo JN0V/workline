@@ -54,6 +54,9 @@ type State struct {
 	// another review, never taken for one answered.
 	Wrote    map[string]string `yaml:"wrote,omitempty"`
 	Answered string            `yaml:"answered,omitempty"`
+	// Deleted are the sections the role wrote that a person took out of
+	// the body: a "no" for each, never written again (ADR-0038).
+	Deleted []string `yaml:"deleted,flow,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -115,7 +118,8 @@ func FormatState(s State) string {
 		Sections  map[string]string `yaml:"sections,omitempty"`
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
 		Answered  string            `yaml:"answered,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered})
+		Deleted   []string          `yaml:"deleted,flow,omitempty"`
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Deleted})
 	return "What workline knows of this issue; edited by the engine, not by hand.\n\n```yaml\n" + string(data) + "```"
 }
 
@@ -211,7 +215,10 @@ type Proposal struct {
 	// Revise, the engine's: the sections with text this refine may rewrite,
 	// to answer the reviewer's findings on the spec (#128) — the role's own
 	// only (Revisable); never taken from the agent.
-	Revise    []string `yaml:"revise,omitempty"`
+	Revise []string `yaml:"revise,omitempty"`
+	// Refused, the engine's: the sections the role wrote that a person
+	// deleted (State.Deleted), never written again (ADR-0038).
+	Refused   []string `yaml:"refused,omitempty"`
 	Questions string   `yaml:"questions,omitempty"` // asking the reporter; for an outsider's refine, what it still needs
 	// The engine's, for the conversation with the reporter: the round this
 	// comment would be, and whether a refine is proposed to the reporter in
@@ -1167,14 +1174,19 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == ""
 		// Answering the reviewer's findings on its spec (#128): the role
 		// rewrites the sections they lie in that are still its own.
-		c.Revise = nil
-		if p.config.SpecReview && !c.ToReporter && f != nil {
+		c.Revise, c.Refused = nil, nil
+		if f != nil {
 			comments, err := f.Comments(forge.Target{Kind: "issue", ID: c.Issue})
 			if err != nil {
 				return "no-state", err.Error()
 			}
 			st, _, _ := ReadState(comments, role)
-			c.Revise = Revisable(is, st, SpecOpen(is, comments))
+			// A section the role wrote and a person deleted is their "no"
+			// for it: never written again (ADR-0038).
+			c.Refused = DeletedSections(st, is.Body)
+			if p.config.SpecReview && !c.ToReporter {
+				c.Revise = Revisable(is, st, SpecOpen(is, comments))
+			}
 		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
@@ -1337,7 +1349,7 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	var added, kept []string
 	for _, name := range Sections {
 		text := strings.TrimSpace(given[name])
-		if text == "" {
+		if text == "" || slices.Contains(c.Refused, name) {
 			continue
 		}
 		if slices.Contains(drafted, name) {

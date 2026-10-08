@@ -1,0 +1,14 @@
+case: product-owner/deleted-section-not-written-again
+about: A section the role wrote that a person deleted from the body is a "no" for it (ADR-0038) — the issue is read again for the edit, and a refine proposing that section again writes nothing of it; the deletion is kept in the issue's state.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nEvery row exported, so the monthly report is right.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go.", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 0123456789ab\nwrote:\n  Need: aaaaaaaaaaaa\n  Verification: 5d0b8e3c1f2a\n  Validation: bbbbbbbbbbbb\n  Scope: cccccccccccc\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine-again}
+expect:
+  agent-calls: 1
+  findings: [{rule: nothing-to-refine, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Validation", comment-contains: "deleted: [Validation]"}
