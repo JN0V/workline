@@ -88,6 +88,9 @@ who reads neither the log nor `line.json`:
   end of the log ([ci-gitlab.md](ci-gitlab.md#what-the-template-does)).
 - **Another CI**: pass `--summary` to `route`, `apply` or `sample`, as
   `.md` or `.html`, whichever your CI shows.
+- **The applying job** writes its own: what it did on each issue, linked,
+  grouped as the judge's; what failed, the runs it left unapplied, and the
+  command that resumes them.
 
 ## The product owner
 

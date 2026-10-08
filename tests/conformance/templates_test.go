@@ -163,6 +163,46 @@ func TestGitHubTemplatesUseTheSummary(t *testing.T) {
 	}
 }
 
+// The job that applies writes its own summary: what was done, and what
+// failed or was left unapplied, on its page, the job failing still.
+func TestGitHubApplyJobsWriteTheirSummary(t *testing.T) {
+	files, _ := filepath.Glob("../../ci/github/workline*.yml")
+	own, _ := filepath.Glob("../../.github/workflows/workline*.yml")
+	n := 0
+	for _, f := range append(files, own...) {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				Steps []struct {
+					Run string `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		for name, job := range wf.Jobs {
+			for _, st := range job.Steps {
+				if !strings.Contains(st.Run, "workline apply") && !strings.Contains(st.Run, "workline sample --apply") {
+					continue
+				}
+				n++
+				if !strings.Contains(st.Run, "--summary workline-summary.md || status=$?") ||
+					!strings.Contains(st.Run, `cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"`) ||
+					!strings.Contains(st.Run, `exit "$status"`) {
+					t.Errorf("%s, job %s: applies without its own summary on the job's page, or without failing by it", filepath.Base(f), name)
+				}
+			}
+		}
+	}
+	if n < 6 {
+		t.Fatalf("found %d steps applying, want six", n)
+	}
+}
+
 // A judge that fails — a step blocked, the reviewer held by a finding —
 // still leaves what it proposed to apply (#226, #142): the job that applies
 // runs whatever the judge's outcome, and the pipeline still fails by the
