@@ -1352,10 +1352,11 @@ func ListChildren(body string, ids []int) string {
 		list = append(list, fmt.Sprintf("- [ ] #%d", id))
 	}
 	text := strings.Join(list, "\n")
+	body, footer := work.Footer(body)
 	if _, ok := work.Sections(body)["Sub-issues"]; ok {
-		return fill(body, "Sub-issues", text)
+		return work.WithFooter(fill(body, "Sub-issues", text), footer)
 	}
-	return strings.TrimRight(body, " \r\n") + "\n\n" + SubIssuesHeading + "\n\n" + text
+	return work.WithFooter(strings.TrimRight(body, " \r\n")+"\n\n"+SubIssuesHeading+"\n\n"+text, footer)
 }
 
 // Sections are an issue's, in the order they are written.
@@ -1379,6 +1380,7 @@ func DraftLine(role string) string {
 func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	have := work.Sections(body)
 	given := map[string]string{"Need": c.Need, "Verification": c.Verification, "Validation": c.Validation, "Scope": c.Scope}
+	body, footer := work.Footer(body) // a section added goes above the body's footer
 	body = strings.TrimRight(body, " \r\n")
 	var added, kept []string
 	for _, name := range Sections {
@@ -1403,7 +1405,7 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 		}
 		added = append(added, name)
 	}
-	return body, added, kept
+	return work.WithFooter(body, footer), added, kept
 }
 
 // fill writes text under the heading of an empty section, in place.

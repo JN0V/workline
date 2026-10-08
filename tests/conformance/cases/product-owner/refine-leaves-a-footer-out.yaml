@@ -1,0 +1,18 @@
+case: product-owner/refine-leaves-a-footer-out
+about: "A body's footer — a tool's signature line alone at its end, or what follows a thematic break after the last section — belongs to no section: the role never keeps it in a section's text, and adds the sections it writes above it."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nWriteRows in src/export/csv.go.\n\n🤖 Generated with [a coding tool](https://example.com/tool)", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "XML import", body: "Import XML.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  findings: [{rule: done, where: "#9", message: "Refined #9: Need (draft), Verification, Validation (draft)."}]
+  forge:
+    issues:
+      - id: 9
+        body-contains: "## Scope\n\nWriteRows in src/export/csv.go.\n\n## Need\n\n"
+        body-lacks: "Generated with [a coding tool](https://example.com/tool)\n\n## "
+        comment-contains: "Scope: WriteRows in src/export/csv.go.\n"
+        comment-lacks: "Generated"

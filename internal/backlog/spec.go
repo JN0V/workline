@@ -110,9 +110,12 @@ func SpecOpen(is forge.Issue, comments []string) *SpecReview {
 }
 
 // SectionAt is the section of a body a line lies in, by its `## ` (or
-// `### `) heading above it; "" above the first.
+// `### `) heading above it; "" above the first, or in the body's footer.
 func SectionAt(body string, line int) string {
 	name := ""
+	if main, _ := work.Footer(body); line > strings.Count(main, "\n")+1 {
+		return ""
+	}
 	for i, l := range strings.Split(body, "\n") {
 		if i+1 > line {
 			break
