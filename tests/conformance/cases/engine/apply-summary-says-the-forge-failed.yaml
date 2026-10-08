@@ -1,0 +1,16 @@
+case: engine/apply-summary-says-the-forge-failed
+about: "A forge that fails while the judged acts are applied is on the job's page that applies, with what was done before it and how to resume."
+given:
+  repo: documented
+  setup: ["sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"]
+  forge: {merge-requests: [{id: 1, labels: [], comments: []}], fail-on-write: 2}
+run: {role: documentalist, event: merge-request, target: {merge-request: 1}, ai: "fake:comment-and-label", no-apply: true, then: resume, summary: true}
+expect:
+  status: blocked-external
+  summary-file:
+    - "- to apply: 1 run"
+    - "### workline apply"
+    - "**blocked-external** — stopped while applying"
+    - "resume with: workline apply"
+    - "- forge-unreachable"
+    - "- applied: label"

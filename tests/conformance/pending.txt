@@ -1,2 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+engine/apply-summary-says-what-was-not-applied

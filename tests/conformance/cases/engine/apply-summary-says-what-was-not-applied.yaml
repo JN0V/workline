@@ -1,0 +1,15 @@
+case: engine/apply-summary-says-what-was-not-applied
+about: "The job that applies writes its own summary: a run that fails is said, and so are the runs after it, left unapplied, with the command that resumes them — a job's page never passes over them in silence."
+given:
+  repo: basic
+  setup:
+    - printf '{"status":"pass","pending":["runs/first","runs/second","runs/third"]}' > line.json
+run: {cli: [apply, --line, line.json, --summary, workline-summary.md]}
+expect:
+  exit: 1
+  summary-file:
+    - "### workline apply"
+    - "**block**"
+    - "- engine-error: not a run that reached apply"
+    - "- runs-not-applied runs/first: 2 runs after it not applied"
+    - "workline apply runs/first runs/second runs/third"
