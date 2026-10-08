@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: a59e5e6
+checked: 2b82821
 verified: agent:claude-code
 ---
 # Using workline
@@ -115,6 +115,8 @@ Each in detail: [the commands](commands.md), and
   - Added to, never overwritten, so a judging then an applying job write
     one page. Repeatable; `apply`, `sample` and `issues import` take it
     too.
+  - The product owner's findings grouped, one line an issue linked to
+    its page ([what it writes](../roles/product-owner/docs/outputs.md#in-the-ci-jobs-summary)).
 - **`--json`**: status, summary, findings, the agent's notes, each agent
   call (agent, tier, effort, the exact model that answered, tokens in,
   cached and out, cost, seconds), and for a line its steps and pending

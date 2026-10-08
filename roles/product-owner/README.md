@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 17ca434
+checked: 2b82821
 verified: agent:claude-code
 ---
 # Product owner
@@ -52,7 +52,8 @@ is on each issue; you answer there
   the issue waits on you: its drafts, or a proposal.
 - **What waits on you** is a saved filter on that label.
 - **The night's summary** is in the CI job's summary: done, proposed,
-  left to a person, next, stuck.
+  left to a person, next, stuck, one linked line an issue
+  ([what it writes](docs/outputs.md#in-the-ci-jobs-summary)).
 
 ## How you answer
 
