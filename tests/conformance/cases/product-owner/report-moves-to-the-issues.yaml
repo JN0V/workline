@@ -11,14 +11,14 @@ given:
         title: "Backlog — product owner"
         body: "What the product owner did.\n\n- [x] Rename #9 <!-- workline:proposal=9/rename -->"
         labels: []
-        comments: ["What the role did.\n\n```yaml\nclosed:\n  - {issue: 11, act: close-duplicate, level: normal}\ndone:\n  - {issue: 10, act: ready, level: normal}\nproposed:\n  - issue: 9\n    act: rename\n    line: 'Rename #9 to \"Rows lost in the CSV export\"'\n    since: \"2026-10-01\"\n    proposal: {do: rename, issue: 9, title: Rows lost in the CSV export, before: Rows lost, why: Vague.}\ndid:\n  - {issue: 10, act: ready, level: normal, day: \"2026-10-02\", line: 'Moved #10 to ready: clear.'}\nignored: 2\ncomments: 1\nmeasure: {level: normal, ticked: 3}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
+        comments: ["What the role did.\n\n```yaml\nclosed:\n  - {issue: 11, act: close-duplicate, level: normal}\nwrong:\n  - {issue: 9, act: close-duplicate}\ndone:\n  - {issue: 10, act: ready, level: normal}\nproposed:\n  - issue: 9\n    act: rename\n    line: 'Rename #9 to \"Rows lost in the CSV export\"'\n    since: \"2026-10-01\"\n    proposal: {do: rename, issue: 9, title: Rows lost in the CSV export, before: Rows lost, why: Vague.}\ndid:\n  - {issue: 10, act: ready, level: normal, day: \"2026-10-02\", line: 'Moved #10 to ready: clear.'}\nignored: 2\ncomments: 1\nmeasure: {level: normal, ticked: 3}\n```\n\n<!-- workline:sticky=product-owner/acts -->"]
 run: {role: product-owner, event: schedule, ai: none}
 expect:
   agent-calls: 0
   findings: [{rule: report-closed, where: "#20"}]
   forge:
     issues:
-      - {id: 9, title: "Rows lost", labels: [workline:proposed], comment-contains: ["**Proposes**: Rename it to \"Rows lost in the CSV export\".", "act: rename", "label: workline:proposed"]}
+      - {id: 9, title: "Rows lost", labels: [workline:proposed], comment-contains: ["**Proposes**: Rename it to \"Rows lost in the CSV export\".", "act: rename", "label: workline:proposed", "evidence: '#9 reopened'"]}
       - {id: 10, labels: [workline:ready], comment-contains: ["act: ready", "Moved #10 to ready: clear."]}
       - {id: 11, comment-contains: "closed: close-duplicate"}
       - {id: 20, closed: true, comment-contains: "keeps no report any more: what it proposes is on each issue, under its one comment there, and what waits on you is [the issues bearing `workline:proposed`](https://forge.example/issues?label=workline:proposed)"}

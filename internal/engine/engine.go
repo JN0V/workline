@@ -2202,7 +2202,7 @@ func (a *applier) split(c backlog.Proposal) error {
 	if err != nil {
 		return err
 	}
-	if err := b.EnsureLabel(backlog.AcceptedLabel(a.forge), "0e8a16", "A person accepted what the product owner proposes here: the next run does it, and moves the issue to ready"); err != nil {
+	if err := b.EnsureLabel(backlog.AcceptedLabel(a.forge), "0e8a16", "A yes to what the product owner proposes here: done at its next run"); err != nil {
 		return err
 	}
 	var ids, listed []int
@@ -2379,7 +2379,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 		}
 		// An outsider's issue: the text proposed to its reporter, nothing
 		// written in the body until they or a person of the project agree.
-		if err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", "A person accepted what the product owner proposes here: the next run does it, and moves the issue to ready"); err != nil {
+		if err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", "A yes to what the product owner proposes here: done at its next run"); err != nil {
 			return err
 		}
 		if err := f.Label(t, []string{backlog.LabelToRefine}, nil); err != nil {
@@ -2414,7 +2414,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 		labels = append(labels, backlog.LabelDraft)
 		// The label a person accepts the drafts with, there to be picked
 		// from the forge's list.
-		if err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", "A person accepted what the product owner proposes here: the next run does it, and moves the issue to ready"); err != nil {
+		if err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", "A yes to what the product owner proposes here: done at its next run"); err != nil {
 			return err
 		}
 	}

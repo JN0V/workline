@@ -32,7 +32,7 @@ type Did struct {
 const (
 	DidDays = 35
 	didMax  = 200
-	didLine = 120
+	didLine = 240
 )
 
 // recordDid keeps an act the role did, with today's day.

@@ -25,7 +25,7 @@ const doneMax = 200
 // Done is one act of the role's a person may undo: its issue, its kind, the
 // value it had and the value the role set.
 type Done struct {
-	Issue int    `yaml:"issue"`
+	Issue int    `yaml:"issue,omitempty"` // left out in the issue's own state
 	Act   string `yaml:"act"`
 	Was   string `yaml:"was,omitempty"`
 	Set   string `yaml:"set,omitempty"`
@@ -34,7 +34,7 @@ type Done struct {
 
 // Undo is an act a person undid, and what shows it.
 type Undo struct {
-	Issue    int    `yaml:"issue"`
+	Issue    int    `yaml:"issue,omitempty"` // left out in the issue's own state
 	Act      string `yaml:"act"`
 	Evidence string `yaml:"evidence"`
 	Day      string `yaml:"day,omitempty"` // when a run found it, YYYY-MM-DD: the weekly sample counts it against one act

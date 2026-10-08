@@ -369,6 +369,11 @@ func (l *Ledger) readReport(f forge.Backlog, role string, open map[int]forge.Iss
 			r.Undone = append(r.Undone, u)
 		}
 	}
+	for _, c := range old.Wrong { // a closing found wrong: undone, on its issue
+		if !held(c.Issue) {
+			r.Undone = append(r.Undone, Undo{Issue: c.Issue, Act: c.Act, Evidence: fmt.Sprintf("#%d reopened", c.Issue)})
+		}
+	}
 	for _, d := range old.Did {
 		if !held(d.Issue) {
 			r.Did = append(r.Did, d)
@@ -507,7 +512,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			switch {
 			case waits && st.Label == "":
 				if !ensured {
-					if err := b.EnsureLabel(proposed, "fbca04", "The product owner proposes something here: label "+AcceptedLabel(f)+" to agree, comment to have it revise, take this label off for not now"); err != nil {
+					if err := b.EnsureLabel(proposed, "fbca04", proposedSays(AcceptedLabel(f))); err != nil {
 						return err
 					}
 					ensured = true
@@ -608,6 +613,12 @@ func (p *Plan) revisionsMax() int { return max(1, RoundsMax(p.settings)-1) }
 
 // RevisionsMax is the same, from the settings.
 func RevisionsMax(settings map[string]Setting) int { return max(1, RoundsMax(settings)-1) }
+
+// proposedSays is the description of the label workline:proposed, as the
+// forge's list shows it: 100 characters at most, GitHub's limit.
+func proposedSays(accepted string) string {
+	return "The product owner proposes here: " + accepted + " to agree, a comment to revise, off for not now"
+}
 
 // slashLine is a line a GitLab quick action would run: a `/word` at its
 // start.

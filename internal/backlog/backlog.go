@@ -154,7 +154,7 @@ func FormatState(s State) string {
 	if say == "" {
 		return "What workline knows of this issue; edited by the engine, not by hand.\n\n" + block
 	}
-	return Inert(say) + "\n\n<details><summary>What workline knows of this issue, edited by the engine</summary>\n\n" + block + "\n\n</details>"
+	return Inert(strings.ReplaceAll(say, "```", "'''")) + "\n\n<details><summary>What workline knows of this issue, edited by the engine</summary>\n\n" + block + "\n\n</details>"
 }
 
 // unfenced is a YAML document with every fence (```) in its texts made
@@ -194,11 +194,14 @@ func (s State) say() string {
 		var did []string
 		for _, d := range s.Did {
 			if d.Day == day && d.Line != "" {
-				did = append(did, d.Line)
+				if d.Yes != "" {
+					d.Line += " Accepted by " + d.Yes + "."
+				}
+				did = append(did, "- "+d.Line)
 			}
 		}
 		if len(did) > 0 {
-			lines = append(lines, fmt.Sprintf("**The product owner**, on %s: %s", day, strings.Join(did, " ")))
+			lines = append(lines, fmt.Sprintf("**The product owner**, on %s:\n\n%s", day, strings.Join(did, "\n")))
 		}
 	}
 	for _, q := range s.Proposed {
@@ -217,6 +220,9 @@ func (s State) say() string {
 	case s.Aside != "":
 		lines = append(lines, "Set aside by a person: nothing more is proposed here until the issue changes.")
 	case s.Label != "":
+		if len(s.Proposed) == 0 && len(s.Did) == 0 {
+			lines = append(lines, "**The product owner** drafted sections of this issue, marked as drafts in its body: they wait on your answer.")
+		}
 		accepted := strings.Replace(s.Label, "proposed", "accepted", 1)
 		lines = append(lines, fmt.Sprintf("**Your answer**: label `%s` to agree — what it proposes is done at its next run, its drafts become yours, and the issue moves to ready once complete; comment to have it revise; take `%s` off for not now; close the issue if it should not exist.", accepted, s.Label))
 	}

@@ -262,7 +262,7 @@ func Pre(runDir, repo string) int {
 					closing = closing || c.Do == "close"
 					fallback = append(fallback, intent.Intention{Kind: c.Do, Value: map[string]any{
 						"issue": is.ID, "reason": c.Reason, "ticked": who, "own": true,
-						"why": "accepted by " + who + " (" + backlog.LabelAccepted + ")"}})
+						"why": "accepted by " + who + " (" + backlog.AcceptedLabel(b) + ")"}})
 				}
 			}
 		}
@@ -273,13 +273,13 @@ func Pre(runDir, repo string) int {
 			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
 				"issue": is.ID, "need": p.Need, "verification": p.Verification, "validation": p.Validation,
 				"scope": p.Scope, "sources": p.Sources, "own": true,
-				"why": "the text proposed to its reporter, agreed to by a person (" + backlog.LabelAccepted + ")"}})
+				"why": "the text proposed to its reporter, agreed to by a person (" + backlog.AcceptedLabel(b) + ")"}})
 		}
 		if found && err == nil && backlog.Accepted(is) && !closing {
 			// A person accepted its drafts, with the label: the engine moves
 			// it to ready if its sections are there, with no agent.
 			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
-				"issue": is.ID, "why": "its drafts accepted (" + backlog.LabelAccepted + ")", "ticked": who, "own": true}})
+				"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
 			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, false)) == 0 {
 			// The reviewer read its spec as it is and found no important

@@ -74,6 +74,16 @@ func TestDemoted(t *testing.T) {
 	}
 }
 
+// A label's description fits GitHub's limit, 100 characters, in either
+// spelling.
+func TestProposedSaysFits(t *testing.T) {
+	for _, l := range acceptedLabels {
+		if n := len([]rune(proposedSays(l))); n > 100 {
+			t.Errorf("%s: %d characters", l, n)
+		}
+	}
+}
+
 // The role's comment says nothing until it did or proposes something;
 // then it says it above its state, folded, and what it wants from a
 // person while its label is on.
@@ -85,7 +95,7 @@ func TestStateSays(t *testing.T) {
 	s := State{Confirmed: "abc", Label: scopedProposed, Did: []Did{{Act: "refine", Day: "2026-10-08", Line: "Refined #9: Need (draft)."}},
 		Proposed: []Pending{{Act: "rename", Line: "Rename #9.", Proposal: &Proposal{Do: "rename", Issue: 9, Title: "A title", Why: "```x```"}}}}
 	got := FormatState(s)
-	for _, want := range []string{"**The product owner**, on 2026-10-08: Refined #9: Need (draft).", "**Proposes**: Rename it to \"A title\".",
+	for _, want := range []string{"**The product owner**, on 2026-10-08:\n\n- Refined #9: Need (draft).", "**Proposes**: Rename it to \"A title\". Why: '''x'''",
 		"label `workline::accepted` to agree", "take `workline::proposed` off", "<details><summary>What workline knows of this issue, edited by the engine</summary>"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("state says %q, want it to hold %q", got, want)
