@@ -11,6 +11,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // What the role holds is kept on each issue, never in a report (ADR-0038):
@@ -106,6 +107,78 @@ func Heard(st *State, counted int) int {
 		return min(st.Comments, counted)
 	}
 	return *st.Heard
+}
+
+// Unheard are the counted comments the role has not read yet: a person's
+// word on the issue since it last read it (ADR-0038). Which comment is the
+// role's is told by its marker, never by its author: the role may write
+// with a person's token.
+func Unheard(st *State, notes []forge.Note, is forge.Issue) []forge.Note {
+	counted := Counted(notes, is)
+	if h := Heard(st, len(counted)); h < len(counted) {
+		return counted[h:]
+	}
+	return nil
+}
+
+// StillAside says whether an issue a person set aside stays so: its body
+// as it was then, and no comment of a person since the role last read it.
+// Either brings it back (ADR-0038).
+func StillAside(st *State, is forge.Issue, notes []forge.Note) bool {
+	return st != nil && st.Aside != "" && st.Aside == BodyDigest(is.Body) && len(Unheard(st, notes, is)) == 0
+}
+
+// Reading numbers the role's way of reading an issue. It is raised by a
+// change that may give an issue the role read and left with nothing an
+// act: a fix of what the engine dropped, of what the task tells the agent.
+// An issue read under an older one is read again once (LeftBehind).
+const Reading = 1
+
+// LeftBehind says whether an issue was read under an older Reading and
+// left with nothing: lacking a section, and the role never named its code
+// nor did anything on it; nothing on it waits on anyone — no proposal, no
+// label of the role's, not set aside, no question to its reporter left
+// unanswered, not split, not ready. A section a person deleted is theirs,
+// not lacking. Read again once, a fix of the engine reaches it.
+func LeftBehind(is forge.Issue, st *State, comments []string, role string) bool {
+	if st == nil || st.Judged == "" || st.Rules >= Reading || len(st.Sources) > 0 || len(st.Did) > 0 || len(st.Done) > 0 ||
+		st.Label != "" || st.Aside != "" || len(st.Proposed) > 0 || len(st.Split) > 0 || Accepted(is) || slices.Contains(is.Labels, LabelReady) {
+		return false
+	}
+	if e := ReadExchange(comments, role); e.Rounds > 0 && !e.Answered {
+		return false
+	}
+	have := work.Sections(is.Body)
+	for _, name := range Sections {
+		if strings.TrimSpace(have[name]) == "" && !slices.Contains(st.Deleted, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// heardAt is how many counted comments were written at or before when — a
+// person taking the role's label off: what they said with it is part of
+// their "not now". A time that does not read counts as before.
+func heardAt(notes []forge.Note, is forge.Issue, when string) int {
+	at, ok := readTime(when)
+	n := 0
+	for _, c := range Counted(notes, is) {
+		if t, known := readTime(c.Created); !ok || !known || !t.After(at) {
+			n++
+		}
+	}
+	return n
+}
+
+// readTime reads a forge's time: RFC 3339, or a day.
+func readTime(s string) (time.Time, bool) {
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, dateLayout} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
 }
 
 // ID is a pending proposal's key: its issue and kind, or the text an
@@ -494,8 +567,13 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			st.Label, st.Proposed = "", nil
 		case st.Label != "" && !slices.Contains(is.Labels, st.Label) && !Accepted(*is) && p.SetAside[id]:
 			// Taken off by a person: not now, this issue only, until it
-			// changes (ADR-0038).
-			st.Label, st.Proposed, st.Aside = "", nil, BodyDigest(is.Body)
+			// changes (ADR-0038). What they wrote with it is heard: only a
+			// comment after brings it back.
+			n, err := heardWhenSetAside(b, *is, st)
+			if err != nil {
+				return err
+			}
+			st.Label, st.Proposed, st.Aside, st.Heard = "", nil, BodyDigest(is.Body), &n
 		case Accepted(*is):
 			// Their yes, on every plan: the role takes its label off itself.
 			for _, l := range []string{st.Label, LabelProposed, scopedProposed} {
@@ -505,8 +583,10 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			}
 			st.Label = ""
 		default:
-			if st.Aside != "" && (BodyDigest(is.Body) != st.Aside || p.Answers[id] != nil) {
-				st.Aside = "" // the issue changed since: proposed again, if anything
+			if st.Aside != "" && (BodyDigest(is.Body) != st.Aside || p.Answers[id] != nil || p.decidedOn(id)) {
+				// The issue changed since, or a person's comment brought it
+				// back and the run decided on it: proposed again.
+				st.Aside = ""
 			}
 			waits := st.Aside == "" && (len(st.Proposed) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
 			switch {
@@ -578,6 +658,34 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		}
 	}
 	return nil
+}
+
+// heardWhenSetAside is how many counted comments the role takes as heard
+// when it records an issue set aside: those written up to the moment the
+// label came off, as the forge's events say — never fewer than it read.
+func heardWhenSetAside(b forge.Backlog, is forge.Issue, st *State) (int, error) {
+	notes, err := b.Notes(forge.Target{Kind: "issue", ID: is.ID})
+	if err != nil {
+		return 0, err
+	}
+	events, err := b.LabelEvents(is.ID)
+	if err != nil {
+		return 0, err
+	}
+	when := ""
+	for i := len(events) - 1; i >= 0; i-- {
+		if e := events[i]; e.Label == st.Label && !e.Added {
+			when = e.Created
+			break
+		}
+	}
+	return max(heardAt(notes, is, when), Heard(st, len(Counted(notes, is)))), nil
+}
+
+// decidedOn says whether the run decided an act on an issue, done or
+// proposed.
+func (p *Plan) decidedOn(id int) bool {
+	return slices.ContainsFunc(p.Decisions, func(d Decision) bool { return d.Act.Issue == id && d.Mode != Off })
 }
 
 // sortedKeys are a map's issue numbers, lowest first.
