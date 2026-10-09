@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 08a4bfa
+checked: c745cdc
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -62,9 +62,10 @@ Each issue comes with:
 - **Completing**: the sections an issue lacks (`refine`), a question to
   its reporter (`ask`), the move to `ready`, the code it is about
   (`sources`), an evident duplicate (`close`).
-- **Written for a reader**: a Need says who needs what and why, from
-  their side; a Validation, what a person sees once it is done; plain
-  words, a link for each decision or doc cited.
+- **Written for a reader**: a Need in one line, who needs what and why;
+  one real example; a Validation as scenarios a person runs; the
+  builder's part below a line; plain words, a link for each decision or
+  doc cited ([writing an issue](writing.md)).
 - **Never invented**: an issue too thin, holding several topics, or
   resting on a closed issue gets one plain question; one the code
   already does is said on it for you to close.

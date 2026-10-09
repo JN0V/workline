@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: c67e16a
+checked: c745cdc
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -85,7 +85,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
-| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts — never rewriting one there; on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
+| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts, a real example or a bug's steps to reproduce as drafts too, never required — in the reader's order, never rewriting one there; on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
 | `unready` | move a ready issue back to refine (`workline:ready` off, `workline:to-refine` on), the issue told why; always proposed, done once a person accepts it (docs/spec/backlog-acts.md, "Refining to ready"; ADR-0032) | forge |
 | `ask` | ask an issue's reporter what is missing; again only after an answer, never the same question, three rounds then a person, on the issue (ADR-0021) | forge |
