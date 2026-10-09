@@ -1,0 +1,21 @@
+case: product-owner/aside-body-changed-not-brought-back
+about: 'An issue set aside whose body a person changed since is back for that change, not for a comment written beside it (ADR-0038, amended): the task gives the comment with the plain wording, never "Brought back by a comment".'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost, since the last release.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        label-events: [{label: workline:proposed, added: false, author: ann, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments:
+          - {body: "Set aside by a person: nothing more is proposed here until the issue changes.\n\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\naside: 601137e9bbb6\nheard: 0\nrules: 2\n```\n\n<!-- workline:sticky=product-owner/state -->", author: ann, insider: true}
+          - {body: "Will be tried next week", author: ann, insider: true, created: "2026-10-09T08:00:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  run-files:
+    in/issues-read: {contains: "9"}
+    in/task.md: {contains: "A person commented since you last read it (@ann", not-contains: "Brought back by a comment"}

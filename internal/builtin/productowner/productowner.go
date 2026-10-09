@@ -617,7 +617,7 @@ func Pre(runDir, repo string) int {
 		if a := answers[d.is.ID]; a != nil {
 			review += revise(d.is, d.st, a, revisions)
 		} else if n, ok := heard[d.is.ID]; ok {
-			review += commented(n, d.st)
+			review += commented(n, d.is, d.st)
 		}
 		// The issues it cites, open or closed: a closed one is history,
 		// never work to come.
@@ -801,9 +801,10 @@ func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) strin
 // proposal waiting on them (ADR-0038, amended): their word comes first.
 // One they had set aside is brought back by it: said so — who, when, their
 // words —, and read as any issue at the role's level unless the comment
-// says otherwise.
-func commented(n forge.Note, st *backlog.State) string {
-	if st.Aside == "" {
+// says otherwise. One whose body changed since it was set aside is back
+// for that change, not the comment: the plain wording.
+func commented(n forge.Note, is forge.Issue, st *backlog.State) string {
+	if st.Aside == "" || st.Aside != backlog.BodyDigest(is.Body) {
 		return fmt.Sprintf("A person commented since you last read it (@%s, the last comments below): read their word first — what it says decides.\n", n.Author)
 	}
 	on := ""
