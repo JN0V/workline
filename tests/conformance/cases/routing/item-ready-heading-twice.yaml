@@ -1,0 +1,7 @@
+case: routing/item-ready-heading-twice
+about: A heading written twice in an issue holds the text under both, the first one's never lost — here a Validation with text, then an empty Validation added below — so the issue is ready.
+given:
+  repo: basic
+  forge: {issues: [{id: 8, body: "## Need\n\nExport as CSV\n\n## Validation\n\nThe product owner opens it in a spreadsheet\n\n## Verification\n\nA test exports three rows\n\n## Scope\n\nsrc/export\n\n## Validation\n\n_No response_", labels: [workline:to-refine], comments: []}]}
+run: {route: ready, item: 8}
+expect: {status: pass, forge: {issues: [{id: 8, labels: [workline:ready]}]}}
