@@ -285,3 +285,15 @@ The next run
   brought back, read under the older way and left aside, is read again
   once — the comment written after the label came off, by the forge's
   label events.
+
+## Amendment (2026-10-09, late): fifteen issues a night for the trial
+
+- **Five was too few**: the maintainer's backlog holds about fifty open
+  issues; at five a night, issues a person commented on waited behind
+  never-read ones.
+- **The trial reads fifteen**, completes and readies ten at most;
+  `proposals-max` (10) still bounds what waits on a person. Workline's
+  own `.workline/config.yaml`; the role's defaults are unchanged.
+- **No unlimited mode**: a run is one agent call holding every issue it
+  reads, about ten thousand tokens each. Reading a whole backlog would
+  need several calls a run, built only if real use asks for it.
