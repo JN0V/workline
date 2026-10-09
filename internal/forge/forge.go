@@ -219,6 +219,16 @@ func IssuePages(f any) string {
 	return ""
 }
 
+// FilePages is the address of f's files on the default branch, a file's
+// path after it making its page: the product owner links the decisions and
+// docs its drafts cite; "" when the forge has no such page.
+func FilePages(f any) string {
+	if l, ok := f.(interface{ filePages() string }); ok {
+		return l.filePages()
+	}
+	return ""
+}
+
 // MergeRequest is where a merge request comes from and where it goes.
 type MergeRequest struct {
 	Branch string // the branch it comes from

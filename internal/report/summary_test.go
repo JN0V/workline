@@ -57,14 +57,18 @@ func TestBacklogFindingsGroupedOneLineAnIssue(t *testing.T) {
 	fs = append(fs,
 		verdict.Finding{Rule: "done", Level: "info", Where: "#3", Message: "Named the code #3 is about: a.go."},
 		verdict.Finding{Rule: "done", Level: "info", Where: "#3", Message: "Refined #3: Scope. " + strings.Repeat("why ", 40)},
-		verdict.Finding{Rule: "sources-unknown", Where: "#4", Message: "no file"})
+		verdict.Finding{Rule: "sources-unknown", Where: "#4", Message: "no file"},
+		verdict.Finding{Rule: "waiting", Level: "info", Where: "#14", Message: "waits on #13"},
+		verdict.Finding{Rule: "blocker-not-delivered", Level: "warn", Where: "#15", Message: "#13 closed as not planned"},
+		verdict.Finding{Rule: "proposals-waiting", Level: "warn", Message: "10 issues wait on your answer"})
 	s := Summary{Title: "apply", Status: verdict.Pass, Findings: fs, Issues: "https://f/issues/", Waiting: "https://f/issues?label=p"}
 	got := s.Markdown()
 	for _, want := range []string{
 		"- **done alone** (1)\n  - [#3](https://f/issues/3): Named the code #3 is about: a.go.; Refined #3: Scope. why why",
 		"- **proposed, waiting on a person** (12), [all that wait on a person](https://f/issues?label=p)\n  - [#1](https://f/issues/1): Label it ready.\n",
 		"  - [#10](https://f/issues/10): Label it ready.\n  - and 2 more: [all that wait on a person](https://f/issues?label=p)\n",
-		"- sources-unknown #4: no file\n",
+		"- **read, left incomplete: yours to complete, or to leave** (1)\n  - [#4](https://f/issues/4): no file\n",
+		"- [#14](https://f/issues/14): waits on #13\n- [#15](https://f/issues/15), warn: #13 closed as not planned\n- the backlog, warn: 10 issues wait on your answer\n",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the summary lacks %q:\n%s", want, got)

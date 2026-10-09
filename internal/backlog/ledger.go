@@ -126,7 +126,7 @@ func (q Pending) Undrafted() bool { return q.Proposal == nil && q.Key == "" && q
 // it would do recorded, and not one only a person or the import does.
 func (q Pending) Doable() bool {
 	c := q.Proposal
-	return c != nil && c.Do != "open" && !c.Spent && !(c.Do == "milestone" && c.Milestone == "")
+	return c != nil && c.Do != "open" && !c.Spent && !c.Advice && !(c.Do == "milestone" && c.Milestone == "")
 }
 
 // Answer is a person's comment on an issue waiting on them, read as
@@ -508,7 +508,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			if st.Aside != "" && (BodyDigest(is.Body) != st.Aside || p.Answers[id] != nil) {
 				st.Aside = "" // the issue changed since: proposed again, if anything
 			}
-			waits := st.Aside == "" && (len(st.Proposed) > 0 || (strings.Contains(is.Body, DraftMarker) && !slices.Contains(is.Labels, LabelReady)))
+			waits := st.Aside == "" && (len(st.Proposed) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
 			switch {
 			case waits && st.Label == "":
 				if !ensured {
@@ -525,6 +525,16 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 					remove = append(remove, st.Label)
 				}
 				st.Label = ""
+			}
+		}
+		if !is.Closed && !HasDraft(is.Body, st) {
+			// Its labels say what is true of it: no draft of the role's
+			// left, no workline:draft; set aside, its body a person's, the
+			// role's way to ready is off it too (ADR-0038).
+			for _, l := range []string{LabelDraft, LabelToRefine} {
+				if slices.Contains(is.Labels, l) && (l == LabelDraft || st.Aside != "") && !slices.Contains(remove, l) {
+					remove = append(remove, l)
+				}
 			}
 		}
 		if after := FormatState(*st); after != before {

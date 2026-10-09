@@ -21,6 +21,6 @@ expect:
   forge:
     issues:
       - {id: 9, labels: [workline:to-refine, workline:draft, workline:proposed], reactions: {"2": [eyes]}}
-      - {id: 9, body-contains: "## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nAnn opens the CSV of a known day and counts its rows.", body-lacks: "Ann opens a known day."}
+      - {id: 9, body-contains: "## Validation\n\n<!-- workline:draft -->\n\nAnn opens the CSV of a known day and counts its rows.", body-lacks: "Ann opens a known day."}
       - {id: 9, body-contains: "## Verification\n\nMine: a test writes three rows."}
       - {id: 9, comment-contains: ["@bob, read (revision 1 of 2): rewrote Validation in place.", "revisions: 1", "heard: 1"]}

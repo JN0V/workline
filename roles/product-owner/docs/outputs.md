@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 2b82821
+checked: 42ce663
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -19,9 +19,17 @@ Part of [the product owner](../README.md). What a run does, step by step:
   - what it knows of the issue, folded: what it read, wrote, did,
     proposed, and what you undid.
 - **Labels**: `workline:proposed` (GitLab: `workline::proposed`) while it
-  waits on you; `workline:draft`, `workline:to-refine`, `workline:ready`.
-- **Sections** written in the body, Need and Validation as drafts; to an
-  outsider, a comment proposing them instead.
+  waits on you; `workline:draft` while a draft of its own is left;
+  `workline:to-refine`, `workline:ready`. Checked at every run: set
+  aside with no draft left, the issue loses `draft` and `to-refine`.
+- **Sections** written in the body, Need and Validation as drafts: a
+  hidden mark only, the comment saying which are drafts; edit one and it
+  is yours. To an outsider, a comment proposing them instead.
+- **What it writes reads as user docs**: plain words, a link for each
+  decision cited (added when it wrote one bare), "(closed)" after a
+  closed issue cited.
+- **Looks done?** With `close-obsolete` off (the default), it says so on
+  the issue, the code quoted, for you to close; it closes nothing.
 - **A reply in one line** to your comments, 👀 on each.
 - **On a split need**: one comment listing its parts and what they
   proved ([tracking](tracking.md#a-parent-and-its-parts)).
@@ -39,11 +47,17 @@ read-only, grouped, one line an issue linked to its page:
 - **proposed, waiting on a person**: what waits on you;
 - **left to a person**, **set aside by a person**: the rounds spent, your
   "not now";
+- **read, left incomplete**: an issue it read and could not complete —
+  no file found for its Scope, nothing drafted —, with what you may do;
 - **next to build**: the first ready issues of the order;
-- **stuck**: what waits on a person past `stuck-days`.
+- **stuck**: what waits on a person past `stuck-days`;
+- **held back by the engine**: what the agent wrote and the engine did
+  not do, and why; nothing for you to do.
 
 Each group lists 10 issues, then "and N more"; the waiting groups link
-the saved filter on `workline:proposed`.
+the saved filter on `workline:proposed`. The role's own line counts
+issues, as you will see them: "issues: 2 done alone, 1 proposed to a
+person, 5 set aside by a person".
 
 The judging job, which writes nothing (`--no-apply`), decides the acts
 already and says them: "to do alone, once applied", "to propose, once

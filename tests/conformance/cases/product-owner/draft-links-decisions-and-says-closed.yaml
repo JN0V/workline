@@ -1,0 +1,19 @@
+case: product-owner/draft-links-decisions-and-says-closed
+about: What the role writes in an issue follows the docs rules a reader needs, where the engine can tell — a decision cited bare (ADR-0007) becomes a link to its page on the forge, a closed issue cited is said closed so nobody waits on it; the agent is told which issues an issue cites are closed, and how to link a file.
+given:
+  repo: backlog
+  setup:
+    - "mkdir -p docs/adr && printf '# ADR-0007: Rows are exported whole\\n' > docs/adr/0007-rows-are-exported-whole.md && git add docs && git commit -qm 'docs: a decision'"
+  forge:
+    issues:
+      - {id: 5, title: "Tester role", body: "A tester.", closed: true, reason: not_planned}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost; see #5 and src/export/csv.go.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-cites}
+expect:
+  findings: [{rule: done, where: "#9", message: "Refined #9: Need (draft), Validation (draft)."}]
+  run-files:
+    in/task.md: {contains: ["Cites: #5 (closed as not planned) — a closed issue is done or dropped", "Links: a file of the repository you cite — a decision, a doc, code — is a link to https://forge.example/blob/HEAD/<its path>"]}
+  forge:
+    issues:
+      - {id: 9, body-contains: "Ann needs every row of a day exported, as [ADR-0007](https://forge.example/blob/HEAD/docs/adr/0007-rows-are-exported-whole.md) decided; the rest waits on #5 (closed)."}
+      - {id: 9, body-contains: "as [ADR-0007](https://elsewhere/adr-7) says."}

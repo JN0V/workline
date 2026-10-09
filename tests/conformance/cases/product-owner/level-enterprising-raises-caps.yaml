@@ -19,7 +19,7 @@ run: {role: product-owner, event: schedule, ai: fake:close-five-duplicates}
 expect:
   no-findings: [{rule: act-cap}]
   run-files:
-    in/task.md: {contains: "- close-duplicate: act, 5 a run (level)\n- close-obsolete: off (level)\n- milestone: off (level)\n- order: off (level)\n- refine: act, 10 a run (level)\n- ready: act, 10 a run (level)\n- ask: act, 5 a run (level)"}
+    in/task.md: {contains: "- close-duplicate: act, 5 a run (level)\n- close-obsolete: off (level); write one all the same when the evidence settles it: said on the issue for a person to close, never closed by the role\n- milestone: off (level)\n- order: off (level)\n- refine: act, 10 a run (level)\n- ready: act, 10 a run (level)\n- ask: act, 5 a run (level)"}
   forge:
     issues:
       - {id: 8, closed: true}

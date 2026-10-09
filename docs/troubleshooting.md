@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 1b41bbf
+checked: fb2293a
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -77,6 +77,10 @@ gardening proposes again when fewer wait.
   `proposals-max` (10): it reads only those you answered. Answer some —
   `workline:accepted`, a comment, the label taken off.
 - `setting-gone`: `ignored-runs-max` is no longer read; take it off.
+- An issue gets nothing: the summary's "read, left incomplete" says why —
+  no file found for its Scope (link or name its files, or write the Scope
+  yourself), or nothing drafted (read again once it changes or someone
+  comments).
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - An issue refined never goes ready, the reviewer after it in the line
   ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads one issue a run, none

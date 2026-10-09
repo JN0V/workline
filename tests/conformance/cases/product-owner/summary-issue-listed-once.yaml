@@ -27,7 +27,7 @@ run: {role: product-owner, event: schedule, ai: none}
 expect:
   agent-calls: 0
   findings:
-    - {rule: next-ready, where: "#20", message: "Export in JSON — no milestone, priority 1"}
+    - {rule: next-ready, where: "#20", message: "Export in JSON — priority 1"}
     - {rule: stuck, where: "#21", message: "its reporter written to on 2026-01-02 ("}
   no-findings:
     - {rule: stuck, where: "#20"}

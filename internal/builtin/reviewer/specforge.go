@@ -51,7 +51,7 @@ func nextSpec(f forge.Backlog) (w waiting, ok bool, err error) {
 	}
 	backlog.Order(open)
 	for _, is := range open {
-		if slices.Contains(is.Labels, backlog.LabelReady) || len(backlog.NotReady(is.Body, true)) > 0 {
+		if slices.Contains(is.Labels, backlog.LabelReady) || len(backlog.NotReady(is.Body, nil, true)) > 0 {
 			continue
 		}
 		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})

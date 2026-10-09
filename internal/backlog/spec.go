@@ -144,7 +144,7 @@ func Own(is forge.Issue, st *State) []string {
 		text, ok := have[name]
 		switch {
 		case !ok || strings.TrimSpace(text) == "":
-		case slices.Contains(drafted, name) && strings.Contains(text, DraftMarker) && !Accepted(is):
+		case IsDraft(is.Body, name, st) && !Accepted(is):
 			out = append(out, name)
 		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
 			out = append(out, name)
@@ -167,7 +167,7 @@ func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 		text, ok := have[name]
 		switch {
 		case !ok || !slices.Contains(Sections, name) || slices.Contains(out, name):
-		case slices.Contains(drafted, name) && strings.Contains(text, DraftMarker) && !Accepted(is):
+		case IsDraft(is.Body, name, st) && !Accepted(is):
 			out = append(out, name)
 		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
 			out = append(out, name)

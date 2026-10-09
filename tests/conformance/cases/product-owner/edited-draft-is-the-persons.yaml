@@ -1,0 +1,17 @@
+case: product-owner/edited-draft-is-the-persons
+about: A draft's mark is a line a reader does not see, so a person makes a draft theirs by editing it — its text no longer the one the role wrote (the state's `wrote`) — or by `workline:accepted`; an edited draft is not said a draft to the agent, and an issue whose drafts were all edited is ready once its four sections are there; a draft no person touched, or one an earlier engine wrote with no digest kept, still holds ready back.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\n<!-- workline:draft -->\n\nAnn needs every row of a day, so her report counts what was sold.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\n<!-- workline:draft -->\n\nAnn exports the 3rd of May and finds its 41 sales.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine, workline:draft, workline:proposed], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nlabel: workline:proposed\nwrote: {Need: aaaaaaaaaaaa, Validation: bbbbbbbbbbbb}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine, workline:draft, workline:proposed], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings: [{rule: done, where: "#9"}, {rule: not-ready, where: "#10", message: "not moved to ready: Need is still a draft: accept it (workline:accepted) or edit it"}]
+  run-files:
+    in/task.md: {contains: ["Sections: Need, Verification, Validation, Scope\n", "Sections: Need (draft), Verification, Validation, Scope\n"]}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready], body-lacks: "workline:draft"}
+      - {id: 10, labels: [workline:to-refine, workline:draft, workline:proposed]}

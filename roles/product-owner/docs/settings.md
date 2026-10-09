@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go]
-checked: 17ca434
+checked: fb2293a
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -60,6 +60,10 @@ The code stays; each comes back with a mode
 | `rename` | renames a vague title; a person's kept |
 | `depend` | says what an issue waits on ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)) |
 | `close-obsolete` | announces an obsolete issue, closes it `days` later (7) on silence and a second judge's yes ([ADR-0024](../../../docs/adr/0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md)) |
+
+Off, `close-obsolete` still speaks: an issue the code already does is
+said so on the issue, the code quoted, for you to close; nothing is
+announced or closed.
 
 ```yaml
 roles:

@@ -746,6 +746,15 @@ func (g *gitlab) issuePages() string {
 	return p.Web + "/-/issues/"
 }
 
+// filePages is the address of the project's files, on its default branch
+// (HEAD).
+func (g *gitlab) filePages() string {
+	if p := g.issuePages(); p != "" {
+		return strings.TrimSuffix(p, "issues/") + "blob/HEAD/"
+	}
+	return ""
+}
+
 // Close closes an issue; a duplicate through GitLab's own quick action,
 // which closes it and links the original.
 func (g *gitlab) Close(id, dup int) error {

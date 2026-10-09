@@ -17,7 +17,7 @@ given:
       - {id: 12, title: "Row lost", body: "a row", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:close-five-duplicates}
 expect:
-  findings: [{rule: act-cap, message: "close-duplicate: at most 3 a run"}]
+  findings: [{rule: act-cap, message: "past this run's limit of 3 (close-duplicate)"}]
   forge:
     issues:
       - {id: 10, closed: true}

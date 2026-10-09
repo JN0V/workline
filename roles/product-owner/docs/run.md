@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 2b82821
+checked: 42ce663
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -41,20 +41,33 @@ A share of the open issues (`issues-per-run`), in this order:
 
 Past `proposals-max` issues waiting on you, only the first are read.
 
-Each issue comes with what the engine knows of it, who opened it, which
-sections it has and which are the role's, its comments with who wrote
-each, and the code it names.
+Each issue comes with:
+
+- what the engine knows of it, who opened it, which sections it has and
+  which are the role's drafts;
+- its comments, with who wrote each;
+- the issues it cites, open or closed;
+- the code it names — a file linked on the forge counts —, or else the
+  repository's folders, to name a Scope's files from.
 
 ## 3. What it proposes, what the engine checks
 
 - **Completing**: the sections an issue lacks (`refine`), a question to
   its reporter (`ask`), the move to `ready`, the code it is about
   (`sources`), an evident duplicate (`close`).
+- **Written for a reader**: a Need says who needs what and why, from
+  their side; a Validation, what a person sees once it is done; plain
+  words, a link for each decision or doc cited.
+- **Never invented**: an issue too thin, holding several topics, or
+  resting on a closed issue gets one plain question; one the code
+  already does is said on it for you to close.
 - **Off by default**: milestones, priorities, splits, renames, links,
   obsolete issues ([settings](settings.md#off-by-default)).
 - The engine checks each act when it applies it: never a section a person
   wrote, edited or deleted; `ready` only with four sections and no draft;
-  an outsider's issue proposed; never closed as not planned.
+  a Scope's files read from its text, or the Scope left out, the rest
+  written; an outsider's issue proposed; never closed as not planned.
+- An issue read and left with nothing is said in the summary.
 - Then it does it, proposes it on its issue, or drops it, by the kind's
   mode and cap, and by the issue: one set aside gets nothing; one where a
   person undid that kind gets a proposal.

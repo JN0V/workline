@@ -12,6 +12,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -281,7 +282,7 @@ func Pre(runDir, repo string) int {
 			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
 				"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
-			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, false)) == 0 {
+			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, st, false)) == 0 {
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
@@ -465,7 +466,7 @@ func Pre(runDir, repo string) int {
 	for _, is := range backlog.Next(open, report, cfg.NextMax) {
 		first[is.ID] = true
 		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
-			Message: is.Title + " — " + backlog.Place(is) + "; next to build: ready, waiting on no open issue"})
+			Message: is.Title + placed(is)})
 	}
 	// What waits on a person (ADR-0031), with no agent: a reporter's
 	// answer, from the day of the last round; a ready issue nothing
@@ -554,7 +555,7 @@ func Pre(runDir, repo string) int {
 	toRead := slices.Concat(answered, ahead, again, never, changed, catchUp)
 	if waiting := ledger.Waiting(open); waiting >= cfg.ProposalsMax {
 		findings = append(findings, verdict.Finding{Rule: "proposals-waiting", Level: "warn",
-			Message: fmt.Sprintf("%d issues wait on a person's answer (proposals-max: %d): only those answered are read until fewer wait", waiting, cfg.ProposalsMax)})
+			Message: fmt.Sprintf("%d issues wait on your answer, the most allowed (proposals-max: %d): the role reads only those you answered until fewer wait", waiting, cfg.ProposalsMax)})
 		for _, d := range toRead[len(answered):] {
 			rest = append(rest, d)
 		}
@@ -564,6 +565,8 @@ func Pre(runDir, repo string) int {
 		toRead = nil
 	}
 	wasRead := map[int]bool{}
+	noCode := false                   // an issue read names no file: the repository's folders are listed
+	issuePages := forge.IssuePages(f) // an issue cited by its page is cited
 	for i, d := range toRead {
 		if i >= s.IssuesPerRun {
 			rest = append(rest, d)
@@ -573,12 +576,34 @@ func Pre(runDir, repo string) int {
 		wasRead[d.is.ID] = true
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
+		noCode = noCode || len(files) == 0
 		review := ""
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 			review = specFindings(d.is, d.st, d.comments, r)
 		}
 		if a := answers[d.is.ID]; a != nil {
 			review += revise(d.is, d.st, a, revisions)
+		}
+		// The issues it cites, open or closed: a closed one is history,
+		// never work to come.
+		if ids := backlog.CitedIssues(d.is.Body+"\n"+strings.Join(forge.Bodies(backlog.Counted(d.notes, d.is)), "\n"), issuePages); len(ids) > 0 {
+			if all == nil && slices.ContainsFunc(ids, func(n int) bool { return !isOpen[n] }) {
+				if all, err = b.AllIssues(); errors.Is(err, forge.ErrUnreachable) {
+					fmt.Fprintln(os.Stderr, err)
+					return exitExternal
+				} else if err != nil {
+					return fail(err)
+				}
+			}
+			closed := map[int]string{}
+			for _, is := range all {
+				if is.Closed {
+					closed[is.ID] = is.Reason
+				}
+			}
+			if said := backlog.IssueStates(ids, isOpen, closed); said != "" {
+				review = "Cites: " + said + " — a closed issue is done or dropped: never a part to wait for nor work to come.\n" + review
+			}
 		}
 		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
 		for _, f := range files {
@@ -658,6 +683,11 @@ func Pre(runDir, repo string) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
 	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, ledger.Demoted(cfg.UndoneMax)))
+	if pages := forge.FilePages(f); pages != "" {
+		// What it writes cites a decision or a doc as a link a reader
+		// follows (AGENTS.md, "Writing user docs").
+		intro += fmt.Sprintf("Links: a file of the repository you cite — a decision, a doc, code — is a link to %s<its path>; an issue is cited as #<number>.\n\n", pages)
+	}
 	// An issue not read in this run, on the same code as one read, is given
 	// whole: it may be the original a duplicate is closed against, and a
 	// duplicate's original is quoted (ADR-0018).
@@ -690,6 +720,9 @@ func Pre(runDir, repo string) int {
 		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
 	}
 	writeCode(&task, repo, code, s.CodeLinesMax)
+	if noCode {
+		writeFolders(&task, tracked)
+	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(intro+task.String()), 0o644); err != nil {
 		return fail(err)
 	}
@@ -885,7 +918,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		}
 		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing; an undepend only takes off a link set by the role\n", strings.Join(said, ", "))
 	}
-	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
+	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body, st))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
@@ -967,9 +1000,25 @@ func place(is forge.Issue, isOpen map[int]bool) string {
 	return " (" + strings.Join(out, ", ") + ")"
 }
 
+// placed says an issue's milestone and priority after its title, only
+// those it has: " — milestone v1.0, priority 2", or nothing.
+func placed(is forge.Issue) string {
+	var out []string
+	if is.Milestone != "" {
+		out = append(out, "milestone "+is.Milestone)
+	}
+	if n := backlog.Priority(is); n > 0 {
+		out = append(out, fmt.Sprintf("priority %d", n))
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	return " — " + strings.Join(out, ", ")
+}
+
 // sections says which of the four sections an issue's body has, and which
 // are drafts no person made theirs yet.
-func sections(body string) string {
+func sections(body string, st *backlog.State) string {
 	have := work.Sections(body)
 	var there, missing []string
 	for _, name := range backlog.Sections {
@@ -977,7 +1026,7 @@ func sections(body string) string {
 		switch {
 		case text == "":
 			missing = append(missing, name)
-		case strings.Contains(text, backlog.DraftMarker):
+		case backlog.IsDraft(body, name, st):
 			there = append(there, name+" (draft)")
 		default:
 			there = append(there, name)
@@ -1028,7 +1077,42 @@ var marker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
 // `Core::publish()`.
 var symbol = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)(?:\\(\\))?`")
 
-var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
+// folders are the folders of the commit's files, each above them.
+func folders(tracked map[string]bool) map[string]bool {
+	out := map[string]bool{}
+	for f := range tracked {
+		for d := path.Dir(f); d != "." && d != "/" && !out[d]; d = path.Dir(d) {
+			out[d] = true
+		}
+	}
+	return out
+}
+
+// foldersMax bounds the folders a task lists: those nearest the root.
+const foldersMax = 150
+
+// writeFolders lists the repository's folders, nearest the root first,
+// for an issue that names no file: the agent names its Scope's files
+// from them instead of leaving it out.
+func writeFolders(b *strings.Builder, tracked map[string]bool) {
+	var list []string
+	for d := range folders(tracked) {
+		list = append(list, d)
+	}
+	slices.SortFunc(list, func(a, b string) int {
+		if n := strings.Count(a, "/") - strings.Count(b, "/"); n != 0 {
+			return n
+		}
+		return strings.Compare(a, b)
+	})
+	more := ""
+	if len(list) > foldersMax {
+		more = fmt.Sprintf("- and %d deeper folders\n", len(list)-foldersMax)
+		list = list[:foldersMax]
+	}
+	slices.Sort(list)
+	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its Scope touches from these, in `sources` (a folder named is given with its files at the next run).\n\n- %s\n%s\n", strings.Join(list, "\n- "), more)
+}
 
 // named lists the files an issue is about: its sources, then the paths its
 // title and body name that the commit holds, at most filesPerIssue. A file
@@ -1037,8 +1121,7 @@ var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`
 func named(repo string, is forge.Issue, st *backlog.State, comments []string, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
-		p, _, _ = strings.Cut(p, "#")
-		p = strings.Trim(p, "./`'\"")
+		p = backlog.RepoPath(p) // a link to a file on the forge is that file
 		if !tracked[p] && !strings.Contains(p, "/") {
 			p = byName(p, tracked)
 		}
@@ -1046,7 +1129,13 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, tr
 			out = append(out, p)
 		}
 	}
+	dirs := folders(tracked)
 	for _, s := range st.Sources {
+		// A folder named as a source is given as the list of its files.
+		if f := backlog.RepoPath(s); dirs[f] && !slices.Contains(out, f) && len(out) < filesPerIssue {
+			out = append(out, f)
+			continue
+		}
 		add(s)
 	}
 	// The file an issue was imported from is where it was written, not
@@ -1057,7 +1146,7 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, tr
 			body += "\n" + c
 		}
 	}
-	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
+	for _, m := range backlog.PathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
 	// A symbol quoted as code: the file of the commit that holds it, when

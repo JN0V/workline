@@ -31,7 +31,7 @@ expect:
     - {lines: "9", state: done, why: "Done in 1.2."}
   forge:
     issues:
-      - {id: 1, title: "Keep the last row", body-contains: "Opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role."}
+      - {id: 1, title: "Keep the last row", body-contains: "<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->", body-lacks: "Opened from"}
       - {id: 2, title: "Skip empty rows, again"}
   summary-file:
     - "### workline issues import"

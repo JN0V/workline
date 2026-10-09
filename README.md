@@ -1,8 +1,8 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 1b41bbf
+checked: fb2293a
 judged: cd97f28
-verified: agent:documentalist
+verified: agent:claude-code
 -->
 <h1>
   <picture>

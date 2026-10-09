@@ -18,10 +18,10 @@ run: {role: product-owner, event: schedule, ai: fake:level-acts, no-apply: true,
 expect:
   status: pass
   summary-file:
-    - "**pass** — judged, not applied"
+    - "**pass** — judged, not applied (issues: 1 to do alone, 1 to propose to a person); apply with"
     - "- **to do alone, once applied** (1)\n  - [#11](https://forge.example/issues/11): Named the code #11 is about: src/export/csv.go."
     - "- **to propose, once applied** (1), [all that wait on a person](https://forge.example/issues?label=workline:proposed)\n  - [#12](https://forge.example/issues/12): Close it as a duplicate of #7"
-    - "- **next to build** (1)\n  - [#20](https://forge.example/issues/20): Export in JSON — no milestone, no priority; next to build"
+    - "- **next to build** (1)\n  - [#20](https://forge.example/issues/20): Export in JSON\n"
   summary-html:
     - "<li><strong>to propose, once applied</strong> (1), <a href=\"https://forge.example/issues?label=workline:proposed\">all that wait on a person</a><ul><li><a href=\"https://forge.example/issues/12\">#12</a>: Close it as a duplicate of #7"
   forge:

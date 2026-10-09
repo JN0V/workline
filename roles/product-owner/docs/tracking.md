@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: 2b82821
+checked: 42ce663
 verified: agent:claude-code
 ---
 # Product owner — what each run tracks
@@ -40,6 +40,16 @@ Each act done alone a person may undo is kept in its issue's state:
 - undone `undone-max` (3) times across the open issues: proposed on every
   issue (`demoted`), until fewer are.
 
+## Its labels
+
+Checked on every issue at every run, with no agent: they say what is true
+of it.
+
+- `workline:draft` only while a draft of the role's is left in the body:
+  one you edited is yours.
+- Set aside — `workline:proposed` taken off — with no draft left: no
+  `workline:draft` nor `workline:to-refine` either.
+
 ## A parent and its parts
 
 A split need — a parent — gets one comment, edited in place as its parts
@@ -63,6 +73,8 @@ Each comes back with a setting ([settings](settings.md#off-by-default)):
   nobody wrote, the label `workline:obsolete` still there and a second
   judge agrees
   ([ADR-0024](../../../docs/adr/0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md)).
+  Off, one the code already does is said so on the issue, for you to
+  close.
 - **Slipped milestones**: an issue in a released milestone moved to the
   nearest open one, or proposed when there is none.
 - **A changed need** (`changed-needs`): a Need or Scope a person rewrote,

@@ -1,0 +1,17 @@
+case: product-owner/summary-in-plain-words
+about: "The night's summary speaks to a person (ADR-0038): the role's line counts what they will see on the issues — done alone, proposed, set aside —, not the writes it takes; what the role read and left incomplete says what it means and what they may do, one linked line an issue, no rule's name."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nAnn needs every row of a day exported, so her report counts what was sold.\n\n## Validation\n\nAnn exports a known day and counts its rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "XML import", body: "## Need\n\nAnn needs to import the XML her bank sends.\n\n## Validation\n\nAnn imports last month's file and sees its rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Totals wrong", body: "Totals are wrong.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-paths, no-apply: true, summary: true}
+expect:
+  status: pass
+  summary-file:
+    - "**pass** — judged, not applied (issues: 2 to do alone, 1 set aside by a person); apply with"
+    - "- **to do alone, once applied** (2)\n  - [#9](https://forge.example/issues/9): Refined #9: Verification, Scope."
+    - "- **read, left incomplete: yours to complete, or to leave** (1)\n  - [#12](https://forge.example/issues/12): could not tell which files #12 is about, so its Scope was left out: add a Scope naming them, or leave it\n"
+    - "- **set aside by a person** (1)\n  - [#14](https://forge.example/issues/14): workline:proposed taken off without a yes: nothing more is proposed until it changes or someone comments\n"
