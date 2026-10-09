@@ -58,6 +58,38 @@ func TestMarkClosedSkipsCodeOnly(t *testing.T) {
 	}
 }
 
+// The code a text holds, as CommonMark reads it, is left as it is by
+// every mark the engine adds: each case its text, and the issue cites
+// and decisions it holds outside code.
+func TestCodeLeftAsItIs(t *testing.T) {
+	pages := "https://f/issues/"
+	decisions := map[int]string{38: "d/0038.md"}
+	for _, c := range []struct {
+		name, text, closed, linked string
+		cited                      []int
+	}{
+		{"fence indented 3", "   ```\n#5 ADR-0038\n   ```\n#5", "   ```\n#5 ADR-0038\n   ```\n#5 (closed)", "   ```\n#5 ADR-0038\n   ```\n#5", []int{5}},
+		{"indented 4: no fence", "    ```\n#5\n", "    ```\n#5 (closed)\n", "    ```\n#5\n", []int{5}},
+		{"closer with trailing spaces", "```\n#5\n```   \n#5", "```\n#5\n```   \n#5 (closed)", "```\n#5\n```   \n#5", []int{5}},
+		{"shorter closer: still open", "````\n#5\n```\n#5", "````\n#5\n```\n#5", "````\n#5\n```\n#5", nil},
+		{"other character: still open", "```\n#5\n~~~\n#5", "```\n#5\n~~~\n#5", "```\n#5\n~~~\n#5", nil},
+		{"tilde fence, backtick in its info", "~~~ a`b\n#5\n~~~\n#5", "~~~ a`b\n#5\n~~~\n#5 (closed)", "~~~ a`b\n#5\n~~~\n#5", []int{5}},
+		{"unclosed fence to the end", "#5\n```\n#5 ADR-0038", "#5 (closed)\n```\n#5 ADR-0038", "#5\n```\n#5 ADR-0038", []int{5}},
+		{"one-line span, info-string fence", "```ADR-0038``` and\n```go ADR-0038\n#5\n```", "```ADR-0038``` and\n```go ADR-0038\n#5\n```", "```ADR-0038``` and\n```go ADR-0038\n#5\n```", nil},
+		{"link forms beside and in code", "`x`[#5](https://f/issues/5) and `https://f/issues/5` and https://f/issues/5", "`x`[#5](https://f/issues/5) (closed) and `https://f/issues/5` and https://f/issues/5 (closed)", "`x`[#5](https://f/issues/5) and `https://f/issues/5` and https://f/issues/5", []int{5}},
+	} {
+		if got := MarkClosed(c.text, pages, map[int]bool{5: true}); got != c.closed {
+			t.Errorf("%s: MarkClosed =\n%q\nwant\n%q", c.name, got, c.closed)
+		}
+		if got := CitedIssues(c.text, pages); !slices.Equal(got, c.cited) {
+			t.Errorf("%s: CitedIssues = %v, want %v", c.name, got, c.cited)
+		}
+		if got := LinkDecisions(c.text, "p/", decisions); got != c.linked {
+			t.Errorf("%s: LinkDecisions =\n%q\nwant\n%q", c.name, got, c.linked)
+		}
+	}
+}
+
 func TestIssueStatesSaysHowEachClosed(t *testing.T) {
 	got := IssueStates([]int{81, 206, 300, 5}, map[int]bool{81: true}, map[int]string{206: "not_planned", 5: "completed"})
 	if want := "#81 (open), #206 (closed as not planned), #5 (closed)"; got != want {
