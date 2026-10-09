@@ -525,6 +525,44 @@ var closeReasons = []string{"duplicate", "obsolete"}
 // maxSources bounds the files an issue names.
 const maxSources = 5
 
+// PathLike is a path a text names: `src/a.go`, `docs/x.md`, a folder
+// `internal/doctor`, a file named alone `csv.go`, or a link's address.
+var PathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
+
+// fileLink is the part of a forge's address that shows a file or a
+// folder of the repository: `…/blob/main/`, GitLab's `…/-/tree/HEAD/`.
+var fileLink = regexp.MustCompile(`/(?:-/)?(?:blob|tree)/[^/]+/(.+)$`)
+
+// RepoPath is the path of the repository a name stands for: a link's
+// address to a file on the forge read as that file, the punctuation
+// around it left out.
+func RepoPath(p string) string {
+	p, _, _ = strings.Cut(p, "#")
+	if m := fileLink.FindStringSubmatch(p); m != nil {
+		p = m[1]
+	}
+	p = strings.TrimPrefix(strings.Trim(p, "`'\""), "./")
+	return strings.TrimRight(p, ".,;:/")
+}
+
+// InCommit says whether the commit the run is on holds path, a file or a
+// folder.
+func InCommit(repo, path string) bool {
+	return path != "" && exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() == nil
+}
+
+// PathsIn are the files and folders a text names that the commit holds,
+// in the order named, at most maxSources.
+func PathsIn(repo, text string) []string {
+	var out []string
+	for _, m := range PathLike.FindAllString(text, -1) {
+		if p := RepoPath(m); strings.Contains(p, "/") && !slices.Contains(out, p) && len(out) < maxSources && InCommit(repo, p) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 // MovedPercent reads the role's `moved-percent-max` setting: the share of
 // the open issues a run may move, in percent; a fifth when it is not set.
 func MovedPercent(settings map[string]any) int {
@@ -774,6 +812,29 @@ func (p *Plan) summary() {
 		case d.Mode == Propose:
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "proposed", Level: "info", Where: d.Act.where(),
 				Message: strings.TrimSpace(offer(d.Act))})
+		}
+	}
+	// An issue read that lacks a section and got nothing at all — no
+	// draft, no question, no act dropped with its reason —: said, never
+	// left in silence.
+	acted := map[int]bool{}
+	for _, d := range p.Decisions {
+		acted[d.Act.Issue] = true
+	}
+	for _, id := range p.read {
+		is, ok := p.issues[id]
+		if !ok || acted[id] || p.aside(id) {
+			continue
+		}
+		var lacks []string
+		for _, name := range Sections {
+			if strings.TrimSpace(work.Sections(is.Body)[name]) == "" {
+				lacks = append(lacks, name)
+			}
+		}
+		if len(lacks) > 0 {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "nothing-proposed", Level: "info", Where: fmt.Sprintf("#%d", id),
+				Message: fmt.Sprintf("read, and nothing was drafted or asked though it lacks %s: read again once it changes or a person comments", strings.Join(lacks, ", "))})
 		}
 	}
 	for _, id := range sortedKeys(p.SetAside) {
@@ -1183,15 +1244,31 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 	switch c.Do {
 	case "refine":
 		if c.Scope != "" || len(c.Sources) > 0 {
-			if len(c.Sources) == 0 || len(c.Sources) > maxSources {
-				return "sources-unknown", fmt.Sprintf("a scope names 1 to %d files (sources)", maxSources)
+			// A Scope names the files or folders it touches: given as
+			// sources, or else read from its text. One that names none the
+			// commit holds is left out, the rest of the refine written —
+			// never all of it dropped for its Scope.
+			if len(c.Sources) == 0 {
+				c.Sources = PathsIn(repo, c.Scope)
 			}
+			missing := ""
 			for _, s := range c.Sources {
-				path, _, _ := strings.Cut(s, "#")
-				if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
-					return "sources-unknown", fmt.Sprintf("%s is not in the commit the run is on", path)
+				if path, _, _ := strings.Cut(s, "#"); !InCommit(repo, path) && missing == "" {
+					missing = path
 				}
 			}
+			switch {
+			case len(c.Sources) == 0:
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
+					Message: fmt.Sprintf("could not tell which files #%d is about, so its Scope was left out: add a Scope naming them, or leave it", c.Issue)})
+			case missing != "":
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
+					Message: fmt.Sprintf("its Scope named %s, which the repository does not hold, so it was left out: add a Scope naming the right files, or leave it", missing)})
+			}
+			if len(c.Sources) == 0 || missing != "" {
+				c.Scope, c.Sources = "", nil
+			}
+			c.Sources = c.Sources[:min(len(c.Sources), maxSources)]
 		}
 		// An outsider's issue is theirs (ADR-0021): the refined text is
 		// proposed to its reporter in a comment until they, or a person of

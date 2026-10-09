@@ -12,6 +12,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -564,6 +565,7 @@ func Pre(runDir, repo string) int {
 		toRead = nil
 	}
 	wasRead := map[int]bool{}
+	noCode := false // an issue read names no file: the repository's folders are listed
 	for i, d := range toRead {
 		if i >= s.IssuesPerRun {
 			rest = append(rest, d)
@@ -573,6 +575,7 @@ func Pre(runDir, repo string) int {
 		wasRead[d.is.ID] = true
 		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
 		files := named(repo, d.is, d.st, d.comments, tracked)
+		noCode = noCode || len(files) == 0
 		review := ""
 		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
 			review = specFindings(d.is, d.st, d.comments, r)
@@ -690,6 +693,9 @@ func Pre(runDir, repo string) int {
 		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
 	}
 	writeCode(&task, repo, code, s.CodeLinesMax)
+	if noCode {
+		writeFolders(&task, tracked)
+	}
 	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(intro+task.String()), 0o644); err != nil {
 		return fail(err)
 	}
@@ -1028,7 +1034,42 @@ var marker = regexp.MustCompile(`<!-- workline:[^>]*-->`)
 // `Core::publish()`.
 var symbol = regexp.MustCompile("`([A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*)(?:\\(\\))?`")
 
-var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`)
+// folders are the folders of the commit's files, each above them.
+func folders(tracked map[string]bool) map[string]bool {
+	out := map[string]bool{}
+	for f := range tracked {
+		for d := path.Dir(f); d != "." && d != "/" && !out[d]; d = path.Dir(d) {
+			out[d] = true
+		}
+	}
+	return out
+}
+
+// foldersMax bounds the folders a task lists: those nearest the root.
+const foldersMax = 150
+
+// writeFolders lists the repository's folders, nearest the root first,
+// for an issue that names no file: the agent names its Scope's files
+// from them instead of leaving it out.
+func writeFolders(b *strings.Builder, tracked map[string]bool) {
+	var list []string
+	for d := range folders(tracked) {
+		list = append(list, d)
+	}
+	slices.SortFunc(list, func(a, b string) int {
+		if n := strings.Count(a, "/") - strings.Count(b, "/"); n != 0 {
+			return n
+		}
+		return strings.Compare(a, b)
+	})
+	more := ""
+	if len(list) > foldersMax {
+		more = fmt.Sprintf("- and %d deeper folders\n", len(list)-foldersMax)
+		list = list[:foldersMax]
+	}
+	slices.Sort(list)
+	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its Scope touches from these, in `sources` (a folder named is given with its files at the next run).\n\n- %s\n%s\n", strings.Join(list, "\n- "), more)
+}
 
 // named lists the files an issue is about: its sources, then the paths its
 // title and body name that the commit holds, at most filesPerIssue. A file
@@ -1037,8 +1078,7 @@ var pathLike = regexp.MustCompile(`[\w.-]+(?:/[\w.-]+)+|[\w-]+\.[A-Za-z]{1,5}\b`
 func named(repo string, is forge.Issue, st *backlog.State, comments []string, tracked map[string]bool) []string {
 	var out []string
 	add := func(p string) {
-		p, _, _ = strings.Cut(p, "#")
-		p = strings.Trim(p, "./`'\"")
+		p = backlog.RepoPath(p) // a link to a file on the forge is that file
 		if !tracked[p] && !strings.Contains(p, "/") {
 			p = byName(p, tracked)
 		}
@@ -1046,7 +1086,13 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, tr
 			out = append(out, p)
 		}
 	}
+	dirs := folders(tracked)
 	for _, s := range st.Sources {
+		// A folder named as a source is given as the list of its files.
+		if f := backlog.RepoPath(s); dirs[f] && !slices.Contains(out, f) && len(out) < filesPerIssue {
+			out = append(out, f)
+			continue
+		}
 		add(s)
 	}
 	// The file an issue was imported from is where it was written, not
@@ -1057,7 +1103,7 @@ func named(repo string, is forge.Issue, st *backlog.State, comments []string, tr
 			body += "\n" + c
 		}
 	}
-	for _, m := range pathLike.FindAllString(is.Title+"\n"+body, -1) {
+	for _, m := range backlog.PathLike.FindAllString(is.Title+"\n"+body, -1) {
 		add(m)
 	}
 	// A symbol quoted as code: the file of the commit that holds it, when

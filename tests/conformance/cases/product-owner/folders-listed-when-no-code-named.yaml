@@ -1,0 +1,13 @@
+case: product-owner/folders-listed-when-no-code-named
+about: When an issue read names no file the commit holds, the task lists the repository's folders, so the agent can name the files a Scope touches instead of leaving it out; an issue read and left with no act though it lacks sections is said in the summary, never left in silence.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Totals are wrong", body: "The totals at the bottom are wrong.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  findings: [{rule: nothing-proposed, where: "#7", message: "read, and nothing was drafted or asked though it lacks Need, Verification, Validation, Scope"}]
+  run-files:
+    in/task.md: {contains: ["# The repository's folders", "\n- src/export\n"]}

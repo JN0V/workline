@@ -1,0 +1,19 @@
+case: product-owner/scope-files-taken-from-its-text
+about: A refine whose Scope names its files or folders in its text, with no `sources`, has them taken from that text when the commit holds them; a Scope naming none is left out with a plain finding, and the rest of the refine — its Verification — is still written, never dropped with it.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "## Need\n\nAnn needs every row of a day exported, so her report counts what was sold.\n\n## Validation\n\nAnn exports a known day and counts its rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "XML import", body: "## Need\n\nAnn needs to import the XML her bank sends.\n\n## Validation\n\nAnn imports last month's file and sees its rows.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-scope-paths}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Refined #9: Verification, Scope."}
+    - {rule: done, where: "#12", message: "Refined #12: Verification."}
+    - {rule: scope-without-files, where: "#12", message: "could not tell which files #12 is about, so its Scope was left out: add a Scope naming them, or leave it"}
+  no-findings: [{rule: sources-unknown}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "## Scope\n\nWriteRows, in src/export/csv.go, and the rest of src/export.", comment-contains: "sources: [src/export/csv.go, src/export]"}
+      - {id: 12, body-contains: "## Verification\n\nA test reads an XML file of two rows back.", body-lacks: "## Scope", comment-contains: "sources: []"}

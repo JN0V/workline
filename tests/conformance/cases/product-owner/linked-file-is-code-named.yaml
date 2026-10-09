@@ -1,0 +1,13 @@
+case: product-owner/linked-file-is-code-named
+about: A file an issue links to on the forge — `…/blob/main/src/export/csv.go`, as the docs rules ask a reference to be written — is code it names, given whole; a folder its sources name is given as the list of its files.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "The [export](https://github.com/acme/shop/blob/main/src/export/csv.go) stops one row short.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Export is slow", body: "Exports take a minute.", labels: [], comments: ["```yaml\nsources: [src/export]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  run-files:
+    in/task.md: {contains: ["Code it names, given below: src/export/csv.go.", "Code it names, given below: src/export.", "## src/export\n"], not-contains: "# The repository's folders"}

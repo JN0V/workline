@@ -1,0 +1,12 @@
+# A refine whose Scope names its paths in its text, with no sources: the
+# engine takes them from it; one naming no path keeps its Verification.
+- refine:
+    issue: 9
+    scope: "WriteRows, in src/export/csv.go, and the rest of src/export."
+    verification: "A test writes three rows and reads three lines back."
+    why: "Need and Validation are there; Verification and Scope are not."
+- refine:
+    issue: 12
+    scope: "The importer."
+    verification: "A test reads an XML file of two rows back."
+    why: "Need and Validation are there; Verification and Scope are not."
