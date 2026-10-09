@@ -1,0 +1,13 @@
+case: routing/schedule-refused-proposal-said
+about: 'On schedule (fail-fast false), an agent''s proposal still refused once asked again is upkeep left for later (ADR-0037, amended): nothing of it applied, each refusal said as a warning, the step passes — the line is not failed by a check that did its job. Anything else that does not pass still fails it.'
+given:
+  repo: untidy
+  setup: ["git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"]
+run: {role: documentalist, event: schedule, ai: "fake:condense-rewrites"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: []
+  findings: [{rule: rewritten, where: docs/sessions.md, level: warn}]
+  files:
+    docs/sessions.md: {contains: "## Signing out"}

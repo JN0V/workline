@@ -3,6 +3,6 @@ about: Merging a repeated passage removes that passage only; a patch dropping te
 given: {repo: untidy}
 run: {role: documentalist, event: schedule, ai: "fake:dedupe-drops-more"}
 expect:
-  status: block
+  status: pass   # refused, said as a warning, not failed: on schedule (ADR-0037, amended)
   applied: []
   findings: [{rule: rewritten, where: docs/faq.md}]
