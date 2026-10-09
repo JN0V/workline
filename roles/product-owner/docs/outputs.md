@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 42ce663
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -49,6 +49,8 @@ read-only, grouped, one line an issue linked to its page:
   "not now";
 - **read, left incomplete**: an issue it read and could not complete —
   no file found for its Scope, nothing drafted —, with what you may do;
+  one left with nothing is read again once a later engine reads
+  differently;
 - **next to build**: the first ready issues of the order;
 - **stuck**: what waits on a person past `stuck-days`;
 - **held back by the engine**: what the agent wrote and the engine did

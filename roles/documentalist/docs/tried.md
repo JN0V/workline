@@ -817,3 +817,20 @@ docs/spec/conformance.md condensed instead; the product owner ran after
 the documentalist (`fail-fast` off on schedule, ADR-0037). A prompt
 over the budget, whatever the role, is now a `prompt-over-budget`
 finding, the run going on without the agent.
+
+On 2026-10-09, the gardening night
+([run 37927365638](https://github.com/JN0V/workline/actions/runs/37927365638))
+ended the documentalist `block`, its job red: condensing
+docs/spec/conformance.md, the agent's first patch put the new docs in
+docs/spec, the folder growing from 2,502 to 2,527 lines
+(`folder-too-long`, refused rightly); its second moved them to
+docs/conformance, and was refused as introducing `section-too-long` on
+docs/conformance/evaluation.md#evaluation, 1,172 words — the very section
+of docs/spec/conformance.md over budget already, moved whole. Fixed: a
+part over its budget moved whole into a new doc, no bigger and gone from
+the doc, is the same problem moved (case
+`condense-moves-a-long-section-whole`). Replayed on a clone at f6f74ce
+with the branch's engine, a `cmd:` agent giving the night's second
+answer, judged only, no forge: the same task, the patch passed. On
+schedule, a proposal still refused once asked again is now said as
+warnings, the step passing, nothing of it applied (ADR-0037, amended).

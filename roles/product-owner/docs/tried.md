@@ -958,3 +958,45 @@ written answer (no paid agent):
 **Not tried**: the new prompt with a real agent — whether it asks rather
 than invents, writes a Need from the user's side and a concrete
 Validation; the next real night will say, read by the maintainer.
+
+## 2026-10-09, evening — a person's word first
+
+**The night** ([run 37927365638](https://github.com/JN0V/workline/actions/runs/37927365638)),
+after the amendment of the morning:
+
+- **Two comments not read.** The maintainer commented on
+  [#83](https://github.com/JN0V/workline/issues/83) and
+  [#85](https://github.com/JN0V/workline/issues/85), both set aside; the
+  run read five new issues instead. Cause: a comment counted only on an
+  issue waiting on a person; on any other it ranked after the new
+  issues, and a set-aside one read had every act dropped (`set-aside`)
+  all the same. Comments were told apart rightly, by marker — the
+  role's state on those issues was posted by the same account.
+- **Three issues never read again**: #275 to #277, left with nothing by
+  the engine before the morning's fix; nothing changed in them since.
+- **No `ready`** on five complete issues of the maintainer's: "I did not
+  check who wrote them". The task said "Opened by: JN0V" and the
+  sections' names, not that a section unmarked is a person's.
+
+**On the sandbox**, JN0V/workline-sandbox on GitHub, the branch's engine,
+JN0V's token — the role's comments and the person's by one account —,
+`cmd:` agents giving written answers (no paid agent):
+
+- #54 refined (its Need a draft, `workline:proposed` on); JN0V commented
+  "Not now: after the release." then took the label off; a run with no
+  agent recorded it set aside with `heard: 1` — the comment went with
+  the "not now".
+- JN0V commented "Will be tried next week", and #55 was opened, a new
+  issue of a person's. With `issues-per-run: 1`, the run read #54, not
+  #55; the task said "A person commented since you last read it
+  (@JN0V…)", "Opened by: JN0V, of the project", "Need (draft), …,
+  Validation (a person's)". The written answer asked nothing that read
+  (a field misnamed), so #54 stayed set aside, `heard: 2`.
+- A third comment, the answer fixed: #54 read first again, its question
+  asked, `aside` gone, `workline:proposed` back on (its Need still a
+  draft).
+
+**Not tried**: a real agent given the new wording — whether it moves an
+evident issue of a person's to `ready`, and what it proposes on a
+set-aside issue a person commented; GitLab; the re-read of #275 to #277,
+for the next night.

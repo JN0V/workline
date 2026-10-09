@@ -1,6 +1,6 @@
 # ADR-0037: The schedule runs every step
 
-- **Status:** accepted
+- **Status:** accepted (amended 2026-10-09)
 - **Date:** 2026-10-07
 - **Builds on:** ADR-0006 (gardening opens one merge request per task),
   ADR-0018 (the product owner keeps the backlog); principles 2, 12
@@ -51,3 +51,27 @@
 - Cases: `routing/schedule-runs-every-step`,
   `routing/fail-fast-set-per-event`,
   `routing/keep-going-on-merge-request`.
+
+## Amendment (2026-10-09): a refused proposal is said, not failed
+
+A gardening night
+([run 37927365638](https://github.com/JN0V/workline/actions/runs/37927365638))
+went red on the documentalist: its condensing patch was refused twice,
+the second time wrongly (a long section moved whole was taken for a new
+one), and a red job each night says "repair something" when nothing is
+broken.
+
+- **On an event whose steps all run** (`fail-fast: false`, the shipped
+  `schedule`), an agent's proposal still refused once asked again ends
+  the step `pass`: nothing of it applied, each refusal said as a warning
+  in the job's summary, the task asked again at the next run.
+- **Why not red**: the check ran and did its job — nothing wrong reached
+  the repository; what was to fix stays reported where it was (a doc
+  over budget stays `doc-too-long`). Principle 12 holds: the refusal is
+  said, never read as done. Red stays for what a person must repair: a
+  check that did not run, a setting missing, a service down, a block
+  that is not a refused proposal.
+- **On a gate's event**, or a schedule set `fail-fast: true`, a refusal
+  still blocks.
+- Cases: `routing/schedule-refused-proposal-said`,
+  `routing/schedule-failing-fast-blocks-on-a-refusal`.

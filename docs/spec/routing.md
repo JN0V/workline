@@ -93,6 +93,11 @@ names the retired `release-manager` is refused, saying which tool to use.
   The shipped line sets it for `schedule`, whose roles are upkeep, each on
   its own: a documentalist that blocks does not keep the product owner
   from the backlog. A role that does not pass runs no handoff either way.
+- There, an agent's proposal still refused once asked again is upkeep left
+  for later, not a failure: nothing of it applied, each refusal said as a
+  warning, the step `pass`; the next run asks again
+  ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+  Anything else that does not pass still counts.
 - A `handoff` intention is applied only if its edge is declared here. Anything
   else is refused, like any invalid intention.
 - A chain of handoffs is capped (`max-handoffs`, default 3). A loop stops with a

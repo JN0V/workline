@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: fb2293a
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Configuration
@@ -23,7 +23,7 @@ owner), then the project's `settings`.
 | `roles.<role>.settings` | the role's settings, merged into its defaults |
 | `roles.<role>.enforce` | `<rule>: block \| warn \| off`, per rule |
 | `routing.events` | `<event>: [role, gate:<name>, …]`, replacing the shipped line event by event |
-| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
+| `routing.fail-fast` | `<event>: false` runs every step of the event, the worst verdict standing, a refused proposal said, not failed; true unless set, but on `schedule` ([ADR-0037](adr/0037-the-schedule-runs-every-step.md)) |
 | `routing.handoffs`, `routing.max-handoffs` | which role may hand over to which, and how many times ([routing](spec/routing.md)) |
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 42ce663
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -31,20 +31,27 @@ From each open issue's own state
 
 A share of the open issues (`issues-per-run`), in this order:
 
-1. an issue waiting on you that you commented on: "revise";
+1. an issue you commented on since it was read: waiting on you
+   ("revise"), set aside, or neither — your word comes first;
 2. an act proposed only for a run's cap;
 3. a person's issue never read, newest first — one opened since the last
    run is read in the run that first sees it;
 4. one whose code changed, or that a person edited or reopened, or the
    reviewer's spec findings to answer;
-5. the catch-up: an import's or a bot's issue never read, oldest first.
+5. one read and left with nothing by an older engine, read again once;
+6. the catch-up: an import's or a bot's issue never read, oldest first.
 
-Past `proposals-max` issues waiting on you, only the first are read.
+Past `proposals-max` issues waiting on you, only those you commented on
+are read. The role's own comment is told by its hidden mark, never by
+who posted it: it may run with your token.
 
 Each issue comes with:
 
-- what the engine knows of it, who opened it, which sections it has and
-  which are the role's drafts;
+- what the engine knows of it, who opened it — of the project or not —,
+  which sections it has, which are the role's drafts and which yours;
+- when its four sections are there and Need and Validation are yours,
+  that it may go to `ready` if evident: the agent judges that, the
+  engine checks the sections;
 - its comments, with who wrote each;
 - the issues it cites, open or closed;
 - the code it names — a file linked on the forge counts —, or else the
@@ -72,9 +79,15 @@ Each issue comes with:
   mode and cap, and by the issue: one set aside gets nothing; one where a
   person undid that kind gets a proposal.
 
-## 4. A person's comment: revise
+## 4. A person's comment
 
-On an issue waiting on you, a comment of yours, or of its reporter:
+On an issue with nothing waiting on you — set aside, or read and left —,
+a comment of yours or of its reporter is read first, the agent told your
+word decides; set aside, it proposes only what the comment asks for. A
+comment you wrote before taking `workline:proposed` off goes with that
+"not now".
+
+On an issue waiting on you, it is "revise":
 
 - the issue is read first, the agent told to revise;
 - it rewrites its own sections in place — a draft, or a text as it wrote
