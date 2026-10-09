@@ -199,3 +199,31 @@ switches `normal` off.
 - **No quick action**: a line starting with `/` is escaped, every role.
 - **Migration**: an old report's proposals, acts, undos and closings move
   to their issues; its pause, ticks, measure and changes are dropped.
+
+## Amendment (2026-10-09): what the first nights showed
+
+The first gardening nights
+([run 37895990993](https://github.com/JN0V/workline/actions/runs/37895990993))
+and the maintainer's triage of the drafts it had left:
+
+- **Silence on a new issue.** Three issues with a Need and a Validation
+  got nothing: the agent drafted their Scope and Verification, named no
+  file, and the engine dropped the whole refine. A Scope's files are now
+  read from its text when none is given; a Scope naming none is left out,
+  the rest written; an issue read and left with nothing is said.
+- **Drafts a reader could not use**: a Need rephrasing the solution, a
+  Validation as a formula, internal words, a closed issue cited as work
+  to come. The agent writes for a reader, as the project's user docs
+  are written, and never invents: too thin, several topics, or resting
+  on a closed issue, it asks one plain question. The engine links a
+  decision cited bare and says a cited issue closed.
+- **A closing when `close-obsolete` is off** is said on the issue, its
+  evidence quoted, for a person to close; the role closes nothing, and
+  `workline:accepted` does not close it. Off stays off: no act.
+- **Drafts are marked unseen**: the visible "Draft by the product owner"
+  line contradicted the comment's `workline:accepted`; an edited draft
+  is a person's. An import's origin line is hidden too.
+- **Labels follow the state**: no draft left, no `workline:draft`; set
+  aside with no draft, no `workline:to-refine` either.
+- **The summary counts by issue** what a person sees — done, proposed,
+  set aside —, says each line in plain words, no rule's name.

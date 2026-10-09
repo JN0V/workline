@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 2b82821
+checked: fb2293a
 verified: agent:claude-code
 ---
 # Product owner
@@ -52,7 +52,8 @@ is on each issue; you answer there
   the issue waits on you: its drafts, or a proposal.
 - **What waits on you** is a saved filter on that label.
 - **The night's summary** is in the CI job's summary: done, proposed,
-  left to a person, next, stuck, one linked line an issue
+  left to a person, read and left incomplete, next, stuck, one linked
+  line an issue, in plain words
   ([what it writes](docs/outputs.md#in-the-ci-jobs-summary)).
 
 ## How you answer
@@ -61,7 +62,7 @@ is on each issue; you answer there
 |---|---|---|
 | yes | label `workline:accepted` (bulk from the list) | does what it proposed, makes the drafts yours, moves it to `ready`; takes its label off |
 | revise | a plain comment | 👀 on it, rewrites its own drafts in place, replies in one line |
-| correct it yourself | edit the body | the sections you edited are yours, never rewritten |
+| correct it yourself | edit the body | the sections you edited are yours, never rewritten; an edited draft counts as accepted |
 | not now | take `workline:proposed` off | proposes nothing more on that issue until it changes |
 | it should not exist | close it | never reopens it |
 
@@ -83,6 +84,12 @@ At `autonomy: normal`, the default:
   `ready` (four sections, none a draft).
 - **Proposed** on the issue: past a cap a run; an outsider's issue to
   `ready`; an act whose only evidence is a stranger's comment.
+- **Never invented**: an issue too thin, mixing topics or resting on a
+  closed issue gets one plain question; one the code already does is
+  said on it for you to close.
+- **Written for a reader**: plain words, a link for each decision cited,
+  a closed issue said closed
+  ([what it writes](docs/outputs.md#on-each-issue)).
 - **Undone by you** (`workline:ready` taken off, a closing reopened…):
   that kind is proposed on that issue from then on; undone `undone-max`
   times across the issues, on every issue.

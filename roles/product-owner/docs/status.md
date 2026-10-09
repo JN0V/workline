@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-08)
+# Product owner — where it stands (2026-10-09)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
@@ -12,7 +12,12 @@ night's summary is the CI job's. Milestones, priorities, splits, renames,
 links, obsolete issues, changed needs, the weekly sample are off by
 default, their code kept. Built and tried on both sandboxes with planted
 answers (tried.md, 2026-10-08); a week's trial on workline and the
-maintainer's GitLab project, at most five issues a night, is next.
+maintainer's GitLab project, at most five issues a night, is running.
+Its first nights led to the amendment of 2026-10-09: drafts written for
+a reader and never invented, a Scope's files read from its text, a
+closing said for a person when `close-obsolete` is off, drafts marked
+unseen, labels following the state, the summary in plain words
+(tried.md, 2026-10-09).
 
 ## To leave beta
 
@@ -38,6 +43,7 @@ hold:
 | What | Tried on |
 |---|---|
 | Proposals on each issue (ADR-0038): `workline:proposed` (GitLab `workline::proposed`) and one comment of the role, created once then edited in place, saying what it did, proposes and wants; `workline:accepted` a yes, the role taking `proposed` off itself (both kept on GitLab Free); a person's comment read as "revise" — 👀, the role's own drafts rewritten in place, one line in reply, two revisions at most —; `proposed` taken off a "not now" for that issue; a report's record moved to the issues and the report closed; no line of its text starting with `/` | JN0V/workline-sandbox on GitHub (#50; report #5 moved, closed; #2, #3 set aside) and on GitLab (#33, `/close` and `/label` escaped in a body and a note edit, not run; report #10 moved, closed; #7 set aside), live, planted answers, no paid agent (tried.md); conformance `proposal-*`, `accepted-*`, `revise-*`, `who-counts-*`, `proposed-taken-off-*`, `report-moves-*`, `no-quick-action-*`, `scoped-labels-*`, `undone-*`, `outsider-evidence-*`, `deleted-section-*` |
+| What the first nights showed (ADR-0038, amended 2026-10-09): a Scope's files read from its text, a Scope naming none left out and the rest written, an issue read and left with nothing said; a file linked on the forge given as the issue's code, the repository's folders listed when an issue names none; the issues an issue cites said open or closed, a decision cited bare linked and a closed issue cited marked "(closed)"; a closing with its kind off said on the issue for a person to close; drafts marked by a hidden line, an edited draft a person's; an import's origin hidden; labels following the state; the summary counted by issue, in plain words | the night's own answer on [#275](https://github.com/JN0V/workline/issues/275) to [#277](https://github.com/JN0V/workline/issues/277) replayed on a copy of workline (a fake forge); JN0V/workline-sandbox on GitHub (#51 to #53, #4 set aside) and on GitLab (#34), live, planted answers, no paid agent (tried.md); conformance `scope-files-*`, `linked-file-*`, `folders-listed-*`, `edited-draft-*`, `labels-follow-*`, `obsolete-said-when-off`, `draft-links-*`, `summary-in-plain-words`. The prompt's writing rules not yet with a real agent |
 | A duplicate closed, its original quoted, with GitHub's own reason | JN0V/workline-sandbox, live (#3 → #2) |
 | A closing a person undid found at the next run, that act back to propose, the report saying so; the person's comment read | the same (#3 reopened) |
 | An issue the code solved proposed as obsolete, the code quoted | the sandbox (#4); a copy of DomoticsCore, 8 of 38, all right |
@@ -109,7 +115,10 @@ checked.
    [#261](https://github.com/JN0V/workline/issues/261)'s Scope): in
    conformance only (`summary-judged-says-what-will-be-done`,
    `summary-applied-does-what-the-judge-said`,
-   `refine-leaves-a-footer-out`), next seen on a real night.
+   `refine-leaves-a-footer-out`), seen on the night of 2026-10-09, its
+   wording since made plain. The new writing rules of the prompt — a
+   Need from the user's side, a concrete Validation, one plain question
+   rather than a guess — read on a real night by the maintainer.
 4. **Autonomy, what is left** (ADR-0026): the acts' suggestion seen
    live in the role's own report; a rename by a real
    agent undone, `ready` taken off and a split's child closed live;

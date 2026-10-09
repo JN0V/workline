@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 87a41be
+checked: fb2293a
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -83,7 +83,7 @@ with no AI:
 | Closed as not planned or duplicate | A person's no: nothing written (`issue-closed`, said in the run). |
 | Closed otherwise | Done, or no reason kept (GitLab, the local forge): one comment, once, "found again" with the commit; left closed (`issue-closed`). |
 | New, past `issues-max` | Not opened, counted (`issues-capped`); found again, opened at a later run. Three by default; the product owner's import has its own cap (`open`). |
-| New | Opened: the role named in a line; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state, written last — a run stopped before it, resumed, finds the issue open and writes what it lacks. |
+| New | Opened: the role named in a line — an import's hidden, `<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->`, the item being a person's words; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state, written last — a run stopped before it, resumed, finds the issue open and writes what it lacks. |
 
 ## Reading
 
@@ -105,7 +105,14 @@ catch-up of an import's or a bot's issues never read, oldest first. Past
 set aside by a person is not read until it changes. An issue with nothing new is not read again,
 however old (ADR-0018). An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
-against; the others are listed by title only. Each issue read gets `judged`
+against; the others are listed by title only. The code an issue names: its
+sources (a folder given as the list of its files), the paths its title,
+body and people's comments name — a link to a file on the forge,
+`…/blob/<ref>/<path>` or GitLab's `…/-/blob/…`, is that file —, a file
+named alone when one file of the commit has that name, a symbol quoted
+as code; at most three an issue. When an issue read names no file the
+commit holds, the task lists the repository's folders, nearest the root
+first (150 at most), for the agent to name a Scope's files from. Each issue read gets `judged`
 moved to the run's commit; without an agent, or when its answer does not
 read, none is.
 
@@ -125,7 +132,7 @@ as a requirements tool marks a link suspect; with no agent, at every run:
   them, once, with no agent.
 - **The lines of a file an issue was imported from, changed by a
   commit**: the lines its body names (`Opened from `ROADMAP.md`, lines 7
-  to 8`, beside its `import=` key), carried from the commit it was
+  to 8`, hidden in a marker since 2026-10-09, beside its `import=` key), carried from the commit it was
   opened at (`confirmed`) to the one it was last read at (`judged`),
   then through the commits since (`backlog.LinesChange`): lines changed,
   removed, or added between two of them are a change; lines that only
@@ -302,6 +309,16 @@ too, on an issue announced. In `propose`, the agent's act and the
 engine's closing are proposed on the issue for a person, nothing is
 announced; accepted, it is closed at once.
 
+**Off** (the default since ADR-0038), a closing the agent writes is not
+dropped in silence: it is **said** on the issue for a person to close
+(`advice` in its state), its evidence quoted — "Close it yourself if you
+agree: what it asks looks done already. … The role does not close it" —
+with the label `workline:proposed`. Nothing is announced or closed; the
+label `workline:accepted` does not close it; the comment asks the person
+to close the issue, or to take the label off to keep it. The task tells
+the agent so (ADR-0038, amended 2026-10-09). The same holds for
+`close-duplicate` turned off.
+
 ## Naming its sources
 
 ```yaml
@@ -312,8 +329,9 @@ announced; accepted, it is closed at once.
     why: "#12's WriteRows is defined here."
 ```
 
-The files must be in the commit the run is on (1 to 5; `sources-unknown`
-otherwise), a quote from a file found in one of them. Done, the issue's
+The files, or folders, must be in the commit the run is on (1 to 5;
+`sources-unknown` otherwise), a quote from a file found in one of them. A
+folder is given at the next run as the list of its files. Done, the issue's
 state gets them and loses `judged`: it is read again, with that code, at the
 next run.
 
@@ -393,16 +411,37 @@ what it can and asks for the rest:
   `workline:accepted`** — on the issue, or on many at once from the list of
   issues; the engine creates that label with the first draft, so it is
   there to pick; only who may triage sets a label, so it is a person of the
-  project's. The engine then takes the draft lines out and moves the issue
-  to ready, with no agent. Editing a draft and deleting its line makes it
-  a person's too. Scope names its files (`sources`, 1 to 5, in
+  project's. The engine then takes the draft marks out and moves the issue
+  to ready, with no agent. **Editing a draft makes it a person's too**:
+  its text no longer the one the role wrote (the state's `wrote`, a
+  digest per section), the mark left in it or not (`backlog.IsDraft`). A
+  draft an earlier engine wrote — a visible line, "*Draft by the product
+  owner: …*", around the marker — with no digest kept is told by its
+  marker alone; rewriting its own draft, the role writes the marker
+  alone. Scope names its files or folders (`sources`, 1 to 5, in
   the commit, as for naming its sources), which the issue's state gets when
-  it has none. Nothing to add drops the act (`nothing-to-refine`). The
+  it has none; given none, the engine takes the paths the Scope's text
+  names that the commit holds (`backlog.PathsIn`). A Scope naming none, or
+  a path the commit does not hold, is left out, the rest of the refine
+  written (`scope-without-files`, said in the summary with what a person
+  may do). Nothing to add drops the act (`nothing-to-refine`). The
   issue gets the label `workline:to-refine`.
+- **What it writes is readable**, where the engine can tell
+  (`backlog.LinkDecisions`, `backlog.MarkClosed`): a decision cited bare,
+  `ADR-0038`, becomes a link to its page on the forge, when the commit
+  holds it (a numbered page in a folder named `adr`, `adrs` or
+  `decisions`); an issue cited that is closed is followed by "(closed)",
+  once. The task says, for each issue read, the issues it cites, open or
+  closed and why (`Cites:`), and how a file of the repository is linked
+  (`Links:`, the forge's file pages at `HEAD`).
+- **An issue read and left with nothing** — no draft, no question, no
+  act dropped with its reason — though it lacks a section is said in the
+  summary (`nothing-proposed`), never left in silence.
 - **`ready`** is checked by the engine, not taken from the agent: the four
-  sections there and not empty, no draft marker in Need or Validation
-  unless the issue bears `workline:accepted` — read on the issue, never in
-  a proposal (`not-ready` otherwise, naming what is missing). Done, the issue gets
+  sections there and not empty, no draft of the role's left in Need or
+  Validation unless the issue bears `workline:accepted` — read on the
+  issue, never in a proposal (`not-ready` otherwise, naming what is
+  missing); a mark left in a section a person edited is taken out. Done, the issue gets
   `workline:ready` and loses `workline:to-refine`, as `workline item ready`
   does, and loses `workline:draft` and `workline:accepted`. An issue opened
   by someone without write access to the project is theirs: moving it to
@@ -862,6 +901,12 @@ its body and not ready. Taken off when it no longer waits, when it is
 closed, and when a person accepts. A label a bot took off, as the forge's
 label events say, is put back.
 
+**Its labels follow its state**, at every run, with no agent: an open
+issue left with no draft of the role's (`backlog.HasDraft`) loses
+`workline:draft`; one set aside — this run or an earlier one — and left
+with no draft, its body a person's, loses `workline:to-refine` too. One
+still holding a draft keeps them.
+
 **No quick action.** Every line of text the engine writes on a forge
 that starts with `/`, outside fenced code — in a comment, a note's edit,
 a section written in a body — is escaped (`backlog.Inert`): GitLab runs a
@@ -873,13 +918,22 @@ written and when it is edited.
 `left-to-a-person`, `next-ready`, `stuck`, `demoted`, `report-closed`.
 It groups them (`report.Summary`): one heading a group — done alone,
 done as a person accepted, proposed, left to a person (`left-to-a-person`,
-`asks-spent`), set aside, next, stuck —, under it one line an issue, its
+`asks-spent`, `spec-rounds-spent`), read and left incomplete
+(`nothing-proposed`, `scope-without-files`, `sources-unknown`: each says
+what a person may do), set aside, next, stuck, held back by the engine
+(an act of the agent's not done or only proposed, and why: nothing for a
+person to do) —, under it one line an issue, its
 first three findings joined, each cut at a word to its share of 120
 characters (a code span the cut leaves open closed), then "and N more";
 the issue linked to its page
 (`forge.IssuePages`); 10 issues a group, then "and N more"; the groups
 waiting on a person link the filter on the label (`forge.LabelFilter`).
-The other findings follow, a line each.
+The other findings follow, a line each: on an issue, the issue linked and
+its message, no rule's name; on the backlog (`proposals-waiting`,
+`demoted`, `setting-gone`), "the backlog" and its message. The role's own
+line counts what a person will see on the issues, by issue — "issues: 2
+done alone, 1 proposed to a person, 5 set aside by a person" —, never the
+writes the run takes (`engine.onIssues`).
 
 **Judged, not applied** (`--no-apply`, CI's first job): the engine
 decides the plan (`backlog.Decide`, reading the forge only), keeps it in

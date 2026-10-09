@@ -895,3 +895,66 @@ labelled `test:adr-0038`.
   each sandbox: conformance `who-counts-and-rounds`); a third revision
   left to a person (conformance); a real agent revising; an undo found
   live; the week's trial itself. The trial issues were closed after.
+
+## 2026-10-09 — the first nights after ADR-0038, and what they showed
+
+**The night** ([run 37895990993](https://github.com/JN0V/workline/actions/runs/37895990993),
+Sonnet, 31,344 tokens in, 1,287 out, five issues read): the maintainer's
+new [#275](https://github.com/JN0V/workline/issues/275),
+[#276](https://github.com/JN0V/workline/issues/276),
+[#277](https://github.com/JN0V/workline/issues/277) — a Need and a
+Validation each, no Scope nor Verification — got nothing.
+
+- **Why**: they were read, and the agent answered well — a `refine` each,
+  a Scope and a Verification drafted from their Validation. Each Scope
+  named its code in words (`internal/doctor`, `roles/auditor`), but the
+  `sources` field was empty: the task had given no code, the issues
+  linking their files as `https://…/blob/main/…`, which `pre` did not
+  read as files. The engine dropped each refine whole
+  (`sources-unknown`, "a scope names 1 to 5 files"), Verification
+  included, and wrote nothing on the issues: silence.
+- **Fixed**: a link to a file on the forge is code the issue names; an
+  issue naming none gets the repository's folders listed; a Scope with
+  no `sources` has them read from its text; one naming none is left out,
+  the rest written, said in plain words; an issue read and left with
+  nothing is said.
+- **Replayed**: the night's own answer, on a copy of workline at
+  `3eebaef` and a fake forge holding the three issues as the task gave
+  them, with the branch's engine: #275 and #276 refined (Verification,
+  Scope; sources `internal/doctor`, `docs/spec/forge-command.md`,
+  `roles/auditor`, `roles/auditor/docs/status.md`), #277's Verification
+  written and its Scope left out — "could not tell which files #277 is
+  about…: add a Scope naming them, or leave it".
+- **The summary** said `sources-unknown #275: a scope names 1 to 5 files
+  (sources)` and "(12 proposals)", counting state comments. Now the
+  role's line counts issues — "issues: 2 done alone, 1 set aside by a
+  person" — and each line is plain, no rule's name.
+
+**The drafts the maintainer triaged** (#81, #83, #87, #88, #108, #109,
+written before ADR-0038): a Need rephrasing the item's solution in its
+own jargon; a Validation as a formula ("JN0V looks at … and sees …"); a
+Scope naming docs, not code; a closed issue cited as a part to wait for;
+several topics, some done, drafted as one. The prompt now asks for a Need
+from the user's side, a concrete Validation, the project's user-docs
+rules, and one plain question rather than a guess; the engine links a
+decision cited bare and marks a closed issue cited. A closing with
+`close-obsolete` off is said on the issue for a person to close.
+
+**On the sandboxes**, the branch's engine, a `cmd:` agent answering a
+written answer (no paid agent):
+
+- GitHub: #51 (a Need and Validation, a blob link) got its Verification
+  and Scope, sources `src/auth` read from the Scope; #52's drafts written
+  under a hidden mark, "#32 (closed)" marked, the task saying "Cites: #32
+  (closed as not planned)"; #53 said done ("Close it yourself if you
+  agree…"), left open, `workline:proposed` on; #4, its drafts rewritten
+  by JN0V and `workline:proposed` taken off, lost `workline:draft` and
+  `workline:to-refine`. A second run with no agent changed nothing.
+- GitLab: #34, a `/-/blob/main/` link read as its code, the Scope's file
+  taken from its text, "#27 (closed)" marked, the task linking files at
+  `/-/blob/HEAD/` (checked: GitLab resolves `HEAD`).
+- The trial issues were closed after; #4 keeps JN0V's rewrite.
+
+**Not tried**: the new prompt with a real agent — whether it asks rather
+than invents, writes a Need from the user's side and a concrete
+Validation; the next real night will say, read by the maintainer.
