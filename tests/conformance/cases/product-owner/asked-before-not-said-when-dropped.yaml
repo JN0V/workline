@@ -1,0 +1,24 @@
+case: product-owner/asked-before-not-said-when-dropped
+about: 'A question asked before is said left out only of an act the run writes or proposes: a refine dropped after its checks — its kind off here — writes nothing, and the summary does not say "the rest was kept".'
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {acts: {refine: {mode: "off"}}}}}
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost."
+        author: zed
+        insider: false
+        labels: []
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@zed, the product owner read this issue and would refine it as below.\n\n**What it still needs:** Is it every export, or only a long one?\n\n<!-- workline:product-owner/proposal=1 -->"
+          - {body: "Not sure.", author: zed}
+run: {role: product-owner, event: schedule, ai: fake:refine-outsiders-asking-again}
+expect:
+  no-findings: [{rule: question-left-out, where: "#9"}, {rule: done, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, comments: 3, body-lacks: "## Need"}

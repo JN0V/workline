@@ -364,6 +364,9 @@ type Proposal struct {
 	// a comment rather than written in the body (an outsider's issue).
 	Round      int  `yaml:"round,omitempty"`
 	ToReporter bool `yaml:"to-reporter,omitempty"`
+	// LeftOut, the engine's: the questions asked before, taken out of it;
+	// said once the act is decided, never when it is dropped.
+	LeftOut []string `yaml:"-"`
 	// Agreed, the engine's: who agreed in a reply to the text last proposed
 	// to the reporter, which this refine writes; checked again on the forge
 	// (Agreement), never taken from the agent.
@@ -823,6 +826,11 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				p.recordDid(c)
 			}
 		}
+		if d.Mode != Off && len(c.LeftOut) > 0 {
+			// Written or proposed: the question asked before left out is
+			// said; an act dropped writes nothing, and says only why.
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "question-left-out", Level: "info", Where: c.where(), Message: leftOut(c.LeftOut)})
+		}
 		p.Decisions = append(p.Decisions, d)
 		if extra != nil {
 			p.Decisions = append(p.Decisions, *extra)
@@ -1181,11 +1189,9 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		if rule != "" {
 			return rule, why
 		}
-		if len(left) > 0 {
-			// Only the question asked before is dropped, never the act:
-			// its drafts, its other questions written.
-			p.Findings = append(p.Findings, verdict.Finding{Rule: "question-left-out", Level: "info", Where: c.where(), Message: leftOut(left)})
-		}
+		// Only the question asked before is dropped, never the act: its
+		// drafts, its other questions written — said once it is decided.
+		c.LeftOut = left
 	}
 	switch {
 	case c.Do == "close" && c.Ticked == "" && len(SplitInto(p.issues[c.Issue], st)) > 0:
