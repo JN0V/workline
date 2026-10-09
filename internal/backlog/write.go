@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,11 +24,24 @@ var (
 )
 
 // outsideLinks applies fn to the parts of text that are no link, address
-// nor code span.
+// nor code span, nor fenced block.
 func outsideLinks(text string, fn func(string) string) string {
+	var spans [][2]int
+	for _, m := range linkSpan.FindAllStringIndex(text, -1) {
+		spans = append(spans, [2]int{m[0], m[1]})
+	}
+	spans = append(spans, codeRanges(text)...)
+	slices.SortFunc(spans, func(a, b [2]int) int { return a[0] - b[0] })
 	var b strings.Builder
 	last := 0
-	for _, m := range linkSpan.FindAllStringIndex(text, -1) {
+	for _, m := range spans {
+		if m[0] < last { // within one already left as it is
+			if m[1] > last {
+				b.WriteString(text[last:m[1]])
+				last = m[1]
+			}
+			continue
+		}
 		b.WriteString(fn(text[last:m[0]]))
 		b.WriteString(text[m[0]:m[1]])
 		last = m[1]
@@ -75,22 +89,80 @@ func LinkDecisions(text, pages string, decisions map[int]string) string {
 // link to its page on this forge (pages, the issue's number after it); a
 // link's end is where a mark goes after it.
 func cites(pages string) *regexp.Regexp {
-	page := `(\b\B\d+)` // matches nothing: no page known
-	if pages != "" {
-		page = regexp.QuoteMeta(pages) + `(\d+)\b[^)\s]*\)?`
+	bare := `(?:^|[^\w&/#\[])#(\d+)\b`
+	if pages == "" {
+		return regexp.MustCompile(bare)
 	}
-	return regexp.MustCompile(`(?:^|[^\w&/#\[])#(\d+)\b|\[#\d+\]\(` + page + `|` + page)
+	page := regexp.QuoteMeta(pages) + `(\d+)\b[^)\s]*\)?`
+	return regexp.MustCompile(bare + `|\[#\d+\]\(` + page + `|` + page)
+}
+
+// citation is one issue a text cites: its number, and where the cite ends.
+type citation struct{ n, start, end int }
+
+// citations are the issues a text cites, outside code — a code span, a
+// fenced block —, in their order.
+func citations(text, pages string) []citation {
+	code := codeRanges(text)
+	var out []citation
+	for _, m := range cites(pages).FindAllStringSubmatchIndex(text, -1) {
+		if slices.ContainsFunc(code, func(r [2]int) bool { return m[0] < r[1] && m[1] > r[0] }) {
+			continue
+		}
+		for g := 2; g < len(m); g += 2 {
+			if m[g] >= 0 {
+				n, _ := strconv.Atoi(text[m[g]:m[g+1]])
+				out = append(out, citation{n, m[0], m[1]})
+				break
+			}
+		}
+	}
+	return out
+}
+
+var (
+	fenceLine  = regexp.MustCompile("(?m)^[ \t]*(`{3,}|~{3,})")
+	inlineCode = regexp.MustCompile("`[^`\n]+`")
+)
+
+// codeRanges are where a text holds code: each fenced block, to its
+// closing fence or the text's end, and each code span outside them.
+func codeRanges(text string) [][2]int {
+	var out [][2]int
+	fences := fenceLine.FindAllStringSubmatchIndex(text, -1)
+	for i := 0; i < len(fences); i++ {
+		open, mark := fences[i], text[fences[i][2]:fences[i][3]]
+		end := len(text)
+		for j := i + 1; j < len(fences); j++ {
+			if c := text[fences[j][2]:fences[j][3]]; c[0] == mark[0] && len(c) >= len(mark) {
+				end, i = fences[j][1], j
+				break
+			}
+		}
+		if end == len(text) {
+			i = len(fences)
+		}
+		out = append(out, [2]int{open[0], end})
+	}
+	inFence := func(at int) bool {
+		return slices.ContainsFunc(out, func(r [2]int) bool { return at >= r[0] && at < r[1] })
+	}
+	for _, s := range inlineCode.FindAllStringIndex(text, -1) {
+		if !inFence(s[0]) {
+			out = append(out, [2]int{s[0], s[1]})
+		}
+	}
+	return out
 }
 
 // CitedIssues are the issues a text cites, by number, lowest first.
 func CitedIssues(text, pages string) []int {
 	seen := map[int]bool{}
 	var out []int
-	for _, m := range cites(pages).FindAllStringSubmatch(text, -1) {
-		n, _ := strconv.Atoi(m[1] + m[2] + m[3])
-		if n > 0 && !seen[n] {
-			seen[n] = true
-			out = append(out, n)
+	for _, c := range citations(text, pages) {
+		if c.n > 0 && !seen[c.n] {
+			seen[c.n] = true
+			out = append(out, c.n)
 		}
 	}
 	sort.Ints(out)
@@ -105,15 +177,9 @@ func MarkClosed(text, pages string, closed map[int]bool) string {
 	}
 	var b strings.Builder
 	last := 0
-	for _, m := range cites(pages).FindAllStringSubmatchIndex(text, -1) {
-		n := 0
-		for g := 2; g < len(m); g += 2 {
-			if m[g] >= 0 {
-				n, _ = strconv.Atoi(text[m[g]:m[g+1]])
-			}
-		}
-		end := m[1]
-		if !closed[n] || strings.HasPrefix(text[end:], " (closed") || strings.Count(text[:m[1]], "`")%2 == 1 {
+	for _, c := range citations(text, pages) {
+		end := c.end
+		if !closed[c.n] || strings.HasPrefix(text[end:], " (closed") {
 			continue
 		}
 		b.WriteString(text[last:end])

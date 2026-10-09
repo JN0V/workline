@@ -1,0 +1,11 @@
+# A closing the code settles, and one only a person may decide.
+- close:
+    issue: 7
+    reason: obsolete
+    quote: {path: src/export/csv.go, text: "for i := 0; i < len(rows); i++ {"}
+    why: "WriteRows now loops to the last row."
+- close:
+    issue: 12
+    reason: not-planned
+    quote: {issue: 12, text: "the last row is missing"}
+    why: "Nobody exports single rows."

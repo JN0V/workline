@@ -12,6 +12,10 @@ func TestLinkDecisionsLinksABareOneOnly(t *testing.T) {
 	if got != want {
 		t.Errorf("LinkDecisions =\n%s\nwant\n%s", got, want)
 	}
+	fenced := "```\nADR-0038\n```\nthen ADR-0038, `a` [ADR-0038](x) `b`"
+	if got := LinkDecisions(fenced, "p/", decisions); got != "```\nADR-0038\n```\nthen [ADR-0038](p/docs/adr/0038-proposals.md), `a` [ADR-0038](x) `b`" {
+		t.Errorf("a fenced block: %q", got)
+	}
 	if got := LinkDecisions("ADR-0038", "", decisions); got != "ADR-0038" {
 		t.Errorf("no forge pages: %q", got)
 	}
@@ -30,6 +34,20 @@ func TestMarkClosedSaysItOnce(t *testing.T) {
 	}
 	if ids := CitedIssues("see https://other/issues/7 and #3", ""); !slices.Equal(ids, []int{3}) {
 		t.Errorf("CitedIssues, no pages = %v", ids)
+	}
+}
+
+func TestMarkClosedSkipsCodeOnly(t *testing.T) {
+	// A stray backtick, a fenced block: what follows them is still marked.
+	text := "A lone ` here, then #206.\n\n```\nsee #206\n```\n\nAfter the block, #206 and `#206`."
+	got := MarkClosed(text, "", map[int]bool{206: true})
+	want := "A lone ` here, then #206 (closed).\n\n```\nsee #206\n```\n\nAfter the block, #206 (closed) and `#206`."
+	if got != want {
+		t.Errorf("MarkClosed =\n%s\nwant\n%s", got, want)
+	}
+	// No page known: a bare cite is still read, and marked.
+	if got := MarkClosed("[#5](x) and #5", "", map[int]bool{5: true}); got != "[#5](x) and #5 (closed)" {
+		t.Errorf("no pages: %q", got)
 	}
 }
 
