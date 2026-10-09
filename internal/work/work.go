@@ -27,27 +27,59 @@ var stateLine = regexp.MustCompile(`(?m)^state: .*$`)
 
 // Sections returns the text under each "## " or "### " heading — an
 // issue form writes its fields as the latter. A field left empty in a form
-// ("_No response_") is empty.
+// ("_No response_") is empty. A heading written twice holds the text under
+// both, the first one's first. A thematic break ending a section — the
+// line between the person's part of an issue and the builder's — is not
+// its text.
 func Sections(content string) map[string]string {
-	out := map[string]string{}
+	parts := map[string][]string{}
 	name := ""
 	content, _ = Footer(content)
 	for _, l := range strings.Split(content, "\n") {
 		if h, ok := Heading(l); ok {
 			name = h
-			out[name] = ""
+			parts[name] = append(parts[name], "")
 			continue
 		}
 		if name != "" {
-			out[name] += l + "\n"
+			parts[name][len(parts[name])-1] += l + "\n"
 		}
 	}
-	for k, v := range out {
-		if strings.TrimSpace(v) == NoResponse {
-			out[k] = ""
+	out := map[string]string{}
+	for k, texts := range parts {
+		out[k] = ""
+		for _, v := range texts {
+			v = withoutBreak(v)
+			if t := strings.TrimSpace(v); t == "" || t == NoResponse {
+				continue
+			}
+			if out[k] != "" {
+				out[k] = strings.TrimRight(out[k], "\n") + "\n\n"
+			}
+			out[k] += v
 		}
 	}
 	return out
+}
+
+// withoutBreak is a section's text without the thematic break that ends
+// it, a blank line above it, outside fenced code.
+func withoutBreak(text string) string {
+	lines := strings.Split(strings.TrimRight(text, " \r\n"), "\n")
+	last, fence := len(lines)-1, ""
+	for _, l := range lines[:last] {
+		fence = fenced(l, fence)
+	}
+	if fence != "" || !Break(lines[last]) || (last > 0 && strings.TrimSpace(lines[last-1]) != "") {
+		return text
+	}
+	return strings.Join(lines[:last], "\n") + "\n"
+}
+
+// Break says whether a line is a thematic break: `---`, `***` or `___`,
+// CommonMark's.
+func Break(line string) bool {
+	return thematicBreak.MatchString(strings.TrimRight(line, "\r"))
 }
 
 // Footer splits a body from its footer, which belongs to no section
@@ -75,7 +107,7 @@ func Footer(body string) (string, string) {
 		if fence = fenced(l, fence); fence != "" || was != "" || i <= last || last < 0 {
 			continue
 		}
-		if thematicBreak.MatchString(strings.TrimRight(l, "\r")) && strings.TrimSpace(lines[i-1]) == "" {
+		if Break(l) && strings.TrimSpace(lines[i-1]) == "" {
 			at = i
 			break
 		}
