@@ -237,10 +237,20 @@ func (s State) say() string {
 		lines = append(lines, "Set aside by a person: nothing more is proposed here until the issue changes.")
 	case s.Label != "":
 		if len(s.Proposed) == 0 && len(s.Did) == 0 {
-			lines = append(lines, "**The product owner** drafted sections of this issue, marked as drafts in its body: they wait on your answer.")
+			var names []string
+			for _, name := range drafted {
+				if s.Wrote[name] != "" {
+					names = append(names, name)
+				}
+			}
+			what := "sections of this issue"
+			if len(names) > 0 {
+				what = "the " + and(names) + " of this issue"
+			}
+			lines = append(lines, "**The product owner** drafted "+what+" from its own words: they wait on your answer.")
 		}
 		accepted := strings.Replace(s.Label, "proposed", "accepted", 1)
-		lines = append(lines, fmt.Sprintf("**Your answer**: label `%s` to agree — what it proposes is done at its next run, its drafts become yours, and the issue moves to ready once complete; comment to have it revise; take `%s` off for not now; close the issue if it should not exist.", accepted, s.Label))
+		lines = append(lines, fmt.Sprintf("**Your answer**: label `%s` to agree — what it proposes is done at its next run, its drafts become yours, and the issue moves to ready once complete; edit a draft to make it yours; comment to have it revise; take `%s` off for not now; close the issue if it should not exist.", accepted, s.Label))
 	}
 	return strings.Join(lines, "\n\n")
 }
@@ -1309,7 +1319,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 				Message: "already in the body, left as it is: " + strings.Join(kept, ", ")})
 		}
 	case "ready":
-		if missing := NotReady(is.Body, Accepted(is)); len(missing) > 0 {
+		if missing := NotReady(is.Body, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
 			return "not-ready", "it stays to refine: " + strings.Join(missing, "; ")
 		}
 	case "ask":
@@ -1445,9 +1455,27 @@ var drafted = []string{"Need", "Validation"}
 // DraftMarker marks a section the role drafted and no person made theirs.
 var DraftMarker = forge.Marker("draft")
 
-// DraftLine opens a drafted section; deleting it makes the section a person's.
-func DraftLine(role string) string {
-	return fmt.Sprintf("*Draft by the %s: edit it, then delete this line to make it yours.* %s", strings.ReplaceAll(role, "-", " "), DraftMarker)
+// DraftLine opens a drafted section: the marker alone, which a reader does
+// not see. The role's one comment says the section is a draft and how to
+// make it yours: workline:accepted, or an edit (ADR-0038). An issue an
+// earlier engine drafted holds a visible line too; read the same.
+func DraftLine(role string) string { return DraftMarker }
+
+// IsDraft says whether an issue's section is still the role's draft: its
+// text marked so, and as the role wrote it (the state's `wrote`) — one a
+// person edited is theirs, the marker left in it or not. A draft written
+// before the role kept its digest is told by its marker alone.
+func IsDraft(body, name string, st *State) bool {
+	text := work.Sections(body)[name]
+	if !slices.Contains(drafted, name) || !strings.Contains(text, DraftMarker) {
+		return false
+	}
+	return st == nil || st.Wrote[name] == "" || st.Wrote[name] == BodyDigest(text)
+}
+
+// HasDraft says whether an issue's body holds a draft of the role's still.
+func HasDraft(body string, st *State) bool {
+	return slices.ContainsFunc(drafted, func(name string) bool { return IsDraft(body, name, st) })
 }
 
 // Refine is an issue's body with the sections it lacks written: one there
@@ -1470,7 +1498,7 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 		}
 		old, ok := have[name]
 		switch {
-		case ok && strings.TrimSpace(old) != "" && slices.Contains(c.Revise, name) && squeeze(old) != squeeze(text):
+		case ok && strings.TrimSpace(old) != "" && slices.Contains(c.Revise, name) && squeeze(StripDrafts(old)) != squeeze(StripDrafts(text)):
 			body = fill(body, name, text) // the role's own, rewritten to answer the reviewer (#128)
 		case ok && strings.TrimSpace(old) != "":
 			kept = append(kept, name)
@@ -1553,8 +1581,8 @@ func StripDrafts(body string) string {
 }
 
 // NotReady says what keeps an issue's body from ready: a section missing or
-// empty, Need or Validation still a draft no person accepted.
-func NotReady(body string, accepted bool) []string {
+// empty, Need or Validation still a draft no person accepted nor edited.
+func NotReady(body string, st *State, accepted bool) []string {
 	have := work.Sections(body)
 	var out []string
 	for _, name := range Sections {
@@ -1562,7 +1590,7 @@ func NotReady(body string, accepted bool) []string {
 		switch {
 		case text == "":
 			out = append(out, "## "+name+" is missing or empty")
-		case !accepted && slices.Contains(drafted, name) && strings.Contains(text, DraftMarker):
+		case !accepted && IsDraft(body, name, st):
 			out = append(out, "## "+name+" is a draft, not a person's yet")
 		}
 	}

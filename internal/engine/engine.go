@@ -2408,11 +2408,16 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 		return f.Comment(t, backlog.Inert(backlog.ProposalComment(is.Author, c, role)), backlog.ProposalMarker(role, c.Round))
 	case "ready":
 		accepted := backlog.Accepted(*is)
-		if missing := backlog.NotReady(is.Body, accepted); len(missing) > 0 {
+		comments, err := b.Comments(t)
+		if err != nil {
+			return err
+		}
+		st, _, _ := backlog.ReadState(comments, role) // its drafts told from a person's edit
+		if missing := backlog.NotReady(is.Body, st, accepted); len(missing) > 0 {
 			return nil // changed since the plan: it stays to refine
 		}
-		if accepted && strings.Contains(is.Body, backlog.DraftMarker) {
-			// The drafts are the person's: their lines go.
+		if strings.Contains(is.Body, backlog.DraftMarker) {
+			// The drafts are the person's, accepted or edited: their marks go.
 			body := backlog.StripDrafts(is.Body)
 			if err := b.SetBody(c.Issue, body); err != nil {
 				return err

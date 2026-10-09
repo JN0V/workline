@@ -282,7 +282,7 @@ func Pre(runDir, repo string) int {
 			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
 				"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
-			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, false)) == 0 {
+			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, st, false)) == 0 {
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
@@ -891,7 +891,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		}
 		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing; an undepend only takes off a link set by the role\n", strings.Join(said, ", "))
 	}
-	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body))
+	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body, st))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
@@ -975,7 +975,7 @@ func place(is forge.Issue, isOpen map[int]bool) string {
 
 // sections says which of the four sections an issue's body has, and which
 // are drafts no person made theirs yet.
-func sections(body string) string {
+func sections(body string, st *backlog.State) string {
 	have := work.Sections(body)
 	var there, missing []string
 	for _, name := range backlog.Sections {
@@ -983,7 +983,7 @@ func sections(body string) string {
 		switch {
 		case text == "":
 			missing = append(missing, name)
-		case strings.Contains(text, backlog.DraftMarker):
+		case backlog.IsDraft(body, name, st):
 			there = append(there, name+" (draft)")
 		default:
 			there = append(there, name)

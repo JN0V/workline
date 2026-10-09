@@ -508,7 +508,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			if st.Aside != "" && (BodyDigest(is.Body) != st.Aside || p.Answers[id] != nil) {
 				st.Aside = "" // the issue changed since: proposed again, if anything
 			}
-			waits := st.Aside == "" && (len(st.Proposed) > 0 || (strings.Contains(is.Body, DraftMarker) && !slices.Contains(is.Labels, LabelReady)))
+			waits := st.Aside == "" && (len(st.Proposed) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
 			switch {
 			case waits && st.Label == "":
 				if !ensured {

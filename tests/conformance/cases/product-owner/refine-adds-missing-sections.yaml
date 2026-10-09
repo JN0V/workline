@@ -1,5 +1,5 @@
 case: product-owner/refine-adds-missing-sections
-about: Refining, the engine adds the sections an issue lacks after its text, which stays — Need and Validation as drafts, a line saying so — gives its state the files Scope names, labels it to-refine, draft and proposed, and makes the label a person accepts drafts with; a Scope naming a file not in the commit is left out, the rest written.
+about: Refining, the engine adds the sections an issue lacks after its text, which stays — Need and Validation as drafts, marked so by a line a reader does not see — gives its state the files Scope names, labels it to-refine, draft and proposed, and makes the label a person accepts drafts with; a Scope naming a file not in the commit is left out, the rest written.
 given:
   repo: backlog
   forge:
@@ -11,7 +11,7 @@ expect:
   findings: [{rule: scope-without-files, where: "#12"}, {rule: done, where: "#12", message: "Refined #12: Verification."}, {rule: done, where: "#9", message: "Refined #9: Need (draft), Verification, Validation (draft), Scope."}]
   forge:
     issues:
-      - {id: 9, body-contains: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nEvery row exported, so a report counts what was sold.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nThe maintainer opens an export of a known day.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [workline:to-refine, workline:draft, workline:proposed], comment-contains: "sources: [src/export/csv.go]"}
+      - {id: 9, body-contains: "Some rows are lost.\n\n## Need\n\n<!-- workline:draft -->\n\nEvery row exported, so a report counts what was sold.\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Validation\n\n<!-- workline:draft -->\n\nThe maintainer opens an export of a known day.\n\n## Scope\n\nWriteRows in src/export/csv.go.", labels: [workline:to-refine, workline:draft, workline:proposed], comment-contains: "sources: [src/export/csv.go]"}
       - {id: 12, body-contains: "Import XML.\n\n## Verification\n\nA test.", body-lacks: "## Scope", labels: [workline:to-refine]}
     labels:
       - {id: 1, title: workline:accepted}
