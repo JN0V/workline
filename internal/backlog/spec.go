@@ -140,7 +140,7 @@ func SectionDigest(body, name string) string {
 func Own(is forge.Issue, st *State) []string {
 	have := work.Sections(is.Body)
 	var out []string
-	for _, name := range Sections {
+	for _, name := range Layout {
 		text, ok := have[name]
 		switch {
 		case !ok || strings.TrimSpace(text) == "":

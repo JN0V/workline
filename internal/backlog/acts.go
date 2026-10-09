@@ -42,6 +42,9 @@ func (p *Plan) recordDid(c Proposal) {
 	}
 	now := time.Now().UTC()
 	line := describe(c, "Closed")
+	if c.Do == "refine" && !c.ToReporter {
+		line = refined(c)
+	}
 	if utf8.RuneCountInString(line) > didLine {
 		line = string([]rune(line)[:didLine-1]) + "…"
 	}

@@ -1,4 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-product-owner/refine-writes-the-persons-part-first
-product-owner/refine-adds-missing-sections
