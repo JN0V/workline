@@ -1,0 +1,44 @@
+case: product-owner/asked-before-left-out-refine-kept
+about: 'A question asked in an earlier round is left out of a refine proposed to an outsider, never the whole refine (ADR-0021): its drafts and its new question are written; with no question left, the drafts are written alone. Said in plain words in the summary.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost."
+        author: zed
+        insider: false
+        labels: []
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@zed, the product owner read this issue and would refine it as below.\n\n**What it still needs:** Is it every export, or only a long one?\n\n<!-- workline:product-owner/proposal=1 -->"
+          - {body: "Not sure.", author: zed}
+      - id: 10
+        title: "Totals wrong"
+        body: "Totals are wrong."
+        author: zed
+        insider: false
+        labels: []
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "@zed, to refine this issue: Is it every export, or only a long one?\n\n<!-- workline:product-owner/ask -->"
+          - {body: "Not sure.", author: zed}
+run: {role: product-owner, event: schedule, ai: fake:refine-outsiders-asking-again, summary: true}
+expect:
+  findings:
+    - {rule: question-left-out, where: "#9", message: 'The question "Is it every export, or only a long one?" was asked before, so it was left out; the rest was kept.'}
+    - {rule: question-left-out, where: "#10"}
+    - {rule: done, where: "#9", message: "Proposed to #9's reporter (an outsider)"}
+    - {rule: done, where: "#10", message: "Proposed to #10's reporter (an outsider)"}
+  no-findings: [{rule: asked-before, where: "#9"}, {rule: asked-before, where: "#10"}]
+  summary-file:
+    - '  - [#9](https://forge.example/issues/9): The question "Is it every export, or only a long one?" was asked before, so it was left out; the rest was kept.'
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Need"}
+      - {id: 9, comment-contains: "**What it still needs:** Since when does it drop the row?"}
+      - {id: 9, comment-contains: "**Verification**"}
+      - {id: 9, comment-contains: "<!-- workline:product-owner/proposal=2 -->"}
+      - {id: 10, body-lacks: "## Need"}
+      - {id: 10, comment-contains: ["**Verification**", "<!-- workline:product-owner/proposal=2 -->"], comment-lacks: "What it still needs"}

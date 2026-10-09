@@ -99,7 +99,7 @@ func TestAskedBefore(t *testing.T) {
 	for q, want := range map[string]string{
 		"Which rows are lost: the last one, or any?":    "asked-before",
 		"  which ROWS are lost:\nthe last one, or any?": "asked-before",
-		"Is it every export? Since when?":               "asked-before",
+		"Is it every export? Since when?":               "", // asked without "Since when?"
 		"Which export?":                                 "",
 		"Or any?":                                       "", // a question that only ends an earlier one is a new one
 		"When?":                                         "", // nor one that ends the lead's
@@ -120,8 +120,27 @@ func TestAskedBefore(t *testing.T) {
 		"Which file:\n- a.go or\n- which file?":         "",             // options of one question, not items: not cut
 	} {
 		c := Proposal{Do: "ask", Questions: q}
-		if rule, _ := conversation("product-owner", comments, &c); rule != want {
+		if rule, _, _ := conversation("product-owner", comments, &c); rule != want {
 			t.Errorf("%q: rule %q, want %q", q, rule, want)
+		}
+	}
+	// Only the question asked before is left out, what leads it kept; an
+	// ask with none left is dropped, a refine keeps its drafts.
+	for _, tc := range []struct{ do, q, kept, rule string }{
+		{"ask", "Since when? Which export?", "Which export?", ""},
+		{"ask", "Thanks. Since when? Which export?", "Thanks. Which export?", ""},
+		{"ask", "Which export?\n- Since when?", "Which export?", ""},
+		{"ask", "Since when? Does a.go fail?", "Since when? Does a.go fail?", "asked-before"},
+		{"refine", "Since when? Does a.go fail?", "", ""},
+		{"refine", "Which export?", "Which export?", ""},
+	} {
+		c := Proposal{Do: tc.do, ToReporter: tc.do == "refine", Questions: tc.q}
+		rule, _, left := conversation("product-owner", comments, &c)
+		if rule != tc.rule {
+			t.Errorf("%s %q: rule %q, want %q", tc.do, tc.q, rule, tc.rule)
+		}
+		if rule == "" && (c.Questions != tc.kept || (tc.kept != tc.q) != (len(left) > 0)) {
+			t.Errorf("%s %q: kept %q (left out %q), want %q", tc.do, tc.q, c.Questions, left, tc.kept)
 		}
 	}
 	if e := ReadExchange(append(comments, "@ann, still: Which export?\n\n"+AskMarker("product-owner", 2)), "product-owner"); e.Rounds != 2 || e.Answered {

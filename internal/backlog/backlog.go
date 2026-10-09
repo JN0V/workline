@@ -1160,8 +1160,14 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 	}
 	if c.Do == "ask" || c.ToReporter {
-		if rule, why := conversation(role, comments, c); rule != "" {
+		rule, why, left := conversation(role, comments, c)
+		if rule != "" {
 			return rule, why
+		}
+		if len(left) > 0 {
+			// Only the question asked before is dropped, never the act:
+			// its drafts, its other questions written.
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "question-left-out", Level: "info", Where: c.where(), Message: leftOut(left)})
 		}
 	}
 	switch {
@@ -1760,28 +1766,72 @@ func askedIn(comment string) string {
 
 // conversation checks an ask, or a refine proposed to an outsider, against
 // the conversation so far: never twice without an answer, never the same
-// question twice; it sets the round the comment would be.
-func conversation(role string, comments []string, c *Proposal) (rule, why string) {
+// question twice; it sets the round the comment would be. A question
+// asked before is left out, the rest of the act kept (left): an ask with
+// no question left is dropped, a refine keeps its drafts.
+func conversation(role string, comments []string, c *Proposal) (rule, why string, left []string) {
 	e := ReadExchange(comments, role)
 	if e.Rounds > 0 && !e.Answered {
 		if c.Do == "ask" {
-			return "already-asked", "its reporter was asked and has not answered since: an issue is asked again only after an answer"
+			return "already-asked", "its reporter was asked and has not answered since: an issue is asked again only after an answer", nil
 		}
-		return "already-proposed", "its reporter was proposed a text, or asked, and has not answered since: nothing more is written before an answer"
+		return "already-proposed", "its reporter was proposed a text, or asked, and has not answered since: nothing more is written before an answer", nil
 	}
-	for _, q := range questions(c.Questions) {
-		// The same question, whole: the leads the engine wrote are not in
-		// e.Asked (ReadExchange).
-		if slices.ContainsFunc(e.Asked, func(a string) bool { return slices.Contains(questions(a), q) }) {
-			return "asked-before", fmt.Sprintf("%q was asked before: a question is never asked twice", q)
-		}
+	// The same question, whole: the leads the engine wrote are not in
+	// e.Asked (ReadExchange).
+	var asked []string
+	for _, a := range e.Asked {
+		asked = append(asked, questions(a)...)
 	}
+	kept, left := withoutAsked(c.Questions, asked)
+	if len(left) > 0 && c.Do == "ask" && len(questions(kept)) == 0 {
+		return "asked-before", fmt.Sprintf("%q was asked before: a question is never asked twice", left[0]), nil
+	}
+	c.Questions = kept
 	c.Round = e.Rounds + 1
-	return "", ""
+	return "", "", left
 }
 
-// sentenceEnd is where a sentence ends before a question.
-var sentenceEnd = regexp.MustCompile(`[.!] (?:[-*•] +|\d+[.)] +)?\p{Lu}`)
+// withoutAsked is a text of questions with those asked before left out,
+// each from where it starts — its sentence or its list item — to its
+// "?"; what comes before it stays. No question left, nothing is. left
+// are the questions taken out, as written.
+func withoutAsked(text string, asked []string) (kept string, left []string) {
+	var b strings.Builder
+	for _, part := range strings.SplitAfter(text, "?") {
+		start, q := question(part)
+		if q == "" || !slices.Contains(asked, q) {
+			b.WriteString(part)
+			continue
+		}
+		b.WriteString(part[:start])
+		left = append(left, bullet.ReplaceAllString(squeeze(part[start:]), ""))
+	}
+	if len(left) == 0 {
+		return text, nil
+	}
+	if kept = strings.TrimSpace(b.String()); len(questions(kept)) == 0 {
+		kept = ""
+	}
+	return kept, left
+}
+
+// leftOut says, in plain words, the questions a refine or an ask was
+// written without.
+func leftOut(left []string) string {
+	quoted := make([]string, len(left))
+	for i, q := range left {
+		quoted[i] = `"` + q + `"`
+	}
+	if len(left) == 1 {
+		return fmt.Sprintf("The question %s was asked before, so it was left out; the rest was kept.", quoted[0])
+	}
+	return fmt.Sprintf("The questions %s were asked before, so they were left out; the rest was kept.", and(quoted))
+}
+
+// sentenceEnd is where a sentence ends before a question, spaces as
+// written.
+var sentenceEnd = regexp.MustCompile(`[.!]\s+(?:[-*•]\s+|\d+[.)]\s+)?\p{Lu}`)
 
 // listItem starts a list's item on a line of its own, a sentence of its
 // own: an option of one question ("- the CLI or") starts in lower case.
@@ -1795,26 +1845,34 @@ var bullet = regexp.MustCompile(`^\s*(?:[-*•]|\d+[.)])\s+`)
 func questions(text string) []string {
 	var out []string
 	for _, part := range strings.SplitAfter(text, "?") {
-		if !strings.HasSuffix(part, "?") {
-			continue
-		}
-		// A list's item on a line of its own is a question of its own.
-		if m := listItem.FindAllStringIndex(part, -1); len(m) > 0 {
-			part = part[m[len(m)-1][0]:]
-		}
-		part = squeeze(part)
-		// The question alone, not the sentence before it: a sentence ends
-		// at a "." or "!", a space, then a capital — perhaps after a bullet —,
-		// not at a file's or a version's dot, nor at "e.g.".
-		if m := sentenceEnd.FindAllStringIndex(part, -1); len(m) > 0 {
-			part = part[m[len(m)-1][0]+2:]
-		}
-		part = bullet.ReplaceAllString(part, "") // a list's bullet or number aside
-		if q := strings.ToLower(strings.Trim(part, " *")); len(q) > 3 {
+		if _, q := question(part); q != "" {
 			out = append(out, q)
 		}
 	}
 	return out
+}
+
+// question is where the question a part of a text ends with starts, and
+// that question squeezed and lowercased; "" when the part ends with none.
+func question(part string) (start int, q string) {
+	if !strings.HasSuffix(part, "?") {
+		return 0, ""
+	}
+	// A list's item on a line of its own is a question of its own.
+	if m := listItem.FindAllStringIndex(part, -1); len(m) > 0 {
+		start = m[len(m)-1][0]
+	}
+	// The question alone, not the sentence before it: a sentence ends at a
+	// "." or "!", spaces, then a capital — perhaps after a bullet —, not at
+	// a file's or a version's dot, nor at "e.g.".
+	if m := sentenceEnd.FindAllStringIndex(part[start:], -1); len(m) > 0 {
+		start += m[len(m)-1][0] + 1
+	}
+	text := bullet.ReplaceAllString(squeeze(part[start:]), "") // a list's bullet or number aside
+	if q = strings.ToLower(strings.Trim(text, " *")); len(q) > 3 {
+		return start, q
+	}
+	return start, ""
 }
 
 // Ask is the comment asking the reporter what is missing; a later round
