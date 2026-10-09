@@ -45,6 +45,13 @@ func TestMarkClosedSkipsCodeOnly(t *testing.T) {
 	if got != want {
 		t.Errorf("MarkClosed =\n%s\nwant\n%s", got, want)
 	}
+	// A one-line ```span``` is no fence; a fence line with an info string
+	// does not close a block; a cite right after a code span is read.
+	edge := "```#206``` done; then #206.\n\n```go\nx #206\n```go\ny #206\n```\n\n`x`#206"
+	wantEdge := "```#206``` done; then #206 (closed).\n\n```go\nx #206\n```go\ny #206\n```\n\n`x`#206 (closed)"
+	if got := MarkClosed(edge, "", map[int]bool{206: true}); got != wantEdge {
+		t.Errorf("MarkClosed, edges =\n%s\nwant\n%s", got, wantEdge)
+	}
 	// No page known: a bare cite is still read, and marked.
 	if got := MarkClosed("[#5](x) and #5", "", map[int]bool{5: true}); got != "[#5](x) and #5 (closed)" {
 		t.Errorf("no pages: %q", got)

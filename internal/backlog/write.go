@@ -106,35 +106,45 @@ func citations(text, pages string) []citation {
 	code := codeRanges(text)
 	var out []citation
 	for _, m := range cites(pages).FindAllStringSubmatchIndex(text, -1) {
-		if slices.ContainsFunc(code, func(r [2]int) bool { return m[0] < r[1] && m[1] > r[0] }) {
-			continue
-		}
 		for g := 2; g < len(m); g += 2 {
-			if m[g] >= 0 {
+			if m[g] < 0 {
+				continue
+			}
+			// The number itself in code is what is left: the character
+			// a bare cite holds before its # may close a code span.
+			if !slices.ContainsFunc(code, func(r [2]int) bool { return m[g] < r[1] && m[g+1] > r[0] }) {
 				n, _ := strconv.Atoi(text[m[g]:m[g+1]])
 				out = append(out, citation{n, m[0], m[1]})
-				break
 			}
+			break
 		}
 	}
 	return out
 }
 
 var (
-	fenceLine  = regexp.MustCompile("(?m)^[ \t]*(`{3,}|~{3,})")
+	// A fence line: its marker, and what follows it on the line.
+	fenceLine  = regexp.MustCompile("(?m)^[ \t]{0,3}(`{3,}|~{3,})([^\n]*)$")
 	inlineCode = regexp.MustCompile("`[^`\n]+`")
 )
 
 // codeRanges are where a text holds code: each fenced block, to its
-// closing fence or the text's end, and each code span outside them.
+// closing fence or the text's end, and each code span outside them. As
+// CommonMark reads them: a backtick fence's info string holds no backtick
+// (```x``` is a code span); a closing fence has nothing after its marker
+// but spaces, of the opening's character and at least its length.
 func codeRanges(text string) [][2]int {
 	var out [][2]int
 	fences := fenceLine.FindAllStringSubmatchIndex(text, -1)
 	for i := 0; i < len(fences); i++ {
-		open, mark := fences[i], text[fences[i][2]:fences[i][3]]
+		open, mark, info := fences[i], text[fences[i][2]:fences[i][3]], text[fences[i][4]:fences[i][5]]
+		if mark[0] == '`' && strings.Contains(info, "`") {
+			continue // a code span on one line, not a fence
+		}
 		end := len(text)
 		for j := i + 1; j < len(fences); j++ {
-			if c := text[fences[j][2]:fences[j][3]]; c[0] == mark[0] && len(c) >= len(mark) {
+			c, rest := text[fences[j][2]:fences[j][3]], text[fences[j][4]:fences[j][5]]
+			if c[0] == mark[0] && len(c) >= len(mark) && strings.TrimSpace(rest) == "" {
 				end, i = fences[j][1], j
 				break
 			}
