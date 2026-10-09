@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: fb2293a
+checked: c24213e
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -431,7 +431,7 @@ what it can and asks for the rest:
   `ADR-0038`, becomes a link to its page on the forge, when the commit
   holds it (a numbered page in a folder named `adr`, `adrs` or
   `decisions`); an issue cited that is closed is followed by "(closed)",
-  once. The task says, for each issue read, the issues it cites, open or
+  once. Neither touches code — a code span, a fenced block. The task says, for each issue read, the issues it cites, open or
   closed and why (`Cites:`), and how a file of the repository is linked
   (`Links:`, the forge's file pages at `HEAD`).
 - **An issue read and left with nothing** — no draft, no question, no
