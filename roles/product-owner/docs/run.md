@@ -83,9 +83,13 @@ Each issue comes with:
 
 On an issue with nothing waiting on you — set aside, or read and left —,
 a comment of yours or of its reporter is read first, the agent told your
-word decides; set aside, it proposes only what the comment asks for. A
-comment you wrote before taking `workline:proposed` off goes with that
-"not now".
+word decides.
+
+- **Set aside, then commented on**: it is brought back, your comment
+  quoted to the agent; it completes, proposes or moves it to `ready` as
+  for any issue, unless you say otherwise ("not now", "leave it").
+- **Said with the "not now"**: a comment written before you took
+  `workline:proposed` off brings nothing back.
 
 On an issue waiting on you, it is "revise":
 
@@ -100,7 +104,8 @@ On an issue waiting on you, it is "revise":
 
 - **Asked again** only after they answered, never the same question
   twice, `acts.ask.rounds` times at most
-  ([ADR-0021](../../../docs/adr/0021-the-product-owner-talks-with-the-reporter.md)).
+  ([ADR-0021](../../../docs/adr/0021-the-product-owner-talks-with-the-reporter.md)):
+  a question asked before is left out, the rest of the proposal kept.
 - **An outsider's issue** gets no section in its body: the engine comments
   to its reporter what it understood and the sections it would write. A
   reply `agreed`, or `workline:accepted`, has them written.
