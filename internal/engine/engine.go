@@ -540,6 +540,8 @@ func run(o Options, res *Result) error {
 			if err := planAhead(r, settings, st, runDir, intents, res); err != nil {
 				return err
 			}
+			// What a person will see on the issues, not the writes it takes.
+			res.Summary = fmt.Sprintf("judged, not applied (%s); apply with: workline apply %s", onIssues(res.Findings, true), runDir)
 		}
 		// Judged here, the fix is not on the release pull request: it waits.
 		if releaseFrom != "" && o.PushToMergeRequest && slices.ContainsFunc(intents, func(i intent.Intention) bool { return i.Kind == "patch" }) {
@@ -989,6 +991,9 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	}
 	if plan != nil {
 		res.Findings = append(res.Findings, plan.Findings...)
+		if res.Status == verdict.Pass {
+			res.Summary = onIssues(res.Findings, false)
+		}
 		links(f, res)
 		if err := report(f, r.Name, plan); errors.Is(err, forge.ErrUnreachable) {
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while writing back what the run left on the issues; resume with: workline apply %s", runDir)
@@ -2963,6 +2968,48 @@ func planAhead(r *role.Role, settings map[string]any, st runState, runDir string
 	}
 	res.Findings = append(res.Findings, plan.Findings...)
 	return nil
+}
+
+// onIssues says what a backlog role's run leaves for people on the issues,
+// counted by issue as the summary groups them (ADR-0038): done alone,
+// done as a person accepted, proposed, set aside — never the writes it
+// takes, its state comments among them.
+func onIssues(fs []verdict.Finding, ahead bool) string {
+	if slices.ContainsFunc(fs, func(f verdict.Finding) bool { return f.Rule == "plan-unread" }) {
+		return "what it does on the issues is decided when applied"
+	}
+	count := func(rule string) int {
+		seen := map[string]bool{}
+		for _, f := range fs {
+			if f.Rule == rule && f.Where != "" {
+				seen[f.Where] = true
+			}
+		}
+		return len(seen)
+	}
+	says := []struct{ rule, done, ahead string }{
+		{"done", "done alone", "to do alone"},
+		{"done-as-accepted", "done as a person accepted", "to do as a person accepted"},
+		{"proposed", "proposed to a person", "to propose to a person"},
+		{"set-aside", "set aside by a person", "set aside by a person"},
+	}
+	var parts []string
+	for _, s := range says {
+		if n := count(s.rule); n > 0 {
+			what := s.done
+			if ahead {
+				what = s.ahead
+			}
+			parts = append(parts, fmt.Sprintf("%d %s", n, what))
+		}
+	}
+	if len(parts) == 0 && ahead {
+		return "nothing to do on the issues"
+	}
+	if len(parts) == 0 {
+		return "nothing done on the issues"
+	}
+	return "issues: " + strings.Join(parts, ", ")
 }
 
 // links gives the job's summary the forge's addresses: each issue's page,

@@ -770,7 +770,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
 				d.Mode, d.Capped = Propose, c.From == ""
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
-					Message: fmt.Sprintf("%s: at most %d a run; this one is proposed", c.Kind(), s.Max)})
+					Message: fmt.Sprintf("past this run's limit of %d (%s): proposed instead of done", s.Max, c.Kind())})
 			}
 			if d.Mode == Act && slices.Contains(moves, c.Do) && !moved[c.Issue] {
 				if len(moved) >= movedMax {
@@ -794,7 +794,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 					}
 					d.Act = c
 					p.Findings = append(p.Findings, verdict.Finding{Rule: "drafts-proposed", Level: "info", Where: c.where(),
-						Message: "Need and Validation drafts proposed on the issue, not written (acts.refine.drafts: propose)"})
+						Message: "its Need and Validation are proposed on the issue, not written in it: the role is set to propose them (autonomy cautious, or acts.refine.drafts)"})
 				}
 			}
 			if d.Mode == Act {
@@ -870,7 +870,7 @@ func (p *Plan) summary() {
 	}
 	for _, id := range sortedKeys(p.SetAside) {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "set-aside", Level: "info", Where: fmt.Sprintf("#%d", id),
-			Message: "a person took the role's label off, without accepting: nothing is proposed on it until it changes"})
+			Message: p.ledger.States[id].labelOr() + " taken off without a yes: nothing more is proposed until it changes or someone comments"})
 	}
 	if p.Report != 0 && p.Moved {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "report-closed", Level: "info", Where: fmt.Sprintf("#%d", p.Report),
@@ -1031,7 +1031,7 @@ func (p *Plan) readRecord(f forge.Backlog, role string) error {
 	p.Record.Propose = demoted(p.Record.Undone, p.Record.Wrong, p.config.UndoneMax)
 	for _, kind := range p.Record.Propose {
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "demoted", Level: "warn",
-			Message: fmt.Sprintf("%s: undone %d times or more across the issues (undone-max): proposed on every issue until the undone acts are fewer", kind, max(p.config.UndoneMax, 1))})
+			Message: fmt.Sprintf("%s: undone %d times or more by people, across the issues: proposed on every issue, never done alone, until fewer stand (undone-max)", kind, max(p.config.UndoneMax, 1))})
 	}
 	return nil
 }
@@ -1105,19 +1105,19 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 	} else if c.Do == "sources" {
 		if len(c.Sources) == 0 || len(c.Sources) > maxSources {
-			return "sources-unknown", fmt.Sprintf("an issue names 1 to %d sources", maxSources)
+			return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about (1 to %d files named): nothing changed; add a Scope naming them, or leave it", c.Issue, maxSources)
 		}
 		for _, s := range c.Sources {
 			path, _, _ := strings.Cut(s, "#")
 			if exec.Command("git", "-C", repo, "cat-file", "-e", "HEAD:"+path).Run() != nil {
-				return "sources-unknown", fmt.Sprintf("%s is not in the commit the run is on", path)
+				return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about: %s, named for it, is not in the repository; nothing changed", c.Issue, path)
 			}
 		}
 		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return strings.HasPrefix(s, c.Quote.Path) }) {
-			return "no-quote", "the quote naming the sources comes from one of them"
+			return "no-quote", "the line quoted to show its code is from none of the files named: nothing changed"
 		}
 	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
-		return "close-reason", fmt.Sprintf("closing as %q: a role closes a duplicate or an obsolete issue; refusing a need is a person's (principle 1)", c.Reason)
+		return "close-reason", fmt.Sprintf("not closed: the role closes only a duplicate, or an issue the code made obsolete; closing one as %q is a person's call", c.Reason)
 	}
 	if c.Reason == "duplicate" && (c.DuplicateOf <= 0 || c.DuplicateOf == c.Issue) {
 		return "close-reason", "a duplicate names its original (duplicate-of)"
@@ -1175,11 +1175,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
-		return "no-quote", "no quote: an act cites the code or the issue it rests on"
+		return "no-quote", "nothing done: no evidence quoted from the code or an issue"
 	}
 	p.hearsay = false
 	if !p.found(f, repo, *c.Quote) {
-		return "no-quote", fmt.Sprintf("the quote %q is not found where it says", c.Quote.Text)
+		return "no-quote", fmt.Sprintf("nothing done: the words quoted as evidence, %q, are not where it says", c.Quote.Text)
 	}
 	c.Hearsay = p.hearsay
 	if c.Reason == "obsolete" {
@@ -1336,7 +1336,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
 		if len(added) == 0 {
-			return "nothing-to-refine", "every section it writes is in the body already: none is rewritten"
+			return "nothing-to-refine", "nothing written: the sections it drafted are in the issue already, never rewritten"
 		}
 		if len(kept) > 0 {
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "section-kept", Where: c.where(),
@@ -1344,11 +1344,11 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 	case "ready":
 		if missing := NotReady(is.Body, p.ledger.States[c.Issue], Accepted(is)); len(missing) > 0 {
-			return "not-ready", "it stays to refine: " + strings.Join(missing, "; ")
+			return "not-ready", "not moved to ready: " + strings.Join(missing, "; ")
 		}
 	case "ask":
 		if strings.TrimSpace(c.Questions) == "" {
-			return "ask-empty", "an ask holds the questions"
+			return "ask-empty", "nothing asked: the question was empty"
 		}
 	}
 	return "", ""
@@ -1429,7 +1429,7 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 			}
 		}
 		if len(ch.Sources) == 0 || len(ch.Sources) > maxSources {
-			return "sources-unknown", fmt.Sprintf("%q: a scope names 1 to %d files (sources)", ch.Title, maxSources)
+			return "sources-unknown", fmt.Sprintf("not split: the part %q names no file of the repository (1 to %d) for its Scope", ch.Title, maxSources)
 		}
 		for _, k := range ch.After {
 			if k < 1 || k > len(c.Into) || k == i+1 {
@@ -1439,7 +1439,7 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		for _, s := range ch.Sources {
 			path, _, _ := strings.Cut(s, "#")
 			if out, err := exec.Command("git", "-C", repo, "cat-file", "-t", "HEAD:"+path).Output(); path == "" || err != nil || strings.TrimSpace(string(out)) != "blob" {
-				return "sources-unknown", fmt.Sprintf("%q is not a file in the commit the run is on", path)
+				return "sources-unknown", fmt.Sprintf("not split: %q, named for a part, is not in the repository", path)
 			}
 		}
 	}
@@ -1645,9 +1645,9 @@ func NotReady(body string, st *State, accepted bool) []string {
 		text := strings.TrimSpace(have[name])
 		switch {
 		case text == "":
-			out = append(out, "## "+name+" is missing or empty")
+			out = append(out, name+" is missing")
 		case !accepted && IsDraft(body, name, st):
-			out = append(out, "## "+name+" is a draft, not a person's yet")
+			out = append(out, name+" is still a draft: accept it ("+LabelAccepted+") or edit it")
 		}
 	}
 	return out

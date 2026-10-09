@@ -189,11 +189,29 @@ var groups = []group{
 	{[]string{"done"}, "done alone", "to do alone, once applied", false},
 	{[]string{"done-as-accepted"}, "done, as a person accepted", "to do, as a person accepted", false},
 	{[]string{"proposed"}, "proposed, waiting on a person", "to propose, once applied", true},
-	{[]string{"left-to-a-person", "asks-spent"}, "left to a person, its rounds spent", "left to a person, its rounds spent", true},
+	{[]string{"left-to-a-person", "asks-spent", "spec-rounds-spent"}, "left to a person, its rounds spent", "left to a person, its rounds spent", true},
+	{[]string{"nothing-proposed", "scope-without-files", "sources-unknown"}, "read, left incomplete: yours to complete, or to leave", "read, left incomplete: yours to complete, or to leave", false},
 	{[]string{"set-aside"}, "set aside by a person", "set aside by a person", false},
 	{[]string{"next-ready"}, "next to build", "next to build", false},
 	{[]string{"stuck"}, "stuck", "stuck", false},
+	{heldBack, "held back by the engine, nothing for you to do", "held back by the engine, nothing for you to do", false},
 }
+
+// plain are a backlog's findings on no one issue, said without their
+// rule's name: the message says it all.
+var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed"}
+
+// heldBack are the reasons the engine did not do, or only proposed, an act
+// the product owner's agent wrote (internal/backlog): said in plain words,
+// one line an issue, no rule's name.
+var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-ready", "ask-empty", "already-asked",
+	"already-proposed", "asked-before", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
+	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
+	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "title-kept",
+	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
+	"parent-accepted-by-a-person", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
+	"undepend-gone", "unready-not-ready", "milestone-title", "not-slipped", "exempt", "announced", "obsolete-kept",
+	"not-due", "not-judged", "not-announced"}
 
 // groupMax is how many issues a group lists; "and N more" after.
 const groupMax = 10
@@ -244,7 +262,17 @@ func (s Summary) findings(b *strings.Builder, indent string, fs []verdict.Findin
 		}
 	}
 	for i, f := range fs {
-		if !grouped[i] {
+		switch {
+		case grouped[i]:
+		case issueRef.MatchString(f.Where), f.Where == "" && contains(plain, f.Rule):
+			// On an issue, or the backlog's: what it says, linked, no
+			// rule's name.
+			warn := ""
+			if f.Level == "warn" || f.Level == "block" {
+				warn = ", " + f.Level
+			}
+			fmt.Fprintf(b, "%s- %s%s: %s\n", indent, s.issue(f.Where), warn, message(f))
+		default:
 			b.WriteString(indent + finding(f))
 		}
 	}

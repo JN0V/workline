@@ -466,7 +466,7 @@ func Pre(runDir, repo string) int {
 	for _, is := range backlog.Next(open, report, cfg.NextMax) {
 		first[is.ID] = true
 		findings = append(findings, verdict.Finding{Rule: "next-ready", Level: "info", Where: fmt.Sprintf("#%d", is.ID),
-			Message: is.Title + " — " + backlog.Place(is) + "; next to build: ready, waiting on no open issue"})
+			Message: is.Title + placed(is)})
 	}
 	// What waits on a person (ADR-0031), with no agent: a reporter's
 	// answer, from the day of the last round; a ready issue nothing
@@ -555,7 +555,7 @@ func Pre(runDir, repo string) int {
 	toRead := slices.Concat(answered, ahead, again, never, changed, catchUp)
 	if waiting := ledger.Waiting(open); waiting >= cfg.ProposalsMax {
 		findings = append(findings, verdict.Finding{Rule: "proposals-waiting", Level: "warn",
-			Message: fmt.Sprintf("%d issues wait on a person's answer (proposals-max: %d): only those answered are read until fewer wait", waiting, cfg.ProposalsMax)})
+			Message: fmt.Sprintf("%d issues wait on your answer, the most allowed (proposals-max: %d): the role reads only those you answered until fewer wait", waiting, cfg.ProposalsMax)})
 		for _, d := range toRead[len(answered):] {
 			rest = append(rest, d)
 		}
@@ -998,6 +998,22 @@ func place(is forge.Issue, isOpen map[int]bool) string {
 		return ""
 	}
 	return " (" + strings.Join(out, ", ") + ")"
+}
+
+// placed says an issue's milestone and priority after its title, only
+// those it has: " — milestone v1.0, priority 2", or nothing.
+func placed(is forge.Issue) string {
+	var out []string
+	if is.Milestone != "" {
+		out = append(out, "milestone "+is.Milestone)
+	}
+	if n := backlog.Priority(is); n > 0 {
+		out = append(out, fmt.Sprintf("priority %d", n))
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	return " — " + strings.Join(out, ", ")
 }
 
 // sections says which of the four sections an issue's body has, and which

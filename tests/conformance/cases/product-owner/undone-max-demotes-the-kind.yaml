@@ -12,7 +12,7 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
 expect:
   findings:
-    - {rule: demoted, message: "ready: undone 3 times or more across the issues"}
+    - {rule: demoted, message: "ready: undone 3 times or more by people"}
     - {rule: proposed, where: "#9"}
     - {rule: proposed, where: "#10"}
   run-files:

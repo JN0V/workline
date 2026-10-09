@@ -8,7 +8,7 @@ given:
       - {id: 10, title: "Rows lost again", body: "## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nA need.\n\n## Verification\n\nB.\n\n## Validation\n\nC.\n\n## Scope\n\nD.", author: ann, insider: true, labels: [workline:to-refine, workline:draft, workline:proposed], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
 expect:
-  findings: [{rule: done, where: "#9"}, {rule: not-ready, where: "#10", message: "## Need is a draft, not a person's yet"}]
+  findings: [{rule: done, where: "#9"}, {rule: not-ready, where: "#10", message: "not moved to ready: Need is still a draft: accept it (workline:accepted) or edit it"}]
   run-files:
     in/task.md: {contains: ["Sections: Need, Verification, Validation, Scope\n", "Sections: Need (draft), Verification, Validation, Scope\n"]}
   forge:
