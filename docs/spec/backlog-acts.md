@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: c67e16a
+checked: 08a4bfa
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -769,7 +769,7 @@ issue's comments are the record; the state does not copy them.
 | Check | Otherwise |
 |---|---|
 | A person commented after the last round (a comment not ending with an engine marker: one quoting the engine's is a person's) | Dropped: `already-asked`, or `already-proposed` for a text; nothing written |
-| No question the act holds — each from the sentence before it (". " or "! " then a capital; "e.g. Which" cuts too) or its list item's line (one starting with a capital) to its `?`, the bullet, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | That question left out, from its sentence or its list item to its `?`, the rest of the act written — a refine's drafts, its other questions (`question-left-out`, info, said "The question "…" was asked before, so it was left out; the rest was kept."); an `ask` with no question left is dropped: `asked-before` |
+| No question the act holds — each from the sentence before it (". " or "! " then a capital; "e.g. Which" cuts too) or its list item's line (one starting with a capital) to its `?`, the bullet, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | That question left out, from its sentence or its list item to its `?`, the rest of the act written — a refine's drafts, its other questions (`question-left-out`, info, said "The question "…" was asked before, so it was left out; the rest was kept." once the act is done or proposed, never of one dropped later); an `ask` with no question left is dropped: `asked-before` |
 | Rounds before it under `acts.ask.rounds` (three) | Proposed on the issue: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
 
 A later round thanks the reporter ("thank you; to refine this issue,
@@ -1023,7 +1023,7 @@ each open issue what a person did since the last (ADR-0038):
 | labels it `workline:accepted` (either spelling; GitLab Free keeps it beside `workline::proposed`) | each act its state proposes, as recorded, done whatever its mode or cap — a closing as obsolete closed at once, no announcement nor second judge —, said "Accepted by @x" (the label's last setter, from the forge's label events; "a person of the project" when it does not say); its drafts made theirs and the issue moved to ready when complete; `workline:proposed` taken off by the role |
 | comments, being its reporter or of the project, on an issue waiting on them | "revise": the issue read first, the agent told so; a `refine` rewrites the sections still the role's own (`backlog.Own`: a draft, or a text as the role wrote it), never a person's; 👀 on each comment read (`React`; GitLab's "already taken" is done); one line in reply (`<!-- workline:product-owner/reply=<id> -->`); `revisions` counted — one a run, whatever the comments; at `acts.ask.rounds` less one, a new comment is left to a person (`left-to-a-person`), nothing written |
 | takes `workline:proposed` off, without a yes | "not now": its proposals dropped, `aside` kept in its state with its body's digest, and what they wrote up to the label's removal heard with it (`heard`, from the forge's label events); nothing proposed nor done on it (`set-aside`) until its body changes or a counted comment comes; never a demotion |
-| comments on an issue with nothing waiting on them — set aside, read and left, never read | read first, the agent told that what they say decides; no 👀, no reply. One set aside is said "Brought back by a comment from @x on <day>", the comment quoted, never "set aside": the agent treats it as any issue at its level — completes, proposes, moves to ready — unless the comment says otherwise ("not now", "leave it", "I'll do it"). Set aside, it is so no more once the run decides an act on it; nothing decided, it stays so, said in the summary (`set-aside`) |
+| comments on an issue with nothing waiting on them — set aside, read and left, never read | read first, the agent told that what they say decides; no 👀, no reply. One set aside, its body as it was then, is said "Brought back by a comment from @x on <day>" (its body changed, it is back for that, said as any other comment), the comment quoted, never "set aside": the agent treats it as any issue at its level — completes, proposes, moves to ready — unless the comment says otherwise ("not now", "leave it", "I'll do it"). Set aside, it is so no more once the run decides an act on it; nothing decided, it stays so, said in the summary (`set-aside`) |
 | edits its body | read again; a section edited is theirs; a section the role wrote and they deleted (`deleted`) is never written again |
 | closes it | its proposals settled; never reopened |
 
