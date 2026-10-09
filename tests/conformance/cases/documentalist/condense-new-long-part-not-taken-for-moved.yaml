@@ -1,0 +1,11 @@
+case: documentalist/condense-new-long-part-not-taken-for-moved
+about: 'Only a part moved whole, its text word for word, is the same problem moved: a new part over its budget in a new doc is refused (`patch-introduces`), though a part as long left the doc, cut in two on the way.'
+given:
+  repo: untidy
+  setup: ["git rm -q docs/faq.md && sed -i 's/sessions.md#how-long-a-session-lasts/sessions.md/' docs/auth.md && git commit -qam 'docs: drop the faq'"]
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-and-adds"}
+expect:
+  applied: []
+  findings: [{rule: patch-introduces, where: "docs/more/session-length.md#remember-me"}]
+  files:
+    docs/sessions.md: {contains: "## How long a session lasts"}

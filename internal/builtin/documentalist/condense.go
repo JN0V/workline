@@ -307,33 +307,31 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 	}
 	found := Hygiene(Tree{Docs: after, Files: files}, s.Budgets, s.Duplicates)
 	// A part of the doc over its budget already, moved whole into a new
-	// doc, is the same problem moved, not a new one: no bigger, and gone
-	// from the doc.
-	gone := map[string][]int{}
+	// doc — its text the same, word for word, and gone from the doc — is
+	// the same problem moved, not a new one.
+	gone := map[string]int{} // a rule and a part's text -> the parts the doc no longer holds
 	stays := map[string]bool{}
 	for _, p := range found {
 		stays[p.Key] = true
 	}
 	for _, p := range old {
 		if doc, _, part := strings.Cut(p.Where, "#"); part && doc == c.Doc && !stays[p.Key] {
-			gone[p.Rule] = append(gone[p.Rule], p.Size)
+			if text := partText(tree.Docs[c.Doc], p.Where); text != "" {
+				gone[p.Rule+"\x00"+text]++
+			}
 		}
-	}
-	for _, sizes := range gone {
-		sort.Ints(sizes) // the smallest that holds it first
 	}
 	movedWhole := func(p Problem) bool {
 		doc, _, part := strings.Cut(p.Where, "#")
 		if !part || !contains(created, doc) {
 			return false
 		}
-		for i, size := range gone[p.Rule] {
-			if p.Size <= size {
-				gone[p.Rule] = append(gone[p.Rule][:i], gone[p.Rule][i+1:]...)
-				return true
-			}
+		key := p.Rule + "\x00" + partText(after[doc], p.Where)
+		if gone[key] == 0 {
+			return false
 		}
-		return false
+		gone[key]--
+		return true
 	}
 	for _, p := range found {
 		switch prev, was := old[p.Key]; {
@@ -412,6 +410,18 @@ func editedInPlace(line string, gained []string) bool {
 }
 
 // normal is a line as condensing may move it: trimmed, and a heading at any level.
+// partText is the text of the part of a doc a finding's place names
+// (`doc#slug`), its words alone, or "".
+func partText(content, where string) string {
+	_, slug, _ := strings.Cut(where, "#")
+	for _, s := range sections(scan(content)) {
+		if s.slug == slug {
+			return strings.Join(strings.Fields(s.text), " ")
+		}
+	}
+	return ""
+}
+
 func normal(l string) string {
 	return strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(l), "#"))
 }
