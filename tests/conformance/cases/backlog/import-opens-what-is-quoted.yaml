@@ -1,5 +1,5 @@
 case: backlog/import-opens-what-is-quoted
-about: Importing a file, the agent proposes an issue for each item still to do; the engine opens one whose text it finds in the file, its body that text as the file has it and where it came from, with its state; a text not in the file is dropped, and one an open issue already holds is not opened again.
+about: Importing a file, the agent proposes an issue for each item still to do; the engine opens one whose text it finds in the file, its body that text as the file has it, where it came from hidden in it, with its state; a text not in the file is dropped, and one an open issue already holds is not opened again.
 given:
   repo: backlog
   setup:
@@ -29,6 +29,6 @@ expect:
   findings: [{rule: no-quote, where: "Skip empty rows"}, {rule: already-open, where: "Skip empty rows, again"}, {rule: done, where: "Keep the last row", message: "Opened \"Keep the last row\""}]
   forge:
     issues:
-      - {id: 4, title: "Keep the last row", body-contains: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\nOpened from `ROADMAP.md`, lines 7 to 8 by the product-owner role.", comment-contains: "sources: []"}
+      - {id: 4, title: "Keep the last row", body-contains: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\n<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->", body-lacks: "Opened from", comment-contains: "sources: []"}
       - {id: 5, absent: true}
       - {id: 6, absent: true}

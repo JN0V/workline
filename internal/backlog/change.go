@@ -196,7 +196,7 @@ func files(sources []string) []string {
 
 // importedFrom reads where an issue was imported from, as the import wrote
 // it: its file and the lines it was opened from.
-var importedFrom = regexp.MustCompile("Opened from `([^`]+)`, lines (\\d+) to (\\d+) by the ")
+var importedFrom = regexp.MustCompile("[Oo]pened from `([^`]+)`, lines (\\d+) to (\\d+) by the ")
 
 // Imported is the file and lines an issue was opened from by an import,
 // ok false when its body no longer says so or holds no import key.

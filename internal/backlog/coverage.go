@@ -422,6 +422,7 @@ func ClosedImports(all []forge.Issue, file string, lines []string, from, to int)
 			continue
 		}
 		text, _, _ := strings.Cut(is.Body, "\n\nOpened from `"+file+"`")
+		text, _, _ = strings.Cut(text, "\n\n<!-- workline:opened from `"+file+"`") // the same line, hidden
 		a, b, _, ok := LocateIn(lines, text)
 		if !ok {
 			var path string

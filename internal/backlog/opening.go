@@ -42,6 +42,16 @@ type Opening struct {
 	Commit  string   // the commit it was seen at
 	Triage  bool     // a role's finding: labelled needs-triage, capped, said once when found after it was closed
 	Wrote   []string // the sections the role wrote in its body, recorded in the keeper's state (#128)
+	Quiet   bool     // where it came from hidden from a reader, kept for the engine: an import, a person's words
+}
+
+// said is the line an opened issue ends with: "Opened from … by the …
+// role."; hidden, for a quiet one, read back all the same (Imported).
+func (op Opening) said() string {
+	if op.Quiet {
+		return forge.Marker(fmt.Sprintf("opened%s by the %s role", op.From, op.Role))
+	}
+	return fmt.Sprintf("Opened%s by the %s role.", op.From, op.Role)
 }
 
 // Openings is the one way every role opens an issue (ADR-0018): a stable
@@ -105,7 +115,7 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	case is != nil && !is.Closed:
 		// A run stopped between opening it and giving it its label and
 		// state is resumed here: what is missing is written, once.
-		if !strings.Contains(is.Body, "Opened"+op.From+" by the "+op.Role+" role.") {
+		if !strings.Contains(is.Body, op.said()) && !strings.Contains(is.Body, "Opened"+op.From+" by the "+op.Role+" role.") {
 			return StillOpen, is.ID, nil
 		}
 		t := forge.Target{Kind: "issue", ID: is.ID}
@@ -126,7 +136,7 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	case op.Triage && o.opened >= o.Max:
 		return Capped, 0, nil
 	}
-	body := fmt.Sprintf("%s\n\nOpened%s by the %s role.", strings.TrimRight(op.Body, "\n"), op.From, op.Role)
+	body := strings.TrimRight(op.Body, "\n") + "\n\n" + op.said()
 	if op.Triage {
 		// A finding of the role's own, which the product owner reads as
 		// that role's draft (OpenedBy); an item imported from a file is

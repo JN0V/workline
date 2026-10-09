@@ -1940,7 +1940,7 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		// Through the one way: a text closed as an issue is not opened again.
-		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.ImportKey(q), Title: d.Act.Title, Body: body, From: " from " + where, Commit: head})
+		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.ImportKey(q), Title: d.Act.Title, Body: body, From: " from " + where, Commit: head, Quiet: true})
 		if err != nil {
 			return err
 		}

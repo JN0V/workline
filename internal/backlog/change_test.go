@@ -56,6 +56,11 @@ func TestImportedReadsItsFileAndLines(t *testing.T) {
 	if !ok || path != "ROADMAP.md" || from != 7 || to != 8 {
 		t.Errorf("Imported = %q %d %d %v", path, from, to, ok)
 	}
+	// The line hidden, as an import writes it now: read the same.
+	hidden := "1. Keep the last row.\n\n<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->"
+	if path, from, to, ok := Imported(hidden); !ok || path != "ROADMAP.md" || from != 7 || to != 8 {
+		t.Errorf("Imported, hidden = %q %d %d %v", path, from, to, ok)
+	}
 	if _, _, _, ok := Imported("Opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role."); ok {
 		t.Error("no import key: not an imported issue")
 	}
