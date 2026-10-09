@@ -409,7 +409,6 @@ func editedInPlace(line string, gained []string) bool {
 	return false
 }
 
-// normal is a line as condensing may move it: trimmed, and a heading at any level.
 // partText is the text of the part of a doc a finding's place names
 // (`doc#slug`), its words alone, or "".
 func partText(content, where string) string {
@@ -422,6 +421,7 @@ func partText(content, where string) string {
 	return ""
 }
 
+// normal is a line as condensing may move it: trimmed, and a heading at any level.
 func normal(l string) string {
 	return strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(l), "#"))
 }
