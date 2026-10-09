@@ -51,7 +51,7 @@ hold:
 | On a GitLab merge request: Claude judges, the token commits the fix to its branch, the next pipeline skips the line's own commit | gitlab.com JN0V/workline-sandbox !1; a fork's merge request untried |
 | The weekly sample on GitLab: Opus reads a doc Sonnet vouched for, true, one comment on the tracking issue, none more on a rerun | gitlab.com JN0V/workline-sandbox #2 (v0.2.2); GitHub untried, a `checked` found false untried |
 | Condense, split, merge a card, merge a repeated passage (Opus) | evaluation; workline |
-| A release tool's pull request held as the release: every doc suspect since the last release, the fix on a merge request of its own into `main` (ADR-0017) | a copy of JN0V/workline-sandbox, `local` forge, Claude; on GitHub with release-please untried |
+| A release tool's pull request held as the release: every doc suspect since the last release, the fix on a merge request of its own into `main` (ADR-0017) | a copy of JN0V/workline-sandbox, `local` forge, Claude; workline itself on GitHub with release-please, in CI: release PR #258 held, the fix #259 merged first |
 | That merge request follows `main` (ADR-0034, `workline follow`): rebuilt on main's new tip when main moved `checked` beside its `judged`, the pull request kept and mergeable; left alone once a person committed to it | JN0V/workline-sandbox #38, run by hand, no agent; the CI job on a push to `main` and GitLab (mock only) untried |
 | Staying on the task: a spec's example left as it is when the default it does not show changes | evaluation (`stays-on-the-task`, workline PR #10 replayed), 3 in 3 on Sonnet |
 
