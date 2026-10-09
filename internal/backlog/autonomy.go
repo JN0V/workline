@@ -193,7 +193,11 @@ func (m KindMode) Say() string {
 	if m.Kind == "refine" && m.Mode == Act && m.Drafts == Propose {
 		what += ", Need and Validation drafts proposed"
 	}
-	return what + " (" + m.Origin + ")"
+	what += " (" + m.Origin + ")"
+	if strings.HasPrefix(m.Kind, "close-") && m.Mode == Off {
+		what += "; write one all the same when the evidence settles it: said on the issue for a person to close, never closed by the role"
+	}
+	return what
 }
 
 // ModesLine says every kind's mode on one line, for the report.

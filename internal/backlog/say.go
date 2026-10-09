@@ -63,6 +63,13 @@ func offer(c Proposal) string {
 		if c.Quote == nil {
 			break
 		}
+		if c.Advice {
+			what := "what it asks looks done already"
+			if c.Reason == "duplicate" {
+				what = fmt.Sprintf("it looks like a duplicate of #%d", c.DuplicateOf)
+			}
+			return fmt.Sprintf("Close it yourself if you agree: %s. %s %s The role does not close it (`close-%s` is off).", what, cite(*c.Quote), why, c.Reason)
+		}
 		if c.Announce {
 			return fmt.Sprintf("Announce it obsolete, on the issue: closed at a later run if nobody writes on it and a second judge agrees. %s %s", cite(*c.Quote), why)
 		}

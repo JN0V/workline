@@ -25,7 +25,8 @@ requirement maybe lost. Nothing else is proposed when importing.
 **Gardening** (otherwise): `task.md` lists the issues, each with what the
 engine knows of it — the code it is about (`sources`) and the commit it
 was last found true at. It says first what you may do in this run: each
-kind of act's mode. An `off` kind is dropped: do not write it. A
+kind of act's mode. An `off` kind is dropped: do not write it — but a
+closing, said on its issue for a person when its kind is off. A
 `propose` kind is proposed on its issue for a person to accept: propose
 only what you would do. A refine whose Need and Validation drafts are
 proposed still writes Scope and Verification.
@@ -50,25 +51,60 @@ Nothing else: no other reason, no closing on a likeness alone.
 
 When the code given is not the code an issue is about, and you can tell
 which is — from the names the issue uses and the code given — propose
-`sources`: the files (1 to 5), and a line quoted from one of them that
-shows it. The issue is read again, with that code, at the next run.
+`sources`: the files or folders (1 to 5), and a line quoted from one of
+them that shows it. The issue is read again, with that code, at the next run.
 
 **Refine** every issue you read that is not closed and lacks a section:
-propose `refine` or `ask` for it in this run — it is your work, not a
-person's. Its body needs four sections —
-`## Need` (who needs what, and why), `## Verification` (how the machine
-will prove it: which tests, checks), `## Validation` (who accepts it,
-looking at what), `## Scope` (the part of the code it touches). The task
-says which it has, and which are drafts. Propose `refine` with those it
-lacks: `scope` and `sources` (the files, 1 to 5, from the code given),
+propose `refine`, `ask` or a `close` for it in this run — it is your
+work, not a person's; one left with nothing is said in the night's
+summary. Its body needs four sections; the task says which it has, and
+which are drafts:
+
+- `## Need`: who needs what, and why, seen from their side — "A person
+  setting up a repository runs `workline doctor` to learn what will not
+  work; it says nothing of a forge command, so the first night fails."
+  Never the solution, never the issue's own words rearranged.
+- `## Verification`: how the machine proves it — which tests, which
+  checks.
+- `## Validation`: what a person sees once it is done, concretely — "On
+  a repository whose forge command is missing, `workline doctor` warns
+  and names it." Never "someone runs it and accepts the result".
+- `## Scope`: the part of the code it touches, by its paths — files or
+  folders —, the same paths in `sources` (1 to 5): from the code given,
+  else from the repository's folders the task lists.
+
+Propose `refine` with those it lacks: `scope` and `sources`,
 `verification` from the code and its tests; `need` and `validation` only
-from the issue's own words — they are drafts, the reporter's to make
-theirs; the engine marks them so, write the text alone. A section it has is never rewritten, but one the task says the reviewer's findings
-lie in and is yours to rewrite: give its whole new text in `refine`,
-answering each finding. When the issue does not say
-enough to draft its need, propose `ask` instead: `questions`, short, for
-its reporter. When the four sections are there and neither Need nor
-Validation is a draft, propose `ready`: the engine checks it.
+from what the issue and its comments say — they are drafts, the
+reporter's to make theirs; the engine marks them so, write the text
+alone. A section it has is never rewritten, but one the task says the
+reviewer's findings lie in and is yours to rewrite: give its whole new
+text in `refine`, answering each finding.
+
+**Write for a person who never read the code**, as a project's user docs
+are written:
+
+- plain words, short: a few bullets, no paragraph over about 80 words;
+- no internal word, code name or setting left unexplained: say what it
+  does for the reader;
+- each decision, doc or file cited is a link (the task says how), an
+  issue `#N`;
+- a closed issue (the task says which an issue cites) is done or
+  dropped: never a part to wait for, nor work to come.
+
+**Never invent.** Draft only what the issue, its comments and the code
+given show. Do not draft at all, and write instead:
+
+- `ask` — one plain question for its reporter — when the issue is too
+  thin to say who needs what and why; when it holds several topics (name
+  them, ask whether it should be split); when what it rests on is closed
+  (name it, ask what is left);
+- a `close` as obsolete, its code quoted, when the code given already
+  does what it asks; with `close-obsolete` off, it is said on the issue
+  for a person to close.
+
+When the four sections are there and neither Need nor Validation is a
+draft, propose `ready`: the engine checks it.
 
 **Split** an issue too big to be one need — it asks for several things,
 each proved by its own Verification, that a change could finish one at a

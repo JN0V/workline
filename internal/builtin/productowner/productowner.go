@@ -565,7 +565,8 @@ func Pre(runDir, repo string) int {
 		toRead = nil
 	}
 	wasRead := map[int]bool{}
-	noCode := false // an issue read names no file: the repository's folders are listed
+	noCode := false                   // an issue read names no file: the repository's folders are listed
+	issuePages := forge.IssuePages(f) // an issue cited by its page is cited
 	for i, d := range toRead {
 		if i >= s.IssuesPerRun {
 			rest = append(rest, d)
@@ -582,6 +583,27 @@ func Pre(runDir, repo string) int {
 		}
 		if a := answers[d.is.ID]; a != nil {
 			review += revise(d.is, d.st, a, revisions)
+		}
+		// The issues it cites, open or closed: a closed one is history,
+		// never work to come.
+		if ids := backlog.CitedIssues(d.is.Body+"\n"+strings.Join(forge.Bodies(backlog.Counted(d.notes, d.is)), "\n"), issuePages); len(ids) > 0 {
+			if all == nil && slices.ContainsFunc(ids, func(n int) bool { return !isOpen[n] }) {
+				if all, err = b.AllIssues(); errors.Is(err, forge.ErrUnreachable) {
+					fmt.Fprintln(os.Stderr, err)
+					return exitExternal
+				} else if err != nil {
+					return fail(err)
+				}
+			}
+			closed := map[int]string{}
+			for _, is := range all {
+				if is.Closed {
+					closed[is.ID] = is.Reason
+				}
+			}
+			if said := backlog.IssueStates(ids, isOpen, closed); said != "" {
+				review = "Cites: " + said + " — a closed issue is done or dropped: never a part to wait for nor work to come.\n" + review
+			}
 		}
 		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
 		for _, f := range files {
@@ -661,6 +683,11 @@ func Pre(runDir, repo string) int {
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
 	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, ledger.Demoted(cfg.UndoneMax)))
+	if pages := forge.FilePages(f); pages != "" {
+		// What it writes cites a decision or a doc as a link a reader
+		// follows (AGENTS.md, "Writing user docs").
+		intro += fmt.Sprintf("Links: a file of the repository you cite — a decision, a doc, code — is a link to %s<its path>; an issue is cited as #<number>.\n\n", pages)
+	}
 	// An issue not read in this run, on the same code as one read, is given
 	// whole: it may be the original a duplicate is closed against, and a
 	// duplicate's original is quoted (ADR-0018).

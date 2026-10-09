@@ -671,6 +671,15 @@ func (g *github) issuePages() string {
 	return strings.TrimSpace(string(out)) + "/issues/"
 }
 
+// filePages is the address of the repository's files, on its default
+// branch (HEAD).
+func (g *github) filePages() string {
+	if p := g.issuePages(); p != "" {
+		return strings.TrimSuffix(p, "issues/") + "blob/HEAD/"
+	}
+	return ""
+}
+
 // writer says whether login may write to the repository: a person of the
 // project, as an author association of owner, member or collaborator.
 func (g *github) writer(login string) (bool, error) {

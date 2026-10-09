@@ -17,7 +17,7 @@ run: {role: product-owner, event: schedule, ai: fake:level-acts}
 expect:
   status: pass
   run-files:
-    in/task.md: {contains: "- sources: act, 10 a run (level)\n- close-duplicate: propose (level)\n- close-obsolete: off (level)\n- milestone: off (level)\n- order: off (level)\n- refine: act, 5 a run, Need and Validation drafts proposed (level)\n- ready: propose (level)\n- ask: act, 2 a run (level)\n- split: off (level)\n- depend: off (level)\n- rename: off (level)\n- open: act, 30 a run (level)"}
+    in/task.md: {contains: "- sources: act, 10 a run (level)\n- close-duplicate: propose (level)\n- close-obsolete: off (level); write one all the same when the evidence settles it: said on the issue for a person to close, never closed by the role\n- milestone: off (level)\n- order: off (level)\n- refine: act, 5 a run, Need and Validation drafts proposed (level)\n- ready: propose (level)\n- ask: act, 2 a run (level)\n- split: off (level)\n- depend: off (level)\n- rename: off (level)\n- open: act, 30 a run (level)"}
   findings:
     - {rule: proposed, where: "#12", message: "Close it as a duplicate of #7"}
   forge:

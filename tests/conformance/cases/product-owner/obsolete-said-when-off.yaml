@@ -1,0 +1,16 @@
+case: product-owner/obsolete-said-when-off
+about: With close-obsolete off, as by default (ADR-0038), an issue the code shows done is still never left in silence — the agent is told to write the closing all the same; the engine closes nothing, announces nothing, and says it on the issue, with its evidence, for a person to close; the label workline:accepted does not close it; the summary lists it as proposed.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: 0000000\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:close-obsolete}
+expect:
+  findings: [{rule: proposed, where: "#7", message: "Close it yourself if you agree: what it asks looks done already. src/export/csv.go says `for i := 0; i < len(rows); i++ {` —"}]
+  no-findings: [{rule: done, where: "#7"}]
+  run-files:
+    in/task.md: {contains: "- close-obsolete: off (level); write one all the same when the evidence settles it"}
+  forge:
+    issues:
+      - {id: 7, closed: false, labels: [workline:proposed], comment-contains: ["**Proposes**: Close it yourself if you agree", "The role does not close it (`close-obsolete` is off).", "**Your answer**: close the issue if you agree; take `workline:proposed` off to keep it open as it is", "advice: true"], comment-lacks: "label `workline:accepted` to agree"}

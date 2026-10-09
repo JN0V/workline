@@ -1,0 +1,6 @@
+# A refine citing a decision bare, and a closed issue as if it were to come.
+- refine:
+    issue: 9
+    need: "Ann needs every row of a day exported, as ADR-0007 decided; the rest waits on #5."
+    validation: "Ann exports the 3rd of May and finds its 41 sales, as [ADR-0007](https://elsewhere/adr-7) says."
+    why: "The issue says what is wrong; it does not say who needs it nor how it is accepted."

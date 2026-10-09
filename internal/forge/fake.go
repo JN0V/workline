@@ -237,6 +237,9 @@ func (f *Fake) labelFilter(label string) string {
 // issuePages: the address of the simulated forge's issues.
 func (f *Fake) issuePages() string { return "https://forge.example/issues/" }
 
+// filePages: the address of the simulated forge's files.
+func (f *Fake) filePages() string { return "https://forge.example/blob/HEAD/" }
+
 func (f *Fake) Close(id, dup int) error {
 	return f.write(func(s *FakeState) error {
 		it, err := s.item(Target{Kind: "issue", ID: id})

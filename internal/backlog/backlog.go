@@ -250,6 +250,11 @@ func (s State) say() string {
 			lines = append(lines, "**The product owner** drafted "+what+" from its own words: they wait on your answer.")
 		}
 		accepted := strings.Replace(s.Label, "proposed", "accepted", 1)
+		if len(s.Proposed) > 0 && !slices.ContainsFunc(s.Proposed, func(q Pending) bool { return q.Proposal == nil || !q.Proposal.Advice }) {
+			// Only what a person does themselves: no yes to give.
+			lines = append(lines, fmt.Sprintf("**Your answer**: close the issue if you agree; take `%s` off to keep it open as it is; comment to tell the role why not.", s.Label))
+			break
+		}
 		lines = append(lines, fmt.Sprintf("**Your answer**: label `%s` to agree — what it proposes is done at its next run, its drafts become yours, and the issue moves to ready once complete; edit a draft to make it yours; comment to have it revise; take `%s` off for not now; close the issue if it should not exist.", accepted, s.Label))
 	}
 	return strings.Join(lines, "\n\n")
@@ -378,6 +383,10 @@ type Proposal struct {
 	Until     string `yaml:"until,omitempty"`
 	Judge     string `yaml:"judge,omitempty"`
 	Say       bool   `yaml:"say,omitempty"`
+	// Advice, the engine's: a closing whose kind is off (close-obsolete,
+	// by default), said on the issue for a person to close, never done by
+	// the role nor by a yes (ADR-0038: off, the code kept).
+	Advice bool `yaml:"advice,omitempty"`
 	// Ticked, the engine's: who ticked this proposal's box in the report, a
 	// person of the project — checked again on the forge, the act done as
 	// the record says, never as the intention does (ADR-0025).
@@ -474,6 +483,12 @@ type Plan struct {
 	// changedFor are the issues read again for a change to what they were
 	// built on: every act on them proposed (ADR-0032).
 	changedFor map[int]Change
+	// What a refine's text is made readable with (readable): the forge's
+	// file and issue pages, the decisions the commit holds, the issues
+	// closed — each read once a run, when first needed.
+	pages     *[2]string
+	decisions map[int]string
+	closed    map[int]bool
 }
 
 // Setting is a kind of act's mode and cap.
@@ -695,6 +710,12 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				s = Setting{Mode: Propose} // a blocker still open: whether its reason is gone is a person's to say
 			}
 			d.Mode = s.Mode
+			if d.Mode == Off && c.Do == "close" && c.Ticked == "" {
+				// Its kind is off: what the code shows is said on the issue,
+				// for a person to close; the role closes nothing.
+				c.Advice, c.Announce, c.Until = true, false, ""
+				d.Mode, d.Act = Propose, c
+			}
 			if d.Mode == Act && slices.Contains(p.Record.Propose, c.Kind()) {
 				d.Mode = Propose
 			}
@@ -1280,6 +1301,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			}
 			c.Sources = c.Sources[:min(len(c.Sources), maxSources)]
 		}
+		if err := p.readable(f, repo, c); err != nil {
+			return "no-state", err.Error()
+		}
 		// An outsider's issue is theirs (ADR-0021): the refined text is
 		// proposed to its reporter in a comment until they, or a person of
 		// the project, agree. A role's finding is the line's own draft.
@@ -1328,6 +1352,38 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 	}
 	return "", ""
+}
+
+// readable makes the sections a refine writes readable to a person, as
+// the engine can tell (write.go): each decision cited bare linked to its
+// page, each closed issue cited said closed.
+func (p *Plan) readable(f forge.Backlog, repo string, c *Proposal) error {
+	if f == nil {
+		return nil
+	}
+	if p.pages == nil {
+		p.pages = &[2]string{forge.FilePages(f), forge.IssuePages(f)}
+		p.decisions = Decisions(repo)
+	}
+	files, issues := p.pages[0], p.pages[1]
+	for _, t := range []*string{&c.Need, &c.Verification, &c.Validation, &c.Scope} {
+		*t = LinkDecisions(*t, files, p.decisions)
+		if !slices.ContainsFunc(CitedIssues(*t, issues), func(n int) bool { return !p.open[n] }) {
+			continue
+		}
+		if p.closed == nil {
+			all, err := f.AllIssues()
+			if err != nil {
+				return err
+			}
+			p.closed = map[int]bool{}
+			for _, is := range all {
+				p.closed[is.ID] = is.Closed
+			}
+		}
+		*t = MarkClosed(*t, issues, p.closed)
+	}
+	return nil
 }
 
 // maxChildren bounds the children of one split.

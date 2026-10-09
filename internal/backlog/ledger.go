@@ -126,7 +126,7 @@ func (q Pending) Undrafted() bool { return q.Proposal == nil && q.Key == "" && q
 // it would do recorded, and not one only a person or the import does.
 func (q Pending) Doable() bool {
 	c := q.Proposal
-	return c != nil && c.Do != "open" && !c.Spent && !(c.Do == "milestone" && c.Milestone == "")
+	return c != nil && c.Do != "open" && !c.Spent && !c.Advice && !(c.Do == "milestone" && c.Milestone == "")
 }
 
 // Answer is a person's comment on an issue waiting on them, read as
