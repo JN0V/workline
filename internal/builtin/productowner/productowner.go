@@ -141,7 +141,7 @@ func Pre(runDir, repo string) int {
 	// bot's oldest first; behind: read and left with nothing under an older
 	// reading, read again once.
 	var answered, again, never, catchUp, changed, behind, rest []due
-	heard := map[int]string{} // a person's comment on an issue with no proposal waiting: who wrote the last
+	heard := map[int]forge.Note{} // a person's comment on an issue with no proposal waiting: the last
 	// What the role holds, read from each open issue's state (ADR-0038):
 	// its proposals, its acts a person may undo, the old report's record
 	// the first time.
@@ -396,11 +396,28 @@ func Pre(runDir, repo string) int {
 		counted := backlog.Counted(notes, is)
 		fresh := backlog.Unheard(st, notes, is)
 		aside := ledger.Aside[is.ID] || backlog.StillAside(st, is, notes)
+		var back []forge.Note // the comments that brought it back, read under an older way of reading
+		if aside && !ledger.Aside[is.ID] {
+			back, err = backlog.BroughtBack(b, is, st, notes)
+			if errors.Is(err, forge.ErrUnreachable) {
+				fmt.Fprintln(os.Stderr, err)
+				return exitExternal
+			}
+			if err != nil {
+				back = nil // a forge that keeps no label events: nothing known brought it back
+			}
+		}
 		d := due{is, st, comments, notes}
 		switch {
 		case agreed != "" || backlog.Accepted(is):
 			// Agreed to, or accepted: done this run, not read again for it.
 			rest = append(rest, d)
+		case len(back) > 0:
+			// A person's comment brought it back, read under an older way
+			// of reading, and it stayed aside: read again once, as a fix
+			// reaches the issues it failed on (ADR-0038, amended).
+			heard[is.ID] = back[len(back)-1]
+			behind = append(behind, d)
 		case aside:
 			// Set aside by a person: nothing proposed until it changes.
 			rest = append(rest, d)
@@ -429,7 +446,7 @@ func Pre(runDir, repo string) int {
 			// them — set aside, read and left, never read: their word, read
 			// first with the answers; no 👀 nor reply, nothing was asked of
 			// them (ADR-0038, amended).
-			heard[is.ID] = fresh[len(fresh)-1].Author
+			heard[is.ID] = fresh[len(fresh)-1]
 			answered = append(answered, d)
 		case slices.Contains(capped, is.ID):
 			again = append(again, d)
@@ -599,8 +616,8 @@ func Pre(runDir, repo string) int {
 		}
 		if a := answers[d.is.ID]; a != nil {
 			review += revise(d.is, d.st, a, revisions)
-		} else if who := heard[d.is.ID]; who != "" {
-			review += commented(who, d.st)
+		} else if n, ok := heard[d.is.ID]; ok {
+			review += commented(n, d.is, d.st)
 		}
 		// The issues it cites, open or closed: a closed one is history,
 		// never work to come.
@@ -781,15 +798,30 @@ func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) strin
 }
 
 // commented tells the agent a person commented on an issue with no
-// proposal waiting on them (ADR-0038, amended): their word comes first; on
-// one they set aside, only what it asks for or opens again.
-func commented(who string, st *backlog.State) string {
-	say := fmt.Sprintf("A person commented since you last read it (@%s, the last comments below): read their word first — what it says decides.", who)
-	if st.Aside != "" {
-		say += " A person set this issue aside earlier (they took " + backlog.LabelProposed + " off): propose only what their comment asks for or opens again; when it opens nothing, say so in a `note`."
+// proposal waiting on them (ADR-0038, amended): their word comes first.
+// One they had set aside is brought back by it: said so — who, when, their
+// words —, and read as any issue at the role's level unless the comment
+// says otherwise. One whose body changed since it was set aside is back
+// for that change, not the comment: the plain wording.
+func commented(n forge.Note, is forge.Issue, st *backlog.State) string {
+	if st.Aside == "" || st.Aside != backlog.BodyDigest(is.Body) {
+		return fmt.Sprintf("A person commented since you last read it (@%s, the last comments below): read their word first — what it says decides.\n", n.Author)
 	}
-	return say + "\n"
+	on := ""
+	if len(n.Created) >= len("2006-01-02") {
+		if _, err := time.Parse("2006-01-02", n.Created[:10]); err == nil {
+			on = " on " + n.Created[:10]
+		}
+	}
+	quote := strings.ReplaceAll(clip(marker.ReplaceAllString(n.Body, ""), quoteMax), "\n", "\n> ")
+	return fmt.Sprintf("Brought back by a comment from @%s%s:\n> %s\n\n", n.Author, on, quote) +
+		"Read their word first; then treat it as any issue at your level: complete what it lacks — draft its missing sections —, propose, or move it to `ready`, as the modes above say. " +
+		"Unless the comment says otherwise (not now, leave it, they will do it themselves): then propose nothing, and say so in a `note`.\n"
 }
+
+// quoteMax bounds a person's comment quoted where it brought an issue
+// back; the comment is given whole among the issue's comments.
+const quoteMax = 600
 
 // evidence reads a parent's parts — every issue listed once a run, into
 // all — and what closed each part delivered, and writes its report

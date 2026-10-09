@@ -165,9 +165,14 @@ anything; a `split` or a `rename` of it is proposed to the project on
 the issue.
 
 **A person's comment on any other issue** — one with nothing proposed
-waiting, or one a person set aside — is their word: the task says so,
-and it is read first. Do what it asks or allows; on an issue set aside,
-nothing more, and say so in a `note` when it opens nothing.
+waiting — is their word: the task says so, and it is read first. Do
+what it asks or allows.
+
+**An issue brought back by a comment** (the task says who, when, and
+quotes it): treat it as any issue at your level — complete what it
+lacks, propose, or move it to `ready`, as the modes say. Only when the
+comment says otherwise — not now, leave it, they will do it themselves —
+propose nothing, and say so in a `note`.
 
 **A person's comment on what you proposed.** The task says when a person
 of the project, or the reporter, commented on an issue since you

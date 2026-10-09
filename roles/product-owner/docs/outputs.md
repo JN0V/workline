@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 2522e53
+checked: 08a4bfa
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -46,7 +46,7 @@ read-only, grouped, one line an issue linked to its page:
   on your yes;
 - **proposed, waiting on a person**: what waits on you;
 - **left to a person**, **set aside by a person**: the rounds spent, your
-  "not now";
+  "not now" — or your comment brought it back and asked for nothing more;
 - **read, left incomplete**: an issue it read and could not complete —
   no file found for its Scope, nothing drafted —, with what you may do;
   one left with nothing is read again once a later engine reads
@@ -54,7 +54,8 @@ read-only, grouped, one line an issue linked to its page:
 - **next to build**: the first ready issues of the order;
 - **stuck**: what waits on a person past `stuck-days`;
 - **held back by the engine**: what the agent wrote and the engine did
-  not do, and why; nothing for you to do.
+  not do, and why — a question asked before left out, the rest written;
+  nothing for you to do.
 
 Each group lists 10 issues, then "and N more"; the waiting groups link
 the saved filter on `workline:proposed`. The role's own line counts

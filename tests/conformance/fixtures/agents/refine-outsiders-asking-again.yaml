@@ -1,0 +1,20 @@
+# Two refines proposed to an outsider who answered: #9 asks a question
+# asked before and a new one; #10 only the one asked before.
+- refine:
+    issue: 9
+    scope: "WriteRows in src/export/csv.go, and its test."
+    sources: [src/export/csv.go]
+    verification: "A test writes three rows and reads three lines back."
+    need: "Every row exported, so a report counts what was sold."
+    validation: "The reporter opens an export of a known day."
+    questions: "Is it every export, or only a long one? Since when does it drop the row?"
+    why: "The CSV export drops its last row."
+- refine:
+    issue: 10
+    scope: "WriteRows in src/export/csv.go, and its test."
+    sources: [src/export/csv.go]
+    verification: "A test writes three rows and reads three lines back."
+    need: "Every row exported, so a report counts what was sold."
+    validation: "The reporter opens an export of a known day."
+    questions: "Is it every export, or only a long one?"
+    why: "The CSV export drops its last row."

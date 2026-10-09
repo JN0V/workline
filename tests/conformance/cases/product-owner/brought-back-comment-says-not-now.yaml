@@ -1,0 +1,26 @@
+case: product-owner/brought-back-comment-says-not-now
+about: 'A comment that brings an issue back but says "not now" keeps it aside (ADR-0038, amended): the agent, told the comment decides, proposes nothing and says so; the issue stays set aside, the comment heard, and the summary says it is still set aside, not left incomplete.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        label-events: [{label: workline:proposed, added: false, author: ann, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments:
+          - {body: "Set aside by a person: nothing more is proposed here until the issue changes.\n\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\naside: 601137e9bbb6\nheard: 0\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->", author: ann, insider: true}
+          - {body: "Not now: leave it until the release.", author: ann, insider: true, created: "2026-10-09T08:00:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:note-not-now}
+expect:
+  agent-calls: 1
+  run-files:
+    in/task.md: {contains: ["Brought back by a comment from @ann on 2026-10-09:", "> Not now: leave it until the release.", "Unless the comment says otherwise"]}
+  findings: [{rule: set-aside, where: "#9", message: "a person's comment brought it back and nothing was proposed"}]
+  no-findings: [{rule: nothing-proposed, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, labels: [], body-lacks: "## Verification", comment-contains: ["aside: 601137e9bbb6", "heard: 1"]}

@@ -1,0 +1,37 @@
+case: product-owner/brought-back-read-again-after-a-fix
+about: 'An issue a person''s comment brought back, read under an older way of reading and left aside, is read again once (ADR-0038, amended): a fix of how the role reads such an issue reaches it, the comment quoted as what brought it back. A comment written with the "not now" (before the label came off) brought nothing back: that issue is not read.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        label-events: [{label: workline:proposed, added: false, author: ann, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments:
+          - {body: "Set aside by a person: nothing more is proposed here until the issue changes.\n\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\naside: 601137e9bbb6\nheard: 1\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->", author: ann, insider: true}
+          - {body: "Will be tried next week", author: ann, insider: true, created: "2026-10-09T08:00:00Z"}
+      - id: 10
+        title: "Totals wrong"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        label-events: [{label: workline:proposed, added: false, author: ann, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments:
+          - {body: "Set aside by a person: nothing more is proposed here until the issue changes.\n\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\naside: 601137e9bbb6\nheard: 1\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->", author: ann, insider: true}
+          - {body: "Not now: after the release.", author: ann, insider: true, created: "2026-10-08T06:59:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  run-files:
+    in/issues-read: {contains: "9", not-contains: "10"}
+    in/task.md: {contains: ["Brought back by a comment from @ann on 2026-10-09:", "> Will be tried next week"]}
+  no-findings: [{rule: set-aside, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "A test writes three rows and reads three lines back."}
+      - {id: 9, comment-contains: "heard: 1", comment-lacks: "aside: "}
+      - {id: 10, comment-contains: ["aside: 601137e9bbb6", "rules: 1"]}

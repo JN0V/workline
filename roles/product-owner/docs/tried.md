@@ -1000,3 +1000,43 @@ JN0V's token — the role's comments and the person's by one account —,
 evident issue of a person's to `ready`, and what it proposes on a
 set-aside issue a person commented; GitLab; the re-read of #275 to #277,
 for the next night.
+
+## 2026-10-09, night — brought back is not set aside
+
+**The night** ([run 37935841024](https://github.com/JN0V/workline/actions/runs/37935841024),
+after [#280](https://github.com/JN0V/workline/pull/280)):
+
+- **#65's refine dropped whole.** An outsider's issue (the documentalist's
+  bot): the agent drafted its four sections from the maintainer's
+  comment and asked two questions; one, "Is a Forgejo or Gitea instance
+  available to try it on?", was asked in round 1. The engine's "never the
+  same question twice" (`asked-before`) dropped the whole refine.
+- **#83, #85, #89: a note each, nothing drafted.** The maintainer had
+  commented after setting #83 and #85 aside; the task still said "A
+  person set this issue aside earlier…: propose only what their comment
+  asks for or opens again", and the agent wrote "the issue is set aside
+  and the comment opens nothing". #89's comments were written before its
+  label came off: by the rules of the evening amendment they go with the
+  "not now"; it came back because its aside was recorded before the
+  engine heard such comments with it.
+- **Fixed**: only the question asked before is left out, said in the
+  summary; the task says "Brought back by a comment from @JN0V on
+  2026-10-09", quotes it, and has the agent treat the issue as any other
+  at its level unless the comment says otherwise. `backlog.Reading` is
+  2; an issue a comment brought back and that stayed aside is read again
+  once.
+
+**Replayed**, the branch's engine on a copy of workline at `b6f56ad`, a
+fake forge holding #65, #83, #85 and #89 as GitHub has them (read, never
+written), no paid agent:
+
+- The night's own answer: #65 proposed to its reporter (`proposal=2`)
+  with its four drafts and "Do you want the missing operations added…?";
+  "Is a Forgejo or Gitea instance…?" left out, said under "held back by
+  the engine". #83 and #85 read again, the task saying "Brought back by a
+  comment from @JN0V on 2026-10-09: > Will be tried next week"; the old
+  notes kept them aside, said so in the summary. #89 not read.
+- A written answer drafting #83's Verification and Scope: written in its
+  body, `aside` gone from its state.
+
+**Not tried**: a real agent given the new wording on #83 and #85; GitLab.

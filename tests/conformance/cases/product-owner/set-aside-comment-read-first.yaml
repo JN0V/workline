@@ -27,7 +27,7 @@ expect:
   agent-calls: 1
   run-files:
     in/issues-read: {contains: "9", not-contains: "5"}
-    in/task.md: {contains: "A person commented since you last read it"}
+    in/task.md: {contains: "Brought back by a comment from @ann:", not-contains: "set aside"}
   no-findings: [{rule: set-aside, where: "#9"}]
   forge:
     issues:

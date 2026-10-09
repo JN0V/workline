@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, twice on 2026-10-09); a week's trial running
+- **Status:** accepted — built (amended below, three times on 2026-10-09); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -261,3 +261,27 @@ never read again; five complete issues of the maintainer's got no
   Validation a person's, is said open to `ready` when evident; what the
   level means is said. Whether it is evident stays the agent's judgment;
   the engine checks the sections, and an outsider's `ready` is proposed.
+
+## Amendment (2026-10-09, night): brought back is not set aside
+
+The next run
+([run 37935841024](https://github.com/JN0V/workline/actions/runs/37935841024)):
+
+- **Three issues the maintainer commented on after setting them aside**
+  got a note each, "the issue is set aside and the comment opens
+  nothing": the task still called them set aside, and told the agent to
+  propose only what the comment asks for. Now the task says "Brought
+  back by a comment from @x on <day>", quotes it, and has the agent
+  treat it as any issue at its level — complete, propose, `ready` —
+  unless the comment says otherwise ("not now", "leave it", "I'll do
+  it"); then it stays set aside, said in the summary.
+- **A good refine dropped for one question**: an outsider's refine,
+  its four sections drafted, asked two questions, one asked before; the
+  engine dropped the whole refine
+  ([ADR-0021](0021-the-product-owner-talks-with-the-reporter.md)'s "never
+  the same question twice"). Now only that question is left out, said in
+  the summary; an `ask` with none left is still dropped.
+- **Read again once**: `backlog.Reading` is 2. An issue a comment
+  brought back, read under the older way and left aside, is read again
+  once — the comment written after the label came off, by the forge's
+  label events.
