@@ -862,6 +862,13 @@ func (p *Plan) summary() {
 		if !ok || acted[id] || p.aside(id) {
 			continue
 		}
+		if p.broughtBack(id) {
+			// Their comment asked for nothing more, or the agent proposed
+			// nothing: the issue stays as they left it.
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "set-aside", Level: "info", Where: fmt.Sprintf("#%d", id),
+				Message: "a person's comment brought it back and nothing was proposed on it (the agent's note says why): it stays set aside until it changes or someone comments"})
+			continue
+		}
 		var lacks []string
 		for _, name := range Sections {
 			if strings.TrimSpace(work.Sections(is.Body)[name]) == "" {
@@ -885,12 +892,22 @@ func (p *Plan) summary() {
 
 // aside says whether an issue was set aside by a person — workline:proposed
 // taken off without a yes — and has not changed since, its body nor a
-// person's word on it: nothing is proposed nor done on it (ADR-0038).
+// person's word on it: nothing is proposed nor done on it (ADR-0038). One
+// the run read is not: read while aside, a comment brought it back under
+// an older way of reading (BroughtBack) — pre reads no other.
 func (p *Plan) aside(id int) bool {
 	if p.SetAside[id] {
 		return true
 	}
-	return StillAside(p.ledger.States[id], p.issues[id], p.ledger.Notes[id]) && p.Answers[id] == nil
+	return StillAside(p.ledger.States[id], p.issues[id], p.ledger.Notes[id]) && p.Answers[id] == nil && !slices.Contains(p.read, id)
+}
+
+// broughtBack says whether an issue set aside was read only for a
+// person's comment, its body as it was: nothing decided on it, it stays
+// set aside.
+func (p *Plan) broughtBack(id int) bool {
+	st := p.ledger.States[id]
+	return st != nil && st.Aside != "" && st.Aside == BodyDigest(p.issues[id].Body) && slices.Contains(p.read, id)
 }
 
 // labelOr is the label the role set, or its usual name.

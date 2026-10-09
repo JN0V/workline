@@ -131,8 +131,56 @@ func StillAside(st *State, is forge.Issue, notes []forge.Note) bool {
 // Reading numbers the role's way of reading an issue. It is raised by a
 // change that may give an issue the role read and left with nothing an
 // act: a fix of what the engine dropped, of what the task tells the agent.
-// An issue read under an older one is read again once (LeftBehind).
-const Reading = 1
+// An issue read under an older one is read again once (LeftBehind,
+// BroughtBack). 2: a question asked before drops only itself, not the
+// refine; an issue a comment brought back is read as any other.
+const Reading = 2
+
+// BroughtBack are the comments that brought back an issue a person set
+// aside, when it was read for them under an older way of reading and
+// stays aside: a counted comment written after the role's label came
+// off (the forge's label events), heard since. Such an issue is read
+// again once, as LeftBehind's, so a fix of how the role reads one
+// reaches it (ADR-0038, amended). None when it is not aside, was read
+// under this Reading, or lacks no section; a comment written with the
+// "not now" brought nothing back.
+func BroughtBack(b forge.Backlog, is forge.Issue, st *State, notes []forge.Note) ([]forge.Note, error) {
+	if st == nil || st.Rules >= Reading || !StillAside(st, is, notes) || !lacking(is, st) {
+		return nil, nil
+	}
+	counted := Counted(notes, is)
+	heard := min(Heard(st, len(counted)), len(counted))
+	if heard == 0 {
+		return nil, nil
+	}
+	events, err := b.LabelEvents(is.ID)
+	if err != nil {
+		return nil, err
+	}
+	when := ""
+	for i := len(events) - 1; i >= 0; i-- {
+		if e := events[i]; !e.Added && (e.Label == LabelProposed || e.Label == scopedProposed) {
+			when = e.Created
+			break
+		}
+	}
+	if at := heardAt(notes, is, when); at < heard {
+		return counted[at:heard], nil
+	}
+	return nil, nil
+}
+
+// lacking says whether an issue lacks one of its four sections; one a
+// person deleted is theirs, not lacking.
+func lacking(is forge.Issue, st *State) bool {
+	have := work.Sections(is.Body)
+	for _, name := range Sections {
+		if strings.TrimSpace(have[name]) == "" && !slices.Contains(st.Deleted, name) {
+			return true
+		}
+	}
+	return false
+}
 
 // LeftBehind says whether an issue was read under an older Reading and
 // left with nothing: lacking a section, and the role never named its code
@@ -148,13 +196,7 @@ func LeftBehind(is forge.Issue, st *State, comments []string, role string) bool 
 	if e := ReadExchange(comments, role); e.Rounds > 0 && !e.Answered {
 		return false
 	}
-	have := work.Sections(is.Body)
-	for _, name := range Sections {
-		if strings.TrimSpace(have[name]) == "" && !slices.Contains(st.Deleted, name) {
-			return true
-		}
-	}
-	return false
+	return lacking(is, st)
 }
 
 // heardAt is how many counted comments were written at or before when — a

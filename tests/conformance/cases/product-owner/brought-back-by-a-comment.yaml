@@ -1,0 +1,33 @@
+case: product-owner/brought-back-by-a-comment
+about: 'An issue a person set aside, then commented on, is brought back (ADR-0038, amended): the task says so — who, when, their words quoted — never "set aside", and tells the agent to treat it as any issue at its level, unless the comment says otherwise; what the agent drafts is done.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        label-events: [{label: workline:proposed, added: false, author: ann, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments:
+          - {body: "Set aside by a person: nothing more is proposed here until the issue changes.\n\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\naside: 601137e9bbb6\nheard: 0\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->", author: ann, insider: true}
+          - {body: "Will be tried next week", author: ann, insider: true, created: "2026-10-09T08:00:00Z"}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  agent-calls: 1
+  run-files:
+    in/issues-read: {contains: "9"}
+    in/task.md:
+      contains:
+        - "Brought back by a comment from @ann on 2026-10-09:"
+        - "> Will be tried next week"
+        - "treat it as any issue at your level"
+        - "Unless the comment says otherwise"
+      not-contains: ["set aside", "set this issue aside", "opens nothing"]
+  no-findings: [{rule: set-aside, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "A test writes three rows and reads three lines back."}
+      - {id: 9, comment-contains: "heard: 1", comment-lacks: "aside: "}
