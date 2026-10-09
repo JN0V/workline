@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 2522e53
+checked: c67e16a
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -51,7 +51,7 @@ label: workline:proposed                 # the label the role put on it while it
 aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: nothing proposed until it changes
 heard: 2                                 # the comments that count the role read: one more is a person's word since
 revisions: 1                             # its drafts revised for a person's comments
-rules: 1                                 # the way of reading it was last read under (backlog.Reading)
+rules: 2                                 # the way of reading it was last read under (backlog.Reading)
 ```
 
 The comment says, above the state, what the role did and proposes there,
