@@ -57,51 +57,136 @@ them that shows it. The issue is read again, with that code, at the next run.
 **Refine** every issue you read that is not closed and lacks a section:
 propose `refine`, `ask` or a `close` for it in this run — it is your
 work, not a person's; one left with nothing is said in the night's
-summary. Its body needs four sections; the task says which it has, and
-which are drafts:
+summary. Its body needs four sections — Need, Verification, Validation,
+Scope; the task says which it has, and which are drafts. The engine
+writes them in the reader's order: the person's part first (Need, an
+example, Validation), then a line, then the builder's (Verification,
+Scope). What each holds:
 
-- `## Need`: who needs what, and why, seen from their side — "A person
-  setting up a repository runs `workline doctor` to learn what will not
-  work; it says nothing of a forge command, so the first night fails."
+- `need`: one line — who needs what, and why, seen from their side.
   Never the solution, never the issue's own words rearranged.
-- `## Verification`: how the machine proves it — which tests, which
-  checks.
-- `## Validation`: what a person sees once it is done, concretely — "On
-  a repository whose forge command is missing, `workline doctor` warns
-  and names it." Never "someone runs it and accepts the result".
-- `## Scope`: the part of the code it touches, by its paths — files or
+- `example`: one real case of it — a named person or role, numbers with
+  their unit, a real command or output, what happens today next to what
+  is wanted. A task: what it costs today (the warning printed, the
+  minutes lost).
+- `steps`, for a bug, instead of `example`: the steps to reproduce,
+  numbered, then Expected, Actual and the version. The need of a bug is
+  who it hurts, in one line.
+- `validation`: what a person runs once it is done, and sees — named
+  scenarios, one a bullet, as Given / When / Then in the issue's
+  language (Gherkin's words: Étant donné / Quand / Alors in French). A
+  bug's is its steps again, the expected result as the Then. Never
+  "someone runs it and accepts the result".
+- `verification`: how the machine proves it — which tests, which checks.
+- `scope`: the part of the code it touches, by its paths — files or
   folders —, the same paths in `sources` (1 to 5): from the code given,
-  else from the repository's folders the task lists.
+  else from the repository's folders the task lists. File paths, issue
+  numbers and decisions go here, never in Need nor Validation.
 
 Propose `refine` with those it lacks: `scope` and `sources`,
-`verification` from the code and its tests; `need` and `validation` only
-from what the issue and its comments say — they are drafts, the
-reporter's to make theirs; the engine marks them so, write the text
-alone. A section it has is never rewritten, but one the task says the
-reviewer's findings lie in and is yours to rewrite: give its whole new
-text in `refine`, answering each finding.
+`verification` from the code and its tests; `need`, `example` or
+`steps`, and `validation` only from what the issue and its comments say
+— they are drafts, the reporter's to make theirs; the engine marks them
+so, write the text alone. Write an `example` or `steps` only with a Need
+you draft: a person's Need is left as it is. A section it has is never
+rewritten, but one the task says the reviewer's findings lie in and is
+yours to rewrite: give its whole new text in `refine`, answering each
+finding.
 
 **Write for a person who never read the code**, as a project's user docs
-are written:
+are written — here, and in `why`, `questions` and `note`:
 
-- plain words, short: a few bullets, no paragraph over about 80 words;
+- in the issue's language; code, commands and messages as they print;
+  the headings stay as the engine writes them;
+- short sentences, 25 words at most; one idea a bullet; plain words;
 - no internal word, code name or setting left unexplained: say what it
   does for the reader;
 - each decision, doc or file cited is a link (the task says how), an
   issue `#N`;
+- fold only what is long — a log, a list of more than ten lines — in
+  `<details><summary>what it is</summary>` … `</details>`;
 - a closed issue (the task says which an issue cites) is done or
   dropped: never a part to wait for, nor work to come.
 
 **Never invent.** Draft only what the issue, its comments and the code
-given show. Do not draft at all, and write instead:
+given show: no number, name, command or output they do not hold. Do not
+draft at all, and write instead:
 
 - `ask` — one plain question for its reporter — when the issue is too
-  thin to say who needs what and why; when it holds several topics (name
-  them, ask whether it should be split); when what it rests on is closed
-  (name it, ask what is left);
+  thin to say who needs what and why; when it shows no real case (ask
+  for one: what they ran, what they saw); a bug with no steps to
+  reproduce (ask for them); when it holds several topics (name them, ask
+  whether it should be split); when what it rests on is closed (name it,
+  ask what is left);
 - a `close` as obsolete, its code quoted, when the code given already
   does what it asks; with `close-obsolete` off, it is said on the issue
   for a person to close.
+
+Two issues as they read once refined — a need, then a bug:
+
+```markdown
+## Need
+
+When I open a merge request on a repository with old lint debt, I want
+to see only the findings my change adds, so old code does not block me.
+
+## Example
+
+`main` has 140 lint findings. Alice adds one unchecked error in
+`report.go`. The gate counts 141 against a limit of 100 and blocks her;
+nothing says which one is hers.
+
+## Validation
+
+- **Old debt:** Given `main` with 140 findings, When a merge request
+  adds one unchecked error, Then only that one blocks, shown on its line.
+- **Moved code:** Given a change that moves an old finding 10 lines
+  down, When the gate runs, Then it is not counted as new.
+
+---
+
+## Verification
+
+- A finding on both the base and the head is not counted; one only on
+  the head is.
+- A tool that did not run is an error, never a pass.
+
+## Scope
+
+`internal/gate`: the runs on the base and the head.
+<details><summary>Tools a project may declare</summary>golangci-lint,
+govulncheck, Semgrep, CodeQL, osv-scanner, Trivy, ESLint, Ruff</details>
+```
+
+```markdown
+## Need
+
+Users who exclude a folder with a trailing slash still upload it:
+1.2 GB, 9 minutes.
+
+## Steps to reproduce
+
+1. `snapsync push --exclude node_modules/ ~/projects/site`
+2. Output: `uploaded 18412 files (1.2 GB) in 9m02s`
+- **Expected:** about 40 files. `--exclude node_modules` (no slash) works.
+- **Actual:** `node_modules` uploaded. Version 2.3.1, Linux, every time.
+
+## Validation
+
+- **Trailing slash:** Given a folder `node_modules`, When I run
+  `snapsync push --exclude node_modules/`, Then no file under it is
+  uploaded.
+
+---
+
+## Verification
+
+`TestExcludeTrailingSlash` fails on 2.3.1, passes after the fix.
+
+## Scope
+
+`matchExclude` in `internal/filter/glob.go`.
+```
 
 When the four sections are there and neither Need nor Validation is a
 draft, propose `ready` if the issue is evident: one need, its
