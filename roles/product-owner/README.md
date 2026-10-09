@@ -88,9 +88,11 @@ At `autonomy: normal`, the default:
 - **Never invented**: an issue too thin, mixing topics or resting on a
   closed issue gets one plain question; one the code already does is
   said on it for you to close.
-- **Written for a reader**: plain words, a link for each decision cited,
-  a closed issue said closed
-  ([what it writes](docs/outputs.md#on-each-issue)).
+- **Written for a reader**: the person's part on top — a one-line Need,
+  a real example, Given / When / Then scenarios —, the builder's below a
+  line; plain words, a link for each decision cited, a closed issue said
+  closed ([writing an issue](docs/writing.md),
+  [what it writes](docs/outputs.md#on-each-issue)).
 - **Undone by you** (`workline:ready` taken off, a closing reopened…):
   that kind is proposed on that issue from then on; undone `undone-max`
   times across the issues, on every issue.

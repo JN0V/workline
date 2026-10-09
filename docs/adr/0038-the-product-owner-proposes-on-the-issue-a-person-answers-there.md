@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, three times on 2026-10-09); a week's trial running
+- **Status:** accepted — built (amended below, five times on 2026-10-09); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -297,3 +297,28 @@ The next run
 - **No unlimited mode**: a run is one agent call holding every issue it
   reads, about ten thousand tokens each. Reading a whole backlog would
   need several calls a run, built only if real use asks for it.
+
+## Amendment (2026-10-09, last): an issue a person reads
+
+The maintainer could not read the backlog's issues, the role's drafts
+and those written in sessions alike: the solution in the Need, paths
+and issue numbers before the problem, no real case anywhere.
+
+- **The person's part on top, the builder's below a line**: Need,
+  an example (a bug: the steps to reproduce), Validation; `---`;
+  Verification, Scope. The engine writes the sections it adds in that
+  order, never moving a person's.
+- **The four headings stay the ones required**; the example and the
+  steps are drafts, never required: no change to what `ready` reads.
+- **The instruction**: a one-line Need, one real example, Validation as
+  named Given / When / Then scenarios in the issue's language, short
+  sentences; no real case known, one question to the reporter. Its
+  examples: a need and a bug from any project
+  ([writing an issue](../../roles/product-owner/docs/writing.md)).
+- **What it changed, in one line** on the issue: "Added: … Changed: …",
+  the text before in the forge's edit history. It never changes a
+  person's sentence, so nothing of theirs is quoted.
+- **Found building it**: a heading written twice lost its first text;
+  both are read now.
+- **Measured before shipping**: ten issues drafted twice, old and new
+  instruction, rated blind by the maintainer.

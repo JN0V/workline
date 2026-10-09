@@ -55,6 +55,21 @@ README and docs/ pages other than status.md and tried.md:
   verdict codes) left unexplained to a newcomer. Measures go in status.md,
   tried.md or an ADR; a user doc links to them.
 
+## Writing issues
+
+An issue opened in a session follows the product owner's rules
+([writing an issue](roles/product-owner/docs/writing.md), with two
+examples):
+
+- **The person's part on top**: Need in one line (who needs what, why),
+  one real example (names, numbers with units, a real command or
+  output), Validation as named Given / When / Then scenarios.
+- **A line `---`, then the builder's part**: Verification, Scope. File
+  paths and issue numbers go there, not in Need nor Validation.
+- **A bug**: who it hurts, then Steps to reproduce, Expected, Actual,
+  the version.
+- **Short sentences**, one idea a bullet, no number you did not see.
+
 ## Build and test
 
 ```sh

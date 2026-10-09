@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 87a41be
+checked: c745cdc
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -37,7 +37,12 @@ to-refine ──► ready ──► in-progress ──► review ──► valid
 Verification is what the line checks on its own; validation is what a person
 decides at the end. Writing both before starting is what keeps the machine
 from grading its own work. The engine checks that the four are present and
-not empty; it does not judge their quality. A person moves an item to
+not empty; it does not judge their quality. A section is the text under its
+`## ` or `### ` heading (`work.Sections`): a heading written twice holds
+both texts, and a thematic break ending a section — the line between the
+person's part and the builder's — is not its text. Other headings, an
+example or the steps to reproduce, are kept and never required
+([writing an issue](../../roles/product-owner/docs/writing.md)). A person moves an item to
 `ready`, or the product owner does once Need and Validation are a person's
 (docs/spec/backlog-acts.md, "Refining to ready"). Development roles only take `ready` items, and
 the item's **scope** becomes the run's scope (see "Stay on the task" in the

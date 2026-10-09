@@ -1040,3 +1040,32 @@ written), no paid agent:
   body, `aside` gone from its state.
 
 **Not tried**: a real agent given the new wording on #83 and #85; GitLab.
+
+## 2026-10-09 — issues a person reads: old and new, blind, Sonnet
+
+Ten issues of workline's, frozen as their reporter wrote them — the
+first version of each body, from GitHub's edit history, read only: five
+needs (#84, #85, #92, #95, #275), three bugs (#104, #145, #160), two
+tasks (#91, #103); #92 and #91 thin. Each drafted twice by the role's
+real path (`run-role product-owner --ai claude`), on a fresh copy of
+workline at `1fa0246`, the issues on a fake forge, nothing written to
+GitHub: once with the engine and instruction of `main`, once with this
+branch's. One call each, all ten issues in it.
+
+- **Tokens**: 44,761 in and 2,949 out (old); 45,946 in and 3,881 out
+  (new); 97,537 in all.
+- **Old**: five refined, three asked (#84, #85, #91); #92 and #95 read
+  and left with nothing, no note. Needs of 35 to 77 words, no scenario,
+  no line between the parts.
+- **New**: seven refined — the two bugs a role opened with Steps to
+  reproduce, "Version: not given in the issue" rather than one made up —,
+  three asked (#84, #91, #92). Needs of 24 to 32 words but one (#275,
+  the person's own), Validation as Given / When / Then on six of seven,
+  the line between the parts on all seven.
+- **No Example written on any need**: the issues held no real case, and
+  the agent drafted the Need and Validation without one instead of
+  asking for it, though the instruction says to ask.
+- **Rated blind by the maintainer**: the pairs, A and B at random, wait
+  on their reading; what they say goes here.
+
+**Not tried**: GitLab; an issue in another language than English.
