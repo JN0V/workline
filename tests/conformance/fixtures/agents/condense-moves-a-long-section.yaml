@@ -1,0 +1,23 @@
+# The documentalist's answer to "docs/sessions.md is over its line budget" in
+# the `untidy` fixture: its first section, over the section budget already,
+# moves whole into a new doc of another folder, a link left in its place.
+- patch: |
+    --- /dev/null
+    +++ b/docs/more/session-length.md
+    @@ -0,0 +1,5 @@
+    +## How long a session lasts
+    +
+    +A session lasts as long as its token, and a token lasts one hour unless it is
+    +refreshed. When it expires, the user is asked to sign in again, and anything
+    +they had not saved is kept in the browser until they come back to the page.
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -2,7 +2,3 @@
+
+    -## How long a session lasts
+    -
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page.
+    +How long a session lasts is in [session length](more/session-length.md).
+

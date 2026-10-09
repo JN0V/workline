@@ -305,10 +305,41 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 	for _, p := range Hygiene(tree, s.Budgets, s.Duplicates) {
 		old[p.Key] = p
 	}
-	for _, p := range Hygiene(Tree{Docs: after, Files: files}, s.Budgets, s.Duplicates) {
+	found := Hygiene(Tree{Docs: after, Files: files}, s.Budgets, s.Duplicates)
+	// A part of the doc over its budget already, moved whole into a new
+	// doc, is the same problem moved, not a new one: no bigger, and gone
+	// from the doc.
+	gone := map[string][]int{}
+	stays := map[string]bool{}
+	for _, p := range found {
+		stays[p.Key] = true
+	}
+	for _, p := range old {
+		if doc, _, part := strings.Cut(p.Where, "#"); part && doc == c.Doc && !stays[p.Key] {
+			gone[p.Rule] = append(gone[p.Rule], p.Size)
+		}
+	}
+	for _, sizes := range gone {
+		sort.Ints(sizes) // the smallest that holds it first
+	}
+	movedWhole := func(p Problem) bool {
+		doc, _, part := strings.Cut(p.Where, "#")
+		if !part || !contains(created, doc) {
+			return false
+		}
+		for i, size := range gone[p.Rule] {
+			if p.Size <= size {
+				gone[p.Rule] = append(gone[p.Rule][:i], gone[p.Rule][i+1:]...)
+				return true
+			}
+		}
+		return false
+	}
+	for _, p := range found {
 		switch prev, was := old[p.Key]; {
 		case contains(c.Keys, p.Key):
 			refuse("still-over-budget", p.Where, p.Rule+": "+p.Message)
+		case !was && movedWhole(p):
 		case !was || p.Size > prev.Size:
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
