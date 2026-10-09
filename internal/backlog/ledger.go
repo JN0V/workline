@@ -527,6 +527,16 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 				st.Label = ""
 			}
 		}
+		if !is.Closed && !HasDraft(is.Body, st) {
+			// Its labels say what is true of it: no draft of the role's
+			// left, no workline:draft; set aside, its body a person's, the
+			// role's way to ready is off it too (ADR-0038).
+			for _, l := range []string{LabelDraft, LabelToRefine} {
+				if slices.Contains(is.Labels, l) && (l == LabelDraft || st.Aside != "") && !slices.Contains(remove, l) {
+					remove = append(remove, l)
+				}
+			}
+		}
 		if after := FormatState(*st); after != before {
 			if err := f.Sticky(t, after, StateMarker(role), false); err != nil {
 				return err
