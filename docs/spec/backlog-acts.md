@@ -105,8 +105,9 @@ were read — a commit touched their sources, a person changed its body
 reviewer's spec findings —; then one left with nothing under an older
 way of reading (`backlog.LeftBehind`: its `rules` below
 `backlog.Reading`, a section lacking, no code named, no act ever done,
-nothing waiting on anyone), read again once, newest first, so a fix of
-the engine reaches the issues it failed on; last, the catch-up of an
+nothing waiting on anyone), read again once, newest first — one past
+`issues-per-run` at a later run —, so a fix of the engine reaches the
+issues it failed on; last, the catch-up of an
 import's or a bot's issues never read, oldest first. Past
 `proposals-max` issues waiting on a person, only the first are read. One
 set aside by a person is not read until its body changes or a person who

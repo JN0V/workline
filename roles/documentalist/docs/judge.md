@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: 2522e53
+checked: c810294
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -180,7 +180,8 @@ A condense patch is refused when:
 - the budget problem it was for remains (`still-over-budget`);
 - it brings a budget problem the docs did not have, or makes one bigger
   (`patch-introduces`) — a part over its budget already, moved whole into
-  a new doc, is the same problem moved, not a new one.
+  a new doc, its text word for word, is the same problem moved, not a
+  new one.
 
 A condense, split, merge-card or dedupe patch moving an existing doc's
 `checked`, or creating a doc that carries one, is refused
