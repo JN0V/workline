@@ -59,7 +59,7 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 **Cost**: no call when the message passes; one call of a light model,
 effort low, per refused message, and one more of a stronger model if the
 rewrite is refused (`promote-after: 1`). No cap needed.
-**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
+**Status**: [built](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
 used daily on workline itself since 2026-09;
 [where it stands](docs/status.md); tried with Claude below.
 
@@ -184,4 +184,7 @@ On 2026-10-06, a copy of a real repository (DomoticsCore) with its own
 - `.githooks`: doctor printed `git config --local --unset core.hooksPath`;
   unset, the machine's global hooks blocked the same commit.
 - Not tried: a hook that reads `pre-push`'s input after workline's line;
-  husky or lefthook themselves; a work repository.
+  husky or lefthook themselves.
+
+Up to 2026-10-09, the maintainer ran it on all their commits, on workline
+and at work, and validated the role from that use.
