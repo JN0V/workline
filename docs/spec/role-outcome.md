@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: fb2293a
+checked: 2522e53
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -31,6 +31,9 @@ with the findings as the reasons (docs/spec/model-grid.md), unless `final`:
 `post` says the block does not come from the answer — a release held by
 docs the answer was not about, a check that could not run — and asking
 again would change nothing, but grow the question with every finding.
+Still refused once asked again, on an event whose steps all run
+(`schedule`), the step passes, nothing of the proposal applied, each
+refusal a warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
 
 Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 `--sarif` writes them for code scanning, `--code-quality` as GitLab's Code

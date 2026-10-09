@@ -449,6 +449,23 @@ func run(o Options, res *Result) error {
 			}
 		}
 	}
+	// On an event whose steps all run (schedule, ADR-0037), a proposal
+	// still refused once asked again is upkeep left for later: nothing of
+	// it applied, each refusal said as a warning, the next run asks again.
+	// The check did its job: the line is not failed for it (ADR-0037,
+	// amended). Anything else that does not pass still fails it.
+	if v.Status == verdict.Block && failures > 0 && line != nil && !line.StopsAtFirst(o.Event) {
+		said := make([]verdict.Finding, len(v.Findings))
+		for i, f := range v.Findings {
+			if f.Level == "" {
+				f.Level = "warn"
+			}
+			said[i] = f
+		}
+		v = &verdict.Verdict{Status: verdict.Pass, Findings: said,
+			Summary: "the agent's proposal was refused, nothing of it applied; asked again at the next run (" + v.Summary + ")"}
+		intents = nil
+	}
 	res.Status, res.Summary = v.Status, v.Summary
 	res.Findings = append(res.Findings, v.Findings...)
 	// A role keeping a backlog reads its report on every run, acts or not:

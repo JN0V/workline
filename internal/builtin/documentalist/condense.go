@@ -305,10 +305,39 @@ func judgeCondense(repo string, s Settings, c *condenseTask, intents, fallback [
 	for _, p := range Hygiene(tree, s.Budgets, s.Duplicates) {
 		old[p.Key] = p
 	}
-	for _, p := range Hygiene(Tree{Docs: after, Files: files}, s.Budgets, s.Duplicates) {
+	found := Hygiene(Tree{Docs: after, Files: files}, s.Budgets, s.Duplicates)
+	// A part of the doc over its budget already, moved whole into a new
+	// doc — its text the same, word for word, and gone from the doc — is
+	// the same problem moved, not a new one.
+	gone := map[string]int{} // a rule and a part's text -> the parts the doc no longer holds
+	stays := map[string]bool{}
+	for _, p := range found {
+		stays[p.Key] = true
+	}
+	for _, p := range old {
+		if doc, _, part := strings.Cut(p.Where, "#"); part && doc == c.Doc && !stays[p.Key] {
+			if text := partText(tree.Docs[c.Doc], p.Where); text != "" {
+				gone[p.Rule+"\x00"+text]++
+			}
+		}
+	}
+	movedWhole := func(p Problem) bool {
+		doc, _, part := strings.Cut(p.Where, "#")
+		if !part || !contains(created, doc) {
+			return false
+		}
+		key := p.Rule + "\x00" + partText(after[doc], p.Where)
+		if gone[key] == 0 {
+			return false
+		}
+		gone[key]--
+		return true
+	}
+	for _, p := range found {
 		switch prev, was := old[p.Key]; {
 		case contains(c.Keys, p.Key):
 			refuse("still-over-budget", p.Where, p.Rule+": "+p.Message)
+		case !was && movedWhole(p):
 		case !was || p.Size > prev.Size:
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
@@ -378,6 +407,18 @@ func editedInPlace(line string, gained []string) bool {
 		}
 	}
 	return false
+}
+
+// partText is the text of the part of a doc a finding's place names
+// (`doc#slug`), its words alone, or "".
+func partText(content, where string) string {
+	_, slug, _ := strings.Cut(where, "#")
+	for _, s := range sections(scan(content)) {
+		if s.slug == slug {
+			return strings.Join(strings.Fields(s.text), " ")
+		}
+	}
+	return ""
 }
 
 // normal is a line as condensing may move it: trimmed, and a heading at any level.

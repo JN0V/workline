@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go]
-checked: fb2293a
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -17,7 +17,7 @@ over the level, field by field.
 | `autonomy` | `normal` | how far it goes alone: `cautious`, `normal`, `enterprising` (below) |
 | `issues-per-run` | `8` | issues read a run |
 | `code-lines-max` | `1500` | lines of code given a run, all files together |
-| `proposals-max` | `10` (1 to 100) | issues waiting on a person before it reads only those answered |
+| `proposals-max` | `10` (1 to 100) | issues waiting on a person before it reads only those a person commented on |
 | `undone-max` | `3` (1 to 20) | acts of a kind a person undoes, across the issues, before that kind is proposed on every issue |
 | `next-max` | `5` (0 to 20) | ready issues the summary lists as next |
 | `stuck-days` | `14` (1 to 365) | days an issue waits on a person before the summary says it stuck |

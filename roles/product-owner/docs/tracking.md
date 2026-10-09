@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog]
-checked: 42ce663
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Product owner — what each run tracks
@@ -49,6 +49,9 @@ of it.
   one you edited is yours.
 - Set aside — `workline:proposed` taken off — with no draft left: no
   `workline:draft` nor `workline:to-refine` either.
+- Set aside, then brought back by your comment and acted on: it waits
+  on you again, `workline:proposed` back while it proposes or holds a
+  draft.
 
 ## A parent and its parts
 

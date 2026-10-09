@@ -8,6 +8,6 @@ given:
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
 run: {role: documentalist, event: schedule, ai: "fake:split-card"}
 expect:
-  status: block
+  status: pass   # refused, said as a warning, not failed: on schedule (ADR-0037, amended)
   applied: []
   findings: [{rule: judged-no, message: "still explains how signing out works"}]

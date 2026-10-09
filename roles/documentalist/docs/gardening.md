@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go]
-checked: 886cdff
+checked: bb8a9a3
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -46,6 +46,9 @@ it within budget by moving whole parts into a new doc, and linking to it.
   record — is never the task: moving its parts away rewrites the record;
   its budget stays reported, for a person.
 - A merge request or a push never turns into a rewrite of the docs.
+- A patch still refused once asked again is said as warnings; at night
+  the job stays green, and the next run asks again
+  ([ADR-0037, amended](../../../docs/adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
 
 ## Merging cards
 

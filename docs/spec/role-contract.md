@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: fb2293a
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -259,7 +259,10 @@ token), **apply** (trusted, no AI key).
    role allows and still refused, the files the refusals name are taken out
    of the patches, and what is left — some of the agent's own — is judged
    once more, without asking: passed, it is applied, and each file left out
-   is a `left-out` finding with the refusal's reason. A role listing `claim`
+   is a `left-out` finding with the refusal's reason. Still refused on an
+   event whose steps all run (`fail-fast: false`, the shipped `schedule`),
+   the step passes with nothing of the proposal applied, each refusal a
+   warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)). A role listing `claim`
    among its intentions may give claims beside a patch, saying why it takes
    words out (the documentalist, ADR-0014): `post` reads them; alone, with no
    patch, they are refused, and they are never applied. A `post` that passes

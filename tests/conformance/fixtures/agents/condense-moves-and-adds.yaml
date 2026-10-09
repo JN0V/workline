@@ -1,0 +1,29 @@
+# An answer to "docs/sessions.md is over its line budget" in the `untidy`
+# fixture that moves its long first section out cut in two by a heading,
+# each half within the section budget, and writes a new part over it,
+# shorter than the one that left: the new part is a new problem, not the
+# one moved.
+- patch: |
+    --- /dev/null
+    +++ b/docs/more/session-length.md
+    @@ -0,0 +1,9 @@
+    +## How long a session lasts
+    +A session lasts as long as its token, and a token lasts one hour unless it is
+    +### When it expires
+    +refreshed. When it expires, the user is asked to sign in again, and anything
+    +they had not saved is kept in the browser until they come back to the page.
+    +## Remember me
+    +A user who ticks the box on the sign-in page stays signed in for thirty days
+    +on that browser, whatever the token's own life, until they sign out there or
+    +change their password from any other device they use.
+    --- a/docs/sessions.md
+    +++ b/docs/sessions.md
+    @@ -2,7 +2,3 @@
+
+    -## How long a session lasts
+    -
+    -A session lasts as long as its token, and a token lasts one hour unless it is
+    -refreshed. When it expires, the user is asked to sign in again, and anything
+    -they had not saved is kept in the browser until they come back to the page.
+    +How long a session lasts is in [session length](more/session-length.md).
+

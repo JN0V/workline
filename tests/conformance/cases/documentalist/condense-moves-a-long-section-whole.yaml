@@ -1,0 +1,16 @@
+case: documentalist/condense-moves-a-long-section-whole
+about: 'A section already over its word budget, moved whole into a new doc, is the same section moved, not a new one over budget: condensing does not make it worse, and the patch is applied; the section stays reported where it now is.'
+given:
+  repo: untidy
+  # no repeated passage: merging one would come before condensing; no link
+  # to the section moved, which the move would break
+  setup: ["git rm -q docs/faq.md && sed -i 's/sessions.md#how-long-a-session-lasts/sessions.md/' docs/auth.md && git commit -qam 'docs: drop the faq'"]
+run: {role: documentalist, event: schedule, ai: "fake:condense-moves-a-long-section"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: condense}]
+  applied: [patch]
+  files:
+    docs/more/session-length.md: {contains: "A session lasts as long as its token"}
+    docs/sessions.md: {contains: "(more/session-length.md)"}

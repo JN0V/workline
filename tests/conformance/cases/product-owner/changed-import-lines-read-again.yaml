@@ -34,8 +34,8 @@ given:
       git commit -qam 'docs: the header too'
   forge:
     issues:
-      - {id: 4, title: "Keep the last row", body: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\nOpened from `ROADMAP.md`, lines 7 to 8 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\njudged: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
-      - {id: 5, title: "Sort the columns", body: "2. **Sort the columns.** By name, then by type.\n\nOpened from `ROADMAP.md`, lines 9 to 9 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:5f4e3d2c1b0a -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\njudged: imported\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 4, title: "Keep the last row", body: "1. **Keep the last row.** WriteRows stops one row short.\n   It loses data on every export.\n\nOpened from `ROADMAP.md`, lines 7 to 8 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:0a1b2c3d4e5f -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\njudged: imported\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Sort the columns", body: "2. **Sort the columns.** By name, then by type.\n\nOpened from `ROADMAP.md`, lines 9 to 9 by the product-owner role.\n\n<!-- workline:import=ROADMAP.md:5f4e3d2c1b0a -->", labels: [], comments: ["```yaml\nsources: []\nconfirmed: imported\njudged: imported\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
 expect:
   findings:

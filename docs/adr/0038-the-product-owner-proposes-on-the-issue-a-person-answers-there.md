@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below); a week's trial running
+- **Status:** accepted — built (amended below, twice on 2026-10-09); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -227,3 +227,37 @@ and the maintainer's triage of the drafts it had left:
   aside with no draft, no `workline:to-refine` either.
 - **The summary counts by issue** what a person sees — done, proposed,
   set aside —, says each line in plain words, no rule's name.
+
+## Amendment (2026-10-09, evening): a person's word comes first
+
+The night after
+([run 37927365638](https://github.com/JN0V/workline/actions/runs/37927365638)):
+the maintainer commented on two issues set aside, and the run read five
+new issues instead; three issues an earlier engine had failed on were
+never read again; five complete issues of the maintainer's got no
+`ready`, the agent saying it "did not check who wrote" their sections.
+
+- **A person's comment on any issue is read first**, with the answers:
+  set aside, read and left, or never read. Before, only an issue
+  waiting on a person was; the others came after the new issues, and a
+  set-aside one, once read, still had every act dropped. The agent is
+  told their word decides; on an issue set aside, to propose only what
+  it asks for or opens again. Set aside, it is so no more once the run
+  decides an act on it.
+- **Said with the "not now"**: a comment written before the label came
+  off is heard with it (the forge's label events); only one after brings
+  the issue back.
+- **The role's comment is told by its marker**, never by its author: the
+  role may run with a person's token.
+- **A fix reaches the issues it failed on**: an issue read and left with
+  nothing — a section lacking, no code named, no act ever done, nothing
+  waiting on anyone — under an older way of reading is read again once,
+  after what changed, within `issues-per-run`. The way of reading is a
+  number the engine keeps (`backlog.Reading`), raised by a change that
+  may give such an issue an act; each issue's state keeps the one it was
+  read under (`rules`).
+- **The agent is told whose each section is**: a section not marked a
+  draft is a person's; an issue whose four sections are there, Need and
+  Validation a person's, is said open to `ready` when evident; what the
+  level means is said. Whether it is evident stays the agent's judgment;
+  the engine checks the sections, and an outsider's `ready` is proposed.

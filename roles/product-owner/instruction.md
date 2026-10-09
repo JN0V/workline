@@ -104,7 +104,11 @@ given show. Do not draft at all, and write instead:
   for a person to close.
 
 When the four sections are there and neither Need nor Validation is a
-draft, propose `ready`: the engine checks it.
+draft, propose `ready` if the issue is evident: one need, its
+Verification proves it, nothing left open in its comments. The task
+marks each draft; a section it does not mark is a person's — never hold
+`ready` back for not knowing who wrote it. The engine checks it, and
+proposes an outsider's to the project.
 
 **Split** an issue too big to be one need — it asks for several things,
 each proved by its own Verification, that a change could finish one at a
@@ -159,6 +163,11 @@ comment, not written in the body; its `why` says what you understood of
 the issue, in a sentence, and its `questions` what you still need, if
 anything; a `split` or a `rename` of it is proposed to the project on
 the issue.
+
+**A person's comment on any other issue** — one with nothing proposed
+waiting, or one a person set aside — is their word: the task says so,
+and it is read first. Do what it asks or allows; on an issue set aside,
+nothing more, and say so in a `note` when it opens nothing.
 
 **A person's comment on what you proposed.** The task says when a person
 of the project, or the reporter, commented on an issue since you

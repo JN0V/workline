@@ -1,0 +1,30 @@
+case: product-owner/task-says-whose-sections
+about: 'The agent is told whose each section is, so the level decides ready (ADR-0038): a section the role did not mark a draft is a person''s; an issue whose four sections are there, Need and Validation a person''s, is said open to `ready` when evident; its reporter said of the project. A draft is said a draft, and no ready is offered on it.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day and counts its rows.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 10
+        title: "Totals wrong"
+        body: "Totals are wrong.\n\n## Need\n\n<!-- workline:draft -->\n\nBob needs totals that add up.\n\n## Verification\n\nA test sums two rows.\n\n## Validation\n\nBob opens the totals of a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: bob
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/task.md:
+      contains:
+        - "Opened by: ann, of the project"
+        - "Sections: Need (a person's), Verification, Validation (a person's), Scope"
+        - "Sections: Need (draft), Verification, Validation (a person's), Scope"
+        - "Ready: its four sections are there, Need and Validation a person's"
+        - "a section not marked a draft is a person's"

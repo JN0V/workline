@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: fb2293a
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -74,8 +74,11 @@ gardening proposes again when fewer wait.
 ## The product owner paused, or does nothing
 
 - `proposals-waiting`: more issues wait on your answer than
-  `proposals-max` (10): it reads only those you answered. Answer some —
-  `workline:accepted`, a comment, the label taken off.
+  `proposals-max` (10): it reads only those you commented on. Answer
+  some — `workline:accepted`, a comment, the label taken off.
+- An issue you commented on is read first, set aside or not; a comment
+  written before you took `workline:proposed` off goes with that "not
+  now", and does not bring it back.
 - `setting-gone`: `ignored-runs-max` is no longer read; take it off.
 - An issue gets nothing: the summary's "read, left incomplete" says why —
   no file found for its Scope (link or name its files, or write the Scope

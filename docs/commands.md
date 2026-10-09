@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: fb2293a
+checked: 2522e53
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -21,7 +21,9 @@ to 5 rounds. Options: [usage](usage.md#options-of-run-role-and-route).
 `workline route <event>` runs the steps routing names for the event, in
 order; the first that does not pass stops the line. On `schedule`, every
 step runs and the worst verdict stands (`fail-fast`,
-[ADR-0037](adr/0037-the-schedule-runs-every-step.md)).
+[ADR-0037](adr/0037-the-schedule-runs-every-step.md)); an agent's proposal
+refused there is said as warnings, not failed
+([amended](adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
 
 ### workline apply
 

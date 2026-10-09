@@ -1,0 +1,35 @@
+case: product-owner/set-aside-comment-read-first
+about: 'A person''s comment on an issue set aside brings it back (ADR-0038): read first, before a person''s new issue, whatever account wrote the role''s own comment — a comment is the role''s by its marker, never by its author; what the agent proposes on it is done, not dropped as set aside.'
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {issues-per-run: 1}}}
+  forge:
+    issues:
+      - id: 5
+        title: "Totals wrong"
+        body: "Totals are wrong."
+        author: ann
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        comments:
+          - {body: "Set aside by a person: nothing more is proposed here until the issue changes.\n\n```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\naside: 601137e9bbb6\n```\n\n<!-- workline:sticky=product-owner/state -->", author: ann, insider: true}
+          - {body: "Will be tried next week", author: ann, insider: true}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine}
+expect:
+  agent-calls: 1
+  run-files:
+    in/issues-read: {contains: "9", not-contains: "5"}
+    in/task.md: {contains: "A person commented since you last read it"}
+  no-findings: [{rule: set-aside, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, body-contains: "A test writes three rows and reads three lines back."}
+      - {id: 9, comment-contains: "heard: 1", comment-lacks: "aside: "}

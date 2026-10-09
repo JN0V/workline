@@ -1,0 +1,27 @@
+case: product-owner/left-with-nothing-read-again-once
+about: 'An issue read and left lacking a section, with nothing waiting on anyone, is read again once when the role''s reading changed since (its state''s `rules` older than the engine''s): a fix of the engine reaches the issues it failed on. Read under the current rules, it is not read again until they change; read last but the catch-up, within issues-per-run.'
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 10
+        title: "Totals wrong"
+        body: "Some rows are lost.\n\n## Need\n\nAnn needs every row exported.\n\n## Validation\n\nAnn opens a known day and counts its rows."
+        author: ann
+        insider: true
+        labels: []
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\nbody: 601137e9bbb6\nheard: 0\nrules: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "9", not-contains: "10"}
+  forge:
+    issues:
+      - {id: 9, comment-contains: "rules: 1"}

@@ -75,6 +75,10 @@ type State struct {
 	// role read; Revisions, the times it revised its drafts for them.
 	Heard     *int `yaml:"heard,omitempty"`
 	Revisions int  `yaml:"revisions,omitempty"`
+	// Rules is the role's way of reading an issue when it last read it
+	// (Reading): an issue it left with nothing is read again once they
+	// change.
+	Rules int `yaml:"rules,omitempty"`
 }
 
 // StateMarker marks the comment holding an issue's state.
@@ -146,8 +150,9 @@ func FormatState(s State) string {
 		Aside     string            `yaml:"aside,omitempty"`
 		Heard     *int              `yaml:"heard,omitempty"`
 		Revisions int               `yaml:"revisions,omitempty"`
+		Rules     int               `yaml:"rules,omitempty"`
 	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Deleted,
-		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions})
+		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules})
 	// A fence in a text the agent wrote must not end the block: the block's
 	// is longer than any run of backticks in it.
 	fence := fenceFor(string(data))
@@ -879,14 +884,13 @@ func (p *Plan) summary() {
 }
 
 // aside says whether an issue was set aside by a person — workline:proposed
-// taken off without a yes — and has not changed since: nothing is proposed
-// nor done on it (ADR-0038).
+// taken off without a yes — and has not changed since, its body nor a
+// person's word on it: nothing is proposed nor done on it (ADR-0038).
 func (p *Plan) aside(id int) bool {
 	if p.SetAside[id] {
 		return true
 	}
-	st := p.ledger.States[id]
-	return st != nil && st.Aside != "" && st.Aside == BodyDigest(p.issues[id].Body) && p.Answers[id] == nil
+	return StillAside(p.ledger.States[id], p.issues[id], p.ledger.Notes[id]) && p.Answers[id] == nil
 }
 
 // labelOr is the label the role set, or its usual name.
@@ -1507,6 +1511,10 @@ var Sections = []string{"Need", "Verification", "Validation", "Scope"}
 
 // drafted are the sections the role writes as drafts: a person's to state.
 var drafted = []string{"Need", "Validation"}
+
+// Drafted says whether the role writes a section as a draft, a person's to
+// make theirs: Need and Validation. Not marked a draft, it is a person's.
+func Drafted(name string) bool { return slices.Contains(drafted, name) }
 
 // DraftMarker marks a section the role drafted and no person made theirs.
 var DraftMarker = forge.Marker("draft")

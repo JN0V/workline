@@ -9,6 +9,6 @@ given:
     - "printf 'See [refreshing](../cards/refresh.md).\\n' >> docs/product/sign-in.md && git add docs && git commit -qm 'docs: add cards'"
 run: {role: documentalist, event: schedule, ai: "fake:merge-card-leaves-a-link"}
 expect:
-  status: block
+  status: pass   # refused, said as a warning, not failed: on schedule (ADR-0037, amended)
   applied: []
   findings: [{rule: patch-introduces, where: docs/product/sign-in.md}]

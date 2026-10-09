@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 42ce663
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Product owner
@@ -63,15 +63,16 @@ is on each issue; you answer there
 | yes | label `workline:accepted` (bulk from the list) | does what it proposed, makes the drafts yours, moves it to `ready`; takes its label off |
 | revise | a plain comment | 👀 on it, rewrites its own drafts in place, replies in one line |
 | correct it yourself | edit the body | the sections you edited are yours, never rewritten; an edited draft counts as accepted |
-| not now | take `workline:proposed` off | proposes nothing more on that issue until it changes |
+| not now | take `workline:proposed` off | proposes nothing more on that issue until you edit it or comment |
 | it should not exist | close it | never reopens it |
 
 - **Silence is never a yes.** Past `proposals-max` issues waiting, the
-  role reads only those you answered.
+  role reads only those you commented on.
 - **Three rounds at most** (the draft, two revisions), then one line
   "left to a person" in the summary, nothing more on the issue.
-- **Who counts**: the reporter and the project's people. A bot's, a
-  stranger's or a "+1" comment never brings an issue back.
+- **Who counts**: the reporter and the project's people; their comment
+  on any issue is read first. A bot's, a stranger's or a "+1" comment
+  never brings an issue back.
 - Accepting many issues from the list is quick: read what you accept.
 
 ## Alone or proposed

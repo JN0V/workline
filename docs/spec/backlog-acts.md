@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 42ce663
+checked: 2522e53
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -49,7 +49,9 @@ did: [{act: refine, level: normal, day: '2026-10-08', line: …}]  # what the ro
 closed: close-duplicate                  # the kind it was closed with: open again, undone
 label: workline:proposed                 # the label the role put on it while it waits on a person
 aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: nothing proposed until it changes
+heard: 2                                 # the comments that count the role read: one more is a person's word since
 revisions: 1                             # its drafts revised for a person's comments
+rules: 1                                 # the way of reading it was last read under (backlog.Reading)
 ```
 
 The comment says, above the state, what the role did and proposes there,
@@ -89,21 +91,30 @@ with no AI:
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
 lines of the code they name (ADR-0018, amended by ADR-0038), in this
-order: an issue waiting on a person that they commented on ("A person's
-answers"); one read again for a change to what it was built on ("A
-changed need"); one an act was proposed on only because a run's cap was
+order: an issue a person who counts commented on since the role read it
+— waiting on them ("A person's answers"), set aside, or neither: their
+word, read first, the agent told so —; one read again for a change to
+what it was built on ("A changed need"); one an act was proposed on only because a run's cap was
 reached — the act decided again, the proposal settled once its issue is
 read —; a person's issue never read, newest first (`backlog.ByPerson`: no
 import or finding key on a line of its own, no bot author), one opened
 since the role's last run read in the run that first sees it, its first
 state written before any act; then those with something new since they
-were read — a commit touched their sources, a person who counts commented
-(`heard`), a person changed its body (`body`), a person reopened what the
-role closed (`closed`), the reviewer's spec findings —; last, the
-catch-up of an import's or a bot's issues never read, oldest first. Past
+were read — a commit touched their sources, a person changed its body
+(`body`), a person reopened what the role closed (`closed`), the
+reviewer's spec findings —; then one left with nothing under an older
+way of reading (`backlog.LeftBehind`: its `rules` below
+`backlog.Reading`, a section lacking, no code named, no act ever done,
+nothing waiting on anyone), read again once, newest first — one past
+`issues-per-run` at a later run —, so a fix of the engine reaches the
+issues it failed on; last, the catch-up of an
+import's or a bot's issues never read, oldest first. Past
 `proposals-max` issues waiting on a person, only the first are read. One
-set aside by a person is not read until it changes. An issue with nothing new is not read again,
-however old (ADR-0018). An issue on the same code as one read is given with
+set aside by a person is not read until its body changes or a person who
+counts comments. An issue with nothing new is not read again, however old
+(ADR-0018). `backlog.Reading` is raised by a change that may give such an
+issue an act: a fix of what the engine dropped, of what the task tells
+the agent. An issue on the same code as one read is given with
 its body beside it, up to six, as the original a duplicate would be closed
 against; the others are listed by title only. The code an issue names: its
 sources (a folder given as the list of its files), the paths its title,
@@ -870,8 +881,14 @@ the issue: one set aside gets nothing, one where a person undid that kind
 gets a proposal (`undone-here`); then a kind undone `undone-max` times,
 proposed everywhere (`demoted`); then a person's yes on one act
 (`workline:accepted`), done whatever its mode or cap. The task given to
-the agent lists each kind's mode and where it comes from — `level`,
-`setting` (differs from the level's) or `demoted`. A level the role does
+the agent says what the level means, and lists each kind's mode and where
+it comes from — `level`, `setting` (differs from the level's) or
+`demoted`. It says whose each section is: `(draft)`, the role's draft;
+Need and Validation not marked a draft, `(a person's)`; an issue whose
+four sections are there, Need and Validation a person's, not ready and
+`ready` not off, is said open to `ready` when evident — the agent judges
+it, the engine checks it, and an outsider's is proposed. Its reporter is
+said of the project or not. A level the role does
 not have, a number out of its bounds, `changed-needs` not true or false,
 or `archived` not a list of paths, stops the run; `ignored-runs-max`, no
 longer read, is said (`setting-gone`).
@@ -1002,22 +1019,24 @@ each open issue what a person did since the last (ADR-0038):
 |---|---|
 | labels it `workline:accepted` (either spelling; GitLab Free keeps it beside `workline::proposed`) | each act its state proposes, as recorded, done whatever its mode or cap — a closing as obsolete closed at once, no announcement nor second judge —, said "Accepted by @x" (the label's last setter, from the forge's label events; "a person of the project" when it does not say); its drafts made theirs and the issue moved to ready when complete; `workline:proposed` taken off by the role |
 | comments, being its reporter or of the project, on an issue waiting on them | "revise": the issue read first, the agent told so; a `refine` rewrites the sections still the role's own (`backlog.Own`: a draft, or a text as the role wrote it), never a person's; 👀 on each comment read (`React`; GitLab's "already taken" is done); one line in reply (`<!-- workline:product-owner/reply=<id> -->`); `revisions` counted — one a run, whatever the comments; at `acts.ask.rounds` less one, a new comment is left to a person (`left-to-a-person`), nothing written |
-| takes `workline:proposed` off, without a yes | "not now": its proposals dropped, `aside` kept in its state with its body's digest; nothing proposed nor done on it (`set-aside`) until its body changes or a counted comment comes; never a demotion |
+| takes `workline:proposed` off, without a yes | "not now": its proposals dropped, `aside` kept in its state with its body's digest, and what they wrote up to the label's removal heard with it (`heard`, from the forge's label events); nothing proposed nor done on it (`set-aside`) until its body changes or a counted comment comes; never a demotion |
+| comments on an issue with nothing waiting on them — set aside, read and left, never read | read first, the agent told that what they say decides — on one set aside, to propose only what the comment asks for or opens again; no 👀, no reply; set aside, it is so no more once the run decides an act on it |
 | edits its body | read again; a section edited is theirs; a section the role wrote and they deleted (`deleted`) is never written again |
 | closes it | its proposals settled; never reopened |
 
 **Who counts**: the reporter and the project's people — GitHub's author
 association of owner, member or collaborator; GitLab's members from the
 Planner role (ADR-0023) — never a bot, an author the forge does not name,
-nor a bare "+1" (`backlog.Counted`). Only their comments bring an issue
-back into a run (`heard`); a stranger's is given to the agent as context
+nor a bare "+1" (`backlog.Counted`). Which comment is the role's is told
+by its marker, never by its author: the role may write with a person's
+token. Only their comments bring an issue back into a run (`heard`); a stranger's is given to the agent as context
 when the issue is read for another reason. An act whose quote is found
 only in a comment of someone who does not count is proposed, never done
 alone (`outsider-evidence`).
 
 **Slowing down**: past `proposals-max` issues waiting on a person, a run
-reads only the issues answered (`proposals-waiting`). Silence is never a
-yes.
+reads only the issues a person commented on (`proposals-waiting`).
+Silence is never a yes.
 
 ## Trust
 

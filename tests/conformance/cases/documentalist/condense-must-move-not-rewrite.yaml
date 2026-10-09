@@ -6,6 +6,6 @@ given:
   setup: ["git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"]
 run: {role: documentalist, event: schedule, ai: "fake:condense-rewrites"}
 expect:
-  status: block
+  status: pass   # refused, said as a warning, not failed: on schedule (ADR-0037, amended)
   applied: []
   findings: [{rule: rewritten, where: docs/sessions.md}]

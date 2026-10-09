@@ -10,7 +10,7 @@ run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
 expect:
   findings: [{rule: done, where: "#9"}, {rule: not-ready, where: "#10", message: "not moved to ready: Need is still a draft: accept it (workline:accepted) or edit it"}]
   run-files:
-    in/task.md: {contains: ["Sections: Need, Verification, Validation, Scope\n", "Sections: Need (draft), Verification, Validation, Scope\n"]}
+    in/task.md: {contains: ["Sections: Need (a person's), Verification, Validation (a person's), Scope\n", "Sections: Need (draft), Verification, Validation (a person's), Scope\n"]}
   forge:
     issues:
       - {id: 9, labels: [workline:ready], body-lacks: "workline:draft"}

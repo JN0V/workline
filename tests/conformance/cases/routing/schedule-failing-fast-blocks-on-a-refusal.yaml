@@ -1,0 +1,16 @@
+case: routing/schedule-failing-fast-blocks-on-a-refusal
+about: 'A project that sets `fail-fast: {schedule: true}` keeps a refused proposal a block on schedule, as on a gate''s event: nothing applied, the run fails.'
+given:
+  repo: untidy
+  setup: ["git rm -q docs/faq.md && git commit -qm 'docs: drop the faq'"]
+  config:
+    roles:
+      documentalist:
+        settings:
+          budgets: {doc-lines: 10, section-words: 30, card-words: {min: 8, max: 40}, folder-lines: 30, root-agent-file-lines: 5}
+    routing: {fail-fast: {schedule: true}}
+run: {role: documentalist, event: schedule, ai: "fake:condense-rewrites"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: rewritten, where: docs/sessions.md}]
