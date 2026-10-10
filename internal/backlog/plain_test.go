@@ -19,6 +19,15 @@ func TestDescriptionKeepsTheEngineLines(t *testing.T) {
 	}
 }
 
+// A fence holding a shorter one is read whole: a heading in it is code.
+func TestDescriptionReadsALongerFence(t *testing.T) {
+	body := "Old.\n\n````\n```\n## in the code\n```\n````\n\nAfter.\n\n## Need\n\nA need."
+	top, rest := splitTop(body)
+	if rest != "## Need\n\nA need." || !strings.HasSuffix(top, "After.\n") {
+		t.Fatalf("top = %q, rest = %q", top, rest)
+	}
+}
+
 func TestRewriteTellsARolesTextFromAPersons(t *testing.T) {
 	finding := "The loop ends early.\n\nOpened by the reviewer role.\n\n<!-- workline:opened-by=reviewer -->"
 	bot := forge.Issue{Body: finding, Author: "workline-app[bot]"}

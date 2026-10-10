@@ -10,6 +10,18 @@ import (
 	"github.com/JN0V/workline/internal/builtin/committer"
 )
 
+// The issue a finding outside the change becomes opens with what a person
+// sees; its cause, folded, keeps a quote holding a fence whole.
+func TestIssueBodyPersonFirst(t *testing.T) {
+	f := Finding{Lens: "correctness", Why: "the doc block ends early", Seen: "A help page shows half its text.",
+		Where: "doc.go:3", Cause: Quote{Quote: "s := \"```\" + text"}, Verified: "verified, independence: model (a → b)"}
+	got := issueBody(f)
+	want := "A help page shows half its text.\n\n<details><summary>The cause in the code</summary>\n\nthe doc block ends early\n\nAt `doc.go:3`:\n\n````\ns := \"```\" + text\n````\n\n</details>\n\n<!-- workline:found=the correctness lens; verified, independence: model (a → b) -->"
+	if got != want {
+		t.Fatalf("body = %q, want %q", got, want)
+	}
+}
+
 func TestComment(t *testing.T) {
 	for _, c := range []struct {
 		file, line, text string

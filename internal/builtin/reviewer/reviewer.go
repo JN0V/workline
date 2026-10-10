@@ -1363,7 +1363,9 @@ func oneLine(t string, max int) string {
 // opens with its cause.
 func issueBody(f Finding) string {
 	top := strings.TrimSpace(f.Seen)
-	cause := fmt.Sprintf("At `%s`:\n\n```\n%s\n```", f.Where, strings.TrimSpace(f.Cause.Quote))
+	quote := strings.TrimSpace(f.Cause.Quote)
+	fence := backlog.FenceFor(quote) // a fence in the quote does not end the block
+	cause := fmt.Sprintf("At `%s`:\n\n%s\n%s\n%s", f.Where, fence, quote, fence)
 	if top == "" {
 		top = f.Why
 	} else {

@@ -40,18 +40,8 @@ func splitTop(body string) (top, rest string) {
 	lines := strings.Split(body, "\n")
 	fence := ""
 	for i, l := range lines {
-		t := strings.TrimSpace(l)
-		switch {
-		case fence != "":
-			if strings.HasPrefix(t, fence) {
-				fence = ""
-			}
-			continue
-		case strings.HasPrefix(t, "```"):
-			fence = "```"
-			continue
-		case strings.HasPrefix(t, "~~~"):
-			fence = "~~~"
+		var code bool
+		if fence, code = inFence(l, fence); code {
 			continue
 		}
 		if _, ok := work.Heading(l); ok {
@@ -59,6 +49,33 @@ func splitTop(body string) (top, rest string) {
 		}
 	}
 	return body, ""
+}
+
+// inFence reads a line as CommonMark reads fenced code: whether it is the
+// code's — its opening line, its text, its closing line — and the fence
+// left open after it: one of three backticks or tildes or more, closed by
+// a line of the same character at least as long and nothing else.
+func inFence(l, open string) (next string, code bool) {
+	t := strings.TrimSpace(l)
+	run := func(c byte) int {
+		n := 0
+		for n < len(t) && t[n] == c {
+			n++
+		}
+		return n
+	}
+	if open != "" {
+		if n := run(open[0]); n >= len(open) && strings.TrimSpace(t[n:]) == "" {
+			return "", true
+		}
+		return open, true
+	}
+	for _, c := range []byte{'`', '~'} {
+		if n := run(c); n >= 3 && !(c == '`' && strings.Contains(t[n:], "`")) {
+			return t[:n], true
+		}
+	}
+	return "", false
 }
 
 // DescriptionOf is an issue's description as a person reads it: the text
@@ -142,14 +159,11 @@ func bot(author string) bool {
 // words counts a description's words a reader reads first: those outside
 // a fold and fenced code.
 func words(text string) int {
-	n, fence, folded := 0, false, 0
+	n, fence, folded := 0, "", 0
 	for _, l := range strings.Split(text, "\n") {
 		t := strings.TrimSpace(l)
-		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
-			fence = !fence
-			continue
-		}
-		if fence {
+		var code bool
+		if fence, code = inFence(l, fence); code {
 			continue
 		}
 		folded += strings.Count(t, "<details")

@@ -159,7 +159,7 @@ func FormatState(s State) string {
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules})
 	// A fence in a text the agent wrote must not end the block: the block's
 	// is longer than any run of backticks in it.
-	fence := fenceFor(string(data))
+	fence := FenceFor(string(data))
 	block := fence + "yaml\n" + string(data) + fence
 	say := s.say()
 	if say == "" {
@@ -168,9 +168,9 @@ func FormatState(s State) string {
 	return Inert(strings.ReplaceAll(say, "```", "'''")) + "\n\n<details><summary>What workline knows of this issue, edited by the engine</summary>\n\n" + block + "\n\n</details>"
 }
 
-// fenceFor is a code fence longer than any run of backticks in text: three,
+// FenceFor is a code fence longer than any run of backticks in text: three,
 // or one more than its longest run, so nothing in it closes the block.
-func fenceFor(text string) string {
+func FenceFor(text string) string {
 	n, run := 3, 0
 	for _, r := range text {
 		if r == '`' {
