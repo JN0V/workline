@@ -23,7 +23,7 @@ A software factory for AI-assisted development:
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
 pull requests and nightly gardening of workline and of another project;
-<!-- workline:derive conformance-cases -->548<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->604<!-- workline:end --> conformance cases green in CI.
 
 ## Get started
 
