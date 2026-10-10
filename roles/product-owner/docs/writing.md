@@ -6,7 +6,9 @@ verified: agent:claude-code
 # Writing an issue a person reads
 
 Part of [the product owner](../README.md). The rules it writes issues by;
-the same for a person, or a coding agent, opening one.
+the same for a person, or a coding agent, opening one, and for
+[the reviewer](../../reviewer/docs/run.md)'s issues: what a person sees
+first, the cause folded.
 
 ## The layout
 

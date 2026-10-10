@@ -357,6 +357,12 @@ Decided:
   hidden markers; the text before is in the forge's edit history, named
   in the role's one line: "Rewrote: the description, in plain words."
   It follows the refine's mode and level, as the drafts do.
+- **The reviewer writes its issues the same way**: what a person sees,
+  a sentence its lens gives, on top; the cause, the line and the fix
+  folded; "Found by the reviewer role while reviewing <commit>, outside
+  that change."; the lens and the judge's verdict hidden. Roles read no
+  facet of another's: its instruction holds the rule in short, naming
+  the product owner's page for the rest.
 - **The answer is a short list**, one gesture a line: the label for yes,
   a draft edited, a comment to revise, the label taken off for not now,
   a closing.

@@ -781,8 +781,16 @@ func compareForge(want map[string]any, file string) []string {
 				p = append(p, fmt.Sprintf("forge: no %s with id %v", kind, wm["id"]))
 				continue
 			}
-			if t, ok := wm["body-contains"]; ok && !strings.Contains(fmt.Sprint(found["body"]), fmt.Sprint(t)) {
-				p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it to hold %q", kind, wm["id"], found["body"], t))
+			if w, ok := wm["body-contains"]; ok {
+				texts := []any{w} // one text, or several
+				if l, ok := w.([]any); ok {
+					texts = l
+				}
+				for _, t := range texts {
+					if !strings.Contains(fmt.Sprint(found["body"]), fmt.Sprint(t)) {
+						p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it to hold %q", kind, wm["id"], found["body"], t))
+					}
+				}
 			}
 			if t, ok := wm["body-lacks"]; ok && strings.Contains(fmt.Sprint(found["body"]), fmt.Sprint(t)) {
 				p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it without %q", kind, wm["id"], found["body"], t))

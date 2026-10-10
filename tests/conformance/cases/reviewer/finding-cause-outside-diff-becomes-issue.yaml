@@ -1,5 +1,5 @@
 case: reviewer/finding-cause-outside-diff-becomes-issue
-about: "A finding whose cause lies outside the change is not the author's to fix there: it is not reported on the merge request, it becomes an issue labelled needs-triage, with the product owner's state — the digest of its text kept, so the product owner may rewrite it in plain words until a person edits it; one an open issue holds already is not opened again."
+about: "A finding whose cause lies outside the change is not the author's to fix there: it is not reported on the merge request, it becomes an issue labelled needs-triage, written for a person first — what a person sees, then the cause in the code folded, the lens and the judge hidden, one line saying where it was found —, with the product owner's state — the digest of its text kept, so the product owner may rewrite it in plain words until a person edits it; one an open issue holds already is not opened again."
 given:
   repo: reviewed
   setup: ["printf '\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"]
@@ -19,6 +19,9 @@ expect:
     issues:
       - {id: 1, comments: 0}
       - {id: 2, title: "Average panics on no values", labels: [needs-triage], body-contains: "workline:issue=calc/calc.go#721bb819", comment-contains: ["sources: [calc/calc.go]", "wrote:\n    Description: "]}
+      - id: 2
+        body-contains: ["Asking for the average of no values crashes the program instead of saying there are none.\n\n<details><summary>The cause in the code</summary>\n\nan empty slice divides by zero\n\nAt `calc/calc.go:", "return total / len(values)\n```\n\n</details>\n\n<!-- workline:found=the correctness lens; verified, independence: ", " -->\n\nFound by the reviewer role while reviewing ", ", outside that change.\n\n<!-- workline:opened-by=reviewer -->"]
+        body-lacks: "so not the author's to fix there"
       - {id: 3, absent: true}
     merge-requests:
       - {id: 5, comments: 1, comment-contains: "not the author's to fix here"}

@@ -2144,7 +2144,8 @@ func (a *applier) openIssue(title, body string, m map[string]any) error {
 	if err != nil {
 		return err
 	}
-	op := backlog.Opening{Role: a.role, Title: title, Body: body, Key: backlog.TitleKey(title), Sources: strs(m["sources"]), Commit: head, Triage: true}
+	found, _ := m["found"].(string) // where the role found it, said in the line the issue ends with
+	op := backlog.Opening{Role: a.role, Title: title, Body: body, Key: backlog.TitleKey(title), Sources: strs(m["sources"]), Commit: head, Triage: true, Found: found}
 	if at, ok := m["at"].(map[string]any); ok {
 		path, _ := at["path"].(string)
 		text, _ := at["text"].(string)

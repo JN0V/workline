@@ -16,6 +16,11 @@ Report each defect as a `finding`:
   the code harder to read or change. A judge checks each important one.
 - `title` in a few words, `why`: how it fails, and when. `fix`: what would
   fix it, in a sentence.
+- `seen`: what a person using the project sees when it fails — who,
+  doing what, sees what —, in plain words, 25 at most: no name from the
+  code, no path. A finding outside the change becomes an issue that opens
+  with it, the cause folded below (the rules an issue is written by: the
+  product owner's `docs/writing.md`).
 - `decision`, only for what is no defect but a choice a person makes — a
   trade-off, a design choice, a behaviour the issue leaves open: the
   question to put to them, its cause the open point quoted, in the issue
