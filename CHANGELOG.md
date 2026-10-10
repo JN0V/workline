@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.23.0](https://github.com/JN0V/workline/compare/v0.22.0...v0.23.0) (2026-10-10)
+
+
+### Features
+
+* **ci:** the apply job writes its own summary, and what it left ([#274](https://github.com/JN0V/workline/issues/274)) ([a4c04e3](https://github.com/JN0V/workline/commit/a4c04e30eaa9e21143bc6d3c802f2adf151a5141))
+* **product-owner:** issues a person reads, the person's part first ([#284](https://github.com/JN0V/workline/issues/284)) ([24d4b39](https://github.com/JN0V/workline/commit/24d4b39592a11ee7022030cb17e015b3522848a4))
+* **product-owner:** plain words for what no person wrote ([#285](https://github.com/JN0V/workline/issues/285)) ([8218bc8](https://github.com/JN0V/workline/commit/8218bc8bd29992b51071a6074dc25574d73c2ed0))
+* **product-owner:** proposals and answers on each issue (ADR-0038) ([#272](https://github.com/JN0V/workline/issues/272)) ([7452563](https://github.com/JN0V/workline/commit/7452563c39bb0336ea885af8c35b0e0dd18be0e9))
+
+
+### Bug Fixes
+
+* **product-owner:** a person's word first; refusals said at night ([#280](https://github.com/JN0V/workline/issues/280)) ([b6f56ad](https://github.com/JN0V/workline/commit/b6f56ad76000766731c3fd8e2f107229dabafa7d))
+* **product-owner:** brought back is not set aside; one question left out ([#281](https://github.com/JN0V/workline/issues/281)) ([6bd672f](https://github.com/JN0V/workline/commit/6bd672fcfc3701f0f1cdfd676285d4abd5290354))
+* **product-owner:** the night's summary grouped and linked; a body's footer in no section ([#273](https://github.com/JN0V/workline/issues/273)) ([3f2c48f](https://github.com/JN0V/workline/commit/3f2c48f51937e7e010bccb93fc0adf0c7e0fd7e3))
+* **product-owner:** what the first nights after ADR-0038 showed ([#279](https://github.com/JN0V/workline/issues/279)) ([f6f74ce](https://github.com/JN0V/workline/commit/f6f74ce5539ece639fbab179af262a516ea1e6a5))
+* the schedule runs every role; a prompt over budget never blocks ([#266](https://github.com/JN0V/workline/issues/266)) ([3386e86](https://github.com/JN0V/workline/commit/3386e8626fc4372a7866aacbbd100b06039b383f))
+
 ## [0.22.0](https://github.com/JN0V/workline/compare/v0.21.0...v0.22.0) (2026-10-07)
 
 
