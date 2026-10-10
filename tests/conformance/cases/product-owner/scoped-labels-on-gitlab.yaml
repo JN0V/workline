@@ -17,7 +17,7 @@ run: {role: product-owner, event: schedule, ai: fake:refine-nine-again}
 expect:
   forge:
     issues:
-      - {id: 9, labels: [workline:to-refine, workline:draft, workline::proposed], comment-contains: ["label `workline::accepted` to agree", "take `workline::proposed` off"]}
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline::proposed], comment-contains: ["label `workline::accepted`: yes", "take `workline::proposed` off: not now"]}
       - {id: 10, labels: [workline:ready], body-lacks: "workline:draft"}
     labels:
       - {id: 1, title: workline::accepted}

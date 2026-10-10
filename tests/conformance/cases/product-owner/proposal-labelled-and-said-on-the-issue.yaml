@@ -1,5 +1,5 @@
 case: product-owner/proposal-labelled-and-said-on-the-issue
-about: An issue the role completes with drafts gets the label workline:proposed, created once, and its one comment — the state comment, edited in place — says what the role did and what it wants from a person, the state folded under it; no report issue is opened (ADR-0038).
+about: An issue the role completes with drafts gets the label workline:proposed, created once, and its one comment — the state comment, edited in place — says what the role did and what it wants from a person — its answers a short list, one gesture a line —, the state folded under it; no report issue is opened (ADR-0038).
 given:
   repo: backlog
   forge:
@@ -11,7 +11,7 @@ expect:
   forge:
     issues:
       - {id: 9, labels: [workline:to-refine, workline:draft, workline:proposed], comments: 1}
-      - {id: 9, comment-contains: ["Added: Need (draft), Validation (draft), Verification, Scope. Changed: —. See the issue's edit history.", "**Your answer**: label `workline:accepted` to agree", "take `workline:proposed` off for not now", "<details><summary>What workline knows of this issue, edited by the engine</summary>", "label: workline:proposed"]}
+      - {id: 9, comment-contains: ["Added: Need (draft), Validation (draft), Verification, Scope. Changed: —. See the issue's edit history.", "**Your answer:**\n\n- label `workline:accepted`: yes, done at its next run\n- edit a draft: it is yours\n- comment: it revises what it proposes\n- take `workline:proposed` off: not now\n- close the issue: it should not exist", "<details><summary>What workline knows of this issue, edited by the engine</summary>", "label: workline:proposed"]}
       - {id: 10, absent: true}
     labels:
       - {id: 1, title: workline:accepted}

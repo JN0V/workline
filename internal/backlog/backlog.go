@@ -254,15 +254,35 @@ func (s State) say() string {
 			}
 			lines = append(lines, "**The product owner** drafted "+what+" from its own words: they wait on your answer.")
 		}
-		accepted := strings.Replace(s.Label, "proposed", "accepted", 1)
-		if len(s.Proposed) > 0 && !slices.ContainsFunc(s.Proposed, func(q Pending) bool { return q.Proposal == nil || !q.Proposal.Advice }) {
-			// Only what a person does themselves: no yes to give.
-			lines = append(lines, fmt.Sprintf("**Your answer**: close the issue if you agree; take `%s` off to keep it open as it is; comment to tell the role why not.", s.Label))
-			break
-		}
-		lines = append(lines, fmt.Sprintf("**Your answer**: label `%s` to agree — what it proposes is done at its next run, its drafts become yours, and the issue moves to ready once complete; edit a draft to make it yours; comment to have it revise; take `%s` off for not now; close the issue if it should not exist.", accepted, s.Label))
+		lines = append(lines, s.answers())
 	}
 	return strings.Join(lines, "\n\n")
+}
+
+// answers is what a person may answer on an issue waiting on them: one
+// gesture a line, read on every proposal (ADR-0038).
+func (s State) answers() string {
+	if len(s.Proposed) > 0 && !slices.ContainsFunc(s.Proposed, func(q Pending) bool { return q.Proposal == nil || !q.Proposal.Advice }) {
+		// Only what a person does themselves: no yes to give.
+		return fmt.Sprintf("**Your answer:**\n\n- close the issue: yes\n- take `%s` off: keep it open as it is\n- comment: tell the role why not", s.Label)
+	}
+	list := []string{fmt.Sprintf("- label `%s`: yes, done at its next run", strings.Replace(s.Label, "proposed", "accepted", 1))}
+	if s.drafts() {
+		list = append(list, "- edit a draft: it is yours")
+	}
+	list = append(list, "- comment: it revises what it proposes", fmt.Sprintf("- take `%s` off: not now", s.Label), "- close the issue: it should not exist")
+	return "**Your answer:**\n\n" + strings.Join(list, "\n")
+}
+
+// drafts says whether the role drafted on the issue, or proposes to: a
+// draft is there for a person to edit.
+func (s State) drafts() bool {
+	for _, name := range drafted {
+		if s.Wrote[name] != "" {
+			return true
+		}
+	}
+	return slices.ContainsFunc(s.Proposed, func(q Pending) bool { return q.Proposal != nil && q.Proposal.Do == "refine" })
 }
 
 // drafts says the sections a refine would write, each under its name.
