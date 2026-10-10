@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: 60d5f8c
+checked: 4464b84
 verified: agent:claude-code
 ---
 # Product owner — a run

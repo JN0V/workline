@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 60d5f8c
+checked: 4464b84
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -946,7 +946,8 @@ state folded under it (`backlog.FormatState`):
   text before is in the forge's edit history, which no forge links to;
   a question to the reporter, or a text proposed to an outsider, says so
   in one line linking to that comment (`linkComments`), "in the comment
-  below" on a forge with no address for it: written once, in the comment
+  below" on a forge with no address for it or when its comments do not
+  read (an unreachable forge stops the run): written once, in the comment
   that names the reporter and so notifies them;
 - each act it proposes there, in plain words (`backlog.offer`), and a
   refine's drafts, folded;
