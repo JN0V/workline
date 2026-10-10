@@ -1,0 +1,35 @@
+case: product-owner/description-rewritten-plain
+about: "The text above an issue's sections that a role wrote — an item imported from a file, another role's finding — and no person edited is rewritten in plain words when the agent gives a `description`, also beside a question; the engine tells it is the role's from what it recorded — the digest kept at opening, an import's key —, keeps its own lines there — where the issue comes from, its hidden markers —, says it in one line, and keeps the new text's digest. A person's text is never rewritten: an issue a person opened, an import a person edited, one rewritten already and edited since or asked again with no comment; nor a rewrite past 100 words before its fold."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Five whys", author: ann, insider: true, labels: [], body: "- **Five whys as a shared skill.** Root cause before any countermeasure in the\n  defect ledger; used by reviewer, developer, tester, architect.\n\nOpened from `docs/BACKLOG.md`, lines 10 to 11 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:e17512fffb50 -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "WriteRows stops one row short", author: "github-actions[bot]", labels: [needs-triage], body: "The loop ends one row early: `for i := 0; i < len(rows)-1; i++` skips the last index.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/export/csv.go#00000000 -->", comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nwrote:\n    Description: cce12975b3bc\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Faster export", author: ann, insider: true, labels: [], body: "- **Faster export.** The export takes too long: 9 minutes for 1.2 GB.\n\nOpened from `docs/BACKLOG.md`, lines 20 to 20 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:44092247e34e -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", author: ann, insider: true, labels: [], body: "Rows lost.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row", author: ann, insider: true, labels: [], body: "Exports lose their last row: a sale of the day is missing.\n\nOpened from `docs/BACKLOG.md`, lines 30 to 30 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:0123456789ab -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\nplain: b22745c863f8\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Cache", author: ann, insider: true, labels: [], body: "- **Cache.** Keep a cache of the parsed files.\n\nOpened from `docs/BACKLOG.md`, lines 40 to 40 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:b601a6fea153 -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:description-plain}
+expect:
+  findings:
+    - {rule: done, where: "#7", message: "Refined #7: the description in plain words."}
+    - {rule: done, where: "#8", message: "Refined #8: the description in plain words."}
+    - {rule: description-kept, where: "#10", message: "its description is left as it is: a person edited its description, or the role cannot tell no one did"}
+    - {rule: description-kept, where: "#11", message: "its description is left as it is: a person opened the issue"}
+    - {rule: description-kept, where: "#12", message: "its description is left as it is: its description is rewritten already"}
+    - {rule: description-kept, where: "#13", message: "before any fold, past 100"}
+  run-files:
+    in/task.md: {contains: ["Description: the text above its sections is a role's, and no person edited it", "Description: rewritten in plain words by you — again only as a person's comment asks"]}
+  forge:
+    issues:
+      - id: 7
+        body-contains: "When a defect is found, the team fixes what it sees, not why it happened, and the same defect comes back.\n\nThe idea: a role recording a defect asks \"why\" five times before it fixes anything.\n\nOpened from `docs/BACKLOG.md`, lines 10 to 11 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:e17512fffb50 -->"
+        body-lacks: "countermeasure"
+        comment-contains: ["- Rewrote: the description, in plain words. See the issue's edit history.", "- Asked the reporter a question, [in this comment]", "@ann, to refine this issue: Which defect came back", "plain: "]
+      - id: 8
+        body-contains: "Exporting a CSV file drops its last row: 3 sales give a file of 2 rows.\n\n<details><summary>The cause in the code</summary>\n\nThe loop in `WriteRows` stops one index early.\n\n</details>\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/export/csv.go#00000000 -->"
+      - {id: 10, body-contains: "- **Faster export.** The export takes too long: 9 minutes for 1.2 GB."}
+      - {id: 11, body-contains: "Rows lost."}
+      - {id: 12, body-contains: "Exports lose their last row: a sale of the day is missing."}
+      - {id: 13, body-contains: "- **Cache.** Keep a cache of the parsed files."}

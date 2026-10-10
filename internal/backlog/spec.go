@@ -130,6 +130,9 @@ func SectionAt(body string, line int) string {
 // SectionDigest is the digest of a section's text, as the role wrote it:
 // another text there is a person's.
 func SectionDigest(body, name string) string {
+	if name == DescriptionName {
+		return DescriptionDigest(body)
+	}
 	return BodyDigest(work.Sections(body)[name])
 }
 

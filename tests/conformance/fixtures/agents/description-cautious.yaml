@@ -1,0 +1,7 @@
+- refine:
+    issue: 8
+    description: "Exporting a CSV file drops its last row: 3 sales give a file of 2 rows."
+    scope: "WriteRows in src/export/csv.go."
+    sources: [src/export/csv.go]
+    verification: "A test writes three rows and reads three lines back."
+    why: "A finding in code words."

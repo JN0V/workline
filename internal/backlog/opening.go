@@ -167,7 +167,13 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 		}
 	}
 	st := State{Sources: op.Sources, Confirmed: op.Commit}
-	for _, name := range op.Wrote {
+	wrote := op.Wrote
+	if opener.MatchString(body) && DescriptionOf(body) != "" {
+		// Its description, as the role opened it: rewritten in plain words
+		// while it reads so, a person's once edited (ADR-0038, amended).
+		wrote = append(slices.Clone(wrote), DescriptionName)
+	}
+	for _, name := range wrote {
 		if st.Wrote == nil {
 			st.Wrote = map[string]string{}
 		}

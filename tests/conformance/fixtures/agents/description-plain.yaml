@@ -1,0 +1,16 @@
+- refine:
+    issue: 7
+    description: "When a defect is found, the team fixes what it sees, not why it happened, and the same defect comes back.\n\nThe idea: a role recording a defect asks \"why\" five times before it fixes anything."
+    why: "The imported text is one line of internal words."
+- ask: {issue: 7, questions: "Which defect came back after a fix that missed its root cause?", why: "no real case"}
+- refine:
+    issue: 8
+    description: "Exporting a CSV file drops its last row: 3 sales give a file of 2 rows.\n\n<details><summary>The cause in the code</summary>\n\nThe loop in `WriteRows` stops one index early.\n\n</details>"
+    why: "A finding in code words."
+- refine: {issue: 10, description: "Exports are slow.", why: "shorter"}
+- refine: {issue: 11, description: "Rows are lost.", why: "shorter"}
+- refine: {issue: 12, description: "The export loses a row.", why: "shorter"}
+- refine:
+    issue: 13
+    description: "A cache would help. Every run parses every file again, which takes a long time on a large repository with many files in many folders, and the time grows with each file added, so a project with thousands of files waits minutes for a run that changes nothing, while a cache of the files parsed, kept between runs and keyed by each file's content, would let a run parse only the files that changed since the last one, and would make a run on a large repository as fast as one on a small repository, which is what the people running it every night on their large repositories expect from a tool like this one today."
+    why: "too long on purpose"

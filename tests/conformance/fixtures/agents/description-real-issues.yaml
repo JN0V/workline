@@ -1,0 +1,9 @@
+- refine:
+    issue: 160
+    description: "Adding the reviewer to a project whose `.workline/config.yaml` has an empty `routing:` key (`routing:` or `routing: ~`) writes a broken config, or loses the reviewer without a word.\n\n<details><summary>The cause in the code</summary>\n\n`AddReviewer`, in `internal/routing/adopt.go` at line 112, takes the empty key for a mapping: `events := child(child(top, \"routing\"), \"events\")`. Since ccffcb2, `SetAutonomy` turns an empty key into a mapping and refuses a scalar; `AddReviewer` should do the same.\n\n</details>"
+    why: "The reviewer's text is in the code's words."
+- refine:
+    issue: 92
+    description: "Find a defect's root cause before fixing it: ask \"why\" five times, as a skill every role can use (the reviewer, a developer, a tester, an architect). It would run when a defect is recorded, or when a role blocks again and again."
+    why: "The imported item is one line of internal words."
+- ask: {issue: 92, questions: "Where should the five whys run first: when a defect is recorded, or in each role? Which defect came back after a fix that missed its root cause?", why: "no real case"}

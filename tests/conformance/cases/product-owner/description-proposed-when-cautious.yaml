@@ -1,0 +1,21 @@
+case: product-owner/description-proposed-when-cautious
+about: "A role's description rewritten in plain words follows the refine's mode and autonomy as the drafts do: at autonomy cautious, Scope and Verification are written and the description is proposed on the issue, in its comment, the body's text left as it is until a person accepts."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+  forge:
+    issues:
+      - {id: 8, title: "WriteRows stops one row short", author: "github-actions[bot]", labels: [needs-triage], body: "The loop ends one row early: `for i := 0; i < len(rows)-1; i++` skips the last index.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/export/csv.go#00000000 -->", comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nwrote:\n    Description: cce12975b3bc\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:description-cautious}
+expect:
+  findings: [{rule: drafts-proposed, where: "#8"}, {rule: done, where: "#8", message: "Refined #8: Verification, Scope."}]
+  forge:
+    issues:
+      - id: 8
+        body-contains: "The loop ends one row early"
+        body-lacks: "Exporting a CSV file"
+        labels: [needs-triage, workline:to-refine, workline:proposed]
+        comment-contains: ["**Proposes**: Rewrite its description in plain words.", "**Description**\n\nExporting a CSV file drops its last row: 3 sales give a file of 2 rows."]

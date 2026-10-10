@@ -2489,6 +2489,11 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 		st.Sources = sources
 	}
 	for _, name := range wrote {
+		if name == backlog.DescriptionName {
+			// Rewritten in plain words: the role's, until a person edits it.
+			st.Plain = backlog.DescriptionDigest(body)
+			continue
+		}
 		if st.Wrote == nil {
 			st.Wrote = map[string]string{}
 		}

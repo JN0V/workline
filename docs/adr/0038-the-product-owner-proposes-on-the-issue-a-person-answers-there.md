@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, five times on 2026-10-09); a week's trial running
+- **Status:** accepted — built (amended below, five times on 2026-10-09, once on 2026-10-10); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -322,3 +322,44 @@ and issue numbers before the problem, no real case anywhere.
   both are read now.
 - **Measured before shipping**: ten issues drafted twice, old and new
   instruction, rated blind by the maintainer.
+
+## Amendment (2026-10-10): what no person wrote, in plain words
+
+The maintainer rated, blind, the role's output before and after the last
+amendment on ten real issues: the new one won 6 of 6 and was understood
+4 of 6, but accepted as is only once. "Still too long, or not split
+enough"; what they could not read:
+
+- **Two imported issues**: a good question, under the raw item of the
+  old backlog file — 120 words of internal terms in one bullet.
+- **A reviewer's issue**: on top, the code's words, the commit, the lens,
+  the models; the role's clearer sections only below.
+- **The answer**: one long sentence, read on every proposal.
+- **A question written twice**: in the role's comment and in the one
+  naming the reporter.
+
+Decided:
+
+- **The text above the sections that a role wrote is rewritten in plain
+  words** while no person edited it: an import's item, another role's
+  finding. Short, the problem first, one real case, a builder's detail
+  folded; at most 100 words before the fold. This changes the import's
+  stance — "an item imported from a file is a person's words": the file
+  stays theirs, and the issue's copy is the role's until a person edits
+  it.
+- **The engine tells it, never the agent**: a digest of that text kept
+  in the state when a role opens the issue; before it was kept, an
+  import's key, which holds one, or a finding opened by a bot and
+  unchanged since the role last read it. Rewritten once, again only for
+  a person's comment. A person's text, written or edited, is never
+  rewritten.
+- **Kept**: the engine's line saying where the issue comes from, the
+  hidden markers; the text before is in the forge's edit history, named
+  in the role's one line: "Rewrote: the description, in plain words."
+  It follows the refine's mode and level, as the drafts do.
+- **The answer is a short list**, one gesture a line: the label for yes,
+  a draft edited, a comment to revise, the label taken off for not now,
+  a closing.
+- **A question is written once**: in the comment naming the reporter,
+  the one a mention notifies from; the role's comment says it asked and
+  links to it.

@@ -53,6 +53,9 @@ type State struct {
 	// another review, never taken for one answered.
 	Wrote    map[string]string `yaml:"wrote,omitempty"`
 	Answered string            `yaml:"answered,omitempty"`
+	// Plain is the digest of the description the role rewrote in plain
+	// words (ADR-0038, amended): another text there is a person's.
+	Plain string `yaml:"plain,omitempty"`
 	// Deleted are the sections the role wrote that a person took out of
 	// the body: a "no" for each, never written again (ADR-0038).
 	Deleted []string `yaml:"deleted,flow,omitempty"`
@@ -140,6 +143,7 @@ func FormatState(s State) string {
 		Sections  map[string]string `yaml:"sections,omitempty"`
 		Wrote     map[string]string `yaml:"wrote,omitempty"`
 		Answered  string            `yaml:"answered,omitempty"`
+		Plain     string            `yaml:"plain,omitempty"`
 		Deleted   []string          `yaml:"deleted,flow,omitempty"`
 		Proposed  []Pending         `yaml:"proposed,omitempty"`
 		Done      []Done            `yaml:"done,omitempty"`
@@ -151,7 +155,7 @@ func FormatState(s State) string {
 		Heard     *int              `yaml:"heard,omitempty"`
 		Revisions int               `yaml:"revisions,omitempty"`
 		Rules     int               `yaml:"rules,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Deleted,
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules})
 	// A fence in a text the agent wrote must not end the block: the block's
 	// is longer than any run of backticks in it.
@@ -288,7 +292,7 @@ func (s State) drafts() bool {
 // drafts says the sections a refine would write, each under its name.
 func drafts(c Proposal) string {
 	var b strings.Builder
-	for _, name := range Layout {
+	for _, name := range append([]string{DescriptionName}, Layout...) {
 		if text := strings.TrimSpace(c.Text(name)); text != "" && (len(c.Added) == 0 || slices.Contains(c.Added, name)) {
 			fmt.Fprintf(&b, "**%s**\n\n%s\n\n", name, strings.ReplaceAll(text, "```", "'''"))
 		}
@@ -373,7 +377,10 @@ type Proposal struct {
 	Example      string   `yaml:"example,omitempty"`
 	Steps        string   `yaml:"steps,omitempty"`
 	Validation   string   `yaml:"validation,omitempty"`
-	Added        []string `yaml:"added,omitempty"`
+	// Description, the text above its sections rewritten in plain words:
+	// only where the role opened it and no person edited it (Rewrite).
+	Description string   `yaml:"description,omitempty"`
+	Added       []string `yaml:"added,omitempty"`
 	// Revise, the engine's: the sections with text this refine may rewrite,
 	// to answer the reviewer's findings on the spec (#128) — the role's own
 	// only (Revisable); never taken from the agent.
@@ -1388,6 +1395,7 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 					}
 				}
 			}
+			p.plain(is, st, c)
 		}
 		_, added, kept := Refine(is.Body, *c, role)
 		c.Added = added
@@ -1410,6 +1418,29 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 	return "", ""
 }
 
+// plain checks a refine's description rewritten in plain words: written
+// only over a role's text no person edited (Rewrite), short, and never in
+// a comment to an outsider; otherwise left out, the rest of the refine
+// kept, and said.
+func (p *Plan) plain(is forge.Issue, st *State, c *Proposal) {
+	if strings.TrimSpace(c.Description) == "" {
+		return
+	}
+	ok, why := Rewrite(is, st, p.Answers[c.Issue] != nil)
+	switch {
+	case c.ToReporter:
+		ok, why = false, "the issue is its reporter's, outside the project: its description is theirs"
+	case ok && words(c.Description) > DescriptionWordsMax:
+		ok, why = false, fmt.Sprintf("its description rewritten holds %d words before any fold, past %d: a reader's first lines stay short", words(c.Description), DescriptionWordsMax)
+	}
+	if ok {
+		return
+	}
+	c.Description = ""
+	p.Findings = append(p.Findings, verdict.Finding{Rule: "description-kept", Level: "info", Where: c.where(),
+		Message: "its description is left as it is: " + why})
+}
+
 // readable makes the sections a refine writes readable to a person, as
 // the engine can tell (write.go): each decision cited bare linked to its
 // page, each closed issue cited said closed.
@@ -1422,7 +1453,7 @@ func (p *Plan) readable(f forge.Backlog, repo string, c *Proposal) error {
 		p.decisions = Decisions(repo)
 	}
 	files, issues := p.pages[0], p.pages[1]
-	for _, t := range []*string{&c.Need, &c.Example, &c.Steps, &c.Verification, &c.Validation, &c.Scope} {
+	for _, t := range []*string{&c.Description, &c.Need, &c.Example, &c.Steps, &c.Verification, &c.Validation, &c.Scope} {
 		*t = LinkDecisions(*t, files, p.decisions)
 		if !slices.ContainsFunc(CitedIssues(*t, issues), func(n int) bool { return !p.open[n] }) {
 			continue
@@ -1582,6 +1613,8 @@ func Drafted(name string) bool { return slices.Contains(drafted, name) }
 // Text is the text a refine gives a section, by its heading.
 func (c Proposal) Text(name string) string {
 	switch name {
+	case DescriptionName:
+		return c.Description
 	case "Need":
 		return c.Need
 	case "Example":
@@ -1635,6 +1668,11 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	body, footer := work.Footer(body) // a section added goes above the body's footer
 	body = strings.TrimRight(body, " \r\n")
 	var added, kept []string
+	if text := Inert(strings.TrimSpace(c.Description)); text != "" && squeeze(text) != squeeze(DescriptionOf(body)) {
+		// Checked before (Rewrite): a role's text no person edited.
+		body = withDescription(body, text)
+		added = append(added, DescriptionName)
+	}
 	for _, name := range Layout {
 		text := Inert(strings.TrimSpace(c.Text(name))) // no quick action run on GitLab when the body is written
 		if text == "" || slices.Contains(c.Refused, name) {
@@ -2319,7 +2357,10 @@ func describe(c Proposal, verb string) string {
 		}
 		var names []string
 		for _, n := range c.Added {
-			if slices.Contains(drafted, n) {
+			switch {
+			case n == DescriptionName:
+				n = "the description in plain words"
+			case slices.Contains(drafted, n):
 				n += " (draft)"
 			}
 			names = append(names, n)
@@ -2368,13 +2409,18 @@ func describe(c Proposal, verb string) string {
 }
 
 // refined says on the issue, in one line, what a refine did to its body:
-// the sections added, those of the role's own it rewrote, and where the
-// text before is — the forge's edit history, which no forge links to.
+// the sections added, those of the role's own it rewrote, its description
+// rewritten in plain words, and where the text before is — the forge's edit history, which no forge links to.
 // A person's sentence is never changed: nothing of theirs to quote.
 func refined(c Proposal) string {
 	var added, changed []string
+	var said []string
 	for _, n := range c.Added {
 		name := n
+		if n == DescriptionName {
+			said = append(said, "Rewrote: the description, in plain words.")
+			continue
+		}
 		if Drafted(n) {
 			name += " (draft)"
 		}
@@ -2390,7 +2436,10 @@ func refined(c Proposal) string {
 		}
 		return strings.Join(names, ", ")
 	}
-	return fmt.Sprintf("Added: %s. Changed: %s. See the issue's edit history.", list(added), list(changed))
+	if len(added) > 0 || len(changed) > 0 || len(said) == 0 {
+		said = append([]string{fmt.Sprintf("Added: %s. Changed: %s.", list(added), list(changed))}, said...)
+	}
+	return strings.Join(said, " ") + " See the issue's edit history."
 }
 
 func cite(q Quote) string {

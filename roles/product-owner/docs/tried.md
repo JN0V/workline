@@ -1065,7 +1065,31 @@ branch's. One call each, all ten issues in it.
 - **No Example written on any need**: the issues held no real case, and
   the agent drafted the Need and Validation without one instead of
   asking for it, though the instruction says to ask.
-- **Rated blind by the maintainer**: the pairs, A and B at random, wait
-  on their reading; what they say goes here.
+- **Rated blind by the maintainer**: the new version preferred on 6 of
+  6 issues rated, understood on 4 of 6 (the old one on none), accepted
+  as is on 1 of 6: "the texts are still too long or not split enough".
+  Not read: #84 and #92, a good question under the raw imported item;
+  #160, the reviewer's code words, commit, lens and models on top; the
+  answer in one long sentence; a question written twice. Built after it:
+  2026-10-10, below.
 
 **Not tried**: GitLab; an issue in another language than English.
+
+## 2026-10-10 — what no person wrote, in plain words: #160 and #92 replayed
+
+#160 (the reviewer's finding) and #92 (an item of the old backlog file),
+their bodies as opened, read from GitHub, nothing written there; on a
+fake forge, the run's engine with a planted answer, no agent
+(conformance `description-rewritten-on-real-issues`).
+
+- **Told a role's text by the engine**: #160 by its bot author and its
+  body unchanged since the role last read it, #92 by its import key's
+  digest; the task said so for both.
+- **Rewritten**: the planted plain text on top, the code and the commit
+  folded; "Opened by the reviewer role." and "Opened from
+  `docs/BACKLOG.md`, lines 110 to 112 …" kept, the markers kept.
+- **#92's question**: in the comment naming its reporter only; the role's
+  comment says "Asked the reporter a question, in this comment", linked.
+
+**Not tried**: a real agent writing the `description`; a live forge; the
+maintainer reading the result.

@@ -81,17 +81,31 @@ func offer(c Proposal) string {
 // addSections says what a refine adds: the sections, the drafts among
 // them.
 func addSections(added []string) string {
-	var drafts []string
+	var drafts, sections []string
+	rewrite := false
 	for _, n := range added {
-		if slices.Contains(drafted, n) {
+		switch {
+		case n == DescriptionName:
+			rewrite = true
+			continue
+		case slices.Contains(drafted, n):
 			drafts = append(drafts, n)
 		}
+		sections = append(sections, n)
 	}
-	what := fmt.Sprintf("Add %s to it", and(added))
-	if len(drafts) > 0 {
-		what += fmt.Sprintf(" (%s as drafts for you to correct)", and(drafts))
+	var what []string
+	if rewrite {
+		what = append(what, "Rewrite its description in plain words")
 	}
-	return what + "."
+	if len(sections) > 0 || !rewrite {
+		add := fmt.Sprintf("add %s to it", and(sections))
+		if len(drafts) > 0 {
+			add += fmt.Sprintf(" (%s as drafts for you to correct)", and(drafts))
+		}
+		what = append(what, add)
+	}
+	s := strings.Join(what, ", and ")
+	return strings.ToUpper(s[:1]) + s[1:] + "."
 }
 
 // and joins names as a sentence says them: "Need", "Need and Scope",

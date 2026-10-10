@@ -1,0 +1,38 @@
+case: product-owner/description-rewritten-on-real-issues
+about: "Two of workline's own issues as they were opened, before the engine kept a digest of their text: a reviewer's finding (#160), opened by a bot and unchanged since the role last read it, and an item imported from the old backlog file (#92), whose key holds its text's digest. Both are told the role's, rewritten in plain words, the engine's line saying where each comes from and its markers kept; #92's question asked once, linked from the role's comment."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 160
+        title: "AddReviewer corrupts a config whose routing key is empty"
+        author: "workline-jn0v[bot]"
+        labels: [needs-triage]
+        body: "With `routing:` or `routing: ~` in the config, `child` returns the null scalar node. `value(events...)` then finds nothing, and `events` becomes a mapping appended onto the scalar's Content. The encoder writes a broken or odd document, or the reviewer is silently lost. The change fixed this for SetAutonomy only.\n\nAt `internal/routing/adopt.go:112`:\n\n```\nevents := child(child(top, \"routing\"), \"events\")\n```\n\nWhat would fix it: Give AddReviewer the same null-to-mapping and refuse-scalar handling that SetAutonomy now has.\n\nFound outside the change it reviewed (ccffcb2), so not the author's to fix there: the reviewer's edge-cases lens, verified, independence: model (claude-sonnet-5-5 → claude-opus-5-5).\n\nOpened by the reviewer role.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=internal/routing/adopt.go#203c8cfe -->"
+        comments: ["```yaml\nsources: [internal/routing/adopt.go]\nconfirmed: ccffcb2\nbody: 121bf3b506a8\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 92
+        title: "Five whys as a shared skill"
+        author: JN0V
+        insider: true
+        labels: []
+        body: "- **Five whys as a shared skill.** Root cause before any countermeasure in the\n  defect ledger; used by reviewer, developer, tester, architect; triggered when\n  a defect is recorded or a role blocks repeatedly.\n\nOpened from `docs/BACKLOG.md`, lines 110 to 112 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:49eaeac6665a -->"
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:description-real-issues}
+expect:
+  findings:
+    - {rule: done, where: "#160", message: "Refined #160: the description in plain words."}
+    - {rule: done, where: "#92", message: "Refined #92: the description in plain words."}
+  run-files:
+    in/task.md: {contains: ["## #160 AddReviewer corrupts a config whose routing key is empty\n\nLabels: needs-triage\nOpened by: the reviewer role, on a finding of its own — a draft to refine: its Need and Validation are not a person's yet\nDescription: the text above its sections is a role's, and no person edited it", "## #92 Five whys as a shared skill\n\nOpened by: JN0V, of the project\nDescription: the text above its sections is a role's, and no person edited it"]}
+  forge:
+    issues:
+      - id: 160
+        body-contains: "Adding the reviewer to a project whose `.workline/config.yaml` has an empty `routing:` key (`routing:` or `routing: ~`) writes a broken config, or loses the reviewer without a word.\n\n<details><summary>The cause in the code</summary>"
+        body-lacks: "independence"
+        comment-contains: ["- Rewrote: the description, in plain words. See the issue's edit history.", "plain: "]
+      - {id: 160, body-contains: "</details>\n\nOpened by the reviewer role.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=internal/routing/adopt.go#203c8cfe -->"}
+      - id: 92
+        body-contains: "Find a defect's root cause before fixing it: ask \"why\" five times, as a skill every role can use (the reviewer, a developer, a tester, an architect). It would run when a defect is recorded, or when a role blocks again and again.\n\nOpened from `docs/BACKLOG.md`, lines 110 to 112 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:49eaeac6665a -->"
+        comments: 2
+        comment-contains: ["- Rewrote: the description, in plain words. See the issue's edit history.\n- Asked the reporter a question, [in this comment](https://forge.example/issues/92#comment-2).", "@JN0V, to refine this issue: Where should the five whys run first"]
+        comment-lacks: "reporter: Where should"

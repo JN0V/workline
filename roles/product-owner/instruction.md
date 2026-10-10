@@ -122,6 +122,22 @@ draft at all, and write instead:
   does what it asks; with `close-obsolete` off, it is said on the issue
   for a person to close.
 
+**A role's text on top.** When the task says an issue's description —
+the text above its sections — is a role's and no person edited it (an
+item imported from a file, another role's finding), rewrite it in
+`refine`'s `description`, also when you ask its reporter:
+
+- what goes wrong, or what is wanted, first; who it hurts; one real case
+  it holds;
+- a word only a builder knows explained or gone;
+- what only a builder needs — the code, a path, a commit, the fix — at
+  its end, folded in one `<details><summary>…</summary>`;
+- at most 100 words before the fold; nothing it does not say;
+- the line saying where it comes from is the engine's, kept: do not
+  write it.
+
+A description the task says nothing of is a person's: never rewritten.
+
 Two issues as they read once refined — a need, then a bug:
 
 ```markdown
