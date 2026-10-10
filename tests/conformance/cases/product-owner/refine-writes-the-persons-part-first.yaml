@@ -1,0 +1,24 @@
+case: product-owner/refine-writes-the-persons-part-first
+about: "Refining, the role writes an issue's sections in the reader's order — the person's part, Need, an example or a bug's steps to reproduce, Validation, above a thematic break; the builder's part, Verification and Scope, below it — inserting a section it adds among those there, never moving a person's; the example and the steps are drafts, never required; its comment on the issue says in one line what it added and changed, and where the text before is."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Last sale missing", body: "The export drops the last sale of the day.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Totals wrong", body: "## Need\n\nAnn needs the month's total right.\n\n## Validation\n\nAnn adds up a known month by hand.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:refine-person-first}
+expect:
+  findings: [{rule: done, where: "#9", message: "Refined #9: Need (draft), Example (draft), Validation (draft), Verification, Scope."}]
+  forge:
+    issues:
+      - id: 9
+        body-contains: "Some rows are lost.\n\n## Need\n\n<!-- workline:draft -->\n\nAnn, who closes the month, needs every sale in the export, so the report counts what was sold.\n\n## Example\n\n<!-- workline:draft -->\n\nAnn sells 3 items on 8 Oct and exports that day: the file holds 2 rows.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **One day:** Given 3 sales on 8 Oct, When Ann exports 8 Oct, Then the file holds 3 rows.\n\n---\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go."
+        labels: [workline:to-refine, workline:draft, workline:proposed]
+        comment-contains: "- Added: Need (draft), Example (draft), Validation (draft), Verification, Scope. Changed: —. See the issue's edit history."
+      - id: 10
+        body-contains: "The export drops the last sale of the day.\n\n## Need\n\n<!-- workline:draft -->\n\nAccountants lose the last sale of each day in the daily export.\n\n## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Make 3 sales on 8 Oct, the last at 18:59.\n2. Export 8 Oct.\n- **Expected:** 3 rows. **Actual:** 2 rows. Version 0.21.0.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Last sale:**"
+      - id: 11
+        body-contains: "## Need\n\nAnn needs the month's total right.\n\n## Validation\n\nAnn adds up a known month by hand.\n\n---\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go."
+        labels: [workline:to-refine]
+        comment-contains: "- Added: Verification, Scope. Changed: —. See the issue's edit history."

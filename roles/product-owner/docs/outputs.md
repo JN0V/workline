@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 08a4bfa
+checked: c745cdc
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -12,7 +12,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
 
 - **One comment**, created once, then edited in place
   ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
-  - what it did there last, and when;
+  - what it did there last, and when — for its sections, one line:
+    "Added: Verification, Scope. Changed: —. See the issue's edit
+    history.";
   - what it proposes, in plain words; drafts it proposes, folded;
   - what it wants from you, while the issue waits on you;
   - set aside, when you took its label off;
@@ -22,9 +24,13 @@ Part of [the product owner](../README.md). What a run does, step by step:
   waits on you; `workline:draft` while a draft of its own is left;
   `workline:to-refine`, `workline:ready`. Checked at every run: set
   aside with no draft left, the issue loses `draft` and `to-refine`.
-- **Sections** written in the body, Need and Validation as drafts: a
-  hidden mark only, the comment saying which are drafts; edit one and it
-  is yours. To an outsider, a comment proposing them instead.
+- **Sections** written in the body, Need, Validation and a real example
+  as drafts: a hidden mark only, the comment saying which are drafts;
+  edit one and it is yours. To an outsider, a comment proposing them
+  instead.
+- **In the reader's order**: Need, Example, Validation, then a line,
+  then Verification and Scope; yours never moved
+  ([writing an issue](writing.md)).
 - **What it writes reads as user docs**: plain words, a link for each
   decision cited (added when it wrote one bare), "(closed)" after a
   closed issue cited.

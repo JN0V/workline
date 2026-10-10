@@ -2457,7 +2457,7 @@ func refining(f forge.Forge, role string, c backlog.Proposal) error {
 		}
 	}
 	labels := []string{backlog.LabelToRefine}
-	if slices.Contains(added, "Need") || slices.Contains(added, "Validation") {
+	if slices.ContainsFunc(added, backlog.Drafted) {
 		labels = append(labels, backlog.LabelDraft)
 		// The label a person accepts the drafts with, there to be picked
 		// from the forge's list.

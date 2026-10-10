@@ -15,7 +15,7 @@ roles:
         roles/documentalist/docs/cascades.md, roles/documentalist/docs/gardening.md,
         roles/documentalist/docs/judge-claims.md,
         roles/product-owner/docs/run.md, roles/product-owner/docs/outputs.md, roles/product-owner/docs/tracking.md,
-        roles/product-owner/docs/settings.md,
+        roles/product-owner/docs/settings.md, roles/product-owner/docs/writing.md,
         roles/reviewer/docs/run.md, roles/reviewer/docs/judge.md, roles/reviewer/docs/spec.md]
       # The user pages (AGENTS.md, "Writing user docs"): the role pages too,
       # but their status and the archived backlog; each role page opens

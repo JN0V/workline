@@ -64,7 +64,7 @@ func DeletedSections(s *State, body string) []string {
 	}
 	out := slices.Clone(s.Deleted)
 	have := work.Sections(body)
-	for _, name := range Sections {
+	for _, name := range Layout {
 		if s.Wrote[name] != "" && strings.TrimSpace(have[name]) == "" && !slices.Contains(out, name) {
 			out = append(out, name)
 		}

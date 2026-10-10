@@ -246,7 +246,7 @@ func Pre(runDir, repo string) int {
 			}
 			lp := backlog.LastProposal(comments, role)
 			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
-				"issue": is.ID, "need": lp.Need, "verification": lp.Verification, "validation": lp.Validation,
+				"issue": is.ID, "need": lp.Need, "example": lp.Example, "steps": lp.Steps, "verification": lp.Verification, "validation": lp.Validation,
 				"scope": lp.Scope, "sources": lp.Sources, "own": true, "agreed": agreed,
 				"why": fmt.Sprintf("the text proposed to its reporter, agreed to by @%s (%s) in a reply.", agreed, whose)}})
 		}
@@ -275,7 +275,7 @@ func Pre(runDir, repo string) int {
 			// of the project with the label: the engine writes what the body
 			// still lacks, with no agent (ADR-0021).
 			fallback = append(fallback, intent.Intention{Kind: "refine", Value: map[string]any{
-				"issue": is.ID, "need": p.Need, "verification": p.Verification, "validation": p.Validation,
+				"issue": is.ID, "need": p.Need, "example": p.Example, "steps": p.Steps, "verification": p.Verification, "validation": p.Validation,
 				"scope": p.Scope, "sources": p.Sources, "own": true,
 				"why": "the text proposed to its reporter, agreed to by a person (" + backlog.AcceptedLabel(b) + ")"}})
 		}
@@ -1077,14 +1077,16 @@ func placed(is forge.Issue) string {
 	return " — " + strings.Join(out, ", ")
 }
 
-// sections says which of the four sections an issue's body has, and which
-// are drafts no person made theirs yet.
+// sections says which of the four sections an issue's body has — an
+// example or the steps to reproduce after them, never required —, and
+// which are drafts no person made theirs yet.
 func sections(body string, st *backlog.State) string {
 	have := work.Sections(body)
 	var there, missing []string
-	for _, name := range backlog.Sections {
+	for _, name := range append(slices.Clone(backlog.Sections), "Example", "Steps to reproduce") {
 		text := strings.TrimSpace(have[name])
 		switch {
+		case text == "" && !slices.Contains(backlog.Sections, name):
 		case text == "":
 			missing = append(missing, name)
 		case backlog.IsDraft(body, name, st):

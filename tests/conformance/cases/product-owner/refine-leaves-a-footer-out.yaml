@@ -8,11 +8,11 @@ given:
       - {id: 12, title: "XML import", body: "Import XML.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:refine-nine}
 expect:
-  findings: [{rule: done, where: "#9", message: "Refined #9: Need (draft), Verification, Validation (draft)."}]
+  findings: [{rule: done, where: "#9", message: "Refined #9: Need (draft), Validation (draft), Verification."}]
   forge:
     issues:
       - id: 9
-        body-contains: "## Scope\n\nWriteRows in src/export/csv.go.\n\n## Need\n\n"
+        body-contains: "Some rows are lost.\n\n## Need\n\n<!-- workline:draft -->\n\nEvery row exported, so a report counts what was sold.\n\n## Validation\n\n<!-- workline:draft -->\n\nThe maintainer opens an export of a known day.\n\n---\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go.\n\n🤖 Generated with [a coding tool](https://example.com/tool)"
         body-lacks: "Generated with [a coding tool](https://example.com/tool)\n\n## "
         comment-contains: "Scope: WriteRows in src/export/csv.go.\n"
         comment-lacks: "Generated"

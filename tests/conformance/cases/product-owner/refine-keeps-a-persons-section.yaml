@@ -11,5 +11,5 @@ expect:
   findings: [{rule: section-kept, where: "#9"}, {rule: nothing-to-refine, where: "#10"}]
   forge:
     issues:
-      - {id: 9, body-contains: "## Need\n\nMine: the monthly report.\n\n## Scope\n\nWriteRows in src/export/csv.go."}
+      - {id: 9, body-contains: "## Need\n\nMine: the monthly report.\n\n---\n\n## Scope\n\nWriteRows in src/export/csv.go."}
       - {id: 10, body-contains: "## Need\n\nA.\n\n## Verification", labels: []}
