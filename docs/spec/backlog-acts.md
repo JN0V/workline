@@ -922,10 +922,17 @@ state folded under it (`backlog.FormatState`):
   changes a person's sentence, so nothing of theirs is quoted, on GitLab's
   Free plan either, which keeps no text of a description's versions; the
   text before is in the forge's edit history, which no forge links to;
+  a question to the reporter, or a text proposed to an outsider, says so
+  in one line linking to that comment (`linkComments`), "in the comment
+  below" on a forge with no address for it: written once, in the comment
+  that names the reporter and so notifies them;
 - each act it proposes there, in plain words (`backlog.offer`), and a
   refine's drafts, folded;
-- while the issue waits on a person: how to answer — `workline:accepted`,
-  a comment, the label taken off, a closing;
+- while the issue waits on a person: how to answer, a short list, one
+  gesture a line (`State.answers`) — `workline:accepted` (yes), a draft
+  edited (shown only when there is a draft), a comment (revise), the
+  label taken off (not now), a closing (it should not exist); a closing
+  only advised: closing it, the label taken off, a comment;
 - once set aside: that nothing more is proposed until the issue changes.
 
 Written at the end of each run (`Plan.Persist`), edited in place, never a

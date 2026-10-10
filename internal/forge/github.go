@@ -671,6 +671,9 @@ func (g *github) issuePages() string {
 	return strings.TrimSpace(string(out)) + "/issues/"
 }
 
+// commentAnchor is a comment's place on its issue's page.
+func (g *github) commentAnchor(id string) string { return "#issuecomment-" + id }
+
 // filePages is the address of the repository's files, on its default
 // branch (HEAD).
 func (g *github) filePages() string {

@@ -237,6 +237,9 @@ func (f *Fake) labelFilter(label string) string {
 // issuePages: the address of the simulated forge's issues.
 func (f *Fake) issuePages() string { return "https://forge.example/issues/" }
 
+// commentAnchor: a comment's place on the simulated forge's issue page.
+func (f *Fake) commentAnchor(id string) string { return "#comment-" + id }
+
 // filePages: the address of the simulated forge's files.
 func (f *Fake) filePages() string { return "https://forge.example/blob/HEAD/" }
 
