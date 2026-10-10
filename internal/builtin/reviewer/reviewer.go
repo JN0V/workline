@@ -1374,7 +1374,10 @@ func issueBody(f Finding) string {
 	if fix := fixLine(f); fix != "" {
 		cause += "\n\n" + fix
 	}
-	how := strings.ReplaceAll(fmt.Sprintf("found=the %s lens; %s", f.Lens, f.Verified), "--", "-")
+	how := fmt.Sprintf("found=the %s lens; %s", f.Lens, f.Verified)
+	for strings.Contains(how, "--") { // a run of dashes, however long, would end the marker
+		how = strings.ReplaceAll(how, "--", "-")
+	}
 	return top + "\n\n<details><summary>The cause in the code</summary>\n\n" + cause + "\n\n</details>\n\n" + forge.Marker(how)
 }
 

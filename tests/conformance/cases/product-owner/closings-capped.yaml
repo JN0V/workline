@@ -1,5 +1,5 @@
 case: product-owner/closings-capped
-about: Past the cap of a run, closings are proposed on their issue rather than done.
+about: Past the cap of a run, closings are proposed on their issue rather than done; with no draft there, a person's answers list nothing to edit.
 given:
   repo: backlog
   config:
@@ -25,4 +25,4 @@ expect:
       - {id: 10, closed: true}
       - {id: 11, closed: false, comments: 1}
       - {id: 12, closed: false, comments: 1}
-      - {id: 11, labels: [workline:proposed], comment-contains: "**Proposes**: Close it as a duplicate"}
+      - {id: 11, labels: [workline:proposed], comment-contains: ["**Proposes**: Close it as a duplicate", "**Your answer:**\n\n- label `workline:accepted`: yes, done at its next run\n- comment: it revises what it proposes"], comment-lacks: "edit a draft"}

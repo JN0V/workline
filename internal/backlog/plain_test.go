@@ -19,12 +19,21 @@ func TestDescriptionKeepsTheEngineLines(t *testing.T) {
 	}
 }
 
-// A fence holding a shorter one is read whole: a heading in it is code.
-func TestDescriptionReadsALongerFence(t *testing.T) {
-	body := "Old.\n\n````\n```\n## in the code\n```\n````\n\nAfter.\n\n## Need\n\nA need."
-	top, rest := splitTop(body)
-	if rest != "## Need\n\nA need." || !strings.HasSuffix(top, "After.\n") {
-		t.Fatalf("top = %q, rest = %q", top, rest)
+// A heading in fenced code is code: the description goes on to the first
+// heading outside one — a fence of backticks holding a shorter one, a
+// tilde fence; a line of three backticks holding another backtick is
+// inline code, no fence.
+func TestDescriptionReadsFences(t *testing.T) {
+	for _, c := range []struct{ name, body, top string }{
+		{"a longer fence", "Old.\n\n````\n```\n## in the code\n```\n````\n\nAfter.\n\n## Need\n\nA need.", "After.\n"},
+		{"a tilde fence", "Old.\n\n~~~yaml\n## in the code\n```\n~~~\n\nAfter.\n\n## Need\n\nA need.", "After.\n"},
+		{"a tilde fence closed by a longer one", "Old.\n\n~~~\n## in the code\n~~~~\n\nAfter.\n\n## Need\n\nA need.", "After.\n"},
+		{"inline code, no fence", "Old: ```go``` here.\n\n## Need\n\nA need.", "here.\n"},
+	} {
+		top, rest := splitTop(c.body)
+		if rest != "## Need\n\nA need." || !strings.HasSuffix(top, c.top) {
+			t.Errorf("%s: top = %q, rest = %q", c.name, top, rest)
+		}
 	}
 }
 
@@ -42,6 +51,8 @@ func TestRewriteTellsARolesTextFromAPersons(t *testing.T) {
 		{"recorded at opening", bot, &State{Wrote: map[string]string{DescriptionName: DescriptionDigest(finding)}}, true},
 		{"edited since opening", bot, &State{Wrote: map[string]string{DescriptionName: "000000000000"}}, false},
 		{"a bot's finding unchanged since read, before the record", bot, read, true},
+		{"a GitLab project bot's finding, before the record", forge.Issue{Body: finding, Author: "project_42_bot_3f9a"}, read, true},
+		{"a GitLab group bot's finding, before the record", forge.Issue{Body: finding, Author: "group_7_bot"}, read, true},
 		{"a finding opened with a person's token, before the record", forge.Issue{Body: finding, Author: "ann"}, read, false},
 		{"a finding changed since read", bot, &State{Body: "000000000000"}, false},
 		{"rewritten, no comment", bot, &State{Plain: DescriptionDigest(finding)}, false},
