@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 1b41bbf
+checked: 245015c
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -134,8 +134,8 @@ a `PATH` without a tool, or with a fake one first.
   text none does), `closed`
   and the `reason` it was closed for, its `milestone`, `branch`, `base`,
   `title` and the `parent` it is a sub-issue of (0 for none), `blocked-by`
-  the issues it waits on in the forge's relation, `body-contains` and `body-lacks` (a text its body holds, or does
-  not), `reactions` (the reactions on its comments, by the comment's id);
+  the issues it waits on in the forge's relation, `body-contains` and `body-lacks` (a text its body holds, or a list
+  of them, or a text it does not), `reactions` (the reactions on its comments, by the comment's id);
   `absent: true` — no item with that id. `labels` there lists the
   labels the forge defines, their order as id, by `title`.
 - `pushed` / `pushed-message` — a text a file holds on a branch of the
