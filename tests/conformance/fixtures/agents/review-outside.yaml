@@ -10,4 +10,5 @@
     severity: important
     title: Average panics on no values
     why: an empty slice divides by zero
+    seen: "Asking for the average of no values crashes the program instead of saying there are none."
     cause: {path: calc/calc.go, quote: "return total / len(values)"}

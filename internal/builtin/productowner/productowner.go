@@ -788,6 +788,9 @@ func acceptedBy(b forge.Backlog, is forge.Issue) (string, error) {
 // answers — its own drafts rewritten whole, a person's sections kept.
 func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) string {
 	mine := backlog.Own(is, st)
+	if ok, _ := backlog.Rewrite(is, st, true); ok {
+		mine = append(mine, "the description, as `description`")
+	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "A person of the project commented on what you proposed on it (@%s, the last comments below): revision %d of %d. Read them as asking you to revise: ", a.Who, a.Revision, max)
 	if len(mine) > 0 {
@@ -940,6 +943,13 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 			whose = ", without write access to the project"
 		}
 		fmt.Fprintf(b, "Opened by: %s%s\n", is.Author, whose)
+	}
+	if ok, _ := backlog.Rewrite(is, st, false); ok {
+		// A role's text no person edited (ADR-0038, amended): the engine
+		// tells so, from what it recorded.
+		b.WriteString("Description: the text above its sections is a role's, and no person edited it — rewrite it in plain words, as `description` in a `refine`\n")
+	} else if st.Plain != "" && st.Plain == backlog.DescriptionDigest(is.Body) {
+		b.WriteString("Description: rewritten in plain words by you — again only as a person's comment asks\n")
 	}
 	if st.Title != "" && st.Title != is.Title {
 		b.WriteString("Title: a person's, set after the role's (kept)\n")

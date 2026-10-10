@@ -1,12 +1,14 @@
 ---
 sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/work/work.go]
-checked: c745cdc
+checked: bd82342
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
 
 Part of [the product owner](../README.md). The rules it writes issues by;
-the same for a person, or a coding agent, opening one.
+the same for a person, or a coding agent, opening one, and for
+[the reviewer](../../reviewer/docs/run.md)'s issues: what a person sees
+first, the cause folded.
 
 ## The layout
 
@@ -109,12 +111,29 @@ Users who exclude a folder with a trailing slash still upload it:
 `matchExclude` in `internal/filter/glob.go`.
 ```
 
+## Text a role wrote
+
+What an import or another role opened an issue with, above its sections,
+is the role's until a person edits it:
+
+- **Rewritten in plain words**, the problem first, one real case, at most
+  100 words; what only a builder needs — the code, a path, the fix —
+  folded in `<details>` at its end.
+- **Kept**: the line saying where it comes from, the hidden markers.
+- **Who decides**: the engine, from the digest it kept when the issue was
+  opened, never the agent. Edited by you, the text is yours: never
+  rewritten. Rewritten once, again only when your comment asks.
+- **Your level decides how**: written at `normal`, proposed at
+  `cautious`, like the drafts.
+
 ## What the product owner says it changed
 
 - **One line on the issue**, in its comment: "Added: Verification, Scope.
   Changed: —. See the issue's edit history."
 - **Changed** lists only its own drafts it rewrote; it never changes a
   sentence of yours.
+- **Rewrote: the description, in plain words** when it rewrote a role's
+  text on top.
 - **The text before** is in the forge's edit history: "edited" above the
   description on GitHub, Gitea and Forgejo; the "changed the
   description" note on GitLab, compared with the version before on its

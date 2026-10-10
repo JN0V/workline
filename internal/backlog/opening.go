@@ -43,13 +43,21 @@ type Opening struct {
 	Triage  bool     // a role's finding: labelled needs-triage, capped, said once when found after it was closed
 	Wrote   []string // the sections the role wrote in its body, recorded in the keeper's state (#128)
 	Quiet   bool     // where it came from hidden from a reader, kept for the engine: an import, a person's words
+	// Found says where the role found it, for a person: "while reviewing
+	// ccffcb2, outside that change"; the line it ends with is then "Found
+	// by the … role …".
+	Found string
 }
 
 // said is the line an opened issue ends with: "Opened from … by the …
-// role."; hidden, for a quiet one, read back all the same (Imported).
+// role.", or "Found by the … role …" where it says where it was found;
+// hidden, for a quiet one, read back all the same (Imported).
 func (op Opening) said() string {
-	if op.Quiet {
+	switch {
+	case op.Quiet:
 		return forge.Marker(fmt.Sprintf("opened%s by the %s role", op.From, op.Role))
+	case op.Found != "":
+		return fmt.Sprintf("Found by the %s role %s.", op.Role, strings.TrimSuffix(strings.TrimSpace(op.Found), "."))
 	}
 	return fmt.Sprintf("Opened%s by the %s role.", op.From, op.Role)
 }
@@ -115,7 +123,7 @@ func (o *Openings) Open(op Opening) (string, int, error) {
 	case is != nil && !is.Closed:
 		// A run stopped between opening it and giving it its label and
 		// state is resumed here: what is missing is written, once.
-		if !strings.Contains(is.Body, op.said()) && !strings.Contains(is.Body, "Opened"+op.From+" by the "+op.Role+" role.") {
+		if !strings.Contains(is.Body, op.said()) && !strings.Contains(is.Body, "Opened"+op.From+" by the "+op.Role+" role.") && !strings.Contains(is.Body, "Found by the "+op.Role+" role ") {
 			return StillOpen, is.ID, nil
 		}
 		t := forge.Target{Kind: "issue", ID: is.ID}
@@ -167,7 +175,13 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 		}
 	}
 	st := State{Sources: op.Sources, Confirmed: op.Commit}
-	for _, name := range op.Wrote {
+	wrote := op.Wrote
+	if opener.MatchString(body) && DescriptionOf(body) != "" {
+		// Its description, as the role opened it: rewritten in plain words
+		// while it reads so, a person's once edited (ADR-0038, amended).
+		wrote = append(slices.Clone(wrote), DescriptionName)
+	}
+	for _, name := range wrote {
 		if st.Wrote == nil {
 			st.Wrote = map[string]string{}
 		}

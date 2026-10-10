@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: c745cdc
+checked: bd82342
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -15,8 +15,11 @@ Part of [the product owner](../README.md). What a run does, step by step:
   - what it did there last, and when — for its sections, one line:
     "Added: Verification, Scope. Changed: —. See the issue's edit
     history.";
+  - a question it asked: one line linking to the comment that asks it,
+    never written twice;
   - what it proposes, in plain words; drafts it proposes, folded;
-  - what it wants from you, while the issue waits on you;
+  - what you may answer, while the issue waits on you: a short list, one
+    gesture a line;
   - set aside, when you took its label off;
   - what it knows of the issue, folded: what it read, wrote, did,
     proposed, and what you undid.
@@ -31,6 +34,10 @@ Part of [the product owner](../README.md). What a run does, step by step:
 - **In the reader's order**: Need, Example, Validation, then a line,
   then Verification and Scope; yours never moved
   ([writing an issue](writing.md)).
+- **A role's text on top, in plain words**: what an import or another
+  role wrote above the sections, no person having edited it, is
+  rewritten short — "Rewrote: the description" in its line
+  ([how](writing.md#text-a-role-wrote)). Yours never is.
 - **What it writes reads as user docs**: plain words, a link for each
   decision cited (added when it wrote one bare), "(closed)" after a
   closed issue cited.

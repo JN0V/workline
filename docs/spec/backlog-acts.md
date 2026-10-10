@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: c745cdc
+checked: bd82342
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -38,8 +38,9 @@ kept: ['src/export/csv.go:b2a6ba892dee'] # announcements as obsolete kept open, 
 sections:                                # its Need and Scope as last read or written (A changed need)
   Need: Every row exported, so a report counts what was sold.
   Scope: WriteRows in src/export/csv.go.
-wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready)
+wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready); Description, the text a role opened it with
 answered: 3f9a1c0e2b7d                   # the review of its spec last given to the agent, by the body it read
+plain: 9b0e7d1c2a44                      # its description as the role rewrote it in plain words (Refining to ready)
 deleted: [Validation]                    # sections the role wrote and a person deleted: never written again
 proposed:                                # the acts proposed on it, each as decided, since a day (On the issue)
   - {act: rename, line: 'Rename #9 to …', since: '2026-10-08', proposal: {do: rename, issue: 9, title: …}}
@@ -85,7 +86,7 @@ with no AI:
 | Closed as not planned or duplicate | A person's no: nothing written (`issue-closed`, said in the run). |
 | Closed otherwise | Done, or no reason kept (GitLab, the local forge): one comment, once, "found again" with the commit; left closed (`issue-closed`). |
 | New, past `issues-max` | Not opened, counted (`issues-capped`); found again, opened at a later run. Three by default; the product owner's import has its own cap (`open`). |
-| New | Opened: the role named in a line — an import's hidden, `<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->`, the item being a person's words; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state, written last — a run stopped before it, resumed, finds the issue open and writes what it lacks. |
+| New | Opened: the role named in a line — an import's hidden, `<!-- workline:opened from `ROADMAP.md`, lines 7 to 8 by the product-owner role -->`; a finding's, where the role found it when it says (`found`): "Found by the reviewer role while reviewing ccffcb2, outside that change."; for a finding, `<!-- workline:opened-by=<role> -->` and `needs-triage`; the product owner's state, written last, keeping a digest of the text it was opened with (`wrote: {Description: …}`) — a run stopped before it, resumed, finds the issue open and writes what it lacks. |
 
 ## Reading
 
@@ -410,6 +411,7 @@ what it can and asks for the rest:
     need: "Every row exported, so a report counts what was sold."   # a draft
     example: "Ann makes 3 sales on 8 Oct and exports that day: 2 rows."   # a draft, never required; a bug: steps
     validation: "The maintainer opens an export of a known day."    # a draft
+    description: "Exporting a day drops its last sale: 3 sales, 2 rows."   # a role's text on top, rewritten
     why: "The issue says what is wrong, not how it will be proved."
 - ready: {issue: 12, why: "Its four sections are there, Need and Validation the reporter's."}
 - ask: {issue: 14, questions: "Which export: CSV or JSON? What should a blank row become?", why: "The need is not clear."}
@@ -451,6 +453,26 @@ what it can and asks for the rest:
   written (`scope-without-files`, said in the summary with what a person
   may do). Nothing to add drops the act (`nothing-to-refine`). The
   issue gets the label `workline:to-refine`.
+- **A role's text on top, in plain words** (ADR-0038, amended). The
+  text above an issue's sections — its description — a role opened it
+  with and no person edited is rewritten when the agent gives a
+  `description`: an import's item, another role's finding. The engine
+  tells it is the role's, never the agent (`backlog.Rewrite`): the issue
+  holds an import's key or a finding's `opened-by`, and its description,
+  spaces aside, matches the digest the state kept at opening (`wrote:
+  {Description: …}`); opened before that digest was kept, an import's key
+  holds one, and a finding opened by a bot (a GitHub app, a GitLab bot)
+  counts as unedited while its body is unchanged since the role last read
+  it. A description the role rewrote (`plain`) is again only to answer a
+  person's comment on its proposal; edited since, it is theirs. The
+  engine's lines there — where it comes from ("Opened from …", "Found by
+  …"), its hidden markers — are kept after the new text, in their order;
+  the text before is in the forge's edit history. Over 100 words before
+  its first fold, given on an issue a person opened or edited, or in a
+  text proposed to an outsider, it is left out, the rest of the refine
+  kept (`description-kept`, said). It follows the refine's mode and
+  level as the drafts do: at `cautious`, proposed. The issue's one line
+  says "Rewrote: the description, in plain words."
 - **What it writes is readable**, where the engine can tell
   (`backlog.LinkDecisions`, `backlog.MarkClosed`): a decision cited bare,
   `ADR-0038`, becomes a link to its page on the forge, when the commit
@@ -922,10 +944,18 @@ state folded under it (`backlog.FormatState`):
   changes a person's sentence, so nothing of theirs is quoted, on GitLab's
   Free plan either, which keeps no text of a description's versions; the
   text before is in the forge's edit history, which no forge links to;
+  a question to the reporter, or a text proposed to an outsider, says so
+  in one line linking to that comment (`linkComments`), "in the comment
+  below" on a forge with no address for it or when its comments do not
+  read (an unreachable forge stops the run): written once, in the comment
+  that names the reporter and so notifies them;
 - each act it proposes there, in plain words (`backlog.offer`), and a
   refine's drafts, folded;
-- while the issue waits on a person: how to answer — `workline:accepted`,
-  a comment, the label taken off, a closing;
+- while the issue waits on a person: how to answer, a short list, one
+  gesture a line (`State.answers`) — `workline:accepted` (yes), a draft
+  edited (shown only when there is a draft), a comment (revise), the
+  label taken off (not now), a closing (it should not exist); a closing
+  only advised: closing it, the label taken off, a comment;
 - once set aside: that nothing more is proposed until the issue changes.
 
 Written at the end of each run (`Plan.Persist`), edited in place, never a

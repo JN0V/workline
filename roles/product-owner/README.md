@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: c745cdc
+checked: bd82342
 verified: agent:claude-code
 ---
 # Product owner
@@ -62,7 +62,7 @@ is on each issue; you answer there
 |---|---|---|
 | yes | label `workline:accepted` (bulk from the list) | does what it proposed, makes the drafts yours, moves it to `ready`; takes its label off |
 | revise | a plain comment | 👀 on it, rewrites its own drafts in place, replies in one line |
-| correct it yourself | edit the body | the sections you edited are yours, never rewritten; an edited draft counts as accepted |
+| correct it yourself | edit the body | what you edited is yours, never rewritten; an edited draft counts as accepted |
 | not now | take `workline:proposed` off | proposes nothing more on that issue until you edit it or comment |
 | it should not exist | close it | never reopens it |
 
@@ -93,6 +93,9 @@ At `autonomy: normal`, the default:
   line; plain words, a link for each decision cited, a closed issue said
   closed ([writing an issue](docs/writing.md),
   [what it writes](docs/outputs.md#on-each-issue)).
+- **A role's text in plain words**: what an import or another role
+  opened an issue with, no person having edited it, rewritten short
+  ([text a role wrote](docs/writing.md#text-a-role-wrote)).
 - **Undone by you** (`workline:ready` taken off, a closing reopened…):
   that kind is proposed on that issue from then on; undone `undone-max`
   times across the issues, on every issue.

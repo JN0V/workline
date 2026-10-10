@@ -140,7 +140,7 @@ func TestStateSays(t *testing.T) {
 		Proposed: []Pending{{Act: "rename", Line: "Rename #9.", Proposal: &Proposal{Do: "rename", Issue: 9, Title: "A title", Why: "```x```"}}}}
 	got := FormatState(s)
 	for _, want := range []string{"**The product owner**, on 2026-10-08:\n\n- Refined #9: Need (draft).", "**Proposes**: Rename it to \"A title\". Why: '''x'''",
-		"label `workline::accepted` to agree", "take `workline::proposed` off", "<details><summary>What workline knows of this issue, edited by the engine</summary>"} {
+		"label `workline::accepted`: yes", "take `workline::proposed` off: not now", "<details><summary>What workline knows of this issue, edited by the engine</summary>"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("state says %q, want it to hold %q", got, want)
 		}

@@ -219,6 +219,21 @@ func IssuePages(f any) string {
 	return ""
 }
 
+// CommentLink is the address of a comment on an issue, by the forge's id
+// of it (Note.ID): the product owner's comment on the issue links to the
+// question it asked there; "" when the forge has no such address.
+func CommentLink(f any, issue int, id string) string {
+	l, ok := f.(interface{ commentAnchor(string) string })
+	if !ok || id == "" {
+		return ""
+	}
+	pages := IssuePages(f)
+	if pages == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s%d%s", pages, issue, l.commentAnchor(id))
+}
+
 // FilePages is the address of f's files on the default branch, a file's
 // path after it making its page: the product owner links the decisions and
 // docs its drafts cite; "" when the forge has no such page.

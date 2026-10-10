@@ -246,7 +246,7 @@ func (p *Plan) splitDrafts(c Proposal, role string) (facts, drafts Proposal, ok 
 		return c, c, false
 	}
 	facts, drafts = c, c
-	facts.Need, facts.Validation = "", ""
+	facts.Need, facts.Example, facts.Steps, facts.Validation, facts.Description = "", "", "", "", ""
 	drafts.Scope, drafts.Verification, drafts.Sources = "", "", nil
 	_, facts.Added, _ = Refine(is.Body, facts, role)
 	_, drafts.Added, _ = Refine(is.Body, drafts, role)

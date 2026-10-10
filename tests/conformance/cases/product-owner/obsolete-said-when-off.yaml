@@ -14,5 +14,5 @@ expect:
     in/task.md: {contains: "- close-obsolete: off (level); write one all the same when the evidence settles it"}
   forge:
     issues:
-      - {id: 7, closed: false, labels: [workline:proposed], comment-contains: ["**Proposes**: Close it yourself if you agree", "The role does not close it (`close-obsolete` is off).", "**Your answer**: close the issue if you agree; take `workline:proposed` off to keep it open as it is", "advice: true"], comment-lacks: "label `workline:accepted` to agree"}
+      - {id: 7, closed: false, labels: [workline:proposed], comment-contains: ["**Proposes**: Close it yourself if you agree", "The role does not close it (`close-obsolete` is off).", "**Your answer:**\n\n- close the issue: yes\n- take `workline:proposed` off: keep it open as it is\n- comment: tell the role why not", "advice: true"], comment-lacks: "label `workline:accepted`: yes"}
       - {id: 12, closed: false, labels: [], comment-lacks: "Close it yourself"}

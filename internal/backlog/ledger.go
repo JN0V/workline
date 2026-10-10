@@ -600,6 +600,9 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		}
 		before := FormatState(*st)
 		p.stateOf(id, st)
+		if err := linkComments(b, f, role, id, st); err != nil {
+			return err
+		}
 		var add, remove []string
 		switch {
 		case is.Closed:
@@ -697,6 +700,41 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		}
 		if err := b.Close(p.Report, 0); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// linkComments links each line of this run's that says the role wrote to
+// the issue's reporter to that comment, now posted: its address on the
+// forge, or "in the comment below" when the forge gives none or its
+// comments do not read; an unreachable forge stops the run.
+func linkComments(b forge.Backlog, f forge.Forge, role string, id int, st *State) error {
+	var notes []forge.Note
+	read := false
+	for i := range st.Did {
+		d := &st.Did[i]
+		if d.to == nil || !strings.Contains(d.Line, Below) {
+			continue
+		}
+		if !read {
+			var err error
+			notes, err = b.Notes(forge.Target{Kind: "issue", ID: id})
+			if errors.Is(err, forge.ErrUnreachable) {
+				return err
+			}
+			// Not read otherwise: the line stays "in the comment below",
+			// still true, and the other issues' states are written.
+			read = true
+		}
+		for k := len(notes) - 1; k >= 0; k-- {
+			if !strings.Contains(notes[k].Body, d.to.marker(role)) {
+				continue
+			}
+			if url := forge.CommentLink(f, id, notes[k].ID); url != "" {
+				d.Line = strings.Replace(d.Line, Below, "[in this comment]("+url+")", 1)
+			}
+			break
 		}
 	}
 	return nil

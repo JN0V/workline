@@ -1,0 +1,16 @@
+case: product-owner/question-written-once
+about: "A question to an issue's reporter is written once: in the comment that names them, which notifies them; the role's own comment on the issue says it asked, and links to that comment, without the question."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ask-two}
+expect:
+  findings: [{rule: done, where: "#9", message: "Asked #9's reporter: Which rows are lost: the last one, or any?"}]
+  forge:
+    issues:
+      - id: 9
+        comments: 2
+        comment-contains: ["@ann, to refine this issue: Which rows are lost: the last one, or any?", "- Asked the reporter a question, [in this comment](https://forge.example/issues/9#comment-2)."]
+        comment-lacks: "reporter: Which rows"

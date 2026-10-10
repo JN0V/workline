@@ -64,3 +64,48 @@ func TestOpenResumedCompletesTheIssue(t *testing.T) {
 		t.Errorf("labels %v, comments %q", is.Labels, comments)
 	}
 }
+
+// A finding that says where it was found ends with "Found by the … role
+// …", not "Opened by": a run stopped before its label and state is
+// completed all the same when resumed, the same line or one said at
+// another commit; its description's digest is kept.
+func TestOpenResumedCompletesAFoundIssue(t *testing.T) {
+	key := CodeKey("a.go", "x := 1")
+	for _, found := range []string{"while reviewing abc1234, outside that change", "while reviewing def5678, outside that change"} {
+		path := filepath.Join(t.TempDir(), "forge.json")
+		state := `{"issues": [{"id": 1, "title": "Found", "labels": [], "comments": [], "body": "Rows go missing.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:` + key + ` -->"}], "merge-requests": []}`
+		if err := os.WriteFile(path, []byte(state), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		f := &forge.Fake{Path: path}
+		o, _ := NewOpenings(f, 3)
+		op := Opening{Role: "reviewer", Key: key, Title: "Found", Body: "Rows go missing.", Sources: []string{"a.go"}, Commit: "0000000", Triage: true, Found: found}
+		if got, id, err := o.Open(op); err != nil || got != StillOpen || id != 1 {
+			t.Fatalf("%s: %s #%d, %v", found, got, id, err)
+		}
+		is, _ := f.Issue(1)
+		comments, _ := f.Comments(forge.Target{Kind: "issue", ID: 1})
+		if len(is.Labels) != 1 || is.Labels[0] != LabelTriage || len(comments) != 1 ||
+			!strings.Contains(comments[0], "sources: [a.go]") || !strings.Contains(comments[0], "Description: "+BodyDigest("Rows go missing.")) {
+			t.Errorf("%s: labels %v, comments %q", found, is.Labels, comments)
+		}
+	}
+}
+
+// A new finding that says where it was found ends with that line.
+func TestOpenSaysWhereItWasFound(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "forge.json")
+	if err := os.WriteFile(path, []byte(`{"issues": [], "merge-requests": []}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := &forge.Fake{Path: path}
+	o, _ := NewOpenings(f, 3)
+	op := Opening{Role: "reviewer", Key: CodeKey("a.go", "x := 1"), Title: "Found", Body: "Rows go missing.", Commit: "0000000", Triage: true, Found: "while reviewing abc1234, outside that change."}
+	if got, _, err := o.Open(op); err != nil || got != Opened {
+		t.Fatalf("%s, %v", got, err)
+	}
+	is, _ := f.Issue(1)
+	if !strings.Contains(is.Body, "Rows go missing.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->") || strings.Contains(is.Body, "Opened by") {
+		t.Errorf("body %q", is.Body)
+	}
+}

@@ -746,6 +746,9 @@ func (g *gitlab) issuePages() string {
 	return p.Web + "/-/issues/"
 }
 
+// commentAnchor is a note's place on its issue's page.
+func (g *gitlab) commentAnchor(id string) string { return "#note_" + id }
+
 // filePages is the address of the project's files, on its default branch
 // (HEAD).
 func (g *gitlab) filePages() string {

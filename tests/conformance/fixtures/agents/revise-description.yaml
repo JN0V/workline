@@ -1,0 +1,8 @@
+- refine:
+    issue: 9
+    description: "Exporting the daily CSV file drops its last row: 3 sales give a file of 2 rows."
+    why: "Bob asked to say which export."
+- refine:
+    issue: 10
+    description: "Exporting the daily CSV file drops its last row."
+    why: "No one asked, rewritten all the same."

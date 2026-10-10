@@ -19,6 +19,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/builtin/committer"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
@@ -77,6 +78,7 @@ type Finding struct {
 	Title    string    `json:"title"`
 	Why      string    `json:"why"`
 	Fix      string    `json:"fix,omitempty"`
+	Seen     string    `json:"seen,omitempty"`     // what a person sees when it fails, in plain words: an issue opens with it
 	Claim    string    `json:"claim,omitempty"`    // the author's words it contradicts, found again in what they said (#126)
 	Decision string    `json:"decision,omitempty"` // not a defect: the question put to a person, never judged nor blocking (#126)
 	Cause    Quote     `json:"cause"`
@@ -823,6 +825,7 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		Title    string `json:"title"`
 		Why      string `json:"why"`
 		Fix      string `json:"fix"`
+		Seen     string `json:"seen"`
 		Claim    string `json:"claim"`
 		Decision string `json:"decision"`
 		Cause    *Quote `json:"cause"`
@@ -833,7 +836,7 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return Finding{Title: fmt.Sprint(v)}, "it does not read: " + err.Error()
 	}
-	f := Finding{Lens: lens, Severity: strings.ToLower(strings.TrimSpace(raw.Severity)), Title: strings.TrimSpace(raw.Title), Why: strings.TrimSpace(raw.Why), Fix: strings.TrimSpace(raw.Fix), Symptom: raw.Symptom}
+	f := Finding{Lens: lens, Severity: strings.ToLower(strings.TrimSpace(raw.Severity)), Title: strings.TrimSpace(raw.Title), Why: strings.TrimSpace(raw.Why), Fix: strings.TrimSpace(raw.Fix), Seen: strings.TrimSpace(raw.Seen), Symptom: raw.Symptom}
 	if f.Severity != "important" {
 		f.Severity = "nit"
 	}
@@ -1165,8 +1168,7 @@ func settle(runDir, repo string, s Settings) int {
 		if s.ForgeWrites && os.Getenv("WORKLINE_FORGE") != "" {
 			fallback = append(fallback, intent.Intention{Kind: "issue", Value: map[string]any{
 				"title": f.Title, "at": map[string]any{"path": f.Cause.Path, "text": f.Line},
-				"body": fmt.Sprintf("%s\n\nAt `%s`:\n\n```\n%s\n```\n\n%s\n\nFound outside the change it reviewed (%s), so not the author's to fix there: the reviewer's %s lens, %s.",
-					f.Why, f.Where, strings.TrimSpace(f.Cause.Quote), fixLine(f), short(st.Head), f.Lens, f.Verified)}})
+				"body": issueBody(f), "found": fmt.Sprintf("while reviewing %s, outside that change", short(st.Head))}})
 		} else {
 			c.Logged = append(c.Logged, verdict.Finding{Rule: "outside-the-change", Level: "warn",
 				Message: fmt.Sprintf("at %s, outside the change, for an issue (none opened: no forge to write to): %s — %s", f.Where, f.Title, f.Why)})
@@ -1352,6 +1354,31 @@ func oneLine(t string, max int) string {
 		t = string(r[:max]) + "…"
 	}
 	return t
+}
+
+// issueBody is the issue a finding outside the change becomes, written as
+// the product owner writes one (roles/product-owner/docs/writing.md): what
+// a person sees first, then the cause in the code, folded; the lens and
+// the judge hidden. A finding that says nothing of what a person sees
+// opens with its cause.
+func issueBody(f Finding) string {
+	top := strings.TrimSpace(f.Seen)
+	quote := strings.TrimSpace(f.Cause.Quote)
+	fence := backlog.FenceFor(quote) // a fence in the quote does not end the block
+	cause := fmt.Sprintf("At `%s`:\n\n%s\n%s\n%s", f.Where, fence, quote, fence)
+	if top == "" {
+		top = f.Why
+	} else {
+		cause = f.Why + "\n\n" + cause
+	}
+	if fix := fixLine(f); fix != "" {
+		cause += "\n\n" + fix
+	}
+	how := fmt.Sprintf("found=the %s lens; %s", f.Lens, f.Verified)
+	for strings.Contains(how, "--") { // a run of dashes, however long, would end the marker
+		how = strings.ReplaceAll(how, "--", "-")
+	}
+	return top + "\n\n<details><summary>The cause in the code</summary>\n\n" + cause + "\n\n</details>\n\n" + forge.Marker(how)
 }
 
 func fixLine(f Finding) string {

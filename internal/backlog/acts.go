@@ -25,7 +25,33 @@ type Did struct {
 	Day   string `yaml:"day"`             // the day, YYYY-MM-DD, UTC
 	Line  string `yaml:"line,omitempty"`
 	Yes   string `yaml:"yes,omitempty"` // who accepted it: done on their yes, not alone
+	// to, this run's only: the comment it wrote to the reporter, a question
+	// or a proposal, found by its marker once posted, its line then linking
+	// to it (Persist) — the question written once, there.
+	to *comment
 }
+
+// comment is a comment to an issue's reporter: an ask, or a proposal to
+// an outsider, and its round.
+type comment struct {
+	proposal bool
+	round    int
+}
+
+// marker is what the comment carries, for the role.
+func (c comment) marker(role string) string {
+	if c.proposal {
+		return ProposalMarker(role, c.Round())
+	}
+	return AskMarker(role, c.Round())
+}
+
+// Round is the comment's round, the first when it was not said.
+func (c comment) Round() int { return max(c.round, 1) }
+
+// Below is where a line of the role's comment says the comment it wrote
+// to the reporter is, until it links to it.
+const Below = "in the comment below"
 
 // The acts kept: those of the last DidDays days, at most didMax over the
 // backlog, each said in at most didLine characters.
@@ -42,18 +68,36 @@ func (p *Plan) recordDid(c Proposal) {
 	}
 	now := time.Now().UTC()
 	line := describe(c, "Closed")
-	if c.Do == "refine" && !c.ToReporter {
+	var to *comment
+	switch {
+	case c.Do == "refine" && !c.ToReporter:
 		line = refined(c)
+	case c.Do == "ask" || c.Do == "refine":
+		// What it asked or proposed is in that comment, which notifies
+		// them: said here, never written twice.
+		line, to = wrote(c), &comment{proposal: c.Do == "refine", round: c.Round}
 	}
 	if utf8.RuneCountInString(line) > didLine {
 		line = string([]rune(line)[:didLine-1]) + "…"
 	}
 	oldest := now.AddDate(0, 0, -DidDays).Format(dateLayout)
 	p.Record.Did = slices.DeleteFunc(p.Record.Did, func(d Did) bool { return d.Day < oldest })
-	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level, Day: now.Format(dateLayout), Line: line, Yes: c.Ticked})
+	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level, Day: now.Format(dateLayout), Line: line, Yes: c.Ticked, to: to})
 	if n := len(p.Record.Did); n > didMax {
 		p.Record.Did = p.Record.Did[n-didMax:]
 	}
+}
+
+// wrote says, on the issue, that the role wrote to its reporter, and
+// where: the question or the proposal is in that comment, not repeated.
+func wrote(c Proposal) string {
+	switch {
+	case c.Do == "refine":
+		return "Proposed sections to the reporter, who is outside the project, " + Below + ": nothing is written in the issue until they or a maintainer agree."
+	case c.Round > 1:
+		return "Asked the reporter again, after their answer, " + Below + "."
+	}
+	return "Asked the reporter a question, " + Below + "."
 }
 
 // Acts is what the weekly sample reads of the role's acts on the forge:

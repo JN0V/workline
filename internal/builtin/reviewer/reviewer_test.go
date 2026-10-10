@@ -5,10 +5,39 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/builtin/committer"
 )
+
+// The issue a finding outside the change becomes opens with what a person
+// sees; its cause, folded, keeps a quote holding a fence whole.
+func TestIssueBodyPersonFirst(t *testing.T) {
+	f := Finding{Lens: "correctness", Why: "the doc block ends early", Seen: "A help page shows half its text.",
+		Where: "doc.go:3", Cause: Quote{Quote: "s := \"```\" + text"}, Verified: "verified, independence: model (a → b)"}
+	got := issueBody(f)
+	want := "A help page shows half its text.\n\n<details><summary>The cause in the code</summary>\n\nthe doc block ends early\n\nAt `doc.go:3`:\n\n````\ns := \"```\" + text\n````\n\n</details>\n\n<!-- workline:found=the correctness lens; verified, independence: model (a → b) -->"
+	if got != want {
+		t.Fatalf("body = %q, want %q", got, want)
+	}
+	// Saying nothing of what a person sees, it opens with its cause, the
+	// fold holding the line alone; a "--" in the judge's words cannot end
+	// the hidden marker early.
+	f.Seen, f.Fix, f.Verified = "", "close the block", "verified, independence: model (a --> b)"
+	got = issueBody(f)
+	want = "the doc block ends early\n\n<details><summary>The cause in the code</summary>\n\nAt `doc.go:3`:\n\n````\ns := \"```\" + text\n````\n\nWhat would fix it: close the block\n\n</details>\n\n<!-- workline:found=the correctness lens; verified, independence: model (a -> b) -->"
+	if got != want {
+		t.Fatalf("no seen: body = %q, want %q", got, want)
+	}
+	for _, v := range []string{"a --> b", "a ---> b", "a ------ b"} {
+		f.Verified = v
+		got = issueBody(f)
+		if marker := got[strings.Index(got, "<!--"):]; strings.Count(marker, "--") != 2 {
+			t.Errorf("%q: the marker holds a -- of its text: %q", v, marker)
+		}
+	}
+}
 
 func TestComment(t *testing.T) {
 	for _, c := range []struct {

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: fb2293a
+checked: bd82342
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -102,6 +102,12 @@ Every one on a machine; on a merge request one a push, in turn
      file and the cause's line; an issue open or closed holds it, none
      opened ([ADR-0018](../../../docs/adr/0018-the-product-owner.md)). A
      nit there is left, counted.
+   - **Written for a person first**, as the product owner writes
+     ([writing an issue](../../product-owner/docs/writing.md)): what a
+     person sees (the lens's `seen`), then the cause, the line and the
+     fix folded, then one line, "Found by the reviewer role while
+     reviewing ccffcb2, outside that change." The lens and the judge's
+     verdict are hidden in the body.
    - **A decision for a person**
      ([#126](https://github.com/JN0V/workline/issues/126)): a finding
      holding `decision` — a trade-off, a design choice, what the issue

@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, five times on 2026-10-09); a week's trial running
+- **Status:** accepted — built (amended below, five times on 2026-10-09, once on 2026-10-10); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -322,3 +322,43 @@ and issue numbers before the problem, no real case anywhere.
   both are read now.
 - **Measured before shipping**: ten issues drafted twice, old and new
   instruction, rated blind by the maintainer.
+
+## Amendment (2026-10-10): what no person wrote, in plain words
+
+Rated blind by the maintainer on ten real issues, the last amendment's
+drafts won 6 of 6, were understood 4 of 6, accepted as is once: "still
+too long, or not split enough". Not read:
+
+- **Two imported issues**: a good question under the raw item of the
+  old backlog file, 120 words of internal terms.
+- **A reviewer's issue**: the code's words, the commit, the lens, the
+  models on top.
+- **The answer**: one long sentence, read on every proposal.
+- **A question written twice**: in the role's comment and in the one
+  naming the reporter.
+
+Decided:
+
+- **The text above the sections a role wrote is rewritten in plain
+  words** while no person edited it: an import's item, another role's
+  finding. The problem first, one real case, a builder's detail folded,
+  100 words at most before the fold. An imported item is no longer "a
+  person's words": the file stays theirs, the issue's copy is the role's
+  until a person edits it.
+- **The engine tells it, never the agent**: a digest of the text kept
+  when a role opens the issue; before, an import's key, which holds one,
+  or a finding opened by a bot and unchanged since the role last read it
+  — an edit read before cannot be told. Rewritten once, again only for
+  a person's comment; a person's text is never rewritten.
+- **Kept**: the line saying where the issue comes from, the hidden
+  markers; the text before is in the forge's edit history, named in the
+  role's line: "Rewrote: the description, in plain words." It follows
+  the refine's mode and level, as the drafts do.
+- **The reviewer writes its issues so**: what a person sees, from its
+  lens, on top; the cause folded; "Found by the reviewer role while
+  reviewing <commit>, outside that change."; the lens and the judge
+  hidden. A role reads no facet of another's: its instruction holds the
+  rule in short, naming the product owner's page.
+- **The answer is a short list**, one gesture a line.
+- **A question is written once**, in the comment naming the reporter,
+  which notifies them; the role's comment links to it.

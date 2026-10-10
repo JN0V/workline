@@ -1,0 +1,35 @@
+case: product-owner/description-revised-for-a-comment
+about: "A description the role rewrote in plain words is its own until a person edits it: when a person of the project comments on what it proposed, the agent is told the description is among what it may rewrite, and the new text is written, its digest kept; with no comment, a second rewrite is left out."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "WriteRows stops one row short"
+        author: "github-actions[bot]"
+        labels: [needs-triage, workline:proposed]
+        body: "Exporting a CSV file drops its last row.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/export/csv.go#00000000 -->"
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nplain: 8caaa932b175\nlabel: workline:proposed\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - {body: "Say which export: the daily one.", author: bob, insider: true}
+      - id: 10
+        title: "WriteRows again"
+        author: "github-actions[bot]"
+        labels: [needs-triage]
+        body: "Exporting a CSV file drops its last row.\n\nFound by the reviewer role while reviewing abc1234, outside that change.\n\n<!-- workline:opened-by=reviewer -->\n\n<!-- workline:issue=src/export/csv.go#11111111 -->"
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nplain: 8caaa932b175\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:revise-description}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Refined #9: the description in plain words."}
+    - {rule: description-kept, where: "#10", message: "its description is rewritten already: again only when a person's comment asks"}
+  run-files:
+    in/task.md: {contains: ["revision 1 of 2", "the sections that are still yours (the description, as `description`)", "Description: rewritten in plain words by you — again only as a person's comment asks"]}
+  forge:
+    issues:
+      - id: 9
+        body-contains: "Exporting the daily CSV file drops its last row: 3 sales give a file of 2 rows.\n\nFound by the reviewer role while reviewing abc1234, outside that change."
+        reactions: {"2": [eyes]}
+        comment-contains: ["@bob, read (revision 1 of 2): rewrote Description in place.", "- Rewrote: the description, in plain words.", "revisions: 1", "plain: d1f00acbbc48"]
+        comment-lacks: "plain: 8caaa932b175"
+      - {id: 10, body-contains: "Exporting a CSV file drops its last row.\n\nFound by"}
