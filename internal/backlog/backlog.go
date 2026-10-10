@@ -371,12 +371,12 @@ type Proposal struct {
 	// a real example of the need or a bug's steps to reproduce, drafts too,
 	// never required; Added, the engine's, says which the body did not have
 	// yet.
-	Scope        string   `yaml:"scope,omitempty"`
-	Verification string   `yaml:"verification,omitempty"`
-	Need         string   `yaml:"need,omitempty"`
-	Example      string   `yaml:"example,omitempty"`
-	Steps        string   `yaml:"steps,omitempty"`
-	Validation   string   `yaml:"validation,omitempty"`
+	Scope        string `yaml:"scope,omitempty"`
+	Verification string `yaml:"verification,omitempty"`
+	Need         string `yaml:"need,omitempty"`
+	Example      string `yaml:"example,omitempty"`
+	Steps        string `yaml:"steps,omitempty"`
+	Validation   string `yaml:"validation,omitempty"`
 	// Description, the text above its sections rewritten in plain words:
 	// only where the role opened it and no person edited it (Rewrite).
 	Description string   `yaml:"description,omitempty"`
@@ -2527,4 +2527,3 @@ func LocateIn(lines []string, text string) (from, to int, original string, ok bo
 	}
 	return 0, 0, "", false
 }
-
