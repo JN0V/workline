@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: 245015c
+checked: bd82342
 verified: agent:claude-code
 ---
 # Concepts
