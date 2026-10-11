@@ -1,0 +1,8 @@
+case: routing/item-ready-under-a-new-heading
+about: "An issue's sections are read by meaning, through one table (ADR-0039): in an engine built with one meaning given a new name in front — how a person accepts it, written \"Accepted when\", \"Validation\" still read; a build of the tests only —, an issue holding the new name is ready, as routing/item-ready-on-forge's holding the old one."
+given:
+  repo: basic
+  engine-tags: [workline_alias]
+  forge: {issues: [{id: 8, body: "## Need\nExport as CSV\n## Verification\nA test exports three rows\n## Accepted when\nThe product owner opens it in a spreadsheet\n## Scope\nsrc/export", labels: [workline:to-refine], comments: []}]}
+run: {route: ready, item: 8}
+expect: {status: pass, forge: {issues: [{id: 8, labels: [workline:ready]}]}}
