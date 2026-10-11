@@ -19,7 +19,7 @@ stars and dates were checked against the GitHub API that day.
 | [product-owner.md](product-owner.md) | Focused: what forges, bots and AI triage tools do for a backlog — stale bots closing on silence included — and what a product owner role would add |
 | [surfacing-proposals.md](surfacing-proposals.md) | Focused: where backlog bots show acts and proposals, how a person says yes, no or "change this", and what each forge records and notifies |
 | [issue-formats.md](issue-formats.md) | Focused: where forges keep a project's issue format, the names projects give each section, how they mark a bug with no reproduction, how tools record and set an issue's kind |
-| [priority-and-weight.md](priority-and-weight.md) | Focused: where each forge keeps an issue's priority and effort, the scales projects use, how tools combine the two, who estimates and how a person's value is kept |
+| [priority-and-weight.md](priority-and-weight.md) | Focused: where forges keep an issue's priority and effort, the scales in use, who estimates |
 | [self-evaluation.md](self-evaluation.md) | Focused: how automation and agents are judged in production, and how systems that improve their own agents keep people in control |
 | [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
 | [code-review.md](code-review.md) | Focused: how AI code reviewers find, verify and post findings, and what a reviewer role takes from them; what reviews a spec before it is built |
