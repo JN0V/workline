@@ -66,6 +66,7 @@ type caseFile struct {
 		Forge  map[string]any      `yaml:"forge"`
 		Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
 		Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands
+		Tags   []string            `yaml:"engine-tags"` // the engine built with these Go build tags: a change of the tests only (engineFor)
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -194,8 +195,40 @@ func TestConformance(t *testing.T) {
 	}
 }
 
+// engines are the engines built with build tags of the tests, by their tags.
+var engines = map[string]string{}
+
+// engineFor is the engine a case runs: the suite's, or, for a case naming
+// engine-tags, one built from this source with those Go build tags — a
+// change only the tests make, which no shipped engine has (the table of a
+// section's headings given one more name, workline_alias). An engine
+// built already (WORKLINE_ENGINE) cannot run such a case: said, never
+// passed.
+func engineFor(tags []string) (string, error) {
+	if len(tags) == 0 {
+		return engineBin, nil
+	}
+	key := strings.Join(tags, ",")
+	if bin, ok := engines[key]; ok {
+		return bin, nil
+	}
+	if os.Getenv("WORKLINE_ENGINE") != "" {
+		return "", fmt.Errorf("needs the engine built from source with -tags %s, not the one WORKLINE_ENGINE names", key)
+	}
+	bin := filepath.Join(filepath.Dir(engineBin), "workline-"+strings.Join(tags, "-"))
+	if out, err := exec.Command("go", "build", "-tags", key, "-o", bin, "../../cmd/workline").CombinedOutput(); err != nil {
+		return "", fmt.Errorf("building the engine with -tags %s: %v\n%s", key, err, out)
+	}
+	engines[key] = bin
+	return bin, nil
+}
+
 // runCase returns what differs from the expectation; empty means it passes.
 func runCase(t *testing.T, c *caseFile) []string {
+	engineBin, err := engineFor(c.Given.Tags)
+	if err != nil {
+		return []string{err.Error()}
+	}
 	work := t.TempDir()
 	seen := filepath.Join(work, "models-seen.yaml")
 	// The user's config folder stays out: their own lists and defaults are not the case's.
@@ -252,7 +285,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
 	if c.Run.CLI != nil {
-		return runCLI(c, repo, env)
+		return runCLI(engineBin, c, repo, env)
 	}
 	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
@@ -453,7 +486,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 
 // runCLI runs workline with the case's arguments, as a person or a script
 // types them, and checks its exit code and what it prints where.
-func runCLI(c *caseFile, repo string, env []string) []string {
+func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
 	cmd.Dir, cmd.Env = repo, env
 	var stdout, stderr bytes.Buffer

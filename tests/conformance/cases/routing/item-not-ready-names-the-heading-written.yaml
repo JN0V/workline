@@ -1,0 +1,8 @@
+case: routing/item-not-ready-names-the-heading-written
+about: "A section missing is named as the table writes it (ADR-0039): in an engine built with how a person accepts the need written \"Accepted when\" (a build of the tests only), an issue lacking it is not ready, and the finding names the new heading."
+given:
+  repo: basic
+  engine-tags: [workline_alias]
+  forge: {issues: [{id: 7, body: "## Need\nExport as CSV\n## Verification\nA test exports three rows\n## Scope\nsrc/export", labels: [], comments: []}]}
+run: {route: ready, item: 7}
+expect: {status: block, findings: [{rule: not-ready, where: "Accepted when", message: "## Accepted when is missing or empty"}], forge: {issues: [{id: 7, labels: []}]}}

@@ -9,6 +9,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/pathglob"
 	"github.com/JN0V/workline/internal/verdict"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // due is an open issue pre may read, with what it knows of it.
@@ -46,13 +47,12 @@ func changesFound(repo string, open []forge.Issue, report int, all []due, archiv
 		switch {
 		case len(what) > 0:
 			rebase = append(rebase, d)
-			now := backlog.Basis(d.is.Body)
 			var was, is []string
 			for _, name := range what {
-				was = append(was, "## "+name+"\n\n"+d.st.Sections[name])
-				is = append(is, "## "+name+"\n\n"+now[name])
+				was = append(was, "## "+name+"\n\n"+d.st.KeptText(name))
+				is = append(is, "## "+name+"\n\n"+backlog.BasisText(d.is.Body, name))
 			}
-			c := backlog.Change{Issue: d.is.ID, What: what, Touch: backlog.Touched(d.is.ID, others, sources, slices.Contains(what, "Scope")),
+			c := backlog.Change{Issue: d.is.ID, What: what, Touch: backlog.Touched(d.is.ID, others, sources, work.Has(what, work.Scope)),
 				Was: strings.Join(was, "\n\n"), Now: strings.Join(is, "\n\n")}
 			if len(c.Touch) == 0 {
 				break // nothing built on it: its sections kept, nothing flagged

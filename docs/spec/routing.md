@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: c745cdc
+checked: d5323d2
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -40,7 +40,11 @@ from grading its own work. The engine checks that the four are present and
 not empty; it does not judge their quality. A section is the text under its
 `## ` or `### ` heading (`work.Sections`): a heading written twice holds
 both texts, and a thematic break ending a section — the line between the
-person's part and the builder's — is not its text. Other headings, an
+person's part and the builder's — is not its text. Each is read by its
+meaning, through one table (`work.Headings`,
+[ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)):
+a meaning's first heading is the one written, every one is read; today
+each has one, the names above. Other headings, an
 example or the steps to reproduce, are kept and never required
 ([writing an issue](../../roles/product-owner/docs/writing.md)). A person moves an item to
 `ready`, or the product owner does once Need and Validation are a person's

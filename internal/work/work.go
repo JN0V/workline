@@ -15,9 +15,6 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// Required are the sections an item needs before it is ready.
-var Required = []string{"Need", "Verification", "Validation", "Scope"}
-
 // Path is where item id lives.
 func Path(repo, id string) string {
 	return filepath.Join(repo, ".workline", "work", id+".md")
@@ -32,34 +29,45 @@ var stateLine = regexp.MustCompile(`(?m)^state: .*$`)
 // line between the person's part of an issue and the builder's — is not
 // its text.
 func Sections(content string) map[string]string {
-	parts := map[string][]string{}
-	name := ""
+	out := map[string]string{}
+	for _, p := range parts(content) {
+		out[p.heading] = join(out[p.heading], p.text)
+	}
+	return out
+}
+
+// part is a section of a body as written: its heading and the text under
+// it, up to the next heading.
+type part struct{ heading, text string }
+
+// parts are a body's sections in its order, a heading written twice in two
+// parts; the text above the first heading and the body's footer in none.
+func parts(content string) []part {
+	var out []part
 	content, _ = Footer(content)
 	for _, l := range strings.Split(content, "\n") {
 		if h, ok := Heading(l); ok {
-			name = h
-			parts[name] = append(parts[name], "")
+			out = append(out, part{heading: h})
 			continue
 		}
-		if name != "" {
-			parts[name][len(parts[name])-1] += l + "\n"
-		}
-	}
-	out := map[string]string{}
-	for k, texts := range parts {
-		out[k] = ""
-		for _, v := range texts {
-			v = withoutBreak(v)
-			if t := strings.TrimSpace(v); t == "" || t == NoResponse {
-				continue
-			}
-			if out[k] != "" {
-				out[k] = strings.TrimRight(out[k], "\n") + "\n\n"
-			}
-			out[k] += v
+		if n := len(out); n > 0 && out[n-1].heading != "" {
+			out[n-1].text += l + "\n"
 		}
 	}
 	return out
+}
+
+// join is a section's text with the text under one more of its headings
+// after it: nothing of a field an issue form left empty.
+func join(have, text string) string {
+	text = withoutBreak(text)
+	if t := strings.TrimSpace(text); t == "" || t == NoResponse {
+		return have
+	}
+	if have != "" {
+		have = strings.TrimRight(have, "\n") + "\n\n"
+	}
+	return have + text
 }
 
 // withoutBreak is a section's text without the thematic break that ends
@@ -229,12 +237,12 @@ func ReadyOnForge(f forge.Forge, id int) *verdict.Verdict {
 }
 
 func check(content string) []verdict.Finding {
-	sections := Sections(content)
+	sections := ByMeaning(content)
 	var missing []verdict.Finding
-	for _, r := range Required {
-		if strings.TrimSpace(sections[r]) == "" {
-			missing = append(missing, verdict.Finding{Rule: "not-ready", Where: r,
-				Message: fmt.Sprintf("## %s is missing or empty", r)})
+	for _, m := range Required {
+		if strings.TrimSpace(sections[m].Text) == "" {
+			missing = append(missing, verdict.Finding{Rule: "not-ready", Where: Name(m),
+				Message: fmt.Sprintf("## %s is missing or empty", Name(m))})
 		}
 	}
 	return missing

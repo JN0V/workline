@@ -133,7 +133,7 @@ func SectionDigest(body, name string) string {
 	if name == DescriptionName {
 		return DescriptionDigest(body)
 	}
-	return BodyDigest(work.Sections(body)[name])
+	return BodyDigest(work.ByMeaning(body)[work.MeaningOf(name)].Text)
 }
 
 // Own are the sections of a body still the role's own — a draft no person
@@ -141,19 +141,24 @@ func SectionDigest(body, name string) string {
 // it rewrites to answer a person's comment on its proposal (ADR-0038). A
 // person's section, edited or deleted, is never among them.
 func Own(is forge.Issue, st *State) []string {
-	have := work.Sections(is.Body)
+	have := work.ByMeaning(is.Body)
 	var out []string
-	for _, name := range Layout {
-		text, ok := have[name]
+	for _, m := range layout() {
+		s, ok := have[m]
 		switch {
-		case !ok || strings.TrimSpace(text) == "":
-		case IsDraft(is.Body, name, st) && !Accepted(is):
-			out = append(out, name)
-		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
-			out = append(out, name)
+		case !ok || strings.TrimSpace(s.Text) == "":
+		case IsDraft(is.Body, m, st) && !Accepted(is), mine(st, m, s.Text):
+			out = append(out, s.Heading)
 		}
 	}
 	return out
+}
+
+// mine says whether text is as the role wrote a section of meaning m (the
+// state's `wrote`).
+func mine(st *State, m work.Meaning, text string) bool {
+	_, wrote := st.wrote(m)
+	return wrote != "" && wrote == BodyDigest(text)
 }
 
 // Revisable are the sections of a body the role may rewrite to answer the
@@ -164,15 +169,14 @@ func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 	if r == nil {
 		return nil
 	}
-	have := work.Sections(is.Body)
+	have := work.ByMeaning(is.Body)
 	var out []string
 	for _, name := range r.In {
-		text, ok := have[name]
+		m := work.MeaningOf(name)
+		s, ok := have[m]
 		switch {
-		case !ok || !slices.Contains(Sections, name) || slices.Contains(out, name):
-		case IsDraft(is.Body, name, st) && !Accepted(is):
-			out = append(out, name)
-		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
+		case !ok || !slices.Contains(work.Required, m) || work.Has(out, m):
+		case IsDraft(is.Body, m, st) && !Accepted(is), mine(st, m, s.Text):
 			out = append(out, name)
 		}
 	}

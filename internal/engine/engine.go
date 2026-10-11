@@ -2251,8 +2251,9 @@ func (a *applier) split(c backlog.Proposal) error {
 	var ids, listed []int
 	closed := map[int]bool{} // children closed already: left as they are
 	for _, ch := range c.Into {
+		body, wrote := backlog.ChildBody(c.Issue, ch, a.role)
 		outcome, id, err := o.Open(backlog.Opening{Role: a.role, Key: backlog.SplitKey(c.Issue, ch.Title), Title: strings.TrimSpace(ch.Title),
-			Body: backlog.ChildBody(c.Issue, ch, a.role), From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head, Wrote: backlog.Sections})
+			Body: body, From: fmt.Sprintf(" from #%d", c.Issue), Sources: ch.Sources, Commit: head, Wrote: wrote})
 		if err != nil {
 			return err
 		}
@@ -2495,10 +2496,7 @@ func keepBody(f forge.Forge, role string, t forge.Target, body string, sources, 
 			st.Plain = backlog.DescriptionDigest(body)
 			continue
 		}
-		if st.Wrote == nil {
-			st.Wrote = map[string]string{}
-		}
-		st.Wrote[name] = backlog.SectionDigest(body, name)
+		st.SetWrote(name, backlog.SectionDigest(body, name))
 	}
 	st.Keep(body)
 	return f.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(role), false)

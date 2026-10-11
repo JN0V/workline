@@ -1,0 +1,18 @@
+case: product-owner/ready-under-old-new-and-mixed-headings
+about: "The engine's ready check reads sections by meaning (ADR-0039): in an engine built with how a person accepts the need written \"Accepted when\", \"Validation\" still read (a build of the tests only), an issue under the new name, one under the old, and one under both — the old one left empty — are ready alike, as product-owner/ready-checked-by-the-engine's under the old names."
+given:
+  repo: backlog
+  engine-tags: [workline_alias]
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Need\n\nThe monthly report counts every sale.\n\n## Accepted when\n\nAnn opens a known day.\n\n---\n\n## Verification\n\nA test writes three rows.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Validation\n\nAnn opens a known day.\n\n---\n\n## Verification\n\nA test writes three rows.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost once more", body: "## Need\n\nThe monthly report counts every sale.\n\n## Accepted when\n\nAnn opens a known day.\n\n## Validation\n\n_No response_\n\n---\n\n## Verification\n\nA test writes three rows.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-three}
+expect:
+  no-findings: [{rule: not-ready}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready]}
+      - {id: 10, labels: [workline:ready]}
+      - {id: 11, labels: [workline:ready]}

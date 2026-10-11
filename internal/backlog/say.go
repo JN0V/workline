@@ -3,7 +3,6 @@ package backlog
 import (
 	"fmt"
 	"html"
-	"slices"
 	"strings"
 )
 
@@ -88,7 +87,7 @@ func addSections(added []string) string {
 		case n == DescriptionName:
 			rewrite = true
 			continue
-		case slices.Contains(drafted, n):
+		case Drafted(n):
 			drafts = append(drafts, n)
 		}
 		sections = append(sections, n)
