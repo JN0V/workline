@@ -1,198 +1,198 @@
-# ADR-0039: An issue's sections are read by meaning, a template's fields too; its kind is the forge's
+# ADR-0039: Issue sections take established names, read by meaning; a bug waits for its steps; the role sets the kind
 
-- **Status:** proposed — the questions at the end wait on the maintainer;
-  built after the trial of [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
-- **Date:** 2026-10-10
+- **Status:** proposed — built after the trial of
+  [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md);
+  one question at the end waits on the maintainer
+- **Date:** 2026-10-10, revised 2026-10-11
 - **Builds on:** [ADR-0018](0018-the-product-owner.md) (Need and
-  Validation a person's), the layout of
-  [ADR-0038's last amendments](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md#amendment-2026-10-09-last-an-issue-a-person-reads),
-  [#260](https://github.com/JN0V/workline/pull/260) (headings a project
-  names in a setting); principles 1, 4, 5, 13
-- **Research:** [issue-formats.md](../research/issue-formats.md)
+  Validation a person's), [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+  (acts, proposals, a person's undo), [#260](https://github.com/JN0V/workline/pull/260)
+  (headings a project names); principles 1, 4, 5, 7, 13
+- **Research:** [issue-formats.md](../research/issue-formats.md);
+  worked examples: [the proposed headings](../../roles/product-owner/docs/proposed-headings.md)
 
 ## Context
 
 - **Step 1 held**: the person's part on top, the builder's below a line,
-  one real example — rated blind, understood where the old drafts were
-  not. Its headings are English and fixed: about twenty places of the
-  engine read `Need`, `Verification`, `Validation`, `Scope` by name.
-- **workline runs on any repository**, GitHub, GitLab, Gitea or Forgejo.
-  Left: (a) a project's own issue format; (b) the kinds; (c) the
-  language it writes in; (d) clearer heading names.
-- **The forges** ([research](../research/issue-formats.md)): templates
-  are files in the repository, GitHub's YAML forms read by Gitea and
-  Forgejo too, Markdown everywhere; a submitted form is Markdown,
-  `### <label>` then the answer. The kind is GitHub's issue type in an
-  organization, else a label the template sets.
-- **Today** a bug form's "What did you expect?" gets a Validation draft
-  saying the same, for a person to accept; GitHub's issue type is unread.
+  rated blind. Its headings are fixed: about twenty places of the engine,
+  and each issue's state, name Need, Verification, Validation, Scope.
+- **The maintainer decided, on 2026-10-11**:
+  1. the headings take the best established names, none invented:
+     Validation and Verification read badly;
+  2. a bug without steps to reproduce is never readied by the role; a
+     person may force it, and the issue then shows what still waits;
+  3. the role sets the kind label itself.
+- **Elsewhere** ([research](../research/issue-formats.md)): "Steps to
+  reproduce", "Acceptance criteria", "Test plan" are established;
+  "accepted, but waiting" is two labels; the kind is a type or a label.
 
 ## Decision
 
-### (a) A project's own format: used as is, completed by one setting
+### (a) Section names, borrowed
 
-- **Used as is**: the project's templates and forms, on every forge. The
-  reporter's fields keep their words, order and level, never renamed,
-  moved or rewritten.
-- **Completed**: a field counts as one of workline's meanings when the
-  project names it in `headings`. What a template lacks — most bug forms
-  have no Verification nor Scope — is added as today, at its level.
-  Nothing is replaced.
-- **Empty**: `_No response_`, as now, or only an HTML comment, a
-  Markdown template's hint.
+| Meaning | Written | Also read | Borrowed from |
+|---|---|---|---|
+| need | Problem | Need | GitHub's built-in feature template (~49.5k template files), "Problem statement" (~17k), GitLab's "Problem to solve" |
+| example | Example | — | TypeScript's "Motivating Example" |
+| steps (a bug) | Steps to reproduce, holding **Expected behavior**, **Actual behavior**, **Version** as bold lines | — | ~185k, ~176k, ~66k files; 8 of 21 large bug forms word for word |
+| validation | Acceptance criteria | Validation | ~39k files; an Azure DevOps field; Atlassian, GOV.UK; Dan North's story template |
+| verification | Test plan | Verification | Kubernetes enhancement proposals, Phabricator |
+| scope | Implementation notes | Scope | ~2.4k files; GitLab's "Implementation plan" |
+
+- **Acceptance criteria**: named Given / When / Then scenarios, the
+  person who accepts named in the When (Dan North's "presented as
+  Scenarios"); a task's are "done when" items. Never `- [ ]` boxes: a
+  tick is a body edit, which the role reads as a person accepting the
+  draft.
+- **Test plan**, its hint: the unit, integration and end-to-end tests
+  that prove it.
+- **Implementation notes** rather than "Implementation details", more
+  frequent (~3.3k): details invites a design the role must not invent;
+  notes hold the paths `ready` needs.
+- **Why the old names go**: in trackers, verification is a person
+  re-checking a fix, validation is checking a problem is real, and
+  "Scope" is what is in or out of the work.
+- **Kept**: the order, and the line `---` between the person's part and
+  the builder's. No generic "Open questions" section.
+
+### Old names, read forever
+
+One table maps each meaning to its headings: the first is written, all
+are read; the ids (`need`, `example`, `steps`, `validation`,
+`verification`, `scope`) never change.
+
+- A person's heading is never renamed. An issue keeps the set of names it
+  uses: a section missing from an old issue gets the old name, so the
+  two sets never mix.
+- The names in each issue's state (`wrote`, `deleted`, `sections`) are
+  read by meaning: a section a person deleted under an old name is never
+  written again under the new one.
+- An old "Scope" or "Verification" counts only beside another workline
+  section or the role's marker: a project's own "Scope", or GitLab's
+  "Verification steps", is not taken for workline's.
+- Matched whole, case, spaces, emoji and a final ":" or "?" aside.
+- **A project's own template**: `headings` lets its labels ("What
+  happened?") count as a meaning, built when a project has one. English
+  only: another language needs every engine line, case and measure again.
+
+### (b) A bug is readied by the role only with its steps
+
+- **For a bug, `ready` also needs Steps to reproduce**, a person's or
+  accepted by one, as Problem and Acceptance criteria are. The role may
+  draft them from the issue's own words; `workline:accepted` accepts
+  them. Any reproduction counts: steps, a command, code, a failing test,
+  a link. The engine checks it is there and whose; the agent judges that
+  it reproduces.
+- **The reviewer writes its finding's input as the steps**: its issues,
+  opened by a bot, have no reporter to ask.
+- **The kind must be known**: the role's `ready` states it; with none,
+  no `ready`. The engine drops a role's `ready` on a bug without a
+  person's steps, at every level.
+- **A person forces it** by setting `workline:ready`; `workline:accepted`
+  accepts drafts and does not force. On such a bug the role's line says
+  "Ready waits for steps to reproduce; set workline:ready to start
+  without them."
+- **The waiting mark, `workline:needs-repro`**, beside `workline:ready`:
+  two independent labels, as Go (`NeedsFix`, `WaitingForInfo`) and
+  Gitea (`Reviewed/Confirmed`, `Status/Need More Info`) do.
+  - workline's prefix: a project's own "needs reproduction" label may
+    drive a bot that closes the issue (Next.js after 2 days). One colon
+    on GitLab: `workline::needs-repro` would replace `workline::proposed`.
+  - Set and cleared only by the engine, each run, with no agent, comment
+    nor mail: set when a person readies a bug with no steps; cleared when
+    steps arrive, the kind stops being bug, or `ready` comes off. Taken
+    off by a person, it is never set again on that issue.
+  - It closes nothing; past `stuck-days`, the summary lists it as stuck.
+
+### (c) The role sets the kind label
+
+- **A new act, `kind`**: bug, feature or task. `normal` sets it, 10 a
+  run at most; `enterprising`, 20; `cautious` says it in its line only.
+- **Only on an issue with no type and no kind label**, checked again just
+  before applying. It never removes nor swaps a label: on GitLab Premium
+  a scoped label would silently replace a person's.
+- **Which label**: `kinds` maps each kind to the project's words; the
+  engine reads the project's labels first and uses the one that exists.
+  Only `task` is created when missing; GitLab gets labels only, never
+  `issue_type: task`, which makes the issue a child work item.
+- **GitHub issue types are read, never set**: on a personal account's
+  repository the API answers both ways, and a type set without push
+  access is silently dropped.
+- **A person's correction holds**: a kind a person removed or changed is
+  never set again on that issue, as Go's bot does; `undone-max` stops the
+  act everywhere when it is often wrong. What it set is kept in the
+  issue's state, since the Forgejo sample forge reports no label events.
+- **Issues already read**: one light read for the kind alone, about 1k
+  tokens an issue, within `issues-per-run`.
+- **Notifications**: none on GitHub; GitLab mails a label's subscribers,
+  and workflows a label triggers run: hence the cap.
 
 ```yaml
-roles:
-  product-owner:
-    settings:
-      # Each meaning, the headings holding it, the first one written; matched
-      # whole, case, spaces and punctuation aside; the English ones always read.
-      headings: {need: [Need], example: [Example], steps: [Steps to reproduce],
-        validation: [Validation], verification: [Verification], scope: [Scope]}
-      # The kind, from words in the issue's type or labels, any case.
-      kinds: {bug: [bug, defect, incident], need: [feature, enhancement],
-        task: [task, chore, maintenance]}
+# roles.product-owner.settings: the project's label per kind, the first that exists
+kinds: {bug: [bug, "type::bug", Kind/Bug], feature: [enhancement, "type::feature",
+  Kind/Feature], task: [task, "type::maintenance"]}
+acts: {kind: {mode: act, max: 10}}
 ```
-
-### (b) Kinds: the forge's; `ready` the same for all
-
-- **From the forge**: GitHub's issue type, GitLab's `issue_type`
-  (`incident` a bug), else the labels by `kinds` (`type::bug`,
-  `Kind/Bug` hold `bug`). The type wins; labels of two kinds give none.
-- **None found**: the agent judges from the text; the role's line says
-  "Read as a bug". A person who disagrees sets the kind label: one
-  click, bulk-able, read the next night.
-- **`ready` is the same for every kind**: the four sections, Need and
-  Validation a person's. The kind changes what fills them, which the
-  agent writes and judges:
-
-| Kind | Need | Example | Validation |
-|---|---|---|---|
-| need | who needs what, and why | one real case, today and wanted | named Given / When / Then scenarios |
-| bug | who it hurts | Steps to reproduce: steps, Expected, Actual, version | the steps, the expected result as the Then |
-| task | what it costs today | the warning, the minutes lost | "Done when": a checklist a person runs |
-
-### (c) English only
-
-- **workline writes English, everywhere**: the engine's lines, the
-  agent's drafts, the examples, the settings. No translated heading nor
-  scenario word, no language detected.
-- **Why**: another language, supported for real, needs every line the
-  engine writes, the conformance cases and the blind measures again in
-  that language. Half-supported, it reads half-translated. One language,
-  then.
-- `headings` is not a language feature: it lets a template's own labels,
-  "What happened?", count as a meaning — part (a).
-
-### (d) Heading names: kept
-
-- Need, Example or Steps to reproduce, Validation, the line,
-  Verification, Scope: those step 1 was rated with. The line, not a new
-  name, tells the person's part from the builder's. A project names its
-  own through `headings`; the defaults are question 1.
-
-### A bug and a need, by default and through a project's form
-
-The default writes `##` headings, in the order of
-[writing an issue](../../roles/product-owner/docs/writing.md). The form
-writes `###` and the reporter's labels. The bug's form, `bug.yml`, sets
-`labels: [bug]`; the project sets `headings: {need: [Need, "What
-happened?"], steps: [Steps to reproduce, "How can we reproduce it?"],
-validation: [Validation, "What did you expect?"]}`.
-
-| Bug | By default | Through `bug.yml` |
-|---|---|---|
-| Need | Users who exclude a folder with a trailing slash still upload it: 1.2 GB. | "What happened?" — Excluding `node_modules/` still uploads it: 18,412 files. |
-| Steps to reproduce | `snapsync push --exclude node_modules/ ~/site`; Expected: about 40 files; Actual: 18,412; version 2.3.1 | "How can we reproduce it?" — the same command; "Version" — 2.3.1, read as context |
-| Validation | Given `node_modules`, When I run that command, Then no file under it is uploaded. | "What did you expect?" — About 40 files: `node_modules` skipped. |
-| `---` | the line | added by the role |
-| Verification | `TestExcludeTrailingSlash` fails on 2.3.1, passes after the fix. | the same, added by the role |
-| Scope | `matchExclude` in `internal/filter/glob.go` | the same, added by the role |
-
-- Through the form, Need and Validation are the reporter's: at `normal`,
-  `ready` when evident, nothing to accept. Without `headings`, two
-  drafts repeat them, for a person to accept.
-
-The need's form, `feature.yml`, sets `type: Feature`; the project sets
-`headings: {need: [Need, "Why is this needed?"]}`.
-
-| Need | By default | Through `feature.yml` |
-|---|---|---|
-| Need | When I close a month's accounts, I want one export for the month, so I stop merging 30 files. | "Why is this needed?" — Closing September took 30 exports, merged by hand. "What would you like to be added?" — read as context. |
-| Example | Closing September took 30 exports, one a day. | — |
-| Validation | Given 3 sales on 1 Sep and 2 on 30 Sep, When I export "2026-09", Then I get one file with 5 sales. | the same, drafted by the role: the form has none |
-| `---`, Verification, Scope | A test exports a month with sales on two days, reads 5 rows; `ExportRange` in `src/export/csv.go` | the same, added by the role |
 
 ### What the engine checks, what the agent judges
 
 | The engine, with no agent | The agent |
 |---|---|
-| which heading holds which meaning (`headings`) | whether what fills it is enough to build from |
-| a meaning filled or empty | the kind, when no type nor label gives it |
-| the kind, from a type or a label (`kinds`) | what fills each section for that kind |
-| Need and Validation a person's | whether an issue is evident for `ready` |
-| where an added section goes, its heading and level | what to ask when a bug has no steps |
+| which heading holds which meaning, old or new | whether what fills it is enough to build from |
+| a meaning filled, and whose | whether the steps reproduce the bug |
+| the kind from a type or a label | the kind, when neither gives it |
+| a role's `ready` with no kind, or on a bug with no person's steps, dropped | whether an issue is evident for `ready` |
+| `workline:needs-repro` set and cleared | what to ask when a bug has no steps |
 
 ### Built after the trial, in order
 
-1. **Sections read by meaning**, no behaviour change: `ready`, drafts,
-   digests, the reviewer's spec read, changed needs, a parent's items.
-   The 78 conformance cases holding today's headings pass unchanged.
-2. **`headings`**; an HTML comment alone counted empty. Pieces 1 and 2
-   are built when a project running workline has its own issue template.
-3. **The kind**: GitHub's and GitLab's issue types read; `kinds`; the
-   kind in the task, and in the role's line when judged.
-4. **The instruction per kind**: a task's "Done when"; Given / When /
-   Then where a person gives an input and sees an output.
+1. **Sections read by meaning**, no behaviour change. Cases first: old,
+   new and mixed names give the same `ready`; a section deleted under an
+   old name stays deleted; the 78 existing cases pass unchanged.
+2. **The new names**, in one change: the table, the instruction, the
+   form templates, the specs.
+3. **The kind**: types read, the `kind` act, the light read.
+4. **The bug rule** and `workline:needs-repro`.
+5. **The instruction per kind**.
 
 ### Not now, because…
 
-- **Reading template files** (forms, Markdown, GitLab's group templates),
-  which one an issue came from, a hint left as written counted empty:
-  `headings` covers every forge in one line; no project has asked.
-- **A map the agent proposes and the role keeps**: wrong in silence.
-- **A bug's steps required by `ready`**: the kind is often unlabelled,
-  and the agent already asks (question 2).
-- **The role setting a kind label**: a new act with its undo (question 3).
-- **A question or a doc as a kind**: none seen; a doc is a reader's need.
-- **A readability score gating `ready`**: reported beside ratings first.
+- **Setting GitHub issue types**: see (c). **Reading template files**:
+  `headings` covers it in one line.
+- **A generic waiting label or "Open questions" section**: one wait is
+  known, the steps; a section to fill invites filler.
+- **A timer that closes**: forcing a bug is a person's choice.
+- **A developer role reading `needs-repro`**: no such role yet.
 
 ## How it is measured
 
-- **Blind, as step 1**: ten frozen issues — four bugs, three needs,
-  three tasks — drafted before and after piece 4; the maintainer says of
-  each "understood?", "accepted unchanged?". Kept if the new wins on each kind.
-- **The kind**: the agent's, labels hidden, against the label.
-- **Pieces 1 and 2**: conformance, then a copy of a repository with its
-  own template: drafts repeating a reporter's field — none after.
-- **In use**: the trial's counter — accepted unchanged, edited,
-  revised, set aside — the week after against the trial's. No new one.
+- **The names, blind, no token**: six frozen issues under the old and new
+  names; the maintainer says which section he checks to accept, which
+  the builder writes. In use: Acceptance criteria drafts accepted
+  unchanged, against Validation's.
+- **The kind**: 9 of 10 right, labels hidden; 10% or fewer changed by a
+  person. **Bugs**: none readied by the role without steps (a case);
+  open `needs-repro` issues and their age.
+- **The instruction per kind**: ten issues before and after, rated blind.
 
 ## Alternatives rejected
 
-- **Only what the template asks**: `ready` would mean "the form is
-  filled", with no Scope nor Verification in most bug forms, and who
-  validates lost (principle 1).
-- **workline's format replacing the project's**: it rewrites a
-  reporter's fields, where completing them is enough (principle 13).
-- **Multilingual support** — headings, scenario words and the engine's
-  lines in the project's language: every engine line, conformance case
-  and blind measure again per language, a cost too high (part (c)).
+- **Only what a template asks**: `ready` would mean "the form is
+  filled", who validates lost (principle 1).
+- **A kind set again each run**, as a labeler on every edit: a person's
+  correction undone each night.
+- **A project's own "needs reproduction" label**: see (b).
+- **Multilingual support**: see "Old names".
 
 ## Consequences
 
-- An issue written before reads as it did: no migration.
-- Without an agent, headings and kinds are read and `ready` checks the
-  meanings; nothing is drafted. No new label nor comment.
-- Found: workline's own `.github/ISSUE_TEMPLATE/need.yml` still lists the
-  sections in the old order; it takes the layout with piece 4.
+- Old issues read as they did: no migration, no mixed names.
+- Without an agent, the names, the forge's kinds, the bug rule and the
+  waiting mark hold; nothing is drafted, no kind judged.
+- workline's own `.github/ISSUE_TEMPLATE/need.yml` takes the new names
+  with piece 2.
 
-## Open questions for the maintainer
+## Open question for the maintainer
 
-1. **Rename the defaults?** Recommended: keep them; to check, six issues
-   under two sets of headings rated blind, no token — the other set
-   Need · Example · Accepted when · Tests · Code.
-2. **A bug `ready` only with its steps?** Recommended: no; count in use
-   the bugs readied without steps.
-3. **The role setting the kind label it judged?** Recommended: no; it
-   says the kind in its line, and a person's label is one click.
+1. **Implementation notes, or Implementation details?** Recommended:
+   notes; details is more frequent but invites a design to invent.
