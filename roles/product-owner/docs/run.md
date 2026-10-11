@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: bd82342
+checked: a86296b
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -64,8 +64,8 @@ Each issue comes with:
   (`sources`), an evident duplicate (`close`).
 - **Written for a reader**: a Need in one line, who needs what and why;
   one real example; a Validation as scenarios a person runs; the
-  builder's part below a line; plain words, a link for each decision or
-  doc cited ([writing an issue](writing.md)).
+  builder's part below a line; plain words in English, a link for each
+  decision or doc cited ([writing an issue](writing.md)).
 - **Never invented**: an issue too thin, holding several topics, or
   resting on a closed issue gets one plain question; one the code
   already does is said on it for you to close.

@@ -66,6 +66,7 @@ type caseFile struct {
 		Forge  map[string]any      `yaml:"forge"`
 		Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
 		Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands
+		Tags   []string            `yaml:"engine-tags"` // the engine built with these Go build tags: a change of the tests only (engineFor)
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -80,6 +81,7 @@ type caseFile struct {
 		Scope   []string          `yaml:"scope"`
 		Tamper  string            `yaml:"tamper"`
 		Then    string            `yaml:"then"`
+		Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
 		Route   string            `yaml:"route"`
 		Item    int               `yaml:"item"`
 		Gate    string            `yaml:"gate"`
@@ -194,8 +196,40 @@ func TestConformance(t *testing.T) {
 	}
 }
 
+// engines are the engines built with build tags of the tests, by their tags.
+var engines = map[string]string{}
+
+// engineFor is the engine a case runs: the suite's, or, for a case naming
+// engine-tags, one built from this source with those Go build tags — a
+// change only the tests make, which no shipped engine has (the table of a
+// section's headings given one more name, workline_alias). An engine
+// built already (WORKLINE_ENGINE) cannot run such a case: said, never
+// passed.
+func engineFor(tags []string) (string, error) {
+	if len(tags) == 0 {
+		return engineBin, nil
+	}
+	key := strings.Join(tags, ",")
+	if bin, ok := engines[key]; ok {
+		return bin, nil
+	}
+	if os.Getenv("WORKLINE_ENGINE") != "" {
+		return "", fmt.Errorf("needs the engine built from source with -tags %s, not the one WORKLINE_ENGINE names", key)
+	}
+	bin := filepath.Join(filepath.Dir(engineBin), "workline-"+strings.Join(tags, "-"))
+	if out, err := exec.Command("go", "build", "-tags", key, "-o", bin, "../../cmd/workline").CombinedOutput(); err != nil {
+		return "", fmt.Errorf("building the engine with -tags %s: %v\n%s", key, err, out)
+	}
+	engines[key] = bin
+	return bin, nil
+}
+
 // runCase returns what differs from the expectation; empty means it passes.
 func runCase(t *testing.T, c *caseFile) []string {
+	engineBin, err := engineFor(c.Given.Tags)
+	if err != nil {
+		return []string{err.Error()}
+	}
 	work := t.TempDir()
 	seen := filepath.Join(work, "models-seen.yaml")
 	// The user's config folder stays out: their own lists and defaults are not the case's.
@@ -252,7 +286,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
 	if c.Run.CLI != nil {
-		return runCLI(c, repo, env)
+		return runCLI(engineBin, c, repo, env)
 	}
 	roles := rolesDir
 	args := []string{"run-role", c.Run.Role, "--event", c.Run.Event, "--repo", repo, "--roles", roles, "--json"}
@@ -368,6 +402,27 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
 	}
+	if c.Run.Then == "again" {
+		// The same run once more, on the forge and the repository as the
+		// first left them, after a person's edits (between): what a run
+		// records, the next reads back.
+		if err := editForge(forgeFile, c.Run.Between); err != nil {
+			return []string{err.Error()}
+		}
+		again := exec.Command(engineBin, args...)
+		again.Dir, again.Env = repo, cmd.Env
+		stdout.Reset()
+		again.Stdout, again.Stderr = &stdout, &stderr
+		_ = again.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("the second run printed no result: %v\n%s", err, stderr.String())}
+		}
+		r2.AgentCalls += r.AgentCalls
+		r2.Calls = append(r.Calls, r2.Calls...)
+		r2.Findings = append(r.Findings, r2.Findings...)
+		r = r2
+	}
 	if c.Run.Then == "resume" || c.Run.Then == "resume-elsewhere" {
 		dirs := r.Pending
 		if len(dirs) == 0 && r.RunDir != "" {
@@ -453,7 +508,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 
 // runCLI runs workline with the case's arguments, as a person or a script
 // types them, and checks its exit code and what it prints where.
-func runCLI(c *caseFile, repo string, env []string) []string {
+func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	cmd := exec.Command(engineBin, c.Run.CLI...)
 	cmd.Dir, cmd.Env = repo, env
 	var stdout, stderr bytes.Buffer
@@ -741,6 +796,45 @@ func readPending(t *testing.T) map[string]bool {
 		}
 	}
 	return out
+}
+
+// editForge makes a person's edits to the simulated forge between two runs
+// (between): each item listed, by kind and id, takes the fields given.
+func editForge(file string, edits map[string]any) error {
+	if len(edits) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return fmt.Errorf("between: no forge to edit: %v", err)
+	}
+	var forge map[string]any
+	if err := json.Unmarshal(data, &forge); err != nil {
+		return fmt.Errorf("between: the forge does not read: %v", err)
+	}
+	for kind, items := range edits {
+		list, _ := items.([]any)
+		have, _ := forge[kind].([]any)
+		for _, e := range list {
+			edit, _ := e.(map[string]any)
+			found := false
+			for _, h := range have {
+				if item, _ := h.(map[string]any); item != nil && fmt.Sprint(item["id"]) == fmt.Sprint(edit["id"]) {
+					for k, v := range edit {
+						item[k] = v
+					}
+					found = true
+				}
+			}
+			if !found {
+				return fmt.Errorf("between: no %s with id %v", kind, edit["id"])
+			}
+		}
+	}
+	if data, err = json.Marshal(forge); err != nil {
+		return err
+	}
+	return os.WriteFile(file, data, 0o644)
 }
 
 // compareForge checks the simulated forge's state: for each listed item, by

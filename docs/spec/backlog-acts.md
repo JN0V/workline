@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: bd82342
+checked: a86296b
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -58,6 +58,12 @@ rules: 2                                 # the way of reading it was last read u
 The comment says, above the state, what the role did and proposes there,
 the state folded ("On the issue"). The block's fence is longer than any
 run of backticks in it: a text holding a code fence is kept as written.
+
+`sections`, `wrote` and `deleted` keep each section under the heading it
+had in the body, and are read by its meaning (`work.Headings`,
+[ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)):
+a section deleted under one heading is never written under another of
+the same meaning.
 
 Two carrying the marker, the last is read: on GitLab only a note's author
 edits it, so one another token wrote is left, and the state is written
@@ -422,7 +428,7 @@ what it can and asks for the rest:
   `_No response_` — is filled in place (an issue form writes its fields as
   `### ` headings, read as `## ` ones). A section with text — a person's,
   or one the role wrote before — is never rewritten (`section-kept`).
-  **In the reader's order** (`backlog.Layout`): the person's part — Need,
+  **In the reader's order** (the table's, `work.Headings`): the person's part — Need,
   an `example` (`## Example`) or a bug's `steps` (`## Steps to
   reproduce`), Validation — above a thematic break `---`; the builder's —
   Verification, Scope — below it. A section added goes after the nearest
@@ -554,6 +560,12 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
 - the body's digest it read (`BodyDigest`; empty when the review was not
   whole), the round, the important findings open, the sections they lie
   in, and `stopped` once the rounds are spent.
+- **A section is named by its heading** in the body, as the state's
+  `wrote` and `deleted` are, read by meaning (ADR-0039): any heading,
+  each escaped as a URL's query escapes a value (`in=Steps+to+reproduce`,
+  a comma `%2C`). A heading of letters only is written as it always was,
+  so a record written before reads the same; one that does not read is
+  none, the issue read again as round 1.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
   a proposal accepted — and at every level: `spec-not-reviewed` (no record, or

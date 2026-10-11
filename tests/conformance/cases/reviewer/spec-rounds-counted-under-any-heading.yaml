@@ -1,0 +1,30 @@
+case: reviewer/spec-rounds-counted-under-any-heading
+about: "The record the reviewer hides in its comment on an issue's spec (#128) holds the sections its important findings lie in under any heading, words and spaces too, and the next run reads it back: a finding in a bug's Steps to reproduce, the steps then edited by a person, is read again as round 2, never round 1 again with the rounds lost."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 4
+        title: Average crashes on an empty list
+        body: "## Need\n\nAverage gives 0 for an empty list instead of crashing.\n\n## Steps to reproduce\n\n1. Call Average on an empty list.\n2. The program stops on a division by zero.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run:
+  role: reviewer
+  event: schedule
+  ai: "fake:review-spec-steps"
+  then: again
+  between:
+    issues:
+      - id: 4
+        body: "## Need\n\nAverage gives 0 for an empty list instead of crashing.\n\n## Steps to reproduce\n\n1. Open the monthly report on a day with no sale.\n2. Call Average on an empty list.\n3. The program stops on a division by zero.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+expect:
+  status: pass
+  findings: [{rule: unverifiable, where: "#4:7"}, {rule: unverifiable, where: "#4:8"}]
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["**Holds it from ready**: 1 important finding open, round 2 of 5", "rewriting what is its own in Steps to reproduce", "round=2 open=1 in=Steps+to+reproduce -->"]

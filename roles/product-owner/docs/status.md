@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-10)
+# Product owner — where it stands (2026-10-11)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
@@ -36,18 +36,20 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: nearly. What is left is mostly tries
-   on real use; the forge's native rank (deferred by ADR-0018) and the
-   items "if live use asks" are to park as issues.
-2. **The main issue validated on real use**: open. The maintainer found
-   the report ([#110](https://github.com/JN0V/workline/issues/110))
-   unreadable; ADR-0038 replaced it with proposals on each issue. Its
-   week's trial measures them: accepted unchanged, edited, revised, set
-   aside, ignored.
-3. **AI verdicts measured**: in part. `keeps-a-planted-backlog` passed 5
-   in 5 on Sonnet; closing as obsolete, refining, splitting and renaming
-   are not measured; a real week's sample of its acts is not yet read
-   (Missing 5).
+1. **Nothing buildable in Missing**: met once
+   [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
+   is built. Missing holds only that decision, next to build; the tries
+   on real use are under "Not tried yet", the deferred items parked as
+   issues.
+2. **The main issue validated on real use**: open. The trial of
+   [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+   measures the proposals on each issue — accepted unchanged, edited,
+   revised, set aside, ignored —; the maintainer validates it from them.
+3. **AI verdicts measured on the acts on by default**: in part. An
+   evident duplicate: `keeps-a-planted-backlog`, 5 in 5 on Sonnet. Left:
+   refine (drafts accepted unchanged in the trial, the blind ratings),
+   ready (moved alone and not undone), and the kind once ADR-0039 builds
+   it (9 of 10 right, labels hidden).
 
 ## Built and tried with a real agent
 
@@ -105,75 +107,110 @@ sandbox, three runs, then members, a bot's token and a reply's
 agreement, four runs and GitLab CI (tried.md); its milestones there not
 checked.
 
+## Not tried yet
+
+Tries on real use, nothing to build: what is left to see.
+
+- **Refining**: a real outsider's issue, and a reporter's own `agreed`,
+  live; the gardening template on GitLab with a release holding this.
+- **Answers on the issue**
+  ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
+  the trial, measured (To leave beta, 2); a real agent's revision after
+  a comment; a comment by an outsider and by a bot, live (one account on
+  each sandbox); the night's summary grouped and linked, the judging job
+  saying what the applying one will do, a body's footer kept out of its
+  sections (conformance only), live in their plain wording; the
+  prompt's writing rules read by the maintainer on a real night.
+- **Autonomy**
+  ([ADR-0026](../../../docs/adr/0026-the-product-owners-autonomy-is-a-level.md)):
+  a real agent's rename undone, `ready` taken off and a split's child
+  closed, live; `workline init`'s question on a terminal.
+- **Sources and imports**: a file the agent was not shown named as a
+  source; a real agent's answer to a closed issue in an import's plan; a
+  real agent's import answered with `skip`s — DomoticsCore's roadmap
+  again, its map read by the maintainer against its 56 issues — and the
+  tokens a `skip` costs
+  ([ADR-0030](../../../docs/adr/0030-an-import-maps-every-item-to-its-issue-or-why-not.md)).
+- **Ordering**: a person's priority kept, live (conformance only);
+  milestones ranked by due date on GitLab.
+- **A parent**
+  ([ADR-0029](../../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)):
+  a test named as proof, read live on GitLab.
+- **What an issue waits on**
+  ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)):
+  a GitLab Premium link, a link taken off on GitLab, a real agent's
+  `undepend` accepted, all live.
+- **Next and stuck**
+  ([ADR-0031](../../../docs/adr/0031-the-report-opens-with-what-is-next-and-what-is-stuck.md)):
+  an issue stuck past 14 days, live; the maintainer reading the night's
+  summary for [#164](https://github.com/JN0V/workline/issues/164)'s
+  Validation, written for the report the summary replaced.
+- **Off by default, once turned on**:
+  - closing as obsolete
+    ([ADR-0024](../../../docs/adr/0024-obsolete-is-announced-then-closed-on-silence-and-a-second-judge.md)):
+    a real delay of days; the label taken off, an exempt label, a
+    judge's no, live; 7 days and 3 a run measured;
+  - the weekly sample
+    ([ADR-0033](../../../docs/adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):
+    a real week's acts read by the maintainer — a closing undone, the
+    level suggested, ten acts or more, a GitLab project's, workline's
+    own;
+  - a changed need
+    ([ADR-0032](../../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)):
+    a real agent proposing `unready` when it should, and only then; an
+    imported file's lines changed, live; GitLab;
+    [#165](https://github.com/JN0V/workline/issues/165)'s Validation
+    read by the maintainer.
+
+## Parked as issues
+
+Buildable, deferred until real use asks
+([ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)):
+closed as not planned, labelled `workline:parked`, reopened when it does.
+
+- [#290](https://github.com/JN0V/workline/issues/290): a yes given in a
+  reply, a bot's `workline:accepted`, an outsider's proposal labelled.
+- [#291](https://github.com/JN0V/workline/issues/291): splits on GitLab —
+  a Planner token's refusal said, an undone split told with no close
+  reason —, and the links a split set before the parent kept them.
+- [#292](https://github.com/JN0V/workline/issues/292): the forge's own
+  rank, a GitLab board or a GitHub project.
+- [#293](https://github.com/JN0V/workline/issues/293): a parent's part
+  and an issue's blocker in another repository.
+- [#294](https://github.com/JN0V/workline/issues/294): a Verification
+  item proved in other words, or by a test named in prose.
+- [#295](https://github.com/JN0V/workline/issues/295): a changed
+  Verification or Validation flagging the issues built on it.
+- [#296](https://github.com/JN0V/workline/issues/296): a person's
+  verdict on an act of the weekly sample.
+- [#297](https://github.com/JN0V/workline/issues/297): a pull request
+  closed unmerged no longer counted as a start.
+- Open elsewhere: the Forgejo sample's backlog operations, among them
+  `label-events`, `react`, `add-blocker`, `remove-blocker`, `trail` and
+  `closers` ([#65](https://github.com/JN0V/workline/issues/65)); the
+  developer role taking the `next-ready` issue
+  ([#117](https://github.com/JN0V/workline/issues/117)).
+
 ## Missing, in the order to build it
 
-1. **Refining, what is left**: a real outsider's issue tried live, and
-   a reporter's own `agreed`; a person of the project's reply taken for
-   the label, if live use asks for it (ADR-0021, amended); a GitLab role
-   too low reported as such, not only by the split's fallback
-   (ADR-0023); the gardening template on GitLab run with a release
-   holding this.
-2. **Obsolete, what is left** (ADR-0024): a real delay of days waited
-   for; the label taken off, an exempt label, a judge's no tried live; 7
-   days and 3 a run measured. (The weekly sample draws these closings
-   with the other acts: ADR-0033.)
-3. **Answers on the issue, what is left** (ADR-0038): the week's trial
-   on workline and the maintainer's GitLab project, measured; a real
-   agent's revision after a comment; a comment by an outsider and a bot
-   live (one account on each sandbox); `workline:accepted` set by a bot
-   read as the project's; the Forgejo sample's `label-events` and
-   `react`; an outsider's proposal labelled `workline:proposed` (its
-   comment to the reporter is the proposal today). The night's summary
-   grouped and linked, the judging job saying what the applying one will
-   do, and a body's footer kept out of its sections (seen on
-   [#261](https://github.com/JN0V/workline/issues/261)'s Scope): in
-   conformance only (`summary-judged-says-what-will-be-done`,
-   `summary-applied-does-what-the-judge-said`,
-   `refine-leaves-a-footer-out`), seen on the night of 2026-10-09, its
-   wording since made plain. The new writing rules of the prompt — a
-   Need from the user's side, a concrete Validation, one plain question
-   rather than a guess — read on a real night by the maintainer.
-4. **Autonomy, what is left** (ADR-0026): the acts' suggestion seen
-   live in the role's own report; a rename by a real
-   agent undone, `ready` taken off and a split's child closed live;
-   `workline init`'s question on a terminal; an undone split on GitLab,
-   which keeps no reason for a closing.
-5. **The weekly sample of its acts, what is left** (ADR-0033): a real
-   week's acts drawn and read by the maintainer — the sandbox's were
-   planted, a closing undone and a suggestion not yet seen live; ten or more
-   acts in the window, live; a GitLab project's; workline's own (its
-   record has no `did` until its next nightly run with this); a person's
-   tick in the sample read as a verdict, if undoing proves too coarse. A
-   file the agent was not shown named as a source. The one way to open issues is built (ADR-0018,
-   amended); its import's plan sees a closed issue; left: a real agent's
-   answer to one.
-   **The import's map, what is left** (ADR-0030): a real agent's import
-   answered with `skip`s — DomoticsCore's roadmap again, the map read by
-   the maintainer against its 56 issues, each reason agreed with, none
-   missing; the tokens a `skip` a line costs, measured.
-6. **Ordering, what is left**: a forge's native rank (GitLab's reorder, a
-   GitHub project's position), deferred (ADR-0018); milestones ranked by
-   their due date tried on GitLab; the engine refusing a person's
-   priority, tried in conformance only.
-7. **A parent, what is left** (ADR-0029): an agent drafting which
-   Verification items look proved in other words, if live use asks; a
-   test named in prose, outside a code span; a test named as proof read
-   live on GitLab; a part of another repository;
-   a plugged forge's `closers` tried.
-8. **What an issue waits on, what is left** (ADR-0028): a GitLab Premium
-   link tried live; a relation across projects; a link taken off on
-   GitLab live, and a real agent's `undepend` ticked live; the links a
-   split set before the parent's state kept `after`, unknown to the role;
-   the Forgejo sample's `add-blocker` and `remove-blocker`; the
-   developer role taking the `next-ready` issue (#117).
-9. **Next and stuck, what is left** (ADR-0031): an issue truly stuck
-   past 14 days seen live (the sandboxes' days are all this week's); the
-   maintainer reading #110 after a run on workline (#164's Validation);
-   the Forgejo sample's `trail`; a pull request closed unmerged still
-   counting as started.
-10. **A changed need, what is left** (ADR-0032): a real agent's answer on
-   the parts read again — whether it proposes `unready` when it should,
-   and only then; an imported file's lines changed, tried live (the
-   sandbox's imported file was never pushed); GitLab; a change to
-   Verification or Validation, if live use asks; the maintainer reading
-   the report against #165's Validation.
+Only what is decided and comes next:
+
+1. **Issue sections and kinds, proposed**
+   ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
+   [examples](proposed-headings.md)): established section names, the
+   old ones read forever; each thing said once — the text above the
+   sections as the Problem, an Example only with a fact, a draft that
+   repeats another dropped (amended 2026-10-11); a bug readied only with
+   its steps, `workline:needs-repro` when a person readies it without;
+   the kind label set by the role; English only. Built after the trial
+   of
+   [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md).
+2. **Priority and effort where the forge keeps them, proposed**
+   ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
+   [examples](priority-and-effort.md)): a priority (Urgent to Low) and an
+   effort (Low to High), read by name from a GitHub organisation's
+   fields, GitLab's `weight`, the project's labels or the forge's words;
+   the order adds effort after priority, Next shows each issue's cell;
+   the role estimates both where empty, a person's value kept;
+   `workline:priority/*` renamed. Six steps, conformance first, then a
+   live try on a new jn0v-lab repository.

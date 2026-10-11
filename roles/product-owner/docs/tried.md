@@ -1073,7 +1073,7 @@ branch's. One call each, all ten issues in it.
   answer in one long sentence; a question written twice. Built after it:
   2026-10-10, below.
 
-**Not tried**: GitLab; an issue in another language than English.
+**Not tried**: GitLab.
 
 ## 2026-10-10 — what no person wrote, in plain words: #160 and #92 replayed
 

@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/JN0V/workline/internal/work"
 )
 
 // contracts describes each intention's shape, for the generated output contract.
@@ -22,7 +24,7 @@ var contracts = map[string]string{
 	"milestone":      `- milestone: {issue: 12, milestone: "v2.14.0", why: "why it belongs to that release"}`,
 	"order":          `- order: {issue: 12, priority: 1, why: "why it comes before the others"}  # 1 the most pressing, to 4`,
 	"refine":         `- refine: {issue: 12, need: "one line: who needs what, and why (a draft)", example: "one real case, today and wanted (a draft)", validation: "named scenarios, Given / When / Then (a draft)", verification: "the tests that will prove it", scope: "the part of the code", sources: ["src/file.go"], why: "why", questions: "what is still missing (an outsider's issue only)"}  # only the sections it lacks; a bug: steps instead of example — the steps, Expected, Actual, the version (a draft); description: the text above its sections in plain words, only where the task says it is a role's`,
-	"ready":          `- ready: {issue: 12, why: "its four sections are there, Need and Validation a person's"}`,
+	"ready":          `- ready: {issue: 12, why: "its four sections are there, ` + work.Name(work.Need) + ` and ` + work.Name(work.Validation) + ` a person's"}`,
 	"unready":        `- unready: {issue: 12, why: "what in the change it no longer fits"}  # a ready issue back to refine: always proposed to a person, never done by the role`,
 	"ask":            `- ask: {issue: 12, questions: "what its reporter should say", why: "why the issue cannot be refined without it"}`,
 	"split":          `- split: {issue: 12, into: [{title: "a short title", need: "who needs this part, and why (a draft)", verification: "the tests that will prove it", validation: "who accepts it (a draft)", scope: "the part of the code", sources: ["src/file.go"]}, {title: "…", …}], why: "why it is several needs"}  # 2 to 6 children, each its four sections`,

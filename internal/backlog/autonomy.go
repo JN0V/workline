@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/JN0V/workline/internal/work"
 )
 
 // How far the role goes (ADR-0026): one setting, `autonomy`, a preset of
@@ -191,7 +193,7 @@ func (m KindMode) Say() string {
 		what = fmt.Sprintf("act, %d a run", m.Max)
 	}
 	if m.Kind == "refine" && m.Mode == Act && m.Drafts == Propose {
-		what += ", Need and Validation drafts proposed"
+		what += fmt.Sprintf(", %s and %s drafts proposed", work.Name(work.Need), work.Name(work.Validation))
 	}
 	what += " (" + m.Origin + ")"
 	if strings.HasPrefix(m.Kind, "close-") && m.Mode == Off {

@@ -8,6 +8,7 @@ package backlog
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
@@ -32,11 +33,16 @@ type SpecReview struct {
 	Body    string   // the digest of the body it read (BodyDigest); "" when no review was whole
 	Round   int      // the reviews in a row that found an important finding open, this one included
 	Open    int      // the important findings open, as it read the body
-	In      []string // the sections their causes lie in
+	In      []string // the sections their causes lie in, by heading
 	Stopped bool     // the rounds spent: put to a person, not read again
 }
 
-var specRecord = regexp.MustCompile(`<!-- workline:spec-review body=([0-9a-f]*) round=(\d+) open=(\d+) in=([A-Za-z,]*)( stopped)? -->`)
+// The record names a section by its heading in the body, as the issue's
+// state does, read by meaning (ADR-0039). Each heading is escaped as a
+// URL's query escapes a value: words, spaces, a comma or a "-->" read back
+// whole, and a heading of letters only is written as it always was, so a
+// record written before reads the same.
+var specRecord = regexp.MustCompile(`<!-- workline:spec-review body=([0-9a-f]*) round=(\d+) open=(\d+) in=([A-Za-z0-9%+._~,-]*)( stopped)? -->`)
 
 // String is the record as the comment hides it.
 func (r SpecReview) String() string {
@@ -44,7 +50,11 @@ func (r SpecReview) String() string {
 	if r.Stopped {
 		stopped = " stopped"
 	}
-	return fmt.Sprintf("<!-- workline:spec-review body=%s round=%d open=%d in=%s%s -->", r.Body, r.Round, r.Open, strings.Join(r.In, ","), stopped)
+	in := make([]string, len(r.In))
+	for i, h := range r.In {
+		in[i] = url.QueryEscape(h)
+	}
+	return fmt.Sprintf("<!-- workline:spec-review body=%s round=%d open=%d in=%s%s -->", r.Body, r.Round, r.Open, strings.Join(in, ","), stopped)
 }
 
 // ReadSpecReview reads the reviewer's record from an issue's comments: nil
@@ -62,8 +72,14 @@ func ReadSpecReview(comments []string) *SpecReview {
 		r := &SpecReview{Body: m[1], Stopped: m[5] != ""}
 		r.Round, _ = strconv.Atoi(m[2])
 		r.Open, _ = strconv.Atoi(m[3])
-		if m[4] != "" {
-			r.In = strings.Split(m[4], ",")
+		for _, h := range strings.Split(m[4], ",") {
+			name, err := url.QueryUnescape(h)
+			if err != nil {
+				return nil
+			}
+			if name != "" {
+				r.In = append(r.In, name)
+			}
 		}
 		return r
 	}
@@ -133,7 +149,7 @@ func SectionDigest(body, name string) string {
 	if name == DescriptionName {
 		return DescriptionDigest(body)
 	}
-	return BodyDigest(work.Sections(body)[name])
+	return BodyDigest(work.ByMeaning(body)[work.MeaningOf(name)].Text)
 }
 
 // Own are the sections of a body still the role's own — a draft no person
@@ -141,19 +157,24 @@ func SectionDigest(body, name string) string {
 // it rewrites to answer a person's comment on its proposal (ADR-0038). A
 // person's section, edited or deleted, is never among them.
 func Own(is forge.Issue, st *State) []string {
-	have := work.Sections(is.Body)
+	have := work.ByMeaning(is.Body)
 	var out []string
-	for _, name := range Layout {
-		text, ok := have[name]
+	for _, m := range layout() {
+		s, ok := have[m]
 		switch {
-		case !ok || strings.TrimSpace(text) == "":
-		case IsDraft(is.Body, name, st) && !Accepted(is):
-			out = append(out, name)
-		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
-			out = append(out, name)
+		case !ok || strings.TrimSpace(s.Text) == "":
+		case IsDraft(is.Body, m, st) && !Accepted(is), mine(st, m, s.Text):
+			out = append(out, s.Heading)
 		}
 	}
 	return out
+}
+
+// mine says whether text is as the role wrote a section of meaning m (the
+// state's `wrote`).
+func mine(st *State, m work.Meaning, text string) bool {
+	_, wrote := st.wrote(m)
+	return wrote != "" && wrote == BodyDigest(text)
 }
 
 // Revisable are the sections of a body the role may rewrite to answer the
@@ -164,15 +185,14 @@ func Revisable(is forge.Issue, st *State, r *SpecReview) []string {
 	if r == nil {
 		return nil
 	}
-	have := work.Sections(is.Body)
+	have := work.ByMeaning(is.Body)
 	var out []string
 	for _, name := range r.In {
-		text, ok := have[name]
+		m := work.MeaningOf(name)
+		s, ok := have[m]
 		switch {
-		case !ok || !slices.Contains(Sections, name) || slices.Contains(out, name):
-		case IsDraft(is.Body, name, st) && !Accepted(is):
-			out = append(out, name)
-		case st != nil && st.Wrote[name] != "" && st.Wrote[name] == BodyDigest(text):
+		case !ok || !slices.Contains(work.Required, m) || work.Has(out, m):
+		case IsDraft(is.Body, m, st) && !Accepted(is), mine(st, m, s.Text):
 			out = append(out, name)
 		}
 	}

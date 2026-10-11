@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: bd82342
+checked: a86296b
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -70,7 +70,13 @@ the run (`{"fake:light": {model: …}}`), in the file `WORKLINE_MODELS_SEEN` nam
 It can also carry `repos`: other repositories to build first, each
 exported by name as an environment variable holding its path, for
 multi-repository cases. `env` sets variables for the run (`$VAR` expands):
-a `PATH` without a tool, or with a fake one first.
+a `PATH` without a tool, or with a fake one first. `engine-tags` runs the
+case on an engine built from this source with those Go build tags, a
+change only the tests make: `workline_alias` gives how a person accepts a
+need a new heading, written first, the shipped one still read
+([ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)).
+Such a case does not run on an engine `WORKLINE_ENGINE` names: it fails,
+saying so.
 
 `run` can also carry:
 
@@ -111,7 +117,12 @@ a `PATH` without a tool, or with a fake one first.
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
   every run a line judged and did not apply; `then: resume-elsewhere` — the
   same with another cache and the roles built into the engine, as CI's
-  second job;
+  second job; `then: again` — after the run, the same run once more, on
+  the forge and the repository as the first left them, after a person's
+  edits to the forge given in `between` (`{issues: [{id: 4, body: …}]}`:
+  each item, by kind and id, takes the fields given): what one run
+  records, the next reads back. Both runs' agent calls, calls and findings
+  are counted together, the rest is the second's;
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 `expect` lists only what the case is about; anything not listed is not checked.

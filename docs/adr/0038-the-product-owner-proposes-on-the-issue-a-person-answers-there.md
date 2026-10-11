@@ -362,3 +362,14 @@ Decided:
 - **The answer is a short list**, one gesture a line.
 - **A question is written once**, in the comment naming the reporter,
   which notifies them; the role's comment links to it.
+
+## Amendment (2026-10-11): drafts in English
+
+- **The role writes in English**, whatever the issue's language: the
+  drafts, the Given / When / Then scenarios, its lines. The last
+  amendment's "in the issue's language" is withdrawn.
+- **Why**: real support for other languages means every engine line,
+  conformance case and blind measure again per language
+  ([ADR-0039](0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
+  rejects it); one sentence in the instruction would promise what was
+  never tried.
