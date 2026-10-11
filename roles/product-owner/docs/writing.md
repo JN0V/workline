@@ -140,6 +140,6 @@ is the role's until a person edits it:
 
 ## Proposed next
 
-New names for these sections, a bug readied only with its steps, and
-the kind set by the role are proposed, not built:
+New names for these sections, each thing said once, a bug readied only
+with its steps, and the kind set by the role are proposed, not built:
 [the proposed headings](proposed-headings.md).

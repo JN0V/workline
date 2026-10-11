@@ -23,10 +23,13 @@ issue's kind? For the product owner's sections
   removed, one re-adds it on every edit.
 - **No tool** checks that a filled template is enough to build from.
   Forms have no language key; workline writes English only.
+- **A section that repeats another** is found as near-duplicate text
+  is: the share of its words already said, over shingles.
 
 Searched in the ecosystem's words: *issue forms*, *description
 templates*, *issue types*, *steps to reproduce*, *expected behavior*,
-*acceptance criteria*, *test plan*, *needs repro*, *waiting for info*.
+*acceptance criteria*, *test plan*, *needs repro*, *waiting for info*,
+*near-duplicate detection*, *shingling*, *containment*.
 Templates and label lists read on the default branches on 2026-10-09
 and 2026-10-11; counts from GitHub's code search on 2026-10-11.
 
@@ -151,6 +154,24 @@ Label lists read on each repository on 2026-10-11.
   required before work starts can become "a big, burly bouncer"
   ([Mountain Goat Software](https://www.mountaingoatsoftware.com/blog/the-dangers-of-a-definition-of-ready)).
 
+## A draft that repeats
+
+- **Near-duplicate detection** cuts each text into shingles, every run
+  of k consecutive words, and compares the sets
+  ([Manning, Raghavan, Schütze, *Introduction to Information Retrieval*, 19.6](https://nlp.stanford.edu/IR-book/html/htmledition/near-duplicates-and-shingling-1.html)):
+  for web pages, k = 4, near duplicates past a Jaccard of 0.9.
+- **Two measures** ([Broder, "On the resemblance and containment of
+  documents", 1997](https://doi.org/10.1109/SEQUEN.1997.666900)):
+  resemblance, the Jaccard of the two sets; containment of A in B, the
+  share of A's shingles found in B.
+- **For a short draft against a longer text**, containment: Jaccard
+  dilutes a draft wholly inside a long text. One-word shingles, common
+  words left out: a restated problem is a paraphrase, not a copy.
+  [#103](https://github.com/JN0V/workline/issues/103)'s Example scores
+  54% against its text on top at one word, 18% at three
+  ([ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
+  amended 2026-10-11).
+
 ## Languages
 
 - **Forms have no language key.** Projects copy a template per language
@@ -168,7 +189,8 @@ Label lists read on each repository on 2026-10-11.
 - **Borrowed**: the forge's templates, untouched; the established names;
   two labels for "accepted, but waiting", as Go and Gitea do; the kind as
   the forge holds it, a label a person removed never set again, as
-  gopherbot does.
+  gopherbot does; containment over shingles, to find a draft that
+  repeats.
 - **Missing**: a template's field read as a meaning (a documentalist
   setting already takes a project's own headings,
   [#260](https://github.com/JN0V/workline/pull/260)); what a template
