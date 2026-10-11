@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
+sources: [internal/backlog, internal/scale, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: a86296b
+checked: 8deb61d
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -390,6 +390,14 @@ the one recorded — set by a person, or by a person over the role's, or
 taken off by one — is a person's: the act is dropped and the label kept
 (`priority-kept`); the task shows it as a person's. No quote; the state
 must read, as for any act.
+
+The levels are read by name through one table (`internal/scale`,
+[ADR-0040](../adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md)):
+the two scales, Urgent to Low and an effort Low to High, and the names
+each is read under — a field's options whatever their order, a
+project's label family, GitLab's `weight`. The engine reads and writes
+only the labels above, and no effort, until it detects where a project
+keeps them.
 
 **The backlog's order** is derived, never stored: the nearest milestone
 first (by its due date, GitHub's and GitLab's alike, a milestone with one
