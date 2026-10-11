@@ -49,10 +49,6 @@ roles:
       acts:
         refine: {max: 10}
         ready: {max: 10}
-        # The maintainer wants priorities here: ten a run, as the labels
-        # workline:priority/1 to /4 (ADR-0018); a person's label is kept and
-        # their correction never undone (ADR-0026). Off in the role's default.
-        order: {mode: act, max: 10}
       # The backlog file the issues were imported from, archived since: the
       # issues are the source, an edit to it flags none of them (ADR-0032).
       archived: [docs/BACKLOG.md]
