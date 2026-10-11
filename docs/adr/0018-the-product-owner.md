@@ -3,7 +3,9 @@
 - **Status:** proposed — the points under "Open" wait for the person;
   closing as obsolete built by ADR-0024, its default `act`; a tick, a
   kind set back to act and the pause built by ADR-0025; partly
-  superseded by [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md) (the report issue)
+  superseded by [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md) (the report issue),
+  and by [ADR-0040](0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md)
+  once built (the priority labels)
 - **Date:** 2026-10-03
 - **Builds on:** ADR-0014 (`checked` earned by what was read), ADR-0015
   (the weekly sample), ADR-0016 (writes go to the project's forge),
@@ -131,6 +133,11 @@ and says so.
 
 *Amended 2026-10-04* (docs/research/product-owner.md, "Priority and
 ranking").
+
+*Amended 2026-10-11*: [ADR-0040](0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
+proposed, replaces the labels `workline:priority/1` to `/4` with the
+forge's own priority, and orders by effort after it; until it is built,
+this section describes what runs.
 
 **Stored in the forge's own fields**: an issue's release in its milestone,
 its priority in one label of four, `workline:priority/1` (the most

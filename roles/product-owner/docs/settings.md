@@ -55,7 +55,7 @@ The code stays; each comes back with a mode
 | Kind | Turned on, does |
 |---|---|
 | `milestone` | puts an issue in its release's milestone; moves one that slipped |
-| `order` | sets `workline:priority/1` to `/4`; a person's kept |
+| `order` | sets `workline:priority/1` to `/4`; a person's kept. Proposed: the forge's own priority, and an effort ([priority and effort](priority-and-effort.md)) |
 | `split` | splits a need too big into 2 to 6 issues ([ADR-0022](../../../docs/adr/0022-a-split-keeps-the-need-a-rename-keeps-a-persons-title.md)) |
 | `rename` | renames a vague title; a person's kept |
 | `depend` | says what an issue waits on ([ADR-0028](../../../docs/adr/0028-an-issue-names-what-it-waits-on.md)) |
