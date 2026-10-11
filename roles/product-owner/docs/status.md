@@ -205,3 +205,12 @@ Only what is decided and comes next:
    the kind label set by the role; English only. Built after the trial
    of
    [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md).
+2. **Priority and effort where the forge keeps them, proposed**
+   ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
+   [examples](priority-and-effort.md)): a priority (Urgent to Low) and an
+   effort (Low to High), read by name from a GitHub organisation's
+   fields, GitLab's `weight`, the project's labels or the forge's words;
+   the order adds effort after priority, Next shows each issue's cell;
+   the role estimates both where empty, a person's value kept;
+   `workline:priority/*` renamed. Six steps, conformance first, then a
+   live try on a new jn0v-lab repository.
