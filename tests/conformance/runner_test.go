@@ -81,6 +81,7 @@ type caseFile struct {
 		Scope   []string          `yaml:"scope"`
 		Tamper  string            `yaml:"tamper"`
 		Then    string            `yaml:"then"`
+		Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
 		Route   string            `yaml:"route"`
 		Item    int               `yaml:"item"`
 		Gate    string            `yaml:"gate"`
@@ -400,6 +401,27 @@ func runCase(t *testing.T, c *caseFile) []string {
 	var r result
 	if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
 		return []string{fmt.Sprintf("engine printed no result: %v\n%s", err, stderr.String())}
+	}
+	if c.Run.Then == "again" {
+		// The same run once more, on the forge and the repository as the
+		// first left them, after a person's edits (between): what a run
+		// records, the next reads back.
+		if err := editForge(forgeFile, c.Run.Between); err != nil {
+			return []string{err.Error()}
+		}
+		again := exec.Command(engineBin, args...)
+		again.Dir, again.Env = repo, cmd.Env
+		stdout.Reset()
+		again.Stdout, again.Stderr = &stdout, &stderr
+		_ = again.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("the second run printed no result: %v\n%s", err, stderr.String())}
+		}
+		r2.AgentCalls += r.AgentCalls
+		r2.Calls = append(r.Calls, r2.Calls...)
+		r2.Findings = append(r.Findings, r2.Findings...)
+		r = r2
 	}
 	if c.Run.Then == "resume" || c.Run.Then == "resume-elsewhere" {
 		dirs := r.Pending
@@ -774,6 +796,45 @@ func readPending(t *testing.T) map[string]bool {
 		}
 	}
 	return out
+}
+
+// editForge makes a person's edits to the simulated forge between two runs
+// (between): each item listed, by kind and id, takes the fields given.
+func editForge(file string, edits map[string]any) error {
+	if len(edits) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return fmt.Errorf("between: no forge to edit: %v", err)
+	}
+	var forge map[string]any
+	if err := json.Unmarshal(data, &forge); err != nil {
+		return fmt.Errorf("between: the forge does not read: %v", err)
+	}
+	for kind, items := range edits {
+		list, _ := items.([]any)
+		have, _ := forge[kind].([]any)
+		for _, e := range list {
+			edit, _ := e.(map[string]any)
+			found := false
+			for _, h := range have {
+				if item, _ := h.(map[string]any); item != nil && fmt.Sprint(item["id"]) == fmt.Sprint(edit["id"]) {
+					for k, v := range edit {
+						item[k] = v
+					}
+					found = true
+				}
+			}
+			if !found {
+				return fmt.Errorf("between: no %s with id %v", kind, edit["id"])
+			}
+		}
+	}
+	if data, err = json.Marshal(forge); err != nil {
+		return err
+	}
+	return os.WriteFile(file, data, 0o644)
 }
 
 // compareForge checks the simulated forge's state: for each listed item, by
