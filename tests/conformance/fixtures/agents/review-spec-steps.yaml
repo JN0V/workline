@@ -1,0 +1,11 @@
+# A spec lens on issue #4, a bug, read by its number: its steps to
+# reproduce call Average on an empty list, its Need asks for 0 there, and
+# nothing says whether the crash is gone from every caller.
+calls:
+  - - finding:
+        lens: unverifiable
+        severity: important
+        title: The steps reproduce the crash, nothing checks it is gone for the callers
+        why: "The steps call Average on an empty list; the Verification tests Average alone, not the code that reached it"
+        cause: {path: "#4", quote: "Call Average on an empty list"}
+        fix: name the caller the steps start from, and test it

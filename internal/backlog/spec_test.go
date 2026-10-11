@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/work"
 )
 
 func TestSpecReviewReadsBack(t *testing.T) {
@@ -15,6 +16,28 @@ func TestSpecReviewReadsBack(t *testing.T) {
 	}
 	if ReadSpecReview([]string{r.String()}) != nil {
 		t.Fatal("a record without the reviewer's marker read")
+	}
+}
+
+// The record holds the sections under any heading a body can have, and a
+// record written before, its headings of letters only, reads the same and
+// is written the same.
+func TestSpecReviewHoldsAnyHeading(t *testing.T) {
+	in := []string{work.Name(work.Steps), "Acceptance criteria", "What happened?", "Notes, ideas", "Critères", "a --> b", "C++ at 100%"}
+	r := SpecReview{Body: "3f9a1c0e2b7d", Round: 3, Open: 2, In: in}
+	got := ReadSpecReview([]string{r.String() + "\n\n" + SpecMarker})
+	if got == nil || got.Round != 3 || got.Open != 2 || !slices.Equal(got.In, in) {
+		t.Fatalf("read back %+v from %q", got, r.String())
+	}
+	old := "<!-- workline:spec-review body=d424ff914f28 round=1 open=2 in=Verification,Scope -->"
+	if got := ReadSpecReview([]string{old + "\n\n" + SpecMarker}); got == nil || got.Round != 1 || !slices.Equal(got.In, []string{"Verification", "Scope"}) {
+		t.Fatalf("a record written before read %+v", got)
+	}
+	if s := (SpecReview{Body: "d424ff914f28", Round: 1, Open: 2, In: []string{"Verification", "Scope"}}).String(); s != old {
+		t.Fatalf("headings of letters only written %q, want as before: %q", s, old)
+	}
+	if got := ReadSpecReview([]string{"<!-- workline:spec-review body= round=1 open=0 in= -->\n\n" + SpecMarker}); got == nil || got.In != nil {
+		t.Fatalf("a record of no section read %+v", got)
 	}
 }
 

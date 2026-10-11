@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: d5323d2
+checked: a86296b
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -117,7 +117,12 @@ saying so.
 - `then: resume` — after the run, resume it with `workline apply`: the run, or
   every run a line judged and did not apply; `then: resume-elsewhere` — the
   same with another cache and the roles built into the engine, as CI's
-  second job;
+  second job; `then: again` — after the run, the same run once more, on
+  the forge and the repository as the first left them, after a person's
+  edits to the forge given in `between` (`{issues: [{id: 4, body: …}]}`:
+  each item, by kind and id, takes the fields given): what one run
+  records, the next reads back. Both runs' agent calls, calls and findings
+  are counted together, the rest is the second's;
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 `expect` lists only what the case is about; anything not listed is not checked.

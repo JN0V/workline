@@ -8,6 +8,7 @@ package backlog
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
@@ -32,11 +33,16 @@ type SpecReview struct {
 	Body    string   // the digest of the body it read (BodyDigest); "" when no review was whole
 	Round   int      // the reviews in a row that found an important finding open, this one included
 	Open    int      // the important findings open, as it read the body
-	In      []string // the sections their causes lie in
+	In      []string // the sections their causes lie in, by heading
 	Stopped bool     // the rounds spent: put to a person, not read again
 }
 
-var specRecord = regexp.MustCompile(`<!-- workline:spec-review body=([0-9a-f]*) round=(\d+) open=(\d+) in=([A-Za-z,]*)( stopped)? -->`)
+// The record names a section by its heading in the body, as the issue's
+// state does, read by meaning (ADR-0039). Each heading is escaped as a
+// URL's query escapes a value: words, spaces, a comma or a "-->" read back
+// whole, and a heading of letters only is written as it always was, so a
+// record written before reads the same.
+var specRecord = regexp.MustCompile(`<!-- workline:spec-review body=([0-9a-f]*) round=(\d+) open=(\d+) in=([A-Za-z0-9%+._~,-]*)( stopped)? -->`)
 
 // String is the record as the comment hides it.
 func (r SpecReview) String() string {
@@ -44,7 +50,11 @@ func (r SpecReview) String() string {
 	if r.Stopped {
 		stopped = " stopped"
 	}
-	return fmt.Sprintf("<!-- workline:spec-review body=%s round=%d open=%d in=%s%s -->", r.Body, r.Round, r.Open, strings.Join(r.In, ","), stopped)
+	in := make([]string, len(r.In))
+	for i, h := range r.In {
+		in[i] = url.QueryEscape(h)
+	}
+	return fmt.Sprintf("<!-- workline:spec-review body=%s round=%d open=%d in=%s%s -->", r.Body, r.Round, r.Open, strings.Join(in, ","), stopped)
 }
 
 // ReadSpecReview reads the reviewer's record from an issue's comments: nil
@@ -62,8 +72,14 @@ func ReadSpecReview(comments []string) *SpecReview {
 		r := &SpecReview{Body: m[1], Stopped: m[5] != ""}
 		r.Round, _ = strconv.Atoi(m[2])
 		r.Open, _ = strconv.Atoi(m[3])
-		if m[4] != "" {
-			r.In = strings.Split(m[4], ",")
+		for _, h := range strings.Split(m[4], ",") {
+			name, err := url.QueryUnescape(h)
+			if err != nil {
+				return nil
+			}
+			if name != "" {
+				r.In = append(r.In, name)
+			}
 		}
 		return r
 	}

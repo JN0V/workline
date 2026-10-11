@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: d5323d2
+checked: a86296b
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -560,6 +560,12 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
 - the body's digest it read (`BodyDigest`; empty when the review was not
   whole), the round, the important findings open, the sections they lie
   in, and `stopped` once the rounds are spent.
+- **A section is named by its heading** in the body, as the state's
+  `wrote` and `deleted` are, read by meaning (ADR-0039): any heading,
+  each escaped as a URL's query escapes a value (`in=Steps+to+reproduce`,
+  a comma `%2C`). A heading of letters only is written as it always was,
+  so a record written before reads the same; one that does not read is
+  none, the issue read again as round 1.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
   a proposal accepted — and at every level: `spec-not-reviewed` (no record, or

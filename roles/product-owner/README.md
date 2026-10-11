@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: d5323d2
+checked: a86296b
 verified: agent:claude-code
 ---
 # Product owner
