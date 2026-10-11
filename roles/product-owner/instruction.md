@@ -73,10 +73,9 @@ Scope). What each holds:
   numbered, then Expected, Actual and the version. The need of a bug is
   who it hurts, in one line.
 - `validation`: what a person runs once it is done, and sees — named
-  scenarios, one a bullet, as Given / When / Then in the issue's
-  language (Gherkin's words: Étant donné / Quand / Alors in French). A
-  bug's is its steps again, the expected result as the Then. Never
-  "someone runs it and accepts the result".
+  scenarios, one a bullet, as Given / When / Then. A bug's is its steps
+  again, the expected result as the Then. Never "someone runs it and
+  accepts the result".
 - `verification`: how the machine proves it — which tests, which checks.
 - `scope`: the part of the code it touches, by its paths — files or
   folders —, the same paths in `sources` (1 to 5): from the code given,
@@ -96,8 +95,8 @@ finding.
 **Write for a person who never read the code**, as a project's user docs
 are written — here, and in `why`, `questions` and `note`:
 
-- in the issue's language; code, commands and messages as they print;
-  the headings stay as the engine writes them;
+- in English, whatever language the issue is in; code, commands and
+  messages as they print; the headings stay as the engine writes them;
 - short sentences, 25 words at most; one idea a bullet; plain words;
 - no internal word, code name or setting left unexplained: say what it
   does for the reader;

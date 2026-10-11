@@ -30,13 +30,12 @@ first, the cause folded.
 - **Need**: one line — who needs what, and why. Not the solution.
 - **Example**: one real case — a named person or role, numbers with
   their unit, a real command or output, today next to what is wanted.
-- **Validation**: named scenarios a person runs, as Given / When / Then,
-  in the issue's language (French: Étant donné / Quand / Alors).
+- **Validation**: named scenarios a person runs, as Given / When / Then.
 - **A bug**: the Need says who it hurts; Steps to reproduce, then
   Expected, Actual, the version; its Validation repeats the steps, the
   expected result as the Then.
 - **Short**: sentences of 25 words at most, one idea a bullet, plain
-  words, the issue's language; code and messages as they print.
+  words, in English; code and messages as they print.
 - **Paths and numbers below the line**: file paths, issue numbers and
   decisions go in Scope, not in Need nor Validation.
 - **Fold only what is long** — a log, a list of more than ten lines — in
