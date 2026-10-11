@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/scale"
 )
 
 // Undoing (ADR-0026): a person undoing one of the role's acts, of any kind,
@@ -221,11 +222,10 @@ func splitState(f forge.Backlog, role string, id int) (*State, error) {
 	return st, nil
 }
 
+// priorityName says a priority the ledger keeps as its level's number.
 func priorityName(n string) string {
-	if n == "0" || n == "" {
-		return "none"
-	}
-	return n
+	l, _ := strconv.Atoi(n)
+	return scale.Value(l)
 }
 
 func milestoneName(m string) string {

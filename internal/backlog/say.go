@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"html"
 	"strings"
+
+	"github.com/JN0V/workline/internal/scale"
 )
 
 // What the role says on an issue, in its one comment there (ADR-0038):
@@ -25,7 +27,7 @@ func offer(c Proposal) string {
 			return say(fmt.Sprintf("Put it in the milestone %q (now: %s).", c.Milestone, c.Before))
 		}
 	case "order":
-		return say(fmt.Sprintf("Set its priority to %d (now: %s).", c.Priority, c.Before))
+		return say(fmt.Sprintf("Set its priority to %s (now: %s).", scale.Value(c.Priority), c.Before))
 	case "rename":
 		return say(fmt.Sprintf("Rename it to %q.", strings.TrimSpace(c.Title)))
 	case "split":

@@ -27,6 +27,7 @@ import (
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -932,7 +933,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		if len(set) != 1 || set[0] != st.Priority {
 			whose = " (a person's: kept)"
 		}
-		fmt.Fprintf(b, "Priority: %d%s\n", backlog.Priority(is), whose)
+		fmt.Fprintf(b, "Priority: %s%s\n", scale.Value(backlog.Priority(is)), whose)
 	}
 	if by := backlog.OpenedBy(is.Body); by != "" {
 		// A role's finding, opened through the one way (ADR-0018): the
@@ -1064,7 +1065,7 @@ func place(is forge.Issue, isOpen map[int]bool) string {
 		out = append(out, is.Milestone)
 	}
 	if n := backlog.Priority(is); n > 0 {
-		out = append(out, fmt.Sprintf("priority %d", n))
+		out = append(out, scale.Said(n))
 	}
 	if len(out) == 0 {
 		return ""
@@ -1080,7 +1081,7 @@ func placed(is forge.Issue) string {
 		out = append(out, "milestone "+is.Milestone)
 	}
 	if n := backlog.Priority(is); n > 0 {
-		out = append(out, fmt.Sprintf("priority %d", n))
+		out = append(out, scale.Said(n))
 	}
 	if len(out) == 0 {
 		return ""

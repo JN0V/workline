@@ -30,6 +30,7 @@ import (
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/rolefs"
 	"github.com/JN0V/workline/internal/routing"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
@@ -2184,18 +2185,16 @@ func (a *applier) openIssue(title, body string, m map[string]any) error {
 // is a person's (docs/spec/backlog-acts.md, "Ordering").
 func order(f forge.Forge, role string, c backlog.Proposal) error {
 	b := f.(forge.Backlog)
-	label := backlog.PriorityLabel(c.Priority)
-	if err := b.EnsureLabel(label, priorityColors[c.Priority], fmt.Sprintf("Priority %d of %d, 1 the most pressing: set by the %s or a person", c.Priority, backlog.Levels, strings.ReplaceAll(role, "-", " "))); err != nil {
+	family := scale.Used.Priority
+	label, ok := family.Label(c.Priority)
+	if !ok {
+		return fmt.Errorf("#%d: no %s label carries level %d", c.Issue, family.Scale.Axis, c.Priority)
+	}
+	if err := b.EnsureLabel(label.Name, label.Color, label.Describe(strings.ReplaceAll(role, "-", " "))); err != nil {
 		return err
 	}
-	var others []string
-	for n := 1; n <= backlog.Levels; n++ {
-		if n != c.Priority {
-			others = append(others, backlog.PriorityLabel(n))
-		}
-	}
 	t := forge.Target{Kind: "issue", ID: c.Issue}
-	if err := f.Label(t, []string{label}, others); err != nil {
+	if err := f.Label(t, []string{label.Name}, family.Others(c.Priority)); err != nil {
 		return err
 	}
 	comments, err := b.Comments(t)
@@ -2400,10 +2399,6 @@ func (a *applier) depend(id int, blockers []int, digest bool) error {
 	st.Keep(body)
 	return a.forge.Sticky(t, backlog.FormatState(*st), backlog.StateMarker(a.role), false)
 }
-
-// priorityColors are the priority labels' colours, the most pressing the
-// warmest.
-var priorityColors = map[int]string{1: "b60205", 2: "d93f0b", 3: "fbca04", 4: "c5def5"}
 
 // refining applies a refine, a ready or an ask, against the issue as it is
 // now (docs/spec/backlog-acts.md, "Refining to ready").

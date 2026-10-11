@@ -17,6 +17,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
@@ -1159,8 +1160,8 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 		c.Before = Before(is)
 		switch {
-		case c.Do == "order" && (c.Priority < 1 || c.Priority > Levels):
-			return "priority-level", fmt.Sprintf("a priority is a level from 1, the most pressing, to %d", Levels)
+		case c.Do == "order" && !scale.Priority.Valid(c.Priority):
+			return "priority-level", fmt.Sprintf("a priority is a level from 1, the most pressing, to %d", scale.Priority.Count())
 		case c.Do == "order":
 		case c.From != "" && (c.From != is.Milestone || !Released(repo, c.From)):
 			return "not-slipped", fmt.Sprintf("#%d is not in the released milestone %q", c.Issue, c.From)
@@ -1213,7 +1214,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		case !(len(set) == 0 && st.Priority == 0) && !(len(set) == 1 && set[0] == st.Priority):
 			return "priority-kept", "its priority was set by a person (a label the role did not set, or took off): it is kept"
 		case len(set) == 1 && set[0] == c.Priority:
-			return "priority-same", fmt.Sprintf("it has priority %d already", c.Priority)
+			return "priority-same", fmt.Sprintf("it has %s already", scale.Said(c.Priority))
 		}
 	}
 	if c.Do == "ready" && p.config.SpecReview {
@@ -2358,7 +2359,7 @@ func describe(c Proposal, verb string) string {
 		return fmt.Sprintf("Put #%d in the milestone %q (was: %s): %s", c.Issue, c.Milestone, c.Before, strings.TrimSpace(c.Why))
 	}
 	if c.Do == "order" {
-		return fmt.Sprintf("Set #%d's priority to %d (was: %s): %s", c.Issue, c.Priority, c.Before, strings.TrimSpace(c.Why))
+		return fmt.Sprintf("Set #%d's priority to %s (was: %s): %s", c.Issue, scale.Value(c.Priority), c.Before, strings.TrimSpace(c.Why))
 	}
 	done := verb != "Close"
 	if !done && c.Spent {

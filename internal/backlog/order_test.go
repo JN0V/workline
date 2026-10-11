@@ -6,19 +6,26 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/scale"
 )
+
+// priorityLabel is the label the engine writes for a priority level.
+func priorityLabel(l int) string {
+	label, _ := scale.Used.Priority.Label(l)
+	return label.Name
+}
 
 // The backlog's order: the nearest milestone in version order, none last;
 // then the priority, none after 4; then the lowest number.
 func TestOrder(t *testing.T) {
 	issues := []forge.Issue{
 		{ID: 1},
-		{ID: 2, Labels: []string{PriorityLabel(1)}},
+		{ID: 2, Labels: []string{priorityLabel(1)}},
 		{ID: 3, Milestone: "v1.10.0"},
-		{ID: 4, Milestone: "v1.9.0", Labels: []string{PriorityLabel(4)}},
-		{ID: 5, Milestone: "v1.9.0", Labels: []string{PriorityLabel(2)}},
+		{ID: 4, Milestone: "v1.9.0", Labels: []string{priorityLabel(4)}},
+		{ID: 5, Milestone: "v1.9.0", Labels: []string{priorityLabel(2)}},
 		{ID: 6, Milestone: "v1.9.0"},
-		{ID: 7, Milestone: "v1.9.0", Labels: []string{PriorityLabel(2)}},
+		{ID: 7, Milestone: "v1.9.0", Labels: []string{priorityLabel(2)}},
 	}
 	Order(issues)
 	var got []int
@@ -64,9 +71,9 @@ func ids(issues []forge.Issue) string {
 // blocker not among them — closed — holds nothing back (ADR-0028).
 func TestOrderBlocked(t *testing.T) {
 	issues := []forge.Issue{
-		{ID: 1, Labels: []string{PriorityLabel(1)}, BlockedBy: []int{3}},
-		{ID: 2, Labels: []string{PriorityLabel(2)}, Body: "Blocked by #9."},
-		{ID: 3, Labels: []string{PriorityLabel(4)}},
+		{ID: 1, Labels: []string{priorityLabel(1)}, BlockedBy: []int{3}},
+		{ID: 2, Labels: []string{priorityLabel(2)}, Body: "Blocked by #9."},
+		{ID: 3, Labels: []string{priorityLabel(4)}},
 	}
 	if cycles := Order(issues); len(cycles) > 0 || ids(issues) != "[2 3 1]" {
 		t.Fatalf("order = %s, cycles %v; want [2 3 1], none", ids(issues), cycles)

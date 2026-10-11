@@ -1,62 +1,33 @@
 package backlog
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/scale"
 )
 
-// Levels are the priorities an issue takes: 1, the most pressing, to 4
-// (docs/spec/backlog-acts.md, "Ordering").
-const Levels = 4
-
-// PriorityPrefix starts each priority label: workline:priority/1 to /4.
-const PriorityPrefix = "workline:priority/"
-
-// PriorityLabel is the label of a priority level.
-func PriorityLabel(n int) string { return PriorityPrefix + strconv.Itoa(n) }
-
-// PriorityLabels lists the levels an issue's priority labels give, in the
-// order of its labels; more than one is a person's doing.
-func PriorityLabels(is forge.Issue) []int {
-	var out []int
-	for _, l := range is.Labels {
-		if rest, ok := strings.CutPrefix(l, PriorityPrefix); ok {
-			if n, err := strconv.Atoi(rest); err == nil && n >= 1 && n <= Levels {
-				out = append(out, n)
-			}
-		}
-	}
-	return out
-}
+// PriorityLabels lists the levels an issue's priority labels give, read
+// by name where the project keeps them (scale.Used), in the order of its
+// labels; more than one is a person's doing.
+func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Levels(is.Labels) }
 
 // Priority is an issue's level, the most pressing of its labels; 0 when
 // it has none.
-func Priority(is forge.Issue) int {
-	set := PriorityLabels(is)
-	if len(set) == 0 {
-		return 0
-	}
-	return slices.Min(set)
-}
+func Priority(is forge.Issue) int { return scale.Used.Priority.First(is.Labels) }
 
 // Before says an issue's place in the order, to put it back: its
 // priority and its milestone.
 func Before(is forge.Issue) string {
-	p, m := "no priority", "no milestone"
-	if n := Priority(is); n > 0 {
-		p = fmt.Sprintf("priority %d", n)
-	}
+	m := "no milestone"
 	if is.Milestone != "" {
 		m = "milestone " + is.Milestone
 	}
-	return p + ", " + m
+	return scale.Said(Priority(is)) + ", " + m
 }
 
 // Released says whether a tag named after the milestone exists: the
@@ -123,7 +94,8 @@ func CompareMilestones(a, b string) int {
 // Less is the backlog's order (docs/spec/backlog-acts.md, "Ordering"):
 // the nearest milestone first — by its due date, then its title
 // (CompareDue) —, an issue in none after every one in one; then the
-// priority, an issue with none after priority 4; then the lowest number.
+// priority, an issue with none after the last (scale.Priority.Rank); then
+// the lowest number.
 func Less(a, b forge.Issue) bool {
 	switch {
 	case a.Milestone != b.Milestone && (a.Milestone == "" || b.Milestone == ""):
@@ -133,13 +105,7 @@ func Less(a, b forge.Issue) bool {
 			return c < 0
 		}
 	}
-	pa, pb := Priority(a), Priority(b)
-	if pa == 0 {
-		pa = Levels + 1
-	}
-	if pb == 0 {
-		pb = Levels + 1
-	}
+	pa, pb := scale.Priority.Rank(Priority(a)), scale.Priority.Rank(Priority(b))
 	if pa != pb {
 		return pa < pb
 	}
