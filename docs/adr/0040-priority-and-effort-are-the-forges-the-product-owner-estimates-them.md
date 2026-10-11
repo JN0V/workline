@@ -1,7 +1,7 @@
 # ADR-0040: Priority and effort are the forge's; the product owner estimates both, a person checks
 
-- **Status:** proposed — built in the order below; two questions at the end
-  wait on the maintainer
+- **Status:** proposed — built in the order below; the review's two
+  questions answered by the maintainer on 2026-10-11 (Urgent, the default)
 - **Date:** 2026-10-11
 - **Supersedes, once built:** the labels `workline:priority/1` to `/4` of
   [ADR-0018](0018-the-product-owner.md) ("Ordering"); its order rule
@@ -114,8 +114,15 @@ The engine detects, each run and with no agent, the first that holds:
 | Level | Priority and effort |
 |---|---|
 | `cautious` | proposed on the issue ([ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)); `workline:accepted` sets them |
-| `normal` (default) | set where empty, 10 a run per axis |
-| `enterprising` | set where empty, 20 a run per axis |
+| `normal`, the default level | set where empty, Urgent included, 10 a run per axis |
+| `enterprising` | set where empty, Urgent included, 20 a run per axis |
+
+- **Off by default**, as `order` is today: on for workline once built; on
+  at `normal` for every project by an amendment, once the measures below
+  pass on workline and the jn0v-lab repository.
+- **Urgent is set like any level**, with one more guard, no ban: the
+  night's summary lists each Urgent the role set, for a person to see at
+  once.
 
 - **Never overwritten**: only an empty value is written; one the role did
   not set is a person's or another tool's, kept. One a person changed or
@@ -125,7 +132,7 @@ The engine detects, each run and with no agent, the first that holds:
 - **Set once**: never re-estimated, so Next does not move on a night its
   issues did not; `moved-percent-max` bounds a first backfill too.
 - **Stuck estimates flagged**: past 10 values set on an axis, one value
-  over 60% of them (all "Medium", everything "High") is said.
+  over 60% of them (all "Medium", too many "Urgent" or "High") is said.
 
 ### (e) Writes, and what a public page must not show
 
@@ -148,7 +155,7 @@ The engine detects, each run and with no agent, the first that holds:
 - **Renamed in place**: `workline:priority/2`, `/3`, `/4` (`/1` was never
   created) become `priority/high`, `/medium`, `/low`, three silent calls;
   the state's `priority: 1` to `4` reads as Urgent to Low: still the
-  role's own. `order` and `effort` come back on for workline once built.
+  role's own.
 - **Live, on a new public, non-fork repository of jn0v-lab**, created when
   building: jn0v-lab/workline-sandbox is a fork, and `gh` in a fork's clone
   resolves to the parent. Tried with an App's token, `GITHUB_TOKEN` and a
@@ -176,7 +183,7 @@ The engine detects, each run and with no agent, the first that holds:
 | 3 | **Effort and the grid**: the `effort` kind; `Less`; Next's cell; the 60% flag; read again before applying | cases: a person's value kept per axis; cleared, never refilled; changed since the plan, dropped; no code, no effort |
 | 4 | **GitHub fields**, members-only values never shown | fake forge cases; live on jn0v-lab, each token, the API version header |
 | 5 | **GitLab's `weight`**: the bands, never a parent | cases; live once a Premium project is at hand |
-| 6 | **workline's labels renamed**, the acts on | the measures below, four weeks |
+| 6 | **workline's labels renamed**, the acts on for workline | the measures below, four weeks; then the amendment turning them on |
 
 ## How it is measured
 
@@ -187,14 +194,3 @@ The engine detects, each run and with no agent, the first that holds:
   Next, from the forge's trail.
 - **Blind**: the maintainer ranks 10 ready issues, values hidden; at least
   2 of the engine's first 3 among his first 3.
-
-## Open questions for the maintainer
-
-1. **Does `normal` set Urgent alone?** Recommended: no, Urgent is proposed
-   at every level, High to Low set: an Urgent jumps its whole milestone,
-   "everything urgent" is the cheapest failure to guard, and GitLab's
-   handbook leaves `priority::1` to the group's owner.
-2. **Are `order` and `effort` on by default everywhere?** Recommended: off
-   until the measures pass on workline and jn0v-lab, then on at `normal`
-   by an amendment: the role's main value, but a default writes on every
-   project that installs it.

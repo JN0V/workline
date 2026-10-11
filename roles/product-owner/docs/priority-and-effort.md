@@ -10,8 +10,10 @@ Below, what the proposal does on real cases.
   effort, how hard it is to build (Low, Medium, High).
 - **Kept where the forge keeps them**: a GitHub organisation's fields,
   GitLab's labels and weight, or the project's own labels.
-- **Estimated by the role**, only where empty; a person checks and
-  corrects with the forge's own tools.
+- **Estimated by the role**, only where empty, Urgent included; a person
+  checks and corrects with the forge's own tools.
+- **Off by default**: on for workline first, then for every project at
+  `normal` once the measures pass there and on a test repository.
 
 ## Other scales, read by name
 
@@ -74,6 +76,14 @@ Next to build
   show their two values only.
 - **An issue that waits on another** still comes after it, whatever its
   cell.
+
+Each Urgent the role set that night is listed apart, ready or not, for a
+person to see at once; too many Urgents also trip the flag on estimates
+stuck on one value:
+
+```markdown
+Set to Urgent tonight, to check: #214 Exports drop the last row of a file
+```
 
 On a public repository whose fields are visible to organization members
 only, Next keeps the order and hides the values:
