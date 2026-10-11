@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: d5323d2
+checked: a86296b
 verified: agent:claude-code
 judged: fa1d682
 ---
