@@ -3,7 +3,7 @@
 - **Status:** proposed — built after the trial of
   [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md);
   one question at the end waits on the maintainer
-- **Date:** 2026-10-10, revised 2026-10-11
+- **Date:** 2026-10-10, revised 2026-10-11, amended 2026-10-11 (below)
 - **Builds on:** [ADR-0018](0018-the-product-owner.md) (Need and
   Validation a person's), [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
   (acts, proposals, a person's undo), [#260](https://github.com/JN0V/workline/pull/260)
@@ -22,9 +22,6 @@
   2. a bug without steps to reproduce is never readied by the role; a
      person may force it, and the issue then shows what still waits;
   3. the role sets the kind label itself.
-- **Elsewhere** ([research](../research/issue-formats.md)): "Steps to
-  reproduce", "Acceptance criteria", "Test plan" are established;
-  "accepted, but waiting" is two labels; the kind is a type or a label.
 
 ## Decision
 
@@ -40,20 +37,12 @@
 | scope | Implementation notes | Scope | ~2.4k files; GitLab's "Implementation plan" |
 
 - **Acceptance criteria**: named Given / When / Then scenarios, the
-  person who accepts named in the When (Dan North's "presented as
-  Scenarios"); a task's are "done when" items. Never `- [ ]` boxes: a
-  tick is a body edit, which the role reads as a person accepting the
-  draft.
-- **Test plan**, its hint: the unit, integration and end-to-end tests
-  that prove it.
-- **Implementation notes** rather than "Implementation details", more
-  frequent (~3.3k): details invites a design the role must not invent;
-  notes hold the paths `ready` needs.
+  person who accepts named in the When; a task's, "done when" items.
+  Never `- [ ]` boxes: a tick edits the body, read as accepting a draft.
 - **Why the old names go**: in trackers, verification is a person
   re-checking a fix, validation is checking a problem is real, and
   "Scope" is what is in or out of the work.
-- **Kept**: the order, and the line `---` between the person's part and
-  the builder's. No generic "Open questions" section.
+- **Kept**: the order, and the line `---` between the two parts.
 
 ### Old names, read forever
 
@@ -78,61 +67,37 @@ are read; the ids (`need`, `example`, `steps`, `validation`,
 ### (b) A bug is readied by the role only with its steps
 
 - **For a bug, `ready` also needs Steps to reproduce**, a person's or
-  accepted by one, as Problem and Acceptance criteria are. The role may
-  draft them from the issue's own words; `workline:accepted` accepts
-  them. Any reproduction counts: steps, a command, code, a failing test,
-  a link. The engine checks it is there and whose; the agent judges that
-  it reproduces.
+  accepted by one, as Problem and Acceptance criteria are; the role may
+  draft them from the issue's words. Any reproduction counts: steps, a
+  command, code, a failing test, a link. The engine checks it is there
+  and whose; the agent judges that it reproduces.
 - **The reviewer writes its finding's input as the steps**: its issues,
   opened by a bot, have no reporter to ask.
 - **The kind must be known**: the role's `ready` states it; with none,
   no `ready`. The engine drops a role's `ready` on a bug without a
   person's steps, at every level.
 - **A person forces it** by setting `workline:ready`; `workline:accepted`
-  accepts drafts and does not force. On such a bug the role's line says
-  "Ready waits for steps to reproduce; set workline:ready to start
-  without them."
+  accepts drafts and does not force. The role's line says how.
 - **The waiting mark, `workline:needs-repro`**, beside `workline:ready`:
   two independent labels, as Go (`NeedsFix`, `WaitingForInfo`) and
-  Gitea (`Reviewed/Confirmed`, `Status/Need More Info`) do.
-  - workline's prefix: a project's own "needs reproduction" label may
-    drive a bot that closes the issue (Next.js after 2 days). One colon
-    on GitLab: `workline::needs-repro` would replace `workline::proposed`.
-  - Set and cleared only by the engine, each run, with no agent, comment
-    nor mail: set when a person readies a bug with no steps; cleared when
-    steps arrive, the kind stops being bug, or `ready` comes off. Taken
-    off by a person, it is never set again on that issue.
-  - It closes nothing; past `stuck-days`, the summary lists it as stuck.
+  Gitea (`Reviewed/Confirmed`, `Status/Need More Info`) do. workline's
+  prefix: a project's own "needs reproduction" label may drive a bot
+  that closes the issue (Next.js after 2 days). Set and cleared by the
+  engine alone, no agent nor comment; it closes nothing
+  ([its life](../../roles/product-owner/docs/proposed-headings.md#a-bug-with-no-steps)).
 
 ### (c) The role sets the kind label
 
-- **A new act, `kind`**: bug, feature or task. `normal` sets it, 10 a
-  run at most; `enterprising`, 20; `cautious` says it in its line only.
-- **Only on an issue with no type and no kind label**, checked again just
-  before applying. It never removes nor swaps a label: on GitLab Premium
-  a scoped label would silently replace a person's.
-- **Which label**: `kinds` maps each kind to the project's words; the
-  engine reads the project's labels first and uses the one that exists.
-  Only `task` is created when missing; GitLab gets labels only, never
-  `issue_type: task`, which makes the issue a child work item.
-- **GitHub issue types are read, never set**: on a personal account's
-  repository the API answers both ways, and a type set without push
-  access is silently dropped.
+- **A new act, `kind`**: bug, feature or task, only on an issue with no
+  type and no kind label, checked again before applying; it never
+  removes nor swaps a label. `normal` sets it, 10 a run at most;
+  `enterprising`, 20; `cautious` says it in its line only.
+- **The project's own label**, the first of `kinds` that exists; GitHub
+  issue types read, never set; issues already read get one light read
+  ([how, and the settings](../../roles/product-owner/docs/proposed-headings.md#the-kind-the-role-sets)).
 - **A person's correction holds**: a kind a person removed or changed is
   never set again on that issue, as Go's bot does; `undone-max` stops the
-  act everywhere when it is often wrong. What it set is kept in the
-  issue's state, since the Forgejo sample forge reports no label events.
-- **Issues already read**: one light read for the kind alone, about 1k
-  tokens an issue, within `issues-per-run`.
-- **Notifications**: none on GitHub; GitLab mails a label's subscribers,
-  and workflows a label triggers run: hence the cap.
-
-```yaml
-# roles.product-owner.settings: the project's label per kind, the first that exists
-kinds: {bug: [bug, "type::bug", Kind/Bug], feature: [enhancement, "type::feature",
-  Kind/Feature], task: [task, "type::maintenance"]}
-acts: {kind: {mode: act, max: 10}}
-```
+  act everywhere when it is often wrong.
 
 ### What the engine checks, what the agent judges
 
@@ -143,6 +108,7 @@ acts: {kind: {mode: act, max: 10}}
 | the kind from a type or a label | the kind, when neither gives it |
 | a role's `ready` with no kind, or on a bug with no person's steps, dropped | whether an issue is evident for `ready` |
 | `workline:needs-repro` set and cleared | what to ask when a bug has no steps |
+| a draft that repeats what is above it, dropped (amended below) | whether an Example adds a fact |
 
 ### Built after the trial, in order
 
@@ -157,12 +123,10 @@ acts: {kind: {mode: act, max: 10}}
 
 ### Not now, because…
 
-- **Setting GitHub issue types**: see (c). **Reading template files**:
-  `headings` covers it in one line.
-- **A generic waiting label or "Open questions" section**: one wait is
-  known, the steps; a section to fill invites filler.
-- **A timer that closes**: forcing a bug is a person's choice.
-- **A developer role reading `needs-repro`**: no such role yet.
+- Setting GitHub issue types (see (c)); reading template files
+  (`headings` covers it); a generic waiting label or "Open questions"
+  section (a section to fill invites filler); a timer that closes (a
+  person forces a bug); a developer role reading `needs-repro`.
 
 ## How it is measured
 
@@ -181,12 +145,11 @@ acts: {kind: {mode: act, max: 10}}
   filled", who validates lost (principle 1).
 - **A kind set again each run**, as a labeler on every edit: a person's
   correction undone each night.
-- **A project's own "needs reproduction" label**: see (b).
-- **Multilingual support**: see "Old names".
+- **A project's own "needs reproduction" label**, **multilingual
+  support**: see (b) and "Old names".
 
 ## Consequences
 
-- Old issues read as they did: no migration, no mixed names.
 - Without an agent, the names, the forge's kinds, the bug rule and the
   waiting mark hold; nothing is drafted, no kind judged.
 - workline's own `.github/ISSUE_TEMPLATE/need.yml` takes the new names
@@ -195,4 +158,43 @@ acts: {kind: {mode: act, max: 10}}
 ## Open question for the maintainer
 
 1. **Implementation notes, or Implementation details?** Recommended:
-   notes; details is more frequent but invites a design to invent.
+   notes; details is more frequent (~3.3k files) but invites a design
+   the role must not invent; notes hold the paths `ready` needs.
+
+## Amendment (2026-10-11): each thing said once
+
+[#103](https://github.com/JN0V/workline/issues/103) said its problem
+three times nearly word for word: an import's text on top, rewritten in
+plain words ([ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md),
+amended 2026-10-10), the Need, and an Example restating it, no real
+case known ([worked case](../../roles/product-owner/docs/proposed-headings.md#each-thing-said-once)).
+
+- **A role's text on top becomes the Problem**: rewritten as that draft,
+  taken from the top; the origin line and the markers stay.
+- **A person's text on top, with no Problem section, is the Problem**,
+  a person's: the engine reads it so, no agent, nothing recorded. No
+  draft restates it; one is drafted, read instead, only when that text
+  states no problem. A person's own `## Problem` always wins. Rejected:
+  the agent's word kept in the state, a presence check resting on a
+  claim the person cannot see.
+- **An Example only with a fact** the Problem lacks: a command, a real
+  output, a number, a name. No real case: no Example; a question to the
+  reporter only if a case would change what is built.
+- **The engine drops a draft that repeats**, no agent: containment, the
+  share of its words already said above it, over one-word shingles,
+  common words out ([research](../research/issue-formats.md#a-draft-that-repeats)).
+  Compared: a Problem draft with a person's text on top; an Example or
+  Steps to reproduce with all above; never Acceptance criteria, which
+  restate the case by design. Past `repeated-percent-max` (40 by
+  default), not written; the role's line: "Not written: an Example that
+  said the Problem again." A person's text is only read, never touched.
+
+| Words already said above | #103 | #104 | #111 | Examples kept |
+|---|---|---|---|---|
+| the Need's, in the text on top | 57% | 64% | 50% | — |
+| the Example's, in all above | 62% | 69% | 50% | 3% to 18% |
+
+- **Built after piece 1, before the new names**: it needs the meanings
+  piece 1 reads, not the names, and its effect is rated alone.
+- **Measured**: #103, #104 and #111 drafted again, rated blind with the
+  maintainer; in the trial, drafts accepted unchanged.
