@@ -28,8 +28,7 @@ issues wait on a blind rating (tried.md, the last of 2026-10-09). Rated
 blind, the new drafts won 6 of 6 but were accepted as is once: it now
 rewrites in plain words the text a role opened an issue with, answers
 are a short list, and a question is written once (built 2026-10-10, not
-yet with a real agent). Since 2026-10-11 it also orders workline's own
-backlog (`order` on there, off by default).
+yet with a real agent).
 
 ## To leave beta
 
@@ -132,8 +131,8 @@ Tries on real use, nothing to build: what is left to see.
   again, its map read by the maintainer against its 56 issues — and the
   tokens a `skip` costs
   ([ADR-0030](../../../docs/adr/0030-an-import-maps-every-item-to-its-issue-or-why-not.md)).
-- **Ordering**, on for workline since 2026-10-11: a person's priority
-  kept, live (conformance only); milestones ranked by due date on GitLab.
+- **Ordering**: a person's priority kept, live (conformance only);
+  milestones ranked by due date on GitLab.
 - **A parent**
   ([ADR-0029](../../../docs/adr/0029-a-parent-is-accepted-by-a-person-from-what-its-parts-delivered.md)):
   a test named as proof, read live on GitLab.
