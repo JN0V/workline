@@ -247,8 +247,8 @@ func (s State) say() string {
 	case s.Label != "":
 		if len(s.Proposed) == 0 && len(s.Did) == 0 {
 			var names []string
-			for _, name := range drafted {
-				if s.Wrote[name] != "" {
+			for _, m := range layout() {
+				if name, wrote := s.wrote(m); wrote != "" && drafted(m) {
 					names = append(names, name)
 				}
 			}
@@ -281,8 +281,8 @@ func (s State) answers() string {
 // drafts says whether the role drafted on the issue, or proposes to: a
 // draft is there for a person to edit.
 func (s State) drafts() bool {
-	for _, name := range drafted {
-		if s.Wrote[name] != "" {
+	for _, m := range layout() {
+		if _, wrote := s.wrote(m); wrote != "" && drafted(m) {
 			return true
 		}
 	}
@@ -292,9 +292,17 @@ func (s State) drafts() bool {
 // drafts says the sections a refine would write, each under its name.
 func drafts(c Proposal) string {
 	var b strings.Builder
-	for _, name := range append([]string{DescriptionName}, Layout...) {
-		if text := strings.TrimSpace(c.Text(name)); text != "" && (len(c.Added) == 0 || slices.Contains(c.Added, name)) {
+	write := func(name, text string) {
+		if text = strings.TrimSpace(text); text != "" {
 			fmt.Fprintf(&b, "**%s**\n\n%s\n\n", name, strings.ReplaceAll(text, "```", "'''"))
+		}
+	}
+	if len(c.Added) == 0 || slices.Contains(c.Added, DescriptionName) {
+		write(DescriptionName, c.Description)
+	}
+	for _, m := range layout() {
+		if len(c.Added) == 0 || work.Has(c.Added, m) {
+			write(named(c.Added, m), c.Text(m))
 		}
 	}
 	return strings.TrimSpace(b.String())
@@ -832,7 +840,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 					}
 					d.Act = c
 					p.Findings = append(p.Findings, verdict.Finding{Rule: "drafts-proposed", Level: "info", Where: c.where(),
-						Message: "its Need and Validation are proposed on the issue, not written in it: the role is set to propose them (autonomy cautious, or acts.refine.drafts)"})
+						Message: fmt.Sprintf("its %s and %s are proposed on the issue, not written in it: the role is set to propose them (autonomy cautious, or acts.refine.drafts)", work.Name(work.Need), work.Name(work.Validation))})
 				}
 			}
 			if d.Mode == Act {
@@ -908,9 +916,10 @@ func (p *Plan) summary() {
 			continue
 		}
 		var lacks []string
-		for _, name := range Sections {
-			if strings.TrimSpace(work.Sections(is.Body)[name]) == "" {
-				lacks = append(lacks, name)
+		have := work.ByMeaning(is.Body)
+		for _, m := range work.Required {
+			if strings.TrimSpace(have[m].Text) == "" {
+				lacks = append(lacks, work.Name(m))
 			}
 		}
 		if len(lacks) > 0 {
@@ -1164,7 +1173,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 	} else if c.Do == "sources" {
 		if len(c.Sources) == 0 || len(c.Sources) > maxSources {
-			return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about (1 to %d files named): nothing changed; add a Scope naming them, or leave it", c.Issue, maxSources)
+			return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about (1 to %d files named): nothing changed; add a %s naming them, or leave it", c.Issue, maxSources, work.Name(work.Scope))
 		}
 		for _, s := range c.Sources {
 			path, _, _ := strings.Cut(s, "#")
@@ -1354,10 +1363,10 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 			switch {
 			case len(c.Sources) == 0:
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
-					Message: fmt.Sprintf("could not tell which files #%d is about, so its Scope was left out: add a Scope naming them, or leave it", c.Issue)})
+					Message: fmt.Sprintf("could not tell which files #%d is about, so its %[2]s was left out: add a %[2]s naming them, or leave it", c.Issue, work.Name(work.Scope))})
 			case missing != "":
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "scope-without-files", Level: "info", Where: c.where(),
-					Message: fmt.Sprintf("its Scope named %s, which the repository does not hold, so it was left out: add a Scope naming the right files, or leave it", missing)})
+					Message: fmt.Sprintf("its %[1]s named %[2]s, which the repository does not hold, so it was left out: add a %[1]s naming the right files, or leave it", work.Name(work.Scope), missing)})
 			}
 			if len(c.Sources) == 0 || missing != "" {
 				c.Scope, c.Sources = "", nil
@@ -1510,13 +1519,16 @@ func (p *Plan) checkSplitRename(repo string, c *Proposal) (rule, why string) {
 		} else {
 			keys[key] = true
 		}
-		for _, sec := range []struct{ name, text string }{{"need", ch.Need}, {"verification", ch.Verification}, {"validation", ch.Validation}, {"scope", ch.Scope}} {
+		for _, sec := range []struct {
+			field work.Meaning
+			text  string
+		}{{work.Need, ch.Need}, {work.Verification, ch.Verification}, {work.Validation, ch.Validation}, {work.Scope, ch.Scope}} {
 			if strings.TrimSpace(sec.text) == "" {
-				return "split-sections", fmt.Sprintf("%q has no %s: each child has its four sections", ch.Title, sec.name)
+				return "split-sections", fmt.Sprintf("%q has no %s: each child has its four sections", ch.Title, sec.field)
 			}
 		}
 		if len(ch.Sources) == 0 || len(ch.Sources) > maxSources {
-			return "sources-unknown", fmt.Sprintf("not split: the part %q names no file of the repository (1 to %d) for its Scope", ch.Title, maxSources)
+			return "sources-unknown", fmt.Sprintf("not split: the part %q names no file of the repository (1 to %d) for its %s", ch.Title, maxSources, work.Name(work.Scope))
 		}
 		for _, k := range ch.After {
 			if k < 1 || k > len(c.Into) || k == i+1 {
@@ -1563,10 +1575,11 @@ func SplitKey(parent int, title string) string {
 }
 
 // ChildBody is a split's child's body: a line naming its parent, then its
-// four sections, Need and Validation as drafts.
-func ChildBody(parent int, ch Child, role string) string {
-	body, _, _ := Refine(fmt.Sprintf("Part of #%d.", parent), Proposal{Need: ch.Need, Verification: ch.Verification, Validation: ch.Validation, Scope: ch.Scope}, role)
-	return body
+// four sections, the need and how it is accepted as drafts; and the
+// headings it wrote, for its state.
+func ChildBody(parent int, ch Child, role string) (string, []string) {
+	body, added, _ := Refine(fmt.Sprintf("Part of #%d.", parent), Proposal{Need: ch.Need, Verification: ch.Verification, Validation: ch.Validation, Scope: ch.Scope}, role)
+	return body, added
 }
 
 // SubIssuesHeading heads the task list of a parent's children, on a forge
@@ -1589,46 +1602,49 @@ func ListChildren(body string, ids []int) string {
 	return work.WithFooter(strings.TrimRight(body, " \r\n")+"\n\n"+SubIssuesHeading+"\n\n"+text, footer)
 }
 
-// Sections are the four an issue needs to be ready (docs/spec/routing.md).
-var Sections = []string{"Need", "Verification", "Validation", "Scope"}
-
-// Layout is the order the role writes an issue's sections in, for its
-// reader: the person's part — the need, a real example of it or a bug's
-// steps to reproduce, how a person accepts it — above a thematic break;
-// the builder's part — how the machine proves it, the code it touches —
+// layout is the order the role writes an issue's sections in, the table's
+// (work.Headings): the person's part above a thematic break, the builder's
 // below it. The example and the steps are never required.
-var Layout = []string{"Need", "Example", "Steps to reproduce", "Validation", "Verification", "Scope"}
+func layout() []work.Meaning { return work.Headings.Meanings() }
 
-// builders are the sections of the builder's part, below the break.
-var builders = []string{"Verification", "Scope"}
+// builder says whether a section is of the builder's part, below the break.
+func builder(m work.Meaning) bool { return work.Headings.Builder(m) }
 
-// drafted are the sections the role writes as drafts: a person's to state.
-var drafted = []string{"Need", "Example", "Steps to reproduce", "Validation"}
+// drafted says whether the role writes a section as a draft, a person's to
+// state: the person's part.
+func drafted(m work.Meaning) bool { return m != "" && !builder(m) }
 
-// Drafted says whether the role writes a section as a draft, a person's to
-// make theirs: Need and Validation, an example, the steps to reproduce.
-// Not marked a draft, it is a person's.
-func Drafted(name string) bool { return slices.Contains(drafted, name) }
+// Drafted says whether the role writes a section, by its heading, as a
+// draft, a person's to make theirs: the need and how it is accepted, an
+// example, the steps to reproduce. Not marked a draft, it is a person's.
+func Drafted(name string) bool { return drafted(work.MeaningOf(name)) }
 
-// Text is the text a refine gives a section, by its heading.
-func (c Proposal) Text(name string) string {
-	switch name {
-	case DescriptionName:
-		return c.Description
-	case "Need":
+// Text is the text a refine gives a section, by its meaning: the fields of
+// a refine are named by meaning.
+func (c Proposal) Text(m work.Meaning) string {
+	switch m {
+	case work.Need:
 		return c.Need
-	case "Example":
+	case work.Example:
 		return c.Example
-	case "Steps to reproduce":
+	case work.Steps:
 		return c.Steps
-	case "Validation":
+	case work.Validation:
 		return c.Validation
-	case "Verification":
+	case work.Verification:
 		return c.Verification
-	case "Scope":
+	case work.Scope:
 		return c.Scope
 	}
 	return ""
+}
+
+// named is the heading names give meaning m, or the one it is written under.
+func named(names []string, m work.Meaning) string {
+	if n, ok := work.Headings.In(names, m); ok {
+		return n
+	}
+	return work.Name(m)
 }
 
 // DraftMarker marks a section the role drafted and no person made theirs.
@@ -1644,17 +1660,18 @@ func DraftLine(role string) string { return DraftMarker }
 // text marked so, and as the role wrote it (the state's `wrote`) — one a
 // person edited is theirs, the marker left in it or not. A draft written
 // before the role kept its digest is told by its marker alone.
-func IsDraft(body, name string, st *State) bool {
-	text := work.Sections(body)[name]
-	if !slices.Contains(drafted, name) || !strings.Contains(text, DraftMarker) {
+func IsDraft(body string, m work.Meaning, st *State) bool {
+	text := work.ByMeaning(body)[m].Text
+	if !drafted(m) || !strings.Contains(text, DraftMarker) {
 		return false
 	}
-	return st == nil || st.Wrote[name] == "" || st.Wrote[name] == BodyDigest(text)
+	_, wrote := st.wrote(m)
+	return wrote == "" || wrote == BodyDigest(text)
 }
 
 // HasDraft says whether an issue's body holds a draft of the role's still.
 func HasDraft(body string, st *State) bool {
-	return slices.ContainsFunc(drafted, func(name string) bool { return IsDraft(body, name, st) })
+	return slices.ContainsFunc(layout(), func(m work.Meaning) bool { return IsDraft(body, m, st) })
 }
 
 // Refine is an issue's body with the sections it lacks written: one there
@@ -1664,7 +1681,7 @@ func HasDraft(body string, st *State) bool {
 // builder's; added and kept name the sections written and those already
 // there, left alone.
 func Refine(body string, c Proposal, role string) (string, []string, []string) {
-	have := work.Sections(body)
+	have := work.ByMeaning(body)
 	body, footer := work.Footer(body) // a section added goes above the body's footer
 	body = strings.TrimRight(body, " \r\n")
 	var added, kept []string
@@ -1673,25 +1690,31 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 		body = withDescription(body, text)
 		added = append(added, DescriptionName)
 	}
-	for _, name := range Layout {
-		text := Inert(strings.TrimSpace(c.Text(name))) // no quick action run on GitLab when the body is written
-		if text == "" || slices.Contains(c.Refused, name) {
+	for _, m := range layout() {
+		text := Inert(strings.TrimSpace(c.Text(m))) // no quick action run on GitLab when the body is written
+		if text == "" || work.Has(c.Refused, m) {
 			continue
 		}
-		if slices.Contains(drafted, name) {
+		if drafted(m) {
 			text = DraftLine(role) + "\n\n" + text
 		}
-		old, ok := have[name]
+		// A section there is written under its heading in the body; one
+		// missing, under the heading the table writes.
+		old, ok := have[m]
+		name := work.Name(m)
+		if ok {
+			name = old.Heading
+		}
 		switch {
-		case ok && strings.TrimSpace(old) != "" && slices.Contains(c.Revise, name) && squeeze(StripDrafts(old)) != squeeze(StripDrafts(text)):
+		case ok && strings.TrimSpace(old.Text) != "" && work.Has(c.Revise, m) && squeeze(StripDrafts(old.Text)) != squeeze(StripDrafts(text)):
 			body = fill(body, name, text) // the role's own, rewritten to answer the reviewer (#128)
-		case ok && strings.TrimSpace(old) != "":
+		case ok && strings.TrimSpace(old.Text) != "":
 			kept = append(kept, name)
 			continue
 		case ok:
 			body = fill(body, name, text)
 		default:
-			body = insert(body, name, text)
+			body = insert(body, m, text)
 		}
 		added = append(added, name)
 	}
@@ -1704,25 +1727,28 @@ func Refine(body string, c Proposal, role string) (string, []string, []string) {
 	return work.WithFooter(withBreak(body), footer), added, kept
 }
 
-func isBuilder(name string) bool { return slices.Contains(builders, name) }
+// isBuilder says whether a section, by its heading, is of the builder's part.
+func isBuilder(name string) bool { return builder(work.MeaningOf(name)) }
 
-// insert adds a section where the Layout puts it: after the nearest one
+// insert adds a section where the layout puts it: after the nearest one
 // before it in the body — above the break when it is the person's —, else
 // before the nearest one after it, else after the body's text; at the
 // level of the heading it goes by.
-func insert(body, name, text string) string {
+func insert(body string, m work.Meaning, text string) string {
 	lines := strings.Split(body, "\n")
-	at := map[string]int{} // the line of each heading of the Layout, the last when written twice
+	at := map[work.Meaning]int{} // the line of each section of the layout, the last when written twice
 	for i, l := range lines {
-		if h, ok := work.Heading(l); ok && slices.Contains(Layout, h) {
-			at[h] = i
+		if h, ok := work.Heading(l); ok && work.MeaningOf(h) != "" {
+			at[work.MeaningOf(h)] = i
 		}
 	}
+	name := work.Name(m)
 	section := func(i int) string { // at the level of heading i
 		return lines[i][:strings.Index(lines[i], " ")+1] + name + "\n\n" + text
 	}
-	k := slices.Index(Layout, name)
-	for _, before := range slices.Backward(Layout[:k]) {
+	order := layout()
+	k := slices.Index(order, m)
+	for _, before := range slices.Backward(order[:k]) {
 		i, ok := at[before]
 		if !ok {
 			continue
@@ -1734,18 +1760,18 @@ func insert(body, name, text string) string {
 			}
 			next++
 		}
-		if b := breakAbove(lines, next); b >= 0 && !isBuilder(name) {
+		if b := breakAbove(lines, next); b >= 0 && !builder(m) {
 			next = b
 		}
 		return splice(lines, next, section(i))
 	}
-	for _, after := range Layout[k+1:] {
+	for _, after := range order[k+1:] {
 		i, ok := at[after]
 		if !ok {
 			continue
 		}
 		to := i
-		if b := breakAbove(lines, i); b >= 0 && !isBuilder(name) {
+		if b := breakAbove(lines, i); b >= 0 && !builder(m) {
 			to = b
 		}
 		return splice(lines, to, section(i))
@@ -1783,23 +1809,23 @@ func splice(lines []string, i int, section string) string {
 // other and none is between them.
 func withBreak(body string) string {
 	lines := strings.Split(body, "\n")
-	person, builder := -1, -1
+	person, builders := -1, -1
 	for i, l := range lines {
 		h, ok := work.Heading(l)
 		switch {
-		case !ok || !slices.Contains(Layout, h):
-		case isBuilder(h) && builder < 0:
-			builder = i
-		case !isBuilder(h) && builder >= 0:
+		case !ok || work.MeaningOf(h) == "":
+		case isBuilder(h) && builders < 0:
+			builders = i
+		case !isBuilder(h) && builders >= 0:
 			return body // the person's part and the builder's mixed: left as they are
 		case !isBuilder(h):
 			person = i
 		}
 	}
-	if person < 0 || builder < 0 || breakAbove(lines, builder) > person {
+	if person < 0 || builders < 0 || breakAbove(lines, builders) > person {
 		return body
 	}
-	return splice(lines, builder, "---")
+	return splice(lines, builders, "---")
 }
 
 // fill writes text under the heading of an empty section, in place.
@@ -1872,15 +1898,15 @@ func StripDrafts(body string) string {
 // NotReady says what keeps an issue's body from ready: a section missing or
 // empty, Need or Validation still a draft no person accepted nor edited.
 func NotReady(body string, st *State, accepted bool) []string {
-	have := work.Sections(body)
+	have := work.ByMeaning(body)
 	var out []string
-	for _, name := range Sections {
-		text := strings.TrimSpace(have[name])
+	for _, m := range work.Required {
+		text := strings.TrimSpace(have[m].Text)
 		switch {
 		case text == "":
-			out = append(out, name+" is missing")
-		case !accepted && IsDraft(body, name, st):
-			out = append(out, name+" is still a draft: accept it ("+LabelAccepted+") or edit it")
+			out = append(out, work.Name(m)+" is missing")
+		case !accepted && IsDraft(body, m, st):
+			out = append(out, have[m].Heading+" is still a draft: accept it ("+LabelAccepted+") or edit it")
 		}
 	}
 	return out
@@ -2127,15 +2153,16 @@ func ProposalComment(author string, c Proposal, role string) string {
 	if w := strings.TrimSpace(c.Why); w != "" {
 		fmt.Fprintf(&b, "**What it understood:** %s\n\n", w)
 	}
-	for _, name := range Layout {
-		if !slices.Contains(c.Added, name) {
+	for _, m := range layout() {
+		name, ok := work.Headings.In(c.Added, m)
+		if !ok {
 			continue
 		}
 		draft := ""
-		if slices.Contains(drafted, name) {
+		if drafted(m) {
 			draft = " (yours to state: a draft from your words)"
 		}
-		fmt.Fprintf(&b, "**%s**%s\n\n%s\n\n", name, draft, strings.TrimSpace(c.Text(name)))
+		fmt.Fprintf(&b, "**%s**%s\n\n%s\n\n", name, draft, strings.TrimSpace(c.Text(m)))
 	}
 	if q := strings.TrimSpace(c.Questions); q != "" {
 		fmt.Fprintf(&b, "**What it still needs:** %s\n\n", q)
@@ -2151,18 +2178,18 @@ func ProposalComment(author string, c Proposal, role string) string {
 		Sources      []string `yaml:"sources,flow,omitempty"`
 	}{}
 	for _, name := range c.Added {
-		switch name {
-		case "Need":
+		switch work.MeaningOf(name) {
+		case work.Need:
 			kept.Need = c.Need
-		case "Example":
+		case work.Example:
 			kept.Example = c.Example
-		case "Steps to reproduce":
+		case work.Steps:
 			kept.Steps = c.Steps
-		case "Verification":
+		case work.Verification:
 			kept.Verification = c.Verification
-		case "Validation":
+		case work.Validation:
 			kept.Validation = c.Validation
-		case "Scope":
+		case work.Scope:
 			kept.Scope, kept.Sources = c.Scope, c.Sources
 		}
 	}
@@ -2360,7 +2387,7 @@ func describe(c Proposal, verb string) string {
 			switch {
 			case n == DescriptionName:
 				n = "the description in plain words"
-			case slices.Contains(drafted, n):
+			case Drafted(n):
 				n += " (draft)"
 			}
 			names = append(names, n)
@@ -2424,7 +2451,7 @@ func refined(c Proposal) string {
 		if Drafted(n) {
 			name += " (draft)"
 		}
-		if slices.Contains(c.Revise, n) {
+		if work.Has(c.Revise, work.MeaningOf(n)) {
 			changed = append(changed, name)
 		} else {
 			added = append(added, name)

@@ -173,9 +173,9 @@ func BroughtBack(b forge.Backlog, is forge.Issue, st *State, notes []forge.Note)
 // lacking says whether an issue lacks one of its four sections; one a
 // person deleted is theirs, not lacking.
 func lacking(is forge.Issue, st *State) bool {
-	have := work.Sections(is.Body)
-	for _, name := range Sections {
-		if strings.TrimSpace(have[name]) == "" && !slices.Contains(st.Deleted, name) {
+	have := work.ByMeaning(is.Body)
+	for _, m := range work.Required {
+		if strings.TrimSpace(have[m].Text) == "" && !work.Has(st.Deleted, m) {
 			return true
 		}
 	}

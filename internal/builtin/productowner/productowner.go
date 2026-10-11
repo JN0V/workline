@@ -328,16 +328,16 @@ func Pre(runDir, repo string) int {
 			}
 			if len(ev.TestUnread) > 0 {
 				findings = append(findings, verdict.Finding{Rule: "proof-test-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
-					Message: fmt.Sprintf("its Verification names %s as proof, and the code could not be read for it: the item is said not proved, never the test missing", strings.Join(ev.TestUnread, ", "))})
+					Message: fmt.Sprintf("its %s names %s as proof, and the code could not be read for it: the item is said not proved, never the test missing", work.Name(work.Verification), strings.Join(ev.TestUnread, ", "))})
 			}
 			if len(ev.NoTest) > 0 {
 				findings = append(findings, verdict.Finding{Rule: "proof-test-missing", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
-					Message: fmt.Sprintf("its Verification names %s as proof, and the code at this commit holds no such test: the item is said not proved", strings.Join(ev.NoTest, ", "))})
+					Message: fmt.Sprintf("its %s names %s as proof, and the code at this commit holds no such test: the item is said not proved", work.Name(work.Verification), strings.Join(ev.NoTest, ", "))})
 			}
 			if ev.AllClosed {
 				msg := fmt.Sprintf("its %d parts are closed: for a person to accept, by closing it — the role never does", ev.Parts)
 				if len(ev.Undone) > 0 || len(ev.Unproved) > 0 {
-					msg += fmt.Sprintf("; not delivered: %d part(s), not proved: %d Verification item(s)", len(ev.Undone), len(ev.Unproved))
+					msg += fmt.Sprintf("; not delivered: %d part(s), not proved: %d %s item(s)", len(ev.Undone), len(ev.Unproved), work.Name(work.Verification))
 				}
 				findings = append(findings, verdict.Finding{Rule: "parent-to-accept", Level: "info", Where: fmt.Sprintf("#%d", is.ID), Message: msg})
 			}
@@ -612,7 +612,8 @@ func Pre(runDir, repo string) int {
 			review = specFindings(d.is, d.st, d.comments, r)
 		}
 		if readyOpen(d.is, d.st, cfg) {
-			review += "Ready: its four sections are there, Need and Validation a person's — propose `ready` when it is evident: one need, a Verification that proves it, nothing left open in its comments; the engine checks it.\n"
+			review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
+				work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
 		}
 		if a := answers[d.is.ID]; a != nil {
 			review += revise(d.is, d.st, a, revisions)
@@ -936,7 +937,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	if by := backlog.OpenedBy(is.Body); by != "" {
 		// A role's finding, opened through the one way (ADR-0018): the
 		// product owner takes it from here, as any other issue.
-		fmt.Fprintf(b, "Opened by: the %s role, on a finding of its own — a draft to refine: its Need and Validation are not a person's yet\n", by)
+		fmt.Fprintf(b, "Opened by: the %s role, on a finding of its own — a draft to refine: its %s and %s are not a person's yet\n", by, work.Name(work.Need), work.Name(work.Validation))
 	} else if is.Author != "" {
 		whose := ", of the project"
 		if !is.Insider {
@@ -1091,15 +1092,15 @@ func placed(is forge.Issue) string {
 // example or the steps to reproduce after them, never required —, and
 // which are drafts no person made theirs yet.
 func sections(body string, st *backlog.State) string {
-	have := work.Sections(body)
+	have := work.ByMeaning(body)
 	var there, missing []string
-	for _, name := range append(slices.Clone(backlog.Sections), "Example", "Steps to reproduce") {
-		text := strings.TrimSpace(have[name])
+	for _, m := range append(slices.Clone(work.Required), work.Example, work.Steps) {
+		text, name := strings.TrimSpace(have[m].Text), have[m].Heading
 		switch {
-		case text == "" && !slices.Contains(backlog.Sections, name):
+		case text == "" && !slices.Contains(work.Required, m):
 		case text == "":
-			missing = append(missing, name)
-		case backlog.IsDraft(body, name, st):
+			missing = append(missing, work.Name(m))
+		case backlog.IsDraft(body, m, st):
 			there = append(there, name+" (draft)")
 		case backlog.Drafted(name):
 			there = append(there, name+" (a person's)") // not marked a draft: theirs
@@ -1186,7 +1187,7 @@ func writeFolders(b *strings.Builder, tracked map[string]bool) {
 		list = list[:foldersMax]
 	}
 	slices.Sort(list)
-	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its Scope touches from these, in `sources` (a folder named is given with its files at the next run).\n\n- %s\n%s\n", strings.Join(list, "\n- "), more)
+	fmt.Fprintf(b, "# The repository's folders\n\nAn issue above names no file: name the files or folders its %s touches from these, in `sources` (a folder named is given with its files at the next run).\n\n- %s\n%s\n", work.Name(work.Scope), strings.Join(list, "\n- "), more)
 }
 
 // named lists the files an issue is about: its sources, then the paths its
@@ -1317,9 +1318,9 @@ func readyOpen(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
 	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off || slices.Contains(is.Labels, backlog.LabelReady) {
 		return false
 	}
-	have := work.Sections(is.Body)
-	for _, name := range backlog.Sections {
-		if strings.TrimSpace(have[name]) == "" || backlog.IsDraft(is.Body, name, st) {
+	have := work.ByMeaning(is.Body)
+	for _, m := range work.Required {
+		if strings.TrimSpace(have[m].Text) == "" || backlog.IsDraft(is.Body, m, st) {
 			return false
 		}
 	}
@@ -1555,7 +1556,7 @@ func specFindings(is forge.Issue, st *backlog.State, comments []string, r *backl
 	if len(mine) > 0 {
 		fmt.Fprintf(&b, "Answer them with a `refine` giving the whole new text of the sections they lie in that are yours to rewrite: %s. ", strings.Join(mine, ", "))
 	}
-	if theirs := slices.DeleteFunc(slices.Clone(r.In), func(n string) bool { return slices.Contains(mine, n) }); len(theirs) > 0 {
+	if theirs := slices.DeleteFunc(slices.Clone(r.In), func(n string) bool { return work.Has(mine, work.MeaningOf(n)) }); len(theirs) > 0 {
 		fmt.Fprintf(&b, "%s: a person's, never rewritten: `ask` its reporter. ", strings.Join(theirs, ", "))
 	}
 	b.WriteString("The reviewer reads the spec again after your answer.\n")

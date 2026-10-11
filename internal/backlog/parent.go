@@ -67,7 +67,7 @@ var verificationItem = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\
 // VerificationItems are the items of a body's Verification section: each
 // list item, or, with no list, the section whole.
 func VerificationItems(body string) []string {
-	text := strings.TrimSpace(work.Sections(body)["Verification"])
+	text := strings.TrimSpace(work.ByMeaning(body)[work.Verification].Text)
 	if text == "" {
 		return nil
 	}
@@ -179,10 +179,11 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 	ev.AllClosed = ev.Parts > 0 && ev.Closed == ev.Parts
 	notYet := map[bool]string{true: "**Not proved**", false: "**Not proved yet**"}[ev.AllClosed]
 	items := VerificationItems(parent.Body)
+	proofs := work.Name(work.Verification)
 	if len(items) == 0 {
-		b.WriteString("\nThis issue has no Verification of its own: nothing to prove its parts against; a person judges from the parts alone.\n")
+		fmt.Fprintf(&b, "\nThis issue has no %s of its own: nothing to prove its parts against; a person judges from the parts alone.\n", proofs)
 	} else {
-		b.WriteString("\n**Its Verification**, each item against the parts delivered — proved when a part's Verification, or what closed it, quotes it, and a test it names is in the code:\n\n")
+		fmt.Fprintf(&b, "\n**Its %[1]s**, each item against the parts delivered — proved when a part's %[1]s, or what closed it, quotes it, and a test it names is in the code:\n\n", proofs)
 		for _, item := range items {
 			where := proof(item, parts)
 			if where != "" && tests != nil {
@@ -236,7 +237,7 @@ func ReadEvidence(parent forge.Issue, parts []Part, role string, tests TestFinde
 			missing = append(missing, "the part of "+issueList(ev.Undone)+" not delivered")
 		}
 		if n := len(ev.Unproved); n > 0 {
-			missing = append(missing, fmt.Sprintf("%d item(s) of its Verification not proved", n))
+			missing = append(missing, fmt.Sprintf("%d item(s) of its %s not proved", n, work.Name(work.Verification)))
 		}
 		if len(missing) > 0 {
 			b.WriteString(" Before accepting: " + strings.Join(missing, "; ") + ".")
@@ -262,8 +263,8 @@ func proof(item string, parts []Part) string {
 		if len(p.Closers) > 0 {
 			closed = ", closed by " + closerName(p.Closers[0])
 		}
-		if strings.Contains(plain(work.Sections(p.Issue.Body)["Verification"]), want) {
-			return fmt.Sprintf("quoted in #%d's Verification%s", p.ID, closed)
+		if s := work.ByMeaning(p.Issue.Body)[work.Verification]; strings.Contains(plain(s.Text), want) {
+			return fmt.Sprintf("quoted in #%d's %s%s", p.ID, s.Heading, closed)
 		}
 		for _, c := range p.Closers {
 			if strings.Contains(plain(c.Text), want) {

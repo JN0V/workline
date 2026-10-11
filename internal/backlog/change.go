@@ -21,29 +21,89 @@ import (
 
 // Watched are the sections whose change touches the issues built on an
 // issue: what it needs, and the part of the code it holds.
-var Watched = []string{"Need", "Scope"}
+var Watched = []work.Meaning{work.Need, work.Scope}
 
 // Basis is what an issue's state keeps of its watched sections, to tell a
 // person's change from the engine's: their text, the engine's own lines
-// (a draft line, a blocked-by line) left out.
+// (a draft line, a blocked-by line) left out, each under its heading in
+// the body.
 func Basis(body string) map[string]string {
-	have := work.Sections(body)
+	have := work.ByMeaning(body)
 	out := map[string]string{}
-	for _, name := range Watched {
+	for _, m := range Watched {
 		var kept []string
-		for _, l := range strings.Split(have[name], "\n") {
+		for _, l := range strings.Split(have[m].Text, "\n") {
 			if !strings.Contains(l, "<!-- workline:") {
 				kept = append(kept, l)
 			}
 		}
 		if t := strings.TrimSpace(strings.Join(kept, "\n")); t != "" {
-			out[name] = t
+			out[have[m].Heading] = t
 		}
 	}
 	if len(out) == 0 {
 		return nil
 	}
 	return out
+}
+
+// An issue's state records each section under the heading it had in the
+// body, and is read by meaning (ADR-0039): a section the role wrote, or a
+// person deleted, under a heading is the same section under any other
+// heading of its meaning — one deleted under an old name is never written
+// under a new one.
+
+// recorded is the heading a section of meaning m is recorded under in one
+// of the state's lists, keyed by heading, and what it holds there; "" when
+// none.
+func recorded(kept map[string]string, m work.Meaning) (string, string) {
+	for _, h := range work.Headings.Of(m) {
+		if v := kept[h]; v != "" {
+			return h, v
+		}
+	}
+	return "", ""
+}
+
+// wrote is the heading the role recorded writing a section of meaning m
+// under, and the digest of what it wrote; "" when it wrote none.
+func (s *State) wrote(m work.Meaning) (string, string) {
+	if s == nil {
+		return "", ""
+	}
+	return recorded(s.Wrote, m)
+}
+
+// SetWrote records that the role wrote a section under a heading, by its
+// digest: in place of what it recorded under another heading of the same
+// meaning.
+func (s *State) SetWrote(name, digest string) {
+	if s.Wrote == nil {
+		s.Wrote = map[string]string{}
+	}
+	if m := work.MeaningOf(name); m != "" {
+		for _, h := range work.Headings.Of(m) {
+			delete(s.Wrote, h)
+		}
+	}
+	s.Wrote[name] = digest
+}
+
+// KeptText is the text the state kept of a watched section, by its
+// meaning, under whichever heading it was kept: "" when none.
+func (s *State) KeptText(name string) string {
+	if s == nil {
+		return ""
+	}
+	_, text := recorded(s.Sections, work.MeaningOf(name))
+	return text
+}
+
+// BasisText is the text Basis keeps of a body's watched section, by its
+// meaning: "" when the body has none.
+func BasisText(body, name string) string {
+	_, text := recorded(Basis(body), work.MeaningOf(name))
+	return text
 }
 
 // Keep records in the state the body the engine read or left: its digest,
@@ -63,9 +123,9 @@ func DeletedSections(s *State, body string) []string {
 		return nil
 	}
 	out := slices.Clone(s.Deleted)
-	have := work.Sections(body)
-	for _, name := range Layout {
-		if s.Wrote[name] != "" && strings.TrimSpace(have[name]) == "" && !slices.Contains(out, name) {
+	have := work.ByMeaning(body)
+	for _, m := range layout() {
+		if name, wrote := s.wrote(m); wrote != "" && strings.TrimSpace(have[m].Text) == "" && !work.Has(out, m) {
 			out = append(out, name)
 		}
 	}
@@ -81,10 +141,16 @@ func Rewritten(st *State, body string) []string {
 	}
 	now := Basis(body)
 	var out []string
-	for _, name := range Watched {
-		if old := st.Sections[name]; old != "" && squeeze(old) != squeeze(now[name]) {
-			out = append(out, name)
+	for _, m := range Watched {
+		kept, old := recorded(st.Sections, m)
+		name, text := recorded(now, m)
+		if old == "" || squeeze(old) == squeeze(text) {
+			continue
 		}
+		if name == "" {
+			name = kept // gone from the body: named as it was kept
+		}
+		out = append(out, name)
 	}
 	return out
 }

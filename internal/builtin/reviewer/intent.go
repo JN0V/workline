@@ -65,18 +65,19 @@ func whatFor(issues []ClosedIssue) string {
 
 // intentSections are what of an issue a change is compared with: what it
 // asks, how it is proven, and what it leaves out (#126).
-var intentSections = []string{"Need", "Verification", "Scope"}
+var intentSections = []work.Meaning{work.Need, work.Verification, work.Scope}
 
-// issueText is what the lenses read of an issue: its title, then its Need,
-// Verification and Scope; its whole body when it has none of them.
+// issueText is what the lenses read of an issue: its title, then its need,
+// how it is proven and its scope, each under its heading; its whole body
+// when it has none of them.
 func issueText(is *forge.Issue) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "### Issue #%d: %s\n", is.ID, is.Title)
-	sections := work.Sections(is.Body)
+	sections := work.ByMeaning(is.Body)
 	any := false
-	for _, name := range intentSections {
-		if body := strings.TrimSpace(sections[name]); body != "" {
-			fmt.Fprintf(&b, "\n#### %s\n\n%s\n", name, body)
+	for _, m := range intentSections {
+		if body := strings.TrimSpace(sections[m].Text); body != "" {
+			fmt.Fprintf(&b, "\n#### %s\n\n%s\n", sections[m].Heading, body)
 			any = true
 		}
 	}

@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/JN0V/workline/internal/work"
 )
 
 // command is one command of the dispatcher: what `workline --help` lists,
@@ -27,7 +29,7 @@ func init() {
 		{name: "apply", args: "<run-dir>... | --line <file> [options]", about: "apply runs judged with --no-apply, or resume a run stopped while applying", run: applyCmd},
 		{name: "review", args: "[options]", about: "have the reviewer review this branch before it is pushed, or a spec before it is built", run: reviewCmd},
 		{name: "gate", args: "<name> [options]", about: "run a gate declared in .workline/config.yaml", run: gateCmd},
-		{name: "item", args: "ready <id> [options]", about: "move a work item to ready, once its Need, Verification, Validation and Scope are written", run: itemCmd},
+		{name: "item", args: "ready <id> [options]", about: "move a work item to ready, once its " + required() + " are written", run: itemCmd},
 		{name: "issues", args: "[list] | show <n>|!<n> | import <file> [options]", about: "read the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},
 		{name: "sample", args: "[options] | --apply <file> [options]", about: "draw and read the week's sample of the docs the documentalist vouched for; --apply writes it to the forge", run: sampleCmd},
@@ -41,6 +43,16 @@ func init() {
 		{name: "hook", args: "<git-hook-name> [<args>]", about: "run by the installed git hooks", hidden: true, run: hookCmd},
 		{name: "builtin", args: "<role> pre|post", about: "run by the shipped roles' scripts, inside a run", hidden: true, run: builtin},
 	}
+}
+
+// required names the sections an item needs to be ready, as a sentence
+// says them: "A, B, C and D".
+func required() string {
+	var names []string
+	for _, m := range work.Required {
+		names = append(names, work.Name(m))
+	}
+	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
 }
 
 func lookupCommand(name string) *command {

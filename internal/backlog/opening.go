@@ -182,10 +182,7 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 		wrote = append(slices.Clone(wrote), DescriptionName)
 	}
 	for _, name := range wrote {
-		if st.Wrote == nil {
-			st.Wrote = map[string]string{}
-		}
-		st.Wrote[name] = SectionDigest(body, name)
+		st.SetWrote(name, SectionDigest(body, name))
 	}
 	return o.f.Sticky(t, FormatState(st), StateMarker(Keeper), true)
 }
