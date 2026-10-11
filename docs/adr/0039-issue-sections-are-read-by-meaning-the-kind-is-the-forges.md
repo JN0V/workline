@@ -1,4 +1,4 @@
-# ADR-0039: An issue's sections are read by meaning, in the project's words; its kind is the forge's
+# ADR-0039: An issue's sections are read by meaning, a template's fields too; its kind is the forge's
 
 - **Status:** proposed — the questions at the end wait on the maintainer;
   built after the trial of [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
@@ -6,8 +6,8 @@
 - **Builds on:** [ADR-0018](0018-the-product-owner.md) (Need and
   Validation a person's), the layout of
   [ADR-0038's last amendments](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md#amendment-2026-10-09-last-an-issue-a-person-reads),
-  [#260](https://github.com/JN0V/workline/pull/260) (headings as a
-  setting); principles 1, 4, 5, 13
+  [#260](https://github.com/JN0V/workline/pull/260) (headings a project
+  names in a setting); principles 1, 4, 5, 13
 - **Research:** [issue-formats.md](../research/issue-formats.md)
 
 ## Context
@@ -16,9 +16,9 @@
   one real example — rated blind, understood where the old drafts were
   not. Its headings are English and fixed: about twenty places of the
   engine read `Need`, `Verification`, `Validation`, `Scope` by name.
-- **workline runs on any repository**, GitHub, GitLab, Gitea or Forgejo,
-  in any language. Left: (a) a project's own issue format; (b) the
-  kinds; (c) headings in its language; (d) clearer heading names.
+- **workline runs on any repository**, GitHub, GitLab, Gitea or Forgejo.
+  Left: (a) a project's own issue format; (b) the kinds; (c) the
+  language it writes in; (d) clearer heading names.
 - **The forges** ([research](../research/issue-formats.md)): templates
   are files in the repository, GitHub's YAML forms read by Gitea and
   Forgejo too, Markdown everywhere; a submitted form is Markdown,
@@ -72,21 +72,24 @@ roles:
 | bug | who it hurts | Steps to reproduce: steps, Expected, Actual, version | the steps, the expected result as the Then |
 | task | what it costs today | the warning, the minutes lost | "Done when": a checklist a person runs |
 
-### (c) The project's language: headings by setting, words by the agent
+### (c) English only
 
-- **Headings**: `headings`, the shape
-  [#260](https://github.com/JN0V/workline/pull/260) gave the
-  documentalist; French: `need: [Besoin]`, `scope: [Périmètre]`…
-- **The prose and the scenarios' words** follow the issue's language,
-  written by the agent as now (Étant donné / Quand / Alors). The engine
-  checks no keyword, and guesses no language.
+- **workline writes English, everywhere**: the engine's lines, the
+  agent's drafts, the examples, the settings. No translated heading nor
+  scenario word, no language detected.
+- **Why**: another language, supported for real, needs every line the
+  engine writes, the conformance cases and the blind measures again in
+  that language. Half-supported, it reads half-translated. One language,
+  then.
+- `headings` is not a language feature: it lets a template's own labels,
+  "What happened?", count as a meaning — part (a).
 
 ### (d) Heading names: kept
 
 - Need, Example or Steps to reproduce, Validation, the line,
   Verification, Scope: those step 1 was rated with. The line, not a new
   name, tells the person's part from the builder's. A project names its
-  own through `headings`; the defaults are question 2.
+  own through `headings`; the defaults are question 1.
 
 ### A bug and a need, by default and through a project's form
 
@@ -126,7 +129,7 @@ The need's form, `feature.yml`, sets `type: Feature`; the project sets
 |---|---|
 | which heading holds which meaning (`headings`) | whether what fills it is enough to build from |
 | a meaning filled or empty | the kind, when no type nor label gives it |
-| the kind, from a type or a label (`kinds`) | the issue's language, the scenarios' words |
+| the kind, from a type or a label (`kinds`) | what fills each section for that kind |
 | Need and Validation a person's | whether an issue is evident for `ready` |
 | where an added section goes, its heading and level | what to ask when a bug has no steps |
 
@@ -136,7 +139,7 @@ The need's form, `feature.yml`, sets `type: Feature`; the project sets
    digests, the reviewer's spec read, changed needs, a parent's items.
    The 78 conformance cases holding today's headings pass unchanged.
 2. **`headings`**; an HTML comment alone counted empty. Pieces 1 and 2
-   only if a project running workline needs them (question 1).
+   are built when a project running workline has its own issue template.
 3. **The kind**: GitHub's and GitLab's issue types read; `kinds`; the
    kind in the task, and in the role's line when judged.
 4. **The instruction per kind**: a task's "Done when"; Given / When /
@@ -148,11 +151,9 @@ The need's form, `feature.yml`, sets `type: Feature`; the project sets
   which one an issue came from, a hint left as written counted empty:
   `headings` covers every forge in one line; no project has asked.
 - **A map the agent proposes and the role keeps**: wrong in silence.
-- **Guessing the language**: nobody sees the guess nor undoes it; the
-  engine's own lines in another language are question 3.
 - **A bug's steps required by `ready`**: the kind is often unlabelled,
-  and the agent already asks (question 4).
-- **The role setting a kind label**: a new act with its undo (question 5).
+  and the agent already asks (question 2).
+- **The role setting a kind label**: a new act with its undo (question 3).
 - **A question or a doc as a kind**: none seen; a doc is a reader's need.
 - **A readability score gating `ready`**: reported beside ratings first.
 
@@ -162,8 +163,8 @@ The need's form, `feature.yml`, sets `type: Feature`; the project sets
   three tasks — drafted before and after piece 4; the maintainer says of
   each "understood?", "accepted unchanged?". Kept if the new wins on each kind.
 - **The kind**: the agent's, labels hidden, against the label.
-- **Pieces 1 and 2**: conformance, then a copy of the project needing
-  them: drafts repeating a reporter's field — none after.
+- **Pieces 1 and 2**: conformance, then a copy of a repository with its
+  own template: drafts repeating a reporter's field — none after.
 - **In use**: the trial's counter — accepted unchanged, edited,
   revised, set aside — the week after against the trial's. No new one.
 
@@ -174,6 +175,9 @@ The need's form, `feature.yml`, sets `type: Feature`; the project sets
   validates lost (principle 1).
 - **workline's format replacing the project's**: it rewrites a
   reporter's fields, where completing them is enough (principle 13).
+- **Multilingual support** — headings, scenario words and the engine's
+  lines in the project's language: every engine line, conformance case
+  and blind measure again per language, a cost too high (part (c)).
 
 ## Consequences
 
@@ -185,15 +189,10 @@ The need's form, `feature.yml`, sets `type: Feature`; the project sets
 
 ## Open questions for the maintainer
 
-1. **Your GitLab project at work: has it description templates, and in
-   which language are its issues?** Recommended: pieces 1 and 2 only if
-   it has either; else they stay parked, this ADR their plan.
-2. **Rename the defaults?** Recommended: keep them; to check, six issues
+1. **Rename the defaults?** Recommended: keep them; to check, six issues
    under two sets of headings rated blind, no token — the other set
    Need · Example · Accepted when · Tests · Code.
-3. **The engine's own lines in French?** Recommended: after a week of
-   French headings at work, a `language` setting, as the documentalist's.
-4. **A bug `ready` only with its steps?** Recommended: no; count in use
+2. **A bug `ready` only with its steps?** Recommended: no; count in use
    the bugs readied without steps.
-5. **The role setting the kind label it judged?** Recommended: no; it
+3. **The role setting the kind label it judged?** Recommended: no; it
    says the kind in its line, and a person's label is one click.

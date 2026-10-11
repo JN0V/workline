@@ -16,7 +16,7 @@ template itself. Bugs ask the same few things everywhere; features ask
 "what" and "why", never a story sentence. Only one tool fills a
 project's own template, mapping to its fields, never to fixed meanings;
 none checks that a filled template is enough to build from. Forms have
-no language key.
+no language key; workline writes English only.
 
 Searched in the ecosystem's words: *issue forms*, *issue templates*,
 *description templates*, *issue types*, *type labels*, *steps to
@@ -137,16 +137,18 @@ from the repositories' default branches on 2026-10-09.
 
 - **Forms have no language key.** Projects copy a template per language
   ([vant](https://github.com/youzan/vant/tree/main/.github/ISSUE_TEMPLATE):
-  `…en-US.yml` beside `…zh-CN.yml`), write two-language labels
-  ([Paddle](https://github.com/PaddlePaddle/Paddle/tree/develop/.github/ISSUE_TEMPLATE):
-  "bug描述 Describe the Bug"), or write in one language
-  ([etalab/data.gouv.fr](https://github.com/etalab/data.gouv.fr/tree/master/.github/ISSUE_TEMPLATE):
-  "Description du bug", "Comment reproduire le bug", "Comportement
-  attendu").
+  `…en-US.yml` beside `…zh-CN.yml`), write each label in two languages
+  ([Paddle](https://github.com/PaddlePaddle/Paddle/tree/develop/.github/ISSUE_TEMPLATE)),
+  or write in one language other than English
+  ([etalab/data.gouv.fr](https://github.com/etalab/data.gouv.fr/tree/master/.github/ISSUE_TEMPLATE)).
 - **Given / When / Then** is translated in Cucumber's
   [Gherkin](https://cucumber.io/docs/gherkin/reference/), "over 70
-  languages", chosen by `# language: fr` (Étant donné / Quand / Alors).
+  languages", chosen by a `# language:` line.
 - Copilot's docs say nothing of the language it writes in.
+- **For workline: English only.** Supporting another language for real
+  means every line the engine writes, its conformance cases and its blind
+  measures again in that language; workline writes English everywhere
+  ([ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)).
 
 ## What to borrow
 
@@ -160,18 +162,16 @@ from the repositories' default branches on 2026-10-09.
 - **A feature's**: the problem before the proposal.
 - **Scenarios for behaviour, a checklist for constraints**; no clear
   outcome, a question.
-- **Given / When / Then's words per language**, as Gherkin translates them.
 
 ## What is missing, for workline to complete
 
 - **A field read as a meaning**: nothing tells that "What did you expect
-  to happen?" or "Comportement attendu" is how a person checks the
-  result. workline's `ready` needs it to read a template's fields.
+  to happen?" is how a person checks the result. workline's `ready`
+  needs it to read a template's fields; a documentalist setting already
+  takes a project's own headings
+  ([#260](https://github.com/JN0V/workline/pull/260)).
 - **What a template lacks**: most bug forms have no field for the code a
   change touches nor for how the machine proves it; added after the
   reporter's fields, never inside them.
-- **Headings in the project's language** for what workline writes; a
-  documentalist setting already takes headings in any language
-  ([#260](https://github.com/JN0V/workline/pull/260)).
 - **Whether a filled template is enough to build from**: no tool checks
   it; it is the role's judgment.
