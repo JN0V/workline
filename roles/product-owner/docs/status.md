@@ -177,3 +177,10 @@ checked.
    sandbox's imported file was never pushed); GitLab; a change to
    Verification or Validation, if live use asks; the maintainer reading
    the report against #165's Validation.
+11. **Issue sections and kinds, proposed**
+   ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
+   [examples](proposed-headings.md)): established section names, the
+   old ones read forever; a bug readied only with its steps,
+   `workline:needs-repro` when a person readies it without; the kind
+   label set by the role; English only. Built after the trial of
+   [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md).
