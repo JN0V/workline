@@ -137,3 +137,9 @@ is the role's until a person edits it:
   description on GitHub, Gitea and Forgejo; the "changed the
   description" note on GitLab, compared with the version before on its
   Premium plan.
+
+## Proposed next
+
+New names for these sections, a bug readied only with its steps, and
+the kind set by the role are proposed, not built:
+[the proposed headings](proposed-headings.md).
