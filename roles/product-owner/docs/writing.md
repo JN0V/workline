@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/work/work.go]
-checked: bd82342
+checked: 3cff814
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
