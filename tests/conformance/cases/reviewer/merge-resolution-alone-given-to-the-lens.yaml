@@ -1,0 +1,15 @@
+case: reviewer/merge-resolution-alone-given-to-the-lens
+about: "A reviewed branch merges main in and settles a conflict wrong, dropping main's guard (#134): the lens is given the resolution alone, both sides of the conflict, the guard removed; not main's other code nor its commits."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+    - "git checkout -q main && sed -i 's|return total / len(values)|if len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\treturn total / len(values)|' calc/calc.go && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add calc && git commit -qm 'feat: sum the values' && git checkout -q feature"
+    - "git merge -q --no-edit main >/dev/null 2>&1 || { git checkout -q --ours calc/calc.go && git add calc/calc.go && git commit -q --no-edit; }"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-edge-cases/task.md: {contains: ["### calc/calc.go", "-\tif len(values) == 0 {", " \treturn total / (len(values) - 1)"], not-contains: ["calc/sum.go", "feat: sum the values"]}

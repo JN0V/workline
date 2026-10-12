@@ -1,0 +1,17 @@
+case: reviewer/rebased-commit-changed-by-a-conflict-reviewed-again
+about: "Three reviewed commits rebased onto a main that settles a conflict in the second (#286): its change differs, so it and the one after it are reviewed, the first not; the lens reads their files only."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "printf 'package calc\\n\\n// Double doubles a count.\\nfunc Double(n int) int { return n * 2 }\\n' > calc/double.go && git add calc/double.go && git commit -qm 'feat: double a count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-list main..HEAD | paste -sd, -) patches=$(git log -p main..HEAD | git patch-id --verbatim | cut -d' ' -f1 | paste -sd, -) runs=1 -->\" > .git/workline/reviewer-record"
+    - "git checkout -q main && printf 'package calc\\n\\n// HalfUp halves a count, rounding up.\\nfunc HalfUp(n int) int { return (n + 1) / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count, rounding up' && git checkout -q feature"
+    - "git rebase -q main >/dev/null 2>&1 || { printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n\\n// HalfUp halves a count, rounding up.\\nfunc HalfUp(n int) int { return (n + 1) / 2 }\\n' > calc/half.go && git add calc/half.go && GIT_EDITOR=true git rebase --continue >/dev/null; }"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-edge-cases/task.md: {contains: ["### calc/half.go", "### calc/double.go"], not-contains: "### calc/calc.go"}
