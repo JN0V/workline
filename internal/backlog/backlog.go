@@ -2203,8 +2203,23 @@ func ProposalComment(author string, c Proposal, role string) string {
 const engineBlock = "<details><summary>As the engine reads it</summary>"
 
 // LastProposal reads the sections of the last refined text proposed to an
-// issue's reporter; nil when none was, or it does not read.
+// issue's reporter; nil when none was, or it does not read
+// (ProposalUnread says so).
 func LastProposal(comments []string, role string) *Proposal {
+	p, _ := lastProposal(comments, role)
+	return p
+}
+
+// ProposalUnread says why the engine's block of the last text proposed to
+// an issue's reporter does not read; nil when it reads, or none was
+// proposed. An agreement to it writes nothing: said (#302), never left
+// for a person to wonder at.
+func ProposalUnread(comments []string, role string) error {
+	_, err := lastProposal(comments, role)
+	return err
+}
+
+func lastProposal(comments []string, role string) (*Proposal, error) {
 	prefix := "<!-- workline:" + role + "/proposal="
 	for i := len(comments) - 1; i >= 0; i-- {
 		if last, _ := EngineMarker(comments[i]); !Round(comments[i], role) || !strings.HasPrefix(last, prefix) {
@@ -2214,19 +2229,19 @@ func LastProposal(comments []string, role string) *Proposal {
 		// before it, their fences neutralised (ProposalComment).
 		at := strings.LastIndex(comments[i], engineBlock)
 		if at < 0 {
-			return nil
+			return nil, fmt.Errorf("no %q block in it", "As the engine reads it")
 		}
 		m := fenced.FindStringSubmatch(comments[i][at:])
 		if m == nil {
-			return nil
+			return nil, fmt.Errorf("no YAML in its %q block", "As the engine reads it")
 		}
 		var p Proposal
-		if yaml.Unmarshal([]byte(m[1]), &p) != nil {
-			return nil
+		if err := yaml.Unmarshal([]byte(m[1]), &p); err != nil {
+			return nil, fmt.Errorf("its YAML: %v", err)
 		}
-		return &p
+		return &p, nil
 	}
-	return nil
+	return nil, nil
 }
 
 // AgreeWord is the reply that agrees to a text proposed to a reporter: its

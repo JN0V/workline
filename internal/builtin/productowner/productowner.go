@@ -306,9 +306,18 @@ func Pre(runDir, repo string) int {
 			}
 			continue
 		case err != nil:
-			findings = append(findings, verdict.Finding{Rule: "state-broken", Where: fmt.Sprintf("#%d", is.ID),
-				Message: "its state comment does not read (" + err.Error() + "): the issue is not judged, nothing is written on it"})
+			// Held, said each run (#302): never read as no state, which
+			// would write a new one over what the role held there.
+			findings = append(findings, verdict.Finding{Rule: "state-broken", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+				Message: "its state comment does not read (" + err.Error() + "): the issue is held — not judged, nothing written on it — until a person mends that comment, or deletes it for a state anew"})
 			continue
+		}
+		if perr := backlog.ProposalUnread(comments, role); perr != nil && len(backlog.NotReady(is.Body, nil, true)) > 0 {
+			// The text last proposed to its reporter does not read (#302):
+			// an agreement to it writes nothing; said while the body still
+			// lacks a section, a person's to complete.
+			findings = append(findings, verdict.Finding{Rule: "proposal-unread", Level: "warn", Where: fmt.Sprintf("#%d", is.ID),
+				Message: "the engine's block in the text last proposed to its reporter does not read (" + perr.Error() + "): an agreement to it writes nothing in the body, which waits on a person to copy the sections in"})
 		}
 		// A parent (ADR-0029): what its parts delivered, kept in one
 		// comment, with no agent; a person accepts it once all are closed.
