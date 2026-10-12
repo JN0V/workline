@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 8deb61d
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -337,7 +337,10 @@ the release tool rewrites: it goes to a merge request of its own into the
 release's base, and the release waits until it is merged (`fixed-elsewhere`);
 never over a person's commit on that branch, where it goes in a comment
 instead. `workline follow` rebuilds that merge request on its base as the
-base moves (ADR-0034).
+base moves (ADR-0034); with `--gardening`, after gardening applies, the
+role's other merge requests too, or closes those with nothing left to
+merge. A task's branch a person committed to is never force-pushed over
+(`not-proposed`, ADR-0034 amended).
 
 ### Exit codes
 

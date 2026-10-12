@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 03b2719
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -69,7 +69,13 @@ one merge request per task:
 git checkout -q -B <branch>              # CI checks out a detached HEAD
 workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request --json > line.json
 workline apply --line line.json
+workline follow --gardening --base <branch> --forge gitlab
 ```
+
+The last command, with the applying job's token and no agent, tends the
+merge requests gardening opened before: rebuilt on the branch's new tip,
+or closed when nothing is left to merge
+([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 
 ### The product owner alone
 

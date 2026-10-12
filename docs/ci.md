@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 76661ee
+checked: 01f4f82
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -32,7 +32,7 @@ then one that applies, with the write token and no AI key
 |---|---|---|---|
 | merge request | each one | the line on its commits | the fixes, to its branch |
 | follow | a push to the default branch | — | the release fix rebuilt on it ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)) |
-| gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)) |
+| gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |
 

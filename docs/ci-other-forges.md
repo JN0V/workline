@@ -1,6 +1,6 @@
 ---
 sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
-checked: 7ebf882
+checked: 01f4f82
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -65,8 +65,9 @@ forge: local
   merge request) shows one; you merge a branch with git.
 - No CI to set up: gardening and the [weekly sample](ci.md#the-weekly-sample)
   run on your machine — `workline route schedule --open-merge-request`,
-  `workline sample --out sample.json` then `workline sample --apply
-  sample.json` — and `workline docs` judges before a release.
+  then `workline follow --gardening` to rebuild or close its earlier
+  branches, `workline sample --out sample.json` then `workline sample
+  --apply sample.json` — and `workline docs` judges before a release.
 - In CI — `CI`, `GITHUB_ACTIONS` or `GITLAB_CI` set — the local forge
   refuses its writes, loud: the job's clone is thrown away, and what it
   would hold with it. What writes nothing still runs, so a project whose

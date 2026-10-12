@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: 1924c0c
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # Documentalist
@@ -94,8 +94,11 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   on each run; the fix committed to the branch (`Workline-Role:
   documentalist`); from a fork, the diff in a comment.
 - Gardening: a branch and merge request per task,
-  `workline/documentalist/<task>`; a tracking issue for docs due at the
-  release; an issue when the code disagrees with a doc it follows.
+  `workline/documentalist/<task>`, rebuilt on `main` once `main` moved, or
+  closed, saying why, when nothing is left to merge
+  ([when the base moves](docs/gardening.md#when-the-base-moves)); a
+  tracking issue for docs due at the release; an issue when the code
+  disagrees with a doc it follows.
 - On a release tool's pull request: the fix on a merge request of its own,
   `workline/documentalist/release`, rebuilt on `main` each time `main`
   moves (`workline follow`, [ADR-0034](../../docs/adr/0034-the-release-fix-follows-its-base.md)), never over a person's commit.

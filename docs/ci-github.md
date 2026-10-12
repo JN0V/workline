@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 7ebf882
+checked: 01f4f82
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -47,7 +47,10 @@ fork's pull request gets no secret, so no agent and no write.
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
      pull request, which gets no secret and no right to write.
    - [workline-gardening.yml](../ci/github/workline-gardening.yml):
-     gardening, nightly while a backlog is caught up, then weekly.
+     gardening, nightly while a backlog is caught up, then weekly; its
+     `apply` runs every time, and then rebuilds on `main` the pull
+     requests it opened before, or closes those with nothing left to merge
+     ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
    - [workline-sample.yml](../ci/github/workline-sample.yml): the
      [weekly sample](ci.md#the-weekly-sample), from the first release
      after v0.2.1.
