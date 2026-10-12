@@ -54,14 +54,11 @@ variables:
   - ai=none
   - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
 # Every lens of the reviewer once when the merge request becomes ready
-# (ADR-0020), when the line runs it. Marking a draft ready starts no
-# pipeline on GitLab (gitlab-org/gitlab#25426): the next one, a push or
-# "Run pipeline", is the one on ready when the merge request is no draft
-# (CI_MERGE_REQUEST_DRAFT, GitLab 17.10, else the API) and GitLab's note
+# (ADR-0020). Marking a draft ready starts no pipeline: the next one is
+# the run on ready when the merge request is no draft and its note
 # "marked this merge request as **ready**" is newer than the reviewer's
-# comment, or there is no comment yet: opened ready. Read as the engine
-# reads, with GITLAB_TOKEN when the job has one, else the job's own token;
-# unread, one lens, said.
+# comment, or there is no comment yet. Read with GITLAB_TOKEN, else the
+# job's token; unread, one lens, said (roles/reviewer/docs/run.md).
 .workline:ready: &ready
   - |
     lenses=; last=; auth="JOB-TOKEN: $CI_JOB_TOKEN"
