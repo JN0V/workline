@@ -851,3 +851,26 @@ did not push it over that commit (`not-proposed`), the change left in the
 working tree; `follow --gardening` left that branch, which still merged,
 without a word. Not tried live: the forge's close on GitHub and GitLab
 (a fake `gh`, GitLab's API mocked), and the gardening job in CI.
+
+On 2026-10-12, people's pull requests settled on workline's own lines
+(ADR-0041, #319) were replayed on copies of workline (a clone sharing its
+objects), origin a local bare repository, the forge simulated, the
+setting `update-branches: conflicts`, no agent. Each branch at its last
+commit before merging, `main` at a later commit:
+
+| Branch | `main` | git's conflicts | `workline follow` |
+|---|---|---|---|
+| #315's | 7df3ab2 (#316) | 16 docs, README.md's `<!-- workline` header among them | merged, 0.6 s |
+| #307's | b0e5b25 (#310) | docs/gitlab-trigger.md | merged, 0.1 s |
+| #306's | a192de1 (#314) | CONTRIBUTING.md | merged, 0.1 s |
+| #316's, before its rebase (5df53d3) | 8b37a1f (#315) | the same 16, docs/spec/conformance.md, tests/conformance/runner_test.go | left, those two named, nothing pushed |
+
+Each merge: the branch's tip first parent, `main`'s second, the trailer;
+the branch merged into `main` again with no conflict. In
+docs/gitlab-trigger.md, `judged` moved on `main` and `verified` on the
+branch: both kept, key by key. A clone at the old tip pulled the merge as
+a fast-forward and pushed a commit on it. The documentalist with no agent
+then listed the docs whose `checked` took `main`'s value as suspect, to
+judge again. Not tried live: the push to GitHub or GitLab, an App token
+without the `workflows` permission for a `main` that changed a workflow,
+and the `follow` job in CI.

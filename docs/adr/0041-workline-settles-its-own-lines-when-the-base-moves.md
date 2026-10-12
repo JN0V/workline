@@ -1,7 +1,7 @@
 # ADR-0041: workline settles its own lines when a pull request's base moves
 
-- **Status:** proposed — the points under "For the person" wait on the
-  maintainer; built by [#319](https://github.com/JN0V/workline/issues/319)
+- **Status:** accepted, "For the person" as proposed; built by
+  [#319](https://github.com/JN0V/workline/issues/319) ([page](../../roles/documentalist/docs/follow.md))
 - **Date:** 2026-10-12
 - **Extends:** [ADR-0034](0034-the-release-fix-follows-its-base.md)
   (`follow` keeps workline's own branches on their base, a doc's header
@@ -130,9 +130,9 @@ The choice is what is judged, and when:
 
 ### The setting and the token
 
-- **Off by default**: a project opts in with a documentalist setting
-  (`update-branches: conflicts`; the name settled in the build). workline's
-  own repository turns it on.
+- **Off by default**: a project opts in with a documentalist setting,
+  `update-branches: conflicts` (default `off`). workline's own repository
+  turns it on.
 - **The `follow` job's token**: the project's GitHub App when it has one,
   so the checks run on the new head; otherwise the job's own, and the
   checks wait for a person
@@ -141,9 +141,9 @@ The choice is what is judged, and when:
   the project's bot ([ADR-0023](0023-the-project-bot-keeps-a-gitlab-backlog.md)).
 - **No new permission on GitHub**: the job has `contents: write`. A base
   that changed a workflow file may need the App's `workflows` permission
-  for the push: not tried, to try in the build.
+  for the push: not tried live; a refused push is said (`merge-refused`).
 
-### For the person
+### For the person (settled as proposed)
 
 1. **The default**: off (proposed), so writing to a person's branch is a
    project's choice; or on, since the lines are workline's own.
@@ -196,5 +196,5 @@ belong to that decision.
   [#316](https://github.com/JN0V/workline/pull/316) among them, still meet
   their header lines when a person settles the rest.
 - **`main` holds no merge commit**: this repository merges by squash.
-  Conformance: the cases are named in
-  [#319](https://github.com/JN0V/workline/issues/319).
+  Conformance: documentalist/persons-branch* (15), forge/cmd-persons-branch-merged,
+  routing/own-merge-not-judged-again, reviewer/workline-merge-of-main-asks-no-lens.

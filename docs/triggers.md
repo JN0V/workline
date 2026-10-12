@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 5eb8a2f
+checked: c648a31
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -100,7 +100,10 @@ Before your release tool tags; a non-zero exit holds it.
   `workline/documentalist/release`, on the branch's new tip, so it stays
   mergeable as the branch moves
   ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); `user.name`
-  and `user.email` set first, as for `apply`.
+  and `user.email` set first, as for `apply`. With `update-branches:
+  conflicts`, it also merges the branch into people's merge requests in
+  conflict only on workline's lines
+  ([more](../roles/documentalist/docs/follow.md)).
 
 ### Weekly sample
 

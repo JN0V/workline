@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 5eb8a2f
+checked: c648a31
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -123,7 +123,9 @@ saying so.
   case's `origin`, or the message of that branch's tip.
 - `not-pushed` — branches of the case's `origin` the run left where they
   were; `on-top` — a branch of `origin` whose tip holds another's
-  (`{workline/documentalist/release: main}`).
+  (`{workline/documentalist/release: main}`); `merged` — a branch of
+  `origin` whose tip is a merge of another's tip into its tip before the
+  run, its first parent (`{feat/sessions: main}`).
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
 - `summary` — a text the result's summary holds.

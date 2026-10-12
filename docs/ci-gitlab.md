@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 5eb8a2f
+checked: c648a31
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -130,7 +130,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 - **`workline:follow`**, on each push to the default branch: the
   documentalist's merge request for the release, when one is open, is
   rebuilt on the branch's new tip, with `WORKLINE_GITLAB_TOKEN` and no
-  agent ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)).
+  agent ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when
+  set, the branch merged into people's merge requests in conflict only on
+  workline's lines ([more](../roles/documentalist/docs/follow.md)).
 - **`workline:garden:apply`** then rebuilds gardening's earlier merge
   requests, or closes those with nothing left to merge
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
@@ -139,7 +141,7 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   and, for a merge request, from the merge request's page (`expose_as`);
   `workline-summary.md` printed at the end of the log. Both kept a day as
   artifacts, a week for the applying jobs, which add what they applied to
-  the judging job's. The HTML opens in the browser through GitLab Pages,
+  the judging job's. The HTML opens through GitLab Pages,
   on by default on gitlab.com; without Pages, the link downloads it.
   - Tried on gitlab.com (2026-10-06), the engine of the branch: a
     scheduled gardening job, the sample's read, and a gardening job

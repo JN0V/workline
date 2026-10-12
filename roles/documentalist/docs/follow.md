@@ -1,0 +1,87 @@
+---
+sources: [internal/engine/settle.go, internal/engine/follow.go, roles/documentalist/role.yaml]
+checked: c648a31
+verified: agent:claude-code
+---
+# Documentalist — a pull request in conflict on workline's lines
+
+Two pull requests often move the same doc's `checked`: the one merged
+first leaves the other in conflict on that line alone. With
+`update-branches: conflicts`, when the default branch moves, `workline
+follow` merges it into such a pull request, workline's lines settled
+([ADR-0041](../../../docs/adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)).
+No agent. Off by default.
+
+```yaml
+# .workline/config.yaml
+roles:
+  documentalist:
+    settings:
+      update-branches: conflicts   # default: off
+```
+
+The `follow` job of the [CI templates](../../../docs/ci.md) runs it on each
+push to the default branch.
+
+## Which pull requests
+
+- **Open, into the branch that moved, from this repository**, opened by a
+  person.
+- **Left without a word**: workline's own (`workline/…`, kept on the base
+  apart: [at the release](push.md#a-release-tools-pull-request),
+  [gardening](gardening.md#when-the-base-moves)); a bot's — opened by an
+  app or a token's user, a release tool's branch (`release.branches`),
+  `dependabot/…` or `renovate/…` — which its bot rebuilds.
+- **Left, named**: one from a fork, in conflict (the job's token may not
+  write there).
+- **Left**: one behind but merging clean; bringing it up to date is for
+  whoever merges it.
+
+## Which lines are workline's
+
+- In a doc's header — a `---` front matter, or README's `<!-- workline
+  … -->` — the keys `checked`, `judged`, `judged-in-parts`, `verified`,
+  each on its own line. Docs are what the `docs` setting names.
+- A derived block (`<!-- workline:derive … -->…<!-- workline:end -->`).
+- Everything else is the person's: the text, the code, `sources` and the
+  header's other keys.
+
+## How it is settled
+
+- **The header, key by key**: a key one side changed keeps that side's
+  value; one of the four both changed, the base's; `sources` or another
+  key both changed is left to the person.
+- **A derived block**: the base's, which gardening regenerates there.
+- **The rest**: git's own merge; a conflict there is the person's.
+- **Any conflict left**: nothing is pushed, the files named.
+
+## What it writes
+
+- **A merge commit, never a rewrite**: the branch's tip first parent, the
+  base's second, as the forge's Update branch makes it; every commit of
+  the branch keeps its id.
+- **The forge's message**, `Merge branch 'main' into <branch>`, the files
+  settled, the trailer `Workline-Role: documentalist`: the line judges
+  nothing on it, and the reviewer asks no lens for it alone.
+- **Pushed as a fast-forward, never forced**: a push of theirs meanwhile
+  stays, workline's is refused; the next push to the base tries again.
+- **The token**: on GitHub, the App's runs the pull request's checks
+  again; the job's own leaves them for a person. On GitLab, the project's
+  bot.
+
+## For whoever works on the branch
+
+- **Pull before pushing again**: git refuses the push otherwise ("fetch
+  first"). A force-push over the merge, or a rebase on the base, brings
+  the header conflicts back.
+- **The next push judges again** each doc whose `checked` took the base's
+  value: the branch's change to its sources is still to read.
+
+## In the job's summary
+
+| Rule | Said when |
+|---|---|
+| `merged` | the base merged in; the files settled |
+| `not-merged` (warning) | a conflict of the person's too, its files named; or a fork's |
+| `merge-refused` (warning) | the branch moved meanwhile, or the forge refused the push, in its words |
+| `conflict-unread` (warning) | git could not tell whether it merges |

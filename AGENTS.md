@@ -94,6 +94,11 @@ own line (.workline/config.yaml):
   pull request (ADR-0011): `main` takes pull requests only, the checks
   green. Push a branch and open the pull request when the person asks;
   never merge it, never turn auto-merge on: the person does.
+- **follow** — when `main` moves, workline's bot may merge it into your
+  pull request, if it conflicts only on lines workline writes (a doc's
+  `checked`, ADR-0041). Pull before pushing again (`git pull`, a
+  fast-forward); never force-push over that merge nor rebase it away: the
+  conflicts come back.
 - **secrets and forbidden terms** — the committer scans each commit with
   gitleaks. A gitignored `.gitleaks.toml` link, when present, points to terms
   that must never reach this public repository, as gitleaks rules. Never
