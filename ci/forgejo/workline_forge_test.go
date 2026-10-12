@@ -65,7 +65,12 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case r.Method == "GET" && r.URL.Path == repo+"/pulls" && r.URL.Query().Get("state") == "open":
 		if r.URL.Query().Get("page") == "1" {
-			fmt.Fprint(w, `[{"number": 6, "head": {"ref": "workline/documentalist/suspect"}}, {"number": 7, "head": {"ref": "feat/other"}}]`)
+			here, main := `"repo": {"full_name": "owner/name"}`, `"base": {"ref": "main", "repo": {"full_name": "owner/name"}}`
+			fmt.Fprint(w, `[{"number": 6, "title": "docs: suspect", "head": {"ref": "workline/documentalist/suspect", `+here+`}, `+main+`, "user": {"id": 3, "login": "workline-bot"}},
+				{"number": 7, "title": "Two hours", "head": {"ref": "feat/other", `+here+`}, `+main+`, "user": {"id": 8, "login": "dev"}},
+				{"number": 9, "title": "Typo", "head": {"ref": "patch-1", "repo": {"full_name": "zed/name"}}, `+main+`, "user": {"id": 7, "login": "zed"}},
+				{"number": 10, "head": {"ref": "renovate/go", `+here+`}, `+main+`, "user": {"id": 9, "login": "renovate-bot"}},
+				{"number": 11, "title": "Backport", "head": {"ref": "fix/x", `+here+`}, "base": {"ref": "release/1.x", `+here+`}, "user": {"id": 8, "login": "dev"}}]`)
 		} else {
 			fmt.Fprint(w, `[]`)
 		}
@@ -201,6 +206,21 @@ func TestCloseMergeRequest(t *testing.T) {
 	}
 	if slices.ContainsFunc(m.calls, func(c string) bool { return strings.Contains(c, "/pulls/7") }) {
 		t.Errorf("another pull request was touched; calls: %q", m.calls)
+	}
+}
+
+// merge-requests lists the open pull requests into a branch, each with
+// where it comes from and who opened it (ADR-0041): a fork's not here, a
+// bot told as for comments, every head where Forgejo keeps it.
+func TestMergeRequests(t *testing.T) {
+	out := run(t, &mock{}, "merge-requests", map[string]any{"base": "main"})
+	want := `{"merge-requests":[` +
+		`{"id":6,"branch":"workline/documentalist/suspect","base":"main","here":true,"title":"docs: suspect","author":"workline-bot","bot":true,"head":"refs/pull/6/head"},` +
+		`{"id":7,"branch":"feat/other","base":"main","here":true,"title":"Two hours","author":"dev","bot":false,"head":"refs/pull/7/head"},` +
+		`{"id":9,"branch":"patch-1","base":"main","here":false,"title":"Typo","author":"zed","bot":false,"head":"refs/pull/9/head"},` +
+		`{"id":10,"branch":"renovate/go","base":"main","here":true,"title":"","author":"renovate-bot","bot":true,"head":"refs/pull/10/head"}]}`
+	if out != want {
+		t.Errorf("answer = %s\nwant     %s", out, want)
 	}
 }
 
