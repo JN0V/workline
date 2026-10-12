@@ -1,0 +1,17 @@
+case: documentalist/persons-branch-submodule-conflict-left
+about: "A person's pull request conflicts with main on a `checked` line and on a submodule under docs/, both sides moving it (ADR-0041): only a file's lines are settled, never a submodule's pointer, so nothing is pushed and the submodule is named, left to its author."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
+  setup:
+    - "git update-index --add --cacheinfo 160000,1111111111111111111111111111111111111111,docs/theme && git commit -qm 'docs: a theme'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && git update-index --cacheinfo 160000,2222222222222222222222222222222222222222,docs/theme && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git add docs/tech/auth.md && git commit -qm 'docs: another theme' && git push -q origin feat/sessions && git checkout -q main"
+    - "git update-index --cacheinfo 160000,3333333333333333333333333333333333333333,docs/theme && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add docs/tech/auth.md && git commit -qm 'docs: a third theme' && git push -q origin main"
+  forge: {merge-requests: [{id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: not-merged, where: feat/sessions, level: warn, message: "in conflict with main in docs/theme: left to its author, nothing pushed; workline would settle its own lines in docs/tech/auth.md"}]
+  no-findings: [{rule: merged, where: feat/sessions}]
+  not-pushed: [feat/sessions]

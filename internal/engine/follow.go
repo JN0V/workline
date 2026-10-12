@@ -97,11 +97,11 @@ func Follow(o FollowOptions) *Result {
 	}
 	if o.People {
 		o.Base = base
-		mine, merged, left, err := people(f, o, local, res)
+		sum, err := people(f, o, local, res)
 		if err != nil {
 			return fail(err)
 		}
-		res.Summary += fmt.Sprintf("; %d merge requests of people into %s, %s merged into %d, %d left in conflict", mine, base, base, merged, left)
+		res.Summary += "; " + sum
 	}
 	return res
 }

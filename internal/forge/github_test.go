@@ -120,10 +120,10 @@ EOF
 	}
 }
 
-// The open pull requests into a branch, each with where it comes from and
-// who opened it (ADR-0041): a fork's, or one whose fork is gone, is not
-// here; an app's is a bot's; each head where GitHub keeps it.
-func TestGitHubOpenMergeRequestsInto(t *testing.T) {
+// The open pull requests, each with where it comes from and who opened it
+// (ADR-0041): a fork's, or one whose fork is gone, is not here; an app's
+// is a bot's; each head where GitHub keeps it.
+func TestGitHubListMergeRequests(t *testing.T) {
 	bin := t.TempDir()
 	args := filepath.Join(bin, "args")
 	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + args + "\n" + `cat <<'EOF'
@@ -136,7 +136,7 @@ EOF
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-	got, err := (&github{repo: t.TempDir()}).OpenMergeRequestsInto("main")
+	got, err := (&github{repo: t.TempDir()}).ListMergeRequests()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ EOF
 		t.Errorf("merge requests:\n%+v\nwant\n%+v", got, want)
 	}
 	asked, _ := os.ReadFile(args)
-	for _, w := range []string{"pulls?state=open&per_page=100&base=main", `.head.repo.full_name // ""`, `.user.type == "Bot"`} {
+	for _, w := range []string{"pulls?state=open&per_page=100", `.head.repo.full_name // ""`, `.user.type == "Bot"`} {
 		if !strings.Contains(string(asked), w) {
 			t.Errorf("gh not asked for %q: %s", w, asked)
 		}

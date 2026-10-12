@@ -209,16 +209,17 @@ func TestCloseMergeRequest(t *testing.T) {
 	}
 }
 
-// merge-requests lists the open pull requests into a branch, each with
-// where it comes from and who opened it (ADR-0041): a fork's not here, a
-// bot told as for comments, every head where Forgejo keeps it.
+// merge-requests lists the open pull requests, each with where it comes
+// from and goes, and who opened it (ADR-0041): a fork's not here, a bot
+// told as for comments, every head where Forgejo keeps it.
 func TestMergeRequests(t *testing.T) {
-	out := run(t, &mock{}, "merge-requests", map[string]any{"base": "main"})
+	out := run(t, &mock{}, "merge-requests", map[string]any{})
 	want := `{"merge-requests":[` +
 		`{"id":6,"branch":"workline/documentalist/suspect","base":"main","here":true,"title":"docs: suspect","author":"workline-bot","bot":true,"head":"refs/pull/6/head"},` +
 		`{"id":7,"branch":"feat/other","base":"main","here":true,"title":"Two hours","author":"dev","bot":false,"head":"refs/pull/7/head"},` +
 		`{"id":9,"branch":"patch-1","base":"main","here":false,"title":"Typo","author":"zed","bot":false,"head":"refs/pull/9/head"},` +
-		`{"id":10,"branch":"renovate/go","base":"main","here":true,"title":"","author":"renovate-bot","bot":true,"head":"refs/pull/10/head"}]}`
+		`{"id":10,"branch":"renovate/go","base":"main","here":true,"title":"","author":"renovate-bot","bot":true,"head":"refs/pull/10/head"},` +
+		`{"id":11,"branch":"fix/x","base":"release/1.x","here":true,"title":"Backport","author":"dev","bot":false,"head":"refs/pull/11/head"}]}`
 	if out != want {
 		t.Errorf("answer = %s\nwant     %s", out, want)
 	}

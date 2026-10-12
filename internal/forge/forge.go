@@ -137,10 +137,10 @@ type Forge interface {
 	CloseMergeRequest(branch, body, marker string) error
 	// MergeRequest says where a merge request comes from and goes.
 	MergeRequest(id int) (MergeRequest, error)
-	// OpenMergeRequestsInto lists the open merge requests into base, by
-	// number, each with where it comes from and who opened it: what
-	// `workline follow` needs to merge base into a person's (ADR-0041).
-	OpenMergeRequestsInto(base string) ([]MergeRequest, error)
+	// ListMergeRequests lists the open merge requests, by number, each with
+	// where it comes from and goes, and who opened it: what `workline
+	// follow` needs to merge a base into a person's (ADR-0041).
+	ListMergeRequests() ([]MergeRequest, error)
 }
 
 // Backlog is what a role acting on a project's issues needs from its forge

@@ -15,4 +15,4 @@ expect:
   findings: [{rule: merged, where: feature, message: "docs/tech/auth.md"}]
   merged: {feature: main}
   files:
-    .git/forge-requests.jsonl: {contains: '{"base":"main","operation":"merge-requests"}'}
+    .git/forge-requests.jsonl: {contains: '{"operation":"merge-requests"}'}

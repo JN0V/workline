@@ -39,6 +39,9 @@ type gitlabState struct {
 		Username string `json:"username"`
 		Level    int    `json:"access_level"`
 	} `json:"members,omitempty"`
+	// Bots are the users the users API says are bots (`bot`), a service
+	// account's among them; a merge request's author is user 1000 + its id.
+	Bots []string `json:"bots,omitempty"`
 }
 
 var (
@@ -49,6 +52,7 @@ var (
 	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
 	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
 	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
+	userPath    = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
 )
 
 const tokenUser = "workline-bot"
@@ -124,10 +128,18 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 				source = 2
 			}
 			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
-				"source_project_id": source, "target_project_id": 1, "title": it.Title, "author": user(it.Author),
+				"source_project_id": source, "target_project_id": 1, "title": it.Title,
+				"author": map[string]any{"id": 1000 + it.ID, "username": it.Author},
 				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed]})
 		}
 		return out, 200
+	case userPath.MatchString(p):
+		id, _ := strconv.Atoi(userPath.FindStringSubmatch(p)[1])
+		it := mergeRequest(id - 1000)
+		if it == nil {
+			return notFound, 404
+		}
+		return map[string]any{"id": id, "username": it.Author, "bot": slices.Contains(s.Bots, it.Author)}, 200
 	case p == "/issues" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.Issues {

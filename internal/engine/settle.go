@@ -42,23 +42,35 @@ var workKeys = map[string]bool{"checked": true, "judged": true, "judged-in-parts
 var derived = regexp.MustCompile(`(?s)<!-- workline:derive (\S+) -->(.*?)<!-- workline:end -->`)
 
 // people merges base into each person's merge request left in conflict with
-// it only on lines workline writes, and says what it did of each: mine
-// are the people's merge requests into base it read. workline's own are
-// followed apart; a bot's — a release tool's, a dependency bot's — is
-// rebuilt by its bot, which a commit of another stops.
-func people(f forge.Forge, o FollowOptions, local bool, res *Result) (mine, merged, left int, err error) {
-	open, err := f.OpenMergeRequestsInto(o.Base)
+// it only on lines workline writes, says what it did of each, and sums it
+// up for the run's summary. workline's own are followed apart; a bot's — a
+// release tool's, a dependency bot's — is rebuilt by its bot, which a
+// commit of another stops. A long-lived branch — the base of another open
+// merge request (develop, release/1.x) — is no person's work in progress:
+// left, named once in the summary.
+func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, error) {
+	open, err := f.ListMergeRequests()
 	if err != nil {
-		return 0, 0, 0, err
+		return "", err
 	}
+	bases := map[string]bool{}
 	for _, mr := range open {
-		if strings.HasPrefix(mr.Branch, "workline/") || mr.ByBot() || o.Release != nil && o.Release(mr.Branch) {
+		bases[mr.Base] = true
+	}
+	mine, merged, left := 0, 0, 0
+	var lasting []string
+	for _, mr := range open {
+		switch {
+		case mr.Base != o.Base, strings.HasPrefix(mr.Branch, "workline/"), mr.ByBot(), o.Release != nil && o.Release(mr.Branch):
+			continue
+		case mr.Here && bases[mr.Branch]:
+			lasting = append(lasting, mr.Branch)
 			continue
 		}
 		mine++
 		finding, err := settle(o.Repo, o.Base, mr, local, o.IsDoc)
 		if err != nil {
-			return mine, merged, left, err
+			return "", err
 		}
 		switch finding.Rule {
 		case "":
@@ -70,7 +82,11 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (mine, merg
 		}
 		res.Findings = append(res.Findings, finding)
 	}
-	return mine, merged, left, nil
+	sum := fmt.Sprintf("%d merge requests of people into %s, %s merged into %d, %d left in conflict", mine, o.Base, o.Base, merged, left)
+	if len(lasting) > 0 {
+		sum += fmt.Sprintf("; left, long-lived branches (the base of other merge requests): %s", strings.Join(lasting, ", "))
+	}
+	return sum, nil
 }
 
 // settle merges base into one person's merge request when every conflict
@@ -125,8 +141,10 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 	if err != nil {
 		return verdict.Finding{}, err
 	}
-	// Not quiet: a refusal says the forge's own words (`remote: …`).
-	move := []string{"push", "origin", commit + ":refs/heads/" + mr.Branch}
+	// A fast-forward, with a lease on the tip read: never over a push of
+	// theirs, never bringing back a branch deleted meanwhile. Not quiet: a
+	// refusal says the forge's own words (`remote: …`).
+	move := []string{"push", "--force-with-lease=refs/heads/" + mr.Branch + ":" + tip, "origin", commit + ":refs/heads/" + mr.Branch}
 	if local {
 		move = []string{"update-ref", "refs/heads/" + mr.Branch, commit, tip}
 	}
@@ -135,6 +153,9 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 		switch {
 		case readErr != nil:
 			return verdict.Finding{}, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+		case now == "":
+			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
+				Message: fmt.Sprintf("the branch was deleted while workline merged %s into it: left deleted, workline's merge refused", base)}, nil
 		case now != tip:
 			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
 				Message: fmt.Sprintf("the branch moved while workline merged %s into it: their push kept, workline's refused; the next push to %s tries again", base, base)}, nil
@@ -251,14 +272,18 @@ func settleTree(repo, tip, baseTip string, isDoc func(string) bool) (tree string
 	}
 	for _, file := range files {
 		v := stages[file]
-		if isDoc == nil || !isDoc(file) || v[1].id == "" || v[2].id == "" || v[3].id == "" || v[2].mode != v[3].mode {
-			theirs = append(theirs, file)
+		if isDoc == nil || !isDoc(file) || v[2].mode != v[3].mode || !regular(v[1].mode) || !regular(v[2].mode) || !regular(v[3].mode) {
+			theirs = append(theirs, file) // a submodule, a link, a file gone on a side: the person's
 			continue
 		}
-		old, _ := object(repo, v[1].id)
-		branch, _ := object(repo, v[2].id)
-		onBase, _ := object(repo, v[3].id)
-		merged, ok, err := settleDoc(repo, file, old, branch, onBase)
+		var text [4]string
+		for n := 1; n <= 3; n++ {
+			var ok bool
+			if text[n], ok = object(repo, v[n].id); !ok {
+				return "", nil, nil, fmt.Errorf("%s: its version %s could not be read", file, v[n].id)
+			}
+		}
+		merged, ok, err := settleDoc(repo, file, text[1], text[2], text[3])
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -365,6 +390,10 @@ func mergeBlobs(repo, name, old, ours, theirs string) (string, bool, error) {
 	}
 	return merged, true, nil
 }
+
+// regular says whether a tree entry's mode is a file's, executable or not:
+// never a submodule (160000), a link (120000) or a side that has none.
+func regular(mode string) bool { return mode == "100644" || mode == "100755" }
 
 // object is a blob's content, by its id or tree:path, and whether it is
 // there.

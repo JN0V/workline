@@ -559,11 +559,11 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
 }
 
-// OpenMergeRequestsInto reads each open pull request into base: one from
-// a fork, or whose fork is gone, is not here; an app's (a user of type
-// Bot) is a bot's. GitHub keeps every head under refs/pull/<n>/head.
-func (g *github) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
-	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100&base="+url.QueryEscape(base), "--jq",
+// ListMergeRequests reads each open pull request: one from a fork, or
+// whose fork is gone, is not here; an app's (a user of type Bot) is a
+// bot's. GitHub keeps every head under refs/pull/<n>/head.
+func (g *github) ListMergeRequests() ([]MergeRequest, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq",
 		`.[] | {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), author: .user.login, bot: (.user.type == "Bot"), title: .title}`)
 	if err != nil {
 		return nil, err

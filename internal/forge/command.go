@@ -236,10 +236,10 @@ func (c *command) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body}, err
 }
 
-// OpenMergeRequestsInto asks its own operation, merge-requests: a command
+// ListMergeRequests asks its own operation, merge-requests: a command
 // that does not know it refuses it, and the run says so, rather than a
 // person's merge request be taken for one there is none of.
-func (c *command) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
+func (c *command) ListMergeRequests() ([]MergeRequest, error) {
 	var a struct {
 		MergeRequests []struct {
 			ID     int    `json:"id"`
@@ -252,12 +252,12 @@ func (c *command) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
 			Head   string `json:"head"`
 		} `json:"merge-requests"`
 	}
-	if err := c.call("merge-requests", map[string]any{"base": base}, &a); err != nil {
+	if err := c.call("merge-requests", nil, &a); err != nil {
 		return nil, err
 	}
-	var out []MergeRequest // only those into base, by number, whatever the command sent
+	var out []MergeRequest // by number, whatever the command sent
 	for _, m := range a.MergeRequests {
-		if m.Branch != "" && m.Base == base {
+		if m.Branch != "" {
 			out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: m.Here, Title: m.Title,
 				Author: m.Author, Bot: m.Bot, Head: m.Head})
 		}

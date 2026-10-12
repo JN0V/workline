@@ -421,16 +421,16 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
 }
 
-// OpenMergeRequestsInto lists the open merge requests into base, each head
-// kept under refs/pull/<id>/head, as GitHub keeps them.
-func (f *Fake) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
+// ListMergeRequests lists the open merge requests, each head kept under
+// refs/pull/<id>/head, as GitHub keeps them.
+func (f *Fake) ListMergeRequests() ([]MergeRequest, error) {
 	s, err := f.load()
 	if err != nil {
 		return nil, err
 	}
 	var out []MergeRequest
 	for _, m := range s.MergeRequests {
-		if !m.Closed && m.Branch != "" && m.Base == base {
+		if !m.Closed && m.Branch != "" {
 			out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: !m.Fork, Title: m.Title, Body: m.Body,
 				Author: m.Author, Bot: m.Bot, Head: fmt.Sprintf("refs/pull/%d/head", m.ID)})
 		}

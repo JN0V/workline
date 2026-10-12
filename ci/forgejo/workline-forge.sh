@@ -190,9 +190,9 @@ merge-request-branch)
 	api GET "/pulls/$(arg .id)" | jq -c '{branch: .head.ref, here: (.head.repo.full_name == .base.repo.full_name), title: .title, body: (.body // "")}'
 	;;
 merge-requests)
-	# The open pull requests into a branch, each with who opened it: a bot
-	# as for `comments`; a fork's head kept under refs/pull/<n>/head.
-	all "/pulls?state=open" | jq -c --arg b "$(arg .base)" '{"merge-requests": [.[] | select(.base.ref == $b)
+	# The open pull requests, each with where it goes and who opened it: a
+	# bot as for `comments`; a fork's head kept under refs/pull/<n>/head.
+	all "/pulls?state=open" | jq -c '{"merge-requests": [.[]
 		| {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name),
 		title: (.title // ""), author: .user.login, bot: ((.user.id // 0) < 0 or (.user.login | test("(-bot|\\[bot\\])$"))),
 		head: "refs/pull/\(.number)/head"}]}'

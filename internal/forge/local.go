@@ -444,16 +444,16 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body}, nil
 }
 
-// OpenMergeRequestsInto lists the open merge requests into base: each from
-// a branch of this clone, by whoever wrote it.
-func (l *Local) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
+// ListMergeRequests lists the open merge requests: each from a branch of
+// this clone, by whoever wrote it.
+func (l *Local) ListMergeRequests() ([]MergeRequest, error) {
 	items, err := l.Items("merge-request")
 	if err != nil {
 		return nil, err
 	}
 	var out []MergeRequest
 	for _, it := range items {
-		if it.Branch != "" && it.Base == base && l.StateOf(it) == "open" {
+		if it.Branch != "" && l.StateOf(it) == "open" {
 			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body})
 		}
 	}
