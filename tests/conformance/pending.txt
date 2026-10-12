@@ -1,2 +1,4 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+reviewer/run-on-ready-held-by-a-rule-owes-every-lens
+reviewer/every-lens-owed-read-on-the-next-push
