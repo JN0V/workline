@@ -16,4 +16,4 @@ expect:
     - {rule: suspect, where: docs/tech/auth.md, message: "is fixed"}
   forge:
     merge-requests:
-      - {id: 1, branch: "workline/documentalist/suspect", base: main, body: "`docs/tech/auth.md` — nothing found wrong"}
+      - {id: 1, branch: "workline/documentalist/suspect", base: main, body-contains: "`docs/tech/auth.md` — nothing found wrong, `judged` recorded", body-lacks: "not read"}

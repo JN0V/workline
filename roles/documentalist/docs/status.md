@@ -24,9 +24,10 @@ Beta until the three criteria of
 hold:
 
 1. **Nothing buildable in Missing**: open. The docs to split and the
-   default of judging in parts (Missing 3, 4) are still to do; open bugs
-   [#120](https://github.com/JN0V/workline/issues/120) and
+   default of judging in parts (Missing 3, 4) are still to do; open bug
    [#121](https://github.com/JN0V/workline/issues/121) to fix or park.
+   [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
+   simple version (below).
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
 3. **AI verdicts measured**: in part. ADR-0014's step 4 holds on the
@@ -86,6 +87,12 @@ hold:
   judged whole goes round again, the parts judged the same night on the
   `fix` pull request (ADR-0013, amended). Conformance only: the next
   nights to watch, with a second task's tokens.
+- **A doc judged on its diff says what was read** (#120, ADR-0013 amended
+  2026-10-12): a doc whose sources did not all go whole is said "nothing
+  found wrong in what was read", with what the task gave and what it did
+  not, in the finding, the summary and the gardening pull request.
+  Conformance only. Not built: the agent reading such a doc's claims
+  against the code as it is now, which would cost a read each night.
 - **The weekly sample of the docs vouched for** (ADR-0014, step 4;
   ADR-0015; `workline sample`): one in ten of the docs whose `checked`
   the documentalist moved in the last week, drawn the same on a rerun,

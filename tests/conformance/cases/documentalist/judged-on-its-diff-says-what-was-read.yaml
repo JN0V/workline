@@ -1,0 +1,32 @@
+case: documentalist/judged-on-its-diff-says-what-was-read
+about: "A doc whose sources are too large to go whole is judged on what changed in them. The agent found nothing wrong there, yet a false claim stands in a passage the change did not touch: the finding, the summary and the gardening merge request say what was read and what was not, never \"nothing found wrong\" of the whole doc (#120)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 1200 | sed 's|^|// One line of a long comment on tokens, number |' >> src/auth/token.go && printf '// Tokens are signed with RS256.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): explain tokens at length'"
+    - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin main"
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true, summary: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "nothing found wrong in what was read, not vouched for"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "not read: the rest of src/auth/token.go"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "nothing found wrong, not vouched for"}
+  summary-file:
+    - "suspect docs/tech/auth.md"
+    - "read: what changed in src/auth/token.go since "
+    - "not read: the rest of src/auth/token.go"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: "workline/documentalist/suspect"
+        body-contains:
+          - "`docs/tech/auth.md` — nothing found wrong in what was read"
+          - "read: what changed in src/auth/token.go since "
+          - "not read: the rest of src/auth/token.go"
+        body-lacks: "nothing found wrong, `judged` recorded"

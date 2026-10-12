@@ -11,5 +11,8 @@ expect:
   status: pass
   agent-calls: 1
   applied: [patch]
-  findings: [{rule: suspect, where: docs/tech/auth.md, message: "not every source of the doc could be given whole"}]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "not every source of the doc could be given whole"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "what the agent found wrong in what was read is fixed in this run"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "not read: the rest of src/auth/token.go"}
   files: {"docs/tech/auth.md": {contains: "judged: ", lacks: "one hour"}}
