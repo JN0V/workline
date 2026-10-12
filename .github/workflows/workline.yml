@@ -46,16 +46,11 @@
 #          request from this repository in conflict with main only on lines
 #          workline writes gets main merged in: a merge commit, never forced.
 #          The job's summary names each one merged into, and each left.
-#          With the project's merge policy, `merge: {autonomy: cautious}`
-#          (ADR-0042, off by default), it also runs after judge on a pull
-#          request: it keeps the line's verdict on the head (a git note),
-#          turns GitHub's auto-merge on for each pull request a person who
-#          can write labelled workline:accepted, its head's verdict passed,
-#          and brings the first in line up to date with main, one at a time;
-#          workline-merge.yml runs it when a label is put or taken off. Only
-#          with the GitHub App's token: a merge made with the job's own
-#          starts no workflow on main. Without `merge:`, it stops at once on
-#          a pull request.
+#          With the merge policy, `merge: {autonomy: cautious}` (ADR-0042,
+#          off here), also after judge: the head's verdict kept, auto-merge
+#          turned on for what a person accepted, the first in line brought
+#          up to date; workline-merge.yml runs it on a label. Only with the
+#          App's token (docs/merge-policy.md).
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the

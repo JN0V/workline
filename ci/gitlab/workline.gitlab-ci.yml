@@ -134,16 +134,13 @@ workline:apply:
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
 
-# The project's merge policy, `merge: {autonomy: cautious}` (ADR-0042, off
-# by default; the first release after v0.25.0): after the judge, the line's
-# verdict on the head is kept (a git note), each merge request a person of
-# the project labelled workline::accepted, its head's verdict passed, is set
-# to merge when its pipeline succeeds, and the first in line is brought up
-# to date with the target branch, one at a time; workline:follow does the
-# same on each push to the default branch. GitLab starts no pipeline for a
-# label: one put is acted on at the next pipeline. The target branch is
-# checked out, for its config; not for a fork's merge request, whose run is
-# the fork's. Without `merge:`, it stops at once.
+# The merge policy, `merge: {autonomy: cautious}` (ADR-0042; the first
+# release after v0.25.0), after the judge: the head's verdict kept, the
+# merge requests a person accepted set to merge when their pipeline
+# succeeds, the first in line brought up to date. A label starts no
+# pipeline: acted on at the next. The target branch checked out, for its
+# config; never a fork's. Without `merge:`, it stops at once
+# (docs/merge-policy.md).
 workline:merge:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy

@@ -1,22 +1,10 @@
-# workline's merge policy when a pull request's label changes — copy to
-# .github/workflows/workline-merge.yml, beside workline.yml, with the
-# project's `merge: {autonomy: cautious}` (ADR-0042; the first release after
-# v0.24.0).
-#
-# A person puts workline:accepted on a pull request, or takes it off, or
-# marks it Draft: `workline follow` turns GitHub's auto-merge on for each
-# pull request accepted by someone who can write, its head's verdict passed
-# (workline.yml keeps it), off where the label was taken off, and brings the
-# first in line up to date with main. workline.yml's follow job does the
-# same after each judge and on each push to main.
-#
-# pull_request_target: the run is the repository's, from its default
-# branch, with its secrets — a fork's pull request too —, and nothing of the
-# pull request is checked out: the base is, for its config. No `judge` job
-# here: a skipped one would show on the pull request as a check passed.
-# Only with the GitHub App's token (variable WORKLINE_APP_ID, secret
-# WORKLINE_APP_PRIVATE_KEY): a merge made with the job's own starts no
-# workflow on main.
+# workline's merge policy when a label is put or taken off, or a draft
+# made — copy to .github/workflows/workline-merge.yml, beside workline.yml,
+# with `merge: {autonomy: cautious}` (the first release after v0.25.0).
+# pull_request_target: the repository's own run and secrets, the base
+# checked out, nothing of the pull request. No `judge` here: a skipped one
+# would show the check passed. Only with the GitHub App's token.
+# What it does: docs/merge-policy.md.
 name: workline merge
 on:
   pull_request_target: {types: [labeled, unlabeled, converted_to_draft]}
