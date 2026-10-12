@@ -1,0 +1,27 @@
+case: reviewer/one-lens-on-the-push-after-ready
+about: "After the run on ready read every lens, the next push gets one lens again, in turn, on its new commit only (#129): the template passes no `lenses` on a push."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    # Two pushes on the draft, then the run on ready: both commits reviewed, three runs.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1),$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Double doubles a count.\\nfunc Double(n int) int { return n * 2 }\\n' > calc/double.go && git add calc/double.go && git commit -qm 'feat: double a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by every lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=3 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  # The fourth lens, intent, has no issue to read: the turn passes to claims.
+  calls: [{task: part, for: 1-claims}]
+  run-files:
+    in/parts/1-claims/task.md: {contains: "### calc/double.go", not-contains: "### calc/half.go"}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=4 -->"}

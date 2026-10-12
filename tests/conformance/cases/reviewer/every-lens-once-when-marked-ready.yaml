@@ -1,0 +1,25 @@
+case: reviewer/every-lens-once-when-marked-ready
+about: "A draft whose two pushes each got one lens, then marked ready, is read by every lens once on the whole change (#129): the commits the record holds as reviewed are read again, not skipped, or the run would read nothing."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    # The two pushes on the draft: each commit reviewed, one lens each.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1),$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by the edge-cases lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=2 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-lenses}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=3 -->"}
