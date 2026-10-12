@@ -46,7 +46,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
-          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the merge policy acts only with an App's token
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # who holds the yes, and reads the verdict
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
         run: |
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"

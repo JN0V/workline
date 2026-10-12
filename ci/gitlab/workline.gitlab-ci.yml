@@ -100,7 +100,7 @@ workline:judge:
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses
       --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
-      --verdict workline-verdict.json --json > line.json || status=$?
+      --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a
   # person judges what it would have (ADR-0010).

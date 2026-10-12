@@ -522,8 +522,9 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 	}
 }
 
-// The merge policy (ADR-0042) acts after each judge, keeping its verdict on
-// the head, and when a label is put or taken off — never in the workflow
+// The merge policy (ADR-0042) acts after each judge, its verdict kept by a
+// job no newer run cancels — in no concurrency group, where `follow` is in
+// one —, and when a label is put or taken off — never in the workflow
 // holding `judge`, whose run on a label would show the check skipped, which
 // GitHub takes as passed for a required check.
 func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
@@ -537,8 +538,9 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 			} `yaml:"pull_request_target"`
 		} `yaml:"on"`
 		Jobs map[string]struct {
-			Needs any `yaml:"needs"`
-			Steps []struct {
+			Needs       any `yaml:"needs"`
+			Concurrency any `yaml:"concurrency"`
+			Steps       []struct {
 				Run string `yaml:"run"`
 			} `yaml:"steps"`
 		} `yaml:"jobs"`
@@ -561,22 +563,26 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 				t.Errorf("%s: runs on %s, where judge would show skipped", filepath.Base(f), ty)
 			}
 		}
-		var route, follow string
+		var route, keep string
 		for name, job := range wf.Jobs {
 			for _, s := range job.Steps {
 				switch {
 				case strings.Contains(s.Run, "workline route merge-request"):
 					route = s.Run
+				case strings.Contains(s.Run, "--verdict-only"):
+					keep = s.Run
+					if fmt.Sprint(job.Needs) != "judge" || job.Concurrency != nil {
+						t.Errorf("%s, job %s: the verdict is not kept after judge, in no concurrency group (needs %v, concurrency %v)", filepath.Base(f), name, job.Needs, job.Concurrency)
+					}
 				case strings.Contains(s.Run, "workline follow"):
-					follow = s.Run
-					if fmt.Sprint(job.Needs) != "judge" {
-						t.Errorf("%s, job %s: follow does not run after judge (needs %v)", filepath.Base(f), name, job.Needs)
+					if fmt.Sprint(job.Needs) != "[judge verdict]" || job.Concurrency == nil {
+						t.Errorf("%s, job %s: follow does not run after the verdict is kept, one at a time (needs %v)", filepath.Base(f), name, job.Needs)
 					}
 				}
 			}
 		}
-		if !strings.Contains(route, "--verdict workline-verdict.json") || !strings.Contains(follow, `${verdict:+--verdict "$verdict"}`) {
-			t.Errorf("%s: judge does not write the head's verdict, or follow does not keep it", filepath.Base(f))
+		if !strings.Contains(route, "--verdict workline-verdict.json") || !strings.Contains(keep, "--verdict workline-verdict.json") {
+			t.Errorf("%s: judge does not write the head's verdict, or no job keeps it", filepath.Base(f))
 		}
 	}
 	for _, f := range []string{"../../ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
