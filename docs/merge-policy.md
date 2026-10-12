@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: da3adf40
+checked: f7514347
 verified: agent:claude-code
 ---
 # The merge policy
@@ -27,11 +27,12 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 ## What it does
 
 - **Turns auto-merge on** for a pull request labelled `workline:accepted`
-  (GitLab: `workline::accepted`) by someone who can write, its head's
-  verdict passed:
-  - the line passed on that head;
-  - no step that needed an agent ran without one, or not whole (no agent,
-    a lens unanswered, the tokens spent).
+  (GitLab: `workline::accepted`), its head's verdict passed:
+  - the label put by someone who may push and merge: GitHub's write
+    access, GitLab's Developer or above;
+  - the line passed on that head, every step that needs an agent answered
+    by one, whole. With no agent, every review falls short: nothing is
+    turned on where the reviewer runs.
 - **The forge merges**: GitHub's auto-merge, GitLab's "merge when the
   pipeline succeeds", each checking its own rules. One GitHub could merge
   at once is merged at once.
@@ -42,20 +43,36 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   - a role's own branch rebuilt on the base instead
     ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)).
 - **The order**: the release's docs fix first, then the order the labels
-  were put. One whose auto-merge a person turned on by hand joins the line.
+  were put. Auto-merge a person turned on by hand is their yes, weighed as
+  the label's.
 - **Out of line, said in the job's summary**: a verdict or a check red,
-  a review short, a conflict on a person's line, a push refused. The next
-  one is brought up instead.
+  a review short, a conflict on a person's line, a push refused. One not
+  judged yet waits, named, and never holds the line: the next comes up.
 - **The label** is made in the forge's list when missing: put it in bulk,
   from a saved filter.
+
+## The yes covers one head
+
+- **A push after the yes takes it back**: auto-merge off, the label off,
+  one comment. When each head was pushed is the forge's word: GitHub's
+  repository activity, GitLab's versions.
+- **`follow`'s own update is no push**: the base merged in, a role's
+  branch rebuilt — checked by its tree, exactly what workline's own merge
+  or rebuild gives; its trailer is never taken on trust.
+- **Held by the forge, not by a race**: GitHub keeps auto-merge on after a
+  writer's push. So the base requires the status `workline/accepted`,
+  which `follow` sets on the head a yes covers: a new head lacks it and
+  cannot merge. A base that does not require it gets nothing turned on,
+  said. On GitLab, the merge waits for the new head's pipeline, which
+  holds `workline:merge`.
 
 ## Never without a person's yes
 
 - **A release pull request** merges only labelled. Held for its docs, it
   waits for them, then is brought up to date and merges.
-- **A fork's** is turned on when labelled, never brought up to date: the
-  token cannot write to a fork. Its CI run is the fork's own, so the
-  templates keep no verdict of it: it waits for a person.
+- **A fork's** is never brought up to date: the token cannot write to a
+  fork. Its CI run is the fork's own, so the templates keep no verdict of
+  it: it waits for a person.
 - **Any other** with no label, whoever opened it. A bot's own auto-merge
   (a dependency bot's) is left to it.
 - **An agent never puts the label**: it is the person's yes.
@@ -66,34 +83,38 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **Auto-merge turned off by a person** stays off until the label is put
   again.
 - **The label taken off** turns auto-merge off.
-- **A push after the yes**: the yes covers the head it was given on. Any
-  commit but `follow`'s own update — the base merged in, a role's branch
-  rebuilt — turns auto-merge off and takes the label off, said in one
-  comment. When each head was pushed is the forge's word: GitHub's
-  repository activity, GitLab's versions.
 
 ## Where the head's verdict lives
 
 - The judging job writes it: `workline route … --verdict <file>`.
-- The job holding the write token keeps it, `workline follow --verdict
-  <file>`: a git note on the head, `refs/notes/workline/verdicts`,
-  pushed. A later run, woken by a label or a push, reads it there.
+- **GitHub**: a job of its own keeps it, `workline follow --verdict <file>
+  --verdict-only`: the status `workline/verdict` on the head, set by the
+  App. Only the statuses `follow`'s own token set are read: a writer's
+  never counts.
+- **GitLab**: in hand in the merge request's pipeline, where
+  `workline:merge` reads it; nothing kept elsewhere.
 - No verdict on the head yet: auto-merge waits for it.
+- **The limit**: on GitLab, whoever can run a pipeline can read the
+  project bot's token, so a person who may push could act as it.
 
 ## Set up
 
-- **GitHub**: the [templates](ci-github.md) — `workline.yml`'s `follow`
-  job runs after `judge`; `workline-merge.yml` runs when a label changes.
-  Settings → General → "Allow auto-merge"; a ruleset requiring the checks
-  auto-merge waits on. The GitHub App's token, as for `apply`: a merge made
-  with the job's own starts no workflow on `main` — nothing is turned on
-  then, said.
+- **GitHub**: the [templates](ci-github.md) — `workline.yml`'s `verdict`
+  and `follow` jobs run after `judge`; `workline-merge.yml` runs when a
+  label changes. Then:
+  - Settings → General → "Allow auto-merge";
+  - the GitHub App, with **Commit statuses** read and write besides its
+    other permissions; a merge made with the job's own token starts no
+    workflow on `main` — nothing is turned on then, said;
+  - a ruleset on the base requiring the checks, and `workline/accepted`
+    from the App.
 - **GitLab**: the [template](ci-gitlab.md)'s `workline:merge` job, after
   the judge; the project bot's token. A label starts no pipeline there: it
   is acted on at the next one.
-- **Another forge** (`cmd:`): the operations `merge-state` and
-  `auto-merge` ([forge command](spec/forge-command.md)). The local forge
-  has no auto-merge: said, nothing turned on.
+- **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
+  `guarded`, `accept`, `keep-verdict` and `verdict`
+  ([forge command](spec/forge-command.md)). The local forge has no
+  auto-merge: said, nothing turned on.
 
 ## What the summary says
 
@@ -101,14 +122,14 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed |
 | `updated` | first in line, brought up to date |
-| `verdict-missing` | accepted, its head not judged yet |
+| `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
-| `accepted-reset` | a push after the yes: label and auto-merge off |
+| `accepted-reset` | a push after the yes: the yes and auto-merge off |
 | `vetoed`, `draft`, `auto-merge-off` | the forge's veto, or the label taken off |
 | `waits-for-docs` | a release whose docs are still open |
 | `fork-behind`, `update-left` | behind, not brought up to date |
-| `label-ignored` | put by someone who cannot write |
-| `merge-token`, `merge-unsupported` | a token or a forge it cannot act with |
+| `label-ignored` | put by someone who may not push nor merge |
+| `merge-unguarded`, `merge-token`, `merge-unsupported` | a base, a token or a forge it cannot act with |
 
 What was tried, live: the documentalist's
 [tried.md](../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live);

@@ -179,19 +179,34 @@ puts the label.
 ## Built (2026-10-12, #321)
 
 `cautious`, as decided; what the build settled
-([page](../merge-policy.md)):
+([page](../merge-policy.md)), an independent review's findings answered:
 
-- **Each head's verdict, where `follow` reads it**: the judging job
-  writes it (`route --verdict`); the job holding the write token keeps it
-  as a git note on the head (`follow --verdict`,
-  `refs/notes/workline/verdicts`), as Gerrit keeps its reviews. A later
-  run — a label, a push to the base — reads it with the token it holds:
-  no artifact, no further permission for the App.
+- **The yes holds on its head through a required check, not a race**:
+  GitHub keeps auto-merge on after a writer's push, and the checks of the
+  new head could pass before `follow` runs again. `follow` sets the status
+  `workline/accepted` on the head a yes covers, by the App; the base
+  requires it, from the App, so a new head cannot merge until a yes covers
+  it. A base that does not require it gets nothing turned on, said.
+  Making `judge` fail instead was not chosen: a person putting the label
+  again would wait for the job to run again. On GitLab the merge waits
+  for the new head's pipeline, which holds `workline:merge`.
+- **Each head's verdict, where only the App writes it**: the judging job
+  writes it (`route --verdict`); a job of its own keeps it on GitHub as the
+  status `workline/verdict`, set by the App, bound by the forge to the
+  commit — in no concurrency group, so no newer run cancels it. Only what
+  `follow`'s own token set is read: a writer's status, as a git note anyone
+  could push, never counts. On GitLab, the verdict is in hand in the
+  pipeline that judged the head; a status set there from elsewhere could
+  become the merge request's pipeline. The limit: a GitLab project bot's
+  token can be read by whoever runs a pipeline.
+- **Who says yes** may push and merge: GitHub's write access, GitLab's
+  Developer — not the product owner's wider "person of the project".
 - **A push after the yes** is told by the forge's own push times —
   GitHub's repository activity, GitLab's versions —, else by the commits'
   dates; a head opened with the label on is the one accepted. `follow`'s
-  own update is a merge carrying workline's trailer, or a role's branch
-  rebuilt, its commit's message, author and date kept.
+  own update is checked by its tree — the base merged in, workline's lines
+  settled, a role's branch rebuilt —, never by its trailer; the line, too,
+  judges a commit whose trailer its tree does not bear out.
 - **GitHub turns no auto-merge on for a pull request it could merge now**
   ("clean status"): it is merged at once, at the head checked, as `gh pr
   merge --auto` does — the forge's rules met already.
@@ -199,15 +214,21 @@ puts the label.
   taken off in a workflow of its own (`pull_request_target`): a run with
   `judge` skipped would show the check passed. GitLab starts no pipeline
   for a label: it is acted on at the next one.
+- **The line never stalls**: one not judged yet waits, named; one whose
+  check failed is out; only one ready and up to date ends a pass.
 - **Draft** turns auto-merge off; **another bot's own auto-merge** (a
   dependency bot's) is left to it; a fork's run is the fork's, so the
   templates keep no verdict of it.
 - **The texts**: principle 1 holds as written, the label being the
   acceptance; concepts.md, ADR-0011, ADR-0020 and AGENTS.md amended.
-- **Tried live** on both forges, real auto-merges and merges, no agent:
+- **Tried live** on both forges, real auto-merges and merges, no agent;
+  on GitHub, a head pushed after the yes, its other checks green, held
+  five minutes by the required status until `follow` took the yes back:
   [tried.md](../../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live).
-- Conformance: merge/* (29 cases), the simulated forge, GitLab's mock, a
-  `cmd:` forge; TestMergePolicyRunsAfterTheJudgeAndOnLabels.
+- Conformance: merge/* (37 cases), the simulated forge, GitLab's mock, a
+  `cmd:` forge; routing/forged-merge-is-judged;
+  TestMergePolicyRunsAfterTheJudgeAndOnLabels, TestGitHubGuarded,
+  TestSumChecks.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
