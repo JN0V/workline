@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 7ebf882
+checked: 066d097
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -65,116 +65,8 @@ expect:
   applied: []
 ```
 
-`given` can also carry `models-seen`: the models this machine saw answer before
-the run (`{"fake:light": {model: …}}`), in the file `WORKLINE_MODELS_SEEN` names.
-It can also carry `repos`: other repositories to build first, each
-exported by name as an environment variable holding its path, for
-multi-repository cases. `env` sets variables for the run (`$VAR` expands):
-a `PATH` without a tool, or with a fake one first. `engine-tags` runs the
-case on an engine built from this source with those Go build tags, a
-change only the tests make: `workline_alias` gives how a person accepts a
-need a new heading, written first, the shipped one still read
-([ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)).
-Such a case does not run on an engine `WORKLINE_ENGINE` names: it fails,
-saying so.
-
-`run` can also carry:
-
-- `route: <event>` instead of `role` — run the event's whole line;
-- `gate: <name>` instead of `role` — run one gate;
-- `doctor: true` instead of `role` — run `workline doctor` on the repository;
-- `init: true` instead of `role` — run `workline init` on the repository,
-  with `init-options: [<option>...]` if given (`--human-po yes`);
-- `setup: [<option>...]` instead of `role` — run `workline setup` with these
-  options, on a git config of the case's own;
-- `issues-import: [<argument>...]` instead of `role` — `workline issues
-  import` on the repository, on the simulated forge;
-- `review: [<option>...]` instead of `role` — `workline review` on the
-  repository, with these options;
-- `sample: [<option>...]` instead of `role` — draw and read the weekly
-  sample (`workline sample`), with no forge; `then: apply` then writes what
-  it found with `workline sample --apply`, on the simulated forge;
-- `follow: [<option>...]` instead of `role` — `workline follow` on the
-  repository (`[--base, main]`), on the simulated forge, or GitLab's with
-  `forge: gitlab`;
-- `cli: [<argument>...]` instead of `role` — `workline` with these
-  arguments, as typed, in the repository: help, misuse; checked by `exit`,
-  `stdout`, `stderr`, and `summary-file` for the `workline-summary.md`
-  its arguments name;
-- `route: ready` with `item` — ask routing to move a work item;
-- `target` — the issue or merge request comments and labels go on
-  (`{merge-request: 1}`); `branch` — the branch that merge request comes from;
-- `open-merge-request: true` or `push-to-merge-request: true` — put what the
-  patches write on a merge request;
-- `reports: true` — also write the findings as SARIF and Code Quality;
-- `summary: true` — also write `--summary`, Markdown and HTML, and give the
-  same files to the `apply` or `sample --apply` that follows;
-- `scope` — the run's scope, as a ready work item would give it;
-- `no-apply: true` — judge, and stop before applying;
-- `forge` — a forge spec given as `--forge` instead of the simulated forge
-  (`local`, `none`, `cmd:<command>`, `gitlab`), the sample's `then: apply`
-  included;
-- `then: resume` — after the run, resume it with `workline apply`: the run, or
-  every run a line judged and did not apply; `then: resume-elsewhere` — the
-  same with another cache and the roles built into the engine, as CI's
-  second job; `then: again` — after the run, the same run once more, on
-  the forge and the repository as the first left them, after a person's
-  edits to the forge given in `between` (`{issues: [{id: 4, body: …}]}`:
-  each item, by kind and id, takes the fields given): what one run
-  records, the next reads back. Both runs' agent calls, calls and findings
-  are counted together, the rest is the second's;
-- `tamper: in/` — change the prepared input between prepare and apply.
-
-`expect` lists only what the case is about; anything not listed is not checked.
-
-- `findings` — each listed finding must be present (matched by `rule`, and by
-  `where` and a part of its `message` and `fix` if given).
-- `checks` — the doctor's checks, ok ones included: each listed must be
-  present, by `rule`, and by `level`, `where`, a part of `message` and of
-  `fix` if given.
-- `no-findings` — findings that must not be there (by `rule` and `where`,
-  and a part of the message when given).
-- `agent-calls` — how many times the agent was called.
-- `calls` — each call, in order: the fields listed must match (`agent`,
-  `task`, `tier`, `effort`, `asked`, `model`).
-- `applied` / `refused` — intentions applied or refused, by kind.
-- `steps` — for a line, the steps that ran, in order.
-- `forge` — fields the simulated forge must hold afterwards: per item, by
-  `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
-  (a text some comment holds, or a list of them) and `comment-lacks` (a
-  text none does), `closed`
-  and the `reason` it was closed for, its `milestone`, `branch`, `base`,
-  `title` and the `parent` it is a sub-issue of (0 for none), `blocked-by`
-  the issues it waits on in the forge's relation, `body-contains` and `body-lacks` (a text its body holds, or a list
-  of them, or a text it does not), `reactions` (the reactions on its comments, by the comment's id);
-  `absent: true` — no item with that id. `labels` there lists the
-  labels the forge defines, their order as id, by `title`.
-- `pushed` / `pushed-message` — a text a file holds on a branch of the
-  case's `origin`, or the message of that branch's tip.
-- `not-pushed` — branches of the case's `origin` the run left where they
-  were; `on-top` — a branch of `origin` whose tip holds another's
-  (`{workline/documentalist/release: main}`).
-- `branches` — a text a file holds on a local branch of the repository.
-- `issues-listed` — texts `workline issues list` prints afterwards.
-- `summary` — a text the result's summary holds.
-- `coverage` / `not-covered` — with `issues-import`, entries the import's
-  map must hold, each matched on the fields given (`lines`, `state`,
-  `issue`; `words` and `why` by a part of them); with `then: resume`,
-  the judge's map, `workline apply` printing none.
-- `notes` — texts the agent's notes must hold, all rounds together.
-- `sarif` / `code-quality` / `left-out` — with `reports`, results each report
-  must hold, and the places neither may name.
-- `summary-file` / `summary-html` — with `summary`, texts the Markdown and
-  the HTML summary must hold, in this order; with `cli`, the Markdown in
-  `workline-summary.md`.
-- `refused-kept` — how many refused answers the run folders keep.
-- `calls-kept` — how many agent calls the run folders record.
-- `run-files` — files of the run folder (`out/claims.yaml`), each holding a
-  text (`contains`), or not (`not-contains`), each a text or a list.
-- `files` — paths that must exist, or contain a text or each of a list of
-  texts, or lack one (`lacks`), afterwards.
-- `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
-  printed on each stream.
+What else a case can give, run and expect, and how each is checked, is in
+[Conformance — a case in full](conformance/cases.md), [read strictly](conformance/cases.md#read-strictly).
 
 ## The fakes
 
@@ -246,7 +138,8 @@ so when skipped. The name is an `--ai` value, so `WORKLINE_EVAL=claude:haiku@med
 runs every case on one model and effort, to compare them with the roles' own.
 The reviewer's cases ask each lens apart; `WORKLINE_EVAL_LENSES` names the
 lenses asked (`diff-alone`: the facet alone) and `WORKLINE_EVAL_REVIEWER`
-sets its settings, a YAML map (`{ai-max-tokens: 10000}`). Besides the fixtures, a case can start from this repository
+sets its settings, a YAML map (`{ai-max-tokens: 10000}`). A case is read as strictly as a conformance case: a key no field names fails to load
+it, as does a check `grade` does not know. Besides the fixtures, a case can start from this repository
 itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 (a message the hook refused, replayed with the author's words in
 `run.message`); `given.workline-at: <sha>` checks it out as it was. Each check
@@ -264,50 +157,8 @@ the efforts asked, the tokens in and out, and the cost at list price (on a
 subscription, the tokens are what counts): a score compares only with the same
 models.
 
-**Real shapes, both sides graded** (ADR-0014, step 1). The `drifted`
-fixture (tests/conformance/fixtures/repos/drifted.sh) holds docs drifted as
-DomoticsCore's and workline's did, every one `checked`, its sources fitting
-whole in a task: frozen line counts (a fenced tree's "(524 lines)", a
-`| File | Lines |` row, "~283 lines"), limits that are no counts ("< 800
-lines"), a sibling sharing the version, a stale code comment against the
-default, a bug long fixed, a test count in a file no source names, a true
-claim only a record backs, and a clean control. Each documentalist case on
-it grades both sides: never `checked` over a planted falsehood, and
-`checked` on the control (`TestDriftedCasesGradeBoth`). Its cases are played
-without a real agent on every `go test`, by a fake `cmd:` agent changing
-headers only (`TestDriftedWithFakeAgents`): vouching for every doc must lose
-the falsehood checks, recording `judged` on every doc must lose the
-control, doing both right must lose neither; the `count-off` findings,
-reported by the engine with no agent (ADR-0014, step 2), are graded there
-too and must never be lost.
-
-**The reviewer's measure** (#90). A reviewer case adds `review:` to
-`given` and `run`: the `defects` planted on the change, each a lens, a
-kind, and the places its cause may be quoted at (a file, a range of lines
-as they read at the change's head, a `text` within them); the places
-where nothing may be found (`not`); and code outside the change
-(`outside`), measured and not scored. Built on the `shop` fixture, every
-lens asked, each apart (`lenses-together: false`, set by the harness),
-event `review`. The run's folder is read with no agent — what
-each lens answered, what the engine kept of it, the judge's verdict on
-each important finding, the tokens each lens's call and its judges used —
-and scored: a point for each defect a finding shown on the change has its
-cause in, whichever lens raised it (AI review benchmarks count known bugs
-found and false positives, docs/research/code-review.md; the place, from
-the quote the engine found again, needs no judge); a point for each
-`not` kept clean; a point when nothing important was shown that nothing
-planted. The `measure` column of `results.tsv` holds, a lens each, the
-defects planted for it and found, those it raised itself, those the judge
-refused, what it raised that nothing planted (shown, nits, refused),
-outside the change (and verified), its answers, its quotes not found
-again, its tokens, and the finder floor asked; the summary sums them by
-lens. `TestReviewerCasesPointRight` builds each case — each place holds
-its text, the code builds, the fixture's tests pass, a planted defect
-they caught measuring nothing — and `TestReviewerWithFakeAgent` plays one
-through the engine with a fake agent (testdata/review-agent.sh). The
-model and independence matrix of ADR-0005 is a run with
-`WORKLINE_EVAL=claude:<model>` and `WORKLINE_JUDGE=claude:<model>`, never
-by default.
+Real shapes, both sides graded, and the reviewer's measure are told in full in
+[Evaluation — two measures](conformance/evaluation.md).
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
