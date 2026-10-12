@@ -89,7 +89,9 @@ Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the
 branches under the prefix, sorted; of `issues`, only the open ones, by
 number. There is no `release` operation:
-releases are the project's release tool's, not workline's (ADR-0017).
+releases are the project's release tool's, not workline's (ADR-0017). Nor
+one for comments on a merge request's lines: a reviewer's findings go, in
+full, into its summary comment, `sticky` (role-outcome.md, `comment`).
 
 ## What stays with the engine
 

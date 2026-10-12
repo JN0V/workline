@@ -152,6 +152,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   `CI_JOB_TOKEN` may not read a merge request's notes, so give
   `GITLAB_TOKEN` (`read_api`), or each push reviews the whole merge request
   again, said (`record-unread`).
+  The applying job posts each finding as a discussion on its line, with
+  `WORKLINE_GITLAB_TOKEN`
+  ([more](../roles/reviewer/docs/lines.md)).
   Marking a draft ready starts no pipeline: the next one, a push or
   **Run pipeline**, has every lens read the whole change once
   ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready); not tried on

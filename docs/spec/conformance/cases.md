@@ -110,7 +110,9 @@ saying so.
   `title` and the `parent` it is a sub-issue of (0 for none), `blocked-by`
   the issues it waits on in the forge's relation, `body-contains` and
   `body-lacks` (a text its body holds, or does not, or a list of them),
-  `reactions` (the reactions on its comments, by the comment's id);
+  `reactions` (the reactions on its comments, by the comment's id),
+  `threads` (a merge request's comments on lines, exactly these, in the
+  order posted: each `{path, line, contains, lacks, resolved}`);
   `absent: true` — no item with that id. Items are listed by kind:
   `issues`, `merge-requests`, and `labels`, the labels the forge defines,
   their order as id, by `title`.

@@ -113,7 +113,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | What | Roles | Writes |
 |---|---|---|
-| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer, opt-in | the docs' fix on its branch; one summary comment; the findings in the forge's code-scanning view; the job's summary |
+| each push to it; on GitHub, marked ready too | committer; documentalist; reviewer, opt-in | the docs' fix on its branch; each finding on its line, and one summary comment; the findings in the forge's code-scanning view; the job's summary |
 | a release tool's (release-please…) | documentalist, on the docs due at the release | the docs' fix in a merge request of its own |
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
