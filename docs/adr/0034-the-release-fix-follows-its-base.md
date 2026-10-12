@@ -130,14 +130,17 @@ judged no more. A person closed both by hand.
     next gardening judges the docs again on the base, which a task closed
     no longer holds back;
   - it only records when docs were read (`judged`, `judged-in-parts`,
-    `verified`): a record waiting on a moved base holds its task's docs
-    back, for nothing a reader sees.
+    `verified`), and the base changed those docs since: read again or
+    vouched for there, the record says nothing more. A record whose docs
+    the base did not change is rebuilt: closed, its docs would go before
+    an agent again the next night, to the same record, each night the
+    base moved.
 - **A person's commit**: the branch is theirs. Neither rebuilt nor closed;
-  named (`not-rebuilt`, a warning, in the job's summary) only when git's
-  own merge, in memory (`git merge-tree`), meets a conflict, as the forge
-  shows it. Proposing the task again never force-pushes over it either
-  (`not-proposed`): the consequence of ADR-0006 that a person's commits are
-  overwritten no longer holds.
+  named in the job's summary when git's own merge, in memory (`git
+  merge-tree`), meets a conflict, as the forge shows it (`not-rebuilt`), or
+  cannot tell (`conflict-unread`), both warnings. Proposing the task again
+  never force-pushes over it (`not-proposed`): ADR-0006's "a person's
+  commits are overwritten" no longer holds.
 - **Not on each push to `main`**: `workline follow` alone tends the release
   fix only. A gardening merge request waits days for review; rebuilt at
   every push, each would run its checks again for nothing a night's
@@ -150,15 +153,17 @@ judged no more. A person closed both by hand.
   then; the local forge and a `cmd:` forge have none. `git merge-tree` is
   the merge both forges run, the same everywhere.
 - **Tending before judging**, a job of its own: a merge request closed
-  would be proposed again the same night, but a record closed would be
-  judged again every night the base moved, and a third job would hold the
+  would be proposed again the same night, but a third job would hold the
   write token. After applying, in the job that holds it already, a closed
   task is taken up the next night.
+- **Closing every record on a moved base**, as #303 first asked: on a
+  base that moves daily, its docs judged again every other night, tokens
+  spent for the same record.
 
 Conformance: documentalist/gardening-branch-follows-main,
 gardening-branch-left-on-a-push-to-main,
 gardening-branch-closed-when-main-fixed-it,
 gardening-branch-closed-when-main-changed-its-lines-on-gitlab,
-gardening-branch-only-judged-closed,
+gardening-branch-only-judged-closed, gardening-branch-only-judged-rebuilt,
 gardening-branch-a-person-committed-to-is-left,
-gardening-keeps-a-person-commit.
+gardening-branch-close-refused-said, gardening-keeps-a-person-commit.

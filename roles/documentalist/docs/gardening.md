@@ -114,11 +114,13 @@ One the base moved under is:
   - the base holds its change already;
   - the base changed the same lines: the next gardening judges the docs
     again and proposes what is still needed;
-  - it only records when docs were read (`judged`): its docs, held while
-    it waited, are judged again when still due;
+  - it only records when docs were read (`judged`), and the base changed
+    those docs since; a record whose docs the base left as they were is
+    rebuilt, so they are not judged again for the same record;
 - **left to a person** who committed to it: neither rebuilt nor closed,
-  and named in the job's summary when it no longer merges. Running the
-  task again never pushes over that commit either (`not-proposed`).
+  and named in the job's summary when it no longer merges, or when git
+  cannot tell (`conflict-unread`). Running the task again never pushes
+  over that commit either (`not-proposed`).
 
 A push to the base leaves them alone: only the release's fix follows each
 push ([at the release](push.md#a-release-tools-pull-request)).
