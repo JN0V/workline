@@ -1,0 +1,24 @@
+case: documentalist/persons-branch-push-refused-said
+about: "The forge refuses workline's push of the merge to a person's branch — a branch protected, or GitHub's App token without the `workflows` permission for a main that changed a workflow (ADR-0041): left to its author, the forge's words said in the summary; the next pull request is still tended."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "git checkout -qb feat/sign-in && sed -i 's/^checked: .*/checked: 4444444/; s/one hour/an hour/' docs/product/sign-in.md && git commit -qam 'docs: an hour' && git push -q origin feat/sign-in && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md docs/product/sign-in.md && git add src docs && git commit -qm 'feat(auth): refresh tokens' && git push -q origin main"
+    - "printf '#!/bin/sh\\n[ \"$1\" != refs/heads/feat/sessions ] || { echo \"refusing to allow a GitHub App to create or update workflow .github/workflows/ci.yml without workflows permission\" >&2; exit 1; }\\n' > ../origin.git/hooks/update && chmod +x ../origin.git/hooks/update"
+  forge:
+    merge-requests:
+      - {id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}
+      - {id: 8, branch: feat/sign-in, base: main, author: dana, labels: [], comments: []}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: merge-refused, where: feat/sessions, level: warn, message: "the forge refused workline's merge"}
+    - {rule: merged, where: feat/sign-in, message: "docs/product/sign-in.md"}
+  not-pushed: [feat/sessions]
+  merged: {feat/sign-in: main}
+  summary-file: ["workline follow", "feat/sessions", "without workflows permission", "feat/sign-in"]

@@ -11,7 +11,7 @@ given:
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  findings: [{rule: not-merged, where: feat/sessions, level: warn, message: "in conflict with main in src/auth/token.go: left to its author, nothing pushed; workline's own lines in docs/tech/auth.md"}]
+  findings: [{rule: not-merged, where: feat/sessions, level: warn, message: "in conflict with main in src/auth/token.go: left to its author, nothing pushed; workline would settle its own lines in docs/tech/auth.md"}]
   no-findings: [{rule: merged, where: feat/sessions}]
   not-pushed: [feat/sessions]
   summary-file: ["workline follow", "feat/sessions", "src/auth/token.go"]

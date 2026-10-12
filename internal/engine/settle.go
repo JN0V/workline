@@ -68,9 +68,6 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (mine, merg
 		default:
 			left++
 		}
-		if finding.Level == "block" {
-			res.Status = verdict.Block
-		}
 		res.Findings = append(res.Findings, finding)
 	}
 	return mine, merged, left, nil
@@ -120,7 +117,7 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 	if len(theirs) > 0 {
 		msg := fmt.Sprintf("in conflict with %s in %s: left to its author, nothing pushed", base, strings.Join(theirs, ", "))
 		if len(settled) > 0 {
-			msg += fmt.Sprintf("; workline's own lines in %s settle as %s has them", strings.Join(settled, ", "), base)
+			msg += fmt.Sprintf("; workline would settle its own lines in %s", strings.Join(settled, ", "))
 		}
 		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where, Message: msg}, nil
 	}
@@ -128,7 +125,8 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 	if err != nil {
 		return verdict.Finding{}, err
 	}
-	move := []string{"push", "-q", "origin", commit + ":refs/heads/" + mr.Branch}
+	// Not quiet: a refusal says the forge's own words (`remote: …`).
+	move := []string{"push", "origin", commit + ":refs/heads/" + mr.Branch}
 	if local {
 		move = []string{"update-ref", "refs/heads/" + mr.Branch, commit, tip}
 	}
@@ -141,8 +139,11 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
 				Message: fmt.Sprintf("the branch moved while workline merged %s into it: their push kept, workline's refused; the next push to %s tries again", base, base)}, nil
 		}
-		return verdict.Finding{Rule: "merge-refused", Level: "block", Where: where,
-			Message: fmt.Sprintf("the forge refused workline's merge of %s into it: %s", base, lastLine(err.Error()))}, nil
+		// A branch protected, a token short of a permission (GitHub's
+		// `workflows`, for a base that changed a workflow): as a conflict
+		// left, the person's, said with the forge's words.
+		return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
+			Message: fmt.Sprintf("in conflict with %s only on workline's lines, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
 	}
 	return verdict.Finding{Rule: "merged", Where: where,
 		Message: fmt.Sprintf("%s merged in (%s), workline's own lines settled in %s: a merge commit, its commits kept", base, short(baseTip), strings.Join(settled, ", "))}, nil
@@ -375,8 +376,23 @@ func object(repo, id string) (string, bool) {
 	return string(out), true
 }
 
-// lastLine is the last line of a text.
-func lastLine(s string) string {
-	lines := strings.Split(strings.TrimSpace(s), "\n")
-	return strings.TrimSpace(lines[len(lines)-1])
+// refusal is what the forge said refusing a push: its own lines
+// (`remote: …`) and git's naming the ref refused, with why; else git's
+// last line.
+func refusal(err error) string {
+	var said []string
+	for _, l := range strings.Split(err.Error(), "\n") { // the first after git's own "git push: exit status 1: "
+		if _, s, ok := strings.Cut(l, "remote:"); ok {
+			if s = strings.TrimSpace(s); s != "" {
+				said = append(said, s)
+			}
+		} else if i := strings.Index(l, "! ["); i >= 0 {
+			said = append(said, strings.TrimSpace(l[i:]))
+		}
+	}
+	if len(said) == 0 {
+		lines := strings.Split(strings.TrimSpace(err.Error()), "\n")
+		return strings.TrimSpace(lines[len(lines)-1])
+	}
+	return strings.Join(said, "; ")
 }
