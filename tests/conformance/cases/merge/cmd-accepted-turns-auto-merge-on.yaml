@@ -8,7 +8,6 @@ given:
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q main"
-    - "sh \"$FIXTURES/verdict.sh\" feature pass"
 run: {follow: [--base, main]}
 expect:
   status: pass

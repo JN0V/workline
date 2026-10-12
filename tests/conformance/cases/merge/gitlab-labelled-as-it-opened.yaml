@@ -6,7 +6,7 @@ given:
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && GIT_COMMITTER_DATE=2026-01-04T10:00:01Z git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
-    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass ../verdict.json"
   forge:
     members: [{username: dana, access_level: 30}]
     merge-requests:
@@ -18,7 +18,7 @@ given:
         label-events: [{label: "workline::accepted", added: true, author: dana, created: "2026-01-04T10:00:00.958Z"}]
         pushes: [{head: feat/sessions, at: "2026-01-04T10:00:02.093Z"}]
         comments: []
-run: {follow: [--base, main], forge: gitlab}
+run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
 expect:
   status: pass
   findings: [{rule: auto-merge-on, where: "!7"}]

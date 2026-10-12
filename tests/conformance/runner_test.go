@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/forge"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -198,6 +199,20 @@ type forgeWant struct {
 	Issues        []itemWant `yaml:"issues"`
 	MergeRequests []itemWant `yaml:"merge-requests"`
 	Labels        []itemWant `yaml:"labels"` // labels defined, their name as id
+	// Statuses: each must be the last status of its name on its commit (a
+	// revision of the repository) — by, state and a part of its description
+	// when given; absent: none of that name there.
+	Statuses []statusWant `yaml:"statuses"`
+}
+
+// statusWant is a status the simulated forge holds on a commit.
+type statusWant struct {
+	Commit      string `yaml:"commit"`
+	Name        string `yaml:"name"`
+	State       string `yaml:"state"`
+	By          string `yaml:"by"`
+	Description string `yaml:"description"`
+	Absent      bool   `yaml:"absent"`
 }
 
 // itemWant is an item of the forge, by id: each field given is checked
@@ -696,6 +711,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Expect.Forge != nil {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
+		problems = append(problems, compareStatuses(c.Expect.Forge.Statuses, forgeFile, repo)...)
 	}
 	return problems
 }
@@ -1036,6 +1052,45 @@ func editForge(file string, edits map[string]any) error {
 		return err
 	}
 	return os.WriteFile(file, data, 0o644)
+}
+
+// compareStatuses checks the statuses the simulated forge holds: the last
+// of each name on each commit, the commits revisions of the repository.
+func compareStatuses(want []statusWant, file, repo string) []string {
+	if len(want) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{err.Error()}
+	}
+	var s forge.FakeState
+	if err := json.Unmarshal(data, &s); err != nil {
+		return []string{err.Error()}
+	}
+	commit := func(rev string) string {
+		out, _ := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
+		return strings.TrimSpace(string(out))
+	}
+	var p []string
+	for _, w := range want {
+		var last *forge.FakeStatus
+		for i := range s.Statuses {
+			if st := &s.Statuses[i]; st.Name == w.Name && commit(st.Commit) == commit(w.Commit) {
+				last = st
+			}
+		}
+		switch {
+		case w.Absent && last != nil:
+			p = append(p, fmt.Sprintf("forge: status %s on %s is there (%+v), want none", w.Name, w.Commit, *last))
+		case w.Absent:
+		case last == nil:
+			p = append(p, fmt.Sprintf("forge: no status %s on %s", w.Name, w.Commit))
+		case w.State != "" && last.State != w.State, w.By != "" && last.By != w.By, !strings.Contains(last.Description, w.Description):
+			p = append(p, fmt.Sprintf("forge: status %s on %s is %+v, want %+v", w.Name, w.Commit, *last, w))
+		}
+	}
+	return p
 }
 
 // compareForge checks the simulated forge's state: each item listed, by

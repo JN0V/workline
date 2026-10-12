@@ -1,12 +1,12 @@
 case: merge/verdict-kept-then-read
-about: "The head's verdict, where `follow` reads it (#321): the judging job wrote the line's verdict on the head (`workline route --verdict`); the job holding the write token keeps it as a git note on that commit, pushed to origin (`workline follow --verdict`), then reads it, as any later run does: the accepted pull request's auto-merge is turned on (ADR-0042)."
+about: "The head's verdict, where `follow` reads it (#321): the judging job wrote the line's verdict on the head (`workline route --verdict`); the job holding the write token keeps it where only that token writes — on GitHub, the status `workline/verdict`, set by the App, bound by the forge to the commit (`workline follow --verdict`) — and reads it back, as a later run does: the accepted pull request's auto-merge is turned on, the yes held on that head (`workline/accepted`) (ADR-0042)."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
-    - "printf '{\"head\": \"%s\", \"status\": \"pass\", \"steps\": [{\"name\": \"reviewer\", \"status\": \"pass\"}]}' $(git rev-parse feat/sessions) > ../verdict.json"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass ../verdict.json"
   forge:
     merge-requests:
       - id: 7
@@ -14,16 +14,17 @@ given:
         base: main
         author: dana
         labels: [workline:accepted]
-        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:00:00Z"}]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         comments: []
 run: {follow: [--base, main, --verdict, ../verdict.json]}
 expect:
   status: pass
   findings:
-    - {rule: verdict-recorded, message: "pass, kept for the merge policy (refs/notes/workline/verdicts)"}
+    - {rule: verdict-kept, message: "pass, the line passed"}
     - {rule: auto-merge-on, where: "#7"}
-  files:
-    ../origin.git/refs/notes/workline/verdicts: {exists: true}
   forge:
     merge-requests:
       - {id: 7, auto-merge: true}
+    statuses:
+      - {commit: feat/sessions, name: workline/verdict, state: success, by: workline-bot, description: "pass: "}
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana"}

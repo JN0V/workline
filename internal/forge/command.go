@@ -280,6 +280,43 @@ func (c *command) MergeState(mr MergeRequest) (MergeState, error) {
 	return st, err
 }
 
+// Guarded asks guarded: {base}, answered {why} — "" when the forge holds a
+// yes to the head it was given on. A command that does not know it
+// refuses it, and nothing is turned on.
+func (c *command) Guarded(base string) (string, error) {
+	var a struct {
+		Why string `json:"why"`
+	}
+	err := c.call("guarded", map[string]any{"base": base}, &a)
+	return a.Why, err
+}
+
+// Accept asks accept: {head, ok, why}, for a forge that marks a head
+// accepted to hold a yes; {} where it marks nothing.
+func (c *command) Accept(head string, ok bool, why string) error {
+	return c.call("accept", map[string]any{"head": head, "ok": ok, "why": why}, nil)
+}
+
+// KeepVerdict asks keep-verdict: {head, class, why}, kept where only this
+// forge's token writes it.
+func (c *command) KeepVerdict(head, class, why string) error {
+	return c.call("keep-verdict", map[string]any{"head": head, "class": class, "why": why}, nil)
+}
+
+// Verdict asks verdict: {head}, answered {class, why}, {} when none is
+// kept.
+func (c *command) Verdict(head string) (string, string, error) {
+	var a struct {
+		Class string `json:"class"`
+		Why   string `json:"why"`
+	}
+	if err := c.call("verdict", map[string]any{"head": head}, &a); err != nil {
+		return "", "", err
+	}
+	class, why := readVerdict(a.Class + ": " + a.Why)
+	return class, why, nil
+}
+
 // AutoMerge asks auto-merge: {id, branch, head, on}, answered {merged}
 // when the forge merged it at once.
 func (c *command) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) {

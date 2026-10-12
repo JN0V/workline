@@ -1,0 +1,30 @@
+case: merge/amended-own-branch-takes-it-back
+about: "A role's branch rewritten after the yes keeps its yes only when it is `follow`'s rebuild — its tree exactly the change redone on its parent —, never by its message, author and date (#321's review): `git commit --amend --no-edit` keeps all three and adds a file; a push after the yes, taken back (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: the auth doc says tokens are renewed' -m 'Workline-Role: documentalist' && git tag before && git push -q origin workline/documentalist/suspect"
+    - "echo 'package auth' > src/auth/evil.go && git add src && GIT_COMMITTER_DATE=2026-01-04T11:00:00Z git commit -q --amend --no-edit && git push -q -f origin workline/documentalist/suspect && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: workline/documentalist/suspect, name: workline/verdict, state: success, description: "pass: the line passed", by: workline-bot}
+    merge-requests:
+      - id: 12
+        branch: workline/documentalist/suspect
+        base: main
+        author: "workline-app[bot]"
+        bot: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: workline/documentalist/suspect, at: "2026-01-04T11:00:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#12", message: "its branch was rewritten"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 12, auto-merge: false, labels: []}

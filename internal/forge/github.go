@@ -19,6 +19,7 @@ import (
 // Not yet tried live: OpenIssue.
 type github struct {
 	repo    string
+	login   string           // the token's user, read once (me)
 	writers map[string]bool  // who may write to the repository, read once each
 	unread  map[string]error // whose rights the token could not read, asked once each
 }
@@ -687,6 +688,7 @@ func (g *github) LabelEvents(id int) ([]LabelEvent, error) {
 			if e.Insider, err = g.writer(e.Author); err != nil {
 				e.Author = "" // who it was is not known: never taken for a person's
 			}
+			e.Writer = e.Insider
 		}
 	}
 	return events, nil

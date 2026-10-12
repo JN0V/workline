@@ -35,8 +35,11 @@ type FollowOptions struct {
 	// (ADR-0042, merge.go).
 	Merge string
 	// Verdict is a file holding the line's verdict on a merge request's
-	// head (`workline route --verdict`), kept first, for the merge policy.
-	Verdict string
+	// head (`workline route --verdict`), kept first, for the merge policy;
+	// with VerdictOnly, nothing else is done: a job of its own keeps it,
+	// which no newer run cancels (GitHub's concurrency).
+	Verdict     string
+	VerdictOnly bool
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when

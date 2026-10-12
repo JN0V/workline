@@ -1,8 +1,10 @@
 package forge
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -11,9 +13,9 @@ import (
 // and when auto-merge was last turned on, the last hundred such events.
 const mergeStateQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { isDraft headRefOid autoMergeRequest { enabledAt enabledBy { login __typename } } timelineItems(itemTypes: [AUTO_MERGE_ENABLED_EVENT, AUTO_SQUASH_ENABLED_EVENT, AUTO_REBASE_ENABLED_EVENT], last: 100) { nodes { ... on AutoMergeEnabledEvent { createdAt } ... on AutoSquashEnabledEvent { createdAt } ... on AutoRebaseEnabledEvent { createdAt } } } } } }`
 
-// checksQuery asks the head's checks, summed up as GitHub shows them on
-// the pull request: check runs and commit statuses both.
-const checksQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { state } } } } } } }`
+// checksQuery asks the head's checks as GitHub shows them on the pull
+// request, each: check runs and commit statuses both.
+const checksQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $number) { commits(last: 1) { nodes { commit { statusCheckRollup { contexts(first: 100) { nodes { __typename ... on CheckRun { name status conclusion } ... on StatusContext { context state } } } } } } } } } }`
 
 // MergeState reads a pull request's state in one GraphQL call, its
 // checks in another — a token that may not read them leaves them unread,
@@ -71,7 +73,9 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 						Nodes []struct {
 							Commit struct {
 								Rollup *struct {
-									State string `json:"state"`
+									Contexts struct {
+										Nodes []checkContext `json:"nodes"`
+									} `json:"contexts"`
 								} `json:"statusCheckRollup"`
 							} `json:"commit"`
 						} `json:"nodes"`
@@ -87,7 +91,7 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 	case err != nil:
 		st.ChecksUnread = err.Error()
 	case len(nodes) == 1 && nodes[0].Commit.Rollup != nil:
-		st.Checks = rollup(nodes[0].Commit.Rollup.State)
+		st.Checks = sumChecks(nodes[0].Commit.Rollup.Contexts.Nodes)
 	}
 	if st.Labels, err = g.LabelEvents(mr.ID); err != nil {
 		return MergeState{}, err
@@ -112,18 +116,162 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 	return st, nil
 }
 
-// rollup reads GitHub's sum of a commit's checks: success, pending,
-// failure.
-func rollup(state string) string {
-	switch state {
-	case "SUCCESS":
-		return "success"
-	case "PENDING", "EXPECTED":
-		return "pending"
-	case "FAILURE", "ERROR":
-		return "failure"
+// checkContext is a check run or a commit status on a head.
+type checkContext struct {
+	Type       string `json:"__typename"`
+	Name       string `json:"name"`
+	Status     string `json:"status"`
+	Conclusion string `json:"conclusion"`
+	Context    string `json:"context"`
+	State      string `json:"state"`
+}
+
+// sumChecks sums up a head's checks — failure when one failed, else
+// pending when one runs, else success —, workline's own statuses left
+// out: a verdict kept, a yes held, are no check of the change.
+func sumChecks(all []checkContext) string {
+	sum := ""
+	for _, c := range all {
+		state := ""
+		switch {
+		case c.Type == "StatusContext" && strings.HasPrefix(c.Context, "workline/"):
+			continue
+		case c.Type == "StatusContext":
+			state = map[string]string{"SUCCESS": "success", "PENDING": "pending", "EXPECTED": "pending", "FAILURE": "failure", "ERROR": "failure"}[c.State]
+		case c.Status != "COMPLETED":
+			state = "pending"
+		default:
+			state = map[string]string{"SUCCESS": "success", "NEUTRAL": "success", "SKIPPED": "success",
+				"FAILURE": "failure", "TIMED_OUT": "failure", "CANCELLED": "failure", "ACTION_REQUIRED": "failure", "STARTUP_FAILURE": "failure"}[c.Conclusion]
+		}
+		switch {
+		case state == "failure":
+			return "failure"
+		case state == "pending" || sum == "pending":
+			sum = "pending"
+		case state == "success":
+			sum = "success"
+		}
 	}
-	return ""
+	return sum
+}
+
+// me is who this token writes as: the GitHub App's bot when the workflow
+// names it (WORKLINE_APP), else the token's user, read once.
+func (g *github) me() (string, error) {
+	if app := strings.TrimSpace(os.Getenv("WORKLINE_APP")); app != "" {
+		return app + "[bot]", nil
+	}
+	if g.login == "" {
+		out, err := g.api("user", "--jq", ".login")
+		if err != nil {
+			return "", err
+		}
+		g.login = strings.TrimSpace(string(out))
+	}
+	return g.login, nil
+}
+
+// ownStatus is the last status of that name on a head set by this token:
+// one by anyone else is never read.
+func (g *github) ownStatus(head, name string) (state, description string, err error) {
+	me, err := g.me()
+	if err != nil {
+		return "", "", err
+	}
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/commits/"+head+"/statuses?per_page=100",
+		"--jq", fmt.Sprintf(`.[] | select(.context == %q and .creator.login == %q) | {state, description}`, name, me))
+	if err != nil {
+		return "", "", err
+	}
+	found, err := lines[struct {
+		State       string `json:"state"`
+		Description string `json:"description"`
+	}](out)
+	if err != nil || len(found) == 0 {
+		return "", "", err
+	}
+	return found[0].State, found[0].Description, nil // the newest first
+}
+
+// setStatus sets a status on a head, unless the last one this token set
+// says the same.
+func (g *github) setStatus(head, name, state, description string) error {
+	was, said, err := g.ownStatus(head, name)
+	if err != nil {
+		return err
+	}
+	if was == state && said == statusText(description) {
+		return nil
+	}
+	_, err = g.api("-X", "POST", "repos/{owner}/{repo}/statuses/"+head, "-f", "state="+state, "-f", "context="+name,
+		"-f", "description="+statusText(description))
+	return err
+}
+
+// KeepVerdict keeps the verdict as the status workline/verdict: success
+// when it passed, pending for a release held for its docs, failure else.
+func (g *github) KeepVerdict(head, class, why string) error {
+	state := map[string]string{"pass": "success", "held": "pending"}[class]
+	if state == "" {
+		state = "failure"
+	}
+	return g.setStatus(head, VerdictStatus, state, verdictText(class, why))
+}
+
+// Verdict reads the status workline/verdict this token set on the head.
+func (g *github) Verdict(head string) (string, string, error) {
+	_, text, err := g.ownStatus(head, VerdictStatus)
+	if err != nil {
+		return "", "", err
+	}
+	class, why := readVerdict(text)
+	return class, why, nil
+}
+
+// Accept sets the status workline/accepted on the head: success, the yes
+// covering it; failure, why not.
+func (g *github) Accept(head string, ok bool, why string) error {
+	state := "failure"
+	if ok {
+		state = "success"
+	}
+	return g.setStatus(head, Accepted, state, why)
+}
+
+// Guarded: the base must require the status workline/accepted, which a
+// new head lacks until `follow` sets it — in a ruleset, or the branch's
+// protection; pinned to the App (WORKLINE_APP_ID) when it is pinned.
+func (g *github) Guarded(base string) (string, error) {
+	app := strings.TrimSpace(os.Getenv("WORKLINE_APP_ID"))
+	out, err := g.api("repos/{owner}/{repo}/rules/branches/"+url.PathEscape(base), "--jq",
+		`.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[] | {context, app: ((.integration_id // "") | tostring)}`)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return "", err
+	}
+	required, _ := lines[struct {
+		Context string `json:"context"`
+		App     string `json:"app"`
+	}](out)
+	out, err = g.api("repos/{owner}/{repo}/branches/"+url.PathEscape(base), "--jq",
+		`(.protection.required_status_checks.checks // [])[] | {context, app: ((.app_id // "") | tostring)}`)
+	if err == nil {
+		more, _ := lines[struct {
+			Context string `json:"context"`
+			App     string `json:"app"`
+		}](out)
+		required = append(required, more...)
+	}
+	for _, r := range required {
+		if r.Context != Accepted {
+			continue
+		}
+		if app != "" && r.App != "" && r.App != app {
+			return fmt.Sprintf("%s requires %s from another app (%s), not workline's (%s)", base, Accepted, r.App, app), nil
+		}
+		return "", nil
+	}
+	return fmt.Sprintf("%s does not require the status %s: a push after the yes could merge before follow takes the yes back; require it, from the GitHub App, in a ruleset", base, Accepted), nil
 }
 
 // pullQuery asks a pull request's node id and the merge methods its

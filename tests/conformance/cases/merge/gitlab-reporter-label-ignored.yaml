@@ -1,0 +1,27 @@
+case: merge/gitlab-reporter-label-ignored
+about: "On GitLab, a yes takes someone who may push and merge (#321's review): a Reporter, a person of the project for the product owner (ADR-0038), cannot merge; their `workline::accepted` turns nothing on. A Developer's would."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass ../verdict.json"
+  forge:
+    members: [{username: dana, access_level: 30}, {username: rita, access_level: 20}]
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: ["workline::accepted"]
+        label-events: [{label: "workline::accepted", added: true, author: rita, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
+expect:
+  status: pass
+  findings: [{rule: label-ignored, where: "!7", level: warn, message: "by @rita, who may not push nor merge here"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}

@@ -35,6 +35,11 @@ type gitlab struct {
 // (10) or a Minimal Access member (5) is outside, as anyone not a member.
 const planner = 15
 
+// developer is GitLab's access level from which a member may push and
+// merge: a yes the merge policy acts on (ADR-0042), where a Planner's or a
+// Reporter's label is only a person of the project's.
+const developer = 30
+
 // botName matches the users of project and group access tokens:
 // project_<id>_bot_<random>, group_<id>_bot_<random> (GitLab's naming).
 var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
@@ -705,6 +710,7 @@ func (g *gitlab) labelEvents(t Target) ([]LabelEvent, error) {
 			if ev.Insider, err = g.insider(ev.Author); err != nil {
 				return nil, err
 			}
+			ev.Writer = g.members[ev.Author] >= developer
 		}
 		events = append(events, ev)
 	}

@@ -36,6 +36,22 @@ type FakeState struct {
 	// JobToken: the token is a CI job's own, whose merges start no
 	// pipeline, as GitHub's GITHUB_TOKEN (MergeToken, ADR-0042).
 	JobToken bool `json:"job-token,omitempty"`
+	// Unguarded: why a push after a yes could merge before follow takes
+	// it back — a base not requiring workline/accepted (Guarded).
+	Unguarded string `json:"unguarded,omitempty"`
+	// Statuses are the statuses set on commits, as GitHub keeps them: the
+	// commit a revision of the repository, who set it (`workline-bot`, the
+	// token's user, or another).
+	Statuses []FakeStatus `json:"statuses,omitempty"`
+}
+
+// FakeStatus is a status set on a commit.
+type FakeStatus struct {
+	Commit      string `json:"commit"`
+	Name        string `json:"name"`
+	State       string `json:"state,omitempty"`
+	Description string `json:"description,omitempty"`
+	By          string `json:"by"`
 }
 
 // FakeItem is an issue or a merge request.

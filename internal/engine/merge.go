@@ -20,14 +20,8 @@ import (
 // verdict passed, and keeps them up to date with their base, one at a
 // time. The forge merges, checking its own rules; no agent is called.
 
-// verdictNotes keeps each head's verdict, a git note on the commit, as
-// Gerrit keeps its reviews' (refs/notes/review): whatever event wakes
-// `follow` later — a push to the base, a label — it reads there what the
-// line said of a head, with the token it holds already.
-const verdictNotes = "refs/notes/workline/verdicts"
-
 // HeadVerdict is the line's verdict on a merge request's head, written by
-// the judging job (`workline route --verdict`), recorded by the job that
+// the judging job (`workline route --verdict`), kept by the job that
 // writes (`workline follow --verdict`).
 type HeadVerdict struct {
 	Head     string            `json:"head"`
@@ -107,77 +101,65 @@ func (v *HeadVerdict) red() string {
 	return why
 }
 
+// The classes of a head's verdict, as the policy reads it.
+const (
+	verdictPass  = "pass"
+	verdictHeld  = "held"  // a release waiting for its docs
+	verdictShort = "short" // passed, a review short of its agent
+	verdictRed   = "red"
+)
+
+// class is the verdict's class for the policy, and why.
+func (v *HeadVerdict) class() (string, string) {
+	switch {
+	case v.held():
+		return verdictHeld, "the release waits for its docs, fixed in a merge request of their own"
+	case v.Status != verdict.Pass:
+		return verdictRed, v.red()
+	case v.short() != "":
+		return verdictShort, v.short()
+	}
+	return verdictPass, "the line passed, every agent's review whole"
+}
+
 func firstSentence(s string) string {
 	s, _, _ = strings.Cut(s, "\n")
 	return s
 }
 
-// recordVerdict keeps the verdict file's head verdict as a note on its
-// head, pushed to origin; a push that lost the race to another job's is
-// tried again on its notes.
-func recordVerdict(repo, file string, local bool) (verdict.Finding, error) {
+// kept is a head's verdict in hand: its class and why.
+type kept struct{ class, why string }
+
+// keepVerdict keeps the verdict the file holds on its head where only the
+// token `follow` holds writes it (GitHub: the status workline/verdict, by
+// the App; a writer's own status is never read), and has it in hand for
+// this run: the pipeline that judged the head reads it there (GitLab).
+func keepVerdict(m forge.Merger, file string, hand map[string]kept) (verdict.Finding, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return verdict.Finding{}, fmt.Errorf("the verdict to record: %w", err)
+		return verdict.Finding{}, fmt.Errorf("the verdict to keep: %w", err)
 	}
 	var v HeadVerdict
 	if err := json.Unmarshal(data, &v); err != nil || v.Head == "" || v.Status == "" {
-		return verdict.Finding{}, fmt.Errorf("the verdict to record, %s: no head and status in it (%v)", file, err)
+		return verdict.Finding{}, fmt.Errorf("the verdict to keep, %s: no head and status in it (%v)", file, err)
 	}
-	if _, err := git(repo, nil, "cat-file", "-e", v.Head+"^{commit}"); err != nil && !local {
-		if _, err := git(repo, nil, "fetch", "-q", "origin", v.Head); err != nil {
-			return verdict.Finding{}, fmt.Errorf("%w: the head judged, %s: %v", forge.ErrUnreachable, short(v.Head), err)
-		}
+	class, why := v.class()
+	if err := m.KeepVerdict(v.Head, class, why); err != nil {
+		return verdict.Finding{}, err
 	}
-	note, _ := json.Marshal(v)
-	for try := 1; ; try++ {
-		if !local {
-			if err := fetchVerdicts(repo); err != nil {
-				return verdict.Finding{}, err
-			}
-		}
-		if _, err := git(repo, nil, "-c", "user.name=workline", "-c", "user.email=workline@localhost",
-			"notes", "--ref="+verdictNotes, "add", "-f", "-m", string(note), v.Head); err != nil {
-			return verdict.Finding{}, err
-		}
-		if local {
-			break
-		}
-		// The engine's own record, no person's commits: a machine's hooks
-		// have nothing to judge in it.
-		_, err := git(repo, nil, "push", "-q", "--no-verify", "origin", verdictNotes+":"+verdictNotes)
-		if err == nil {
-			break
-		}
-		if try == 3 {
-			return verdict.Finding{}, fmt.Errorf("%w: the verdict's note not pushed: %v", forge.ErrUnreachable, err)
-		}
-	}
-	return verdict.Finding{Rule: "verdict-recorded", Where: short(v.Head),
-		Message: fmt.Sprintf("the line's verdict on %s, %s, kept for the merge policy (%s)", short(v.Head), v.Status, verdictNotes)}, nil
+	hand[v.Head] = kept{class, why}
+	return verdict.Finding{Rule: "verdict-kept", Where: short(v.Head),
+		Message: fmt.Sprintf("the line's verdict on %s: %s, %s", short(v.Head), class, why)}, nil
 }
 
-// fetchVerdicts takes origin's notes of the heads' verdicts, in place of
-// the clone's; none there yet is none.
-func fetchVerdicts(repo string) error {
-	_, err := git(repo, nil, "fetch", "-q", "origin", "+"+verdictNotes+":"+verdictNotes)
-	if err != nil && !strings.Contains(err.Error(), "couldn't find remote ref") {
-		return fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
+// verdictOf is the verdict on head: in hand, else as the forge keeps it;
+// "" none.
+func verdictOf(m forge.Merger, hand map[string]kept, head string) (kept, error) {
+	if k, ok := hand[head]; ok {
+		return k, nil
 	}
-	return nil
-}
-
-// readVerdict is the verdict noted on head, nil when there is none.
-func readVerdict(repo, head string) *HeadVerdict {
-	out, err := git(repo, nil, "notes", "--ref="+verdictNotes, "show", head)
-	if err != nil {
-		return nil
-	}
-	var v HeadVerdict
-	if json.Unmarshal([]byte(out), &v) != nil || v.Status == "" {
-		return nil
-	}
-	return &v
+	class, why, err := m.Verdict(head)
+	return kept{class, why}, err
 }
 
 // accepted says whether a label is a person's yes, `workline:accepted`
@@ -186,9 +168,10 @@ func accepted(label string) bool {
 	return backlog.Accepted(forge.Issue{Labels: []string{label}})
 }
 
-// theYes is the last time the label was put by someone who can write
-// (ADR-0038's who counts), nil when it is not on now by such a hand —
-// put by another, or taken off since —; ignored, who put it then.
+// theYes is the last time the label was put by someone who may push and
+// merge — GitHub's write access, GitLab's Developer —, nil when it is not
+// on now by such a hand — put by another, or taken off since —; ignored,
+// who put it then.
 func theYes(events []forge.LabelEvent) (yes, ignored *forge.LabelEvent) {
 	for i := range events {
 		e := &events[i]
@@ -196,7 +179,7 @@ func theYes(events []forge.LabelEvent) (yes, ignored *forge.LabelEvent) {
 		case !accepted(e.Label):
 		case !e.Added:
 			yes, ignored = nil, nil
-		case e.Insider && !e.Bot && e.Author != "":
+		case e.Writer && !e.Bot && e.Author != "":
 			yes, ignored = e, nil
 		case yes == nil:
 			ignored = e
@@ -243,23 +226,82 @@ func isAncestor(repo, a, b string) bool {
 	return err == nil
 }
 
-// followsOwn says whether a commit is `follow`'s own update: a merge
-// carrying workline's trailer, the base merged in (ADR-0041, ADR-0042).
-func followsOwn(repo, commit string) bool {
-	out, err := git(repo, nil, "log", "-1", "--format=%P%x1f%(trailers:key="+OwnTrailer+",valueonly)", commit)
+// OwnCommit names the role of a commit workline made, "" when it is none.
+// Its trailer is not taken on trust — anyone can write one: a merge is
+// workline's only when its tree is exactly what workline's own merge of
+// its two parents gives (OwnMerge); another commit, only when it changes
+// Markdown alone, what the roles write. Else it is judged as a person's.
+func OwnCommit(repo, commit string) string {
+	out, err := git(repo, nil, "log", "-1", "--format=%P%x1f%(trailers:key="+OwnTrailer+",valueonly,separator=%x2c)", commit)
 	if err != nil {
+		return ""
+	}
+	parents, role, _ := strings.Cut(out, "\x1f")
+	if role = strings.TrimSpace(role); role == "" {
+		return ""
+	}
+	switch len(strings.Fields(parents)) {
+	case 2:
+		if !OwnMerge(repo, commit) {
+			return ""
+		}
+	case 1:
+		files, err := git(repo, nil, "diff-tree", "--no-commit-id", "--name-only", "-r", commit)
+		if err != nil || files == "" {
+			return ""
+		}
+		for _, f := range strings.Split(files, "\n") {
+			if !strings.HasSuffix(strings.ToLower(f), ".md") {
+				return ""
+			}
+		}
+	default:
+		return ""
+	}
+	return role
+}
+
+// OwnMerge says whether a merge commit is one `follow` makes: its second
+// parent merged into its first, workline's own lines settled (ADR-0041),
+// and nothing else — its tree exactly the one that merge gives.
+func OwnMerge(repo, commit string) bool {
+	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", commit)
+	parts := strings.Fields(out)
+	if err != nil || len(parts) != 3 {
 		return false
 	}
-	parents, by, _ := strings.Cut(out, "\x1f")
-	return len(strings.Fields(parents)) == 2 && strings.TrimSpace(by) != ""
+	tree, _, theirs, err := settleTree(repo, parts[1], parts[2], func(string) bool { return true })
+	if err != nil || len(theirs) > 0 {
+		return false
+	}
+	own, err := git(repo, nil, "rev-parse", commit+"^{tree}")
+	return err == nil && own == tree
+}
+
+// ownRebuild says whether tip is covered rebuilt on the base by `follow`
+// (ADR-0034): one commit, its tree exactly the change of covered redone
+// on its parent.
+func ownRebuild(repo, covered, tip string) bool {
+	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", tip)
+	parts := strings.Fields(out)
+	if err != nil || len(parts) != 2 {
+		return false
+	}
+	tree, clashes, err := redo(repo, parts[1], covered)
+	if err != nil || len(clashes) > 0 {
+		return false
+	}
+	own, err := git(repo, nil, "rev-parse", tip+"^{tree}")
+	return err == nil && own == tree
 }
 
 // pushedAfter says what was pushed to a merge request after the yes given
 // at yes, "" nothing but `follow`'s own updates: the yes covers the head
 // it was given on, as approvals reset on a push (ADR-0042). The head it
 // was given on is the last pushed before it, as the forge says; a forge
-// that does not say leaves the commits' own dates, past base.
-func pushedAfter(repo, tipBranch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
+// that does not say leaves the commits' own dates, past base. `follow`'s
+// own update is checked, never taken on its trailer (OwnMerge, ownRebuild).
+func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
 	covered := ""
 	for _, p := range st.Pushes {
 		if !later(p.At, yes) {
@@ -279,13 +321,8 @@ func pushedAfter(repo, tipBranch string, st forge.MergeState, yes, baseTip, tip 
 			git(repo, nil, "fetch", "-q", "origin", covered) // gone from the branch, maybe still on the forge
 		}
 		if !isAncestor(repo, covered, tip) {
-			// A role's own branch rebuilt on the base by `follow`
-			// (ADR-0034): the same change, its commit's message, author
-			// and date kept. Anything else rewritten is a push.
-			if was, err := git(repo, nil, "log", "-1", "--format=%an%x1f%ae%x1f%aI%x1f%B", covered); err == nil && was != "" {
-				if now, _ := git(repo, nil, "log", "-1", "--format=%an%x1f%ae%x1f%aI%x1f%B", tip); now == was && strings.HasPrefix(tipBranch, "workline/") {
-					return "", nil
-				}
+			if strings.HasPrefix(branch, "workline/") && ownRebuild(repo, covered, tip) {
+				return "", nil
 			}
 			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), nil
 		}
@@ -295,7 +332,7 @@ func pushedAfter(repo, tipBranch string, st forge.MergeState, yes, baseTip, tip 
 			return "", err
 		}
 		for _, c := range strings.Fields(out) {
-			if !followsOwn(repo, c) {
+			if !OwnMerge(repo, c) || ownTrailer(repo, c) == "" {
 				return commitSaid(repo, c) + " was pushed", nil
 			}
 		}
@@ -307,11 +344,17 @@ func pushedAfter(repo, tipBranch string, st forge.MergeState, yes, baseTip, tip 
 	}
 	for _, l := range strings.Split(out, "\n") {
 		c, at, ok := strings.Cut(l, "\x1f")
-		if ok && later(at, yes) && !followsOwn(repo, c) {
+		if ok && later(at, yes) && (!OwnMerge(repo, c) || ownTrailer(repo, c) == "") {
 			return commitSaid(repo, c) + " was committed", nil
 		}
 	}
 	return "", nil
+}
+
+// ownTrailer is the role a commit's trailer names, "".
+func ownTrailer(repo, c string) string {
+	by, _ := git(repo, nil, "log", "-1", "--format=%(trailers:key="+OwnTrailer+",valueonly)", c)
+	return strings.TrimSpace(by)
 }
 
 // commitSaid names a commit by its short id and subject.
@@ -320,12 +363,12 @@ func commitSaid(repo, c string) string {
 	return fmt.Sprintf("%s (%q)", short(c), subject)
 }
 
-// releaseFix says whether a branch is a role's fix for a release, opened
-// apart from the release tool's pull request (ADR-0017): first in line,
-// before the release (ADR-0042).
-func releaseFix(branch string) bool {
-	role, task, ok := strings.Cut(strings.TrimPrefix(branch, "workline/"), "/")
-	return strings.HasPrefix(branch, "workline/") && ok && role != "" && task == "release"
+// releaseFix says whether a merge request is a role's fix for a release,
+// opened apart from the release tool's (ADR-0017), from this repository:
+// first in line, before the release (ADR-0042).
+func releaseFix(mr forge.MergeRequest) bool {
+	role, task, ok := strings.Cut(strings.TrimPrefix(mr.Branch, "workline/"), "/")
+	return mr.Here && strings.HasPrefix(mr.Branch, "workline/") && ok && role != "" && task == "release"
 }
 
 // inLine is a merge request the merge policy keeps up to date.
@@ -335,11 +378,12 @@ type inLine struct {
 	at     string // when the yes was given: the label put, or auto-merge turned on by a person
 	first  bool   // the release's own fix: before the rest
 	behind bool
+	ready  bool // accepted, its verdict passed, auto-merge on: it merges once its checks pass
 }
 
 // mergePolicy runs the project's merge policy on the merge requests into
 // o.Base, says what it did of each, and sums it up for the run's summary.
-func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (string, error) {
+func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand map[string]kept) (string, error) {
 	sum := "merge policy (" + o.Merge + ")"
 	m, ok := f.(forge.Merger)
 	if !ok || local {
@@ -351,6 +395,21 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (strin
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-token", Level: "warn",
 			Message: why + ": nothing turned on, no merge request brought up to date"})
 		return sum + ": nothing turned on, the token's merges would start no pipeline", nil
+	}
+	// A yes covers the head it was given on: the forge must hold it there
+	// (GitHub: a required status a new head lacks), not a race with the
+	// next run.
+	why, err := m.Guarded(o.Base)
+	switch {
+	case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+		return "", err
+	case err != nil:
+		why = "whether a push after a yes is held could not be read: " + forge.Said(err)
+	}
+	if why != "" {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unguarded", Level: "warn",
+			Message: why + ": nothing turned on, no merge request brought up to date"})
+		return sum + ": nothing turned on, a push after a yes would not be held", nil
 	}
 	// The label in the forge's list, for a person to put, in bulk, from a
 	// saved filter (ADR-0038).
@@ -368,14 +427,9 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (strin
 	if err != nil {
 		return "", err
 	}
-	if !local {
-		if err := fetchVerdicts(o.Repo); err != nil {
-			return "", err
-		}
-	}
 	fix := ""
 	for _, mr := range open {
-		if mr.Base == o.Base && releaseFix(mr.Branch) {
+		if mr.Base == o.Base && releaseFix(mr) {
 			fix = forge.MergeRef(f, mr.ID)
 		}
 	}
@@ -386,7 +440,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (strin
 			continue
 		}
 		before := len(res.Findings)
-		e, err := weigh(f, m, o, local, mr, fix, res)
+		e, err := weigh(f, m, o, local, mr, fix, res, hand)
 		if err != nil {
 			return "", err
 		}
@@ -422,12 +476,15 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (strin
 	if n := acts["merged-at-once"]; n > 0 {
 		sum += fmt.Sprintf("; %d merged at once", n)
 	}
+	// One at a time: the first ready and up to date merges, the rest wait;
+	// one not ready yet — its verdict to come — never holds the line.
 	for _, e := range line {
-		if !e.behind {
-			sum += fmt.Sprintf("; first in line %s, up to date: it waits for its checks", e.where)
-			return sum, nil
-		}
-		if !e.mr.Here {
+		switch {
+		case !e.behind && e.ready:
+			return sum + fmt.Sprintf("; first in line %s, up to date: it merges once its checks pass", e.where), nil
+		case !e.behind:
+			continue // said by weigh: up to date, its verdict to come
+		case !e.mr.Here:
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "fork-behind", Level: "warn", Where: e.where,
 				Message: fmt.Sprintf("behind %s, from a fork: never brought up to date, workline may not write to a fork; its author updates it", o.Base)})
 			continue
@@ -446,19 +503,20 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (strin
 }
 
 // weigh reads one merge request into the base, accepted or its auto-merge
-// on, does what the policy says of it — auto-merge on or off, a yes taken
-// back — and says it; it returns it when it is in line.
-func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, fix string, res *Result) (*inLine, error) {
+// on, does what the policy says of it — auto-merge on or off, the yes held
+// on its head (Accept) or taken back — and says it; it returns it when it
+// is in line.
+func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, fix string, res *Result, hand map[string]kept) (*inLine, error) {
 	where := forge.MergeRef(f, mr.ID)
 	say := func(rule, level, msg string) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: level, Where: where, Message: msg})
 	}
 	st, err := m.MergeState(mr)
 	if err != nil {
-		if errors.Is(err, forge.ErrUnreachable) {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 			return nil, err
 		}
-		say("merge-state-unread", "warn", "its state could not be read, left as it is: "+err.Error())
+		say("merge-state-unread", "warn", "its state could not be read, left as it is: "+forge.Said(err))
 		return nil, nil
 	}
 	baseTip, tip, err := headTips(o.Repo, o.Base, mr, local)
@@ -471,7 +529,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	case tip == "":
 		return nil, nil // its branch is gone
 	}
-	e := &inLine{mr: mr, where: where, first: releaseFix(mr.Branch), behind: !isAncestor(o.Repo, baseTip, tip)}
+	e := &inLine{mr: mr, where: where, first: releaseFix(mr), behind: !isAncestor(o.Repo, baseTip, tip)}
 	off := func() error {
 		if !st.AutoMerge {
 			return nil
@@ -479,31 +537,38 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		_, err := m.AutoMerge(mr, tip, false)
 		return err
 	}
-	if !slices.ContainsFunc(mr.Labels, accepted) {
-		// Auto-merge on, no yes. Turned on while the label was on, the
+	// takeBack turns auto-merge off and marks the head not accepted.
+	takeBack := func(why string) error {
+		if err := off(); err != nil {
+			return err
+		}
+		return m.Accept(tip, false, why)
+	}
+	labelled := slices.ContainsFunc(mr.Labels, accepted)
+	yes, ignored := theYes(st.Labels)
+	switch {
+	case !labelled:
+		// Auto-merge on, no label. Turned on while the label was on, the
 		// label taken off since: it goes off, the veto by the label. By a
-		// person: it joins the line. By another bot (a dependency bot's
-		// own auto-merge): left to it.
+		// person: their own yes, weighed as the label's. By another bot (a
+		// dependency bot's own auto-merge): left to it.
 		if taken := takenOff(st.Labels); taken != "" && st.AutoMergeAt != "" && !later(st.AutoMergeAt, taken) {
-			if err := off(); err != nil {
+			if err := takeBack("the label was taken off"); err != nil {
 				return nil, err
 			}
 			say("auto-merge-off", "", "the label `workline:accepted` was taken off since auto-merge was turned on: auto-merge turned off")
 			return nil, nil
 		}
-		if st.AutoMergeBot || st.Draft {
+		if st.AutoMergeBot || st.AutoMergeBy == "" {
 			return nil, nil
 		}
-		e.at = st.AutoMergeAt
-		return e, nil
-	}
-	yes, ignored := theYes(st.Labels)
-	if yes == nil {
+		yes = &forge.LabelEvent{Writer: true, Note: forge.Note{Author: st.AutoMergeBy, Created: st.AutoMergeAt}}
+	case yes == nil:
 		who := "a hand the forge does not name"
 		if ignored != nil && ignored.Author != "" {
 			who = "@" + ignored.Author
 		}
-		say("label-ignored", "warn", fmt.Sprintf("labelled `workline:accepted` by %s, who cannot write to the repository: no yes, nothing turned on", who))
+		say("label-ignored", "warn", fmt.Sprintf("labelled `workline:accepted` by %s, who may not push nor merge here: no yes, nothing turned on", who))
 		return nil, nil
 	}
 	by := "@" + yes.Author
@@ -511,7 +576,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		// The veto by Draft: auto-merge on goes off, and stays off once
 		// it is ready until the label is put again.
 		if st.AutoMerge {
-			if err := off(); err != nil {
+			if err := takeBack("marked a draft"); err != nil {
 				return nil, err
 			}
 			say("draft", "", fmt.Sprintf("accepted by %s, then marked a draft: auto-merge turned off, until the label is put again", by))
@@ -525,7 +590,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, err
 	}
 	if pushed != "" {
-		if err := off(); err != nil {
+		if err := takeBack(pushed + " after the yes: put the label again"); err != nil {
 			return nil, err
 		}
 		var labels []string
@@ -535,53 +600,85 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 			}
 		}
 		t := forge.Target{Kind: "merge-request", ID: mr.ID}
-		if err := f.Label(t, nil, labels); err != nil {
-			return nil, err
+		if len(labels) > 0 {
+			if err := f.Label(t, nil, labels); err != nil {
+				return nil, err
+			}
 		}
-		body := fmt.Sprintf("**workline took `%s` off**: %s after %s accepted this merge request, on %s. A yes covers the head it was given on, so its auto-merge is off. Put the label again to accept the head as it is now (%s).",
-			strings.Join(labels, "`, `"), pushed, by, yes.Created, short(tip))
+		took, again := "`"+strings.Join(labels, "`, `")+"`", "Put the label again"
+		if len(labels) == 0 { // the person's own auto-merge, their yes
+			took, again = "auto-merge", "Turn auto-merge on again"
+		}
+		body := fmt.Sprintf("**workline took %s off**: %s after %s accepted this merge request, on %s. A yes covers the head it was given on, so its auto-merge is off. %s to accept the head as it is now (%s).",
+			took, pushed, by, yes.Created, again, short(tip))
 		if err := f.Comment(t, body, forge.Marker("merge-reset="+tip)); err != nil {
 			return nil, err
 		}
-		say("accepted-reset", "warn", fmt.Sprintf("%s after %s accepted it: label and auto-merge taken off, said in a comment", pushed, by))
+		say("accepted-reset", "warn", fmt.Sprintf("%s after %s accepted it: the yes and auto-merge taken off, said in a comment", pushed, by))
 		return nil, nil
 	}
 	if !st.AutoMerge && st.AutoMergeAt != "" && later(st.AutoMergeAt, yes.Created) {
+		if err := m.Accept(tip, false, "auto-merge turned off since: put the label again"); err != nil {
+			return nil, err
+		}
 		say("vetoed", "", fmt.Sprintf("auto-merge was turned on after %s's yes, and off since: left off until the label is put again", by))
 		return nil, nil
 	}
 	e.at = yes.Created
-	v := readVerdict(o.Repo, tip)
-	switch {
-	case v == nil:
-		if !st.AutoMerge {
-			say("verdict-missing", "", fmt.Sprintf("accepted by %s; no verdict of the line on its head (%s) yet: auto-merge waits for it", by, short(tip)))
-		}
-		return e, nil
-	case v.held() && fix != "":
-		say("waits-for-docs", "", fmt.Sprintf("accepted by %s; the release waits for its docs, %s, to merge first", by, fix))
+	if st.ChecksUnread != "" {
+		say("checks-unread", "warn", "its head's checks could not be read, only the line's verdict counts: "+st.ChecksUnread)
+	}
+	if st.Checks == "failure" {
+		say("checks-red", "warn", fmt.Sprintf("accepted by %s, but a check failed on its head (%s): out of line, the next one comes up", by, short(tip)))
 		return nil, nil
-	case v.held() && e.behind:
-		return e, nil // its docs merged since: brought up to date, judged again
-	case v.Status != verdict.Pass || v.short() != "":
-		rule, why, then := "verdict-red", v.red(), "auto-merge stays off"
-		if v.Status == verdict.Pass {
-			rule, why = "review-short", v.short()
+	}
+	v, err := verdictOf(m, hand, tip)
+	if err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return nil, err
 		}
-		if st.AutoMerge && st.AutoMergeBot && !later(yes.Created, st.AutoMergeAt) {
-			// On since the yes, by workline's token: the yes no longer
-			// holds for this head.
+		say("verdict-unread", "warn", fmt.Sprintf("accepted by %s; its head's verdict could not be read: %s", by, forge.Said(err)))
+		return nil, nil
+	}
+	ours := st.AutoMerge && st.AutoMergeBot && !later(yes.Created, st.AutoMergeAt)
+	switch v.class {
+	case "":
+		say("verdict-missing", "", fmt.Sprintf("accepted by %s; no verdict of the line on its head (%s) yet: it waits for it, the next one comes up meanwhile", by, short(tip)))
+		return e, nil
+	case verdictHeld:
+		if fix != "" {
+			say("waits-for-docs", "", fmt.Sprintf("accepted by %s; the release waits for its docs, %s, to merge first", by, fix))
+			return nil, nil
+		}
+		if e.behind {
+			return e, nil // its docs merged since: brought up to date, judged again
+		}
+		say("verdict-red", "warn", fmt.Sprintf("accepted by %s, but held for docs merged since: judged again at its next push", by))
+		return nil, nil
+	case verdictRed, verdictShort:
+		rule := map[string]string{verdictRed: "verdict-red", verdictShort: "review-short"}[v.class]
+		then := "auto-merge stays off"
+		switch {
+		case ours:
 			if err := off(); err != nil {
 				return nil, err
 			}
 			then = "auto-merge turned off"
+		case st.AutoMerge:
+			then = by + "'s auto-merge left on, held by the yes not given"
 		}
-		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s, out of line", by, why, then))
+		if err := m.Accept(tip, false, v.why); err != nil {
+			return nil, err
+		}
+		say(rule, "warn", fmt.Sprintf("accepted by %s, but %s; %s, out of line", by, v.why, then))
 		return nil, nil
-	case st.Checks == "failure":
-		say("checks-red", "warn", fmt.Sprintf("accepted by %s, but a check failed on its head (%s): out of line", by, short(tip)))
-		return nil, nil
-	case st.AutoMerge:
+	}
+	// Its verdict passed: the yes held on this head, then auto-merge on.
+	if err := m.Accept(tip, true, "accepted by "+by+", its head's verdict passed"); err != nil {
+		return nil, err
+	}
+	if st.AutoMerge {
+		e.ready = true
 		return e, nil
 	}
 	merged, err := m.AutoMerge(mr, tip, true)
@@ -596,6 +693,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		return nil, nil
 	}
 	say("auto-merge-on", "", fmt.Sprintf("accepted by %s, its head's verdict passed: auto-merge turned on, the forge merges it once its checks pass", by))
+	e.ready = true
 	return e, nil
 }
 

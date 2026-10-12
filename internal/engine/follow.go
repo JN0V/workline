@@ -39,7 +39,7 @@ import (
 // on for each merge request a person accepted, its head's verdict passed,
 // and brings the first in line up to date with base, one at a time
 // (ADR-0042; merge.go). Verdict, a head's verdict the line wrote, is kept
-// first, for this run and the next.
+// first, in hand for this run and, where the forge keeps it, for the next.
 func Follow(o FollowOptions) *Result {
 	repo, forgeSpec, base, gardening := o.Repo, o.Forge, o.Base, o.Gardening
 	res := &Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
@@ -64,16 +64,25 @@ func Follow(o FollowOptions) *Result {
 		}
 	}
 	local := forge.KeepsBranches(f)
+	hand := map[string]kept{}
+	m, merges := f.(forge.Merger)
 	switch {
-	case o.Verdict != "" && o.Merge != "":
-		finding, err := recordVerdict(repo, o.Verdict, local)
+	case o.Verdict != "" && o.Merge != "" && merges && !local:
+		finding, err := keepVerdict(m, o.Verdict, hand)
 		if err != nil {
 			return fail(err)
 		}
 		res.Findings = append(res.Findings, finding)
+	case o.Verdict != "" && o.Merge != "":
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-not-kept", Level: "warn",
+			Message: "this forge has no auto-merge workline can turn on: the line's verdict is not kept"})
 	case o.Verdict != "":
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-not-kept",
 			Message: "the project sets no merge policy (`merge:`): the line's verdict is not kept"})
+	}
+	if o.VerdictOnly {
+		res.Summary = "the line's verdict kept, nothing else followed"
+		return res
 	}
 	open, err := f.OpenMergeRequests("workline/")
 	if err != nil {
@@ -121,7 +130,7 @@ func Follow(o FollowOptions) *Result {
 		res.Summary += "; " + sum
 	}
 	if o.Merge != "" {
-		sum, err := mergePolicy(f, o, local, res)
+		sum, err := mergePolicy(f, o, local, res, hand)
 		if err != nil {
 			return fail(err)
 		}

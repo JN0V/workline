@@ -123,3 +123,20 @@ func (g *gitlab) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) 
 	}
 	return v.State == "merged", nil
 }
+
+// Guarded: GitLab merges a merge request set to merge once the pipeline
+// of its head succeeds, and a push starts a new one, holding the
+// template's workline:merge, which takes a yes back before that pipeline
+// can succeed (ci/gitlab/workline.gitlab-ci.yml).
+func (g *gitlab) Guarded(base string) (string, error) { return "", nil }
+
+// Accept: nothing to mark on GitLab, which holds a yes as Guarded says.
+func (g *gitlab) Accept(head string, ok bool, why string) error { return nil }
+
+// KeepVerdict keeps nothing on GitLab: the verdict is in hand in the
+// pipeline that judged the head, where workline:merge reads it; a status
+// set from elsewhere could make a pipeline of its own the merge request's.
+func (g *gitlab) KeepVerdict(head, class, why string) error { return nil }
+
+// Verdict: none kept on GitLab.
+func (g *gitlab) Verdict(head string) (string, string, error) { return "", "", nil }

@@ -1,20 +1,22 @@
 case: merge/push-after-the-yes-takes-it-back
-about: "A push after my yes (#321): the label covers the head it was put on, as approvals reset on a push. An agent pushed to the accepted pull request after the label — the forge says when each head was pushed —, so `workline follow` turns auto-merge off, takes the label off and says why in one comment; nothing is brought up to date (ADR-0042)."
+about: "A push after my yes (#321): the label covers the head it was put on, as approvals reset on a push. The yes is held on the head it was given on — the status `workline/accepted`, which a new head lacks and the base requires —, so the forge cannot merge the pushed head before `follow` runs. An agent pushed after the label — the forge says when each head was pushed —, so `workline follow` marks the new head not accepted, turns auto-merge off, takes the label off and says why in one comment (ADR-0042)."
 given:
   repo: documented
   config: {merge: {autonomy: cautious}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && echo more > more.txt && git add more.txt && git commit -qm 'feat(auth): one more thing' && git push -q origin feat/sessions && git checkout -q main"
-    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass"
   forge:
+    statuses:
+      - {commit: "feat/sessions~1", name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
       - id: 7
         branch: feat/sessions
         base: main
         author: dana
         labels: [workline:accepted]
-        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:00:00Z"}]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         pushes: [{head: "feat/sessions~1", at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
         auto-merge: true
         auto-merge-at: "2026-01-04T10:01:00Z"
@@ -23,7 +25,7 @@ given:
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
-  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "\"feat(auth): one more thing\") was pushed after @dana accepted it: label and auto-merge taken off"}]
+  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "\"feat(auth): one more thing\") was pushed after @dana accepted it: the yes and auto-merge taken off"}]
   no-findings: [{rule: auto-merge-on}]
   forge:
     merge-requests:
@@ -32,3 +34,6 @@ expect:
         labels: []
         comments: 1
         comment-contains: ["workline took `workline:accepted` off", "was pushed after @dana accepted this merge request", "Put the label again"]
+    statuses:
+      - {commit: "feat/sessions~1", name: workline/accepted, state: success, by: workline-bot}
+      - {commit: feat/sessions, name: workline/accepted, state: failure, by: workline-bot, description: "after the yes: put the label again"}

@@ -47,6 +47,50 @@ type Merger interface {
 	// already (GitHub turns no auto-merge on for a pull request it could
 	// merge now). Turning off one already off changes nothing.
 	AutoMerge(mr MergeRequest, head string, on bool) (merged bool, err error)
+	// Guarded says why a push after a person's yes could merge before
+	// `follow` takes the yes back; "" when the forge holds it: GitHub when
+	// the base requires the status Accepted, which a new head lacks;
+	// GitLab, whose merge waits for the head's pipeline, `follow` in it.
+	Guarded(base string) (string, error)
+	// Accept marks a head accepted, or not, where the forge needs it to
+	// hold a yes to that head only (GitHub: the status Accepted, by this
+	// token); nothing where it does not.
+	Accept(head string, ok bool, why string) error
+	// KeepVerdict keeps the line's verdict on a head — its class, pass,
+	// held, short or red, and why — where only this token writes it
+	// (GitHub: the status VerdictStatus); Verdict reads it back, "" when
+	// none is kept, or the forge keeps none (GitLab: the verdict is in hand
+	// in the pipeline that judged the head).
+	KeepVerdict(head, class, why string) error
+	Verdict(head string) (class, why string, err error)
+}
+
+// The statuses workline sets on a head on GitHub, by its App's token: the
+// line's verdict, and the yes the merge policy holds (ADR-0042).
+const (
+	VerdictStatus = "workline/verdict"
+	Accepted      = "workline/accepted"
+)
+
+// statusText is a status's description: GitHub keeps 140 characters.
+func statusText(s string) string {
+	if r := []rune(s); len(r) > 140 {
+		return string(r[:139]) + "…"
+	}
+	return s
+}
+
+// verdictText is a verdict kept in a status's description, "class: why";
+// readVerdict reads it back.
+func verdictText(class, why string) string { return statusText(class + ": " + why) }
+
+func readVerdict(text string) (class, why string) {
+	class, why, _ = strings.Cut(text, ": ")
+	switch class {
+	case "pass", "held", "short", "red":
+		return class, why
+	}
+	return "", ""
 }
 
 // Refused says whether err is the forge refusing a request — a token that

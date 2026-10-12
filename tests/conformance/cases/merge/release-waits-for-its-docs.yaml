@@ -6,15 +6,16 @@ given:
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
-    - "sh \"$FIXTURES/verdict.sh\" release-please--branches--main block '[{\"rule\": \"fixed-elsewhere\", \"level\": \"block\", \"where\": \"docs/tech/auth.md\", \"message\": \"fixed in merge request #11\"}]'"
     - "git checkout -qb workline/documentalist/release && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: what the release waits for' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
-    - "sh \"$FIXTURES/verdict.sh\" workline/documentalist/release pass"
   forge:
+    statuses:
+      - {commit: "release-please--branches--main", name: workline/verdict, state: pending, description: "held: the release waits for its docs, fixed in a merge request of their own", by: workline-bot}
+      - {commit: "workline/documentalist/release", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
       - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
-         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:00:00Z"}]}
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
       - {id: 11, branch: workline/documentalist/release, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
-         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:05:00Z"}]}
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:05:00Z"}]}
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass

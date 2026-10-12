@@ -6,8 +6,9 @@ given:
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
     - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
-    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass"
   forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
       - id: 7
         branch: feat/sessions
@@ -15,7 +16,7 @@ given:
         author: dana
         draft: true
         labels: [workline:accepted]
-        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:00:00Z"}]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
         auto-merge: true
         auto-merge-by: workline-bot
         auto-merge-at: "2026-01-04T10:01:00Z"

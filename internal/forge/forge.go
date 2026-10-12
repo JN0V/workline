@@ -78,6 +78,10 @@ type Note struct {
 type LabelEvent struct {
 	Label string `json:"label"`
 	Added bool   `json:"added,omitempty"` // set; false: taken off
+	// Writer: who did it may push and merge — GitHub's write, maintain or
+	// admin; GitLab's Developer or above —, the merge policy's yes
+	// (ADR-0042); Insider, a person of the project, is wider on GitLab.
+	Writer bool `json:"writer,omitempty"`
 	Note
 }
 
