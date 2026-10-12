@@ -1,7 +1,7 @@
 # ADR-0013: What was judged is not asked again before something changes
 
 - **Status:** accepted; amended 2026-10-02 (a task proposed earlier in the
-  run waits too)
+  run waits too); amended 2026-10-12 (a doc's `judged` says what was read)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -85,3 +85,33 @@ the engine already does on a machine that applies (the merge request opened,
 the next round sees it waiting); the change makes the CI run, which applies
 in another job, do the same. Its cost is a second task a night, within the
 caps above.
+
+## Amendment (2026-10-12)
+
+About a doc's `judged` header only; the product owner's own `judged`, on
+an issue, is unchanged.
+
+DomoticsCore's gardening judged a doc whose sources were too large to go
+whole ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)): the agent
+read only what changed in them, found nothing wrong there, and the run said
+"nothing found wrong, `judged` recorded" of the doc
+([#120](https://github.com/JN0V/workline/issues/120)). Five claims outside
+every diff were false. `judged` keeps such a doc from an agent until a
+source changes, and then only the new diff is read: those claims are never
+read against the code, while the finding and the pull request read as all
+clear.
+
+- **`judged` records when, not what was read.** "Judged whole" above means
+  judged as one doc, not in parts; it does not mean every source was read.
+- **A doc not given every source whole says what was read.** Its finding,
+  the run's summary and the gardening merge request name what the task
+  gave — what changed in a source since `checked`, the doc it follows — and
+  mark the rest "not read". "Nothing found wrong" is said of what was read
+  ("nothing found wrong in what was read"), never of the rest. `pre`
+  records it in `in/read-not-whole.yaml`, beside `in/read-whole.yaml`.
+
+Not chosen, for now: the agent reading the doc's claims against the code
+as it is now, not only the diff, before saying nothing is wrong. It would
+vouch for more, but would cost a read of each such doc against its sources
+every night one changes. Left as a follow-up; the doc still waits for a
+person, as before.
