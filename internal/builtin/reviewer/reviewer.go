@@ -8,9 +8,11 @@ package reviewer
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"slices"
@@ -101,7 +103,8 @@ type Quote struct {
 // lenses and the judge answered.
 type state struct {
 	Head       string            `json:"head"`
-	From       string            `json:"from"` // where the commits not reviewed yet start
+	From       string            `json:"from"`             // where the commits not reviewed yet start
+	Before     string            `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
 	Base       string            `json:"base"`
 	Change     Change            `json:"change"` // the whole range's
 	Mechanical []verdict.Finding `json:"mechanical"`
@@ -239,9 +242,14 @@ func prepare(runDir, repo string, s Settings) int {
 		return held(runDir, s, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
 	}
 	// A lens reads what the commits not reviewed yet change, not every file
-	// of the merge request; when they change no code, nobody is asked.
+	// of the merge request, nor the base's code they merged in; when they
+	// change no code, nobody is asked.
 	if start != base {
-		if files, err = codeFiles(repo, s, start, head); err != nil {
+		if st.Before, err = mergedIn(repo, base, start); err != nil {
+			st.Advisories = append(st.Advisories, verdict.Finding{Rule: "base-not-set-apart", Level: "warn",
+				Message: "the base's code the new commits merged in could not be set apart (" + err.Error() + "): the lens is given it too"})
+		}
+		if files, err = codeFiles(repo, s, st.lensFrom(), head); err != nil {
 			return fail(err)
 		}
 		if len(files) == 0 {
@@ -325,11 +333,48 @@ func codeFiles(repo string, s Settings, from, head string) ([]string, error) {
 	return code(s, names), nil
 }
 
+// mergedIn is where a lens's diff starts when the commits after from, the
+// newest reviewed, merged the base in (#134): from with the base merged in
+// by git's own merge, in memory (`git merge-tree --write-tree`, git 2.38),
+// a conflict's markers left in it. Diffed against the head, it shows the
+// branch's own commits and how it settled a conflict, both sides of one it
+// settled wrong, and not the base's code, reviewed there: for a lone merge,
+// what `git show --remerge-diff` shows. A tree, it is read as a commit is:
+// one diff, each file whole with the change marked, whatever commits came
+// with the merge. "" when the base is in from already: from is where.
+func mergedIn(repo, base, from string) (string, error) {
+	if _, err := git(repo, "merge-base", "--is-ancestor", base, from); err == nil {
+		return "", nil
+	}
+	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "--no-messages", from, base)
+	var errOut strings.Builder
+	cmd.Stderr = &errOut
+	out, err := cmd.Output()
+	var exit *exec.ExitError
+	if err != nil && (!errors.As(err, &exit) || exit.ExitCode() != 1) { // 1: a conflict, its markers in the tree
+		return "", fmt.Errorf("git merge-tree: %v: %s", err, strings.TrimSpace(errOut.String()))
+	}
+	tree, _, _ := strings.Cut(string(out), "\n")
+	return strings.TrimSpace(tree), nil
+}
+
+// lensFrom is where the diff a lens reads starts.
+func (st state) lensFrom() string {
+	if st.Before != "" {
+		return st.Before
+	}
+	return st.From
+}
+
 // recordOnly settles a run whose new commits change no code: nobody asked,
 // the commits recorded as reviewed, and the turn of the lenses left where
 // it was, for the next push that changes code.
 func recordOnly(runDir string, s Settings, st state) int {
-	v := review(st, nil, fmt.Sprintf("no code changed since the last review (only files the reviewer leaves, by its `ignore`): nobody asked, the %d new commits recorded", slices.Index(st.Commits, st.From)))
+	why := "only files the reviewer leaves, by its `ignore`"
+	if st.Before != "" {
+		why = "only the base's code, merged in and reviewed there, or files the reviewer leaves"
+	}
+	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded", why, slices.Index(st.Commits, st.From)))
 	v.Complete = true
 	v.Record = st.Record.add(st.Commits, st.Patches)
 	v.Record.Runs = st.Record.Runs
@@ -433,7 +478,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 	var hunked []string
 	left := s.CodeLinesMax
 	for _, f := range files {
-		body, ok := marked(repo, st.From, st.Head, f)
+		body, ok := marked(repo, st.lensFrom(), st.Head, f)
 		n := strings.Count(body, "\n")
 		if !ok || n > left {
 			hunked = append(hunked, f)
@@ -445,7 +490,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 	diff := "(none: every file it changes is given whole below)\n"
 	if len(hunked) > 0 {
 		var err error
-		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, hunked...)...); err != nil {
+		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.lensFrom(), st.Head, "--"}, hunked...)...); err != nil {
 			return err
 		}
 		diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
@@ -523,7 +568,7 @@ func aloneTask(repo string, s Settings, st state, files []string) (string, error
 	if err != nil {
 		return "", err
 	}
-	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, files...)...)
+	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", st.lensFrom(), st.Head, "--"}, files...)...)
 	if err != nil {
 		return "", err
 	}

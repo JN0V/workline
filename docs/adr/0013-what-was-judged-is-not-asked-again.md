@@ -1,7 +1,8 @@
 # ADR-0013: What was judged is not asked again before something changes
 
 - **Status:** accepted; amended 2026-10-02 (a task proposed earlier in the
-  run waits too); amended 2026-10-12 (the reviewer knows a change rebased)
+  run waits too); amended 2026-10-12 (the reviewer knows a change rebased,
+  and what a merge of the base settled)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -110,3 +111,33 @@ tokens in, no code changed
 - **Said when git cannot**: git before 2.39 gives no `--verbatim` patch id;
   the run warns (`patch-ids-unread`) and a rebased commit is reviewed
   again, as before.
+
+A merge of the base had the same flaw
+([#134](https://github.com/JN0V/workline/issues/134)): the lens was given
+`git diff <newest reviewed> <head>`, which holds the code the merge brought
+from `main`, reviewed there (roles/reviewer/docs/tried.md, workline's pull
+request [#132](https://github.com/JN0V/workline/pull/132)).
+
+- **A merge's own change is what it settled.** When the commits after the
+  newest reviewed merged the base in, a lens's diff starts from that
+  commit with the base merged in by git, in memory (`git merge-tree
+  --write-tree`): the tree a merge settling nothing by hand would have
+  made, a conflict's markers left in it. Diffed against the head, it shows
+  the branch's own commits and how a conflict was settled, both sides of
+  one settled wrong; none of the base's code. Nothing left: no lens is
+  asked, the merge recorded. The base's commit messages are not given as
+  the author's either.
+- **Chosen over `git show --remerge-diff`**, which shows the same for one
+  merge commit: a push often holds commits besides the merge, and a lens
+  reads one diff from where the review stopped, each file whole with the
+  change marked. A tree to start from serves all three, as a commit does.
+- **Said when git cannot**: before git 2.38, no merge in memory; the run
+  warns (`base-not-set-apart`) and the lens is given the base's code too,
+  as before.
+
+Measured on copies of workline, with a fake agent
+(roles/reviewer/docs/tried.md, 2026-10-12): the three commits up to
+[#304](https://github.com/JN0V/workline/pull/304) rebased,
+74k bytes put to a lens before, nothing after; `main` merged in with no
+conflict, 74k before, nothing after; a conflict settled wrong, 73k
+before, 5.7k after, the line dropped shown.

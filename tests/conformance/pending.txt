@@ -1,4 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/merge-of-main-asks-no-lens
-reviewer/merge-resolution-alone-given-to-the-lens
