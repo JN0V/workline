@@ -418,6 +418,23 @@ func (l *Local) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
+func (l *Local) CloseMergeRequest(branch, body, marker string) error {
+	items, err := l.Items("merge-request")
+	if err != nil {
+		return err
+	}
+	for _, it := range items {
+		if it.Branch == branch && l.StateOf(it) == "open" {
+			t := Target{Kind: "merge-request", ID: it.ID}
+			if err := l.Comment(t, body, marker); err != nil {
+				return err
+			}
+			return l.change(t, func(it *LocalItem) { it.State = "closed" })
+		}
+	}
+	return nil
+}
+
 func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	it, err := l.Item("merge-request", id)
 	if err != nil {

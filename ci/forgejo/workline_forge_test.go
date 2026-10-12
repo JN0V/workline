@@ -63,6 +63,18 @@ func (m *mock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			fmt.Fprint(w, `[]`)
 		}
+	case r.Method == "GET" && r.URL.Path == repo+"/pulls" && r.URL.Query().Get("state") == "open":
+		if r.URL.Query().Get("page") == "1" {
+			fmt.Fprint(w, `[{"number": 6, "head": {"ref": "workline/documentalist/suspect"}}, {"number": 7, "head": {"ref": "feat/other"}}]`)
+		} else {
+			fmt.Fprint(w, `[]`)
+		}
+	case r.Method == "GET" && r.URL.Path == repo+"/issues/6/comments":
+		fmt.Fprint(w, `[]`)
+	case r.Method == "POST" && r.URL.Path == repo+"/issues/6/comments":
+		fmt.Fprint(w, `{"id": 60}`)
+	case r.Method == "PATCH" && r.URL.Path == repo+"/pulls/6":
+		fmt.Fprint(w, `{"number": 6, "state": "closed"}`)
 	case strings.HasPrefix(r.URL.Path, repo+"/collaborators/") && m.refuse:
 		http.Error(w, `{"message": "Only admins can query all permissions"}`, http.StatusForbidden)
 	case r.Method == "GET" && r.URL.Path == repo+"/collaborators/dev/permission":
@@ -167,6 +179,28 @@ func TestLabelsWithSpaces(t *testing.T) {
 	}
 	if slices.Contains(m.calls, `DELETE /api/v1/repos/owner/name/issues/3/labels/6`) {
 		t.Errorf("a label named by a part of another's name was removed; calls: %q", m.calls)
+	}
+}
+
+// close-merge-request closes the pull request open from the branch, after
+// one comment saying why; another pull request is left alone.
+func TestCloseMergeRequest(t *testing.T) {
+	m := &mock{}
+	out := run(t, m, "close-merge-request", map[string]any{"branch": "workline/documentalist/suspect",
+		"body": "Closed by workline's documentalist: main holds its change already.", "marker": "<!-- workline:closed -->"})
+	if out != "{}" {
+		t.Errorf("answer = %q, want {}", out)
+	}
+	for _, want := range []string{
+		`POST /api/v1/repos/owner/name/issues/6/comments {"body":"Closed by workline's documentalist: main holds its change already.\n\n<!-- workline:closed -->"}`,
+		`PATCH /api/v1/repos/owner/name/pulls/6 {"state": "closed"}`,
+	} {
+		if !slices.Contains(m.calls, want) {
+			t.Errorf("no call %q; calls: %q", want, m.calls)
+		}
+	}
+	if slices.ContainsFunc(m.calls, func(c string) bool { return strings.Contains(c, "/pulls/7") }) {
+		t.Errorf("another pull request was touched; calls: %q", m.calls)
 	}
 }
 

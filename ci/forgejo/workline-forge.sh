@@ -175,6 +175,17 @@ open-merge-request)
 open-merge-requests)
 	all "/pulls?state=open" | jq -c --arg p "$(arg .prefix)" '{branches: [.[].head.ref | select(startswith($p))] | sort}'
 	;;
+close-merge-request)
+	# Its comment once, by its marker, then closed; the branch stays.
+	n=$(all "/pulls?state=open" | jq -r --arg b "$(arg .branch)" 'map(select(.head.ref == $b)) | .[0].number // empty')
+	if [ -n "$n" ]; then
+		if [ -z "$(comment_with "$n" "$(arg .marker)")" ]; then
+			api POST "/issues/$n/comments" "$(printf '%s' "$req" | jq -c '{body: (.body + "\n\n" + .marker)}')" >/dev/null
+		fi
+		api PATCH "/pulls/$n" '{"state": "closed"}' >/dev/null
+	fi
+	echo '{}'
+	;;
 merge-request-branch)
 	api GET "/pulls/$(arg .id)" | jq -c '{branch: .head.ref, here: (.head.repo.full_name == .base.repo.full_name), title: .title, body: (.body // "")}'
 	;;

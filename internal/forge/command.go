@@ -220,6 +220,10 @@ func (c *command) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
+func (c *command) CloseMergeRequest(branch, body, marker string) error {
+	return c.call("close-merge-request", map[string]any{"branch": branch, "body": body, "marker": marker}, nil)
+}
+
 func (c *command) MergeRequest(id int) (MergeRequest, error) {
 	var a struct {
 		Branch string `json:"branch"`

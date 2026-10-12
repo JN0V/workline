@@ -372,6 +372,24 @@ func (f *Fake) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
+func (f *Fake) CloseMergeRequest(branch, body, marker string) error {
+	return f.write(func(s *FakeState) error {
+		for i := range s.MergeRequests {
+			m := &s.MergeRequests[i]
+			if m.Branch != branch || m.Closed {
+				continue
+			}
+			said := slices.ContainsFunc(m.Comments, func(c FakeComment) bool { return strings.Contains(c.Body, marker) })
+			if !said {
+				m.Comments = append(m.Comments, FakeComment{Body: body + "\n\n" + marker})
+			}
+			m.Closed = true
+			return nil
+		}
+		return nil
+	})
+}
+
 func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	s, err := f.load()
 	if err != nil {

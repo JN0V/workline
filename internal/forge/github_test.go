@@ -53,6 +53,40 @@ EOF
 
 // A pull request says where it comes from and goes, and what its author
 // says of it: its title and body, a review's testimony (ADR-0020).
+// A pull request closed by a role: found by its branch among the open
+// ones, one comment saying why, then closed; one from another branch, or
+// none open, is left alone.
+func TestGitHubCloseMergeRequest(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + log + "\n" + `case "$*" in
+*pulls?state=open*) printf '6\tworkline/documentalist/suspect\n7\tfeat/other\n' ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	g := &github{repo: t.TempDir()}
+	if err := g.CloseMergeRequest("workline/documentalist/suspect", "Closed: nothing is left to merge.", "<!-- workline:closed -->"); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.CloseMergeRequest("workline/documentalist/gone", "Closed.", "<!-- workline:closed -->"); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(log)
+	calls := string(data)
+	for _, w := range []string{"-X POST repos/{owner}/{repo}/issues/6/comments -f body=Closed: nothing is left to merge.\n\n<!-- workline:closed -->",
+		"-X PATCH repos/{owner}/{repo}/pulls/6 -f state=closed"} {
+		if !strings.Contains(calls, w) {
+			t.Errorf("gh not asked %q: %s", w, calls)
+		}
+	}
+	if strings.Contains(calls, "/7") || strings.Count(calls, "state=closed") != 1 {
+		t.Errorf("another pull request touched: %s", calls)
+	}
+}
+
 func TestGitHubMergeRequest(t *testing.T) {
 	bin := t.TempDir()
 	script := "#!/bin/sh\n" + `cat <<'EOF'
