@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go]
-checked: bb8a9a3
+checked: ddc75cf
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -17,8 +17,10 @@ sources as they are now, in full.
 
 - The agent confirms it, fixes it, or says with a `note` that the sources
   do not tell.
-- A doc whose sources are too large to be given in full stays for a
-  person: confirming it unread would only fake its freshness.
+- A doc whose sources are too large to be given in full, or one of which
+  cannot be read (a section whose heading is gone), stays for a person,
+  the finding saying why: confirming it unread would only fake its
+  freshness.
 
 ## Duplicates
 
