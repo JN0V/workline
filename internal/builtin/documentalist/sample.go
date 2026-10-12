@@ -104,12 +104,12 @@ func SourcesAt(repo string, d *Doc, limit int) (evidence []string, fits bool, er
 	if err != nil {
 		return nil, false, err
 	}
-	if evidence, ok := sourcesAs(d, pl, limit, "at the commit `checked` names"); ok {
+	if evidence, err := sourcesAs(d, pl, limit, "at the commit `checked` names"); err == nil {
 		return evidence, true, nil
 	}
 	// Too large, or unreadable: unbounded, it says which.
-	if _, ok := sourcesAs(d, pl, math.MaxInt, ""); !ok {
-		return nil, false, fmt.Errorf("a source of %s cannot be read at the commit `checked` names", d.Path)
+	if _, err := sourcesAs(d, pl, math.MaxInt, ""); err != nil {
+		return nil, false, fmt.Errorf("a source of %s cannot be read at the commit `checked` names: %v", d.Path, err)
 	}
 	return nil, false, nil
 }

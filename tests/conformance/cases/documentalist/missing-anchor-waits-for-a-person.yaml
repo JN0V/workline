@@ -1,0 +1,14 @@
+case: documentalist/missing-anchor-waits-for-a-person
+about: "A doc judged against its sources as they are now alone — its `checked` names a commit main does not hold — one of them a section of a doc whose heading is gone: that source cannot be read, so no agent is asked to vouch for it; the doc waits for a person, the finding saying which heading is gone, not that it is too large (#239)."
+given:
+  repo: documented
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [docs/tech/auth.md#token-refresh]\\nchecked: %s\\n---\\n# Sessions\\n\\nA session lasts as long as its token.\\n' $C > docs/tech/session.md && git add docs/tech/session.md && git commit -qm 'docs: describe sessions'"
+    - "sed -i 's/^## Token refresh/## Token renewal/' docs/tech/auth.md && git commit -qam 'docs(auth): rename the refresh section'"
+    - "sed -i 's/^checked: .*/checked: 0456def/' docs/tech/session.md"
+run: {role: documentalist, event: merge-request, ai: "cmd:echo '- note: should not be asked'"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/session.md, message: "no heading of docs/tech/auth.md has the anchor #token-refresh"}]
+  no-findings: [{rule: suspect, where: docs/tech/session.md, message: "too large"}]
