@@ -2334,7 +2334,8 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	if when == "for the release" { // rebuilt as its base moves, a person's commit kept (ADR-0034)
 		body.WriteString("\nRebuilt on its base each time the base moves, and by the next release run; a commit added to its branch by hand is never overwritten, and the branch is then left to that person.\n")
 	} else {
-		body.WriteString("\nRunning the same task again updates this merge request; commits added to its branch by hand are overwritten.\n")
+		// Tended when gardening runs (`workline follow --gardening`, ADR-0034, amended).
+		body.WriteString("\nRunning the same task again updates this merge request. Once its base moved, gardening rebuilds it on the new tip, or closes it, saying why, when nothing is left to merge; a commit added to its branch by hand is never overwritten, and the branch is then left to that person.\n")
 	}
 	return map[string]string{"key": key, "title": title, "body": body.String()}
 }

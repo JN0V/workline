@@ -11,6 +11,7 @@ expect:
   applied: [patch, issue, issue]   # the two kept issues, docs due and docs waiting for a person, each only kept if already open
   forge:
     merge-requests:
-      - {id: 1, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place"}
+      - {id: 1, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place",
+         body-contains: ["gardening rebuilds it on the new tip, or closes it", "never overwritten"]}
   files:
     docs/faq.md: {contains: "A session lasts as long as its token"}
