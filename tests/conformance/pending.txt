@@ -1,2 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# A doc judged on its diff says what was read, and what was not (#120).
+documentalist/judged-on-its-diff-says-what-was-read
