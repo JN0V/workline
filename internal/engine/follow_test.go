@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -99,11 +100,68 @@ func TestMergeDocFrontMatterByKey(t *testing.T) {
 			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nNinety minutes.\n",
 			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nTwo hours.\n",
 			"", false},
+		{"README's header, merged as a front matter",
+			"<!-- workline\nsources: [a.go]\nchecked: 222\n-->\n# T\n\nOne hour.\n",
+			"<!-- workline\nsources: [a.go]\nchecked: 111\njudged: 333\n-->\n# T\n\nTwo hours.\n",
+			"<!-- workline\nsources: [a.go]\nchecked: 222\njudged: 333\n-->\n# T\n\nTwo hours.\n", true},
 	}
 	for _, c := range cases {
-		got, ok := mergeDoc(t.TempDir(), old, c.ours, c.theirs)
+		from := old
+		if strings.HasPrefix(c.ours, "<!--") {
+			from = "<!-- workline\nsources: [a.go]\nchecked: 111\n-->\n# T\n\nOne hour.\n"
+		}
+		got, ok := mergeDoc(t.TempDir(), from, c.ours, c.theirs)
 		if ok != c.ok || (ok && got != c.want) {
 			t.Errorf("%s: got %v %q, want %v %q", c.name, ok, got, c.ok, c.want)
 		}
+	}
+}
+
+// On a person's branch (ADR-0041), a doc is settled only where every
+// conflict is in a line workline writes: a header key of its own both
+// changed takes base's, another is a clash; a derived block is base's; the
+// rest is git's own merge, a conflict there the person's.
+func TestSettleDoc(t *testing.T) {
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "init", "-q", repo).CombinedOutput(); err != nil {
+		t.Fatalf("git init: %s", out)
+	}
+	old := "---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n"
+	cases := []struct {
+		name, branch, base, want string
+		ok                       bool
+	}{
+		{"checked both moved: base's; the branch's text kept",
+			"---\nsources: [a.go]\nchecked: 222\n---\n# T\n\nTwo hours.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n",
+			"---\nsources: [a.go]\nchecked: 333\nverified: agent:x\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n",
+			"---\nsources: [a.go]\nchecked: 333\nverified: agent:x\n---\n# T\n\nTwo hours.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n", true},
+		{"a derived block both changed: base's",
+			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->4<!-- workline:end --> cases.\n",
+			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases.\n",
+			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases.\n", true},
+		{"sources both changed: the person's",
+			"---\nsources: [a.go, b.go]\nchecked: 222\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n",
+			"---\nsources: [a.go, c.go]\nchecked: 333\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n",
+			"", false},
+		{"a sentence both changed: the person's",
+			"---\nsources: [a.go]\nchecked: 222\n---\n# T\n\nTwo hours.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n",
+			"---\nsources: [a.go]\nchecked: 333\n---\n# T\n\nNinety minutes.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n",
+			"", false},
+		{"the words beside a derived block both changed: the person's",
+			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->4<!-- workline:end --> cases pass.\n",
+			"---\nsources: [a.go]\nchecked: 111\n---\n# T\n\nOne hour.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases run.\n",
+			"", false},
+	}
+	for _, c := range cases {
+		got, ok, err := settleDoc(repo, "docs/t.md", old, c.branch, c.base)
+		if err != nil || ok != c.ok || (ok && got != c.want) {
+			t.Errorf("%s: got %v %q (%v), want %v %q", c.name, ok, got, err, c.ok, c.want)
+		}
+	}
+	// A header not set one key a line is merged as text: both moving
+	// `checked` beside a list of sources is left to the person.
+	listed := "---\nsources:\n  - a.go\nchecked: 111\n---\n# T\n"
+	if _, ok, err := settleDoc(repo, "docs/t.md", listed, strings.Replace(listed, "111", "222", 1), strings.Replace(listed, "111", "333", 1)); ok || err != nil {
+		t.Errorf("a header of several lines a key: settled (%v), want it left", err)
 	}
 }

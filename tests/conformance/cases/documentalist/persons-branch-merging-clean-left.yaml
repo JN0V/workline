@@ -1,0 +1,18 @@
+case: documentalist/persons-branch-merging-clean-left
+about: "A person's pull request behind main but in no conflict with it (ADR-0041): left as it is, not brought up to date; when to, before it merges, is for whoever merges it."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens' && git push -q origin main"
+  forge: {merge-requests: [{id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  summary: "1 merge requests of people into main, main merged into 0, 0 left in conflict"
+  no-findings:
+    - {rule: merged, where: feat/sessions}
+    - {rule: not-merged, where: feat/sessions}
+  not-pushed: [feat/sessions]

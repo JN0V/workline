@@ -4,6 +4,7 @@ package line
 
 import (
 	"fmt"
+	"maps"
 	"os/exec"
 	"strings"
 
@@ -59,12 +60,24 @@ func Run(event string, base engine.Options) *Result {
 	if !ok {
 		return failed(res, "routing", fmt.Sprintf("routing names no step for event %q", event))
 	}
-	// What the engine committed does not wake the line again (routing spec):
-	// the fix a role pushed to a merge request would be judged, and pushed.
-	if role := ownCommit(base.Repo, base.Inputs["range"]); role != "" {
-		res.Summary = fmt.Sprintf("%s: the last commit is workline's own (%s): nothing to judge", event, role)
-		return res
+	// What the engine committed does not wake the line on itself (routing
+	// spec) — a role's fix pushed to a merge request would be judged, and
+	// pushed again — nor turns a verdict green unjudged: the range is
+	// judged as it stood before the engine's last commits, a merge of the
+	// base through its first parent (ADR-0041). The person's commits keep
+	// their verdict; what was judged already is not asked of an agent again.
+	own := ""
+	if role, rng := beforeOwn(base.Repo, base.Inputs["range"]); role != "" {
+		if rng == "" {
+			res.Summary = fmt.Sprintf("%s: the last commits are workline's own (%s): nothing else to judge", event, role)
+			return res
+		}
+		inputs := maps.Clone(base.Inputs)
+		inputs["range"] = rng
+		base.Inputs = inputs
+		own = fmt.Sprintf(" (the last commit workline's own, %s: judged as %s)", role, rng)
 	}
+	defer func() { res.Summary += own }()
 	stopAtFirst := cfg.StopsAtFirst(event)
 	var notPassed []string // with every step run: those that did not pass, and how
 	for _, name := range steps {
@@ -164,16 +177,52 @@ func failed(res *Result, where, msg string) *Result {
 	return res
 }
 
-// ownCommit returns the role that made the last commit of rng, when the
-// engine made it; "" otherwise, or with no range.
-func ownCommit(repo, rng string) string {
+// beforeOwn returns the role that made the last commit of rng, when the
+// engine made it, and rng ending before the engine's last commits: each
+// left for its parent, a merge for its first, the branch's side (`workline
+// follow`'s merge of the base, ADR-0041). The range is "" when nothing is
+// left in it; role is "" when its last commit is a person's, or with no
+// range.
+func beforeOwn(repo, rng string) (role, before string) {
 	if rng == "" {
-		return ""
+		return "", rng
 	}
 	head := gitrange.Head(rng)
-	out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%(trailers:key="+engine.OwnTrailer+",valueonly)", head).Output()
-	if err != nil {
-		return ""
+	cur := head
+	for range 1000 {
+		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%P%x1f%(trailers:key="+engine.OwnTrailer+",valueonly,separator=%x2c)", cur).Output()
+		if err != nil {
+			break
+		}
+		parents, by, _ := strings.Cut(strings.TrimSpace(string(out)), "\x1f")
+		if by = strings.TrimSpace(by); by == "" {
+			break
+		}
+		if role == "" {
+			role = by
+		}
+		first, _, _ := strings.Cut(parents, " ")
+		if cur = first; cur == "" {
+			return role, "" // the history's first commit: nothing before it
+		}
 	}
-	return strings.TrimSpace(string(out))
+	if role == "" {
+		return "", rng
+	}
+	before = cur
+	if from, _, ok := strings.Cut(rng, ".."); ok {
+		before = from + ".." + cur
+	} else if words := strings.Fields(rng); len(words) > 1 {
+		for i, w := range words {
+			if w == head {
+				words[i] = cur
+			}
+		}
+		before = strings.Join(words, " ")
+	}
+	out, err := exec.Command("git", append([]string{"-C", repo, "rev-list", "--count"}, gitrange.Args(before)...)...).Output()
+	if err == nil && strings.TrimSpace(string(out)) == "0" {
+		return role, ""
+	}
+	return role, before
 }

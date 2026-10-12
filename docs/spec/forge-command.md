@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 5eb8a2f
+checked: 54cc42b
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -19,7 +19,7 @@ or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
-none), `close-merge-request`, and `comments`, each with its author and its day, of the project when they may
+none), `close-merge-request`, `merge-requests`, and `comments`, each with its author and its day, of the project when they may
 write to the repository — asked of Forgejo, which needs the token's user
 to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
@@ -84,6 +84,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `open-merge-requests` | `prefix` | lists the open merge requests whose branch starts with `prefix` | `{branches: [names]}` |
 | `close-merge-request` | `branch`, `body`, `marker` | closes the merge request open from `branch`, after commenting as `comment` does; none open changes nothing, and the branch stays. Asked by `workline follow --gardening` for a role's own merge request with nothing left to merge (ADR-0034) | `{}` |
 | `merge-request-branch` | `id` | the branch a merge request comes from, the branch it goes into, whether it lives in this repository rather than a fork, its title and its description | `{branch, base, here, title, body}`; without `base`, a fix for a release pull request goes in a comment (ADR-0017); `title` and `body` are what a review reads as the author's testimony (ADR-0020) |
+| `merge-requests` | | lists the open merge requests, each with where it comes from and goes, and who opened it. Asked by `workline follow` when the documentalist's `update-branches` is `conflicts` (ADR-0041): those into the branch that moved are a person's to settle, a head branch another goes into is a long-lived one | `{merge-requests: [{id, branch, base, here, title, author, bot, head}]}` — `here` as for `merge-request-branch`; `bot` true for one an app or a token's user opened, left to its bot; `head` the ref the forge keeps a fork's head under in this repository (`refs/pull/<n>/head`), left out: a fork's is said unread; a command that does not know it answers an error, and the run says so |
 
 Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the
@@ -106,8 +107,10 @@ it does with the tokens it is given is its own promise, not the engine's.
 The conformance cases `forge/cmd-*` plug a fake script
 (tests/conformance/fixtures/forges/logged.sh) that records each request: a
 merge request's comment, a work item read and labelled, the
-weekly sample written, a forge failing (`blocked-external`) and refusing
+weekly sample written, a person's pull request merged with its base
+(`merge-requests`), a forge failing (`blocked-external`) and refusing
 (`block`). The Forgejo sample was run against a mock of the API only
 (ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
-pages, a pull request left out, `comments` with their authors, and
+pages, a pull request left out, `comments` with their authors,
+`merge-requests` with theirs, and
 `close-merge-request`), not yet on a live instance.

@@ -123,4 +123,6 @@ One the base moved under is:
   over that commit either (`not-proposed`).
 
 A push to the base leaves them alone: only the release's fix follows each
-push ([at the release](push.md#a-release-tools-pull-request)).
+push ([at the release](push.md#a-release-tools-pull-request)), and, when
+set, people's pull requests in conflict on workline's lines
+([more](follow.md)).

@@ -1,0 +1,14 @@
+case: routing/own-merge-not-judged-again
+about: "A merge request whose last commit is workline's merge of main into it, its trailer saying so (ADR-0041): the merge itself is not judged, the commits before it are, through its first parent — so a person's commit that blocked still blocks, its subject no conventional commit, and nothing turns green unjudged."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git commit -qam 'keep users signed in for two hours' && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens'"
+    - "git checkout -q feat/sessions && { git merge -q main >/dev/null 2>&1 || true; } && git checkout -q --theirs docs/tech/auth.md && git add docs/tech/auth.md && git commit -qm \"Merge branch 'main' into feat/sessions\" -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "main..HEAD"}, ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: format, level: block}]
+  summary: "(the last commit workline's own, documentalist: judged as main.."

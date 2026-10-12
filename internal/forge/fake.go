@@ -44,6 +44,7 @@ type FakeItem struct {
 	Reason    string        `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
 	Milestone string        `json:"milestone,omitempty"`
 	Fork      bool          `json:"fork,omitempty"` // a merge request from a fork
+	Bot       bool          `json:"bot,omitempty"`  // a merge request a bot opened: an app, a token's user
 	Title     string        `json:"title,omitempty"`
 	Body      string        `json:"body,omitempty"`
 	Labels    []string      `json:"labels"`
@@ -417,7 +418,25 @@ func (f *Fake) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
+	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: !it.Fork, Title: it.Title, Body: it.Body}, nil
+}
+
+// ListMergeRequests lists the open merge requests, each head kept under
+// refs/pull/<id>/head, as GitHub keeps them.
+func (f *Fake) ListMergeRequests() ([]MergeRequest, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	var out []MergeRequest
+	for _, m := range s.MergeRequests {
+		if !m.Closed && m.Branch != "" {
+			out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: !m.Fork, Title: m.Title, Body: m.Body,
+				Author: m.Author, Bot: m.Bot, Head: fmt.Sprintf("refs/pull/%d/head", m.ID)})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
 }
 
 func (f *Fake) KeepIssue(title, body string, create bool) (int, error) {

@@ -1,7 +1,7 @@
 # ADR-0041: workline settles its own lines when a pull request's base moves
 
-- **Status:** proposed — the points under "For the person" wait on the
-  maintainer; built by [#319](https://github.com/JN0V/workline/issues/319)
+- **Status:** accepted, "For the person" as proposed; built by
+  [#319](https://github.com/JN0V/workline/issues/319) ([page](../../roles/documentalist/docs/follow.md))
 - **Date:** 2026-10-12
 - **Extends:** [ADR-0034](0034-the-release-fix-follows-its-base.md)
   (`follow` keeps workline's own branches on their base, a doc's header
@@ -49,7 +49,8 @@ no agent is called (principle 6).
 - **Opened by a person**: not `workline/…`, rebuilt by
   [ADR-0034](0034-the-release-fix-follows-its-base.md); not another bot's —
   release-please, Renovate and Dependabot rebuild their own branch, and
-  Renovate stops rebuilding one somebody else committed to.
+  Renovate stops rebuilding one somebody else committed to; not a
+  long-lived branch, the base of another open one: named in the summary.
 - **A fork's is left**: the job's token cannot write to it. Named in the
   summary when it no longer merges.
 - **One merging clean is left** ("For the person", point 2).
@@ -85,12 +86,11 @@ no agent is called (principle 6).
   make it. A person's commits keep their ids.
 - **The forge's message**, "Merge branch 'main' into <branch>", a body
   naming the files settled, and the trailer `Workline-Role: documentalist`.
-- **Pushed as a fast-forward, never forced**: if the person pushed
-  meanwhile, the push is refused and said, and the next push to the base
-  tries again.
-- **It is workline's commit**: a line given a range that ends on it judges
-  nothing ([routing](../spec/routing.md)). The pull request's next push by
-  a person is judged as usual.
+- **Pushed as a fast-forward, never forced**, a lease on the tip read: a
+  push meanwhile stays, a branch deleted is not brought back; said.
+- **It is workline's commit**: a line given a range ending on it judges
+  the commits before it, through its first parent
+  ([routing](../spec/routing.md)): a red verdict stays red.
 
 ### Which value stays when both sides moved a key: the base's
 
@@ -130,9 +130,9 @@ The choice is what is judged, and when:
 
 ### The setting and the token
 
-- **Off by default**: a project opts in with a documentalist setting
-  (`update-branches: conflicts`; the name settled in the build). workline's
-  own repository turns it on.
+- **Off by default**: a project opts in with a documentalist setting,
+  `update-branches: conflicts` (default `off`). workline's own repository
+  turns it on.
 - **The `follow` job's token**: the project's GitHub App when it has one,
   so the checks run on the new head; otherwise the job's own, and the
   checks wait for a person
@@ -141,9 +141,9 @@ The choice is what is judged, and when:
   the project's bot ([ADR-0023](0023-the-project-bot-keeps-a-gitlab-backlog.md)).
 - **No new permission on GitHub**: the job has `contents: write`. A base
   that changed a workflow file may need the App's `workflows` permission
-  for the push: not tried, to try in the build.
+  for the push: not tried live; a refused push is said (`merge-refused`).
 
-### For the person
+### For the person (settled as proposed)
 
 1. **The default**: off (proposed), so writing to a person's branch is a
    project's choice; or on, since the lines are workline's own.
@@ -185,16 +185,16 @@ belong to that decision.
   in: their author pulls before pushing again.
 - **The checks run again** on each pull request merged into (with an App
   token): only those left in conflict.
-- **Approvals**: where the forge dismisses them on a push (GitHub's
-  "dismiss stale reviews", GitLab's "reset approvals on push"), a merge
-  resets them. Off here.
+- **Approvals**: a merge resets them where the forge dismisses them on a
+  push (GitHub's "dismiss stale reviews", GitLab's "reset approvals"). Off here.
 - **On the next push, the reviewer sees what the merge settled**
   ([ADR-0013's amendment](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12)):
-  header lines; the build checks no lens is asked for them alone.
+  header lines, no lens asked for them alone. A protected branch: `merge-refused`.
+  A reviewer's block survives the merge once [#326](https://github.com/JN0V/workline/issues/326) is fixed; not exposed here, AI findings only warn.
 - **9 of 24 pull requests in two weeks** would have met no conflict by
   hand; the 9 mixed with a real overlap,
   [#316](https://github.com/JN0V/workline/pull/316) among them, still meet
   their header lines when a person settles the rest.
 - **`main` holds no merge commit**: this repository merges by squash.
-  Conformance: the cases are named in
-  [#319](https://github.com/JN0V/workline/issues/319).
+  Conformance: documentalist/persons-branch* (18), forge/cmd-persons-branch-merged,
+  routing/own-*, routing/follow-merge-keeps-a-red-verdict, reviewer/workline-merge-of-main-asks-no-lens.
