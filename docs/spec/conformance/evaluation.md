@@ -1,6 +1,7 @@
 ---
 sources: [tests/evaluation]
-status: draft
+checked: 7ebf882
+verified: agent:claude-code
 ---
 # Evaluation — two measures
 
