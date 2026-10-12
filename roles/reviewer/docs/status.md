@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-10)
+# Reviewer — where it stands (2026-10-12)
 
 **In one line:** it reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -33,6 +33,8 @@ hold:
 | The rules on the comments a change adds: a bug's story, an internal code, a block too long; while they block, no agent | cases `bug-story-in-comment-blocks-without-ai`, `ticket-code-in-comment`, `long-comment-block-reported` |
 | Only code reviewed; commits reviewed whole not asked again | `docs-only-asks-nobody`, `reviewed-commits-not-asked-again` |
 | A push changing no code asks nobody, its commits recorded; a lens gets only what the new commits change | `push-without-code-asks-nobody`, `lens-given-new-commits-files` |
+| A rebase not reviewed again (#286): each change's patch id recorded beside its commit; a commit rebased with its change intact skipped, one a conflict changed reviewed with those after it; an indent changed is a change; a record written before still reads. On copies of workline: 74k bytes a lens no longer reads (tried.md) | `rebased-commits-not-asked-again`, `rebased-commit-changed-by-a-conflict-reviewed-again`, `new-commit-after-a-rebase-reviewed-alone`, `TestRecord`, `TestSinceKnowsAChangeNotItsIndent` |
+| A merge of the base read for what it settled (#134): a lens given the conflict's resolution, both sides, never the base's code nor its commits; nothing settled, nobody asked, the merge recorded. On copies of workline: 74k bytes to none, a wrong resolution 73k to 5.7k (tried.md) | `merge-of-main-asks-no-lens`, `merge-resolution-alone-given-to-the-lens` |
 | On workline's own pull requests in CI, forge writes on: the summary comment edited in place, the record, the lenses in turn (tried.md) | workline#132 |
 | Lenses as parts, answering findings only; a patch refused; an answer that does not read asked again once (#138) | `never-approves-nor-patches`, `lens-failed-not-clean`, `lens-answer-asked-again-once` |
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
