@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: a7c3acb5
+checked: 5c11ef9c
 verified: agent:claude-code
 ---
 # The merge policy
@@ -67,9 +67,10 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   again.
 - **The label taken off** turns auto-merge off.
 - **A push after the yes**: the yes covers the head it was given on. Any
-  commit but `follow`'s own update turns auto-merge off and takes the
-  label off, said in one comment. When each head was pushed is the
-  forge's word: GitHub's repository activity, GitLab's versions.
+  commit but `follow`'s own update — the base merged in, a role's branch
+  rebuilt — turns auto-merge off and takes the label off, said in one
+  comment. When each head was pushed is the forge's word: GitHub's
+  repository activity, GitLab's versions.
 
 ## Where the head's verdict lives
 

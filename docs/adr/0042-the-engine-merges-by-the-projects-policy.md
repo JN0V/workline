@@ -190,7 +190,8 @@ puts the label.
 - **A push after the yes** is told by the forge's own push times —
   GitHub's repository activity, GitLab's versions —, else by the commits'
   dates; a head opened with the label on is the one accepted. `follow`'s
-  own update is a merge carrying workline's trailer.
+  own update is a merge carrying workline's trailer, or a role's branch
+  rebuilt, its commit's message, author and date kept.
 - **GitHub turns no auto-merge on for a pull request it could merge now**
   ("clean status"): it is merged at once, at the head checked, as `gh pr
   merge --auto` does — the forge's rules met already.
