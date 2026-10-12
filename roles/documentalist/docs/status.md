@@ -70,6 +70,16 @@ hold:
   simulated forge: both in conflict with `main`, both closed with one
   line saying why. Not tried live: the close on GitHub (a fake `gh`) and
   GitLab (its API mocked), the CI job itself.
+- **People's pull requests settled on its own lines** (ADR-0041,
+  [#319](https://github.com/JN0V/workline/issues/319),
+  `update-branches: conflicts`): on copies of workline, a simulated forge,
+  four real branches replayed against a later `main`. Three in conflict
+  only on header lines (16, 1 and 1 docs) merged in under a second, the
+  person's clone pulled and pushed; #316's branch before its rebase left,
+  `runner_test.go` and `conformance.md` named; the line on a merge judged
+  the person's commits, no agent (tried.md, 2026-10-12). Not tried live:
+  the push to GitHub and GitLab, the App's `workflows` permission, the CI
+  job.
 - **A doc too large to condense or split** (`too-large-to-condense`,
   `too-large-to-split`): reported for a person, the next doc condensed.
   Replayed on a copy of workline at 14f0db4, a recording agent: the task

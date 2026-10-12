@@ -95,7 +95,12 @@ func followCmd(args []string) int {
 		}
 		*forgeSpec = cfg.Forge
 	}
-	res := engine.Follow(root, *forgeSpec, *base, *gardening)
+	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening}
+	if err := followSettings(&o); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
+	res := engine.Follow(o)
 	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("follow", "", res)); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
@@ -107,6 +112,43 @@ func followCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// followSettings reads what `workline follow` takes of the documentalist's
+// settings: whether people's merge requests in conflict only on
+// workline's lines get their base merged in (`update-branches`, ADR-0041),
+// and which files are docs; and the release tool's branches, a bot's.
+func followSettings(o *engine.FollowOptions) error {
+	rolesDir, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
+	if err != nil {
+		return err
+	}
+	r, err := role.Load(rolesDir, "documentalist")
+	if err != nil {
+		return err
+	}
+	cfg, err := role.LoadProjectConfig(o.Repo)
+	if err != nil {
+		return err
+	}
+	settings := r.MergedSettings(cfg)
+	switch v := fmt.Sprint(settings["update-branches"]); v {
+	case "off", "false", "<nil>":
+	case "conflicts":
+		o.People = true
+	default:
+		return fmt.Errorf(".workline/config.yaml: the documentalist's update-branches is %q: off or conflicts", v)
+	}
+	s, err := documentalist.SettingsFrom(settings)
+	if err != nil {
+		return fmt.Errorf(".workline/config.yaml: the documentalist's settings: %w", err)
+	}
+	rs, err := release.Load(o.Repo)
+	if err != nil {
+		return err
+	}
+	o.IsDoc, o.Release = s.IsDoc, rs.IsBranch
+	return nil
 }
 
 // version is the release, set when one is built (-X main.version=v0.1.0).

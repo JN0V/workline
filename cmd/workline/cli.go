@@ -33,7 +33,7 @@ func init() {
 		{name: "issues", args: "[list] | show <n>|!<n> | import <file> [options]", about: "read the local forge's issues; import a roadmap or backlog file to the forge's issues", run: issuesCmd},
 		{name: "docs", args: "[options]", about: "judge the docs made suspect since they were last judged, then review each change", run: docsCmd},
 		{name: "sample", args: "[options] | --apply <file> [options]", about: "draw and read the week's sample of the docs the documentalist vouched for; --apply writes it to the forge", run: sampleCmd},
-		{name: "follow", args: "[options]", about: "rebuild the roles' release merge requests on their base's new tip; --gardening: their gardening ones too", run: followCmd},
+		{name: "follow", args: "[options]", about: "rebuild the roles' release merge requests on their base's new tip; --gardening: their gardening ones too; with update-branches, merge it into people's in conflict only on workline's lines", run: followCmd},
 		{name: "init", args: "[options]", about: "adopt this repository: route pre-push, have each doc's sources proposed", run: initCmd},
 		{name: "setup", args: "[options]", about: "set workline up on this machine, asking what to enable", run: setupCmd},
 		{name: "doctor", args: "[options]", about: "say what is set up on this machine and in this repository, and what is missing", run: doctorCmd},

@@ -107,7 +107,20 @@ type runSpec struct {
 	JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
 	Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
 	Follow  []string          `yaml:"follow"`        // workline follow, with these options
+	// ThenLine: after the run, the line on a branch of origin, checked
+	// out, as CI runs it on that branch's push: what the case expects of
+	// status, steps and calls is its; the findings are both runs'.
+	ThenLine *thenLine `yaml:"then-line"`
 	CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
+}
+
+// thenLine is the line run after a case's run: the event, the branch of
+// origin checked out, the range given, the agent.
+type thenLine struct {
+	Event  string `yaml:"event"`
+	Branch string `yaml:"branch"`
+	Range  string `yaml:"range"`
+	AI     string `yaml:"ai"`
 }
 
 // expectSpec is what the case expects.
@@ -124,6 +137,8 @@ type expectSpec struct {
 	PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
 	NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
 	OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Merged      map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
+	Gone        []string                     `yaml:"gone"`           // branches of the remote absent after the run
 	Forge       *forgeWant                   `yaml:"forge"`
 	Steps       []string                     `yaml:"steps"`
 	Calls       []map[string]string          `yaml:"calls"`
@@ -525,6 +540,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
 		tips[b] = string(out)
 	}
+	before := map[string]string{} // the tips of the branches merged into, before the run
+	for b := range c.Expect.Merged {
+		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
+		before[b], _, _ = strings.Cut(string(out), "\t")
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	_ = cmd.Run() // the exit code mirrors the status, which is checked below
@@ -550,6 +570,33 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		r2.AgentCalls += r.AgentCalls
 		r2.Calls = append(r.Calls, r2.Calls...)
+		r2.Findings = append(r.Findings, r2.Findings...)
+		r = r2
+	}
+	if l := c.Run.ThenLine; l != nil {
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", "origin/"+l.Branch).CombinedOutput(); err != nil {
+			return []string{fmt.Sprintf("then-line: origin/%s not checked out: %s", l.Branch, out)}
+		}
+		lineArgs := []string{"route", l.Event, "--repo", repo, "--roles", roles, "--json", "--no-apply", "--forge", "none", "--input", "range=" + l.Range}
+		if l.AI != "" {
+			ai := l.AI
+			if strings.HasPrefix(ai, "fake:") {
+				p, _ := filepath.Abs(filepath.Join("fixtures", "agents", strings.TrimPrefix(ai, "fake:")+".yaml"))
+				ai = "fake:" + p
+			}
+			lineArgs = append(lineArgs, "--ai", ai)
+		}
+		line := exec.Command(engineBin, lineArgs...)
+		line.Dir, line.Env = repo, cmd.Env
+		stdout.Reset()
+		line.Stdout, line.Stderr = &stdout, &stderr
+		_ = line.Run()
+		var r2 result
+		if err := json.Unmarshal(stdout.Bytes(), &r2); err != nil {
+			return []string{fmt.Sprintf("then-line printed no result: %v\n%s", err, stderr.String())}
+		}
+		r2.AgentCalls += r.AgentCalls
 		r2.Findings = append(r.Findings, r2.Findings...)
 		r = r2
 	}
@@ -609,6 +656,21 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for b, before := range tips {
 		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); string(out) != before {
 			problems = append(problems, fmt.Sprintf("origin's %s moved: %q, was %q", b, out, before))
+		}
+	}
+	for _, b := range c.Expect.Gone {
+		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); len(out) > 0 {
+			problems = append(problems, fmt.Sprintf("origin's %s is there: %s", b, out))
+		}
+	}
+	for b, base := range c.Expect.Merged {
+		// A merge commit: the branch's tip before the run, its commits
+		// kept, as first parent; base's tip as second.
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		out, _ := exec.Command("git", "-C", repo, "rev-list", "--parents", "-n", "1", "origin/"+b).Output()
+		baseTip, _ := exec.Command("git", "-C", repo, "rev-parse", "origin/"+base).Output()
+		if got := strings.Fields(string(out)); len(got) != 3 || got[1] != before[b] || got[2] != strings.TrimSpace(string(baseTip)) {
+			problems = append(problems, fmt.Sprintf("origin's %s is not %s merged into its tip %s: commit and parents %v", b, base, before[b], got))
 		}
 	}
 	if len(c.Expect.Listed) > 0 {

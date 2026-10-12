@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 5eb8a2f
+checked: 54cc42b
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -52,7 +52,9 @@ saying so.
   it found with `workline sample --apply`, on the simulated forge;
 - `follow: [<option>...]` instead of `role` — `workline follow` on the
   repository (`[--base, main]`), on the simulated forge, or GitLab's with
-  `forge: gitlab`;
+  `forge: gitlab`; with `then-line: {event, branch, range, ai}`, the line
+  then runs on that branch of `origin`, checked out, as CI runs it on its
+  push: status, steps and calls are the line's, the findings both runs';
 - `cli: [<argument>...]` instead of `role` — `workline` with these
   arguments, as typed, in the repository: help, misuse; checked by `exit`,
   `stdout`, `stderr`, and `summary-file` for the `workline-summary.md`
@@ -123,7 +125,10 @@ saying so.
   case's `origin`, or the message of that branch's tip.
 - `not-pushed` — branches of the case's `origin` the run left where they
   were; `on-top` — a branch of `origin` whose tip holds another's
-  (`{workline/documentalist/release: main}`).
+  (`{workline/documentalist/release: main}`); `merged` — a branch of
+  `origin` whose tip is a merge of another's tip into its tip before the
+  run, its first parent (`{feat/sessions: main}`); `gone` — branches of
+  `origin` absent after the run.
 - `branches` — a text a file holds on a local branch of the repository.
 - `issues-listed` — texts `workline issues list` prints afterwards.
 - `summary` — a text the result's summary holds.

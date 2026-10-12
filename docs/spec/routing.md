@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: d5323d2
+checked: 54cc42b
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -115,8 +115,13 @@ names the retired `release-manager` is refused, saying which tool to use.
   not trigger routing, so two roles cannot wake each other forever. Its
   commits carry a `Workline-Role: <role>` trailer, and a `Workline-Model:
   <agent>:<model>` for each agent and model whose answer they hold, so a
-  later reader can stand apart from them (ADR-0005); a line given a range
-  whose last commit carries one judges nothing.
+  later reader can stand apart from them (ADR-0005). A line given a range
+  whose last commits carry one judges the range as it stood before them,
+  each left for its parent, a merge of the base (`workline follow`,
+  ADR-0041) for its first: what the engine wrote never wakes the line on
+  itself, and a person's commit that blocked still blocks, never turned
+  green unjudged. With nothing of a person's left in the range, it judges
+  nothing.
 
 ### On a forge: judge, then apply
 

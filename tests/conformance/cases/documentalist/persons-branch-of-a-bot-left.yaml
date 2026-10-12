@@ -1,0 +1,24 @@
+case: documentalist/persons-branch-of-a-bot-left
+about: "A bot's pull request — a release tool's branch, even opened with a person's token, or one a bot opened — conflicts with main only on a `checked` line (ADR-0041): its bot rebuilds it, and stops once someone else commits to it, so workline leaves it, without a word."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && echo 1.1.0 > VERSION && git add VERSION && git commit -qam 'chore: release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+    - "git checkout -qb chore/bump && sed -i 's/^checked: .*/checked: 4444444/' docs/tech/auth.md && echo 'go 1.24' > go.mod && git add go.mod && git commit -qam 'chore: bump go' && git push -q origin chore/bump && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens' && git push -q origin main"
+  forge:
+    merge-requests:
+      - {id: 5, branch: release-please--branches--main, base: main, author: dana, labels: [], comments: []}
+      - {id: 6, branch: chore/bump, base: main, author: ci-app, bot: true, labels: [], comments: []}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  summary: "0 merge requests of people into main"
+  no-findings:
+    - {rule: merged, where: release-please--branches--main}
+    - {rule: not-merged, where: release-please--branches--main}
+    - {rule: merged, where: chore/bump}
+    - {rule: not-merged, where: chore/bump}
+  not-pushed: [release-please--branches--main, chore/bump]

@@ -25,6 +25,7 @@ type gitlab struct {
 	base, project, header string // the API's root, the project's id, how the token goes
 	token                 string
 	members               map[string]int // the project's members, direct and inherited, and their access level; read once
+	bots                  map[int]bool   // whether a user is a bot, by id, as the users API says; read once each
 }
 
 // planner is GitLab's access level from which a member counts as a person
@@ -955,7 +956,76 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 	if err := decode(out, &mr); err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
+	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
+}
+
+// ListMergeRequests reads each open merge request: one from another
+// project is not here; a bot's is told by the users API (`bot`: a project
+// or group access token's user, a service account), asked once an author
+// whose name does not say it already. GitLab keeps every head under
+// refs/merge-requests/<iid>/head.
+func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
+	out, err := g.api("--paginate", "projects/:id/merge_requests?state=opened&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	type mr struct {
+		IID           int    `json:"iid"`
+		Source        string `json:"source_branch"`
+		Target        string `json:"target_branch"`
+		SourceProject int    `json:"source_project_id"`
+		TargetProject int    `json:"target_project_id"`
+		Title         string `json:"title"`
+		Author        struct {
+			ID       int    `json:"id"`
+			Username string `json:"username"`
+		} `json:"author"`
+	}
+	var all []MergeRequest
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
+		var page []mr
+		if err := dec.Decode(&page); err != nil {
+			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		for _, m := range page {
+			bot := botName.MatchString(m.Author.Username)
+			if !bot && m.Author.ID != 0 {
+				if bot, err = g.isBot(m.Author.ID); err != nil {
+					return nil, err
+				}
+			}
+			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
+				Title: m.Title, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID)})
+		}
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, nil
+}
+
+// isBot says whether a user is a bot, as the users API says (`bot`); a
+// user gone (404) is none.
+func (g *gitlab) isBot(id int) (bool, error) {
+	if bot, ok := g.bots[id]; ok {
+		return bot, nil
+	}
+	out, err := g.api(fmt.Sprintf("users/%d", id))
+	var u struct {
+		Bot bool `json:"bot"`
+	}
+	switch {
+	case errors.Is(err, errNotFound):
+	case err != nil:
+		return false, err
+	default:
+		if err := decode(out, &u); err != nil {
+			return false, err
+		}
+	}
+	if g.bots == nil {
+		g.bots = map[int]bool{}
+	}
+	g.bots[id] = u.Bot
+	return u.Bot, nil
 }
 
 func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {

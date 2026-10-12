@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/JN0V/workline/internal/pathglob"
 )
 
 // Target is what a comment or a label goes on.
@@ -135,6 +137,10 @@ type Forge interface {
 	CloseMergeRequest(branch, body, marker string) error
 	// MergeRequest says where a merge request comes from and goes.
 	MergeRequest(id int) (MergeRequest, error)
+	// ListMergeRequests lists the open merge requests, by number, each with
+	// where it comes from and goes, and who opened it: what `workline
+	// follow` needs to merge a base into a person's (ADR-0041).
+	ListMergeRequests() ([]MergeRequest, error)
 }
 
 // Backlog is what a role acting on a project's issues needs from its forge
@@ -250,11 +256,28 @@ func FilePages(f any) string {
 
 // MergeRequest is where a merge request comes from and where it goes.
 type MergeRequest struct {
+	ID     int    // its number; 0 when the forge does not say
 	Branch string // the branch it comes from
 	Base   string // the branch it goes into; "" when the forge does not say
 	Here   bool   // the branch lives in this repository, not in a fork
 	Title  string // what its author calls it
 	Body   string // what its author says of it: testimony for a review (ADR-0020)
+	Author string // who opened it; "" when the forge does not say
+	Bot    bool   // opened by a bot: an app, a token's user
+	// Head is the ref this repository keeps its head under, for one from a
+	// fork (GitHub's refs/pull/<n>/head); "" when the forge keeps none.
+	Head string
+}
+
+// botBranches are the branches of the merge requests the dependency bots
+// open, which rebuild them themselves, and stop once someone else
+// commits: left to them whoever their token's user is (ADR-0041).
+var botBranches = []string{"dependabot/**", "renovate/**"}
+
+// ByBot says whether a merge request is a bot's: opened by one, or from a
+// dependency bot's branch.
+func (m MergeRequest) ByBot() bool {
+	return m.Bot || pathglob.Any(botBranches, m.Branch)
 }
 
 // ErrUnreachable marks a forge that did not answer: the run is blocked by
