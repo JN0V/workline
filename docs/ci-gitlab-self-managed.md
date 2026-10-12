@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, Dockerfile]
-checked: bd82342
+checked: 7ebf882
 verified: agent:claude-code
 ---
 # workline on a self-managed GitLab
@@ -22,3 +22,8 @@ own changes. **Not tried yet on one**: tell us what differs.
   docs are listed for a person.
 - **Tokens**: project access tokens exist on every tier of a self-managed
   instance.
+- **The reviewer when a merge request becomes ready**: before GitLab
+  17.10, no `CI_MERGE_REQUEST_DRAFT`, so the merge request is read from
+  the API; a job token that reads no notes leaves one lens, said in the
+  log, unless the job has `GITLAB_TOKEN`
+  ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).

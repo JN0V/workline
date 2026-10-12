@@ -1,8 +1,8 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: d5323d2
+checked: 7ebf882
 judged: 93acc67
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
@@ -49,6 +49,7 @@ none of them:
 |---|---|
 | `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md)), `import` |
 | `MR_IID`, `MR_SOURCE_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
+| `MR_READY` | for `merge-request`, set when it becomes ready: opened not a draft, or a webhook's `update` whose `changes.draft` went to false; every reviewer lens once ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
 A triggered pipeline has none of the `CI_MERGE_REQUEST_*` variables: the
@@ -123,7 +124,8 @@ case "$step:$WORKLINE_TASK" in
     git fetch --quiet origin "$MR_BASE_SHA"
     workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --forge gitlab \
       --target "merge-request:$MR_IID" --branch "$MR_SOURCE_BRANCH" \
-      --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" --code-quality gl-code-quality.json $sum --json > line.json || status=$? ;;
+      --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" ${MR_READY:+--input lenses=all} \
+      --code-quality gl-code-quality.json $sum --json > line.json || status=$? ;;
   judge:garden)
     workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
   judge:product-owner)
