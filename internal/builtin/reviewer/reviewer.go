@@ -106,6 +106,7 @@ type state struct {
 	Change     Change            `json:"change"` // the whole range's
 	Mechanical []verdict.Finding `json:"mechanical"`
 	Commits    []string          `json:"commits"`
+	Patches    []string          `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
 	Lenses     []string          `json:"lenses"`
 	Together   bool              `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
 	Alone      bool              `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
@@ -219,21 +220,18 @@ func prepare(runDir, repo string, s Settings) int {
 			Message: "what was reviewed before could not be read (" + err.Error() + "): every commit of the range is reviewed again"})
 		rec = Record{}
 	}
-	out, err := git(repo, "rev-list", base+".."+head)
+	sp, err := rec.since(repo, base, head)
 	if err != nil {
 		return fail(err)
 	}
-	commits := strings.Fields(out) // newest first
-	start := base
-	for _, c := range commits {
-		if slices.Contains(rec.Reviewed, c) {
-			start = c
-			break
-		}
+	if sp.Unread != nil {
+		advisories = append(advisories, verdict.Finding{Rule: "patch-ids-unread", Level: "warn",
+			Message: "the patch ids of the commits' changes could not be read (" + sp.Unread.Error() + "): a commit rebased is reviewed again"})
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: commits, Record: rec, Advisories: advisories}
+	start := sp.From
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Advisories: advisories}
 	if start == head {
-		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))
+		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(sp.Commits))))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
@@ -333,7 +331,7 @@ func codeFiles(repo string, s Settings, from, head string) ([]string, error) {
 func recordOnly(runDir string, s Settings, st state) int {
 	v := review(st, nil, fmt.Sprintf("no code changed since the last review (only files the reviewer leaves, by its `ignore`): nobody asked, the %d new commits recorded", slices.Index(st.Commits, st.From)))
 	v.Complete = true
-	v.Record = st.Record.add(st.Commits)
+	v.Record = st.Record.add(st.Commits, st.Patches)
 	v.Record.Runs = st.Record.Runs
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
@@ -1183,7 +1181,7 @@ func settle(runDir, repo string, s Settings) int {
 	}
 	v.Findings = append(v.Findings, c.Logged...)
 	if v.Complete && st.Spec == nil { // a spec is read whole each run: no commits to record
-		v.Record = st.Record.add(st.Commits)
+		v.Record = st.Record.add(st.Commits, st.Patches)
 	}
 	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)
