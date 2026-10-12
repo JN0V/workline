@@ -363,17 +363,53 @@ func settleDoc(repo, file, old, branch, onBase string) (string, bool, error) {
 // asBase is a doc with each derived block base's, where base has it.
 func asBase(doc, base string) string {
 	blocks := map[string]string{}
-	for _, m := range derived.FindAllStringSubmatch(base, -1) {
-		if _, seen := blocks[m[1]]; !seen {
-			blocks[m[1]] = m[0]
+	for _, b := range derivedBlocks(base) {
+		if _, seen := blocks[b.name]; !seen {
+			blocks[b.name] = base[b.start:b.end]
 		}
 	}
-	return derived.ReplaceAllStringFunc(doc, func(b string) string {
-		if theirs, ok := blocks[derived.FindStringSubmatch(b)[1]]; ok {
-			return theirs
+	var out strings.Builder
+	at := 0
+	for _, b := range derivedBlocks(doc) {
+		theirs, ok := blocks[b.name]
+		if !ok {
+			continue
 		}
-		return b
-	})
+		out.WriteString(doc[at:b.start] + theirs)
+		at = b.end
+	}
+	return out.String() + doc[at:]
+}
+
+// derivedBlock is a derived block's name, and where it is in a doc.
+type derivedBlock struct {
+	name       string
+	start, end int
+}
+
+// derivedBlocks finds a doc's derived blocks, as `derived` reads them,
+// each closed before the next opens: a marker with no end of its own is
+// no block, left as it is, never swallowing the text after it up to
+// another block's end (the documentalist's `derive-unclosed`).
+func derivedBlocks(doc string) []derivedBlock {
+	const open, end = "<!-- workline:derive ", "<!-- workline:end -->"
+	var all []derivedBlock
+	for at := 0; ; {
+		s := strings.Index(doc[at:], open)
+		if s < 0 {
+			return all
+		}
+		s += at
+		m := derived.FindStringSubmatchIndex(doc[s:])
+		next := strings.Index(doc[s+len(open):], open)
+		closes := strings.Index(doc[s+len(open):], end)
+		if m == nil || m[0] != 0 || closes < 0 || next >= 0 && next < closes {
+			at = s + len(open) // unclosed: left as it is
+			continue
+		}
+		all = append(all, derivedBlock{name: doc[s+m[2] : s+m[3]], start: s, end: s + m[1]})
+		at = s + m[1]
+	}
 }
 
 // mergeBlobs merges three versions of a file by git's own merge, the one

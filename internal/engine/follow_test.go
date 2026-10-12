@@ -158,6 +158,13 @@ func TestSettleDoc(t *testing.T) {
 			t.Errorf("%s: got %v %q (%v), want %v %q", c.name, ok, got, err, c.ok, c.want)
 		}
 	}
+	// A derive marker with no end of its own is no block: the person's
+	// text after it, up to another block's end, is never taken for base's.
+	unclosed := "# T\n\n<!-- workline:derive a --> stray\n\nMy words.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n"
+	onBase := "# T\n\n<!-- workline:derive a --> stray\n\nTheir words.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases.\n"
+	if got := asBase(unclosed, onBase); got != "# T\n\n<!-- workline:derive a --> stray\n\nMy words.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases.\n" {
+		t.Errorf("an unclosed marker: %q", got)
+	}
 	// A header not set one key a line is merged as text: both moving
 	// `checked` beside a list of sources is left to the person.
 	listed := "---\nsources:\n  - a.go\nchecked: 111\n---\n# T\n"
