@@ -1,0 +1,14 @@
+case: reviewer/rebased-commits-not-asked-again
+about: "A branch whose commits were all reviewed, rebased onto a newer main with no conflict: new commit ids, the same changes. The record holds each change's patch id (#286): no agent is asked, the commits said reviewed already."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-list main..HEAD | paste -sd, -) patches=$(git log -p main..HEAD | git patch-id --verbatim | cut -d' ' -f1 | paste -sd, -) runs=1 -->\" > .git/workline/reviewer-record"
+    - "git checkout -q main && printf 'More words.\\n' >> README.md && git commit -qam 'docs: say more' && git checkout -q feature && git rebase -q main"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  run-files: {out/review.json: {contains: "the 2 commits were reviewed already"}}

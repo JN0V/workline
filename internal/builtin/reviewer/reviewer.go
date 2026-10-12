@@ -8,9 +8,11 @@ package reviewer
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"slices"
@@ -101,11 +103,13 @@ type Quote struct {
 // lenses and the judge answered.
 type state struct {
 	Head       string            `json:"head"`
-	From       string            `json:"from"` // where the commits not reviewed yet start
+	From       string            `json:"from"`             // where the commits not reviewed yet start
+	Before     string            `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
 	Base       string            `json:"base"`
 	Change     Change            `json:"change"` // the whole range's
 	Mechanical []verdict.Finding `json:"mechanical"`
 	Commits    []string          `json:"commits"`
+	Patches    []string          `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
 	Lenses     []string          `json:"lenses"`
 	Together   bool              `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
 	Alone      bool              `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
@@ -219,21 +223,18 @@ func prepare(runDir, repo string, s Settings) int {
 			Message: "what was reviewed before could not be read (" + err.Error() + "): every commit of the range is reviewed again"})
 		rec = Record{}
 	}
-	out, err := git(repo, "rev-list", base+".."+head)
+	sp, err := rec.since(repo, base, head)
 	if err != nil {
 		return fail(err)
 	}
-	commits := strings.Fields(out) // newest first
-	start := base
-	for _, c := range commits {
-		if slices.Contains(rec.Reviewed, c) {
-			start = c
-			break
-		}
+	if sp.Unread != nil {
+		advisories = append(advisories, verdict.Finding{Rule: "patch-ids-unread", Level: "warn",
+			Message: "the patch ids of the commits' changes could not be read (" + sp.Unread.Error() + "): a commit rebased is reviewed again"})
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: commits, Record: rec, Advisories: advisories}
+	start := sp.From
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Advisories: advisories}
 	if start == head {
-		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))
+		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(sp.Commits))))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
@@ -241,13 +242,18 @@ func prepare(runDir, repo string, s Settings) int {
 		return held(runDir, s, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
 	}
 	// A lens reads what the commits not reviewed yet change, not every file
-	// of the merge request; when they change no code, nobody is asked.
+	// of the merge request, nor the base's code they merged in; when they
+	// change no code, nobody is asked.
 	if start != base {
-		if files, err = codeFiles(repo, s, start, head); err != nil {
+		if st.Before, err = mergedIn(repo, base, start); err != nil {
+			st.Advisories = append(st.Advisories, verdict.Finding{Rule: "base-not-set-apart", Level: "warn",
+				Message: "the base's code the new commits merged in could not be set apart (" + err.Error() + "): the lens is given it too"})
+		}
+		if files, err = codeFiles(repo, s, st.lensFrom(), head); err != nil {
 			return fail(err)
 		}
 		if len(files) == 0 {
-			return recordOnly(runDir, s, st)
+			return recordOnly(runDir, s, st, sp.New)
 		}
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
@@ -327,13 +333,48 @@ func codeFiles(repo string, s Settings, from, head string) ([]string, error) {
 	return code(s, names), nil
 }
 
+// mergedIn is where a lens's diff starts when the commits after from, the
+// newest reviewed, merged the base in (#134): from with the base merged in
+// by git, in memory (`git merge-tree --write-tree`), a conflict's markers
+// left in it. Against the head it shows the branch's own commits and how
+// it settled a conflict, both sides, and none of the base's code; a tree,
+// read as a commit is, whatever commits came with the merge (ADR-0013).
+// "" when the base is in from already: from is where.
+func mergedIn(repo, base, from string) (string, error) {
+	if _, err := git(repo, "merge-base", "--is-ancestor", base, from); err == nil {
+		return "", nil
+	}
+	cmd := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "--no-messages", from, base)
+	var errOut strings.Builder
+	cmd.Stderr = &errOut
+	out, err := cmd.Output()
+	var exit *exec.ExitError
+	if err != nil && (!errors.As(err, &exit) || exit.ExitCode() != 1) { // 1: a conflict, its markers in the tree
+		return "", fmt.Errorf("git merge-tree: %v: %s", err, strings.TrimSpace(errOut.String()))
+	}
+	tree, _, _ := strings.Cut(string(out), "\n")
+	return strings.TrimSpace(tree), nil
+}
+
+// lensFrom is where the diff a lens reads starts.
+func (st state) lensFrom() string {
+	if st.Before != "" {
+		return st.Before
+	}
+	return st.From
+}
+
 // recordOnly settles a run whose new commits change no code: nobody asked,
 // the commits recorded as reviewed, and the turn of the lenses left where
 // it was, for the next push that changes code.
-func recordOnly(runDir string, s Settings, st state) int {
-	v := review(st, nil, fmt.Sprintf("no code changed since the last review (only files the reviewer leaves, by its `ignore`): nobody asked, the %d new commits recorded", slices.Index(st.Commits, st.From)))
+func recordOnly(runDir string, s Settings, st state, fresh int) int {
+	why := "only files the reviewer leaves, by its `ignore`"
+	if st.Before != "" {
+		why = "only the base's code, merged in and reviewed there, or files the reviewer leaves"
+	}
+	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded", why, fresh))
 	v.Complete = true
-	v.Record = st.Record.add(st.Commits)
+	v.Record = st.Record.add(st.Commits, st.Patches)
 	v.Record.Runs = st.Record.Runs
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
@@ -435,7 +476,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 	var hunked []string
 	left := s.CodeLinesMax
 	for _, f := range files {
-		body, ok := marked(repo, st.From, st.Head, f)
+		body, ok := marked(repo, st.lensFrom(), st.Head, f)
 		n := strings.Count(body, "\n")
 		if !ok || n > left {
 			hunked = append(hunked, f)
@@ -447,7 +488,7 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 	diff := "(none: every file it changes is given whole below)\n"
 	if len(hunked) > 0 {
 		var err error
-		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, hunked...)...); err != nil {
+		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.lensFrom(), st.Head, "--"}, hunked...)...); err != nil {
 			return err
 		}
 		diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
@@ -525,7 +566,7 @@ func aloneTask(repo string, s Settings, st state, files []string) (string, error
 	if err != nil {
 		return "", err
 	}
-	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", st.From, st.Head, "--"}, files...)...)
+	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", st.lensFrom(), st.Head, "--"}, files...)...)
 	if err != nil {
 		return "", err
 	}
@@ -1183,7 +1224,7 @@ func settle(runDir, repo string, s Settings) int {
 	}
 	v.Findings = append(v.Findings, c.Logged...)
 	if v.Complete && st.Spec == nil { // a spec is read whole each run: no commits to record
-		v.Record = st.Record.add(st.Commits)
+		v.Record = st.Record.add(st.Commits, st.Patches)
 	}
 	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)

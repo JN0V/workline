@@ -52,6 +52,11 @@ stale docs, duplicates, condensing, merging and splitting cards:
   doc stays suspect for a person. The same holds for docs due at the
   release and for stale docs. What the run says of it names what was read
   and what was not ([the judge](judge.md#what-the-finding-says)).
+- **A source that cannot be read** — a file gone, or a section whose
+  heading is renamed or removed — is never given as empty: the doc is
+  judged on what changed, so `checked` cannot move. With nothing else to
+  judge it on (far behind, or stale), it is not put before the agent: the
+  finding says which source, and a person judges it.
 - **A line count off**: the doc is told each one, with the real count,
   counted by the engine. `checked` cannot move while one stands
   (`checked-over-count-off`), so the fix brings it to that count or leaves

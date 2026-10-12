@@ -47,8 +47,8 @@ place:
 
 - "Docs due at the next release": the docs due;
 - "Docs waiting for a person": the docs only a person can clear — too
-  large for the agent, or judged without being vouched for — each with why
-  and what to do.
+  large for the agent, naming a source that cannot be read, or judged
+  without being vouched for — each with why and what to do.
 
 ## Code never rewrites the authority
 

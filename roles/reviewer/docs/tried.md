@@ -689,3 +689,26 @@ reviewer]`, the forge GitHub; Sonnet finding, Opus judging.
   important finding (3.4k to 3.6k each): 19.2k and 23.3k a review here.
 - **Not tried**: GitLab; CI, judged then applied (a round over two
   nights); a sixth round reached by real runs.
+
+## 2026-10-12 — a rebase and a merge of `main`, on copies of workline (#286, #134)
+
+Copies of workline, the engine before the fix and after it, `run-role
+reviewer --event merge-request --input range=target..pr`, a fake agent
+answering nothing: the agent calls counted, what a lens was given
+measured in bytes (about four to a token). A first review recorded the
+branch each time.
+
+- **Rebased, no conflict** (#286): the three commits up to #304 (one
+  release, one docs, #304's 712 lines of code), `target` moved by an
+  unrelated line, the branch rebased onto it. Before: one lens asked,
+  74,056 bytes. After: no agent, "the 3 commits were reviewed already".
+- **`main` merged in, no conflict** (#134): a branch of one small commit,
+  `target` moved to #304, merged in. Before: one lens asked, 74,151 bytes,
+  #304's code. After: no agent, the merge recorded.
+- **A conflict settled wrong**: the branch's commit edits a line of
+  `internal/backlog/say.go` that #304 edits too; the merge keeps the
+  branch's file whole, dropping #304's `scale.Value(...)` and its import.
+  Before: 73,224 bytes, #304's code. After: 5,718 bytes, that file whole,
+  the conflict's markers, #304's line and import marked removed.
+- **Not tried**: a real agent on the resolution; a real pull request on
+  the forge, rebased or merged (the record in the summary comment).

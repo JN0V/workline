@@ -819,16 +819,21 @@ func Pre(runDir, repo string) int {
 			if !sd.capped {
 				// Vouching for every sentence the doc keeps needs its sources,
 				// not only what changed in them (ADR-0012): beside the diffs,
-				// when they fit.
-				if now, ok := sourcesNow(sd.doc, pl, wholeChars(s)); ok && len(now) > 0 {
+				// when they fit. One that cannot be read leaves it judged on
+				// the diffs, so `checked` cannot move (#239).
+				if now, err := sourcesNow(sd.doc, pl, wholeChars(s)); err == nil && len(now) > 0 {
 					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
 					sd.whole = true
 				}
 				continue
 			}
-			now, ok := sourcesNow(sd.doc, pl, wholeChars(s))
-			if !ok {
+			now, err := sourcesNow(sd.doc, pl, wholeChars(s))
+			if err == errTooLarge {
 				sd.tooLarge = true
+				continue
+			}
+			if err != nil { // nothing else to judge it on: a person
+				sd.note = unreadNote(err)
 				continue
 			}
 			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)

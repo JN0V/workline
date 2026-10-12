@@ -1,0 +1,16 @@
+case: reviewer/new-commit-after-a-rebase-reviewed-alone
+about: "A reviewed branch rebased onto a newer main, then one new commit pushed (#286): only that commit is reviewed, the rebased ones known by their changes."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-list main..HEAD | paste -sd, -) patches=$(git log -p main..HEAD | git patch-id --verbatim | cut -d' ' -f1 | paste -sd, -) runs=1 -->\" > .git/workline/reviewer-record"
+    - "git checkout -q main && printf 'More words.\\n' >> README.md && git commit -qam 'docs: say more' && git checkout -q feature && git rebase -q main"
+    - "printf 'package calc\\n\\n// Double doubles a count.\\nfunc Double(n int) int { return n * 2 }\\n' > calc/double.go && git add calc/double.go && git commit -qm 'feat: double a count'"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-edge-cases/task.md: {contains: "### calc/double.go", not-contains: ["### calc/half.go", "### calc/calc.go"]}

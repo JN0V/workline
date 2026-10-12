@@ -1,0 +1,16 @@
+case: reviewer/merge-of-main-asks-no-lens
+about: "A reviewed branch merges main in, main having changed code, with no conflict to settle (#134): the merge changes nothing of its own, so no lens is asked and the merge is recorded. The record, written by an engine before patch ids, still reads."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+    - "git checkout -q main && sed -i 's|n, _ := strconv.Atoi(s)|n, err := strconv.Atoi(s)\\n\\tif err != nil {\\n\\t\\treturn -1\\n\\t}|' calc/calc.go && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add calc && git commit -qm 'feat: sum the values' && git checkout -q feature"
+    - "git merge -q --no-edit main"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  run-files: {out/review.json: {contains: "only the base's code, merged in and reviewed there"}}
+  # Two commits now (a comma between them), the merge recorded, and the run not counted.
+  files: {.git/workline/reviewer-record: {contains: [",", " runs=1 -->"]}}

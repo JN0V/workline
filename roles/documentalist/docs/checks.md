@@ -125,7 +125,7 @@ ago (180) is `stale`.
   since a doc nobody reads again drifts from a world that changed around it
   (Google's freshness dates). Docs already suspect or pending are left out.
 - When gardening finds no suspect doc to judge, the agent reads the stale
-  ones again against their sources, when these fit a task.
+  ones again against their sources, when these fit a task and can be read.
 
 ### Line counts off
 
