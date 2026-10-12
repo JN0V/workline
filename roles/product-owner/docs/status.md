@@ -213,4 +213,7 @@ Only what is decided and comes next:
    the order adds effort after priority, Next shows each issue's cell;
    the role estimates both where empty, a person's value kept;
    `workline:priority/*` renamed. Six steps, conformance first, then a
-   live try on a new jn0v-lab repository.
+   live try on a new jn0v-lab repository. Step 1 built: the levels read
+   by name through one table (`internal/scale`), unit-tested; no
+   behaviour change, the engine still reads and writes
+   `workline:priority/*` only; not tried live.

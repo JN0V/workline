@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/scale"
 )
 
 // What is next and what is stuck (ADR-0031), said in the job's summary
@@ -236,12 +237,9 @@ func plural(n int, thing string) string {
 // Place says an issue's milestone and priority: "milestone v1.0,
 // priority 2", "no milestone, no priority".
 func Place(is forge.Issue) string {
-	m, p := "no milestone", "no priority"
+	m := "no milestone"
 	if is.Milestone != "" {
 		m = "milestone " + is.Milestone
 	}
-	if n := Priority(is); n > 0 {
-		p = fmt.Sprintf("priority %d", n)
-	}
-	return m + ", " + p
+	return m + ", " + scale.Said(Priority(is))
 }
