@@ -120,6 +120,7 @@ type state struct {
 	Testimony  string            `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
 	Skipped    []string          `json:"skipped,omitempty"`   // lenses not asked, each with why
 	Spec       *Spec             `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
+	Standing   []Block           `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -242,8 +243,11 @@ func prepare(runDir, repo string, s Settings) int {
 		start = base
 	}
 	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Advisories: advisories}
+	// What blocked the last review stands until a commit answers it (#326):
+	// a run with nothing new to read never turns it green.
+	st.Standing = standing(repo, s, st, rec.Blocks)
 	if start == head {
-		return held(runDir, repo, s, st, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(sp.Commits))))
+		return held(runDir, repo, s, st, review(st, nil, fmt.Sprintf("the %d %s reviewed already: only the rules ran", len(sp.Commits), plural(len(sp.Commits), "commit was", "commits were"))))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
@@ -386,7 +390,7 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded", why, fresh))
 	v.Complete = true
 	v.Record = st.Record.add(st.Commits, st.Patches)
-	v.Record.Runs = st.Record.Runs
+	v.Record.Runs, v.Record.Blocks = st.Record.Runs, st.Standing
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0, nil, nil)}})
@@ -616,11 +620,11 @@ const judgeQuestion = "Is this finding about the code true: does the code quoted
 // judge of its important findings is asked and shown besides the finding,
 // the code around it and the change (#223).
 type Lens struct {
-	Text  string `yaml:"-"`
+	Text    string `yaml:"-"`
 	Subject string `yaml:"subject"` // spec: a lens of a spec, under spec-lenses (#128); empty, of code
 	Needs   string `yaml:"needs"`   // issue: asked only of a change closing an issue, given it (#126); code: of a spec naming code, given it (#128)
-	Cites string `yaml:"cites"` // claim: each finding quotes a claim of the author, found again in what they said, or is dropped
-	Judge struct {
+	Cites   string `yaml:"cites"`   // claim: each finding quotes a claim of the author, found again in what they said, or is dropped
+	Judge   struct {
 		Question string `yaml:"question"` // empty: judgeQuestion
 		Reads    string `yaml:"reads"`    // tests: the tests that touch the cause's file; issue: the issues the change closes; code: the code a spec's finding stands on
 	} `yaml:"judge"`
@@ -1196,14 +1200,20 @@ func settle(runDir, repo string, s Settings) int {
 		return kept
 	}
 	related, outside := regroup(c.Related), regroup(c.Outside)
+	var err error
+	if st.Standing, err = reread(repo, s, st, c, related, len(c.Failed) == 0 && unjudged == 0); err != nil {
+		return fail(err)
+	}
 	v := review(st, nil, "")
 	v.Lenses, v.Change, v.Complete = facets(st), related, len(c.Failed) == 0
 	var fallback []intent.Intention
 	onForge := mergeRequest() != nil && s.ForgeWrites
+	blocks := slices.Clone(st.Standing)
 	for _, f := range related {
 		level := "warn"
-		if s.AIFindings.Blocks(f.Lens) && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified") {
+		if s.blocking(f) {
 			level = ""
+			blocks = append(blocks, Block{Lens: f.Lens, At: st.Head, Where: f.Where, Title: shortMessage(f), Cause: f.Cause})
 		}
 		v.Findings = append(v.Findings, verdict.Finding{Rule: f.Lens, Where: f.Where, Level: level, Message: message(f)})
 	}
@@ -1236,13 +1246,16 @@ func settle(runDir, repo string, s Settings) int {
 			Message: fmt.Sprintf("%d %s not judged, the run having spent its ai-max-tokens (%d): the commits are not recorded as reviewed; review again, with fewer commits or a larger ai-max-tokens", unjudged, plural(unjudged, "finding", "findings"), s.AIMaxTokens)})
 	}
 	v.Findings = append(v.Findings, c.Logged...)
-	if v.Complete && st.Spec == nil { // a spec is read whole each run: no commits to record
-		v.Record = st.Record.add(st.Commits, st.Patches)
+	if st.Spec == nil { // a spec is read whole each run: no commits to record, nothing carried
+		if v.Complete {
+			v.Record = st.Record.add(st.Commits, st.Patches)
+		}
+		v.Record.Blocks = blocks
 	}
 	v.Record.Owed = false // the lenses were asked: no lens is owed any more, whatever they answered
 	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)
-	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged)
+	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.still()
 	if len(st.Skipped) > 0 {
 		v.Summary += "; not asked: " + strings.Join(st.Skipped, ", ")
 	}
@@ -1289,15 +1302,53 @@ func Post(runDir, repo string) int {
 	return 0
 }
 
-// review starts a review from the rules' findings.
+// review starts a review from the rules' findings and the last review's
+// that still block (#326), the record keeping those.
 func review(st state, extra []verdict.Finding, summary string) Review {
-	v := Review{Subject: "code", Findings: append(append(slices.Clone(st.Mechanical), extra...), st.Advisories...), Record: st.Record}
+	v := Review{Subject: "code", Findings: append(append(slices.Clone(st.Mechanical), extra...), st.standingFindings()...), Record: st.Record}
+	v.Findings = append(v.Findings, st.Advisories...)
 	if st.Spec != nil {
 		v.Subject, v.Spec = "spec", st.Spec.Path
+	} else {
+		v.Record.Blocks = st.Standing
 	}
 	v.Status = status(v.Findings)
 	v.Summary = summary
+	if summary != "" {
+		v.Summary += st.still()
+	}
 	return v
+}
+
+// standingFindings are the last review's findings that still block, each
+// saying where it was found: no lens read them again (#326).
+func (st state) standingFindings() []verdict.Finding {
+	var out []verdict.Finding
+	for _, b := range st.Standing {
+		at := "by a review before"
+		if b.At != "" {
+			at = "reviewing " + short(b.At)
+		}
+		out = append(out, verdict.Finding{Rule: b.Lens, Where: b.Where,
+			Message: fmt.Sprintf("%s (found %s; no commit since answers it)", b.Title, at)})
+	}
+	return out
+}
+
+// still is what a summary says of the findings standing.
+func (st state) still() string {
+	n := len(st.Standing)
+	if n == 0 {
+		return ""
+	}
+	return fmt.Sprintf("; %d %s of a review before still %s, until a commit answers %s", n,
+		plural(n, "finding", "findings"), plural(n, "blocks", "block"), plural(n, "it", "them"))
+}
+
+// blocking tells whether a lens's finding blocks: important, verified, its
+// lens set to block (ai-findings).
+func (s Settings) blocking(f Finding) bool {
+	return s.AIFindings.Blocks(f.Lens) && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified")
 }
 
 // status blocks on a finding that blocks: a rule's, or a verified finding

@@ -1,0 +1,32 @@
+case: reviewer/block-goes-when-a-commit-removes-its-cause
+about: "The reviewer blocked a merge request on its commit; the author pushes a commit that removes the cause (#326). The reviewer reads the new commit, its lens in turn finding nothing, and the block goes: the cause is no longer found on the change."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "sed -i 's|return total / (len(values) - 1)|return total / max(len(values), 1)|' calc/calc.go && git commit -qam 'fix: divide by the count, one at least'"
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  calls: [{task: part, for: 1-edge-cases}]
+  no-findings: [{rule: correctness}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "No finding on the commits reviewed."], comment-lacks: ["**blocks**", "workline:blocks"]}

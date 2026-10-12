@@ -140,26 +140,54 @@ func TestLocate(t *testing.T) {
 }
 
 func TestRecord(t *testing.T) {
+	read := func(text string) Record {
+		t.Helper()
+		r, err := parseRecord(text)
+		if err != nil {
+			t.Fatalf("%s: %v", text, err)
+		}
+		return r
+	}
 	r := Record{}.add([]string{"aa", "bb"}, []string{"0a"}).add([]string{"bb", "cc"}, []string{"0a", "0c"})
-	back := parseRecord("text before\n" + r.String() + "\nafter")
+	back := read("text before\n" + r.String() + "\nafter")
 	if !slices.Equal(back.Reviewed, []string{"aa", "bb", "cc"}) || !slices.Equal(back.Patches, []string{"0a", "0c"}) || back.Runs != 2 {
 		t.Errorf("record read back: %+v", back)
 	}
-	if empty := parseRecord("no record here"); len(empty.Reviewed) != 0 || empty.Runs != 0 {
+	if empty := read("no record here"); len(empty.Reviewed) != 0 || empty.Runs != 0 {
 		t.Errorf("no record: %+v", empty)
 	}
 	// A record an engine wrote before patch ids (#286) still reads.
-	if old := parseRecord("<!-- workline:record reviewed=aa,bb runs=3 -->"); !slices.Equal(old.Reviewed, []string{"aa", "bb"}) || len(old.Patches) != 0 || old.Runs != 3 {
+	if old := read("<!-- workline:record reviewed=aa,bb runs=3 -->"); !slices.Equal(old.Reviewed, []string{"aa", "bb"}) || len(old.Patches) != 0 || old.Runs != 3 {
 		t.Errorf("a record without patch ids: %+v", old)
 	}
 	// Every lens owed by a run on ready a rule held (#129) reads back; a run
 	// added after it owes none.
 	owed := Record{Reviewed: []string{"aa"}, Runs: 1, Owed: true}
-	if back := parseRecord(owed.String()); !back.Owed || back.Runs != 1 || !slices.Equal(back.Reviewed, []string{"aa"}) {
+	if back := read(owed.String()); !back.Owed || back.Runs != 1 || !slices.Equal(back.Reviewed, []string{"aa"}) {
 		t.Errorf("an owed record read back: %+v from %s", back, owed)
 	}
-	if back := parseRecord(owed.add([]string{"bb"}, nil).String()); back.Owed {
+	if back := read(owed.add([]string{"bb"}, nil).String()); back.Owed {
 		t.Errorf("a run added still owes every lens: %+v", back)
+	}
+	// The findings that block (#326) read back whole, whatever they hold:
+	// nothing in them ends the comment hiding them, a run added keeps them.
+	blocked := Record{Reviewed: []string{"aa"}, Runs: 1, Blocks: []Block{{Lens: "correctness", At: "aa", Where: "a.go:3",
+		Title: "Important: x -- y --> z", Cause: Quote{Path: "a.go", Quote: "if n --> 0 {\n\treturn `--`"}}}}
+	text := blocked.add([]string{"bb"}, nil).String()
+	_, hidden, _ := strings.Cut(text, "<!-- workline:blocks ")
+	if strings.Count(text, "-->") != 2 || strings.Contains(strings.TrimSuffix(hidden, " -->"), "--") {
+		t.Errorf("a finding's text could end the comment hiding it:\n%s", text)
+	}
+	if back := read("before\n" + text + "\nafter"); !slices.Equal(back.Blocks, blocked.Blocks) || back.Runs != 2 {
+		t.Errorf("blocks read back: %+v from\n%s", back, text)
+	}
+	// A record an engine wrote before the blocks reads with none; blocks
+	// that do not read are said, never read as none.
+	if back := read(r.String()); back.Blocks != nil {
+		t.Errorf("a record without blocks: %+v", back)
+	}
+	if _, err := parseRecord(r.String() + "\n<!-- workline:blocks [{\"lens\": -->"); err == nil {
+		t.Error("blocks that do not read: no error")
 	}
 }
 

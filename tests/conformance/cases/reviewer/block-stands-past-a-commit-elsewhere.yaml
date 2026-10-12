@@ -1,0 +1,32 @@
+case: reviewer/block-stands-past-a-commit-elsewhere
+about: "The reviewer blocked a merge request on its commit; the author pushes a commit elsewhere, its cause left as it was (#326). The lens in turn reads the new commit and finds nothing, but it did not read the cause again: the block stands."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  agent-calls: 1
+  calls: [{task: part, for: 1-edge-cases}]
+  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "Average divides by one less than the count"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "| **blocks** | correctness |", "1 finding of a review before still blocks", "<!-- workline:blocks "]}
