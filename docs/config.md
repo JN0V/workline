@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: a7c3acb5
+checked: f7514347
 verified: agent:claude-code
 ---
 # Configuration
@@ -170,7 +170,7 @@ Runs are kept in `.git/workline/runs/` (the last
 | `GITLAB_TOKEN` | the GitLab forge's token; else glab's, if glab is set up; else `CI_JOB_TOKEN`, which reaches no issue |
 | `CI_API_V4_URL`, `CI_PROJECT_ID` (or `CI_PROJECT_PATH`) | the GitLab instance and project, set by GitLab CI; elsewhere `GITLAB_HOST` and the `origin` remote |
 | `GH_TOKEN` | read by `gh`, which the GitHub forge calls |
-| `WORKLINE_APP` | in GitHub Actions, the GitHub App's slug: empty, the token is the job's own, and the [merge policy](merge-policy.md) turns nothing on |
+| `WORKLINE_APP`, `WORKLINE_APP_ID` | in GitHub Actions, the GitHub App's slug and id: who keeps the [merge policy](merge-policy.md)'s verdicts and holds its yes; no slug, the token is the job's own, and nothing is turned on |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
 | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
 

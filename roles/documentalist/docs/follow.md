@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/settle.go, internal/engine/follow.go, roles/documentalist/role.yaml]
-checked: a7c3acb5
+checked: f7514347
 verified: agent:claude-code
 ---
 # Documentalist — a pull request in conflict on workline's lines
@@ -58,7 +58,8 @@ push to the default branch.
 - **The header, key by key**: a key one side changed keeps that side's
   value; one of the four both changed, the base's; `sources` or another
   key both changed is left to the person.
-- **A derived block**: the base's, which gardening regenerates there.
+- **A derived block**: the base's, which gardening regenerates there. A
+  marker with no end of its own is no block: left as it is.
 - **The rest**: git's own merge; a conflict there is the person's.
 - **Any conflict left**: nothing is pushed, the files named.
 

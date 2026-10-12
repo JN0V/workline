@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/agent/agent.go]
-checked: a7c3acb5
+checked: f7514347
 verified: agent:claude-code
 ---
 # Take only a part

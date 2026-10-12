@@ -938,3 +938,23 @@ Not tried: the CI jobs (`follow` after `judge`, `workline-merge.yml`,
 release-please on `main`; a release pull request and its docs live; a
 fork's; `statusCheckRollup` read with an App's token. Each sandbox's try
 removed after: branches, notes, files, the ruleset and the setting.
+
+Then, after an independent review of the pull request: on GitHub a writer's
+push keeps auto-merge on, so a head pushed after the yes could merge
+before `follow` ran again. The yes is now held on its head by the
+required status `workline/accepted`, the verdict kept as the status
+`workline/verdict`. Tried the same way on jn0v-lab/workline-sandbox (#6),
+a ruleset requiring `workline-try` and `workline/accepted`, removed after:
+
+- the first run read the ruleset: the base holds a yes;
+- the verdict kept by a run of its own (`--verdict-only`), read back by
+  the next from the status, by the token's user only; `workline/accepted`
+  set on the head, auto-merge on, the pull request held for `workline-try`;
+- a commit pushed after the yes, `workline-try` set green on it at once:
+  auto-merge still on, GitHub did not merge it in five minutes
+  (`BLOCKED`, `workline/accepted` missing on the new head);
+- `follow` then took the yes back: label and auto-merge off, one comment,
+  `workline/accepted` failure on the new head.
+
+Not tried: GitLab holding a yes through the new head's pipeline (the
+sandbox's pipelines call an agent), the `verdict` job in CI.

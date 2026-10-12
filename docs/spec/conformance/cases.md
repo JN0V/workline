@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: a7c3acb5
+checked: f7514347
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -118,7 +118,9 @@ saying so.
   `auto-merge` (a merge request's on) and `merged` (the forge merged it);
   `absent: true` — no item with that id. Items are listed by kind:
   `issues`, `merge-requests`, and `labels`, the labels the forge defines,
-  their order as id, by `title`.
+  their order as id, by `title`; `statuses`, the last status of a name on
+  a commit (a revision), by `state`, `by` and a part of its
+  `description`, or `absent: true`.
 
 ## Expect, after the run
 

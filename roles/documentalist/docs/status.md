@@ -87,9 +87,12 @@ hold:
   sandboxes, by hand with a person's token, no agent — real auto-merges
   turned on, three pull requests merged by GitHub and one by GitLab, the
   first in line brought up to date, a push after the yes taken back, a
-  veto by hand kept (tried.md, 2026-10-12). Not tried: the CI jobs with
-  the GitHub App's token, a merge starting `follow` and release-please on
-  `main`, a release and its docs live, a fork's pull request.
+  veto by hand kept; a head pushed after the yes, its other checks green,
+  held by the required status `workline/accepted` (tried.md, 2026-10-12).
+  Not tried: the CI jobs with the GitHub App's token, GitLab holding a yes
+  through the new head's pipeline, a merge starting `follow` and
+  release-please on `main`, a release and its docs live, a fork's pull
+  request.
 - **A doc too large to condense or split** (`too-large-to-condense`,
   `too-large-to-split`): reported for a person, the next doc condensed.
   Replayed on a copy of workline at 14f0db4, a recording agent: the task

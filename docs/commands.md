@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: a7c3acb5
+checked: f7514347
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -197,4 +197,4 @@ Run when the default branch moves (CI's `follow` job,
   for what a person accepted, the first in line brought up to date.
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
-  `route --verdict` wrote, kept first.
+  `route --verdict` wrote, kept first (`--verdict-only`: nothing else).

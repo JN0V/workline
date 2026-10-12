@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: da3adf40
+checked: f7514347
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -46,9 +46,9 @@ fork's pull request gets no secret, so no agent and no write.
      is left alone. With `update-branches: conflicts`, `main` is merged
      into people's pull requests in conflict only on workline's lines
      ([more](../roles/documentalist/docs/follow.md)). With the
-     [merge policy](merge-policy.md), `follow` also runs after `judge`,
-     keeping its verdict on the head. Rename `main` in its `push:` for
-     another default branch.
+     [merge policy](merge-policy.md), `verdict` keeps the judge's verdict
+     and `follow` runs after it. Rename `main` in its `push:` for another
+     default branch.
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
      policy: `follow` when a label is put or taken off.
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
@@ -70,7 +70,8 @@ fork's pull request gets no secret, so no agent and no write.
    approve them):
    - your settings → Developer settings → GitHub Apps → New GitHub App: no
      webhook; repository permissions **Contents**, **Pull requests** and
-     **Issues**, read and write;
+     **Issues**, read and write; with the merge policy, **Commit
+     statuses** too;
    - generate a private key, install the App on the repository;
    - in the repository: variable `WORKLINE_APP_ID` (the App's ID), secret
      `WORKLINE_APP_PRIVATE_KEY` (the whole `.pem`);
@@ -79,7 +80,8 @@ fork's pull request gets no secret, so no agent and no write.
 4. **Protect main** (Settings → Rules): pull requests only, the `judge`
    check required (workline.yml's verdict). The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
-   an agent never merges.
+   an agent never merges. With the merge policy, `workline/accepted` from
+   the App required too: a yes holds on the head it was given on.
 5. **A private repository** without GitHub Advanced Security: remove the
    `upload-sarif` step of workline.yml, code scanning being paid there.
 
