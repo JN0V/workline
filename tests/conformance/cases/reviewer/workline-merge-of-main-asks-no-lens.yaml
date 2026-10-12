@@ -1,0 +1,14 @@
+case: reviewer/workline-merge-of-main-asks-no-lens
+about: "workline merged main into a reviewed branch, settling a conflict on README.md's `checked` alone (ADR-0041): what the merge settled is a doc's header, which the reviewer leaves, and the rest is main's code, reviewed there; no lens is asked for it, the merge recorded."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && printf '<!-- workline\\nsources: [calc]\\nchecked: 2222222\\n-->\\n# Calc\\n\\nSmall sums.\\n' > README.md && git commit -qam 'fix: average over the count'"
+    - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
+    - "git checkout -q main && printf '<!-- workline\\nsources: [calc]\\nchecked: 3333333\\n-->\\n# Calc\\n\\nSmall sums.\\n' > README.md && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add README.md calc && git commit -qm 'feat: sum the values' && git checkout -q feature"
+    - "{ git merge -q main >/dev/null 2>&1 || true; } && git checkout -q --theirs README.md && git add README.md && git commit -qm \"Merge branch 'main' into feature\" -m 'Workline-Role: documentalist'"
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  run-files: {out/review.json: {contains: "only the base's code, merged in and reviewed there"}}

@@ -441,7 +441,24 @@ func (l *Local) MergeRequest(id int) (MergeRequest, error) {
 	if err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body}, nil
+	return MergeRequest{ID: id, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body}, nil
+}
+
+// ListMergeRequests lists the open merge requests: each from a branch of
+// this clone, by whoever wrote it.
+func (l *Local) ListMergeRequests() ([]MergeRequest, error) {
+	items, err := l.Items("merge-request")
+	if err != nil {
+		return nil, err
+	}
+	var out []MergeRequest
+	for _, it := range items {
+		if it.Branch != "" && l.StateOf(it) == "open" {
+			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
 }
 
 func (l *Local) keepsBranches() {}

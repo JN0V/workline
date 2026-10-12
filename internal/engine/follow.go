@@ -29,7 +29,13 @@ import (
 // changed, or it only records when docs were read. One a person committed
 // to is left to them, and named only when it no longer merges (ADR-0034,
 // amended).
-func Follow(repo, forgeSpec, base string, gardening bool) *Result {
+//
+// With People, the project's choice, it merges base into each person's
+// merge request left in conflict with it only on lines workline writes,
+// those settled: a doc's record of when it was checked, a derived block
+// (ADR-0041; settle.go).
+func Follow(o FollowOptions) *Result {
+	repo, forgeSpec, base, gardening := o.Repo, o.Forge, o.Base, o.Gardening
 	res := &Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
 	fail := func(err error) *Result {
 		res.Status = verdict.Block
@@ -88,6 +94,14 @@ func Follow(repo, forgeSpec, base string, gardening bool) *Result {
 		res.Summary = fmt.Sprintf("%d merge requests of the roles open, %d rebuilt on %s, %d closed", n, rebuilt, base, closed)
 	} else {
 		res.Summary = fmt.Sprintf("%d release merge requests open, %d rebuilt on %s", n, rebuilt, base)
+	}
+	if o.People {
+		o.Base = base
+		sum, err := people(f, o, local, res)
+		if err != nil {
+			return fail(err)
+		}
+		res.Summary += "; " + sum
 	}
 	return res
 }
@@ -415,43 +429,62 @@ var frontKey = regexp.MustCompile(`^([A-Za-z0-9_-]+):`)
 // A doc's front matter is merged key by key, each key set on its own line;
 // the body, and a file with no such front matter, as `git merge-file`.
 func mergeDoc(tmp, old, ours, theirs string) (string, bool) {
-	oh, ob, ok1 := front(old)
-	uh, ub, ok2 := front(ours)
-	th, tb, ok3 := front(theirs)
-	if !ok1 || !ok2 || !ok3 {
+	o, u, t := front(old), front(ours), front(theirs)
+	if !o.ok || !u.ok || !t.ok || !o.same(u) || !o.same(t) {
 		return mergeFile(tmp, old, ours, theirs)
 	}
-	head, ok := mergeFront(oh, uh, th)
+	head, ok, _ := mergeFront(o.head, u.head, t.head, nil)
 	if !ok {
 		return mergeFile(tmp, old, ours, theirs)
 	}
-	body, ok := mergeFile(tmp, ob, ub, tb)
+	body, ok := mergeFile(tmp, o.body, u.body, t.body)
 	if !ok {
 		return "", false
 	}
-	return "---\n" + head + "---\n" + body, true
+	return u.open + head + u.close + body, true
 }
 
-// front splits a doc into its front matter's lines and its body; ok is
-// false when it has none.
-func front(s string) (head []string, body string, ok bool) {
-	if !strings.HasPrefix(s, "---\n") {
-		return nil, s, false
-	}
-	end := strings.Index(s[4:], "\n---\n")
-	if end < 0 {
-		return nil, s, false
-	}
-	inner := s[4 : 4+end+1]
-	return strings.SplitAfter(strings.TrimSuffix(inner, "\n"), "\n"), s[4+end+5:], true
+// header is a doc's header, split: its first line and its last, the lines
+// between, and the body after it.
+type header struct {
+	open, close string
+	head        []string
+	body        string
+	ok          bool // false when the doc has none
 }
 
-// mergeFront merges front matters whose every line sets one key: a key the
+// same says whether two headers open and close alike.
+func (h header) same(o header) bool { return h.open == o.open && h.close == o.close }
+
+// front splits a doc into its header and its body: a front matter between
+// `---` lines, or, where a front matter would show (a README), a header
+// between `<!-- workline` and `-->`, as the documentalist reads it.
+func front(s string) header {
+	lines := strings.SplitAfter(s, "\n")
+	end := ""
+	switch first := strings.TrimSuffix(lines[0], "\n"); {
+	case first == "---":
+		end = "---"
+	case strings.TrimSpace(first) == "<!-- workline":
+		end = "-->"
+	default:
+		return header{body: s}
+	}
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == end && strings.HasSuffix(lines[i], "\n") {
+			return header{open: lines[0], close: lines[i], head: lines[1:i], body: strings.Join(lines[i+1:], ""), ok: true}
+		}
+	}
+	return header{body: s}
+}
+
+// mergeFront merges headers whose every line sets one key: a key the
 // branch changed takes the branch's line, one only base changed base's, one
 // both changed base's — the later judgement; a key the branch added goes
-// after the key it followed. ok is false for a front matter it cannot read
-// line by line.
-func mergeFront(old, ours, theirs []string) (string, bool) {
+// after the key it followed. read is false for a header it cannot read
+// line by line. With settles, base's is taken only for the keys it names
+// when both changed one: another both changed is a clash, ok false.
+func mergeFront(old, ours, theirs []string, settles func(key string) bool) (head string, ok, read bool) {
 	keyed := func(lines []string) (map[string]string, []string, bool) {
 		m, order := map[string]string{}, []string{}
 		for _, l := range lines {
@@ -469,11 +502,21 @@ func mergeFront(old, ours, theirs []string) (string, bool) {
 		}
 		return m, order, true
 	}
-	o, _, ok1 := keyed(old)
+	o, oOrder, ok1 := keyed(old)
 	u, uOrder, ok2 := keyed(ours)
 	t, tOrder, ok3 := keyed(theirs)
 	if !ok1 || !ok2 || !ok3 {
-		return "", false
+		return "", false, false
+	}
+	for _, k := range slices.Concat(oOrder, uOrder, tOrder) {
+		ov, inOld := o[k]
+		uv, inOurs := u[k]
+		tv, inTheirs := t[k]
+		baseMoved := inOld != inOurs || uv != ov
+		branchMoved := inOld != inTheirs || tv != ov
+		if settles != nil && baseMoved && branchMoved && (inOurs != inTheirs || uv != tv) && !settles(k) {
+			return "", false, true
+		}
 	}
 	line := map[string]string{} // each key's merged line
 	var keys []string
@@ -507,7 +550,7 @@ func mergeFront(old, ours, theirs []string) (string, bool) {
 	for _, k := range keys {
 		out.WriteString(line[k])
 	}
-	return out.String(), true
+	return out.String(), true, true
 }
 
 // mergeFile merges three texts as git does, and says whether it could.

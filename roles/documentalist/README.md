@@ -1,7 +1,8 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: 01f4f82
-verified: agent:claude-code
+checked: c648a31
+judged: f70db89
+verified: agent:documentalist
 ---
 # Documentalist
 
@@ -79,6 +80,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `versions` | `{pattern: "", files: []}` | how the project writes a version, and where |
 | `language` | `""` (read from each doc) | `en` or `fr` |
 | `max-open-merge-requests` | `5` | gardening pauses while this many of its merge requests wait |
+| `update-branches` | `off` | `conflicts`: when main moves, merge it into a pull request in conflict only on workline's lines ([more](docs/follow.md)) |
 | `ai-max-calls` | `10` | suspect docs per call |
 | `ai-max-tokens` | `0` (no cap) | tokens one run may spend, all calls together |
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
@@ -102,6 +104,9 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 - On a release tool's pull request: the fix on a merge request of its own,
   `workline/documentalist/release`, rebuilt on `main` each time `main`
   moves (`workline follow`, [ADR-0034](../../docs/adr/0034-the-release-fix-follows-its-base.md)), never over a person's commit.
+- On a person's pull request, with `update-branches: conflicts`: a merge
+  of main when it conflicts only on workline's lines, those settled; else
+  named in the job's summary ([more](docs/follow.md)).
 - `--json`, `--sarif`, `--code-quality` for CI.
 
 ## Cost
@@ -127,7 +132,9 @@ comment. Gardening only regenerates derived blocks.
   [gardening](docs/gardening.md): its tasks, one merge request per task.
 - [The judge](docs/judge.md): what `post` refuses of the agent's patches;
   [its claims](docs/judge-claims.md): what backs a word taken out.
-- [At the push, the release and the adoption](docs/push.md).
+- [At the push, the release and the adoption](docs/push.md);
+  [a pull request in conflict on its lines](docs/follow.md): main merged
+  in, when set.
 
 **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and DomoticsCore in CI;
 [docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).

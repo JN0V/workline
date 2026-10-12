@@ -556,7 +556,37 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	if err := decode(out, &pr); err != nil {
 		return MergeRequest{}, fmt.Errorf("pull request %d: %w", id, err)
 	}
-	return MergeRequest{Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
+	return MergeRequest{ID: id, Branch: pr.Head.Ref, Base: pr.Base.Ref, Here: pr.Head.Repo.Name == pr.Base.Repo.Name, Title: pr.Title, Body: pr.Body}, nil
+}
+
+// ListMergeRequests reads each open pull request: one from a fork, or
+// whose fork is gone, is not here; an app's (a user of type Bot) is a
+// bot's. GitHub keeps every head under refs/pull/<n>/head.
+func (g *github) ListMergeRequests() ([]MergeRequest, error) {
+	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq",
+		`.[] | {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), author: .user.login, bot: (.user.type == "Bot"), title: .title}`)
+	if err != nil {
+		return nil, err
+	}
+	found, err := lines[struct {
+		ID     int    `json:"id"`
+		Branch string `json:"branch"`
+		Base   string `json:"base"`
+		Here   bool   `json:"here"`
+		Author string `json:"author"`
+		Bot    bool   `json:"bot"`
+		Title  string `json:"title"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	var all []MergeRequest
+	for _, p := range found {
+		all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title,
+			Author: p.Author, Bot: p.Bot, Head: fmt.Sprintf("refs/pull/%d/head", p.ID)})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, nil
 }
 
 func (g *github) KeepIssue(title, body string, create bool) (int, error) {

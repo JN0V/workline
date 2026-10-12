@@ -1,0 +1,12 @@
+case: routing/own-branch-judges-nothing
+about: "A merge request whose every commit is workline's own — a role's branch, `workline/documentalist/…`, two fixes from main — judges nothing: going back past the engine's commits reaches main, nothing of a person's is left in the range, no role runs, no agent is asked."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/one hour/sixty minutes/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && sed -i 's/one hour/sixty minutes/' docs/product/sign-in.md && git commit -qam 'docs: follow the technical doc' -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "main..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []
+  summary: "the last commits are workline's own (documentalist): nothing else to judge"

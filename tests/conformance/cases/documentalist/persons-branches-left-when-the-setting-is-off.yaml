@@ -1,0 +1,17 @@
+case: documentalist/persons-branches-left-when-the-setting-is-off
+about: "A project that did not turn `update-branches` on (ADR-0041, off by default): when main moves, no person's pull request is touched, not even one in conflict only on a `checked` line, and none is named."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens' && git push -q origin main"
+  forge: {merge-requests: [{id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  summary: "0 release merge requests open, 0 rebuilt on main"
+  no-findings:
+    - {rule: merged, where: feat/sessions}
+    - {rule: not-merged, where: feat/sessions}
+  not-pushed: [feat/sessions]

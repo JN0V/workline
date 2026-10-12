@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 5eb8a2f
+checked: c648a31
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -169,7 +169,7 @@ Run when the default branch moves (CI's `follow` job,
   ([ADR-0017](adr/0017-the-release-manager.md)) whose base moved under it
   is rebuilt on the base's new tip and force-pushed, the merge request
   kept (`rebuilt`):
-  - its change redone file by file, a doc's front matter key by key, the
+  - its change redone file by file, a doc's header key by key, the
     base's value kept where both changed a key;
   - one on the tip already is left alone.
 - **Never rebuilt** (`not-rebuilt`, a warning): one holding a commit
@@ -189,5 +189,9 @@ Run when the default branch moves (CI's `follow` job,
   - one a person committed to is left to them, named when it is in
     conflict with the base (`not-rebuilt`), or when git cannot tell
     (`conflict-unread`).
+- **People's pull requests**, with the documentalist's `update-branches:
+  conflicts`: one in conflict only on lines workline writes gets the base
+  merged in (`merged`); any other is left, named (`not-merged`)
+  ([when the base moves](../roles/documentalist/docs/follow.md)).
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`.

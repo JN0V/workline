@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 5eb8a2f
+checked: c648a31
 verified: agent:claude-code
 ---
 # Using workline
@@ -36,7 +36,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: a second look at the docs confirmed that week |
-| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too |
+| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too; merges it into people's in conflict only on workline's lines, when set |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |
 | [`workline init`](commands-setup.md#workline-init) | adopts this repository |

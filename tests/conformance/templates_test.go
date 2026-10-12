@@ -115,7 +115,8 @@ func TestGitLabTemplateKeepsTheSummary(t *testing.T) {
 			continue
 		}
 		script := fmt.Sprint(job["script"])
-		if !strings.Contains(script, "workline route") && !strings.Contains(script, "workline apply") && !strings.Contains(script, "workline sample") {
+		if !strings.Contains(script, "workline route") && !strings.Contains(script, "workline apply") && !strings.Contains(script, "workline sample") &&
+			!strings.Contains(script, "workline follow") {
 			continue
 		}
 		n++
@@ -166,7 +167,9 @@ func TestGitHubTemplatesUseTheSummary(t *testing.T) {
 }
 
 // The job that applies writes its own summary: what was done, and what
-// failed or was left unapplied, on its page, the job failing still.
+// failed or was left unapplied, on its page, the job failing still; the
+// job following main too, which names each pull request it merged main
+// into, and each it left (ADR-0041).
 func TestGitHubApplyJobsWriteTheirSummary(t *testing.T) {
 	files, _ := filepath.Glob("../../ci/github/workline*.yml")
 	own, _ := filepath.Glob("../../.github/workflows/workline*.yml")
@@ -188,7 +191,7 @@ func TestGitHubApplyJobsWriteTheirSummary(t *testing.T) {
 		}
 		for name, job := range wf.Jobs {
 			for _, st := range job.Steps {
-				if !strings.Contains(st.Run, "workline apply") && !strings.Contains(st.Run, "workline sample --apply") {
+				if !strings.Contains(st.Run, "workline apply") && !strings.Contains(st.Run, "workline sample --apply") && !strings.Contains(st.Run, "workline follow") {
 					continue
 				}
 				n++

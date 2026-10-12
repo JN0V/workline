@@ -201,6 +201,11 @@ workline:garden:apply:
 # request that touched the same doc leaves it mergeable. No agent; one a
 # person committed to is left as it is. Needs a workline release with
 # `workline follow`: the first after v0.16.0.
+# With the documentalist's `update-branches: conflicts` (ADR-0041, off by
+# default; the first release after v0.24.0), a person's merge request from
+# this project in conflict with the default branch only on lines workline
+# writes gets it merged in, by the project's bot: a merge commit, never
+# forced. The summary names each one merged into, and each left.
 workline:follow:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
@@ -214,7 +219,13 @@ workline:follow:
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab
+    - workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
 
 # The weekly sample of the docs vouched for (ADR-0014, step 4): a second
 # pipeline schedule, weekly (Mondays, after the gardening), with the variable

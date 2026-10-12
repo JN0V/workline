@@ -1,0 +1,22 @@
+case: documentalist/persons-branch-long-lived-left
+about: "A pull request from develop into main conflicts with main only on a `checked` line, and develop is itself the base of another open pull request: a long-lived branch, no person's work in progress (ADR-0041). It is left, named once in the summary, not warned of at each push."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb develop && sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin develop"
+    - "git checkout -qb feat/notes && echo 'Notes.' > NOTES.md && git add NOTES.md && git commit -qm 'docs: notes' && git push -q origin feat/notes && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens' && git push -q origin main"
+  forge:
+    merge-requests:
+      - {id: 7, branch: develop, base: main, author: dana, labels: [], comments: []}
+      - {id: 8, branch: feat/notes, base: develop, author: dana, labels: [], comments: []}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  summary: "0 merge requests of people into main, main merged into 0, 0 left in conflict; left, long-lived branches (the base of other merge requests): develop"
+  no-findings:
+    - {rule: merged, where: develop}
+    - {rule: not-merged, where: develop}
+  not-pushed: [develop, feat/notes]
