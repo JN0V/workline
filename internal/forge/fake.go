@@ -11,8 +11,9 @@ import (
 )
 
 // Fake is a forge kept in a JSON file, shared between processes, for the
-// conformance tests. It can be told to fail its N-th write, once.
-type Fake struct{ Path string }
+// conformance tests. It can be told to fail its N-th write, once. Repo is
+// the repository it serves: a merge request's diff is computed there.
+type Fake struct{ Path, Repo string }
 
 // FakeState is the file's content.
 type FakeState struct {
@@ -28,6 +29,10 @@ type FakeState struct {
 	Scoped      bool `json:"scoped-labels,omitempty"`
 	FailOnWrite int  `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
 	Writes      int  `json:"writes"`
+	// ReviewRefused: the forge refuses every comment on a line, as a
+	// token that may not review does, with this reason (HTTP 403).
+	ReviewRefused string `json:"review-refused,omitempty"`
+	Reviews       int    `json:"reviews,omitempty"` // the reviews posted, each holding comments on lines
 }
 
 // FakeItem is an issue or a merge request.
@@ -56,6 +61,19 @@ type FakeItem struct {
 	// the reactions on its comments, by the comment's id (ADR-0038).
 	LabelEvents []LabelEvent        `json:"label-events,omitempty"`
 	Reactions   map[string][]string `json:"reactions,omitempty"`
+	// Threads are a merge request's comments on lines, as a review leaves
+	// them (LineReviewer).
+	Threads []FakeThread `json:"threads,omitempty"`
+}
+
+// FakeThread is a comment on a line of a merge request: its file and line
+// in the file at the head of the change, its text, and whether a person
+// resolved it.
+type FakeThread struct {
+	Path     string `json:"path"`
+	Line     int    `json:"line"`
+	Body     string `json:"body"`
+	Resolved bool   `json:"resolved,omitempty"`
 }
 
 // FakeComment is a comment: in the file, its body alone, or with its

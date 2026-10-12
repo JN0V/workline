@@ -164,8 +164,10 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 		switch {
 		case resp.StatusCode == http.StatusNotFound:
 			return nil, fmt.Errorf("%w: %s %s", errNotFound, method, path)
-		case resp.StatusCode == http.StatusForbidden:
+		case resp.StatusCode == http.StatusForbidden, resp.StatusCode == http.StatusUnauthorized && method != "GET":
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s (the token's role or scope does not allow it)", errForbidden, method, path, resp.Status, strings.TrimSpace(string(data)))
+		case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity:
+			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, resp.Status, strings.TrimSpace(string(data)))
 		case resp.StatusCode >= 300:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", ErrUnreachable, method, path, resp.Status, strings.TrimSpace(string(data)))
 		}
