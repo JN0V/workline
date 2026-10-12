@@ -206,7 +206,7 @@ puts the label.
   acceptance; concepts.md, ADR-0011, ADR-0020 and AGENTS.md amended.
 - **Tried live** on both forges, real auto-merges and merges, no agent:
   [tried.md](../../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live).
-- Conformance: merge/* (28 cases), the simulated forge, GitLab's mock, a
+- Conformance: merge/* (29 cases), the simulated forge, GitLab's mock, a
   `cmd:` forge; TestMergePolicyRunsAfterTheJudgeAndOnLabels.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
