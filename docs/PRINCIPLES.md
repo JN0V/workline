@@ -4,8 +4,10 @@ The rules every role, spec and line of engine code follows. When a design
 choice is unclear, it is settled against this page.
 
 1. **People at both ends, the machine in between.** People state the need, how
-   the result is verified and who validates it; people accept the result. The
-   line does the work in between.
+   the result is verified and who validates it; people accept the result — a
+   label, where the project's merge policy has the forge merge what they
+   accepted ([ADR-0042](adr/0042-the-engine-merges-by-the-projects-policy.md)).
+   The line does the work in between.
 2. **One role, one job.** Each role does one thing and hands over, like a post
    on an assembly line.
 3. **Each role reads only what it needs.** No catch-all constitution; a context

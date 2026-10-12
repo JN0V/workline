@@ -1,8 +1,8 @@
 # ADR-0042: The engine merges by the project's written policy, through the forge's auto-merge
 
-- **Status:** proposed — the points under "For the person" wait on the
-  maintainer; `cautious` built by [#321], `normal` parked in
-  [#322]
+- **Status:** accepted, "For the person" as proposed; `cautious` built by
+  [#321] ([page](../merge-policy.md), [below](#built-2026-10-12-321)),
+  `normal` parked in [#322]
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -121,7 +121,7 @@ puts the label.
   requests ([ADR-0005]). **Not the reviewer**: it never approves
   ([ADR-0020]).
 
-### For the person
+### For the person (settled as proposed, 2026-10-12)
 
 1. **A push after the yes.** The label covers the head it was put on, as
    approvals reset on a push elsewhere. Proposed: any commit but
@@ -175,6 +175,36 @@ puts the label.
     forge merges";
   - [AGENTS.md](../../AGENTS.md): the "never merge" lines kept; an agent
     never puts `workline:accepted`.
+
+## Built (2026-10-12, #321)
+
+`cautious`, as decided; what the build settled
+([page](../merge-policy.md)):
+
+- **Each head's verdict, where `follow` reads it**: the judging job
+  writes it (`route --verdict`); the job holding the write token keeps it
+  as a git note on the head (`follow --verdict`,
+  `refs/notes/workline/verdicts`), as Gerrit keeps its reviews. A later
+  run — a label, a push to the base — reads it with the token it holds:
+  no artifact, no further permission for the App.
+- **A push after the yes** is told by the forge's own push times —
+  GitHub's repository activity, GitLab's versions —, else by the commits'
+  dates; a head opened with the label on is the one accepted. `follow`'s
+  own update is a merge carrying workline's trailer.
+- **GitHub turns no auto-merge on for a pull request it could merge now**
+  ("clean status"): it is merged at once, at the head checked, as `gh pr
+  merge --auto` does — the forge's rules met already.
+- **The workflows**: `follow` runs after `judge`, and on a label put or
+  taken off in a workflow of its own (`pull_request_target`): a run with
+  `judge` skipped would show the check passed. GitLab starts no pipeline
+  for a label: it is acted on at the next one.
+- **Draft** turns auto-merge off; **another bot's own auto-merge** (a
+  dependency bot's) is left to it; a fork's run is the fork's, so the
+  templates keep no verdict of it.
+- **Tried live** on both forges, real auto-merges and merges, no agent:
+  [tried.md](../../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live).
+- Conformance: merge/* (28 cases), the simulated forge, GitLab's mock, a
+  `cmd:` forge; TestMergePolicyRunsAfterTheJudgeAndOnLabels.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md

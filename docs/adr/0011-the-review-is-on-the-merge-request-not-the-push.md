@@ -1,6 +1,7 @@
 # ADR-0011: The review is on the merge request, not the push
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-10-12 (the engine merges by the
+  project's policy, [ADR-0042](0042-the-engine-merges-by-the-projects-policy.md))
 - **Date:** 2026-09-30
 - **Amends:** ADR-0007, whose approval of every push was on for everyone;
   ADR-0008, whose channels stay for whoever asks for it
@@ -40,3 +41,17 @@ people to look. It is where the person wants to be made to look.
   GitHub App for agents, with no right to merge. Listed in docs/BACKLOG.md.
 - Where no merge request is required, nothing reviews an agent's push:
   such a project turns `approve-push` on, or protects its branch.
+
+## Amendment (2026-10-12): the engine merges by the project's policy
+
+[ADR-0042](0042-the-engine-merges-by-the-projects-policy.md), built by
+[#321](https://github.com/JN0V/workline/issues/321) at its `cautious` level.
+
+- **An agent never merges, never turns auto-merge on, and never puts
+  `workline:accepted`**: kept.
+- **The engine does, by the project's policy** (`merge:`): `workline
+  follow`, holding the write token and no AI key, turns the forge's own
+  auto-merge on for a pull request a person labelled, its head's verdict
+  passed. The forge merges, checking its own rules.
+- **The review stays the merge request's**; the person's yes is a label
+  on it. Without `merge:`, the person merges, as before.

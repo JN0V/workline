@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/engine.go, internal/line, internal/routing, internal/verdict, routing.default.yaml]
-checked: 54cc42b
+checked: a7c3acb5
 verified: agent:claude-code
 ---
 # Concepts
@@ -91,8 +91,10 @@ best available, said in the verdict
 
 ## People
 
-- People state the need and accept the result; workline never merges,
-  never approves.
+- People state the need and accept the result; workline never approves.
+  With the project's [merge policy](merge-policy.md), it turns the
+  forge's auto-merge on for what a person accepted, a label; else the
+  person merges.
 - What a role cannot settle is written where a person looks — an issue, a
   comment, a label — with what to do.
 - A **parent** — a need the product owner split into parts, each an issue
