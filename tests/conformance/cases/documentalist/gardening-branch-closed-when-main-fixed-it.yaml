@@ -1,0 +1,18 @@
+case: documentalist/gardening-branch-closed-when-main-fixed-it
+about: "A gardening merge request whose fix main already holds — main brought the doc to two hours and moved `checked` itself — has nothing left to merge: gardening closes it, one comment saying why, and pushes nothing (#303)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/checked: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: abcdef1/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: pass
+  findings: [{rule: closed, where: workline/documentalist/suspect, message: "main holds its change already"}]
+  no-findings: [{rule: rebuilt, where: workline/documentalist/suspect}]
+  not-pushed: [workline/documentalist/suspect]
+  forge:
+    merge-requests:
+      - {id: 4, closed: true, comments: 1, comment-contains: "main holds its change already: nothing is left to merge"}
