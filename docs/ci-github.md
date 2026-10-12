@@ -46,11 +46,10 @@ fork's pull request gets no secret, so no agent and no write.
      is left alone. With `update-branches: conflicts`, `main` is merged
      into people's pull requests in conflict only on workline's lines
      ([more](../roles/documentalist/docs/follow.md)). With the
-     [merge policy](merge-policy.md), `verdict` keeps the judge's verdict
-     and `follow` runs after it. Rename `main` in its `push:` for another
-     default branch.
+     [merge policy](merge-policy.md), `verdict` and `follow` run after
+     `judge`. Rename `main` in its `push:` for another default branch.
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
-     policy: `follow` when a label is put or taken off.
+     policy: `follow` on a label.
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
      pull request, which gets no secret and no right to write.
    - [workline-gardening.yml](../ci/github/workline-gardening.yml):
@@ -81,7 +80,7 @@ fork's pull request gets no secret, so no agent and no write.
    check required (workline.yml's verdict). The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
    an agent never merges. With the merge policy, `workline/accepted` from
-   the App required too: a yes holds on the head it was given on.
+   the App too.
 5. **A private repository** without GitHub Advanced Security: remove the
    `upload-sarif` step of workline.yml, code scanning being paid there.
 
