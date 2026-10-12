@@ -22,8 +22,11 @@ func lineComments(repo string, s Settings, st state, related []Finding) []forge.
 		if l, ok := files[path]; ok {
 			return l
 		}
-		text, _ := fileAt(repo, st.Head, path)
-		files[path] = strings.Split(text, "\n")
+		if text, ok := fileAt(repo, st.Head, path); ok {
+			files[path] = strings.Split(text, "\n")
+		} else {
+			files[path] = nil // a file gone at the head: each line keyed by its number
+		}
 		return files[path]
 	}
 	var out []forge.LineComment
@@ -65,9 +68,10 @@ func fileLine(where string) (string, int, bool) {
 // lineKeyOf keys a finding's comment by what found it and the line it
 // stands on: its file, its text spaces aside, and which of the lines
 // reading so it is. A line moved by lines added above keeps its key; a
-// line changed gets a new one.
+// line changed gets a new one. A line not read — a file gone at the head,
+// past its end — is keyed by its number.
 func lineKeyOf(lines []string, path string, n int, by string) string {
-	text, nth := "", 0
+	text, nth := fmt.Sprintf("\x00line %d", n), 0
 	if n <= len(lines) {
 		text = norm(lines[n-1])
 		for _, l := range lines[:n-1] {
