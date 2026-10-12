@@ -80,6 +80,16 @@ hold:
   the person's commits, no agent (tried.md, 2026-10-12). Not tried live:
   the push to GitHub and GitLab, the App's `workflows` permission, the CI
   job.
+- **The merge policy** (`merge: {autonomy: cautious}`,
+  [ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md),
+  [#321](https://github.com/JN0V/workline/issues/321)), the engine's, run
+  by `follow` ([page](../../../docs/merge-policy.md)): live on both
+  sandboxes, by hand with a person's token, no agent — real auto-merges
+  turned on, three pull requests merged by GitHub and one by GitLab, the
+  first in line brought up to date, a push after the yes taken back, a
+  veto by hand kept (tried.md, 2026-10-12). Not tried: the CI jobs with
+  the GitHub App's token, a merge starting `follow` and release-please on
+  `main`, a release and its docs live, a fork's pull request.
 - **A doc too large to condense or split** (`too-large-to-condense`,
   `too-large-to-split`): reported for a person, the next doc condensed.
   Replayed on a copy of workline at 14f0db4, a recording agent: the task

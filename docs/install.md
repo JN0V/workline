@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: 54cc42b
+checked: a7c3acb5
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -142,8 +142,9 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
   pull request, and each push to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
-  [workline-sample.yml](../ci/github/workline-sample.yml)
-  ([ci-github.md](ci-github.md)).
+  [workline-sample.yml](../ci/github/workline-sample.yml),
+  [workline-merge.yml](../ci/github/workline-merge.yml) (with the
+  [merge policy](merge-policy.md)) ([ci-github.md](ci-github.md)).
 - **GitLab**: include
   [ci/gitlab/workline.gitlab-ci.yml](../ci/gitlab/workline.gitlab-ci.yml),
   then add two pipeline schedules, gardening and the sample

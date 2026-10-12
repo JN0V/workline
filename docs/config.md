@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 54cc42b
+checked: a7c3acb5
 verified: agent:claude-code
 ---
 # Configuration
@@ -28,6 +28,7 @@ owner), then the project's `settings`.
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
+| `merge` | `autonomy: cautious`: the forge's auto-merge turned on for what a person accepted ([merge policy](merge-policy.md)); off unless set |
 
 ## `.workline/config.yaml`
 
@@ -68,6 +69,7 @@ repos:                      # other repositories docs may depend on
 release:                    # how the project's release tool works
   branches: ["release/*"]   # its pull requests' branches; default: release-please's, releaser-pleaser's, release-plz's, changesets'
   tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
+merge: {autonomy: cautious} # the forge merges what a person labelled workline:accepted, its head's verdict passed
 ```
 
 Where the comments point:
@@ -86,6 +88,7 @@ Where the comments point:
 
 - **A key the engine does not know**, with its line: an ignored setting is
   one someone believes in and nothing applies.
+- **A level `merge:` does not know**, the levels named.
 - **A role retired**, named in `roles:` or `routing:`: the release manager
   is gone, and the message names the release tool to use instead
   ([ADR-0017](adr/0017-the-release-manager.md)).
@@ -167,6 +170,7 @@ Runs are kept in `.git/workline/runs/` (the last
 | `GITLAB_TOKEN` | the GitLab forge's token; else glab's, if glab is set up; else `CI_JOB_TOKEN`, which reaches no issue |
 | `CI_API_V4_URL`, `CI_PROJECT_ID` (or `CI_PROJECT_PATH`) | the GitLab instance and project, set by GitLab CI; elsewhere `GITLAB_HOST` and the `origin` remote |
 | `GH_TOKEN` | read by `gh`, which the GitHub forge calls |
+| `WORKLINE_APP` | in GitHub Actions, the GitHub App's slug: empty, the token is the job's own, and the [merge policy](merge-policy.md) turns nothing on |
 | `GITLEAKS_CONFIG`, `GITLEAKS_CONFIG_TOML` | the committer's term list, before the repository's and yours |
 | `CI`, `GITHUB_ACTIONS`, `GITLAB_CI` | any set: `forge: local` refuses its writes, the clone being thrown away |
 

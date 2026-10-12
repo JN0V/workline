@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 54cc42b
+checked: a7c3acb5
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -31,7 +31,7 @@ then one that applies, with the write token and no AI key
 | Task | When | Judges | Applies |
 |---|---|---|---|
 | merge request | each one | the line on its commits | the fixes, to its branch |
-| follow | a push to the default branch | — | the release fix rebuilt on it ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set, the branch merged into people's pull requests in conflict only on workline's lines ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)) |
+| follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | the release fix rebuilt on it ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set, the branch merged into people's pull requests in conflict only on workline's lines ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), and the forge's auto-merge turned on for what a person accepted ([merge policy](merge-policy.md)) |
 | gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |

@@ -883,3 +883,58 @@ no agent, judged `origin/main` up to the merge's first parent — committer,
 documentalist, reviewer, 0 calls — and listed the 18 docs whose `checked`
 took `main`'s value. #315's and #316's tries gave the same merges as
 before.
+
+## 2026-10-12 — the merge policy, `cautious`, live
+
+ADR-0042, #321: the engine of the branch, run by hand in clones of the
+sandboxes with `merge: {autonomy: cautious}` in the clone's config, a
+person's token (JN0V), no agent — the line run with `--ai none`, its
+committer and documentalist passing, its verdict written (`route
+--verdict`) and kept as a note (`follow --verdict`). No pipeline ran: the
+GitHub fork runs no workflow, GitLab's pushes said `ci.skip`.
+
+**GitHub**, jn0v-lab/workline-sandbox, "Allow auto-merge" on and a ruleset
+on `main` requiring a status `workline-try`, kept up to date, both
+removed after:
+
+- **The label**: made by the first run, with its description; put on #2
+  and #3 by a person who can write (the collaborator permission read).
+  Before their verdicts, `verdict-missing` each.
+- **#2**: its verdict kept, the note pushed; auto-merge turned on
+  (`MERGE`, the viewer's default). The status set green: GitHub merged it
+  1 min 54 s later, as JN0V.
+- **#3, behind `main` then**: brought up to date — `main` merged in, a
+  merge commit pushed —, its auto-merge kept, its yes kept (the push
+  `follow`'s own, by the repository's activity). The line on the merge
+  judged the commits before it; the status green: merged.
+- **#4**: auto-merge on, then a commit pushed after the label: label and
+  auto-merge taken off, one comment saying why. Accepted again: brought
+  up to date, auto-merge on; turned off by hand: `vetoed`, left off.
+- **#5**, its status green before the label: GitHub refuses auto-merge on
+  a pull request it could merge now ("clean status"): merged at once, at
+  the head checked.
+- **Found and fixed**: the note's push ran the machine's pre-push hook
+  (an older engine refusing `merge:`): pushed with `--no-verify`, the
+  engine's own record; a push refused by a hook was said as git's last
+  line: the hook's words now.
+
+**GitLab**, gitlab.com JN0V/workline-sandbox, `[skip ci]` commits:
+
+- **!6**, labelled `workline::accepted`, its pipeline running (an
+  external status on it): set to merge when the pipeline succeeds, by the
+  merge API (`auto_merge`); GitLab's note "enabled an automatic merge when
+  all merge checks for … pass" read as when it was turned on. Cancelled by
+  hand: `vetoed`. The label taken off and put again: on again. The status
+  green: GitLab merged it.
+- **!7**, labelled as it was opened, then a commit pushed: label off, one
+  note. Its auto-merge, with no pipeline running: GitLab answered 405,
+  said as its refusal (`auto-merge-refused`), not as a forge out of reach.
+- **Found and fixed**: GitLab dates a merge request's first version 1.1 s
+  after a label put as it opens, so its head was taken as pushed after the
+  yes; a first version within a minute of the yes is the head accepted.
+
+Not tried: the CI jobs (`follow` after `judge`, `workline-merge.yml`,
+`workline:merge`) and the GitHub App's token; a merge starting `follow` and
+release-please on `main`; a release pull request and its docs live; a
+fork's; `statusCheckRollup` read with an App's token. Each sandbox's try
+removed after: branches, notes, files, the ruleset and the setting.

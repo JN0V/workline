@@ -1,6 +1,6 @@
 ---
 sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
-checked: 54cc42b
+checked: a7c3acb5
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -47,6 +47,9 @@ JSON request per operation ([forge-command.md](spec/forge-command.md)).
   replaced by the command, the GitHub App's steps by `FORGEJO_TOKEN`.
 - **Not tried yet** on a live instance — the script was run against a mock
   of the API only: tell us what differs.
+- **The [merge policy](merge-policy.md)** needs `merge-state` and
+  `auto-merge`, which the sample does not answer yet: said, nothing turned
+  on. The local forge has no auto-merge.
 - A forge of another shape: write the command the contract asks.
 
 ## No forge

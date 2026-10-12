@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 54cc42b
+checked: a7c3acb5
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -102,7 +102,12 @@ What else a case can give, run and expect, and how each is checked, is in
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines
   of the repository's diff from the merge request's `base` (main) to the
-  head reviewed; `review-refused: <why>` refuses every review (403). The
+  head reviewed; `review-refused: <why>` refuses every review (403). For
+  the merge policy, a merge request is a `draft`, its `auto-merge` on
+  (`auto-merge-at`, `auto-merge-by`), its head's `checks`, its `pushes`
+  (`{head, at}`, a head a revision of the repository), `clean` (merged at
+  once); `job-token: true` is a CI job's own token; `fixtures/verdict.sh`
+  keeps a head's verdict as `workline follow --verdict` does. The
   repository's `setup` may write into it, at `$FORGE_FILE`, what only the
   built repository knows: a commit's id in a record a comment holds.
 - **Simulated GitLab.** `forge: gitlab` runs the engine's own GitLab forge
@@ -114,7 +119,10 @@ What else a case can give, run and expect, and how each is checked, is in
   request's diffs are the repository's, from its `base` (main) to its
   `branch` (HEAD); a discussion on a line they do not show, or on a kept
   line without its old one, lands on no line, as on gitlab.com;
-  `review-refused` refuses every discussion (403).
+  `review-refused` refuses every discussion (403). Its merge API sets a
+  merge request to merge when its pipeline succeeds, at its head only
+  (409 otherwise), says when in a system note, and cancels it; its
+  versions are its `pushes`.
 
 ## Evaluation
 

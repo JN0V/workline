@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 54cc42b
+checked: a7c3acb5
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -45,8 +45,12 @@ fork's pull request gets no secret, so no agent and no write.
      touched the same doc leaves it mergeable; one a person committed to
      is left alone. With `update-branches: conflicts`, `main` is merged
      into people's pull requests in conflict only on workline's lines
-     ([more](../roles/documentalist/docs/follow.md)). Rename `main` in its
-     `push:` for another default branch.
+     ([more](../roles/documentalist/docs/follow.md)). With the
+     [merge policy](merge-policy.md), `follow` also runs after `judge`,
+     keeping its verdict on the head. Rename `main` in its `push:` for
+     another default branch.
+   - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
+     policy: `follow` when a label is put or taken off.
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
      pull request, which gets no secret and no right to write.
    - [workline-gardening.yml](../ci/github/workline-gardening.yml):
@@ -93,7 +97,9 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
   ([more](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
 - `apply`, `follow` and each pair's second job hold the write token, the
   App's when there is one, and no AI key. `follow`'s merge into a pull
-  request runs its checks again only with the App's token.
+  request runs its checks again only with the App's token; the merge
+  policy acts only with it, and needs "Allow auto-merge" (Settings →
+  General).
 - `apply` runs when `judge` failed too (`if: always()`): a pull request
   the reviewer holds still gets its comment ([#226](https://github.com/JN0V/workline/issues/226)); the workflow fails
   by `judge`'s verdict.
