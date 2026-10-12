@@ -33,6 +33,11 @@
 #          request that touched the same doc leaves it mergeable (ADR-0034).
 #          One a person committed to is left as it is. With the job's own
 #          token, the force-push runs no check on that pull request.
+#          With the documentalist's `update-branches: conflicts` (ADR-0041,
+#          off by default; the first release after v0.24.0), a person's pull
+#          request from this repository in conflict with main only on lines
+#          workline writes gets main merged in: a merge commit, never forced.
+#          The job's summary names each one merged into, and each left.
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
@@ -210,4 +215,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
-          workline follow --base "$GITHUB_REF_NAME" --forge github
+          status=0
+          workline follow --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
