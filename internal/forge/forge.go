@@ -267,6 +267,12 @@ type MergeRequest struct {
 	// Head is the ref this repository keeps its head under, for one from a
 	// fork (GitHub's refs/pull/<n>/head); "" when the forge keeps none.
 	Head string
+	// Labels, Draft and AutoMerge are what ListMergeRequests reads of it
+	// for the merge policy (ADR-0042): its labels, whether it is a draft,
+	// whether the forge's auto-merge is on.
+	Labels    []string
+	Draft     bool
+	AutoMerge bool
 }
 
 // botBranches are the branches of the merge requests the dependency bots

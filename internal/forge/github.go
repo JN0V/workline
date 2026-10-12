@@ -564,18 +564,21 @@ func (g *github) MergeRequest(id int) (MergeRequest, error) {
 // bot's. GitHub keeps every head under refs/pull/<n>/head.
 func (g *github) ListMergeRequests() ([]MergeRequest, error) {
 	out, err := g.api("--paginate", "repos/{owner}/{repo}/pulls?state=open&per_page=100", "--jq",
-		`.[] | {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), author: .user.login, bot: (.user.type == "Bot"), title: .title}`)
+		`.[] | {id: .number, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), author: .user.login, bot: (.user.type == "Bot"), title: .title, labels: [.labels[].name], draft: (.draft // false), auto: (.auto_merge != null)}`)
 	if err != nil {
 		return nil, err
 	}
 	found, err := lines[struct {
-		ID     int    `json:"id"`
-		Branch string `json:"branch"`
-		Base   string `json:"base"`
-		Here   bool   `json:"here"`
-		Author string `json:"author"`
-		Bot    bool   `json:"bot"`
-		Title  string `json:"title"`
+		ID     int      `json:"id"`
+		Branch string   `json:"branch"`
+		Base   string   `json:"base"`
+		Here   bool     `json:"here"`
+		Author string   `json:"author"`
+		Bot    bool     `json:"bot"`
+		Title  string   `json:"title"`
+		Labels []string `json:"labels"`
+		Draft  bool     `json:"draft"`
+		Auto   bool     `json:"auto"`
 	}](out)
 	if err != nil {
 		return nil, err
@@ -583,7 +586,7 @@ func (g *github) ListMergeRequests() ([]MergeRequest, error) {
 	var all []MergeRequest
 	for _, p := range found {
 		all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title,
-			Author: p.Author, Bot: p.Bot, Head: fmt.Sprintf("refs/pull/%d/head", p.ID)})
+			Author: p.Author, Bot: p.Bot, Head: fmt.Sprintf("refs/pull/%d/head", p.ID), Labels: p.Labels, Draft: p.Draft, AutoMerge: p.Auto})
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
 	return all, nil

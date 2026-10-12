@@ -250,6 +250,10 @@ func (c *command) ListMergeRequests() ([]MergeRequest, error) {
 			Author string `json:"author"`
 			Bot    bool   `json:"bot"`
 			Head   string `json:"head"`
+			// What the merge policy reads first (ADR-0042).
+			Labels    []string `json:"labels"`
+			Draft     bool     `json:"draft"`
+			AutoMerge bool     `json:"auto-merge"`
 		} `json:"merge-requests"`
 	}
 	if err := c.call("merge-requests", nil, &a); err != nil {
@@ -259,11 +263,31 @@ func (c *command) ListMergeRequests() ([]MergeRequest, error) {
 	for _, m := range a.MergeRequests {
 		if m.Branch != "" {
 			out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: m.Here, Title: m.Title,
-				Author: m.Author, Bot: m.Bot, Head: m.Head})
+				Author: m.Author, Bot: m.Bot, Head: m.Head, Labels: m.Labels, Draft: m.Draft, AutoMerge: m.AutoMerge})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
+}
+
+// MergeState asks merge-state: {head, draft, auto-merge, auto-merge-at,
+// auto-merge-by, auto-merge-bot, checks, label-events, pushes}
+// (docs/spec/forge-command.md). A command that does not know it refuses
+// it, and the merge policy says so.
+func (c *command) MergeState(mr MergeRequest) (MergeState, error) {
+	var st MergeState
+	err := c.call("merge-state", map[string]any{"id": mr.ID, "branch": mr.Branch}, &st)
+	return st, err
+}
+
+// AutoMerge asks auto-merge: {id, branch, head, on}, answered {merged}
+// when the forge merged it at once.
+func (c *command) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) {
+	var a struct {
+		Merged bool `json:"merged"`
+	}
+	err := c.call("auto-merge", map[string]any{"id": mr.ID, "branch": mr.Branch, "head": head, "on": on}, &a)
+	return a.Merged, err
 }
 
 // Milestones reads each milestone as its title alone, or as {title, due}.

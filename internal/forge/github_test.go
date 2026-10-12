@@ -115,7 +115,7 @@ EOF
 		t.Fatal(err)
 	}
 	want := MergeRequest{ID: 5, Branch: "feat", Base: "main", Here: true, Title: "Average over the count", Body: "Closes #4\n\nNo change in behaviour."}
-	if mr != want {
+	if fmt.Sprint(mr) != fmt.Sprint(want) {
 		t.Errorf("merge request: %+v, want %+v", mr, want)
 	}
 }
@@ -128,7 +128,7 @@ func TestGitHubListMergeRequests(t *testing.T) {
 	args := filepath.Join(bin, "args")
 	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + args + "\n" + `cat <<'EOF'
 {"id":9,"branch":"patch-1","base":"main","here":false,"author":"zed","bot":false,"title":"Fix a typo"}
-{"id":7,"branch":"feat/sessions","base":"main","here":true,"author":"dana","bot":false,"title":"Two hours"}
+{"id":7,"branch":"feat/sessions","base":"main","here":true,"author":"dana","bot":false,"title":"Two hours","labels":["workline:accepted"],"draft":false,"auto":true}
 {"id":8,"branch":"release-please--branches--main","base":"main","here":true,"author":"workline-app[bot]","bot":true,"title":"chore: release 1.1.0"}
 EOF
 `
@@ -141,7 +141,7 @@ EOF
 		t.Fatal(err)
 	}
 	want := []MergeRequest{
-		{ID: 7, Branch: "feat/sessions", Base: "main", Here: true, Title: "Two hours", Author: "dana", Head: "refs/pull/7/head"},
+		{ID: 7, Branch: "feat/sessions", Base: "main", Here: true, Title: "Two hours", Author: "dana", Head: "refs/pull/7/head", Labels: []string{"workline:accepted"}, AutoMerge: true},
 		{ID: 8, Branch: "release-please--branches--main", Base: "main", Here: true, Title: "chore: release 1.1.0", Author: "workline-app[bot]", Bot: true, Head: "refs/pull/8/head"},
 		{ID: 9, Branch: "patch-1", Base: "main", Title: "Fix a typo", Author: "zed", Head: "refs/pull/9/head"},
 	}

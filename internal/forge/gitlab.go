@@ -669,7 +669,12 @@ func (g *gitlab) Trail(id int, label string) (Trail, error) {
 // project or group access token's is a bot's; a person of the project by
 // their access level (ADR-0038).
 func (g *gitlab) LabelEvents(id int) ([]LabelEvent, error) {
-	out, err := g.api("--paginate", path(Target{Kind: "issue", ID: id})+"/resource_label_events?per_page=100")
+	return g.labelEvents(Target{Kind: "issue", ID: id})
+}
+
+// labelEvents reads an issue's or a merge request's label events.
+func (g *gitlab) labelEvents(t Target) ([]LabelEvent, error) {
+	out, err := g.api("--paginate", path(t)+"/resource_label_events?per_page=100")
 	if err != nil {
 		return nil, err
 	}
@@ -980,6 +985,9 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 			ID       int    `json:"id"`
 			Username string `json:"username"`
 		} `json:"author"`
+		Labels []string `json:"labels"`
+		Draft  bool     `json:"draft"`
+		Auto   bool     `json:"merge_when_pipeline_succeeds"`
 	}
 	var all []MergeRequest
 	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
@@ -995,7 +1003,8 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 				}
 			}
 			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
-				Title: m.Title, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID)})
+				Title: m.Title, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID),
+				Labels: m.Labels, Draft: m.Draft, AutoMerge: m.Auto})
 		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
