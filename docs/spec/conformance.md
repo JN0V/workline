@@ -66,7 +66,7 @@ expect:
 ```
 
 What else a case can give, run and expect, and how each is checked, is in
-[Conformance — a case in full](../conformance/cases.md).
+[Conformance — a case in full](conformance/cases.md).
 
 ## The fakes
 
@@ -157,7 +157,7 @@ subscription, the tokens are what counts): a score compares only with the same
 models.
 
 Real shapes, both sides graded, and the reviewer's measure are told in full in
-[Evaluation — two measures](../conformance/evaluation.md).
+[Evaluation — two measures](conformance/evaluation.md).
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.

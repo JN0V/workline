@@ -5,7 +5,7 @@ status: draft
 # Conformance — a case in full
 
 What a case can give, run and expect beyond the example in
-[Conformance](../spec/conformance.md#a-case), in full.
+[Conformance](../conformance.md#a-case), in full.
 
 ## Given
 
@@ -18,7 +18,7 @@ a `PATH` without a tool, or with a fake one first. `engine-tags` runs the
 case on an engine built from this source with those Go build tags, a
 change only the tests make: `workline_alias` gives how a person accepts a
 need a new heading, written first, the shipped one still read
-([ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)).
+([ADR-0039](../../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)).
 Such a case does not run on an engine `WORKLINE_ENGINE` names: it fails,
 saying so.
 

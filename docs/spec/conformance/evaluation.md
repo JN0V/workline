@@ -4,7 +4,7 @@ status: draft
 ---
 # Evaluation — two measures
 
-Two measures of [Evaluation](../spec/conformance.md#evaluation), told in full.
+Two measures of [Evaluation](../conformance.md#evaluation), told in full.
 
 ## Real shapes
 
