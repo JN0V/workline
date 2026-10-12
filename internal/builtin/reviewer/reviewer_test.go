@@ -140,13 +140,17 @@ func TestLocate(t *testing.T) {
 }
 
 func TestRecord(t *testing.T) {
-	r := Record{}.add([]string{"aa", "bb"}).add([]string{"bb", "cc"})
+	r := Record{}.add([]string{"aa", "bb"}, []string{"0a"}).add([]string{"bb", "cc"}, []string{"0a", "0c"})
 	back := parseRecord("text before\n" + r.String() + "\nafter")
-	if !slices.Equal(back.Reviewed, []string{"aa", "bb", "cc"}) || back.Runs != 2 {
+	if !slices.Equal(back.Reviewed, []string{"aa", "bb", "cc"}) || !slices.Equal(back.Patches, []string{"0a", "0c"}) || back.Runs != 2 {
 		t.Errorf("record read back: %+v", back)
 	}
 	if empty := parseRecord("no record here"); len(empty.Reviewed) != 0 || empty.Runs != 0 {
 		t.Errorf("no record: %+v", empty)
+	}
+	// A record an engine wrote before patch ids (#286) still reads.
+	if old := parseRecord("<!-- workline:record reviewed=aa,bb runs=3 -->"); !slices.Equal(old.Reviewed, []string{"aa", "bb"}) || len(old.Patches) != 0 || old.Runs != 3 {
+		t.Errorf("a record without patch ids: %+v", old)
 	}
 }
 

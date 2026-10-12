@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 7ebf882
+checked: b100f7d
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -32,11 +32,21 @@ flowchart LR
 3. **The record.** Commits a review answered whole are not asked again.
    - It is kept in the summary comment on a merge request,
      `.git/workline/reviewer-record` on a machine.
+   - **A rebase** ([#286](https://github.com/JN0V/workline/issues/286)): it
+     holds each change's patch id too, so a commit rebased with its change
+     intact is not asked again. One a conflict changed is, and those after
+     it.
+   - **A merge of the base**
+     ([#134](https://github.com/JN0V/workline/issues/134)): a lens is
+     given what the merge settled, both sides of a conflict and the
+     resolution; never the base's code. Nothing settled: nobody asked.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
    - The run when a merge request becomes ready reads the whole change,
      commits reviewed before too
      ([below](#every-lens-once-when-it-becomes-ready)).
+   - Why, and what git it needs:
+     [ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12).
 
 ## 4. The lenses
 

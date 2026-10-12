@@ -1,6 +1,7 @@
 package documentalist
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -107,23 +108,38 @@ func staleForAgent(findings []verdict.Finding, byPath map[string]*Doc, pl *place
 		if f.Rule != "stale" || d == nil {
 			continue
 		}
-		now, ok := sourcesNow(d, pl, wholeChars(s))
+		now, err := sourcesNow(d, pl, wholeChars(s))
 		// Too large: a person reads it again, or it is judged in parts.
-		out[d.Path] = &suspectDoc{doc: d, why: []string{f.Message}, evidence: now, tooLarge: !ok, whole: ok && len(now) > 0}
+		sd := &suspectDoc{doc: d, why: []string{f.Message}, evidence: now, tooLarge: err == errTooLarge, whole: err == nil && len(now) > 0}
+		if err != nil && err != errTooLarge {
+			sd.note = unreadNote(err)
+		}
+		out[d.Path] = sd
 	}
 	return out
 }
 
+// errTooLarge: a doc's sources take more than limit characters.
+var errTooLarge = errors.New("its sources do not fit in a task whole")
+
+// unreadNote says why a doc one of whose sources cannot be read is not put
+// before the agent: judged against what is not there, it would be confirmed
+// unread (#239). A person judges it.
+func unreadNote(err error) string {
+	return fmt.Sprintf("(a source cannot be read — %v: not put before the agent; a person judges it, naming in `sources` what replaced it)", err)
+}
+
 // sourcesNow is each source of a doc as it is now: a section of a doc, or
-// every text file under a path. ok is false past limit characters, or when
-// a source cannot be read.
-func sourcesNow(d *Doc, pl *places, limit int) (evidence []string, ok bool) {
+// every text file under a path. err is errTooLarge past limit characters,
+// or says which source cannot be read.
+func sourcesNow(d *Doc, pl *places, limit int) ([]string, error) {
 	return sourcesAs(d, pl, limit, "as it is now")
 }
 
 // sourcesAs is sourcesNow at the revisions pl reads, each source titled as
 // it is said there ("as it is now", "at the commit `checked` names").
-func sourcesAs(d *Doc, pl *places, limit int, as string) (evidence []string, ok bool) {
+func sourcesAs(d *Doc, pl *places, limit int, as string) ([]string, error) {
+	var evidence []string
 	size := 0
 	add := func(title, lang, text string) bool {
 		size += len(text)
@@ -134,41 +150,49 @@ func sourcesAs(d *Doc, pl *places, limit int, as string) (evidence []string, ok 
 		name, path, anchor := splitSource(src)
 		where, err := pl.get(name)
 		if err != nil {
-			return nil, false
+			return nil, err
+		}
+		named := path
+		if name != "" {
+			named = name + ":" + path
 		}
 		if strings.HasSuffix(path, ".md") {
 			content, err := git(where.dir, "show", where.rev+":"+path)
 			if err != nil {
-				return nil, false
+				return nil, fmt.Errorf("%s cannot be read", named)
 			}
-			section, _ := Section(content, anchor)
+			// A heading gone is a section not there, never an empty one.
+			section, found := Section(content, anchor)
+			if !found {
+				return nil, fmt.Errorf("no heading of %s has the anchor #%s", named, anchor)
+			}
 			if !add(src, "markdown", section) {
-				return nil, false
+				return nil, errTooLarge
 			}
 			continue
 		}
 		files, err := git(where.dir, "ls-tree", "-z", "-r", "--name-only", where.rev, "--", path)
 		if err != nil || files == "" {
-			return nil, false
+			return nil, fmt.Errorf("%s holds no file", named)
 		}
 		for _, f := range pathList(files) {
-			content, err := git(where.dir, "show", where.rev+":"+f)
-			if err != nil {
-				return nil, false
-			}
-			if strings.ContainsRune(content, 0) {
-				continue // not text
-			}
 			title := f
 			if name != "" {
 				title = name + ":" + f
 			}
+			content, err := git(where.dir, "show", where.rev+":"+f)
+			if err != nil {
+				return nil, fmt.Errorf("%s cannot be read", title)
+			}
+			if strings.ContainsRune(content, 0) {
+				continue // not text
+			}
 			if !add(title, "", content) {
-				return nil, false
+				return nil, errTooLarge
 			}
 		}
 	}
-	return evidence, true
+	return evidence, nil
 }
 
 // staleTask asks the agent to read stale docs again against their sources.

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 7ebf882
+checked: b100f7d
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built

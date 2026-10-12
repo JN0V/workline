@@ -115,8 +115,14 @@ func (c Change) addedAt(path string, n int) bool {
 	return false
 }
 
-func git(repo string, args ...string) (string, error) {
+func git(repo string, args ...string) (string, error) { return gitIn(repo, "", args...) }
+
+// gitIn is git, given what it reads on its standard input.
+func gitIn(repo, stdin string, args ...string) (string, error) {
 	cmd := exec.Command("git", append([]string{"-C", repo, "-c", "core.quotePath=off"}, args...)...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	var errOut strings.Builder
 	cmd.Stderr = &errOut
 	out, err := cmd.Output()
