@@ -751,6 +751,14 @@ removed, its timeout turned to seconds.
 - **A line outside the diff**, posted by hand: GitLab answered 201 and
   made a discussion on no line, silently (deleted after).
 
-Both closed after, their branches deleted. **Not tried**: a token without
+**workline#316 itself**, the pull request building this: judged by the
+branch's engine, applied by the last release, which knows no review. The
+summary kept its placeholder and lost the finding's why. **Fixed**: the
+summary holds each finding in full where the review is said, which such
+an engine leaves as it is (`TestSummaryReviewRegion`). The finding, true:
+a file gone at the head gave every line the same key. **Fixed**: such a
+line is keyed by its number (`TestLineKey`).
+
+Both sandboxes closed after, their branches deleted. **Not tried**: a token without
 the right to review (the simulated forges and a scripted `gh` only); a
 fork; CI's two jobs, judged then applied; a real agent's findings.

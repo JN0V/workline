@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: 4128b17
+checked: 7fd4a71
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
@@ -50,8 +50,9 @@ flowchart LR
 ## Not repeated, found again
 
 - **A key is hidden in each comment**: the lens or rule, the file, the
-  line's text, spaces aside, and which of the lines reading so it is.
-  Lines added above keep it; a line changed gets a new one.
+  line's text, spaces aside, and which of the lines reading so it is; a
+  line that cannot be read, its number. Lines added above keep it; a line
+  changed gets a new one.
 - **Still open on the merge request**: not posted again, counted in the
   summary ("still open from before"). It matters on a later push that
   reads a line again, and when every lens reads the whole change once
