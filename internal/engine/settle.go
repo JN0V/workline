@@ -449,6 +449,15 @@ func refusal(err error) string {
 		}
 	}
 	if len(said) == 0 {
+		// No forge's words: what stopped it here — a pre-push hook of the
+		// machine's —, git's own last line left out.
+		for _, l := range strings.Split(strings.TrimSpace(err.Error()), "\n") {
+			if l = strings.TrimSpace(l); l != "" && !strings.Contains(l, "failed to push some refs") {
+				said = append(said, l)
+			}
+		}
+	}
+	if len(said) == 0 {
 		lines := strings.Split(strings.TrimSpace(err.Error()), "\n")
 		return strings.TrimSpace(lines[len(lines)-1])
 	}
