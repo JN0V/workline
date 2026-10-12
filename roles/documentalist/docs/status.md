@@ -76,9 +76,10 @@ hold:
   four real branches replayed against a later `main`. Three in conflict
   only on header lines (16, 1 and 1 docs) merged in under a second, the
   person's clone pulled and pushed; #316's branch before its rebase left,
-  `runner_test.go` and `conformance.md` named (tried.md, 2026-10-12). Not
-  tried live: the push to GitHub and GitLab, the App's `workflows`
-  permission, the CI job.
+  `runner_test.go` and `conformance.md` named; the line on a merge judged
+  the person's commits, no agent (tried.md, 2026-10-12). Not tried live:
+  the push to GitHub and GitLab, the App's `workflows` permission, the CI
+  job.
 - **A doc too large to condense or split** (`too-large-to-condense`,
   `too-large-to-split`): reported for a person, the next doc condensed.
   Replayed on a copy of workline at 14f0db4, a recording agent: the task

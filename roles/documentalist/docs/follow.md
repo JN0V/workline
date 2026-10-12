@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/settle.go, internal/engine/follow.go, roles/documentalist/role.yaml]
-checked: c648a31
+checked: 54cc42b
 verified: agent:claude-code
 ---
 # Documentalist — a pull request in conflict on workline's lines
@@ -31,7 +31,12 @@ push to the default branch.
   apart: [at the release](push.md#a-release-tools-pull-request),
   [gardening](gardening.md#when-the-base-moves)); a bot's — opened by an
   app or a token's user, a release tool's branch (`release.branches`),
-  `dependabot/…` or `renovate/…` — which its bot rebuilds.
+  `dependabot/…` or `renovate/…` — which its bot rebuilds. On GitLab, a
+  bot is whom the users API calls one: a project or group access token's
+  user, a service account.
+- **Left, named once in the summary**: a long-lived branch, the base of
+  another open pull request (`develop`, `release/1.x`). One the rule
+  misses, protected, gets `merge-refused`.
 - **Left, named**: one from a fork, in conflict (the job's token may not
   write there).
 - **Left**: one behind but merging clean; bringing it up to date is for
@@ -61,10 +66,14 @@ push to the default branch.
   base's second, as the forge's Update branch makes it; every commit of
   the branch keeps its id.
 - **The forge's message**, `Merge branch 'main' into <branch>`, the files
-  settled, the trailer `Workline-Role: documentalist`: the line judges
-  nothing on it, and the reviewer asks no lens for it alone.
-- **Pushed as a fast-forward, never forced**: a push of theirs meanwhile
-  stays, workline's is refused; the next push to the base tries again.
+  settled, the trailer `Workline-Role: documentalist`: the line on it
+  judges the commits before it, through its first parent, so a red verdict
+  stays red; the reviewer asks no lens for what it read already.
+- **Pushed as a fast-forward, never forced**, a lease on the tip it read:
+  a push of theirs meanwhile stays, a branch deleted is not brought back;
+  the next push to the base tries again.
+- **Only files are settled**: a submodule or a link in conflict is the
+  person's.
 - **The token**: on GitHub, the App's runs the pull request's checks
   again; the job's own leaves them for a person. On GitLab, the project's
   bot.
@@ -74,8 +83,8 @@ push to the default branch.
 - **Pull before pushing again**: git refuses the push otherwise ("fetch
   first"). A force-push over the merge, or a rebase on the base, brings
   the header conflicts back.
-- **The next push judges again** each doc whose `checked` took the base's
-  value: the branch's change to its sources is still to read.
+- **The line on the merge judges again** each doc whose `checked` took
+  the base's value: the branch's change to its sources is still to read.
 
 ## In the job's summary
 
@@ -83,5 +92,5 @@ push to the default branch.
 |---|---|
 | `merged` | the base merged in; the files settled |
 | `not-merged` (warning) | a conflict of the person's too, its files named; or a fork's |
-| `merge-refused` (warning) | the branch moved meanwhile, or the forge refused the push, in its words |
+| `merge-refused` (warning) | the branch moved or was deleted meanwhile, or the forge refused the push, in its words |
 | `conflict-unread` (warning) | git could not tell whether it merges |

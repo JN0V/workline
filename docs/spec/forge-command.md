@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: c648a31
+checked: 54cc42b
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -84,7 +84,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `open-merge-requests` | `prefix` | lists the open merge requests whose branch starts with `prefix` | `{branches: [names]}` |
 | `close-merge-request` | `branch`, `body`, `marker` | closes the merge request open from `branch`, after commenting as `comment` does; none open changes nothing, and the branch stays. Asked by `workline follow --gardening` for a role's own merge request with nothing left to merge (ADR-0034) | `{}` |
 | `merge-request-branch` | `id` | the branch a merge request comes from, the branch it goes into, whether it lives in this repository rather than a fork, its title and its description | `{branch, base, here, title, body}`; without `base`, a fix for a release pull request goes in a comment (ADR-0017); `title` and `body` are what a review reads as the author's testimony (ADR-0020) |
-| `merge-requests` | `base` | lists the open merge requests into `base`, each with where it comes from and who opened it. Asked by `workline follow` when the documentalist's `update-branches` is `conflicts` (ADR-0041) | `{merge-requests: [{id, branch, base, here, title, author, bot, head}]}` — `here` as for `merge-request-branch`; `bot` true for one an app or a token's user opened, left to its bot; `head` the ref the forge keeps a fork's head under in this repository (`refs/pull/<n>/head`), left out: a fork's is said unread; a command that does not know it answers an error, and the run says so |
+| `merge-requests` | | lists the open merge requests, each with where it comes from and goes, and who opened it. Asked by `workline follow` when the documentalist's `update-branches` is `conflicts` (ADR-0041): those into the branch that moved are a person's to settle, a head branch another goes into is a long-lived one | `{merge-requests: [{id, branch, base, here, title, author, bot, head}]}` — `here` as for `merge-request-branch`; `bot` true for one an app or a token's user opened, left to its bot; `head` the ref the forge keeps a fork's head under in this repository (`refs/pull/<n>/head`), left out: a fork's is said unread; a command that does not know it answers an error, and the run says so |
 
 Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the

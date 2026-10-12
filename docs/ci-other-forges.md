@@ -1,6 +1,6 @@
 ---
 sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
-checked: c648a31
+checked: 54cc42b
 judged: cd97f28
 verified: agent:claude-code
 ---

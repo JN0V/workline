@@ -874,3 +874,12 @@ then listed the docs whose `checked` took `main`'s value as suspect, to
 judge again. Not tried live: the push to GitHub or GitLab, an App token
 without the `workflows` permission for a `main` that changed a workflow,
 and the `follow` job in CI.
+
+Then, after an independent review of the pull request (the reviewer's
+lenses over their budget): the line on workline's merge judged nothing, so
+a person's commit that had blocked would have turned green. Replayed on
+the copy of #315's branch with the fixed engine: the line on the merge,
+no agent, judged `origin/main` up to the merge's first parent — committer,
+documentalist, reviewer, 0 calls — and listed the 18 docs whose `checked`
+took `main`'s value. #315's and #316's tries gave the same merges as
+before.
