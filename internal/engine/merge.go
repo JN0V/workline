@@ -259,7 +259,7 @@ func followsOwn(repo, commit string) bool {
 // it was given on, as approvals reset on a push (ADR-0042). The head it
 // was given on is the last pushed before it, as the forge says; a forge
 // that does not say leaves the commits' own dates, past base.
-func pushedAfter(repo string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
+func pushedAfter(repo, tipBranch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
 	covered := ""
 	for _, p := range st.Pushes {
 		if !later(p.At, yes) {
@@ -275,7 +275,18 @@ func pushedAfter(repo string, st forge.MergeState, yes, baseTip, tip string) (st
 		if covered == tip {
 			return "", nil
 		}
-		if _, err := git(repo, nil, "cat-file", "-e", covered+"^{commit}"); err != nil || !isAncestor(repo, covered, tip) {
+		if _, err := git(repo, nil, "cat-file", "-e", covered+"^{commit}"); err != nil {
+			git(repo, nil, "fetch", "-q", "origin", covered) // gone from the branch, maybe still on the forge
+		}
+		if !isAncestor(repo, covered, tip) {
+			// A role's own branch rebuilt on the base by `follow`
+			// (ADR-0034): the same change, its commit's message, author
+			// and date kept. Anything else rewritten is a push.
+			if was, err := git(repo, nil, "log", "-1", "--format=%an%x1f%ae%x1f%aI%x1f%B", covered); err == nil && was != "" {
+				if now, _ := git(repo, nil, "log", "-1", "--format=%an%x1f%ae%x1f%aI%x1f%B", tip); now == was && strings.HasPrefix(tipBranch, "workline/") {
+					return "", nil
+				}
+			}
 			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), nil
 		}
 		// The base's commits a merge of it brings are no push to judge.
@@ -509,7 +520,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say("draft", "", fmt.Sprintf("accepted by %s, but a draft: nothing turned on until it is marked ready", by))
 		return nil, nil
 	}
-	pushed, err := pushedAfter(o.Repo, st, yes.Created, baseTip, tip)
+	pushed, err := pushedAfter(o.Repo, mr.Branch, st, yes.Created, baseTip, tip)
 	if err != nil {
 		return nil, err
 	}
