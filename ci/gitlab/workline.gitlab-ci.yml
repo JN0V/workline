@@ -137,7 +137,9 @@ workline:apply:
 # `schedule` line runs (by default the documentalist); each task it takes up
 # becomes a merge request of its own, on a branch workline/<role>/<task>,
 # updated when the task runs again, and no more are proposed while
-# max-open-merge-requests of them wait (ADR-0006). WORKLINE_GITLAB_TOKEN also
+# max-open-merge-requests of them wait (ADR-0006); those the branch moved
+# under are rebuilt on it, or closed when nothing is left to merge
+# (ADR-0034). WORKLINE_GITLAB_TOKEN also
 # needs the `write_repository` scope, to push the branch. Without AI, only
 # derived blocks are regenerated.
 .workline:garden:
@@ -178,7 +180,13 @@ workline:garden:apply:
     - git config user.name "workline"
     - git config user.email "workline@noreply.$CI_SERVER_HOST"
     - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html
+    - status=0
+    - workline apply --line line.json --summary workline-summary.md --summary workline-summary.html || status=$?
+    # Its merge requests the branch moved under: rebuilt on it, or closed
+    # when nothing is left to merge; one a person committed to is theirs
+    # (ADR-0034). Needs the first release after v0.24.0.
+    - workline follow --gardening --base "$CI_COMMIT_REF_NAME" --forge gitlab --summary workline-summary.md --summary workline-summary.html || status=$?
+    - exit $status
   after_script: *summary
   artifacts:
     when: always

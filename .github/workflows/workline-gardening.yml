@@ -58,9 +58,11 @@ jobs:
           fi
           exit "$status"
 
+  # Every night, proposed or not: it also tends the pull requests gardening
+  # opened before (ADR-0034, amended).
   apply:
     needs: judge
-    if: always() && needs.judge.outputs.proposed == 'true'
+    if: always()
     runs-on: ubuntu-latest
     # issues: the product owner's acts, comments and labels on each issue.
     permissions: {contents: write, pull-requests: write, issues: write}
@@ -79,10 +81,12 @@ jobs:
         with: {go-version-file: go.mod}
       - run: mkdir -p "$HOME/.local/bin" && go build -o "$HOME/.local/bin/workline" ./cmd/workline && echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - uses: actions/download-artifact@v4
+        if: needs.judge.outputs.proposed == 'true'
         with: {name: workline-runs}
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
+          PROPOSED: ${{ needs.judge.outputs.proposed }}
         run: |
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"
@@ -92,6 +96,9 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
           status=0
-          workline apply --line line.json --summary workline-summary.md || status=$?
+          [ "$PROPOSED" != true ] || workline apply --line line.json --summary workline-summary.md || status=$?
+          # Its pull requests main moved under: rebuilt on it, or closed when
+          # nothing is left to merge; one a person committed to is theirs.
+          workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"

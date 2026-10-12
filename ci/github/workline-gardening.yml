@@ -15,7 +15,10 @@
 #          The subscription's limits are shared with its owner: run it at
 #          night, and keep ai-max-calls and max-open-merge-requests low.
 #   apply  holds the write token and no AI key: it commits, pushes the
-#          branch, and opens or updates the pull request. With a GitHub App
+#          branch, and opens or updates the pull request; then it rebuilds
+#          on main those main moved under, or closes them, saying why, when
+#          nothing is left to merge (`workline follow --gardening`,
+#          ADR-0034). With a GitHub App
 #          (variable WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY), the
 #          pull request runs your checks by itself; with the job's own token,
 #          GitHub waits for someone to approve them, and the repository must
@@ -84,9 +87,11 @@ jobs:
           fi
           exit "$status"
 
+  # Every night, proposed or not: it also tends the pull requests gardening
+  # opened before (ADR-0034, amended).
   apply:
     needs: judge
-    if: always() && needs.judge.outputs.proposed == 'true'
+    if: always()
     runs-on: ubuntu-latest
     # issues: the product owner's acts (comments, labels, closings,
     # reactions) on each issue.
@@ -112,10 +117,12 @@ jobs:
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
       - uses: actions/download-artifact@v4
+        if: needs.judge.outputs.proposed == 'true'
         with: {name: workline-runs}
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
+          PROPOSED: ${{ needs.judge.outputs.proposed }}
         run: |
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"
@@ -125,6 +132,10 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
           status=0
-          workline apply --line line.json --summary workline-summary.md || status=$?
+          [ "$PROPOSED" != true ] || workline apply --line line.json --summary workline-summary.md || status=$?
+          # Its pull requests main moved under: rebuilt on it, or closed when
+          # nothing is left to merge; one a person committed to is theirs.
+          # Needs the first release after v0.24.0.
+          workline follow --gardening --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"

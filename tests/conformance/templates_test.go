@@ -460,3 +460,61 @@ printf '%s' "$f"
 		}
 	}
 }
+
+// Gardening tends the merge requests it opened before, every night, after
+// applying what it proposed (ADR-0034, amended; #303): the job that
+// applies runs whether or not anything was proposed, and its step runs
+// `workline follow --gardening` after `workline apply`, its summary on
+// the job's page.
+func TestGardeningTendsItsMergeRequests(t *testing.T) {
+	for _, f := range []string{"../../ci/github/workline-gardening.yml", "../../.github/workflows/workline-gardening.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			Jobs map[string]struct {
+				If    string `yaml:"if"`
+				Steps []struct {
+					Run string `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for name, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				if !strings.Contains(s.Run, "workline apply") {
+					continue
+				}
+				found = true
+				if job.If != "always()" {
+					t.Errorf("%s, job %s: if %q: it runs only when something was proposed, and tends nothing otherwise", f, name, job.If)
+				}
+				apply, follow := strings.Index(s.Run, "workline apply"), strings.Index(s.Run, "workline follow --gardening")
+				if follow < apply || !strings.Contains(s.Run[follow:], "--summary workline-summary.md || status=$?") {
+					t.Errorf("%s, job %s: does not run `workline follow --gardening` after applying, with its summary", f, name)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("%s: no job applies", f)
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	job, _ := top["workline:garden:apply"].(map[string]any)
+	script := fmt.Sprint(job["script"])
+	apply, follow := strings.Index(script, "workline apply"), strings.Index(script, "workline follow --gardening")
+	if apply < 0 || follow < apply || !strings.Contains(script[follow:], "|| status=$?") {
+		t.Errorf("workline:garden:apply does not run `workline follow --gardening` after applying: %s", script)
+	}
+}
