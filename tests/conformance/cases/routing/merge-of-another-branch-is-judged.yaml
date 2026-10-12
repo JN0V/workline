@@ -1,0 +1,12 @@
+case: routing/merge-of-another-branch-is-judged
+about: "A clean merge carrying workline's trailer is workline's only when it merges the base (#321's re-review): this one merges another branch, whose commit changes a doc's source. Its commits are judged — the doc listed —, never left out of the range as `follow`'s merge of main would be."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/notes && echo notes > notes.txt && git add notes.txt && git commit -qm 'chore: keep notes' && git checkout -q main"
+    - "git checkout -qb other && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git checkout -q main"
+    - "git checkout -q feat/notes && git merge -q --no-ff other -m \"Merge branch 'main' into feat/notes\" -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "main..HEAD"}, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md}]

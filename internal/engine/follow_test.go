@@ -172,3 +172,18 @@ func TestSettleDoc(t *testing.T) {
 		t.Errorf("a header of several lines a key: settled (%v), want it left", err)
 	}
 }
+
+// Only doc pages make a commit workline's own on its trailer's word: a
+// role's prompt, a tool's folder, a file steering agents never do.
+func TestDocPage(t *testing.T) {
+	for path, want := range map[string]bool{
+		"docs/tech/auth.md": true, "README.md": true, "roles/reviewer/README.md": false,
+		"roles/reviewer/instruction.md": false, "roles/reviewer/lenses/correctness.md": false,
+		".workline/roles/committer/policy.md": false, ".github/copilot-instructions.md": false,
+		"AGENTS.md": false, "sub/CLAUDE.md": false, "docs/x.go": false,
+	} {
+		if got := docPage(path); got != want {
+			t.Errorf("%s: %v, want %v", path, got, want)
+		}
+	}
+}

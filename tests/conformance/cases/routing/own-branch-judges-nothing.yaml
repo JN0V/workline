@@ -1,5 +1,5 @@
 case: routing/own-branch-judges-nothing
-about: "A merge request whose every commit is workline's own — a role's branch, `workline/documentalist/…`, two fixes from main — judges nothing: going back past the engine's commits reaches main, nothing of a person's is left in the range, no role runs, no agent is asked."
+about: "A merge request whose every commit is workline's own — a role's branch, `workline/documentalist/…`, two fixes from main, doc pages only — judges nothing: going back past the engine's commits reaches main, nothing of a person's is left in the range, no agent is asked. Only the committer checks them, as it checks every commit: no agent, its rules only."
 given:
   repo: documented
   setup:
@@ -8,5 +8,5 @@ run: {route: merge-request, input: {range: "main..HEAD"}, ai: "fake:doc-fixed"}
 expect:
   status: pass
   agent-calls: 0
-  steps: []
-  summary: "the last commits are workline's own (documentalist): nothing else to judge"
+  steps: [committer]
+  summary: "the last commits workline's own, documentalist: the committer checked them, nothing else to judge"

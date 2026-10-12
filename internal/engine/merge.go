@@ -228,10 +228,11 @@ func isAncestor(repo, a, b string) bool {
 
 // OwnCommit names the role of a commit workline made, "" when it is none.
 // Its trailer is not taken on trust — anyone can write one: a merge is
-// workline's only when its tree is exactly what workline's own merge of
-// its two parents gives (OwnMerge); another commit, only when it changes
-// Markdown alone, what the roles write. Else it is judged as a person's.
-func OwnCommit(repo, commit string) string {
+// workline's only when it merges base, or a commit of base's history, and
+// its tree is exactly what workline's own merge of its two parents gives
+// (OwnMerge); another commit, only when it changes doc pages alone
+// (docPage). Else it is judged as a person's.
+func OwnCommit(repo, commit, base string) string {
 	out, err := git(repo, nil, "log", "-1", "--format=%P%x1f%(trailers:key="+OwnTrailer+",valueonly,separator=%x2c)", commit)
 	if err != nil {
 		return ""
@@ -242,7 +243,7 @@ func OwnCommit(repo, commit string) string {
 	}
 	switch len(strings.Fields(parents)) {
 	case 2:
-		if !OwnMerge(repo, commit) {
+		if !OwnMerge(repo, commit, base) {
 			return ""
 		}
 	case 1:
@@ -251,7 +252,7 @@ func OwnCommit(repo, commit string) string {
 			return ""
 		}
 		for _, f := range strings.Split(files, "\n") {
-			if !strings.HasSuffix(strings.ToLower(f), ".md") {
+			if !docPage(f) {
 				return ""
 			}
 		}
@@ -261,13 +262,36 @@ func OwnCommit(repo, commit string) string {
 	return role
 }
 
+// agentFiles are the files that steer agents, by name: a role's prompt
+// or a project's instructions, never a doc page whatever its extension.
+var agentFiles = []string{"agents.md", "claude.md", "gemini.md", "copilot-instructions.md"}
+
+// docPage says whether a path is a doc page the roles write: Markdown, not
+// a role's facet (roles/, prompts the engine embeds), not under a tool's
+// folder (.workline, .github, .claude, .cursor), not a file that steers
+// agents (AGENTS.md, CLAUDE.md…).
+func docPage(path string) bool {
+	lower := strings.ToLower(path)
+	if !strings.HasSuffix(lower, ".md") {
+		return false
+	}
+	parts := strings.Split(lower, "/")
+	for _, p := range parts[:len(parts)-1] {
+		if p == "roles" || p == ".workline" || p == ".github" || p == ".claude" || p == ".cursor" {
+			return false
+		}
+	}
+	return !slices.Contains(agentFiles, parts[len(parts)-1])
+}
+
 // OwnMerge says whether a merge commit is one `follow` makes: its second
-// parent merged into its first, workline's own lines settled (ADR-0041),
-// and nothing else — its tree exactly the one that merge gives.
-func OwnMerge(repo, commit string) bool {
+// parent base, or in base's history — the base merged in, never another
+// branch —, merged into its first, workline's own lines settled
+// (ADR-0041), and nothing else: its tree exactly the one that merge gives.
+func OwnMerge(repo, commit, base string) bool {
 	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", commit)
 	parts := strings.Fields(out)
-	if err != nil || len(parts) != 3 {
+	if err != nil || len(parts) != 3 || base == "" || !isAncestor(repo, parts[2], base) {
 		return false
 	}
 	tree, _, theirs, err := settleTree(repo, parts[1], parts[2], func(string) bool { return true })
@@ -279,12 +303,12 @@ func OwnMerge(repo, commit string) bool {
 }
 
 // ownRebuild says whether tip is covered rebuilt on the base by `follow`
-// (ADR-0034): one commit, its tree exactly the change of covered redone
-// on its parent.
-func ownRebuild(repo, covered, tip string) bool {
+// (ADR-0034): one commit on a commit of base's history, its tree exactly
+// the change of covered redone on it.
+func ownRebuild(repo, covered, tip, base string) bool {
 	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", tip)
 	parts := strings.Fields(out)
-	if err != nil || len(parts) != 2 {
+	if err != nil || len(parts) != 2 || !isAncestor(repo, parts[1], base) {
 		return false
 	}
 	tree, clashes, err := redo(repo, parts[1], covered)
@@ -321,7 +345,7 @@ func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip str
 			git(repo, nil, "fetch", "-q", "origin", covered) // gone from the branch, maybe still on the forge
 		}
 		if !isAncestor(repo, covered, tip) {
-			if strings.HasPrefix(branch, "workline/") && ownRebuild(repo, covered, tip) {
+			if strings.HasPrefix(branch, "workline/") && ownRebuild(repo, covered, tip, baseTip) {
 				return "", nil
 			}
 			return fmt.Sprintf("its branch was rewritten (%s, over %s)", short(tip), short(covered)), nil
@@ -332,7 +356,7 @@ func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip str
 			return "", err
 		}
 		for _, c := range strings.Fields(out) {
-			if !OwnMerge(repo, c) || ownTrailer(repo, c) == "" {
+			if !OwnMerge(repo, c, baseTip) || ownTrailer(repo, c) == "" {
 				return commitSaid(repo, c) + " was pushed", nil
 			}
 		}
@@ -344,7 +368,7 @@ func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip str
 	}
 	for _, l := range strings.Split(out, "\n") {
 		c, at, ok := strings.Cut(l, "\x1f")
-		if ok && later(at, yes) && (!OwnMerge(repo, c) || ownTrailer(repo, c) == "") {
+		if ok && later(at, yes) && (!OwnMerge(repo, c, baseTip) || ownTrailer(repo, c) == "") {
 			return commitSaid(repo, c) + " was committed", nil
 		}
 	}
