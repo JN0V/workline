@@ -1,0 +1,12 @@
+case: routing/own-commit-keeps-the-author-s-verdict
+about: "The author's commit blocked the line, its subject no conventional commit, and the job that applies still pushed the doc's fix on top, workline's own commit. The line on that fix judges the commits before it: the merge request stays blocked, never turned green unjudged."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'keep users signed in for two hours'"
+    - "sed -i \"s/one hour/two hours/; s/^checked: .*/checked: $(git rev-parse --short HEAD)/\" docs/tech/auth.md && git commit -qam 'docs: follow tokens lasting two hours' -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "HEAD~2..HEAD"}, ai: none}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: format, level: block}]
