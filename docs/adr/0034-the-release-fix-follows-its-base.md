@@ -1,6 +1,7 @@
 # ADR-0034: The release's own fix follows its base
 
-- **Status:** accepted
+- **Status:** accepted; amended 2026-10-12 (gardening's merge requests
+  follow too, or are closed)
 - **Date:** 2026-10-06
 - **Builds on:** ADR-0017 (a release tool's pull request is the release;
   its fix goes to a merge request of its own), ADR-0027 (derived blocks
@@ -103,3 +104,66 @@ agent and holds the write token, as `apply` does (principle 6).
   release-branch-conflict-asks-a-person,
   release-branch-on-another-base-left-alone,
   release-fix-keeps-a-person-commit.
+
+## Amendment (2026-10-12): gardening's merge requests follow too, or are closed
+
+On 2026-10-11, two of the documentalist's gardening pull requests had
+waited four days, both in conflict with `main`
+([#303](https://github.com/JN0V/workline/issues/303)):
+[#265](https://github.com/JN0V/workline/pull/265) recorded `judged` on three
+docs and README's derived count, which `main` regenerates
+([ADR-0027](0027-derived-blocks-are-regenerated-on-the-default-branch.md));
+[#269](https://github.com/JN0V/workline/pull/269) condensed
+docs/spec/conformance.md, which `main` changed since. Nothing rebuilt or
+closed them, and a task waits while its merge request is open
+([ADR-0013](0013-what-was-judged-is-not-asked-again.md)): its docs were
+judged no more. A person closed both by hand.
+
+- **When gardening runs, its merge requests are tended**: `workline follow
+  --gardening`, in the job that applies, after it applied the night's
+  proposals. Each open `workline/<role>/<task>` the base moved under is
+  rebuilt on its tip as the release's is, its merge request kept.
+- **Closed, one comment saying why, when nothing is left to merge**
+  (`closed`), with the forge's own close; the branch stays:
+  - the base holds its change already;
+  - the base changed the lines it changed: it no longer applies, and the
+    next gardening judges the docs again on the base, which a task closed
+    no longer holds back;
+  - it only records when docs were read (`judged`, `judged-in-parts`,
+    `verified`), and the base changed those docs since: read again or
+    vouched for there, the record says nothing more. A record whose docs
+    the base did not change is rebuilt: closed, its docs would go before
+    an agent again the next night, to the same record, each night the
+    base moved.
+- **A person's commit**: the branch is theirs. Neither rebuilt nor closed;
+  named in the job's summary when git's own merge, in memory (`git
+  merge-tree`), meets a conflict, as the forge shows it (`not-rebuilt`), or
+  cannot tell (`conflict-unread`), both warnings. Proposing the task again
+  never force-pushes over it (`not-proposed`): ADR-0006's "a person's
+  commits are overwritten" no longer holds.
+- **Not on each push to `main`**: `workline follow` alone tends the release
+  fix only. A gardening merge request waits days for review; rebuilt at
+  every push, each would run its checks again for nothing a night's
+  rebuild does not give.
+
+### Not chosen
+
+- **The forge's mergeable state** to tell a person's merge request in
+  conflict: GitHub computes it in the background and answers `null` until
+  then; the local forge and a `cmd:` forge have none. `git merge-tree` is
+  the merge both forges run, the same everywhere.
+- **Tending before judging**, a job of its own: a merge request closed
+  would be proposed again the same night, but a third job would hold the
+  write token. After applying, in the job that holds it already, a closed
+  task is taken up the next night.
+- **Closing every record on a moved base**, as #303 first asked: on a
+  base that moves daily, its docs judged again every other night, tokens
+  spent for the same record.
+
+Conformance: documentalist/gardening-branch-follows-main,
+gardening-branch-left-on-a-push-to-main,
+gardening-branch-closed-when-main-fixed-it,
+gardening-branch-closed-when-main-changed-its-lines-on-gitlab,
+gardening-branch-only-judged-closed, gardening-branch-only-judged-rebuilt,
+gardening-branch-a-person-committed-to-is-left,
+gardening-branch-close-refused-said, gardening-keeps-a-person-commit.

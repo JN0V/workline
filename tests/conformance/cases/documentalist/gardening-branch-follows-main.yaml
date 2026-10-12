@@ -1,0 +1,21 @@
+case: documentalist/gardening-branch-follows-main
+about: "A gardening merge request of the documentalist in conflict with main — main moved `checked` on the line beside the `judged` it wrote (#303) — is rebuilt on main's new tip when gardening runs (`workline follow --gardening`): main's `checked`, the branch's `judged` and fix, force-pushed, the merge request kept, the conflict gone."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: abcdef1/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: pass
+  findings: [{rule: rebuilt, where: workline/documentalist/suspect, message: "on main"}]
+  pushed:
+    workline/documentalist/suspect: {docs/tech/auth.md: "checked: abcdef1\njudged: 1a8e5a4\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last two hours."}
+  pushed-message: {workline/documentalist/suspect: "Workline-Role: documentalist"}
+  on-top: {workline/documentalist/suspect: main}
+  forge:
+    merge-requests:
+      - {id: 4, branch: workline/documentalist/suspect, closed: false}
+      - {id: 5, absent: true}

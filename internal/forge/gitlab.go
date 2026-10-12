@@ -920,6 +920,23 @@ func (g *gitlab) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
+func (g *gitlab) CloseMergeRequest(branch, body, marker string) error {
+	open, err := g.openMergeRequests()
+	if err != nil {
+		return err
+	}
+	id, ok := open[branch]
+	if !ok {
+		return nil
+	}
+	t := Target{Kind: "merge-request", ID: id}
+	if err := g.Comment(t, body, marker); err != nil {
+		return err
+	}
+	_, err = g.api("-X", "PUT", path(t), "-f", "state_event=close")
+	return err
+}
+
 func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 	out, err := g.api(path(Target{Kind: "merge-request", ID: id}))
 	if err != nil {

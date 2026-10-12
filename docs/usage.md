@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 8deb61d
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # Using workline
@@ -36,7 +36,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: a second look at the docs confirmed that week |
-| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip |
+| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |
 | [`workline init`](commands-setup.md#workline-init) | adopts this repository |
@@ -99,7 +99,10 @@ Each in detail: [the commands](commands.md), and
   a branch `workline/<role>/<task>`, pushed, with a merge request opened or
   updated for it; the role is told how many of its merge requests are
   open ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)).
-  With `local`, the branch stays in the clone.
+  With `local`, the branch stays in the clone. A branch a person committed
+  to is never pushed over (`not-proposed`); `workline follow --gardening`
+  keeps the others on the base, or closes them
+  ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - **`--branch`**: for a job that does not ask the forge (CI's judging
   job, which holds no token); default: the forge says. A release tool's
   branch (`release.branches`) has the merge request held as the release

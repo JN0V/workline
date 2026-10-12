@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 8deb61d
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -178,5 +178,16 @@ Run when the default branch moves (CI's `follow` job,
   branch).
 - **Left for a person**: one whose change no longer applies
   (`no-longer-applies`, exit 2).
+- **`--gardening`**, run by gardening's applying job: each other merge
+  request of a role (`workline/<role>/<task>`) is tended too
+  ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)):
+  - rebuilt the same way (`rebuilt`);
+  - closed, one comment saying why (`closed`), when nothing is left to
+    merge: the base holds its change, changed the same lines, or changed
+    the docs it only records as read (a record whose docs it did not
+    change is rebuilt);
+  - one a person committed to is left to them, named when it is in
+    conflict with the base (`not-rebuilt`), or when git cannot tell
+    (`conflict-unread`).
 - Options: `--base` (default: the branch checked out), `--forge`,
-  `--repo`, `--json`.
+  `--repo`, `--json`, `--summary`.

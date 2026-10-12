@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -48,6 +49,52 @@ EOF
 	bodies, _ := g.Comments(Target{Kind: "issue", ID: 9})
 	if len(bodies) != 4 || bodies[1] != "agreed" {
 		t.Errorf("comments: %q", bodies)
+	}
+}
+
+// A pull request closed by a role: found by its branch among the open
+// ones, one comment saying why, then closed; one from another branch, or
+// none open, is left alone. A close GitHub refuses after the comment is
+// said, never passed; run again, it closes without a second comment.
+func TestGitHubCloseMergeRequest(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + log + "\nd=" + bin + "\n" + `case "$*" in
+*pulls?state=open*) printf '6\tworkline/documentalist/suspect\n7\tfeat/other\n' ;;
+"api -X POST "*/comments*) touch "$d/commented" ;;
+*/issues/6/comments*) [ ! -f "$d/commented" ] || echo '<!-- workline:closed -->' ;;
+"api -X PATCH "*) [ ! -f "$d/fail" ] || { echo "HTTP 502: Bad Gateway" >&2; exit 1; } ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	g := &github{repo: t.TempDir()}
+	os.WriteFile(filepath.Join(bin, "fail"), nil, 0o644)
+	if err := g.CloseMergeRequest("workline/documentalist/suspect", "Closed: nothing is left to merge.", "<!-- workline:closed -->"); !errors.Is(err, ErrUnreachable) {
+		t.Fatalf("a close GitHub refused: %v, want it said", err)
+	}
+	os.Remove(filepath.Join(bin, "fail"))
+	if err := g.CloseMergeRequest("workline/documentalist/suspect", "Closed: nothing is left to merge.", "<!-- workline:closed -->"); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.CloseMergeRequest("workline/documentalist/gone", "Closed.", "<!-- workline:closed -->"); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(log)
+	calls := string(data)
+	for _, w := range []string{"-X POST repos/{owner}/{repo}/issues/6/comments -f body=Closed: nothing is left to merge.\n\n<!-- workline:closed -->",
+		"-X PATCH repos/{owner}/{repo}/pulls/6 -f state=closed"} {
+		if !strings.Contains(calls, w) {
+			t.Errorf("gh not asked %q: %s", w, calls)
+		}
+	}
+	if strings.Count(calls, "-X POST") != 1 || strings.Count(calls, "state=closed") != 2 {
+		t.Errorf("want one comment and two closes, the first refused: %s", calls)
+	}
+	if strings.Contains(calls, "/7") {
+		t.Errorf("another pull request touched: %s", calls)
 	}
 }
 

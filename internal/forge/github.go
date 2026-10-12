@@ -516,6 +516,22 @@ func (g *github) OpenMergeRequests(prefix string) ([]string, error) {
 	return out, nil
 }
 
+func (g *github) CloseMergeRequest(branch, body, marker string) error {
+	pulls, err := g.openPulls()
+	if err != nil {
+		return err
+	}
+	id, ok := pulls[branch]
+	if !ok {
+		return nil
+	}
+	if err := g.Comment(Target{Kind: "merge-request", ID: id}, body, marker); err != nil {
+		return err
+	}
+	_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id), "-f", "state=closed")
+	return err
+}
+
 func (g *github) MergeRequest(id int) (MergeRequest, error) {
 	out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", id))
 	if err != nil {

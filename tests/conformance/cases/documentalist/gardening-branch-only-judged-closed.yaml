@@ -1,0 +1,18 @@
+case: documentalist/gardening-branch-only-judged-closed
+about: "A gardening merge request that changes nothing but records when its doc was read (`judged`) is closed once main changed that doc — here main moved its `checked` — not left open nor rebuilt: the record says nothing more there (#303, #265)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: abcdef1/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: pass
+  findings: [{rule: closed, where: workline/documentalist/suspect, message: "only records"}]
+  no-findings: [{rule: rebuilt, where: workline/documentalist/suspect}]
+  not-pushed: [workline/documentalist/suspect]
+  forge:
+    merge-requests:
+      - {id: 4, closed: true, comments: 1, comment-contains: "only records when docs were read (`judged`), and main changed docs/tech/auth.md since"}

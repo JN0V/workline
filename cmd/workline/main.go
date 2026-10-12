@@ -67,13 +67,18 @@ func main() {
 }
 
 // followCmd rebuilds the roles' release merge requests on their base's new
-// tip, run when it moves (ADR-0034). It calls no agent.
+// tip, run when it moves (ADR-0034); with --gardening, run when gardening
+// runs, their gardening merge requests too, or closes them when nothing is
+// left to merge. It calls no agent.
 func followCmd(args []string) int {
 	fs := newFlags("follow")
 	repo := fs.String("repo", ".", "repository")
 	base := fs.String("base", "", "the branch the merge requests go into (default: the branch checked out)")
 	forgeSpec := fs.String("forge", "", "github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
+	gardening := fs.Bool("gardening", false, "also the roles' gardening merge requests: rebuilt, or closed when nothing is left to merge (run when gardening runs)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
+	var summaryFiles multi
+	fs.Var(&summaryFiles, "summary", "also add a Markdown summary to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -90,7 +95,11 @@ func followCmd(args []string) int {
 		}
 		*forgeSpec = cfg.Forge
 	}
-	res := engine.Follow(root, *forgeSpec, *base)
+	res := engine.Follow(root, *forgeSpec, *base, *gardening)
+	if err := wlreport.AppendSummary(summaryFiles, wlreport.RoleSummary("follow", "", res)); err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 1
+	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))

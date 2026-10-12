@@ -1029,12 +1029,18 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 			return nil
 		}
-		if err != nil {
+		switch {
+		case errors.Is(err, ErrLeftToAPerson):
+			// Theirs now: this run's change stays in the working tree, said.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "not-proposed", Level: "warn", Where: branchPrefix(st.Role) + slugify(mergeRequestKey(st, runDir)),
+				Message: strings.TrimPrefix(err.Error(), ErrLeftToAPerson.Error()+": ") + ": this run's change is not pushed over it; the branch and its merge request are left to them"})
+		case err != nil:
 			return fmt.Errorf("open a merge request: %w", err)
-		}
-		st.MergeRequest = id
-		if err := st.save(runDir); err != nil {
-			return err
+		default:
+			st.MergeRequest = id
+			if err := st.save(runDir); err != nil {
+				return err
+			}
 		}
 	}
 	if st.PushToMergeRequest && st.Release != "" && len(st.Written) > 0 {
@@ -1323,26 +1329,52 @@ func openMergeRequest(f forge.Forge, st runState, runDir string) (int, error) {
 			return 0, fmt.Errorf("out/merge-request.yaml: %w", err)
 		}
 	}
-	if mr.Key == "" {
-		mr.Key = st.Role
-	}
+	mr.Key = mergeRequestKey(st, runDir)
 	if mr.Title == "" {
 		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
 	}
 	return ProposeBranch(f, st.Repo, st.Role, mr.Key, mr.Title, mr.Body, st.trailers(), st.Written)
 }
 
+// mergeRequestKey is the task's key the role named in
+// out/merge-request.yaml, its branch's name; the role's name without one.
+func mergeRequestKey(st runState, runDir string) string {
+	var mr struct{ Key string }
+	if data, err := os.ReadFile(filepath.Join(runDir, "out", "merge-request.yaml")); err == nil {
+		yaml.Unmarshal(data, &mr)
+	}
+	if mr.Key == "" {
+		return st.Role
+	}
+	return mr.Key
+}
+
+// ErrLeftToAPerson says a role's branch holds a commit a person added:
+// nothing is pushed over it, the branch and its merge request are theirs
+// (ADR-0034, amended).
+var ErrLeftToAPerson = errors.New("left to a person")
+
 // ProposeBranch commits the files written in the working tree on the role's
 // branch for a task (workline/<role>/<key>), force-pushes it — unless the
 // forge keeps its branches in the clone — opens its merge request or
 // updates the one open, and puts the working tree back on the branch it was
-// on. trailers end the commit's message.
+// on. trailers end the commit's message. A branch a person committed to is
+// never pushed over: ErrLeftToAPerson, the working tree as it was.
 func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers string, written []string) (int, error) {
 	base, err := git(repo, nil, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return 0, errors.New("a merge request is opened from a branch; this run is on a detached HEAD")
 	}
 	branch := branchPrefix(roleName) + slugify(key)
+	baseTip, was, err := tips(repo, base, branch, forge.KeepsBranches(f))
+	if err != nil {
+		return 0, err
+	}
+	if was != "" {
+		if who := personsCommit(repo, baseTip, was, roleName); who != "" {
+			return 0, fmt.Errorf("%w: %s", ErrLeftToAPerson, who)
+		}
+	}
 	steps := [][]string{
 		{"checkout", "-q", "-B", branch},
 		append([]string{"add", "--"}, written...),

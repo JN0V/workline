@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 03b2719
+checked: 01f4f82
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -131,6 +131,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   documentalist's merge request for the release, when one is open, is
   rebuilt on the branch's new tip, with `WORKLINE_GITLAB_TOKEN` and no
   agent ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)).
+- **`workline:garden:apply`** then rebuilds gardening's earlier merge
+  requests, or closes those with nothing left to merge
+  ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
 - **The summary** ([what a job shows](ci.md#what-a-job-shows)):
   `workline-summary.html`, linked from the job's page (its annotations)
   and, for a merge request, from the merge request's page (`expose_as`);

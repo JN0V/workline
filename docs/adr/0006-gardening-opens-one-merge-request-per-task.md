@@ -1,6 +1,9 @@
 # ADR-0006: Gardening opens one merge request per task, on a branch of its own
 
-- **Status:** accepted
+- **Status:** accepted; amended by
+  [ADR-0034's amendment](0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)
+  (2026-10-12): its merge requests are rebuilt on a moved base or closed,
+  and a person's commit on one is no longer overwritten
 - **Date:** 2026-09-28
 
 ## Context

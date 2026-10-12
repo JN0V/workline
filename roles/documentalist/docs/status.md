@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-07)
+# Documentalist — where it stands (2026-10-12)
 
 How finished the role is: what is built and tried on real repositories, what
 is only built, what is missing. tried.md has the story of each try; this page
@@ -62,6 +62,14 @@ hold:
   a gardening task waits while its pull request is open. On a copy of
   DomoticsCore with #109 open: the docs judged whole wait, the parts go.
 - **A cap on a run's tokens** (`ai-max-tokens`): conformance only.
+- **Its stale merge requests tended** (ADR-0034, amended;
+  [#303](https://github.com/JN0V/workline/issues/303)): `workline follow
+  --gardening`, after gardening applies, rebuilds on `main` those `main`
+  moved under, closes those with nothing left to merge, leaves a person's.
+  On a copy of workline at 970a73b with #265 and #269 as they were, a
+  simulated forge: both in conflict with `main`, both closed with one
+  line saying why. Not tried live: the close on GitHub (a fake `gh`) and
+  GitLab (its API mocked), the CI job itself.
 - **A doc too large to condense or split** (`too-large-to-condense`,
   `too-large-to-split`): reported for a person, the next doc condensed.
   Replayed on a copy of workline at 14f0db4, a recording agent: the task

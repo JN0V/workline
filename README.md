@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 03b2719
+checked: 68b431f
 judged: cd97f28
 verified: agent:claude-code
 -->
@@ -127,7 +127,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 
 | When | Roles | Writes |
 |---|---|---|
-| gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task; the issues |
+| gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task, kept on main or closed; the issues |
 | the weekly sample (`workline sample`) | auditor: a second look at one doc in ten the documentalist confirmed; the product owner's acts, drawn for a person | one issue, a comment a week; a merge request undoing a wrong confirmation |
 | each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip | its merge request, force-pushed |
 | before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |

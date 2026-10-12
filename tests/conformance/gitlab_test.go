@@ -43,6 +43,7 @@ var (
 	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
 	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
 	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
+	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/notes)?$`)
 )
 
 const tokenUser = "workline-bot"
@@ -109,6 +110,35 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed]})
 		}
 		return out, 200
+	case mrPath.MatchString(p):
+		// A merge request: its notes, read and written; closed by PUT
+		// state_event=close.
+		sm := mrPath.FindStringSubmatch(p)
+		id, _ := strconv.Atoi(sm[1])
+		var mr *forge.FakeItem
+		for i := range s.MergeRequests {
+			if s.MergeRequests[i].ID == id {
+				mr = &s.MergeRequests[i]
+			}
+		}
+		if mr == nil {
+			return notFound, 404
+		}
+		switch {
+		case sm[2] != "" && method == "GET":
+			out := []map[string]any{}
+			for i, c := range mr.Comments {
+				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
+			}
+			return out, 200
+		case sm[2] != "" && method == "POST":
+			mr.Comments = append(mr.Comments, forge.FakeComment{Body: form.Get("body"), Author: tokenUser})
+			return map[string]any{"id": id*1000 + len(mr.Comments)}, 201
+		case method == "PUT" && form.Get("state_event") == "close":
+			mr.Closed = true
+		}
+		return map[string]any{"iid": mr.ID, "source_branch": mr.Branch, "target_branch": mr.Base, "source_project_id": 1, "target_project_id": 1,
+			"state": map[bool]string{true: "closed", false: "opened"}[mr.Closed]}, 200
 	case p == "/issues" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.Issues {

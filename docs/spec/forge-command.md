@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: bd82342
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -19,7 +19,7 @@ or `--forge 'cmd:<command>'` on a command line. A sample for Forgejo and
 Gitea, whose API is GitHub's shape, is
 [ci/forgejo/workline-forge.sh](../../ci/forgejo/workline-forge.sh). It answers
 `all-issues`, a closed issue without its reason (Forgejo and Gitea keep
-none), and `comments`, each with its author and its day, of the project when they may
+none), `close-merge-request`, and `comments`, each with its author and its day, of the project when they may
 write to the repository — asked of Forgejo, which needs the token's user
 to administer the repository: a refusal fails the operation —, a bot when
 its id is negative (the ghost, the actions user) or its login ends in
@@ -82,6 +82,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `keep-issue` | `title`, `body`, `create` | rewrites the body of the open issue with this title; with none, opens it when `create` is true | `{id}`, 0 when none was opened |
 | `open-merge-request` | `branch`, `base`, `title`, `body` | opens a merge request from `branch` (already pushed to `origin` by the engine) into `base`, or updates the title and body of the one open from `branch` | `{id}` |
 | `open-merge-requests` | `prefix` | lists the open merge requests whose branch starts with `prefix` | `{branches: [names]}` |
+| `close-merge-request` | `branch`, `body`, `marker` | closes the merge request open from `branch`, after commenting as `comment` does; none open changes nothing, and the branch stays. Asked by `workline follow --gardening` for a role's own merge request with nothing left to merge (ADR-0034) | `{}` |
 | `merge-request-branch` | `id` | the branch a merge request comes from, the branch it goes into, whether it lives in this repository rather than a fork, its title and its description | `{branch, base, here, title, body}`; without `base`, a fix for a release pull request goes in a comment (ADR-0017); `title` and `body` are what a review reads as the author's testimony (ADR-0020) |
 
 Arguments not listed are not sent; an operation the command does not know
@@ -93,8 +94,8 @@ releases are the project's release tool's, not workline's (ADR-0017).
 ## What stays with the engine
 
 Git is the engine's: it commits and pushes the branches of merge requests
-(`--open-merge-request`, `--push-to-merge-request`, the weekly sample) to
-`origin` itself; the command is asked only for what is the forge's — issues,
+(`--open-merge-request`, `--push-to-merge-request`, the weekly sample,
+`workline follow`) to `origin` itself; the command is asked only for what is the forge's — issues,
 comments, labels, merge requests. A command is not sandboxed: what
 it does with the tokens it is given is its own promise, not the engine's.
 
@@ -106,5 +107,5 @@ merge request's comment, a work item read and labelled, the
 weekly sample written, a forge failing (`blocked-external`) and refusing
 (`block`). The Forgejo sample was run against a mock of the API only
 (ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
-pages, a pull request left out, and `comments` with their authors), not
-yet on a live instance.
+pages, a pull request left out, `comments` with their authors, and
+`close-merge-request`), not yet on a live instance.

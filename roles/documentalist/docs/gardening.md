@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go]
-checked: 1924c0c
+checked: 01f4f82
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -100,3 +100,27 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   moved or `judged` recorded; for a doc whose sources did not all go
   whole, what was read and what was not
   ([the judge](judge.md#what-the-finding-says)).
+
+## When the base moves
+
+Each night, after applying what it proposed, gardening tends the merge
+requests it opened before (`workline follow --gardening`,
+[ADR-0034, amended](../../../docs/adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).
+One the base moved under is:
+
+- **rebuilt** on the base's tip, its change redone, the merge request kept:
+  a `checked` the base moved beside the `judged` it wrote is no conflict;
+- **closed**, one comment saying why, when nothing is left to merge:
+  - the base holds its change already;
+  - the base changed the same lines: the next gardening judges the docs
+    again and proposes what is still needed;
+  - it only records when docs were read (`judged`), and the base changed
+    those docs since; a record whose docs the base left as they were is
+    rebuilt, so they are not judged again for the same record;
+- **left to a person** who committed to it: neither rebuilt nor closed,
+  and named in the job's summary when it no longer merges, or when git
+  cannot tell (`conflict-unread`). Running the task again never pushes
+  over that commit either (`not-proposed`).
+
+A push to the base leaves them alone: only the release's fix follows each
+push ([at the release](push.md#a-release-tools-pull-request)).

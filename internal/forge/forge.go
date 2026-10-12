@@ -129,6 +129,10 @@ type Forge interface {
 	// OpenMergeRequests lists the branches of the open merge requests whose
 	// branch starts with prefix, sorted.
 	OpenMergeRequests(prefix string) ([]string, error)
+	// CloseMergeRequest closes the open merge request from branch, saying
+	// why in a comment carrying marker, posted once; with none open from
+	// branch, it changes nothing. The branch stays.
+	CloseMergeRequest(branch, body, marker string) error
 	// MergeRequest says where a merge request comes from and goes.
 	MergeRequest(id int) (MergeRequest, error)
 }

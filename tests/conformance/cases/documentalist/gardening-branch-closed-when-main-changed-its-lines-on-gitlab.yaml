@@ -1,0 +1,18 @@
+case: documentalist/gardening-branch-closed-when-main-changed-its-lines-on-gitlab
+about: "On GitLab, a gardening merge request whose doc main rewrote since — the sentence it fixed now says ninety minutes — no longer applies: gardening closes it through GitLab's API, one note saying why; the next gardening judges the doc again on main and proposes what is still needed (#303)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/one hour/ninety minutes/' docs/tech/auth.md && git commit -qam 'docs: tokens last ninety minutes' && git push -q origin main"
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main], forge: gitlab}
+expect:
+  status: pass
+  findings: [{rule: closed, where: workline/documentalist/suspect, message: "docs/tech/auth.md"}]
+  no-findings: [{rule: no-longer-applies, where: workline/documentalist/suspect}]
+  not-pushed: [workline/documentalist/suspect]
+  forge:
+    merge-requests:
+      - {id: 4, closed: true, comments: 1, comment-contains: ["main changed the same lines of docs/tech/auth.md since", "the next gardening"]}

@@ -834,3 +834,20 @@ with the branch's engine, a `cmd:` agent giving the night's second
 answer, judged only, no forge: the same task, the patch passed. On
 schedule, a proposal still refused once asked again is now said as
 warnings, the step passing, nothing of it applied (ADR-0037, amended).
+
+On 2026-10-12, the two gardening pull requests a person had closed by
+hand the day before (#303) were replayed on a copy of workline at
+970a73b, origin a local bare clone, the forge simulated, no agent:
+#265 (`judged` on three docs, README's derived count) and #269
+(docs/spec/conformance.md condensed), each at the commit it was closed
+at, both in conflict with `main` by `git merge-tree`. `workline follow`
+alone, as on a push to `main`, left both. `workline follow --gardening`
+closed both, one comment each: `main` changed the same lines of README.md
+(the count, which `main` regenerates) and of docs/spec/conformance.md
+since. Their branches stayed where they were. Then, on the same copy, a
+person's commit on `workline/documentalist/derived` and README's count
+left behind on `main`: gardening with no agent regenerated the count and
+did not push it over that commit (`not-proposed`), the change left in the
+working tree; `follow --gardening` left that branch, which still merged,
+without a word. Not tried live: the forge's close on GitHub and GitLab
+(a fake `gh`, GitLab's API mocked), and the gardening job in CI.

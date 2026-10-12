@@ -1,8 +1,8 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 03b2719
+checked: 01f4f82
 judged: daef715
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
@@ -140,6 +140,9 @@ case "$step:$WORKLINE_TASK" in
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;
   judge:follow) ;;                                # no agent: all in the applying job
   apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab || status=$? ;;
+  apply:garden)                                   # then its merge requests the branch moved under
+    workline apply --line line.json $sum || status=$?
+    workline follow --gardening --base "$CI_COMMIT_REF_NAME" --forge gitlab $sum || status=$? ;;
   apply:*) [ ! -f line.json ] || workline apply --line line.json $sum || status=$? ;;
 esac
 exit "$status"
@@ -155,6 +158,11 @@ exit "$status"
 - The applying job still runs (`when: always`) and applies what passed,
   and the comment of a reviewer that blocks
   ([#226](https://github.com/JN0V/workline/issues/226)).
+- On `garden`, the applying job then tends the merge requests gardening
+  opened before: rebuilt on the branch, or closed when nothing is left to
+  merge
+  ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed));
+  the first release after v0.24.0.
 - On `release`, a judging job that does not pass holds the release; the
   docs' fix goes to a merge request of its own (untried outside a release
   tool's merge request).
