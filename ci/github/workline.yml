@@ -238,7 +238,10 @@ jobs:
           APP: ${{ steps.app.outputs.app-slug }}
           WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # who keeps the verdict and holds the yes
           WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          head=$(jq -r .head workline-verdict.json)
+          [ "$head" = "$HEAD_SHA" ] || { echo "::error title=workline::the verdict is for $head, not the head judged, $HEAD_SHA"; exit 1; }
           status=0
           workline follow --forge github --verdict workline-verdict.json --verdict-only --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"

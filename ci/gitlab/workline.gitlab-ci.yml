@@ -138,9 +138,9 @@ workline:apply:
 # release after v0.25.0), after the judge: the head's verdict kept, the
 # merge requests a person accepted set to merge when their pipeline
 # succeeds, the first in line brought up to date. A label starts no
-# pipeline: acted on at the next. The target branch checked out, for its
-# config; never a fork's. Without `merge:`, it stops at once
-# (docs/merge-policy.md).
+# pipeline: it waits for that merge request's own next one. The target
+# branch checked out, for its config; never a fork's. Without `merge:`,
+# it stops at once (docs/merge-policy.md).
 workline:merge:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy

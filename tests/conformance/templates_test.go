@@ -574,6 +574,9 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 					if fmt.Sprint(job.Needs) != "judge" || job.Concurrency != nil {
 						t.Errorf("%s, job %s: the verdict is not kept after judge, in no concurrency group (needs %v, concurrency %v)", filepath.Base(f), name, job.Needs, job.Concurrency)
 					}
+					if !strings.Contains(s.Run, `[ "$head" = "$HEAD_SHA" ]`) {
+						t.Errorf("%s, job %s: the verdict is kept without checking it is the event's head's", filepath.Base(f), name)
+					}
 				case strings.Contains(s.Run, "workline follow"):
 					if fmt.Sprint(job.Needs) != "[judge verdict]" || job.Concurrency == nil {
 						t.Errorf("%s, job %s: follow does not run after the verdict is kept, one at a time (needs %v)", filepath.Base(f), name, job.Needs)
