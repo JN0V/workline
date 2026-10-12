@@ -173,6 +173,9 @@ is marked ready.
 - **Cost**: a review of the whole change by every lens, as on a machine,
   within the same `ai-max-tokens`
   ([status](status.md#cost-measured)).
-- **Once**: a run on ready that a rule blocks is not asked again, the
-  next push getting one lens; with no agent, GitHub does not ask again,
-  GitLab does at the next pipeline (no comment was written).
+- **Once**: the run on ready is not asked again, whatever it read: a
+  rule that blocks, or the budget spent, leaves the next push one lens.
+  On GitLab, a run that wrote no comment (no agent) leaves the next
+  pipeline the run on ready.
+- **GitLab's notes** are read page by page, the newest first, until the
+  ready note or the reviewer's comment.

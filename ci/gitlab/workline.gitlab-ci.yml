@@ -67,9 +67,11 @@ variables:
     get() { curl -fsS --header "$auth" "$mr$1"; }
     draft=${CI_MERGE_REQUEST_DRAFT:-}
     [ -n "$draft" ] || draft=$(get "" | jq -r .draft) || draft=
-    if [ "$draft" = false ]; then
-      last=$(get "/notes?order_by=updated_at&sort=desc&per_page=100" | jq -r '[.[] | select((.system and .body == "marked this merge request as **ready**") or (.body | contains("<!-- workline:sticky=reviewer/summary -->")))][0] | if . == null then "none" elif .system then "ready" else "reviewed" end') || last=
-    fi
+    page=0; [ "$draft" != false ] || last=more
+    while [ "$last" = more ] && [ "$page" -lt 50 ]; do
+      page=$((page + 1))
+      last=$(get "/notes?order_by=updated_at&sort=desc&per_page=100&page=$page" | jq -r '([.[] | select((.system and .body == "marked this merge request as **ready**") or (.body | contains("<!-- workline:sticky=reviewer/summary -->")))][0]) as $n | if $n == null then (if length == 100 then "more" else "none" end) elif $n.system then "ready" else "reviewed" end') || last=
+    done
     case "$draft:$last" in
       false:ready|false:none) lenses="--input lenses=all"; echo "workline: the merge request is ready and not reviewed since: every lens of the reviewer, once" ;;
       false:reviewed|true:) ;;

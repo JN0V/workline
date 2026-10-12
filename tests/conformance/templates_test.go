@@ -390,7 +390,8 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 	// most recently updated first; read with the token the engine reads with.
 	dir := t.TempDir()
 	curl := "#!/bin/sh\ncase \"$*\" in *\"$AUTH\"*) ;; *) exit 22 ;; esac\nfor a; do url=$a; done\n" +
-		"case \"$url\" in */notes*) f=$NOTES ;; *) f=$MR ;; esac\n[ -n \"$f\" ] || exit 22\nprintf '%s' \"$f\"\n"
+		"case \"$url\" in *'&page=1') f=$NOTES ;; *'&page=2') f=${NOTES2:-[]} ;; *'&page='*) f='[]' ;; *) f=$MR ;; esac\n" +
+		"[ -n \"$f\" ] || exit 22\nprintf '%s' \"$f\"\n"
 	if err := os.WriteFile(filepath.Join(dir, "curl"), []byte(curl), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -399,21 +400,24 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 		marked  = `{"system": true, "body": "marked this merge request as **ready**"}`
 		other   = `{"system": false, "body": "Looks good."}`
 	)
+	hundred := "[" + strings.Repeat(other+",", 99) + other + "]" // a full page, neither note on it
 	for _, c := range []struct {
-		name, draft, mr, notes, token string
-		all                           bool
+		name, draft, mr, notes, notes2, token string
+		all                                   bool
 	}{
-		{"opened ready: no comment yet", "false", "", "[" + other + "]", "", true},
-		{"marked ready since the last review", "false", "", "[" + marked + "," + summary + "]", "", true},
-		{"a push after the review on ready", "false", "", "[" + other + "," + summary + "," + marked + "]", "", false},
-		{"a draft", "true", "", "[" + marked + "]", "", false},
-		{"before GitLab 17.10: ready, by the API", "", `{"draft": false}`, "[" + marked + "," + summary + "]", "", true},
-		{"read with GITLAB_TOKEN when the job has one", "false", "", "[" + marked + "]", "read", true},
-		{"before GitLab 17.10: a draft, by the API", "", `{"draft": true}`, "[" + marked + "]", "", false},
-		{"the notes unread", "false", "", "", "", false},
+		{"opened ready: no comment yet", "false", "", "[" + other + "]", "", "", true},
+		{"marked ready since the last review", "false", "", "[" + marked + "," + summary + "]", "", "", true},
+		{"a push after the review on ready", "false", "", "[" + other + "," + summary + "," + marked + "]", "", "", false},
+		{"a draft", "true", "", "[" + marked + "]", "", "", false},
+		{"before GitLab 17.10: ready, by the API", "", `{"draft": false}`, "[" + marked + "," + summary + "]", "", "", true},
+		{"read with GITLAB_TOKEN when the job has one", "false", "", "[" + marked + "]", "", "read", true},
+		{"before GitLab 17.10: a draft, by the API", "", `{"draft": true}`, "[" + marked + "]", "", "", false},
+		{"the reviewer's comment past 100 newer notes", "false", "", hundred, "[" + summary + "," + marked + "]", "", false},
+		{"the ready note past 100 newer notes", "false", "", hundred, "[" + marked + "," + summary + "]", "", true},
+		{"the notes unread", "false", "", "", "", "", false},
 	} {
 		env := []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "CI_API_V4_URL=https://gitlab.invalid/api/v4",
-			"CI_PROJECT_ID=1", "CI_MERGE_REQUEST_IID=5", "CI_JOB_TOKEN=job", "MR=" + c.mr, "NOTES=" + c.notes, "AUTH=JOB-TOKEN: job"}
+			"CI_PROJECT_ID=1", "CI_MERGE_REQUEST_IID=5", "CI_JOB_TOKEN=job", "MR=" + c.mr, "NOTES=" + c.notes, "NOTES2=" + c.notes2, "AUTH=JOB-TOKEN: job"}
 		if c.token != "" {
 			env = append(env, "GITLAB_TOKEN="+c.token, "AUTH=PRIVATE-TOKEN: "+c.token)
 		}
