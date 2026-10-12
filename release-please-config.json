@@ -23,6 +23,7 @@
         {"type": "generic", "path": "ci/github/workline.yml"},
         {"type": "generic", "path": "ci/github/workline-gardening.yml"},
         {"type": "generic", "path": "ci/github/workline-sample.yml"},
+        {"type": "generic", "path": "ci/github/workline-merge.yml"},
         {"type": "generic", "path": "ci/gitlab/workline.gitlab-ci.yml"}
       ]
     }

@@ -46,6 +46,16 @@
 #          request from this repository in conflict with main only on lines
 #          workline writes gets main merged in: a merge commit, never forced.
 #          The job's summary names each one merged into, and each left.
+#          With the project's merge policy, `merge: {autonomy: cautious}`
+#          (ADR-0042, off by default), it also runs after judge on a pull
+#          request: it keeps the line's verdict on the head (a git note),
+#          turns GitHub's auto-merge on for each pull request a person who
+#          can write labelled workline:accepted, its head's verdict passed,
+#          and brings the first in line up to date with main, one at a time;
+#          workline-merge.yml runs it when a label is put or taken off. Only
+#          with the GitHub App's token: a merge made with the job's own
+#          starts no workflow on main. Without `merge:`, it stops at once on
+#          a pull request.
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
@@ -111,7 +121,7 @@ jobs:
           workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
             --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} \
-            --sarif workline.sarif --summary workline-summary.md --json > line.json || status=$?
+            --sarif workline.sarif --summary workline-summary.md --verdict workline-verdict.json --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
@@ -124,6 +134,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always() && github.event.pull_request.head.repo.full_name != github.repository
         with: {name: workline-report, path: report/}
+
+      # The line's verdict on the head, for follow to keep (the merge
+      # policy). Not a fork's: its run is the fork's to write.
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        with: {name: workline-verdict, path: workline-verdict.json, if-no-files-found: ignore, retention-days: 1}
 
       - uses: actions/upload-artifact@v4
         if: steps.line.outputs.proposed == 'true'
@@ -196,7 +212,12 @@ jobs:
           exit "$status"
 
   follow:
-    if: github.event_name == 'push'
+    # A push to main; with the merge policy, a pull request's events too,
+    # after judge: never a fork's, whose run gets no secret.
+    needs: judge
+    if: always() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    # One at a time on a branch: the first in line is brought up once.
+    concurrency: {group: "workline-follow-${{ github.base_ref || github.ref_name }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     permissions: {contents: write, pull-requests: read}
     steps:
@@ -206,23 +227,42 @@ jobs:
         with:
           app-id: ${{ vars.WORKLINE_APP_ID }}
           private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      # The base, not the pull request's code: its config says the policy,
+      # and the engine is built from it.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.base_ref || github.ref }}
           token: ${{ steps.app.outputs.token || github.token }}
+      - name: Whether there is anything to follow
+        id: policy
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ] || grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no merge policy (merge:): nothing to follow on a pull request's events"
+          fi
       # The engine built from main's commit: merged, it is reviewed, and
       # no release may have `workline follow` yet.
       - uses: actions/setup-go@v5
+        if: steps.policy.outputs.run == 'true'
         with: {go-version-file: go.mod}
       - name: workline
+        if: steps.policy.outputs.run == 'true'
         run: |
           bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
           go build -o "$bin/workline" ./cmd/workline
           echo "$bin" >> "$GITHUB_PATH"
           "$bin/workline" version
-      - env:
+      - uses: actions/download-artifact@v4
+        if: steps.policy.outputs.run == 'true' && needs.judge.result != 'skipped'
+        continue-on-error: true      # judge may have stopped before writing it
+        with: {name: workline-verdict}
+      - if: steps.policy.outputs.run == 'true'
+        env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # the merge policy acts only with an App's token
         run: |
           if [ -n "$APP" ]; then
             git config user.name "$APP[bot]"
@@ -231,7 +271,8 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           fi
+          verdict=; [ ! -s workline-verdict.json ] || verdict=workline-verdict.json
           status=0
-          workline follow --base "$GITHUB_REF_NAME" --forge github --summary workline-summary.md || status=$?
+          workline follow --base "${GITHUB_BASE_REF:-$GITHUB_REF_NAME}" --forge github ${verdict:+--verdict "$verdict"} --summary workline-summary.md || status=$?
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
