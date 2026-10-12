@@ -55,10 +55,96 @@ type LineReviewer interface {
 	Review(id int, head, body string, comments []LineComment) (Reviewed, error)
 }
 
-// ReviewHere is where a sticky comment carrying a review says what became
-// of its comments on lines: the engine writes it there once the review is
-// posted (docs/spec/role-outcome.md, `comment`).
-var ReviewHere = Marker("review")
+// ReviewHere and ReviewEnd hold the region where a sticky comment carrying
+// a review says what became of its comments on lines: the engine writes
+// it there once the review is posted (docs/spec/role-outcome.md,
+// `comment`). What the role writes between them is for an engine that
+// posts no comment on a line, which leaves it as it is: each comment in
+// full.
+var (
+	ReviewHere = Marker("review")
+	ReviewEnd  = Marker("review-end")
+)
+
+// FillReview puts section in body's review region, the region's markers
+// and what they held replaced; a body without the end marker has only
+// ReviewHere replaced.
+func FillReview(body, section string) string {
+	from := strings.Index(body, ReviewHere)
+	if from < 0 {
+		return body
+	}
+	to := from + len(ReviewHere)
+	if end := strings.Index(body[to:], ReviewEnd); end >= 0 {
+		to += end + len(ReviewEnd)
+	}
+	if section == "" {
+		return strings.TrimRight(body[:from], "\n") + "\n\n" + strings.TrimLeft(body[to:], "\n")
+	}
+	return body[:from] + section + body[to:]
+}
+
+// Unplaced is comments none of which is on its line, each for why.
+func Unplaced(comments []LineComment, why string) Reviewed {
+	r := Reviewed{}
+	for _, c := range comments {
+		r.Placed = append(r.Placed, Placed{LineComment: c, State: LineRefused, Why: why})
+	}
+	return r
+}
+
+// Section says where the comments on lines are, with a link to the
+// review, and gives in full those not on their line, grouped by why: what
+// a summary comment says of its review.
+func (r Reviewed) Section() string {
+	var b strings.Builder
+	posted, open := 0, 0
+	var off []Placed
+	for _, p := range r.Placed {
+		switch p.State {
+		case LinePosted:
+			posted++
+		case LineOpen:
+			open++
+		default:
+			off = append(off, p)
+		}
+	}
+	if on := posted + open; on > 0 {
+		review := "the review"
+		if r.URL != "" {
+			review = "[the review](" + r.URL + ")"
+		}
+		var parts []string
+		if posted > 0 {
+			parts = append(parts, fmt.Sprintf("%d posted now", posted))
+		}
+		if open > 0 {
+			parts = append(parts, fmt.Sprintf("%d still open from before, not posted again", open))
+		}
+		comments := "comments"
+		if on == 1 {
+			comments = "comment"
+		}
+		fmt.Fprintf(&b, "**On their lines**: %d %s, in %s (%s): reply to each, or resolve it, there.\n\n",
+			on, comments, review, strings.Join(parts, ", "))
+	}
+	var whys []string
+	by := map[string][]Placed{}
+	for _, p := range off {
+		if _, ok := by[p.Why]; !ok {
+			whys = append(whys, p.Why)
+		}
+		by[p.Why] = append(by[p.Why], p)
+	}
+	for _, why := range whys {
+		fmt.Fprintf(&b, "**Here only**, not on their lines — %s:\n\n", strings.TrimSuffix(why, "."))
+		for _, p := range by[why] {
+			fmt.Fprintf(&b, "`%s:%d`\n\n> %s\n\n", p.Path, p.Line, strings.ReplaceAll(strings.TrimSpace(p.Body), "\n", "\n> "))
+		}
+	}
+	return strings.TrimSuffix(b.String(), "\n\n")
+}
 
 // lineMarker hides a line comment's key in it.
 func lineMarker(key string) string { return Marker("line=" + key) }

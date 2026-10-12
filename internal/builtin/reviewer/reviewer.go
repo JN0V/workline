@@ -389,7 +389,7 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	v.Record.Runs = st.Record.Runs
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
-		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0, nil, false)}})
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0, nil, nil)}})
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
@@ -1483,7 +1483,7 @@ func summaryIntention(repo string, s Settings, st state, v Review, related []Fin
 			short[g.Lens+"\x00"+g.Where] = shortMessage(g)
 		}
 	}
-	value := map[string]any{"sticky": SummaryKey, "body": summaryComment(v, issues, short, len(lines) > 0)}
+	value := map[string]any{"sticky": SummaryKey, "body": summaryComment(v, issues, short, lines)}
 	if len(lines) > 0 {
 		value["review"] = reviewOf(st, lines)
 	}
@@ -1492,12 +1492,15 @@ func summaryIntention(repo string, s Settings, st state, v Review, related []Fin
 
 // summaryComment is the one summary the merge request gets, edited on each run,
 // the record hidden in it. With findings on lines, the engine says where
-// the review stands (forge.ReviewHere), and a row on its line is short.
-func summaryComment(v Review, issues int, short map[string]string, lines bool) string {
+// the review stands in its region (forge.FillReview), and a row on its
+// line is short; an engine posting no comment on a line leaves what the
+// region holds: each finding in full.
+func summaryComment(v Review, issues int, short map[string]string, lines []forge.LineComment) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
-	if lines {
-		b.WriteString(forge.ReviewHere + "\n\n")
+	if len(lines) > 0 {
+		fmt.Fprintf(&b, "%s\n%s\n%s\n\n", forge.ReviewHere,
+			forge.Unplaced(lines, "the engine that applied this run posts no comment on a line").Section(), forge.ReviewEnd)
 	}
 	b.WriteString(findingsTable(v, "No finding on the commits reviewed.", short))
 	if len(v.Questions) > 0 {

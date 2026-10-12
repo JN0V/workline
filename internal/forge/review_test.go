@@ -36,6 +36,25 @@ func TestShown(t *testing.T) {
 	}
 }
 
+// A review region replaced whole, what it held for an engine posting no
+// comment on a line gone; the marker alone replaced too; nothing to say,
+// the region gone, the text around it kept apart.
+func TestFillReview(t *testing.T) {
+	region := "top\n\n" + ReviewHere + "\nin full\n" + ReviewEnd + "\n\nrest"
+	if got := FillReview(region, "said"); got != "top\n\nsaid\n\nrest" {
+		t.Errorf("region: %q", got)
+	}
+	if got := FillReview("top\n\n"+ReviewHere+"\n\nrest", "said"); got != "top\n\nsaid\n\nrest" {
+		t.Errorf("marker alone: %q", got)
+	}
+	if got := FillReview(region, ""); got != "top\n\nrest" {
+		t.Errorf("nothing to say: %q", got)
+	}
+	if got := FillReview("no region", "said"); got != "no region" {
+		t.Errorf("no region: %q", got)
+	}
+}
+
 // GitHub: the pull request's files read for the lines its diff shows, its
 // threads not resolved for the keys open, then one review, event COMMENT,
 // at head, holding only the comments to post, each on the right side with
