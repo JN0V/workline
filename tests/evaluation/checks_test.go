@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"go.yaml.in/yaml/v3"
 )
 
 func TestChecks(t *testing.T) {
@@ -77,13 +75,9 @@ func loadCases(t *testing.T) map[string]*caseFile {
 	files, _ := filepath.Glob("cases/*/*.yaml")
 	cases := map[string]*caseFile{}
 	for _, f := range files {
-		data, err := os.ReadFile(f)
+		c, err := readCase(f)
 		if err != nil {
 			t.Fatal(err)
-		}
-		var c caseFile
-		if err := yaml.Unmarshal(data, &c); err != nil {
-			t.Fatalf("%s: %v", f, err)
 		}
 		cases[f] = &c
 	}
