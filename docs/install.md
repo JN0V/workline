@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: f7514347
+checked: a6228bb0
 judged: a8574a5
 verified: agent:claude-code
 ---

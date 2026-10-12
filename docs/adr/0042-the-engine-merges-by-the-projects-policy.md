@@ -193,27 +193,36 @@ puts the label.
 - **Each head's verdict, where only the App writes it**: the judging job
   writes it (`route --verdict`); a job of its own keeps it on GitHub as the
   status `workline/verdict`, set by the App, bound by the forge to the
-  commit — in no concurrency group, so no newer run cancels it. Only what
-  `follow`'s own token set is read: a writer's status, as a git note anyone
-  could push, never counts. On GitLab, the verdict is in hand in the
-  pipeline that judged the head; a status set there from elsewhere could
-  become the merge request's pipeline. The limit: a GitLab project bot's
-  token can be read by whoever runs a pipeline.
+  commit — in no concurrency group, so no newer run cancels it, and only
+  for the head the event names. Only what `follow`'s own token set is
+  read: a status a person sets with their own token never counts, as a git
+  note anyone could push would. `workline/accepted` must be required from
+  the App itself: unpinned, nothing is turned on. On GitLab, the verdict
+  is in hand in the pipeline that judged the head; a status set there from
+  elsewhere could become the merge request's pipeline.
+- **The limits, where a token is in reach**: GitHub runs a pull request's
+  own copy of the workflow with the App's key, so whoever can push a
+  branch could set both statuses as the App — open in
+  [#331](https://github.com/JN0V/workline/issues/331), which moves the
+  key to the base's runs; a GitLab project bot's token can be read by
+  whoever runs a pipeline.
 - **Who says yes** may push and merge: GitHub's write access, GitLab's
   Developer — not the product owner's wider "person of the project".
 - **A push after the yes** is told by the forge's own push times —
   GitHub's repository activity, GitLab's versions —, else by the commits'
   dates; a head opened with the label on is the one accepted. `follow`'s
-  own update is checked by its tree — the base merged in, workline's lines
-  settled, a role's branch rebuilt —, never by its trailer; the line, too,
-  judges a commit whose trailer its tree does not bear out.
+  own update is checked by its tree — the base merged in, never another
+  branch, workline's lines settled, a role's branch rebuilt on the base —,
+  never by its trailer; the line, too, judges a commit whose trailer its
+  tree does not bear out, leaves out only doc pages (never a role's prompt
+  nor a file steering agents), and has the committer check every commit.
 - **GitHub turns no auto-merge on for a pull request it could merge now**
   ("clean status"): it is merged at once, at the head checked, as `gh pr
   merge --auto` does — the forge's rules met already.
 - **The workflows**: `follow` runs after `judge`, and on a label put or
   taken off in a workflow of its own (`pull_request_target`): a run with
   `judge` skipped would show the check passed. GitLab starts no pipeline
-  for a label: it is acted on at the next one.
+  for a label: it waits for that merge request's own next pipeline.
 - **The line never stalls**: one not judged yet waits, named; one whose
   check failed is out; only one ready and up to date ends a pass.
 - **Draft** turns auto-merge off; **another bot's own auto-merge** (a
@@ -225,8 +234,9 @@ puts the label.
   on GitHub, a head pushed after the yes, its other checks green, held
   five minutes by the required status until `follow` took the yes back:
   [tried.md](../../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live).
-- Conformance: merge/* (39 cases), the simulated forge, GitLab's mock, a
-  `cmd:` forge; routing/forged-merge-is-judged;
+- Conformance: merge/* (41 cases), the simulated forge, GitLab's mock, a
+  `cmd:` forge; routing/forged-merge-is-judged, merge-of-another-branch-is-judged,
+  committer-checks-workline-s-own-commits;
   TestMergePolicyRunsAfterTheJudgeAndOnLabels, TestGitHubGuarded,
   TestSumChecks.
 

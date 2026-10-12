@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: f7514347
+checked: a6228bb0
 verified: agent:claude-code
 ---
 # The merge policy
@@ -57,14 +57,15 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   one comment. When each head was pushed is the forge's word: GitHub's
   repository activity, GitLab's versions.
 - **`follow`'s own update is no push**: the base merged in, a role's
-  branch rebuilt — checked by its tree, exactly what workline's own merge
-  or rebuild gives; its trailer is never taken on trust.
+  branch rebuilt, on the base, never another branch — checked by its
+  tree, exactly what workline's own merge or rebuild gives; its trailer is
+  never taken on trust. The committer checks every commit all the same.
 - **Held by the forge, not by a race**: GitHub keeps auto-merge on after a
-  writer's push. So the base requires the status `workline/accepted`,
-  which `follow` sets on the head a yes covers: a new head lacks it and
-  cannot merge. A base that does not require it gets nothing turned on,
-  said. On GitLab, the merge waits for the new head's pipeline, which
-  holds `workline:merge`.
+  writer's push. So the base requires the status `workline/accepted` from
+  the App, which `follow` sets on the head a yes covers: a new head lacks
+  it and cannot merge. A base that does not require it, or from any
+  source, gets nothing turned on, said. On GitLab, the merge waits for
+  the new head's pipeline, which holds `workline:merge`.
 
 ## Never without a person's yes
 
@@ -89,13 +90,17 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - The judging job writes it: `workline route … --verdict <file>`.
 - **GitHub**: a job of its own keeps it, `workline follow --verdict <file>
   --verdict-only`: the status `workline/verdict` on the head, set by the
-  App. Only the statuses `follow`'s own token set are read: a writer's
-  never counts.
+  App. Only the statuses `follow`'s own token set are read: one a person
+  sets with their own token never counts.
 - **GitLab**: in hand in the merge request's pipeline, where
   `workline:merge` reads it; nothing kept elsewhere.
 - No verdict on the head yet: auto-merge waits for it.
-- **The limit**: on GitLab, whoever can run a pipeline can read the
-  project bot's token, so a person who may push could act as it.
+- **The limits**, where a token is in reach:
+  - GitHub runs a pull request's own copy of the workflow, with the App's
+    key: whoever can push a branch could make it set both statuses as the
+    App ([#331](https://github.com/JN0V/workline/issues/331));
+  - on GitLab, whoever can run a pipeline can read the project bot's
+    token, so a person who may push could act as it.
 
 ## Set up
 
@@ -110,7 +115,7 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
     from the App.
 - **GitLab**: the [template](ci-gitlab.md)'s `workline:merge` job, after
   the judge; the project bot's token. A label starts no pipeline there: it
-  is acted on at the next one.
+  waits for that merge request's own next pipeline.
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
   `guarded`, `accept`, `keep-verdict` and `verdict`
   ([forge command](spec/forge-command.md)). The local forge has no
