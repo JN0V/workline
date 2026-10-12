@@ -233,7 +233,37 @@ func (c *command) MergeRequest(id int) (MergeRequest, error) {
 		Body   string `json:"body"`
 	}
 	err := c.call("merge-request-branch", map[string]any{"id": id}, &a)
-	return MergeRequest{Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body}, err
+	return MergeRequest{ID: id, Branch: a.Branch, Base: a.Base, Here: a.Here, Title: a.Title, Body: a.Body}, err
+}
+
+// OpenMergeRequestsInto asks its own operation, merge-requests: a command
+// that does not know it refuses it, and the run says so, rather than a
+// person's merge request be taken for one there is none of.
+func (c *command) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
+	var a struct {
+		MergeRequests []struct {
+			ID     int    `json:"id"`
+			Branch string `json:"branch"`
+			Base   string `json:"base"`
+			Here   bool   `json:"here"`
+			Title  string `json:"title"`
+			Author string `json:"author"`
+			Bot    bool   `json:"bot"`
+			Head   string `json:"head"`
+		} `json:"merge-requests"`
+	}
+	if err := c.call("merge-requests", map[string]any{"base": base}, &a); err != nil {
+		return nil, err
+	}
+	var out []MergeRequest // only those into base, by number, whatever the command sent
+	for _, m := range a.MergeRequests {
+		if m.Branch != "" && m.Base == base {
+			out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: m.Here, Title: m.Title,
+				Author: m.Author, Bot: m.Bot, Head: m.Head})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
 }
 
 // Milestones reads each milestone as its title alone, or as {title, due}.

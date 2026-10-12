@@ -955,7 +955,45 @@ func (g *gitlab) MergeRequest(id int) (MergeRequest, error) {
 	if err := decode(out, &mr); err != nil {
 		return MergeRequest{}, err
 	}
-	return MergeRequest{Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
+	return MergeRequest{ID: id, Branch: mr.Source, Base: mr.Target, Here: mr.SourceProject == mr.TargetProject, Title: mr.Title, Body: mr.Description}, nil
+}
+
+// OpenMergeRequestsInto reads each open merge request into base: one from
+// another project is not here; a project or group access token's user is a
+// bot. GitLab keeps every head under refs/merge-requests/<iid>/head.
+func (g *gitlab) OpenMergeRequestsInto(base string) ([]MergeRequest, error) {
+	out, err := g.api("--paginate", "projects/:id/merge_requests?state=opened&per_page=100&target_branch="+url.QueryEscape(base))
+	if err != nil {
+		return nil, err
+	}
+	type mr struct {
+		IID           int    `json:"iid"`
+		Source        string `json:"source_branch"`
+		Target        string `json:"target_branch"`
+		SourceProject int    `json:"source_project_id"`
+		TargetProject int    `json:"target_project_id"`
+		Title         string `json:"title"`
+		Author        struct {
+			Username string `json:"username"`
+		} `json:"author"`
+	}
+	var all []MergeRequest
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
+		var page []mr
+		if err := dec.Decode(&page); err != nil {
+			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		for _, m := range page {
+			if m.Target != base {
+				continue
+			}
+			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
+				Title: m.Title, Author: m.Author.Username, Bot: botName.MatchString(m.Author.Username),
+				Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID)})
+		}
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, nil
 }
 
 func (g *gitlab) KeepIssue(title, body string, create bool) (int, error) {

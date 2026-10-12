@@ -108,6 +108,13 @@ func TestLocalCloseMergeRequest(t *testing.T) {
 	if open, _ := l.OpenMergeRequests("workline/"); len(open) != 1 || open[0] != "workline/documentalist/suspect" {
 		t.Fatalf("open: %v", open)
 	}
+	into, err := l.OpenMergeRequestsInto("main")
+	if err != nil || len(into) != 1 || into[0] != (MergeRequest{ID: 1, Branch: "workline/documentalist/suspect", Base: "main", Here: true, Title: "docs: workline/documentalist/suspect", Body: "body"}) {
+		t.Fatalf("open into main: %+v, %v", into, err)
+	}
+	if into, _ := l.OpenMergeRequestsInto("develop"); len(into) != 0 {
+		t.Fatalf("open into develop: %+v", into)
+	}
 }
 
 // The backlog of the local forge: the open issues listed, their comments

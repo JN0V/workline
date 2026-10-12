@@ -114,8 +114,47 @@ EOF
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := MergeRequest{Branch: "feat", Base: "main", Here: true, Title: "Average over the count", Body: "Closes #4\n\nNo change in behaviour."}
+	want := MergeRequest{ID: 5, Branch: "feat", Base: "main", Here: true, Title: "Average over the count", Body: "Closes #4\n\nNo change in behaviour."}
 	if mr != want {
 		t.Errorf("merge request: %+v, want %+v", mr, want)
+	}
+}
+
+// The open pull requests into a branch, each with where it comes from and
+// who opened it (ADR-0041): a fork's, or one whose fork is gone, is not
+// here; an app's is a bot's; each head where GitHub keeps it.
+func TestGitHubOpenMergeRequestsInto(t *testing.T) {
+	bin := t.TempDir()
+	args := filepath.Join(bin, "args")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + args + "\n" + `cat <<'EOF'
+{"id":9,"branch":"patch-1","base":"main","here":false,"author":"zed","bot":false,"title":"Fix a typo"}
+{"id":7,"branch":"feat/sessions","base":"main","here":true,"author":"dana","bot":false,"title":"Two hours"}
+{"id":8,"branch":"release-please--branches--main","base":"main","here":true,"author":"workline-app[bot]","bot":true,"title":"chore: release 1.1.0"}
+EOF
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	got, err := (&github{repo: t.TempDir()}).OpenMergeRequestsInto("main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []MergeRequest{
+		{ID: 7, Branch: "feat/sessions", Base: "main", Here: true, Title: "Two hours", Author: "dana", Head: "refs/pull/7/head"},
+		{ID: 8, Branch: "release-please--branches--main", Base: "main", Here: true, Title: "chore: release 1.1.0", Author: "workline-app[bot]", Bot: true, Head: "refs/pull/8/head"},
+		{ID: 9, Branch: "patch-1", Base: "main", Title: "Fix a typo", Author: "zed", Head: "refs/pull/9/head"},
+	}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("merge requests:\n%+v\nwant\n%+v", got, want)
+	}
+	asked, _ := os.ReadFile(args)
+	for _, w := range []string{"pulls?state=open&per_page=100&base=main", `.head.repo.full_name // ""`, `.user.type == "Bot"`} {
+		if !strings.Contains(string(asked), w) {
+			t.Errorf("gh not asked for %q: %s", w, asked)
+		}
+	}
+	if !(MergeRequest{Branch: "renovate/go-1.x"}).ByBot() || !(MergeRequest{Branch: "dependabot/go_modules/x"}).ByBot() || (MergeRequest{Branch: "feat/renovate"}).ByBot() {
+		t.Error("a dependency bot's branch is told by its name, whoever opened it; another is not")
 	}
 }
