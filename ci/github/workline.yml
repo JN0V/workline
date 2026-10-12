@@ -40,7 +40,7 @@
 #          workline writes gets main merged in: a merge commit, never forced.
 #          The job's summary names each one merged into, and each left.
 #          With the project's merge policy, `merge: {autonomy: cautious}`
-#          (ADR-0042, off by default; the first release after v0.24.0), it
+#          (ADR-0042, off by default; the first release after v0.25.0), it
 #          also runs after judge on a pull request: it keeps the line's
 #          verdict on the head (a git note), turns GitHub's auto-merge on for
 #          each pull request a person who can write labelled
@@ -228,7 +228,7 @@ jobs:
             echo "no merge policy (merge:): nothing to follow on a pull request's events"
           fi
       # The engine at the version pinned above: `workline follow` needs the
-      # first release after v0.16.0; its merge policy, the first after v0.24.0.
+      # first release after v0.16.0; its merge policy, the first after v0.25.0.
       - name: workline
         if: steps.policy.outputs.run == 'true'
         run: |

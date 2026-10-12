@@ -135,7 +135,7 @@ workline:apply:
     expire_in: 1 week
 
 # The project's merge policy, `merge: {autonomy: cautious}` (ADR-0042, off
-# by default; the first release after v0.24.0): after the judge, the line's
+# by default; the first release after v0.25.0): after the judge, the line's
 # verdict on the head is kept (a git note), each merge request a person of
 # the project labelled workline::accepted, its head's verdict passed, is set
 # to merge when its pipeline succeeds, and the first in line is brought up
