@@ -82,7 +82,7 @@ When something fails:
 
 [#326](https://github.com/JN0V/workline/issues/326): the record keeps
 each finding that blocked, its cause quoted, beside the commits reviewed
-([the record](run.md#13-the-range-the-rules-the-record)).
+([the record](run.md), step 3).
 
 - **Nothing new to read** — the job run again on the same commits, a merge
   of the base that settled nothing, new commits changing no code, a rule
