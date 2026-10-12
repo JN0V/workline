@@ -387,11 +387,23 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 		t.Errorf("workline:judge does not run .workline:ready and pass $lenses: %s", script)
 	}
 	// The API as GitLab answers it: the merge request, then its notes, the
-	// most recently updated first; read with the token the engine reads with.
+	// most recently updated first, a hundred a page (NOTES_<page>, the
+	// pages not named NOTES_REST, else none); read with the token the
+	// engine reads with. A query asking anything else is refused.
 	dir := t.TempDir()
-	curl := "#!/bin/sh\ncase \"$*\" in *\"$AUTH\"*) ;; *) exit 22 ;; esac\nfor a; do url=$a; done\n" +
-		"case \"$url\" in *'&page=1') f=$NOTES ;; *'&page=2') f=${NOTES2:-[]} ;; *'&page='*) f='[]' ;; *) f=$MR ;; esac\n" +
-		"[ -n \"$f\" ] || exit 22\nprintf '%s' \"$f\"\n"
+	curl := `#!/bin/sh
+case "$*" in *"$AUTH"*) ;; *) exit 22 ;; esac
+for a; do url=$a; done
+case "$url" in
+  *'/notes?order_by=updated_at&sort=desc&per_page=100&page='*)
+    [ -z "$NOTES_UNREAD" ] || exit 22
+    n=${url##*page=}; eval "f=\${NOTES_$n:-}"; [ -n "$f" ] || f=${NOTES_REST:-[]} ;;
+  */notes*) exit 22 ;;
+  *) f=$MR ;;
+esac
+[ -n "$f" ] || exit 22
+printf '%s' "$f"
+`
 	if err := os.WriteFile(filepath.Join(dir, "curl"), []byte(curl), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -400,38 +412,51 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 		marked  = `{"system": true, "body": "marked this merge request as **ready**"}`
 		other   = `{"system": false, "body": "Looks good."}`
 	)
-	hundred := "[" + strings.Repeat(other+",", 99) + other + "]" // a full page, neither note on it
+	full := "[" + strings.Repeat(other+",", 99) + other + "]" // a full page, neither note on it
 	for _, c := range []struct {
-		name, draft, mr, notes, notes2, token string
-		all                                   bool
+		name, draft, mr, token string
+		pages                  []string // the notes, a page each
+		rest                   string   // every page after them
+		unread, all            bool
 	}{
-		{"opened ready: no comment yet", "false", "", "[" + other + "]", "", "", true},
-		{"marked ready since the last review", "false", "", "[" + marked + "," + summary + "]", "", "", true},
-		{"a push after the review on ready", "false", "", "[" + other + "," + summary + "," + marked + "]", "", "", false},
-		{"a draft", "true", "", "[" + marked + "]", "", "", false},
-		{"before GitLab 17.10: ready, by the API", "", `{"draft": false}`, "[" + marked + "," + summary + "]", "", "", true},
-		{"read with GITLAB_TOKEN when the job has one", "false", "", "[" + marked + "]", "", "read", true},
-		{"before GitLab 17.10: a draft, by the API", "", `{"draft": true}`, "[" + marked + "]", "", "", false},
-		{"the reviewer's comment past 100 newer notes", "false", "", hundred, "[" + summary + "," + marked + "]", "", false},
-		{"the ready note past 100 newer notes", "false", "", hundred, "[" + marked + "," + summary + "]", "", true},
-		{"the notes unread", "false", "", "", "", "", false},
+		{name: "opened ready: no comment yet", draft: "false", pages: []string{"[" + other + "]"}, all: true},
+		{name: "marked ready since the last review", draft: "false", pages: []string{"[" + marked + "," + summary + "]"}, all: true},
+		{name: "a push after the review on ready", draft: "false", pages: []string{"[" + other + "," + summary + "," + marked + "]"}},
+		{name: "a draft", draft: "true", pages: []string{"[" + marked + "]"}},
+		{name: "before GitLab 17.10: ready, by the API", mr: `{"draft": false}`, pages: []string{"[" + marked + "," + summary + "]"}, all: true},
+		{name: "before GitLab 17.10: a draft, by the API", mr: `{"draft": true}`, pages: []string{"[" + marked + "]"}},
+		{name: "read with GITLAB_TOKEN when the job has one", draft: "false", token: "read", pages: []string{"[" + marked + "]"}, all: true},
+		{name: "the comment past a full page", draft: "false", pages: []string{full, "[" + summary + "," + marked + "]"}},
+		{name: "the ready note past a full page", draft: "false", pages: []string{full, "[" + marked + "," + summary + "]"}, all: true},
+		{name: "the comment past two full pages", draft: "false", pages: []string{full, full, "[" + summary + "]"}},
+		{name: "every page full, neither note: 50 pages read, then one lens", draft: "false", rest: full},
+		{name: "the notes unread", draft: "false", unread: true},
 	} {
 		env := []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "CI_API_V4_URL=https://gitlab.invalid/api/v4",
-			"CI_PROJECT_ID=1", "CI_MERGE_REQUEST_IID=5", "CI_JOB_TOKEN=job", "MR=" + c.mr, "NOTES=" + c.notes, "NOTES2=" + c.notes2, "AUTH=JOB-TOKEN: job"}
+			"CI_PROJECT_ID=1", "CI_MERGE_REQUEST_IID=5", "CI_JOB_TOKEN=job", "MR=" + c.mr, "NOTES_REST=" + c.rest, "AUTH=JOB-TOKEN: job"}
+		for i, p := range c.pages {
+			env = append(env, fmt.Sprintf("NOTES_%d=%s", i+1, p))
+		}
+		if c.unread {
+			env = append(env, "NOTES_UNREAD=1")
+		}
 		if c.token != "" {
 			env = append(env, "GITLAB_TOKEN="+c.token, "AUTH=PRIVATE-TOKEN: "+c.token)
 		}
 		if c.draft != "" {
 			env = append(env, "CI_MERGE_REQUEST_DRAFT="+c.draft)
 		}
-		cmd := exec.Command("sh", "-ec", fmt.Sprint(ready[0])+"\necho \"lenses[$lenses]\"")
+		cmd := exec.Command("sh", "-ec", fmt.Sprint(ready[0])+"\necho \"lenses[$lenses] page[$page]\"")
 		cmd.Env = env
 		out, err := cmd.CombinedOutput()
 		if got := strings.Contains(string(out), "lenses[--input lenses=all]"); err != nil || got != c.all {
 			t.Errorf("%s: every lens %v, want %v (%v)\n%s", c.name, got, c.all, err, out)
 		}
-		if c.notes == "" && !strings.Contains(string(out), "could not be read") {
+		if (c.unread || c.rest != "") && !strings.Contains(string(out), "could not be read") {
 			t.Errorf("%s: not said in the log:\n%s", c.name, out)
+		}
+		if c.rest != "" && !strings.Contains(string(out), "page[50]") {
+			t.Errorf("%s: not stopped at page 50:\n%s", c.name, out)
 		}
 	}
 }
