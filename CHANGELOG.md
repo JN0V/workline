@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.25.0](https://github.com/JN0V/workline/compare/v0.24.0...v0.25.0) (2026-10-12)
+
+
+### Features
+
+* **documentalist:** merge main into a pull request on workline's lines ([#325](https://github.com/JN0V/workline/issues/325)) ([ad3fc5a](https://github.com/JN0V/workline/commit/ad3fc5a31a2ae1b27631a8d95d2b999012494d16))
+* **documentalist:** rebuild or close its stale merge requests ([#315](https://github.com/JN0V/workline/issues/315)) ([8b37a1f](https://github.com/JN0V/workline/commit/8b37a1fd189508c63fbdfd72a27cf9f9533d09e0))
+* **reviewer:** each finding a comment on its line ([#316](https://github.com/JN0V/workline/issues/316)) ([7df3ab2](https://github.com/JN0V/workline/commit/7df3ab25b6f6a28de3f6d134a76f23bab7263270))
+
+
+### Bug Fixes
+
+* **documentalist:** name the flow heading that matched ([#324](https://github.com/JN0V/workline/issues/324)) ([2d9ebb4](https://github.com/JN0V/workline/commit/2d9ebb4a15a0e0ca15351fbab878e689c8674562))
+* **reviewer:** a block stands until a commit answers it ([#327](https://github.com/JN0V/workline/issues/327)) ([c177b19](https://github.com/JN0V/workline/commit/c177b19d4b4bf12547c564e72fbc64aa6981ad03))
+
 ## [0.24.0](https://github.com/JN0V/workline/compare/v0.23.0...v0.24.0) (2026-10-12)
 
 
