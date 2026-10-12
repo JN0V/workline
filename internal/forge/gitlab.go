@@ -167,7 +167,10 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 			return nil, fmt.Errorf("%w: %s %s", errNotFound, method, path)
 		case resp.StatusCode == http.StatusForbidden, resp.StatusCode == http.StatusUnauthorized && method != "GET":
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s (the token's role or scope does not allow it)", errForbidden, method, path, resp.Status, strings.TrimSpace(string(data)))
-		case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity:
+		case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity,
+			// The merge API's: a merge request it cannot merge, nor set to
+			// (405, 406), a head that moved (409).
+			resp.StatusCode == http.StatusMethodNotAllowed, resp.StatusCode == http.StatusNotAcceptable, resp.StatusCode == http.StatusConflict:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, resp.Status, strings.TrimSpace(string(data)))
 		case resp.StatusCode >= 300:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", ErrUnreachable, method, path, resp.Status, strings.TrimSpace(string(data)))

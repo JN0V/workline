@@ -277,7 +277,8 @@ type lineForge interface {
 func refusal(err error) bool { return errors.Is(err, errForbidden) || errors.Is(err, errRefused) }
 
 // errRefused marks a request the forge answered and did not take: a
-// position it does not show, a value it does not accept (HTTP 400, 422).
+// position it does not show, a value it does not accept (HTTP 400, 422);
+// on GitLab, a merge it cannot make nor set (405, 406), a head moved (409).
 var errRefused = fmt.Errorf("%w: refused", ErrUnreachable)
 
 // said is what the forge said refusing: the error, without the words

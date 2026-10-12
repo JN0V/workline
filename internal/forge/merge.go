@@ -53,6 +53,12 @@ type Merger interface {
 // may not, a request it does not take — rather than not answering.
 func Refused(err error) bool { return refusal(err) }
 
+// Said is what the forge said refusing, without the words that only mark
+// the error's kind.
+func Said(err error) string {
+	return strings.TrimPrefix(said(err), ErrUnreachable.Error()+": ")
+}
+
 // MergeRef is how f names a merge request: !7 on GitLab, #7 elsewhere.
 func MergeRef(f any, id int) string {
 	if _, ok := f.(*gitlab); ok {
