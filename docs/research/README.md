@@ -3,6 +3,8 @@
 What already exists, so we build only what is missing. Findings as of 2026-09-23;
 stars and dates were checked against the GitHub API that day.
 
+## Cards
+
 | Card | Question it answers |
 |---|---|
 | [landscape.md](landscape.md) | Who already does role-based or "software factory" development, and what to take from them |
@@ -25,6 +27,7 @@ stars and dates were checked against the GitHub API that day.
 | [code-review.md](code-review.md) | Focused: how AI code reviewers find, verify and post findings, and what a reviewer role takes from them; what reviews a spec before it is built |
 | [code-navigation.md](code-navigation.md) | Focused: how tools find a function's bounds, its callers and callees with no build, in any language, for what a judge reads |
 | [roles-panorama.md](roles-panorama.md) | Which roles a line needs for any project, which are gates, SonarQube read not rerun, and the order to build them |
+| [merge-conflicts.md](merge-conflicts.md) | Focused: why open pull requests conflict with `main`, what forges and git offer, what workline adds |
 
 ## Method
 
