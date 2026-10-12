@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 16fb7b5
+checked: 03b2719
 judged: cd97f28
 verified: agent:claude-code
 -->
