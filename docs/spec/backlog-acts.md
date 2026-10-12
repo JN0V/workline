@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/scale, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 54cc42b
+checked: f78d077
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -576,23 +576,19 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   each escaped as a URL's query escapes a value (`in=Steps+to+reproduce`,
   a comma `%2C`). A heading of letters only is written as it always was,
   so a record written before reads the same.
-- **A record that does not read** is never none (#302): read as none, the
-  spec was read again at round 1, an agent call a night, the issues after
-  it waiting. The reviewer passes the issue over, said each run
-  (`spec-record-unread`, the line quoted); ready stays held, until a
-  person deletes the comment — read anew, at round 1 — or accepts it.
+- **A record that does not read** (#302): the issue passed over, ready
+  held, said (`spec-record-unread`) until a person deletes the comment.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
   a proposal accepted — and at every level: `spec-not-reviewed` (no record, or
   one for another body: a refine in the same run changes it),
-  `spec-record-unread`, `spec-findings-open`, `spec-rounds-spent`. A person's
+  `spec-findings-open`, `spec-rounds-spent`. A person's
   `workline:accepted` lifts it; `workline:ready` set by hand is theirs.
 - **Read again**: an issue with findings open on its body as it is, a
   review its state has not `answered` — kept by the body that review
   read, never by its round, which restarts at 1 after a clean review —,
-  is read again, the comment given
-  to the agent (clipped at 3000 characters) with the sections it may
-  rewrite.
+  is read again, the comment given to the agent (3000 characters at
+  most) with the sections it may rewrite.
 - **Answered**: a `refine` may rewrite a section with text when a finding
   open lies in it and it is the role's own (`backlog.Revisable`): a draft
   no person accepted, or a text whose digest is the one the state's
