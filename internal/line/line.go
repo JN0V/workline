@@ -182,7 +182,9 @@ func failed(res *Result, where, msg string) *Result {
 // left for its parent, a merge for its first, the branch's side (`workline
 // follow`'s merge of the base, ADR-0041). The range is "" when nothing is
 // left in it; role is "" when its last commit is a person's, or with no
-// range.
+// range. A trailer is not taken on trust (engine.OwnCommit): a merge
+// bringing more than the base, a commit changing more than Markdown, is
+// judged as a person's.
 func beforeOwn(repo, rng string) (role, before string) {
 	if rng == "" {
 		return "", rng
@@ -195,7 +197,7 @@ func beforeOwn(repo, rng string) (role, before string) {
 			break
 		}
 		parents, by, _ := strings.Cut(strings.TrimSpace(string(out)), "\x1f")
-		if by = strings.TrimSpace(by); by == "" {
+		if by = strings.TrimSpace(by); by == "" || engine.OwnCommit(repo, cur) == "" {
 			break
 		}
 		if role == "" {

@@ -1,0 +1,12 @@
+case: routing/forged-merge-is-judged
+about: "A last commit carrying workline's trailer is not taken on trust (#321's review): a merge of main that also changes the code is no merge `follow` makes — its tree is not what workline's merge of its two parents gives —, so the line judges it as a person's commit. Here it changes a doc's source: the doc is listed, where workline's own merge would leave it unjudged."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/notes && echo notes > notes.txt && git add notes.txt && git commit -qm 'chore: keep notes' && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves'"
+    - "git checkout -q feat/notes && git merge -q --no-ff --no-commit main && sed -i 's/3600/7200/' src/auth/token.go && git add src && git commit -qm \"Merge branch 'main' into feat/notes\" -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "main..HEAD"}, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md}]
