@@ -522,7 +522,11 @@ type suspectDoc struct {
 	// whole: every source of the doc is given whole in its task, as it is
 	// now. Only then may `checked` move (ADR-0014): a doc judged on diffs,
 	// or beside a doc of the same task, is fixed and records `judged`.
-	whole  bool
+	whole bool
+	// read is what the task gave of the doc's sources when not all went
+	// whole — what changed in one, the doc it follows — said beside what it
+	// did not give (#120).
+	read   []sourceRead
 	shown  int  // lines of evidence shown so far, within docEvidenceLines
 	capped bool // more changed than docEvidenceLines shows
 	// note says what became of a doc judged in parts, or why it was not:
@@ -532,6 +536,67 @@ type suspectDoc struct {
 	// earlier: judged by an earlier round of this run, whose merge request
 	// is proposed, not opened yet: that round's finding stands.
 	earlier bool
+}
+
+// sourceRead is what a task gave of one source of a doc not given whole.
+type sourceRead struct {
+	src  string // as the doc's header names it
+	what string // "what changed in src/a.go since abc1234"
+	part bool   // the rest of the source was not given
+}
+
+// readScope says, of a doc whose sources did not all go whole into its
+// task, what the agent read and what it did not. Nothing found wrong is said
+// of what was read, never of the rest (#120): a diff alone leaves the doc's
+// other claims unread against the code.
+type readScope struct {
+	Read    []string `yaml:"read"`
+	NotRead []string `yaml:"not-read"`
+}
+
+// scope is what the task gave of the doc's sources, and what it did not,
+// in the order its header names them.
+func (sd *suspectDoc) scope() readScope {
+	var r readScope
+	given := map[string]sourceRead{}
+	for _, g := range sd.read {
+		r.Read = append(r.Read, g.what)
+		given[g.src] = g
+	}
+	for _, src := range sd.doc.Sources {
+		switch g, ok := given[src]; {
+		case !ok:
+			r.NotRead = append(r.NotRead, src)
+		case g.part:
+			r.NotRead = append(r.NotRead, "the rest of "+src)
+		}
+	}
+	return r
+}
+
+// String is the scope as a person reads it: "read: what changed in a.go
+// since abc1234; not read: the rest of a.go, b.go".
+func (r readScope) String() string {
+	read := "none of its sources"
+	if len(r.Read) > 0 {
+		read = strings.Join(r.Read, ", ")
+	}
+	if len(r.NotRead) == 0 {
+		return "read: " + read
+	}
+	return "read: " + read + "; not read: " + strings.Join(r.NotRead, ", ")
+}
+
+// readUnrecorded is said of a doc not given whole when the run did not
+// record what it gave: never "nothing found wrong" of the rest.
+const readUnrecorded = "read: only part of its sources, not recorded by this run; not read: the rest"
+
+// abbrev is a commit as a person reads it.
+func abbrev(c string) string {
+	if len(c) > 7 {
+		return c[:7]
+	}
+	return c
 }
 
 // docEvidenceLines is what one doc shows of what changed in all its sources:
@@ -724,6 +789,8 @@ func Pre(runDir, repo string) int {
 					sd.capped = true
 				} else {
 					sd.evidence = append(sd.evidence, fmt.Sprintf("What changed in %s:\n\n%s", src, sd.evidenceFor(where.dir, checked, where.rev, path, anchor)))
+					// A source gone: what changed is all of it.
+					sd.read = append(sd.read, sourceRead{src: src, what: fmt.Sprintf("what changed in %s since %s", src, abbrev(checked)), part: !gone})
 				}
 			}
 		}
@@ -770,7 +837,7 @@ func Pre(runDir, repo string) int {
 				continue
 			}
 			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
-			sd.whole = len(now) > 0
+			sd.whole, sd.read = len(now) > 0, nil // what changed is no longer shown
 		}
 	}
 	holdJudgedInParts(suspects, repo)
@@ -799,7 +866,8 @@ func Pre(runDir, repo string) int {
 				if edge(s, path, d.Path) == "now" {
 					why := fmt.Sprintf("it follows %s, which is suspect", path)
 					suspects[d.Path], grew = &suspectDoc{doc: d, why: []string{why},
-						evidence: []string{fmt.Sprintf("%s is judged in this same task: make this doc agree with it as you leave it.", path)}}, true
+						evidence: []string{fmt.Sprintf("%s is judged in this same task: make this doc agree with it as you leave it.", path)},
+						read:     []sourceRead{{src: src, what: path + ", judged in this same task"}}}, true
 					findings = append(findings, verdict.Finding{Rule: "suspect", Where: d.Path, Message: why})
 				} else if !hasPending(findings, d.Path) {
 					findings = append(findings, verdict.Finding{Rule: "pending", Where: d.Path,
@@ -1129,17 +1197,29 @@ doc when its reader really gained something to know.
 		}
 		// The docs whose sources went whole into the task: only theirs may
 		// have `checked` moved (ADR-0014). The judge refuses any other move.
-		whole := []string{}
+		// The others: what their task gave of their sources, and what it
+		// did not, for what the run says of them (#120).
+		whole, notWhole := []string{}, map[string]readScope{}
 		for p := range judged {
+			var given *suspectDoc
 			for _, m := range []map[string]*suspectDoc{suspects, propagate, stale} {
 				if sd := m[p]; sd != nil && sd.whole && !sd.tooLarge {
 					whole = append(whole, p)
+					given = nil
 					break
+				} else if sd != nil && !sd.tooLarge && given == nil { // too large: judged in parts, said apart
+					given = sd
 				}
+			}
+			if given != nil {
+				notWhole[p] = given.scope()
 			}
 		}
 		sort.Strings(whole)
 		if err := writeYAML(filepath.Join(runDir, "in", "read-whole.yaml"), whole); err != nil {
+			return fail(err)
+		}
+		if err := writeYAML(filepath.Join(runDir, "in", "read-not-whole.yaml"), notWhole); err != nil {
 			return fail(err)
 		}
 		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
@@ -1400,6 +1480,23 @@ func Post(runDir, repo string) int {
 			whole[p] = true
 		}
 	}
+	// What the others were given, and not given: "nothing found wrong" is
+	// said of what was read, never of the rest (#120).
+	notWhole := map[string]readScope{}
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "read-not-whole.yaml")); err == nil {
+		if err := yaml.Unmarshal(data, &notWhole); err != nil {
+			return fail(err)
+		}
+	}
+	readOf := func(p string) string {
+		if whole[p] {
+			return ""
+		}
+		if r, ok := notWhole[p]; ok {
+			return r.String()
+		}
+		return readUnrecorded
+	}
 	var s Settings
 	if err := readJSON(filepath.Join(runDir, "in", "settings.json"), &s); err != nil {
 		return fail(err)
@@ -1528,7 +1625,7 @@ func Post(runDir, repo string) int {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				f.Message += "\n" + notVouched(judgedFix.placesFixed(f.Where), partly[f.Where], whole[f.Where])
+				f.Message += "\n" + notVouched(judgedFix.placesFixed(f.Where), partly[f.Where], readOf(f.Where))
 			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
@@ -1558,7 +1655,7 @@ func Post(runDir, repo string) int {
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
-		outcome := outcomes(judged, inParts, patched, partly, judgedFix)
+		outcome := outcomes(judged, inParts, patched, partly, judgedFix, readOf)
 		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld, outcome)); err != nil {
 			return fail(err)
 		}
@@ -2074,28 +2171,36 @@ func checklist(findings []verdict.Finding) (intent.Intention, bool) {
 // notVouched says, for a doc the agent judged without vouching for it, what
 // this run did: fixed in so many places, or nothing found wrong; applied in
 // part; and why `checked` stays. Never "fixed" for a patch recording only
-// `judged` (workline's first nightly, 2026-10-02).
-func notVouched(n int, partly, whole bool) string {
+// `judged` (workline's first nightly, 2026-10-02). read is what the task
+// gave of a doc whose sources did not all go whole, and what it did not
+// ("" when they did): nothing is said found wrong of what was not read
+// (#120).
+func notVouched(n int, partly bool, read string) string {
+	given := "" // what was read, and what was not
+	if read != "" {
+		given = "not every source of the doc could be given whole in the task — " + read + ". "
+	}
 	switch {
 	case partly && n > 0:
-		return "(fixed in " + nPlaces(n) + ", applied in part: the places refused are left as they were, each said below, and `checked` stays — a person fixes them against the sources, then moves `checked`)"
+		return "(fixed in " + nPlaces(n) + ", applied in part: the places refused are left as they were, each said below; " + given + "`checked` stays — a person fixes them against the sources, then moves `checked`)"
 	case partly:
-		return "(nothing applied: every place the fix changed was refused, each said below, and left as it was; `checked` stays and `judged` records when — a person fixes them against the sources, then moves `checked`)"
+		return "(nothing applied: every place the fix changed was refused, each said below, and left as it was; " + given + "`checked` stays and `judged` records when — a person fixes them against the sources, then moves `checked`)"
+	case read != "" && n > 0:
+		return "(fixed in " + nPlaces(n) + ", not vouched for: what the agent found wrong in what was read is fixed in this run, but " + given + "`checked` stays and `judged` records when — a person reads the doc against what was not read, then moves `checked`)"
+	case read != "":
+		return "(nothing found wrong in what was read, not vouched for: the agent changed nothing in the doc, but " + given + "`checked` stays and `judged` records when — a person reads the doc against what was not read, then moves `checked`)"
+	case n > 0:
+		return "(fixed in " + nPlaces(n) + ", not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
 	}
-	what := "nothing found wrong, not vouched for: the agent changed nothing in the doc"
-	if n > 0 {
-		what = "fixed in " + nPlaces(n) + ", not vouched for: what the agent found wrong is fixed in this run"
-	}
-	if whole {
-		return "(" + what + ", but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
-	}
-	return "(" + what + ", but not every source of the doc could be given whole in the task, so `checked` stays and `judged` records when — a person reads it against them, then moves `checked`)"
+	return "(nothing found wrong, not vouched for: the agent changed nothing in the doc, but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
 }
 
 // outcomes says, for the merge request a gardening task opens, what became
 // of each doc it judged: fixed and in how many places, or nothing found
-// wrong; `checked` moved, or `judged` recorded.
-func outcomes(judged map[string]map[string]string, inParts map[string]string, patched, partly map[string]bool, fix *judgedFixes) map[string]string {
+// wrong; `checked` moved, or `judged` recorded. readOf says what the task
+// gave of a doc whose sources did not all go whole, and what it did not
+// ("" when they did): nothing is said found wrong of what was not read.
+func outcomes(judged map[string]map[string]string, inParts map[string]string, patched, partly map[string]bool, fix *judgedFixes, readOf func(string) string) map[string]string {
 	out := map[string]string{}
 	fixed := func(p string) string {
 		if n := fix.placesFixed(p); n > 0 {
@@ -2119,6 +2224,7 @@ func outcomes(judged map[string]map[string]string, inParts map[string]string, pa
 		}
 		v, ok := patched[p]
 		f := fixed(p)
+		read := readOf(p)
 		switch {
 		case !ok:
 			out[p] = "left as it was"
@@ -2128,11 +2234,16 @@ func outcomes(judged map[string]map[string]string, inParts map[string]string, pa
 			out[p] = "still true, `checked` moved"
 		case f != "":
 			out[p] = f + ", `judged` recorded, `checked` not moved"
+		case read != "":
+			out[p] = "nothing found wrong in what was read, `judged` recorded, `checked` not moved"
 		default:
 			out[p] = "nothing found wrong, `judged` recorded, `checked` not moved"
 		}
 		if partly[p] {
 			out[p] += "; places left for a person, below"
+		}
+		if ok && !v && read != "" {
+			out[p] += " — " + read
 		}
 	}
 	return out

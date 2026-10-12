@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go]
-checked: ddc75cf
+checked: 1924c0c
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -50,7 +50,8 @@ stale docs, duplicates, condensing, merging and splitting cards:
   task it follows, is told that `checked` cannot move. Its fix leaves it
   and sets `judged`, the judge refusing a move (`checked-unread`), and the
   doc stays suspect for a person. The same holds for docs due at the
-  release and for stale docs.
+  release and for stale docs. What the run says of it names what was read
+  and what was not ([the judge](judge.md#what-the-finding-says)).
 - **A source that cannot be read** — a file gone, or a section whose
   heading is renamed or removed — is never given as empty: the doc is
   judged on what changed, so `checked` cannot move. With nothing else to

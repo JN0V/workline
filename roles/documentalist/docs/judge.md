@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: ddc75cf
+checked: 1924c0c
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -90,9 +90,10 @@ dedupe tasks are judged by [their own rules](#condense-split-merge-dedupe).
   [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)):
   judged on diffs, or beside a doc of the same task, nobody read the rest.
   `pre` records the docs whose sources it gave whole (`in/read-whole.yaml`;
-  none, when the file is missing). For any other, the fix sets `judged`
-  and is kept, and the doc stays suspect for a person. *Withheld*: the move
-  of `checked`.
+  none, when the file is missing), and what it gave of the others
+  (`in/read-not-whole.yaml`). For any other, the fix sets `judged` and is
+  kept, and the doc stays suspect for a person. *Withheld*: the move of
+  `checked`.
 - **A line count still off** (`checked-over-count-off`, step 2): the task
   gave the real count; the fix brings it there, with no claim, or leaves
   `checked`. *Withheld*: the move of `checked`.
@@ -124,12 +125,18 @@ one place the engine had already named (step 4). Now:
   records `judged`. Never "fixed" for a header alone: workline's first
   nightly, 2026-10-02, said "what the agent found wrong is fixed" of a doc
   it found true.
+- A doc whose sources did not all go whole: "nothing found wrong in what
+  was read", then `read:` what the task gave (what changed in a source
+  since `checked`, the doc it follows) and `not read:` the rest. Never
+  "nothing found wrong" of what was not read
+  ([#120](https://github.com/JN0V/workline/issues/120)).
 - A doc judged in parts, once the fix is judged: the places it fixed, or
   that it changed nothing of what the parts found.
 - The gardening pull request (gardening: the scheduled run, nightly or
   weekly) lists each doc it judged with the same outcome — fixed and in
-  how many places, still true, or nothing found wrong — and whether
-  `checked` moved or `judged` was recorded.
+  how many places, still true, or nothing found wrong — whether `checked`
+  moved or `judged` was recorded, and, for a doc not given whole, what was
+  read and not read.
 
 ## Asked again
 
