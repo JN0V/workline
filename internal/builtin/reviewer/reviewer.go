@@ -335,13 +335,11 @@ func codeFiles(repo string, s Settings, from, head string) ([]string, error) {
 
 // mergedIn is where a lens's diff starts when the commits after from, the
 // newest reviewed, merged the base in (#134): from with the base merged in
-// by git's own merge, in memory (`git merge-tree --write-tree`, git 2.38),
-// a conflict's markers left in it. Diffed against the head, it shows the
-// branch's own commits and how it settled a conflict, both sides of one it
-// settled wrong, and not the base's code, reviewed there: for a lone merge,
-// what `git show --remerge-diff` shows. A tree, it is read as a commit is:
-// one diff, each file whole with the change marked, whatever commits came
-// with the merge. "" when the base is in from already: from is where.
+// by git, in memory (`git merge-tree --write-tree`), a conflict's markers
+// left in it. Against the head it shows the branch's own commits and how
+// it settled a conflict, both sides, and none of the base's code; a tree,
+// read as a commit is, whatever commits came with the merge (ADR-0013).
+// "" when the base is in from already: from is where.
 func mergedIn(repo, base, from string) (string, error) {
 	if _, err := git(repo, "merge-base", "--is-ancestor", base, from); err == nil {
 		return "", nil
