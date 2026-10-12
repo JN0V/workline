@@ -1,5 +1,5 @@
 case: reviewer/lens-given-new-commits-files
-about: A lens is given the files the commits not reviewed yet change, not every file of the merge request.
+about: A lens is given the files the commits not reviewed yet change, not every file of the merge request. The record, as an engine before patch ids wrote it, reads in silence (#302).
 given:
   repo: reviewed
   setup:
@@ -10,5 +10,6 @@ run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fak
 expect:
   status: pass
   agent-calls: 1
+  no-findings: [{rule: record-unread}]
   run-files:
     in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}

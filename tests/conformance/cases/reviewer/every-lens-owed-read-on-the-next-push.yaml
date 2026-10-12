@@ -17,6 +17,7 @@ run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: 
 expect:
   status: pass
   applied: [comment]
+  no-findings: [{rule: record-unread}]
   calls: [{task: part, for: 1-lenses}]
   run-files:
     in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
