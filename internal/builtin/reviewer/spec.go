@@ -58,15 +58,16 @@ func prepareSpec(runDir, repo string, s Settings) int {
 	head = strings.TrimSpace(head)
 	var sp Spec
 	var cut int
+	var unread []verdict.Finding // the issues passed over, their record unread (#302)
 	file, issue := input(runDir, "spec"), input(runDir, "issue")
 	if os.Getenv("WORKLINE_EVENT") == gardening && file == "" && issue == "" {
 		// On the forge, after the product owner: the issue it refined that
 		// waits on a review, one a run (#128).
-		got, _, code, ok := specOnForge(runDir, repo, s)
+		got, passed, code, ok := specOnForge(runDir, repo, s)
 		if !ok {
 			return code
 		}
-		sp, cut = *got, 0
+		sp, cut, unread = *got, 0, passed
 		if lines := strings.Split(strings.TrimRight(strings.ReplaceAll(sp.Text, "\r\n", "\n"), "\n"), "\n"); s.SpecLinesMax > 0 && len(lines) > s.SpecLinesMax {
 			sp.Text, cut = strings.Join(lines[:s.SpecLinesMax], "\n"), len(lines)-s.SpecLinesMax
 		} else {
@@ -75,7 +76,7 @@ func prepareSpec(runDir, repo string, s Settings) int {
 	} else if sp, cut, err = readSpec(repo, file, issue, s.SpecLinesMax); err != nil {
 		return fail(err)
 	}
-	st := state{Head: head, From: head, Base: head, Spec: &sp}
+	st := state{Head: head, From: head, Base: head, Spec: &sp, Advisories: unread}
 	if cut > 0 {
 		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "spec-cut", Where: sp.Path, Level: "warn",
 			Message: fmt.Sprintf("the spec is cut past spec-lines-max (%d): its last %d lines were not read", s.SpecLinesMax, cut)})
