@@ -1,0 +1,28 @@
+case: merge/gitlab-labelled-as-it-opened
+about: "A merge request opened with `workline::accepted` already on it: GitLab dates its first version a moment after the label put with it (tried on gitlab.com, 1.1 s). That first head is the one accepted — no push after the yes —, and its auto-merge is turned on (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && GIT_COMMITTER_DATE=2026-01-04T10:00:01Z git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass"
+  forge:
+    members: [{username: dana, access_level: 30}]
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: ["workline::accepted"]
+        label-events: [{label: "workline::accepted", added: true, author: dana, created: "2026-01-04T10:00:00.958Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T10:00:02.093Z"}]
+        comments: []
+run: {follow: [--base, main], forge: gitlab}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "!7"}]
+  no-findings: [{rule: accepted-reset}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: ["workline::accepted"], comments: 0}
