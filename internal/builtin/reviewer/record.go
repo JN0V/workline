@@ -85,6 +85,7 @@ func (r Record) add(commits, patches []string) Record {
 type span struct {
 	From    string   // the newest commit reviewed, with all it holds: the base when none is, the head when every one is
 	Commits []string // the range's, newest first
+	New     int      // how many of them are not reviewed: a merge's line may lie between those that are
 	Patches []string // the patch ids of their changes
 	Unread  error    // why git gave no patch ids, when it gave none: commit ids alone tell
 }
@@ -135,6 +136,9 @@ func (r Record) since(repo, base, head string) (span, error) {
 			_, inRange := parents[q]
 			return inRange && !reviewed[q]
 		})
+		if !reviewed[c] {
+			sp.New++
+		}
 	}
 	sp.From = base
 	for _, c := range sp.Commits {

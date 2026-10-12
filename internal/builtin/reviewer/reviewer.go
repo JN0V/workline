@@ -253,7 +253,7 @@ func prepare(runDir, repo string, s Settings) int {
 			return fail(err)
 		}
 		if len(files) == 0 {
-			return recordOnly(runDir, s, st)
+			return recordOnly(runDir, s, st, sp.New)
 		}
 	}
 	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
@@ -367,12 +367,12 @@ func (st state) lensFrom() string {
 // recordOnly settles a run whose new commits change no code: nobody asked,
 // the commits recorded as reviewed, and the turn of the lenses left where
 // it was, for the next push that changes code.
-func recordOnly(runDir string, s Settings, st state) int {
+func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	why := "only files the reviewer leaves, by its `ignore`"
 	if st.Before != "" {
 		why = "only the base's code, merged in and reviewed there, or files the reviewer leaves"
 	}
-	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded", why, slices.Index(st.Commits, st.From)))
+	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded", why, fresh))
 	v.Complete = true
 	v.Record = st.Record.add(st.Commits, st.Patches)
 	v.Record.Runs = st.Record.Runs
