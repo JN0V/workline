@@ -1,0 +1,18 @@
+case: documentalist/reader-flow-headings-named-as-set
+about: "A flow heading is named as the project set it, whatever comes before it in `reader.flow-headings`: a blank entry is skipped, not named in its place (#260's review), and a heading of several words matches whatever spaces part them in the page (two spaces, a no-break space)."
+given:
+  repo: documented
+  config:
+    roles: {documentalist: {settings: {reader: {flow-headings: ["", "  ", "how it works"]}}}}
+  setup:
+    - |
+      printf '# Shop\n\n[Cart](docs/cart.md), [stock](docs/stock.md).\n' > README.md
+      printf '# Cart\n\n## How  it works\n\nThe order goes to the warehouse.\n' > docs/cart.md
+      printf '# Stock\n\n## How\302\240it works\n\nThe warehouse counts.\n' > docs/stock.md
+      git add . && git commit -qm 'docs: pages'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: flow-without-diagram, where: docs/cart.md, message: "heading at line 3 names a flow (\"how it works\""}
+    - {rule: flow-without-diagram, where: docs/stock.md, message: "heading at line 3 names a flow (\"how it works\""}

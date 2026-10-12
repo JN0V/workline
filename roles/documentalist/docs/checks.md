@@ -187,7 +187,7 @@ finding a page, with its lines:
   `reader.paragraph-words` (80).
 - `cell-too-long`: a table cell over `reader.cell-words` (30).
 - `flow-without-diagram`: a page of `reader.flow`, or with a heading
-  holding one of `reader.flow-headings` ("how it works"; as words, any
+  holding one of `reader.flow-headings` ("how it works"; as words, any spacing or
   case, in the docs' language), with no diagram (a Mermaid, PlantUML,
   Graphviz or D2 block, or an image).
 - `page-unreachable`: no link reaches it from `reader.navigation`
