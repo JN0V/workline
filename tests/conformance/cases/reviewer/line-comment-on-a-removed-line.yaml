@@ -1,0 +1,20 @@
+case: reviewer/line-comment-on-a-removed-line
+about: "A finding quoting a line the change removed is a comment on the line of the new file where it was, which the merge request's diff shows (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i '/total += v/d' calc/calc.go && git commit -qam 'refactor: drop the sum'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-removed-line"}
+expect:
+  status: pass
+  applied: [comment]
+  findings: [{rule: correctness, where: "calc/calc.go:8", message: "Important: Average no longer adds the values"}]
+  no-findings: [{rule: line-comment-refused}]
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: "(1 posted now)"
+        threads: [{path: calc/calc.go, line: 8, contains: "**Important: Average no longer adds the values**"}]
