@@ -1,5 +1,5 @@
 case: reviewer/line-comment-outside-the-diff-on-gitlab
-about: "On GitLab, a finding on a line the merge request's diff does not show gets no discussion, which GitLab would refuse: it stays in the summary comment, in full, said why; the run does not fail for it. The one on a line the diff shows is a discussion there (#277)."
+about: "On GitLab, a finding on a line the merge request's diff does not show gets no discussion — GitLab would take it as a discussion on no line, silently: it stays in the summary comment, in full, said why; the run does not fail for it. The one on a line the diff shows is a discussion there (#277)."
 given:
   repo: reviewed
   setup:

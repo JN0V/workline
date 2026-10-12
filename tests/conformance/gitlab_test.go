@@ -26,7 +26,8 @@ import (
 // issue links are GitLab Free's: is_blocked_by refused, for its license.
 // A merge request's diff is the repository's, from its base (main) to its
 // branch (HEAD), as GitLab computes it; a discussion on a line it does not
-// show is refused, as GitLab does (#277).
+// show, or a kept line without its old one, is taken on no line, as
+// gitlab.com does (#277).
 type gitlabMock struct {
 	file, repo string
 	mu         sync.Mutex
@@ -341,7 +342,7 @@ func (m *gitlabMock) mergeRequest(s *gitlabState, it *forge.FakeItem, part, meth
 			}
 		}
 		if form.Get("position[head_sha]") != git("rev-parse", head) || !shown {
-			return map[string]any{"message": `400 Bad request - Note {:line_code=>["can't be blank", "must be a valid line code"]}`}, 400
+			path, n = "", 0 // tried on gitlab.com: a discussion on no line, said by nothing
 		}
 		it.Threads = append(it.Threads, forge.FakeThread{Path: path, Line: n, Body: form.Get("body")})
 		return map[string]any{"id": fmt.Sprintf("d%d", len(it.Threads))}, 201

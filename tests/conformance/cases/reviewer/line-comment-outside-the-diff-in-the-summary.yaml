@@ -1,5 +1,5 @@
 case: reviewer/line-comment-outside-the-diff-in-the-summary
-about: "A finding on a line the merge request's diff does not show — here a line a push put back as main has it — takes no comment on the forge: it stays in the summary comment, in full, said why; the run does not fail for it. The finding on a line the diff shows is posted on it (#277)."
+about: "A finding on a line the merge request's diff does not show — here the range reviewed changed a line back to what main holds, which the merge request's diff, from main, no longer shows — takes no comment on the forge, which would refuse the whole review: it stays in the summary comment, in full, said why; the run does not fail for it. The finding on a line the diff shows is posted on it (#277)."
 given:
   repo: reviewed
   setup:
