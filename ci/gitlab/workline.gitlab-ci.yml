@@ -53,6 +53,31 @@ variables:
 .workline:claude: &claude           # the agent, only when the project gives its token
   - ai=none
   - if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then npm install -g --silent @anthropic-ai/claude-code && ai=claude; fi
+# Every lens of the reviewer once when the merge request becomes ready
+# (ADR-0020), when the line runs it. Marking a draft ready starts no
+# pipeline on GitLab (gitlab-org/gitlab#25426): the next one, a push or
+# "Run pipeline", is the one on ready when the merge request is no draft
+# (CI_MERGE_REQUEST_DRAFT, GitLab 17.10, else the API) and GitLab's note
+# "marked this merge request as **ready**" is newer than the reviewer's
+# comment, or there is no comment yet: opened ready. Read as the engine
+# reads, with GITLAB_TOKEN when the job has one, else the job's own token;
+# unread, one lens, said.
+.workline:ready: &ready
+  - |
+    lenses=; last=; auth="JOB-TOKEN: $CI_JOB_TOKEN"
+    [ -z "${GITLAB_TOKEN:-}" ] || auth="PRIVATE-TOKEN: $GITLAB_TOKEN"
+    mr="$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID"
+    get() { curl -fsS --header "$auth" "$mr$1"; }
+    draft=${CI_MERGE_REQUEST_DRAFT:-}
+    [ -n "$draft" ] || draft=$(get "" | jq -r .draft) || draft=
+    if [ "$draft" = false ]; then
+      last=$(get "/notes?order_by=updated_at&sort=desc&per_page=100" | jq -r '[.[] | select((.system and .body == "marked this merge request as **ready**") or (.body | contains("<!-- workline:sticky=reviewer/summary -->")))][0] | if . == null then "none" elif .system then "ready" else "reviewed" end') || last=
+    fi
+    case "$draft:$last" in
+      false:ready|false:none) lenses="--input lenses=all"; echo "workline: the merge request is ready and not reviewed since: every lens of the reviewer, once" ;;
+      false:reviewed|true:) ;;
+      *) echo "workline: whether the merge request just became ready could not be read: one lens of the reviewer" ;;
+    esac
 
 .workline:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
@@ -69,11 +94,12 @@ workline:judge:
   stage: test
   script:
     - *claude
+    - *ready
     - status=0
     - >
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses
       --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a

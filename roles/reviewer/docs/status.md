@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-10)
+# Reviewer — where it stands (2026-10-12)
 
 **In one line:** it reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -18,7 +18,7 @@ hold:
 1. **Nothing buildable in Missing**: open. Most of Missing is still to
    build: the developer's loop
    ([#117](https://github.com/JN0V/workline/issues/117)), inline comments,
-   every lens once when a merge request becomes ready, a removal's reach.
+   a removal's reach.
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
 3. **AI verdicts measured**: in part.
@@ -33,6 +33,7 @@ hold:
 | The rules on the comments a change adds: a bug's story, an internal code, a block too long; while they block, no agent | cases `bug-story-in-comment-blocks-without-ai`, `ticket-code-in-comment`, `long-comment-block-reported` |
 | Only code reviewed; commits reviewed whole not asked again | `docs-only-asks-nobody`, `reviewed-commits-not-asked-again` |
 | A push changing no code asks nobody, its commits recorded; a lens gets only what the new commits change | `push-without-code-asks-nobody`, `lens-given-new-commits-files` |
+| Every lens once when a merge request becomes ready (#129): `lenses=all` on a merge request reads the whole change, commits reviewed before too; the next push one lens. The templates pass it: GitHub on `opened` not a draft and `ready_for_review`; GitLab, where marking ready starts no pipeline, at the next one, the merge request no draft and its "marked … as **ready**" note newer than the reviewer's comment, read with the job's token. Not tried live on either forge | `every-lens-once-when-opened-ready`, `every-lens-once-when-marked-ready`, `one-lens-on-the-push-after-ready`, `TestGitHubTemplatesAskEveryLensWhenReady`, `TestGitLabTemplateAsksEveryLensWhenReady` |
 | On workline's own pull requests in CI, forge writes on: the summary comment edited in place, the record, the lenses in turn (tried.md) | workline#132 |
 | Lenses as parts, answering findings only; a patch refused; an answer that does not read asked again once (#138) | `never-approves-nor-patches`, `lens-failed-not-clean`, `lens-answer-asked-again-once` |
 | Quotes found again; the change's findings told from the rest by the cause | `finding-without-quote-dropped`, `finding-cause-in-diff-is-fixed-by-author`, `finding-cause-outside-diff-becomes-issue` |
@@ -66,7 +67,9 @@ Each measure's story is in tried.md.
 
 - **Code, every lens**: #146's eight commits, 142k tokens in, estimated;
   the lenses' call 73.6k (430k before #147). The judges reading whole
-  functions (#127): about 160k.
+  functions (#127): about 160k. The run when a merge request becomes
+  ready is such a review, on the whole change (#129): not measured on
+  the forge yet.
 - **Intent and claims** (#126): the lenses' prompt 0.7% larger, 3.0% when
   the change closes an issue; a decision for a person, 0.4% more, no judge
   call.
@@ -102,8 +105,10 @@ Each measure's story is in tried.md.
    finder floor's worth (a run with `finder-floor: false`), five runs a
    case (ADR-0014).
 4. **Inline comments** on the forge's own review (#277).
-5. **Every lens once when a merge request becomes ready**, from the
-   templates (`--input lenses=all` exists; no template passes it yet).
+5. **Every lens once when ready, tried live** (#129): a sandbox draft
+   marked ready, every lens named in the summary, then one lens on the
+   next push; on GitLab, whether `CI_JOB_TOKEN` reads the notes on
+   gitlab.com, and the next pipeline after marking ready.
 6. **The tests lens outside the change**: a test missing for code the
    change did not touch was opened as an issue (tried.md, runs 9 to 11);
    in #90's step 1 the tests lens left such code alone (0 of 1), while the

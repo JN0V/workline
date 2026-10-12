@@ -50,7 +50,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | Event | Fired by | Reads |
 |---|---|---|
 | `review` | `workline review`, on your machine before you push | `base..HEAD`, every lens |
-| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push |
+| `merge-request` | CI, opt-in: `workline init --review` adds it to the line | the commits not reviewed yet, one lens a push; every lens once, on the whole change, when it becomes ready |
 | `spec` | `workline review --spec <file>` or `--issue <n>` | the spec, every spec lens |
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 
@@ -64,6 +64,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   finding; a spec, one call. Capped at 200000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:
   [status](docs/status.md#cost-measured).
+- **The run when a merge request becomes ready** costs more: every lens
+  on the whole change, a full review as on a machine, under the same cap
+  ([how the templates tell it](docs/run.md#every-lens-once-when-it-becomes-ready)).
 - **Without AI**: the rules alone; the change is left for a person
   (`not-reviewed`).
 - **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), released in v0.9.0; [where it stands](docs/status.md),
@@ -121,7 +124,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `base` | `main` | where `workline review` starts without `--base` |
 | `ignore` | `*.md`, `docs/**`, `LICENSE*`, `**/*.txt`, `CHANGELOG*` | not code: a change touching only these asks nobody |
 | `lenses` | `[correctness, edge-cases, tests, intent, claims]` | in this order, in turn, on a merge request; a lens with nothing to read skipped |
-| `lenses-per-push` | `1` | `--input lenses=all` asks every one |
+| `lenses-per-push` | `1` | `--input lenses=all` asks every one, on the whole change: the templates pass it when the merge request becomes ready |
 | `lenses-together` | `true` | the lenses of a run in one call; `false`: a call each |
 | `diff-alone` | `false` | `true`: one more call, given the change only |
 | `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through |

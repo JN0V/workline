@@ -34,8 +34,9 @@ flowchart LR
      `.git/workline/reviewer-record` on a machine.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
-   - The run on ready, every lens on a merge request, reads the whole
-     change, commits reviewed before too (below).
+   - The run when a merge request becomes ready reads the whole change,
+     commits reviewed before too
+     ([below](#every-lens-once-when-it-becomes-ready)).
 
 ## 4. The lenses
 
@@ -43,16 +44,8 @@ The lenses (`lenses/<lens>.md`, a project's own in
 `.workline/roles/reviewer/lenses/`): correctness, edge cases, tests,
 intent, claims ([#126](https://github.com/JN0V/workline/issues/126)).
 Every one on a machine; on a merge request one a push, in turn
-(`lenses-per-push`), every one with `--input lenses=all`.
-
-- **Every lens once when a merge request becomes ready**
-  ([#129](https://github.com/JN0V/workline/issues/129)): the templates
-  pass `--input lenses=all` when it is opened ready, or marked ready
-  ([on a merge request](#on-a-merge-request)).
-  - That run reads the whole change, `base..head`: each commit was read
-    by one lens only, and skipping them could leave nothing to read.
-  - It records the commits and counts one run; the next push gets one
-    lens again, in turn.
+(`lenses-per-push`), every one with `--input lenses=all`, once when it
+becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
 
 - **Together** (`lenses-together`,
   [#147](https://github.com/JN0V/workline/issues/147)): the lenses of a run
@@ -158,18 +151,25 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 - **The job still fails**: the judging job by the verdict, while the
   applying one writes the comment (`if: always()`, `when: always`).
 
-**Every lens once when it becomes ready**: the templates tell it by the
-forge's own signal, and pass `--input lenses=all`.
+### Every lens once when it becomes ready
 
-- **GitHub**: the pull request opened ready (`opened`, not a draft), or
-  marked ready (`ready_for_review`), which runs the line.
+[#129](https://github.com/JN0V/workline/issues/129): the templates pass
+`--input lenses=all` when the merge request is opened ready, or a draft
+is marked ready.
+
+- **The whole change**, `base..head`: each commit was read by one lens
+  only, and skipping them could leave nothing to read. The commits are
+  recorded and one run counted; the next push gets one lens, in turn.
+- **GitHub**: the pull request `opened`, not a draft, or
+  `ready_for_review`, which runs the line.
 - **GitLab**: marking a draft ready starts no pipeline
   ([gitlab-org/gitlab#25426](https://gitlab.com/gitlab-org/gitlab/-/issues/25426)).
-  The next pipeline does, a push or **Run pipeline**: the merge request
-  is no draft (`CI_MERGE_REQUEST_DRAFT`, else the API), and GitLab's
-  note "marked this merge request as **ready**" is newer than the
-  reviewer's comment, or there is no comment yet. Read with the job's
-  own token; unread, one lens, said in the log.
+  The next pipeline, a push or **Run pipeline**, is the one when the
+  merge request is no draft (`CI_MERGE_REQUEST_DRAFT`, else the API)
+  and GitLab's note "marked this merge request as **ready**" is newer
+  than the reviewer's comment, or there is no comment yet.
+  - Read with `GITLAB_TOKEN` when the job has one, else the job's own
+    token; unread, one lens, said in the log.
 - **Cost**: a review of the whole change by every lens, as on a machine,
   within the same `ai-max-tokens`
   ([status](status.md#cost-measured)).

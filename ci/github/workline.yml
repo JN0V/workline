@@ -35,7 +35,9 @@
 #          token, the force-push runs no check on that pull request.
 name: workline
 on:
-  pull_request:
+  # ready_for_review: a draft marked ready, read by every lens of the
+  # reviewer once, when the line runs it (ADR-0020).
+  pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
   push: {branches: [main]}          # your default branch: for the follow job
 permissions: {}
 
@@ -79,14 +81,22 @@ jobs:
         id: line
         # The branch tells a release tool's pull request, held as the release
         # (ADR-0017); from a fork it is anyone's text: a variable, never
-        # written into the script.
-        env: {CLAUDE_CODE_OAUTH_TOKEN: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}", HEAD_REF: "${{ github.head_ref }}", GH_TOKEN: "${{ github.token }}"}
+        # written into the script. Opened ready, or marked ready, the
+        # reviewer reads every lens once, on the whole change; one a push
+        # after (ADR-0020).
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
+          GH_TOKEN: ${{ github.token }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           ai=none; [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && ai=claude
+          ready=; case "$ACTION:$DRAFT" in opened:false|ready_for_review:*) ready=1 ;; esac
           status=0
           workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
-            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} \
             --sarif workline.sarif --summary workline-summary.md --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"

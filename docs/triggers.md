@@ -55,7 +55,10 @@ workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
 workline apply --line line.json          # second job: commits the doc fixes to the branch
 ```
 
-`--input lenses=all` has the reviewer read every lens instead of one.
+`--input lenses=all` has the reviewer read every lens instead of one, on
+the whole change: pass it once, when the merge request becomes ready
+(opened ready, or a draft marked ready), as the templates do
+([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
 
 ### Gardening
 

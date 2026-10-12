@@ -81,6 +81,10 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
 - `judge` reads the code and the pull request (`pull-requests: read`: the
   reviewer reads its own summary comment, to review only new commits);
   it writes only code scanning's SARIF.
+- `judge` runs on a pull request opened, pushed to, reopened, and marked
+  ready (`ready_for_review`): opened ready or marked ready, the reviewer
+  reads every lens once, on the whole change
+  ([more](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
 - `apply`, `follow` and each pair's second job hold the write token, the
   App's when there is one, and no AI key.
 - `apply` runs when `judge` failed too (`if: always()`): a pull request
