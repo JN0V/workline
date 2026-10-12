@@ -241,7 +241,8 @@ func (g *github) Accept(head string, ok bool, why string) error {
 
 // Guarded: the base must require the status workline/accepted, which a
 // new head lacks until `follow` sets it — in a ruleset, or the branch's
-// protection; pinned to the App (WORKLINE_APP_ID) when it is pinned.
+// protection —, pinned to the App (WORKLINE_APP_ID): unpinned, any token
+// that may set a status could give a yes.
 func (g *github) Guarded(base string) (string, error) {
 	app := strings.TrimSpace(os.Getenv("WORKLINE_APP_ID"))
 	out, err := g.api("repos/{owner}/{repo}/rules/branches/"+url.PathEscape(base), "--jq",
@@ -263,10 +264,14 @@ func (g *github) Guarded(base string) (string, error) {
 		required = append(required, more...)
 	}
 	for _, r := range required {
-		if r.Context != Accepted {
+		switch {
+		case r.Context != Accepted:
 			continue
-		}
-		if app != "" && r.App != "" && r.App != app {
+		case app == "":
+			return fmt.Sprintf("the GitHub App's id is not known (WORKLINE_APP_ID): whether %s is required from it cannot be told", Accepted), nil
+		case r.App == "":
+			return fmt.Sprintf("%s requires %s from any source: any token that may set a status could give a yes; pin it to the GitHub App (%s)", base, Accepted, app), nil
+		case r.App != app:
 			return fmt.Sprintf("%s requires %s from another app (%s), not workline's (%s)", base, Accepted, r.App, app), nil
 		}
 		return "", nil

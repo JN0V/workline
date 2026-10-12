@@ -28,8 +28,9 @@ func TestSumChecks(t *testing.T) {
 	}
 }
 
-// The base holds a yes when it requires workline/accepted — from the App,
-// when it says which app (ADR-0042).
+// The base holds a yes only when it requires workline/accepted from the
+// App itself: unpinned, or the App unknown, any token setting statuses
+// could give a yes (ADR-0042).
 func TestGitHubGuarded(t *testing.T) {
 	bin := t.TempDir()
 	script := "#!/bin/sh\ncase \"$*\" in\n*rules/branches*) printf '%s\\n' \"$RULES\" ;;\n*) ;;\nesac\n"
@@ -42,7 +43,8 @@ func TestGitHubGuarded(t *testing.T) {
 		rules, app, want string
 	}{
 		{`{"context":"workline/accepted","app":"12"}`, "12", ""},
-		{`{"context":"workline/accepted","app":""}`, "12", ""},
+		{`{"context":"workline/accepted","app":""}`, "12", "from any source"},
+		{`{"context":"workline/accepted","app":"12"}`, "", "id is not known"},
 		{`{"context":"workline/accepted","app":"99"}`, "12", "from another app"},
 		{`{"context":"test","app":""}`, "12", "does not require the status workline/accepted"},
 	} {
