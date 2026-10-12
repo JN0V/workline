@@ -1911,6 +1911,14 @@ func (a *applier) apply(in intent.Intention) error {
 				return errors.New("a sticky comment needs a key: {body, sticky: key}")
 			}
 			only, _ := m["update-only"].(bool)
+			if r, ok := m["review"]; ok {
+				// Its comments on the merge request's lines first: the
+				// sticky comment says what became of them (#277).
+				var err error
+				if body, err = a.lineReview(*target, r, body); err != nil {
+					return err
+				}
+			}
 			return a.forge.Sticky(*target, backlog.Inert(body), forge.Marker("sticky="+a.role+"/"+key), !only)
 		}
 		return a.forge.Comment(*target, backlog.Inert(body), a.marker())
