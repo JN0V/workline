@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.24.0](https://github.com/JN0V/workline/compare/v0.23.0...v0.24.0) (2026-10-12)
+
+
+### Features
+
+* **reviewer:** every lens once when a merge request becomes ready ([#307](https://github.com/JN0V/workline/issues/307)) ([331472f](https://github.com/JN0V/workline/commit/331472fd94a1baf1087a887e155a58f170a2e109))
+
+
+### Bug Fixes
+
+* **documentalist:** a doc judged on its diff says what was read ([#306](https://github.com/JN0V/workline/issues/306)) ([7eb4042](https://github.com/JN0V/workline/commit/7eb4042cbd132fd7e0d2492e39f2c6cd358d0051))
+* **documentalist:** a heading gone is a source not read ([#305](https://github.com/JN0V/workline/issues/305)) ([c8414c4](https://github.com/JN0V/workline/commit/c8414c482aa074bff5aa545dc6867973d28d5a54))
+* **reviewer:** skip what it read, rebased or merged with main ([#308](https://github.com/JN0V/workline/issues/308)) ([89a5430](https://github.com/JN0V/workline/commit/89a54300dc9ca2e9a13e2b3b191df13084565a09))
+
 ## [0.23.0](https://github.com/JN0V/workline/compare/v0.22.0...v0.23.0) (2026-10-11)
 
 
