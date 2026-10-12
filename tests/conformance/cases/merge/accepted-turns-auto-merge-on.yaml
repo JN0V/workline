@@ -1,0 +1,28 @@
+case: merge/accepted-turns-auto-merge-on
+about: "My yes merges it (#321): a person who can write put `workline:accepted` on a pull request up to date with main, whose head the line passed with an agent's review; with `merge: {autonomy: cautious}`, `workline follow` turns the forge's own auto-merge on, and the forge merges it once its checks pass, with no other click (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass"
+  forge:
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}]
+  not-pushed: [feat/sessions]
+  summary-file: ["#7", "auto-merge turned on", "first in line #7, up to date"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}

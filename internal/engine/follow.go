@@ -34,6 +34,12 @@ import (
 // merge request left in conflict with it only on lines workline writes,
 // those settled: a doc's record of when it was checked, a derived block
 // (ADR-0041; settle.go).
+//
+// With Merge, the project's merge policy, it turns the forge's auto-merge
+// on for each merge request a person accepted, its head's verdict passed,
+// and brings the first in line up to date with base, one at a time
+// (ADR-0042; merge.go). Verdict, a head's verdict the line wrote, is kept
+// first, for this run and the next.
 func Follow(o FollowOptions) *Result {
 	repo, forgeSpec, base, gardening := o.Repo, o.Forge, o.Base, o.Gardening
 	res := &Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}}
@@ -57,11 +63,22 @@ func Follow(o FollowOptions) *Result {
 			return fail(errors.New("on no branch: give the branch the merge requests go into with --base"))
 		}
 	}
+	local := forge.KeepsBranches(f)
+	switch {
+	case o.Verdict != "" && o.Merge != "":
+		finding, err := recordVerdict(repo, o.Verdict, local)
+		if err != nil {
+			return fail(err)
+		}
+		res.Findings = append(res.Findings, finding)
+	case o.Verdict != "":
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "verdict-not-kept",
+			Message: "the project sets no merge policy (`merge:`): the line's verdict is not kept"})
+	}
 	open, err := f.OpenMergeRequests("workline/")
 	if err != nil {
 		return fail(err)
 	}
-	local := forge.KeepsBranches(f)
 	n, rebuilt, closed := 0, 0, 0
 	for _, branch := range open {
 		role, task, ok := strings.Cut(strings.TrimPrefix(branch, "workline/"), "/")
@@ -95,9 +112,16 @@ func Follow(o FollowOptions) *Result {
 	} else {
 		res.Summary = fmt.Sprintf("%d release merge requests open, %d rebuilt on %s", n, rebuilt, base)
 	}
+	o.Base = base
 	if o.People {
-		o.Base = base
 		sum, err := people(f, o, local, res)
+		if err != nil {
+			return fail(err)
+		}
+		res.Summary += "; " + sum
+	}
+	if o.Merge != "" {
+		sum, err := mergePolicy(f, o, local, res)
 		if err != nil {
 			return fail(err)
 		}

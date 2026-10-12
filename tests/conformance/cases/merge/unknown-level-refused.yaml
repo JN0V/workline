@@ -1,0 +1,9 @@
+case: merge/unknown-level-refused
+about: "An unknown level under `merge:` is refused, the levels named (#321): a policy someone believes in and nothing applies is a wish (principle 12); `workline follow` stops before touching anything, as for any key it does not read."
+given:
+  repo: documented
+  config: {merge: {autonomy: bold}}
+run: {cli: [follow, --base, main]}
+expect:
+  exit: 64
+  stderr: [".workline/config.yaml: merge.autonomy is \"bold\": the levels are cautious"]

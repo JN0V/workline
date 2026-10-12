@@ -30,6 +30,13 @@ type FollowOptions struct {
 	// Release says whether a branch is a release tool's: its merge request
 	// is a bot's, rebuilt by the tool.
 	Release func(branch string) bool
+	// Merge is the project's merge policy, its level (`merge: {autonomy:
+	// cautious}`); "" none: no merge request's auto-merge is touched
+	// (ADR-0042, merge.go).
+	Merge string
+	// Verdict is a file holding the line's verdict on a merge request's
+	// head (`workline route --verdict`), kept first, for the merge policy.
+	Verdict string
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when
@@ -68,7 +75,7 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, er
 			continue
 		}
 		mine++
-		finding, err := settle(o.Repo, o.Base, mr, local, o.IsDoc)
+		finding, err := settle(o.Repo, o.Base, mr, local, o.IsDoc, false)
 		if err != nil {
 			return "", err
 		}
@@ -92,9 +99,11 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, er
 // settle merges base into one person's merge request when every conflict
 // is in a line workline writes, and says what it did: nothing for one on
 // base's tip already, or behind it and merging clean — bringing it up to
-// date is for whoever merges it. A merge commit, never a rewrite, pushed
-// as a fast-forward, never forced: a push of theirs meanwhile stays.
-func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(string) bool) (verdict.Finding, error) {
+// date is for whoever merges it: with update, the merge policy's first in
+// line (ADR-0042), merged in too, as the forge's Update branch does. A
+// merge commit, never a rewrite, pushed as a fast-forward, never forced:
+// a push of theirs meanwhile stays.
+func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(string) bool, update bool) (verdict.Finding, error) {
 	where := mr.Branch
 	if !mr.Here && mr.Head == "" {
 		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
@@ -119,7 +128,7 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 	case err != nil:
 		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
 			Message: fmt.Sprintf("left to its author: whether it is in conflict with %s could not be told: %v", base, err)}, nil
-	case !clash:
+	case !clash && !update:
 		return verdict.Finding{}, nil
 	case !mr.Here:
 		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where,
@@ -137,7 +146,11 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 		}
 		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where, Message: msg}, nil
 	}
-	commit, err := gitIn(repo, mergeMessage(base, mr.Branch, settled), "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
+	msg := mergeMessage(base, mr.Branch, settled)
+	if len(settled) == 0 {
+		msg = updateMessage(base, mr.Branch)
+	}
+	commit, err := gitIn(repo, msg, "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
 	if err != nil {
 		return verdict.Finding{}, err
 	}
@@ -163,11 +176,27 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 		// A branch protected, a token short of a permission (GitHub's
 		// `workflows`, for a base that changed a workflow): as a conflict
 		// left, the person's, said with the forge's words.
+		if !clash {
+			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
+				Message: fmt.Sprintf("behind %s, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
+		}
 		return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
 			Message: fmt.Sprintf("in conflict with %s only on workline's lines, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
 	}
+	if len(settled) == 0 {
+		return verdict.Finding{Rule: "merged", Where: where,
+			Message: fmt.Sprintf("%s merged in (%s), as the forge's Update branch does: a merge commit, its commits kept", base, short(baseTip))}, nil
+	}
 	return verdict.Finding{Rule: "merged", Where: where,
 		Message: fmt.Sprintf("%s merged in (%s), workline's own lines settled in %s: a merge commit, its commits kept", base, short(baseTip), strings.Join(settled, ", "))}, nil
+}
+
+// updateMessage is the forge's own message for a merge of base that met
+// no conflict — the merge policy bringing its first in line up to date —,
+// with the trailer of workline's own commits: the line judges the commits
+// before it.
+func updateMessage(base, branch string) string {
+	return fmt.Sprintf("Merge branch '%s' into %s\n\nBrought up to date with %s by the project's merge policy: first\nin line, it merges once its checks pass.\n\n%s: documentalist\n", base, branch, base, OwnTrailer)
 }
 
 // headTips are base's tip and the merge request's head: its branch here,

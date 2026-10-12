@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/JN0V/workline/internal/forge"
 )
@@ -47,7 +48,7 @@ type gitlabState struct {
 var (
 	issuePath   = regexp.MustCompile(`^/issues/(\d+)$`)
 	notesPath   = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
-	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions)?$`)
+	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
 	linksPath   = regexp.MustCompile(`^/issues/(\d+)/links$`)
 	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
 	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
@@ -130,9 +131,14 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
 				"source_project_id": source, "target_project_id": 1, "title": it.Title,
 				"author": map[string]any{"id": 1000 + it.ID, "username": it.Author},
-				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed]})
+				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed],
+				"labels": it.Labels, "draft": it.Draft, "merge_when_pipeline_succeeds": it.AutoMerge})
 		}
 		return out, 200
+	case p == "/api/v4/users/999":
+		// The token's user, who sets a merge request to merge (merge_user):
+		// a bot, as a project access token's is.
+		return map[string]any{"id": 999, "username": tokenUser, "bot": true}, 200
 	case userPath.MatchString(p):
 		id, _ := strconv.Atoi(userPath.FindStringSubmatch(p)[1])
 		it := mergeRequest(id - 1000)
@@ -206,6 +212,10 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			}
 			for i, t := range it.Threads { // a discussion's note is a note too, as GitLab lists it
 				out = append(out, map[string]any{"id": id*1000 + 500 + i + 1, "body": t.Body, "system": false, "author": user(tokenUser), "type": "DiffNote"})
+			}
+			if it.AutoMergeAt != "" { // GitLab's own note when a merge request is set to merge
+				out = append(out, map[string]any{"id": id*1000 + 900, "body": "enabled an automatic merge when the pipeline for 1a2b3c4d succeeds",
+					"system": true, "created_at": it.AutoMergeAt, "author": user(it.AutoMergeBy)})
 			}
 			if q.Get("sort") != "asc" { // GitLab's default: the newest first
 				slices.Reverse(out)
@@ -324,18 +334,82 @@ func (m *gitlabMock) mergeRequest(s *gitlabState, it *forge.FakeItem, part, meth
 		return strings.TrimSpace(string(out))
 	}
 	web := fmt.Sprintf("https://gitlab.example/group/proj/-/merge_requests/%d", it.ID)
+	// The head GitLab names: the branch's tip on origin, as a push left it.
+	tip := git("ls-remote", "origin", "refs/heads/"+it.Branch)
+	tip, _, _ = strings.Cut(tip, "\t")
+	if tip == "" {
+		tip = git("rev-parse", head)
+	}
+	asMR := func() map[string]any {
+		source := 1
+		if it.Fork {
+			source = 2
+		}
+		state := map[bool]string{true: "closed", false: "opened"}[it.Closed]
+		if it.Merged {
+			state = "merged"
+		}
+		v := map[string]any{"iid": it.ID, "title": it.Title, "description": it.Body, "source_branch": it.Branch, "target_branch": it.Base,
+			"source_project_id": source, "target_project_id": 1, "web_url": web, "state": state, "labels": it.Labels,
+			"sha": tip, "draft": it.Draft, "merge_when_pipeline_succeeds": it.AutoMerge,
+			"diff_refs": map[string]any{"base_sha": git("merge-base", base, head), "start_sha": git("rev-parse", base), "head_sha": git("rev-parse", head)}}
+		if it.AutoMerge {
+			id := 0 // a person's, named by the author's id when it is the author
+			if it.AutoMergeBy == tokenUser {
+				id = 999
+			}
+			v["merge_user"] = map[string]any{"id": id, "username": it.AutoMergeBy}
+		}
+		if it.Checks != "" {
+			v["head_pipeline"] = map[string]any{"status": map[string]string{"success": "success", "pending": "running", "failure": "failed"}[it.Checks]}
+		}
+		return v
+	}
 	switch {
 	case part == "" && (method == "GET" || method == "PUT"):
 		if method == "PUT" && form.Get("state_event") == "close" {
 			it.Closed = true
 		}
-		source := 1
-		if it.Fork {
-			source = 2
+		for _, l := range strings.Split(form.Get("add_labels"), ",") {
+			if l != "" && !slices.Contains(it.Labels, l) {
+				it.Labels = append(it.Labels, l)
+			}
 		}
-		return map[string]any{"iid": it.ID, "title": it.Title, "description": it.Body, "source_branch": it.Branch, "target_branch": it.Base,
-			"source_project_id": source, "target_project_id": 1, "web_url": web, "state": map[bool]string{true: "closed", false: "opened"}[it.Closed],
-			"diff_refs": map[string]any{"base_sha": git("merge-base", base, head), "start_sha": git("rev-parse", base), "head_sha": git("rev-parse", head)}}, 200
+		if remove := strings.Split(form.Get("remove_labels"), ","); form.Has("remove_labels") {
+			it.Labels = slices.DeleteFunc(it.Labels, func(l string) bool { return slices.Contains(remove, l) })
+			if it.Labels == nil {
+				it.Labels = []string{}
+			}
+		}
+		return asMR(), 200
+	case part == "/merge" && method == "PUT":
+		// Set to merge when its pipeline succeeds, at the head given; one
+		// GitLab could merge now is merged at once.
+		if form.Get("sha") != tip {
+			return map[string]any{"message": "SHA does not match HEAD of source branch"}, 409
+		}
+		if it.Clean {
+			it.Closed, it.Merged = true, true
+		} else if form.Get("auto_merge") == "true" {
+			it.AutoMerge, it.AutoMergeBy, it.AutoMergeAt = true, tokenUser, time.Now().UTC().Format(time.RFC3339)
+		}
+		return asMR(), 200
+	case part == "/cancel_merge_when_pipeline_succeeds" && method == "POST":
+		it.AutoMerge, it.AutoMergeBy = false, ""
+		return asMR(), 201
+	case part == "/versions" && method == "GET":
+		out := []map[string]any{} // newest first, as GitLab lists them
+		for i := len(it.Pushes) - 1; i >= 0; i-- {
+			out = append(out, map[string]any{"id": i + 1, "head_commit_sha": git("rev-parse", it.Pushes[i].Head), "created_at": it.Pushes[i].At})
+		}
+		return out, 200
+	case part == "/resource_label_events" && method == "GET":
+		out := []map[string]any{}
+		for _, e := range it.LabelEvents {
+			out = append(out, map[string]any{"action": map[bool]string{true: "add", false: "remove"}[e.Added], "created_at": e.Created,
+				"label": map[string]any{"name": e.Label}, "user": map[string]any{"username": e.Author}})
+		}
+		return out, 200
 	case part == "/diffs" && method == "GET":
 		return diffsOf(git("diff", "--no-color", "--no-ext-diff", "-M", "-U3", base+"..."+head)), 200
 	case part == "/discussions" && method == "GET":

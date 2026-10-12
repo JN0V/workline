@@ -1,0 +1,25 @@
+case: merge/own-branch-rebuilt-not-merged-into
+about: "The documentalist's own branch, accepted and behind main, first in line: rebuilt on main's tip as ADR-0034 does — the same change, one commit, its merge request kept —, never merged into (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: the auth doc says tokens are renewed' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && sh \"$FIXTURES/verdict.sh\" HEAD pass && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+  forge:
+    merge-requests:
+      - {id: 12, branch: workline/documentalist/suspect, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         auto-merge: true, auto-merge-by: workline-bot, auto-merge-at: "2026-01-04T10:01:00Z",
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, created: "2026-01-04T10:00:00Z"}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: updated, where: "#12", message: "first in line, brought up to date: rebuilt on main"}]
+  on-top: {workline/documentalist/suspect: main}
+  pushed:
+    workline/documentalist/suspect: {docs/tech/auth.md: "renewed", moved.txt: "moved"}
+  pushed-message: {workline/documentalist/suspect: "docs: the auth doc says tokens are renewed"}
+  forge:
+    merge-requests:
+      - {id: 12, closed: false, auto-merge: true}
