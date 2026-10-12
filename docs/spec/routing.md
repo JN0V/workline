@@ -157,7 +157,13 @@ The reviewer (ADR-0020) is in no shipped line: a project adds it to its
 `merge-request` line, by hand or with `workline init --review`, and runs
 it on a machine before a push with `workline review`. On a merge request it
 reviews the commits not reviewed yet, one lens a push; with `--input
-lenses=all`, every lens. It never moves an item: `review` stays the
+lenses=all`, every lens on the whole change, commits reviewed before too.
+The templates pass it once, when the merge request becomes ready
+(#129): the event says so on GitHub (`opened` not a draft,
+`ready_for_review`); on GitLab, where marking ready starts no pipeline,
+the next pipeline tells it by the merge request's draft state and its
+"marked this merge request as **ready**" note, newer than the
+reviewer's comment. It never moves an item: `review` stays the
 machine's part, `validation` the person's. Its `spec` event reads a spec
 before it is built — a file, or an issue by its number (`--input
 issue=<n>`); on a machine, `workline review --spec` or `--issue` (#128).

@@ -231,6 +231,11 @@ func prepare(runDir, repo string, s Settings) int {
 			break
 		}
 	}
+	// The run on ready (#129), every lens once, reads the whole change: its
+	// commits each read by one lens only, skipping them could leave nothing.
+	if os.Getenv("WORKLINE_EVENT") == "merge-request" && input(runDir, "lenses") == "all" {
+		start = base
+	}
 	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: commits, Record: rec, Advisories: advisories}
 	if start == head {
 		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(commits))))

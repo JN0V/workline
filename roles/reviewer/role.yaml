@@ -4,8 +4,10 @@ mission: A change is reviewed before it merges — what it breaks found, quoted 
 
 # review: `workline review` on a machine, at the end of development, on
 #         base..HEAD: every lens, for the author's agent to fix before pushing.
-# merge-request: on the forge, the commits not reviewed yet, one lens a push:
-#         a safety net; opt-in in the project's routing (ADR-0020).
+# merge-request: on the forge, the commits not reviewed yet, one lens a push;
+#         every lens once, on the whole change, when it becomes ready
+#         (--input lenses=all): a safety net; opt-in in the project's
+#         routing (ADR-0020).
 # spec:   a spec before it is built (#128): a file (--input spec=<file>) or
 #         an issue by its number (--input issue=<n>), every spec lens;
 #         `workline review --spec` or `--issue` on a machine.
@@ -54,7 +56,8 @@ settings:
   # Not code: a change touching only these asks nobody.
   ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*"]
   # In this order on a merge request, one a push (lenses-per-push), the
-  # record turning it; every one on a machine, or with --input lenses=all.
+  # record turning it; every one on a machine, or with --input lenses=all
+  # (on a merge request, when it becomes ready: the whole change).
   lenses: [correctness, edge-cases, tests, intent, claims]
   lenses-per-push: 1
   findings-max: 10      # findings on the change checked and shown a run; the rest counted

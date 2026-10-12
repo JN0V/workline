@@ -34,6 +34,8 @@ flowchart LR
      `.git/workline/reviewer-record` on a machine.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
+   - The run on ready, every lens on a merge request, reads the whole
+     change, commits reviewed before too (below).
 
 ## 4. The lenses
 
@@ -42,6 +44,15 @@ The lenses (`lenses/<lens>.md`, a project's own in
 intent, claims ([#126](https://github.com/JN0V/workline/issues/126)).
 Every one on a machine; on a merge request one a push, in turn
 (`lenses-per-push`), every one with `--input lenses=all`.
+
+- **Every lens once when a merge request becomes ready**
+  ([#129](https://github.com/JN0V/workline/issues/129)): the templates
+  pass `--input lenses=all` when it is opened ready, or marked ready
+  ([on a merge request](#on-a-merge-request)).
+  - That run reads the whole change, `base..head`: each commit was read
+    by one lens only, and skipping them could leave nothing to read.
+  - It records the commits and counts one run; the next push gets one
+    lens again, in turn.
 
 - **Together** (`lenses-together`,
   [#147](https://github.com/JN0V/workline/issues/147)): the lenses of a run
@@ -146,3 +157,22 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
   too, the record left as it was: no lens ran.
 - **The job still fails**: the judging job by the verdict, while the
   applying one writes the comment (`if: always()`, `when: always`).
+
+**Every lens once when it becomes ready**: the templates tell it by the
+forge's own signal, and pass `--input lenses=all`.
+
+- **GitHub**: the pull request opened ready (`opened`, not a draft), or
+  marked ready (`ready_for_review`), which runs the line.
+- **GitLab**: marking a draft ready starts no pipeline
+  ([gitlab-org/gitlab#25426](https://gitlab.com/gitlab-org/gitlab/-/issues/25426)).
+  The next pipeline does, a push or **Run pipeline**: the merge request
+  is no draft (`CI_MERGE_REQUEST_DRAFT`, else the API), and GitLab's
+  note "marked this merge request as **ready**" is newer than the
+  reviewer's comment, or there is no comment yet. Read with the job's
+  own token; unread, one lens, said in the log.
+- **Cost**: a review of the whole change by every lens, as on a machine,
+  within the same `ai-max-tokens`
+  ([status](status.md#cost-measured)).
+- **Once**: a run on ready that a rule blocks is not asked again, the
+  next push getting one lens; with no agent, GitHub does not ask again,
+  GitLab does at the next pipeline (no comment was written).

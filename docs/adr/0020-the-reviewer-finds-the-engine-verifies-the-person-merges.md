@@ -413,3 +413,30 @@ merge-request line; on in workline's own repository.
   keep in step); the reviewer in the product owner's call (one role, one
   job); rewriting a person's section to answer a finding (principle 1).
 
+
+## Amendment (2026-10-12, #129: every lens once when ready)
+
+- **What was missing**: the engine took `--input lenses=all`, no template
+  passed it; and the record holds the commits a review answered whole,
+  whatever lens: a run with every lens after some pushes was given only
+  the commits not reviewed yet, perhaps none.
+- **The run on ready reads the whole change**: on a merge request,
+  `lenses=all` starts at the base, commits reviewed before included; it
+  records them and counts one run, the turn going on from there.
+- **Told by the forge's own signal**, in the templates:
+  - GitHub: `opened` with the pull request not a draft, and
+    `ready_for_review`, which the template now listens for.
+  - GitLab: marking a draft ready starts no pipeline (GitLab's
+    gitlab-org/gitlab#25426, paused). The next one does: the merge
+    request no draft (`CI_MERGE_REQUEST_DRAFT`, GitLab 17.10, else the
+    API's `draft`), and its system note "marked this merge request as
+    **ready**" newer than the reviewer's summary comment, or no comment
+    yet. Notes and the merge request are read with the job's own token
+    (`CI_JOB_TOKEN`); unread, one lens, said in the log.
+- **Cost**: the run on ready is a full review, every lens on the whole
+  change, as on a machine; within the same `ai-max-tokens`, unchanged.
+- **Rejected**: the record saying which lenses read each commit (a
+  record per lens, kept in step on every push, to spare a review once a
+  merge request); every lens on every push of a ready merge request (the
+  cost #147 cut); a label marking the review on ready (a second state
+  beside the record).
