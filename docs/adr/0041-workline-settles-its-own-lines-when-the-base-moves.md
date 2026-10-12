@@ -23,8 +23,8 @@
   change the same lines.
 - **A person or an agent settles them by hand.**
   [#316](https://github.com/JN0V/workline/pull/316)'s rebase met 17 header
-  hunks — 16 docs and README.md's `<!-- workline` header — beside 2 code
-  hunks; its builder checked the docs again.
+  hunks, in 16 docs and [README.md](../../README.md)'s header, beside 2
+  code hunks; its builder checked the docs again.
 - **workline's own branches no longer wait**: `follow` rebuilds them a
   median of 33 s after a push to `main`
   ([ADR-0034](0034-the-release-fix-follows-its-base.md)); a person's is
@@ -122,11 +122,11 @@ The choice is what is judged, and when:
 - **The job's summary** lists each pull request merged into, and each left
   with its files ([ADR-0035](0035-the-engine-writes-the-jobs-summary.md)).
 - **An agent working on the branch**: git refuses its next push ("fetch
-  first"). It pulls, merging or rebasing its own commits onto the branch,
-  and pushes. A force-push over the merge only loses it; the next push to
-  the base merges again. Rebasing on the base later drops the merge and
-  meets the header conflicts again. The rule is written where agents read:
-  AGENTS.md here, the documentalist's page for a project.
+  first"); it pulls, then pushes. A force-push over the merge only loses
+  it, merged again at the next push to the base; a rebase on the base
+  drops it and meets the header conflicts again. The rule is written where
+  agents read: [AGENTS.md](../../AGENTS.md) here, the documentalist's page
+  for a project.
 
 ### The setting and the token
 

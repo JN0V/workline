@@ -74,15 +74,15 @@ what a bot's commit resets ([ci-and-forge.md](ci-and-forge.md#what-a-team-adds-r
   (2026-10-05): README's count conflicted in six pull requests before; one
   derived hunk since ([#257][257]).
 - **[#316][316], today.** Rebased onto [#315][315]'s squash, it met 17
-  header hunks — 16 docs, and README.md's `<!-- workline` header
-  (`checked: 68b431f` against `7fd4a71`) — 2 code hunks in
+  header hunks — 16 docs, and [README.md](../../README.md)'s `<!-- workline`
+  header (`checked: 68b431f` against `7fd4a71`) — 2 code hunks in
   tests/conformance/runner_test.go, 1 doc-text hunk in
-  docs/spec/conformance.md. Its builder settled the headers by checking
-  the docs again (adf03f5).
+  [conformance.md](../spec/conformance.md). Its builder settled the headers
+  by checking the docs again (adf03f5).
 - **Why the header lines collide**: a feature pull request moves `checked`
   on 20 to 30 docs ([#299][299] 34, [#315][315] 32, [#316][316] 24), since
   `sources` name whole folders: `cmd/workline` in 16 docs, also
-  `internal/engine` and `internal/agent`. docs/spec/backlog-acts.md's
+  `internal/engine` and `internal/agent`; [backlog-acts.md](../spec/backlog-acts.md)'s
   `checked` moved in 48 commits on `main` in the window.
 
 ### Clean updates forced by "up to date"
