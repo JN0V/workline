@@ -1,0 +1,14 @@
+case: documentalist/missing-anchor-not-read-as-empty
+about: "A doc naming as a source a section of another doc whose heading is gone is not judged against an empty section: the task says `checked` cannot move, so an agent vouching for every doc it may confirm leaves it, and the doc stays suspect for a person, the finding saying the section is gone (#239)."
+given:
+  repo: documented
+  setup:
+    - "C=$(git rev-parse --short HEAD) && printf -- '---\\nsources: [docs/tech/auth.md#token-refresh]\\nchecked: %s\\n---\\n# Sessions\\n\\nA session lasts as long as its token.\\n' $C > docs/tech/session.md && git add docs/tech/session.md && git commit -qm 'docs: describe sessions'"
+    - "sed -i 's/^## Token refresh/## Token renewal/' docs/tech/auth.md && git commit -qam 'docs(auth): rename the refresh section'"
+# A command agent moving `checked` on the first doc whose task offers it, else proposing nothing.
+run: {role: documentalist, event: merge-request, ai: "cmd:sh $FIXTURES/agents/confirm-each-doc.sh | grep . || echo '[]'"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: []
+  findings: [{rule: suspect, where: docs/tech/session.md, message: "section #token-refresh is gone"}]

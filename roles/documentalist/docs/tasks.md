@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go]
-checked: bb8a9a3
+checked: ddc75cf
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -51,6 +51,11 @@ stale docs, duplicates, condensing, merging and splitting cards:
   and sets `judged`, the judge refusing a move (`checked-unread`), and the
   doc stays suspect for a person. The same holds for docs due at the
   release and for stale docs.
+- **A source that cannot be read** — a file gone, or a section whose
+  heading is renamed or removed — is never given as empty: the doc is
+  judged on what changed, so `checked` cannot move. With nothing else to
+  judge it on (far behind, or stale), it is not put before the agent: the
+  finding says which source, and a person judges it.
 - **A line count off**: the doc is told each one, with the real count,
   counted by the engine. `checked` cannot move while one stands
   (`checked-over-count-off`), so the fix brings it to that count or leaves

@@ -3,6 +3,7 @@ package documentalist
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -22,6 +23,45 @@ func TestSection(t *testing.T) {
 	b, _ := Section("---\nchecked: def\n---\n# T\n\nSame.\n", "")
 	if a != b {
 		t.Fatal("changing only the frontmatter is not a change")
+	}
+}
+
+// A source naming a heading gone is not read as an empty section: the weekly
+// sample says which heading, never judging a `checked` against nothing (#239).
+func TestSourcesAtSaysAHeadingGone(t *testing.T) {
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, "docs"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "docs", "auth.md"), []byte("# Auth\n\n## Token renewal\n\nOne hour.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-qm", "docs: auth"}} {
+		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	head, err := git(repo, "rev-parse", "--short", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for anchor, want := range map[string]string{
+		"token-renewal": "",
+		"token-refresh": "no heading of docs/auth.md has the anchor #token-refresh",
+	} {
+		d, err := ParseDoc("docs/session.md", []byte("---\nsources: [docs/auth.md#"+anchor+"]\nchecked: "+head+"\n---\n# Sessions\n"))
+		if err != nil || d == nil {
+			t.Fatalf("ParseDoc: %v", err)
+		}
+		evidence, fits, err := SourcesAt(repo, d, wholeCharsDefault)
+		switch {
+		case want == "" && (err != nil || !fits || !strings.Contains(strings.Join(evidence, "\n"), "One hour.")):
+			t.Errorf("#%s: SourcesAt = %q, %v, %v; want the section read whole", anchor, evidence, fits, err)
+		case want != "" && (err == nil || !strings.Contains(err.Error(), want)):
+			t.Errorf("#%s: SourcesAt error = %v; want one saying %q", anchor, err, want)
+		}
 	}
 }
 
