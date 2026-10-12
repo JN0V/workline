@@ -1,12 +1,21 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 7ebf882
+checked: 066d097
 verified: agent:claude-code
 ---
 # Conformance — a case in full
 
 What a case can give, run and expect beyond the example in
 [Conformance](../conformance.md#a-case), in full.
+
+## Read strictly
+
+A case is read strictly, by the YAML library's own check: a key the runner
+does not read, at any level — a misspelled `body-contain`, a `body` it has
+no check for — fails the case, naming the key and its file, whatever
+`pending.txt` says. A case never passes while checking nothing. The forge
+`given` holds, and the edits in `between`, are checked against the
+simulated forge's own state, by the JSON library's.
 
 ## Given
 
@@ -80,12 +89,14 @@ saying so.
 `expect` lists only what the case is about; anything not listed is not checked.
 
 - `findings` — each listed finding must be present (matched by `rule`, and by
-  `where` and a part of its `message` and `fix` if given).
+  `level`, `where` and a part of its `message` and `fix` if given). `level:
+  block` is a finding that blocks: of level `block`, or of none in a run
+  that did not pass, as the [role outcome](../role-outcome.md) reads it.
 - `checks` — the doctor's checks, ok ones included: each listed must be
   present, by `rule`, and by `level`, `where`, a part of `message` and of
   `fix` if given.
 - `no-findings` — findings that must not be there (by `rule` and `where`,
-  and a part of the message when given).
+  and `level`, a part of the message and of `fix` when given).
 - `agent-calls` — how many times the agent was called.
 - `calls` — each call, in order: the fields listed must match (`agent`,
   `task`, `tier`, `effort`, `asked`, `model`).
@@ -94,13 +105,15 @@ saying so.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
   `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
   (a text some comment holds, or a list of them) and `comment-lacks` (a
-  text none does), `closed`
+  text none does, or a list of them), `closed`
   and the `reason` it was closed for, its `milestone`, `branch`, `base`,
   `title` and the `parent` it is a sub-issue of (0 for none), `blocked-by`
-  the issues it waits on in the forge's relation, `body-contains` and `body-lacks` (a text its body holds, or a list
-  of them, or a text it does not), `reactions` (the reactions on its comments, by the comment's id);
-  `absent: true` — no item with that id. `labels` there lists the
-  labels the forge defines, their order as id, by `title`.
+  the issues it waits on in the forge's relation, `body-contains` and
+  `body-lacks` (a text its body holds, or does not, or a list of them),
+  `reactions` (the reactions on its comments, by the comment's id);
+  `absent: true` — no item with that id. Items are listed by kind:
+  `issues`, `merge-requests`, and `labels`, the labels the forge defines,
+  their order as id, by `title`.
 
 ## Expect, after the run
 
@@ -126,7 +139,7 @@ saying so.
 - `calls-kept` — how many agent calls the run folders record.
 - `run-files` — files of the run folder (`out/claims.yaml`), each holding a
   text (`contains`), or not (`not-contains`), each a text or a list.
-- `files` — paths that must exist, or contain a text or each of a list of
-  texts, or lack one (`lacks`), afterwards.
+- `files` — paths that must exist (`exists`, or not), or contain a text or
+  each of a list of texts (`contains`), or lack them (`lacks`), afterwards.
 - `exit` / `stdout` / `stderr` — with `cli`: the exit code, and texts
   printed on each stream.

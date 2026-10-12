@@ -15,5 +15,5 @@ expect:
   agent-calls: 4   # the docs judged whole; then two parts and the fix
   forge:
     merge-requests:
-      - {id: 1, branch: "workline/documentalist/suspect", base: main, body: "`docs/tech/ttl.md`"}
-      - {id: 2, branch: "workline/documentalist/fix", base: main, body: "`docs/tech/auth.md` — judged in parts"}
+      - {id: 1, branch: "workline/documentalist/suspect", base: main, body-contains: "`docs/tech/ttl.md`"}
+      - {id: 2, branch: "workline/documentalist/fix", base: main, body-contains: "`docs/tech/auth.md` — judged in parts"}

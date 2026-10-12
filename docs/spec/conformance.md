@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 7ebf882
+checked: 066d097
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -66,7 +66,7 @@ expect:
 ```
 
 What else a case can give, run and expect, and how each is checked, is in
-[Conformance — a case in full](conformance/cases.md).
+[Conformance — a case in full](conformance/cases.md), [read strictly](conformance/cases.md#read-strictly).
 
 ## The fakes
 
@@ -138,7 +138,8 @@ so when skipped. The name is an `--ai` value, so `WORKLINE_EVAL=claude:haiku@med
 runs every case on one model and effort, to compare them with the roles' own.
 The reviewer's cases ask each lens apart; `WORKLINE_EVAL_LENSES` names the
 lenses asked (`diff-alone`: the facet alone) and `WORKLINE_EVAL_REVIEWER`
-sets its settings, a YAML map (`{ai-max-tokens: 10000}`). Besides the fixtures, a case can start from this repository
+sets its settings, a YAML map (`{ai-max-tokens: 10000}`). A case is read as strictly as a conformance case: a key no field names fails to load
+it, as does a check `grade` does not know. Besides the fixtures, a case can start from this repository
 itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 (a message the hook refused, replayed with the author's words in
 `run.message`); `given.workline-at: <sha>` checks it out as it was. Each check

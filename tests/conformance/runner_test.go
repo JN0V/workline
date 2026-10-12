@@ -56,83 +56,155 @@ type repoSpec struct {
 	Setup []string `yaml:"setup"`
 }
 
+// caseFile is a case as written. It is read strictly (readCase): a key no
+// field names, at any level, fails the case, never passes unread.
 type caseFile struct {
-	Case  string `yaml:"case"`
-	About string `yaml:"about"`
-	Given struct {
-		Repo   string              `yaml:"repo"`
-		Repos  map[string]repoSpec `yaml:"repos"`
-		Setup  []string            `yaml:"setup"`
-		Config map[string]any      `yaml:"config"`
-		Forge  map[string]any      `yaml:"forge"`
-		Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
-		Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands
-		Tags   []string            `yaml:"engine-tags"` // the engine built with these Go build tags: a change of the tests only (engineFor)
-	} `yaml:"given"`
-	Run struct {
-		Role    string            `yaml:"role"`
-		Target  map[string]int    `yaml:"target"`
-		Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
-		NoApply bool              `yaml:"no-apply"`
-		OpenMR  bool              `yaml:"open-merge-request"`
-		PushMR  bool              `yaml:"push-to-merge-request"`
-		Event   string            `yaml:"event"`
-		Input   map[string]string `yaml:"input"`
-		AI      string            `yaml:"ai"`
-		Scope   []string          `yaml:"scope"`
-		Tamper  string            `yaml:"tamper"`
-		Then    string            `yaml:"then"`
-		Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
-		Route   string            `yaml:"route"`
-		Item    int               `yaml:"item"`
-		Gate    string            `yaml:"gate"`
-		Doctor  bool              `yaml:"doctor"`
-		Init    bool              `yaml:"init"`
-		InitOpt []string          `yaml:"init-options"`  // workline init, with these options
-		Setup   []string          `yaml:"setup"`         // workline setup, with these options
-		Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
-		Review  []string          `yaml:"review"`        // workline review, with these options
-		Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
-		Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
-		JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
-		Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
-		Follow  []string          `yaml:"follow"`        // workline follow, with these options
-		CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
-	} `yaml:"run"`
-	Expect struct {
-		Status      string                       `yaml:"status"`
-		Findings    []map[string]string          `yaml:"findings"`
-		NoFindings  []map[string]string          `yaml:"no-findings"` // findings that must not be there
-		Checks      []map[string]string          `yaml:"checks"`      // the doctor's checks, ok ones too, by rule, where, level, message, fix
-		AgentCalls  *int                         `yaml:"agent-calls"`
-		Applied     []string                     `yaml:"applied"`
-		Refused     []string                     `yaml:"refused"`
-		Files       map[string]map[string]any    `yaml:"files"`
-		Pushed      map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
-		PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
-		NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
-		OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
-		Forge       map[string]any               `yaml:"forge"`
-		Steps       []string                     `yaml:"steps"`
-		Calls       []map[string]string          `yaml:"calls"`
-		SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
-		CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
-		LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
-		Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
-		RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
-		CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
-		RunFiles    map[string]map[string]texts  `yaml:"run-files"`     // a file of the run folder -> a text it holds, or a list of them
-		Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
-		Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
-		Summary     string                       `yaml:"summary"`       // a text the result's summary holds
-		SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order; with cli, workline-summary.md
-		SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
-		Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
-		NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
-		Exit        *int                         `yaml:"exit"`          // with cli: the exit code
-		Stdout      []string                     `yaml:"stdout"`        // with cli: texts printed on stdout
-		Stderr      []string                     `yaml:"stderr"`        // with cli: texts printed on stderr
-	} `yaml:"expect"`
+	Case   string     `yaml:"case"`
+	About  string     `yaml:"about"`
+	Given  givenSpec  `yaml:"given"`
+	Run    runSpec    `yaml:"run"`
+	Expect expectSpec `yaml:"expect"`
+}
+
+// givenSpec is what the case starts from.
+type givenSpec struct {
+	Repo   string              `yaml:"repo"`
+	Repos  map[string]repoSpec `yaml:"repos"`
+	Setup  []string            `yaml:"setup"`
+	Config map[string]any      `yaml:"config"`
+	Forge  map[string]any      `yaml:"forge"`
+	Seen   map[string]any      `yaml:"models-seen"` // the models this machine saw answer, before the run
+	Env    map[string]string   `yaml:"env"`         // variables set for the run, e.g. a PATH without a tool; $VAR expands
+	Tags   []string            `yaml:"engine-tags"` // the engine built with these Go build tags: a change of the tests only (engineFor)
+}
+
+// runSpec is what the case runs.
+type runSpec struct {
+	Role    string            `yaml:"role"`
+	Target  map[string]int    `yaml:"target"`
+	Branch  string            `yaml:"branch"` // the branch the targeted merge request comes from, as --branch
+	NoApply bool              `yaml:"no-apply"`
+	OpenMR  bool              `yaml:"open-merge-request"`
+	PushMR  bool              `yaml:"push-to-merge-request"`
+	Event   string            `yaml:"event"`
+	Input   map[string]string `yaml:"input"`
+	AI      string            `yaml:"ai"`
+	Scope   []string          `yaml:"scope"`
+	Tamper  string            `yaml:"tamper"`
+	Then    string            `yaml:"then"`
+	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
+	Route   string            `yaml:"route"`
+	Item    int               `yaml:"item"`
+	Gate    string            `yaml:"gate"`
+	Doctor  bool              `yaml:"doctor"`
+	Init    bool              `yaml:"init"`
+	InitOpt []string          `yaml:"init-options"`  // workline init, with these options
+	Setup   []string          `yaml:"setup"`         // workline setup, with these options
+	Import  []string          `yaml:"issues-import"` // workline issues import, with these arguments
+	Review  []string          `yaml:"review"`        // workline review, with these options
+	Sample  []string          `yaml:"sample"`        // workline sample, with these options; then: apply writes what it found
+	Reports bool              `yaml:"reports"`       // also write --sarif and --code-quality
+	JobSum  bool              `yaml:"summary"`       // also write --summary, Markdown and HTML, the apply after it too
+	Forge   string            `yaml:"forge"`         // a forge spec passed as --forge (local, cmd:…), instead of the simulated one
+	Follow  []string          `yaml:"follow"`        // workline follow, with these options
+	CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
+}
+
+// expectSpec is what the case expects.
+type expectSpec struct {
+	Status      string                       `yaml:"status"`
+	Findings    []findingWant                `yaml:"findings"`
+	NoFindings  []findingWant                `yaml:"no-findings"` // findings that must not be there
+	Checks      []checkWant                  `yaml:"checks"`      // the doctor's checks, ok ones too
+	AgentCalls  *int                         `yaml:"agent-calls"`
+	Applied     []string                     `yaml:"applied"`
+	Refused     []string                     `yaml:"refused"`
+	Files       map[string]fileWant          `yaml:"files"`
+	Pushed      map[string]map[string]string `yaml:"pushed"`         // branch -> path -> a text the remote's branch holds there
+	PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
+	NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
+	OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Forge       *forgeWant                   `yaml:"forge"`
+	Steps       []string                     `yaml:"steps"`
+	Calls       []map[string]string          `yaml:"calls"`
+	SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
+	CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
+	LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
+	Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
+	RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
+	CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
+	RunFiles    map[string]runFileWant       `yaml:"run-files"`     // a file of the run folder -> the texts it holds, or not
+	Branches    map[string]map[string]string `yaml:"branches"`      // a local branch -> path -> a text it holds there
+	Listed      []string                     `yaml:"issues-listed"` // texts `workline issues list` prints afterwards
+	Summary     string                       `yaml:"summary"`       // a text the result's summary holds
+	SummaryFile []string                     `yaml:"summary-file"`  // texts the --summary file holds, in this order; with cli, workline-summary.md
+	SummaryHTML []string                     `yaml:"summary-html"`  // texts the --summary .html file holds, in this order
+	Coverage    []map[string]string          `yaml:"coverage"`      // an import's map: its items, by lines, state, issue, words, why
+	NotCovered  []map[string]string          `yaml:"not-covered"`   // an import's items left with no issue nor reason
+	Exit        *int                         `yaml:"exit"`          // with cli: the exit code
+	Stdout      []string                     `yaml:"stdout"`        // with cli: texts printed on stdout
+	Stderr      []string                     `yaml:"stderr"`        // with cli: texts printed on stderr
+}
+
+// findingWant is a finding the run reports, or must not: its rule and
+// level, texts its where, message and fix hold (one not wanted: where equal).
+type findingWant struct {
+	Rule    string `yaml:"rule"`
+	Where   string `yaml:"where"`
+	Level   string `yaml:"level"` // block or warn; any when not given
+	Message string `yaml:"message"`
+	Fix     string `yaml:"fix"`
+}
+
+// checkWant is a doctor's check: its rule and level, texts the rest hold.
+type checkWant struct {
+	Rule    string `yaml:"rule"`
+	Where   string `yaml:"where"`
+	Level   string `yaml:"level"`
+	Message string `yaml:"message"`
+	Fix     string `yaml:"fix"`
+}
+
+// fileWant is a file of the repository after the run.
+type fileWant struct {
+	Exists   *bool `yaml:"exists"`
+	Contains texts `yaml:"contains"`
+	Lacks    texts `yaml:"lacks"`
+}
+
+// runFileWant is a file of the run folders: texts one holds, none holds.
+type runFileWant struct {
+	Contains    texts `yaml:"contains"`
+	NotContains texts `yaml:"not-contains"`
+}
+
+// forgeWant is the simulated forge's state after the run, by kind.
+type forgeWant struct {
+	Issues        []itemWant `yaml:"issues"`
+	MergeRequests []itemWant `yaml:"merge-requests"`
+	Labels        []itemWant `yaml:"labels"` // labels defined, their name as id
+}
+
+// itemWant is an item of the forge, by id: each field given is checked
+// (compareForge); `absent: true`, no item with that id.
+type itemWant struct {
+	ID              int                 `yaml:"id"`
+	Absent          bool                `yaml:"absent"`
+	Title           *string             `yaml:"title"`
+	Branch          *string             `yaml:"branch"`
+	Base            *string             `yaml:"base"`
+	Reason          *string             `yaml:"reason"` // why it was closed
+	Milestone       *string             `yaml:"milestone"`
+	Parent          *int                `yaml:"parent"` // the issue it is a sub-issue of, 0 for none
+	Closed          *bool               `yaml:"closed"`
+	BodyContains    texts               `yaml:"body-contains"`
+	BodyLacks       texts               `yaml:"body-lacks"`
+	Comments        *int                `yaml:"comments"` // how many
+	CommentContains texts               `yaml:"comment-contains"`
+	CommentLacks    texts               `yaml:"comment-lacks"`
+	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
+	Labels          *[]string           `yaml:"labels"`     // the exact set
+	Reactions       map[string][]string `yaml:"reactions"`  // on its comments, by the comment's id
 }
 
 type result struct {
@@ -140,6 +212,7 @@ type result struct {
 	Findings []struct {
 		Rule    string `json:"rule"`
 		Where   string `json:"where"`
+		Level   string `json:"level"`
 		Message string `json:"message"`
 		Fix     string `json:"fix"`
 	} `json:"findings"`
@@ -175,13 +248,15 @@ func TestConformance(t *testing.T) {
 		t.Fatal("no cases found")
 	}
 	for _, f := range files {
-		var c caseFile
-		data, err := os.ReadFile(f)
+		c, err := readCase(f)
 		if err != nil {
-			t.Fatal(err)
-		}
-		if err := yaml.Unmarshal(data, &c); err != nil {
-			t.Fatalf("%s: %v", f, err)
+			// Failed whatever pending.txt says: a case misread checks nothing.
+			name := c.Case
+			if name == "" {
+				name = strings.TrimSuffix(strings.TrimPrefix(f, "cases/"), ".yaml")
+			}
+			t.Run(name, func(t *testing.T) { t.Error(err) })
+			continue
 		}
 		t.Run(c.Case, func(t *testing.T) {
 			problems := runCase(t, &c)
@@ -195,6 +270,45 @@ func TestConformance(t *testing.T) {
 			}
 		})
 	}
+}
+
+// readCase reads a case file strictly, with the YAML library's own check:
+// a key no field of caseFile names is an error naming the key and the file.
+// The forge a case gives, and a person's edits to it, are the simulated
+// forge's to read: checked against its own type, by the JSON library's.
+func readCase(file string) (caseFile, error) {
+	var c caseFile
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return c, err
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&c); err != nil {
+		return c, fmt.Errorf("%s: %v", file, err)
+	}
+	for name, state := range map[string]map[string]any{"given.forge": c.Given.Forge, "run.between": c.Run.Between} {
+		if err := forgeReads(state); err != nil {
+			return c, fmt.Errorf("%s: %s: %v", file, name, err)
+		}
+	}
+	return c, nil
+}
+
+// forgeReads says what of a forge's state the simulated forge would not
+// read: a key no field of its state names (GitLab's mock's members
+// included), or a value of another type.
+func forgeReads(state map[string]any) error {
+	if state == nil {
+		return nil
+	}
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	return dec.Decode(&gitlabState{})
 }
 
 // engines are the engines built with build tags of the tests, by their tags.
@@ -505,7 +619,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if len(c.Expect.SummaryHTML) > 0 {
 		problems = append(problems, compareSummaryFile(c.Expect.SummaryHTML, summaryHTML)...)
 	}
-	if len(c.Expect.Forge) > 0 {
+	if c.Expect.Forge != nil {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
 	}
 	return problems
@@ -554,30 +668,32 @@ func compare(c *caseFile, r *result, repo string) []string {
 	for _, want := range e.Findings {
 		found := false
 		for _, f := range r.Findings {
-			if f.Rule == want["rule"] && strings.Contains(f.Where, want["where"]) && strings.Contains(f.Message, want["message"]) && strings.Contains(f.Fix, want["fix"]) {
+			if f.Rule == want.Rule && (want.Level == "" || levelOf(f.Level, r.Status) == want.Level) && strings.Contains(f.Where, want.Where) &&
+				strings.Contains(f.Message, want.Message) && strings.Contains(f.Fix, want.Fix) {
 				found = true
 			}
 		}
 		if !found {
-			p = append(p, fmt.Sprintf("missing finding %v (got %v)", want, r.Findings))
+			p = append(p, fmt.Sprintf("missing finding %+v (got %+v)", want, r.Findings))
 		}
 	}
 	for _, want := range e.Checks {
 		found := false
 		for _, ch := range r.Checks {
-			if ch.Rule == want["rule"] && (want["level"] == "" || ch.Level == want["level"]) && strings.Contains(ch.Where, want["where"]) &&
-				strings.Contains(ch.Message, want["message"]) && strings.Contains(ch.Fix, want["fix"]) {
+			if ch.Rule == want.Rule && (want.Level == "" || ch.Level == want.Level) && strings.Contains(ch.Where, want.Where) &&
+				strings.Contains(ch.Message, want.Message) && strings.Contains(ch.Fix, want.Fix) {
 				found = true
 			}
 		}
 		if !found {
-			p = append(p, fmt.Sprintf("missing check %v (got %v)", want, r.Checks))
+			p = append(p, fmt.Sprintf("missing check %+v (got %+v)", want, r.Checks))
 		}
 	}
 	for _, bad := range e.NoFindings {
 		for _, f := range r.Findings {
-			if f.Rule == bad["rule"] && f.Where == bad["where"] && strings.Contains(f.Message, bad["message"]) {
-				p = append(p, fmt.Sprintf("finding %v should not be there: %s", bad, f.Message))
+			if f.Rule == bad.Rule && f.Where == bad.Where && (bad.Level == "" || levelOf(f.Level, r.Status) == bad.Level) &&
+				strings.Contains(f.Message, bad.Message) && strings.Contains(f.Fix, bad.Fix) {
+				p = append(p, fmt.Sprintf("finding %+v should not be there: %s", bad, f.Message))
 			}
 		}
 	}
@@ -665,7 +781,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 			p = append(p, fmt.Sprintf("no run folder keeps %s", name))
 			continue
 		}
-		for _, text := range want["contains"] {
+		for _, text := range want.Contains {
 			held := false
 			for _, f := range found {
 				data, _ := os.ReadFile(f)
@@ -675,7 +791,7 @@ func compare(c *caseFile, r *result, repo string) []string {
 				p = append(p, fmt.Sprintf("%s does not hold %q", name, text))
 			}
 		}
-		for _, text := range want["not-contains"] {
+		for _, text := range want.NotContains {
 			for _, f := range found {
 				if data, _ := os.ReadFile(f); strings.Contains(string(data), text) {
 					p = append(p, fmt.Sprintf("%s holds %q", name, text))
@@ -695,20 +811,18 @@ func compare(c *caseFile, r *result, repo string) []string {
 	}
 	for path, want := range e.Files {
 		data, err := os.ReadFile(filepath.Join(repo, path))
-		if exists, ok := want["exists"].(bool); ok && exists != (err == nil) {
-			p = append(p, fmt.Sprintf("%s exists = %v, want %v", path, err == nil, exists))
+		if want.Exists != nil && *want.Exists != (err == nil) {
+			p = append(p, fmt.Sprintf("%s exists = %v, want %v", path, err == nil, *want.Exists))
 		}
-		texts, _ := want["contains"].([]any) // one text, or a list
-		if text, ok := want["contains"].(string); ok {
-			texts = []any{text}
-		}
-		for _, text := range texts {
-			if !strings.Contains(string(data), fmt.Sprint(text)) {
+		for _, text := range want.Contains {
+			if !strings.Contains(string(data), text) {
 				p = append(p, fmt.Sprintf("%s does not contain %q", path, text))
 			}
 		}
-		if text, ok := want["lacks"].(string); ok && strings.Contains(string(data), text) {
-			p = append(p, fmt.Sprintf("%s contains %q", path, text))
+		for _, text := range want.Lacks {
+			if strings.Contains(string(data), text) {
+				p = append(p, fmt.Sprintf("%s contains %q", path, text))
+			}
 		}
 	}
 	return p
@@ -842,17 +956,9 @@ func editForge(file string, edits map[string]any) error {
 	return os.WriteFile(file, data, 0o644)
 }
 
-// compareForge checks the simulated forge's state: for each listed item, by
-// id, `comments` is a count, `labels` the exact set, `comment-contains`
-// texts (one or a list) some comment holds, `comment-lacks` one none
-// does, `branch`, `base`
-// `title`, the `reason` it was closed for, its `milestone` and the `parent`
-// it is a sub-issue of (0 for none) an item's, `reactions` the reactions
-// on its comments by the comment's id, `blocked-by` the issues it
-// waits on in the forge's own relation, `closed` whether it
-// is, `body-contains` a text its body holds, and
-// `absent: true` no item with that id.
-func compareForge(want map[string]any, file string) []string {
+// compareForge checks the simulated forge's state: each item listed, by
+// id, holds what itemWant says of it; `absent: true`, no item with that id.
+func compareForge(want *forgeWant, file string) []string {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return []string{"no forge state to check: " + err.Error()}
@@ -860,102 +966,123 @@ func compareForge(want map[string]any, file string) []string {
 	var got map[string][]map[string]any
 	json.Unmarshal(data, &got)
 	var p []string
-	for kind, items := range want {
-		list, _ := items.([]any)
-		for _, w := range list {
-			wm, _ := w.(map[string]any)
-			var found map[string]any
-			for _, g := range got[kind] {
-				if fmt.Sprint(g["id"]) == fmt.Sprint(wm["id"]) {
-					found = g
-				}
-			}
-			if absent, _ := wm["absent"].(bool); absent {
-				if found != nil {
-					p = append(p, fmt.Sprintf("forge: %s %v exists, want none", kind, wm["id"]))
-				}
-				continue
-			}
-			if found == nil {
-				p = append(p, fmt.Sprintf("forge: no %s with id %v", kind, wm["id"]))
-				continue
-			}
-			if w, ok := wm["body-contains"]; ok {
-				texts := []any{w} // one text, or several
-				if l, ok := w.([]any); ok {
-					texts = l
-				}
-				for _, t := range texts {
-					if !strings.Contains(fmt.Sprint(found["body"]), fmt.Sprint(t)) {
-						p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it to hold %q", kind, wm["id"], found["body"], t))
-					}
-				}
-			}
-			if t, ok := wm["body-lacks"]; ok && strings.Contains(fmt.Sprint(found["body"]), fmt.Sprint(t)) {
-				p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it without %q", kind, wm["id"], found["body"], t))
-			}
-			if w, ok := wm["closed"]; ok && fmt.Sprint(found["closed"] == true) != fmt.Sprint(w) {
-				p = append(p, fmt.Sprintf("forge: %s %v closed = %v, want %v", kind, wm["id"], found["closed"] == true, w))
-			}
-			if found["parent"] == nil {
-				found["parent"] = 0 // not a sub-issue
-			}
-			for _, k := range []string{"branch", "base", "title", "reason", "milestone", "parent"} {
-				if w, ok := wm[k]; ok && fmt.Sprint(found[k]) != fmt.Sprint(w) {
-					p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm["id"], k, found[k], w))
-				}
-			}
-			if n, ok := wm["comments"]; ok {
-				c, _ := found["comments"].([]any)
-				if fmt.Sprint(len(c)) != fmt.Sprint(n) {
-					p = append(p, fmt.Sprintf("forge: %s %v has %d comments, want %v", kind, wm["id"], len(c), n))
-				}
-			}
-			comments, _ := found["comments"].([]any)
-			held := func(text string) bool {
-				for _, c := range comments {
-					if strings.Contains(fmt.Sprint(c), text) {
-						return true
-					}
-				}
-				return false
-			}
-			texts := []any{wm["comment-contains"]} // one text, or several
-			if l, ok := wm["comment-contains"].([]any); ok {
-				texts = l
-			}
-			for _, t := range texts {
-				if t != nil && !held(fmt.Sprint(t)) {
-					p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm["id"], t, comments))
-				}
-			}
-			if t, ok := wm["comment-lacks"]; ok && held(fmt.Sprint(t)) {
-				p = append(p, fmt.Sprintf("forge: a comment on %s %v holds %q", kind, wm["id"], t))
-			}
-			if w, ok := wm["blocked-by"]; ok {
-				gb, _ := found["blocked-by"].([]any)
-				if fmt.Sprint(gb) != fmt.Sprint(w) {
-					p = append(p, fmt.Sprintf("forge: %s %v blocked-by = %v, want %v", kind, wm["id"], gb, w))
-				}
-			}
-			if l, ok := wm["labels"]; ok {
-				gl, _ := found["labels"].([]any)
-				if fmt.Sprint(gl) != fmt.Sprint(l) {
-					p = append(p, fmt.Sprintf("forge: %s %v labels = %v, want %v", kind, wm["id"], gl, l))
-				}
-			}
-			if r, ok := wm["reactions"]; ok {
-				gr, _ := found["reactions"].(map[string]any)
-				if gr == nil {
-					gr = map[string]any{}
-				}
-				if fmt.Sprint(gr) != fmt.Sprint(r) {
-					p = append(p, fmt.Sprintf("forge: %s %v reactions = %v, want %v", kind, wm["id"], gr, r))
-				}
-			}
+	for _, kind := range []struct {
+		name  string
+		items []itemWant
+	}{{"issues", want.Issues}, {"merge-requests", want.MergeRequests}, {"labels", want.Labels}} {
+		for _, wm := range kind.items {
+			p = append(p, compareItem(kind.name, wm, got[kind.name])...)
 		}
 	}
 	return p
+}
+
+// compareItem checks one item of the forge against what is wanted of it.
+func compareItem(kind string, wm itemWant, got []map[string]any) []string {
+	var p []string
+	var found map[string]any
+	for _, g := range got {
+		if fmt.Sprint(g["id"]) == fmt.Sprint(wm.ID) {
+			found = g
+		}
+	}
+	if wm.Absent {
+		if found != nil {
+			p = append(p, fmt.Sprintf("forge: %s %v exists, want none", kind, wm.ID))
+		}
+		return p
+	}
+	if found == nil {
+		return append(p, fmt.Sprintf("forge: no %s with id %v", kind, wm.ID))
+	}
+	body := fmt.Sprint(found["body"])
+	for _, t := range wm.BodyContains {
+		if !strings.Contains(body, t) {
+			p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it to hold %q", kind, wm.ID, found["body"], t))
+		}
+	}
+	for _, t := range wm.BodyLacks {
+		if strings.Contains(body, t) {
+			p = append(p, fmt.Sprintf("forge: %s %v body = %q, want it without %q", kind, wm.ID, found["body"], t))
+		}
+	}
+	if wm.Closed != nil && (found["closed"] == true) != *wm.Closed {
+		p = append(p, fmt.Sprintf("forge: %s %v closed = %v, want %v", kind, wm.ID, found["closed"] == true, *wm.Closed))
+	}
+	if found["parent"] == nil {
+		found["parent"] = 0 // not a sub-issue
+	}
+	fields := []struct {
+		key  string
+		want any
+	}{{"branch", given(wm.Branch)}, {"base", given(wm.Base)}, {"title", given(wm.Title)},
+		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}}
+	for _, f := range fields {
+		if f.want != nil && fmt.Sprint(found[f.key]) != fmt.Sprint(f.want) {
+			p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm.ID, f.key, found[f.key], f.want))
+		}
+	}
+	comments, _ := found["comments"].([]any)
+	if wm.Comments != nil && len(comments) != *wm.Comments {
+		p = append(p, fmt.Sprintf("forge: %s %v has %d comments, want %d", kind, wm.ID, len(comments), *wm.Comments))
+	}
+	held := func(text string) bool {
+		for _, c := range comments {
+			if strings.Contains(fmt.Sprint(c), text) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, t := range wm.CommentContains {
+		if !held(t) {
+			p = append(p, fmt.Sprintf("forge: no comment on %s %v holds %q (comments: %v)", kind, wm.ID, t, comments))
+		}
+	}
+	for _, t := range wm.CommentLacks {
+		if held(t) {
+			p = append(p, fmt.Sprintf("forge: a comment on %s %v holds %q", kind, wm.ID, t))
+		}
+	}
+	if wm.BlockedBy != nil {
+		gb, _ := found["blocked-by"].([]any)
+		if fmt.Sprint(gb) != fmt.Sprint(*wm.BlockedBy) {
+			p = append(p, fmt.Sprintf("forge: %s %v blocked-by = %v, want %v", kind, wm.ID, gb, *wm.BlockedBy))
+		}
+	}
+	if wm.Labels != nil {
+		gl, _ := found["labels"].([]any)
+		if fmt.Sprint(gl) != fmt.Sprint(*wm.Labels) {
+			p = append(p, fmt.Sprintf("forge: %s %v labels = %v, want %v", kind, wm.ID, gl, *wm.Labels))
+		}
+	}
+	if wm.Reactions != nil {
+		gr, _ := found["reactions"].(map[string]any)
+		if gr == nil {
+			gr = map[string]any{}
+		}
+		if fmt.Sprint(gr) != fmt.Sprint(wm.Reactions) {
+			p = append(p, fmt.Sprintf("forge: %s %v reactions = %v, want %v", kind, wm.ID, gr, wm.Reactions))
+		}
+	}
+	return p
+}
+
+// given is a field's value when the case gives it, nil when it does not.
+func given[T any](v *T) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
+// levelOf is a finding's level as docs/spec/role-outcome.md reads it: one
+// that says none blocks in a run that did not pass.
+func levelOf(level, status string) string {
+	if level == "" && status != "pass" {
+		return "block"
+	}
+	return level
 }
 
 // compareSummaryFile checks the --summary file holds each text, in order.

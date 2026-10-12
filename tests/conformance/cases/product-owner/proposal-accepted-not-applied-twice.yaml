@@ -1,0 +1,27 @@
+case: product-owner/proposal-accepted-not-applied-twice
+about: A person's yes still on an issue, the label workline:accepted, whose proposal its state no longer holds — done at an earlier run, then undone by a person — is not done again (ADR-0038).
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings:
+          acts: {rename: {mode: propose, max: 5}}
+  forge:
+    issues:
+      - id: 9
+        title: "bug"
+        body: "The export loses the last row."
+        author: ann
+        insider: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dev, insider: true, created: "2026-10-08T07:00:00Z"}]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\ntitle: The CSV export drops the last row\ndone:\n  - {act: rename, was: bug, set: The CSV export drops the last row, level: normal}\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  findings: [{rule: undone, where: "#9", message: "renamed back to \"bug\" by a person"}]
+  no-findings: [{rule: done-as-accepted, where: "#9", message: "Renamed"}]
+  forge:
+    issues:
+      - {id: 9, title: "bug"}

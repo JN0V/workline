@@ -138,13 +138,9 @@ func TestEvaluation(t *testing.T) {
 	sort.Strings(files)
 	version := worklineVersion()
 	for _, f := range files {
-		var c caseFile
-		data, err := os.ReadFile(f)
+		c, err := readCase(f)
 		if err != nil {
 			t.Fatal(err)
-		}
-		if err := yaml.Unmarshal(data, &c); err != nil {
-			t.Fatalf("%s: %v", f, err)
 		}
 		t.Run(c.Case, func(t *testing.T) {
 			t.Parallel()
@@ -202,6 +198,22 @@ func TestEvaluation(t *testing.T) {
 			fmt.Fprintln(out, line)
 		})
 	}
+}
+
+// readCase reads a case file strictly, as the conformance suite does: a key
+// no field names is an error naming it and the file, never a check unread.
+func readCase(file string) (caseFile, error) {
+	var c caseFile
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return c, err
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&c); err != nil {
+		return c, fmt.Errorf("%s: %v", file, err)
+	}
+	return c, nil
 }
 
 // play builds the case's repository and runs the role once, with the agent
