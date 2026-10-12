@@ -1,8 +1,3 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-documentalist/gardening-branch-follows-main
-documentalist/gardening-branch-closed-when-main-fixed-it
-documentalist/gardening-branch-closed-when-main-changed-its-lines-on-gitlab
-documentalist/gardening-branch-only-judged-closed
-documentalist/gardening-branch-a-person-committed-to-is-left
 documentalist/gardening-keeps-a-person-commit
