@@ -1,0 +1,22 @@
+case: documentalist/persons-branch-merged-when-only-workline-lines-conflict
+about: "A person's pull request conflicts with main only on a line workline writes — both moved docs/tech/auth.md's `checked` — and the project turned `update-branches: conflicts` on (ADR-0041): when main moves, `workline follow` merges main into it, the doc's `checked` main's, the person's change and main's both there, so it merges again."
+given:
+  repo: documented
+  config: {roles: {documentalist: {settings: {update-branches: conflicts}}}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens' && git push -q origin main"
+  forge: {merge-requests: [{id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merged, where: feat/sessions, message: "main merged in"}]
+  merged: {feat/sessions: main}
+  pushed:
+    feat/sessions: {docs/tech/auth.md: "checked: 3333333\n---", src/auth/token.go: "7200", src/auth/refresh.go: "Refresh renews"}
+  pushed-message: {feat/sessions: "Merge branch 'main' into feat/sessions\n\nEvery conflict was in a line workline writes, settled in:\n\n- docs/tech/auth.md"}
+  summary-file: ["workline follow", "feat/sessions", "main merged in", "docs/tech/auth.md"]
+  forge:
+    merge-requests:
+      - {id: 7, branch: feat/sessions, closed: false, comments: 0}

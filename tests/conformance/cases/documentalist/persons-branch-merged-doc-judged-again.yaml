@@ -1,0 +1,12 @@
+case: documentalist/persons-branch-merged-doc-judged-again
+about: "main and a person's branch both moved docs/tech/auth.md's `checked`, each having changed its sources; workline's merge of main kept main's (ADR-0041), as the setup does here. At the person's next push, the doc is suspect again: the branch's change to its sources came after main's `checked`, and is judged, never skipped."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && sed -i \"s/^checked: .*/checked: $(git rev-parse --short HEAD)/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc' && git checkout -q main"
+    - "sed -i '1i // Package auth signs users in.' src/auth/token.go && git commit -qam 'docs(auth): say what the package does' && sed -i \"s/^checked: .*/checked: $(git rev-parse --short HEAD)/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "git checkout -q feat/sessions && { git merge -q main >/dev/null 2>&1 || true; } && git checkout -q --theirs docs/tech/auth.md && git add docs/tech/auth.md && git commit -qm \"Merge branch 'main' into feat/sessions\" -m 'Workline-Role: documentalist'"
+    - "echo 'Sessions end at sign-out.' > NOTES.md && git add NOTES.md && git commit -qm 'docs: notes on sessions'"
+run: {role: documentalist, event: merge-request, input: {range: main..HEAD}, ai: none}
+expect:
+  findings: [{rule: suspect, where: docs/tech/auth.md}]

@@ -124,6 +124,7 @@ type expectSpec struct {
 	PushedMsg   map[string]string            `yaml:"pushed-message"` // branch -> a text the message of the remote branch's tip holds
 	NotPushed   []string                     `yaml:"not-pushed"`     // branches of the remote the run left where they were
 	OnTop       map[string]string            `yaml:"on-top"`         // branch -> the branch of the remote its tip holds
+	Merged      map[string]string            `yaml:"merged"`         // branch -> base: the remote branch's tip merges base's tip into its tip before the run, its first parent
 	Forge       *forgeWant                   `yaml:"forge"`
 	Steps       []string                     `yaml:"steps"`
 	Calls       []map[string]string          `yaml:"calls"`
@@ -525,6 +526,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
 		tips[b] = string(out)
 	}
+	before := map[string]string{} // the tips of the branches merged into, before the run
+	for b := range c.Expect.Merged {
+		out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output()
+		before[b], _, _ = strings.Cut(string(out), "\t")
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	_ = cmd.Run() // the exit code mirrors the status, which is checked below
@@ -609,6 +615,16 @@ func runCase(t *testing.T, c *caseFile) []string {
 	for b, before := range tips {
 		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); string(out) != before {
 			problems = append(problems, fmt.Sprintf("origin's %s moved: %q, was %q", b, out, before))
+		}
+	}
+	for b, base := range c.Expect.Merged {
+		// A merge commit: the branch's tip before the run, its commits
+		// kept, as first parent; base's tip as second.
+		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
+		out, _ := exec.Command("git", "-C", repo, "rev-list", "--parents", "-n", "1", "origin/"+b).Output()
+		baseTip, _ := exec.Command("git", "-C", repo, "rev-parse", "origin/"+base).Output()
+		if got := strings.Fields(string(out)); len(got) != 3 || got[1] != before[b] || got[2] != strings.TrimSpace(string(baseTip)) {
+			problems = append(problems, fmt.Sprintf("origin's %s is not %s merged into its tip %s: commit and parents %v", b, base, before[b], got))
 		}
 	}
 	if len(c.Expect.Listed) > 0 {

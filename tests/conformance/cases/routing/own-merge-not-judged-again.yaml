@@ -1,0 +1,13 @@
+case: routing/own-merge-not-judged-again
+about: "A merge request whose last commit is workline's merge of main into it, its trailer saying so (ADR-0041), is not judged again: the merge settled only lines workline writes. The person's next push is judged as usual."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && sed -i 's/^checked: .*/checked: 2222222/' docs/tech/auth.md && git commit -qam 'feat(auth): keep users signed in for two hours' && git checkout -q main"
+    - "printf 'package auth\\n\\n// Refresh renews a token.\\nfunc Refresh() {}\\n' > src/auth/refresh.go && sed -i 's/^checked: .*/checked: 3333333/' docs/tech/auth.md && git add src docs && git commit -qm 'feat(auth): refresh tokens'"
+    - "git checkout -q feat/sessions && { git merge -q main >/dev/null 2>&1 || true; } && git checkout -q --theirs docs/tech/auth.md && git add docs/tech/auth.md && git commit -qm \"Merge branch 'main' into feat/sessions\" -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "main..HEAD"}, ai: "fake:doc-fixed"}
+expect:
+  status: pass
+  agent-calls: 0
+  steps: []

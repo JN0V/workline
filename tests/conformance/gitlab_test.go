@@ -116,10 +116,15 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 	case p == "/merge_requests" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.MergeRequests {
-			if q.Get("state") == "opened" && it.Closed {
+			if q.Get("state") == "opened" && it.Closed || q.Has("target_branch") && q.Get("target_branch") != it.Base {
 				continue
 			}
+			source := 1 // a fork's is another project's
+			if it.Fork {
+				source = 2
+			}
 			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
+				"source_project_id": source, "target_project_id": 1, "title": it.Title, "author": user(it.Author),
 				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed]})
 		}
 		return out, 200
