@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -202,6 +203,27 @@ func TestDeriveSkipsExamplesInCode(t *testing.T) {
 	want := strings.Replace(strings.Replace(doc, "-->0<!--", "-->3<!--", 1), "-->\nold\n<!--", "-->\n3\n<!--", 1)
 	if fixed["d.md"] != want {
 		t.Fatalf("fixed =\n%s\nwant\n%s", fixed["d.md"], want)
+	}
+}
+
+// An opening with no end before the next block's, or none at all, is said
+// and left as it is (#302): the text after it is a person's, never taken
+// for its fact.
+func TestDeriveUnclosedLeftAsItIs(t *testing.T) {
+	doc := "A: <!-- workline:derive n -->0 files.\n\nWords.\n\nB: <!-- workline:derive n -->0<!-- workline:end -->.\n\nC: <!-- workline:derive m -->0\n"
+	findings, fixed := Derive(t.TempDir(), map[string]string{"d.md": doc}, map[string]string{"n": "echo 3", "m": "echo 4"}, false)
+	var rules []string
+	for _, f := range findings {
+		rules = append(rules, f.Rule+" "+f.Level)
+	}
+	if !slices.Equal(rules, []string{"derive-unclosed warn", "derive-unclosed warn", "derived-stale "}) {
+		t.Fatalf("findings = %v", findings)
+	}
+	if want := strings.Replace(doc, "B: <!-- workline:derive n -->0", "B: <!-- workline:derive n -->3", 1); fixed["d.md"] != want {
+		t.Fatalf("fixed =\n%s\nwant\n%s", fixed["d.md"], want)
+	}
+	if lines := derivedLines(doc); len(lines) != 1 || !lines[5] {
+		t.Fatalf("derived lines %v, want line 5 alone", lines)
 	}
 }
 

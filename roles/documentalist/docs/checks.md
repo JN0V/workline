@@ -216,6 +216,7 @@ turns one off with `enforce`.
   parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
+- **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,
   merge request, release).
 - **Blocks**:
