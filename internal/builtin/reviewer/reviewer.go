@@ -51,7 +51,7 @@ type Settings struct {
 	StoryWords      []string `json:"story-words"`         // what tells a bug's story in a comment
 	AIFindings      Gate     `json:"ai-findings"`         // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
 	JudgeAtLeast    string   `json:"judge-at-least"`      // the independence a verification needs: context, model, provider
-	ForgeWrites     bool     `json:"forge-writes"`        // on a merge request: the summary comment and the issues
+	ForgeWrites     bool     `json:"forge-writes"`        // on a merge request: the comments on lines, the summary comment and the issues
 	FinderFloor     bool     `json:"finder-floor"`        // ask each lens to look for a number of candidates before it stops
 	Tests           []string `json:"tests"`               // the test files: what a judge reading tests is shown of them
 	TestsLinesMax   int      `json:"tests-lines-max"`     // lines of those tests a judge is shown, all together

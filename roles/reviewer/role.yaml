@@ -39,7 +39,8 @@ duties:
 # A lens answers findings, each its cause quoted; the engine finds the quote
 # again, and tells the change's from the rest. What it then proposes is the
 # engine's own: an issue for what lies outside the change, and one summary
-# comment on the merge request. Never a patch, never an approval.
+# comment on the merge request carrying each finding on its line, in the
+# forge's own review (#277). Never a patch, never an approval.
 part-intentions: [finding]
 intentions: [issue, comment, note]
 # A finding that blocks is when the author most needs the comment: a
@@ -75,8 +76,9 @@ settings:
   # The independence a verification needs (ADR-0005): context (the same
   # model, apart), model, provider.
   judge-at-least: context
-  # On a merge request: the summary comment, and an issue for each verified
-  # finding outside the change. false: both only in the verdict.
+  # On a merge request: each finding on its line, the summary comment, and
+  # an issue for each verified finding outside the change. false: all of
+  # them only in the verdict.
   forge-writes: true
   # Each lens looks for a number of candidates before it stops, from the
   # change's size; nothing found is ever required to be shown (ADR-0020).
