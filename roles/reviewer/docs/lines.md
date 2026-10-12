@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: 5eb8a2f
+checked: 1be9bd7
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
@@ -60,6 +60,10 @@ flowchart LR
 - **Resolved by a person**, and found again: posted again, in a new review.
 - **Not found again**: left as it is; the forge marks it outdated when its
   line changes.
+- **A block standing from a review before**, no lens reading it again
+  ([#326](https://github.com/JN0V/workline/issues/326)): its row in the
+  summary comment, marked `**blocks**`; its comment on the line is not
+  posted again, resolved or not.
 
 ## When it cannot be on its line
 

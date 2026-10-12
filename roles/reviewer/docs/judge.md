@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 5eb8a2f
+checked: 1be9bd7
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -67,6 +67,8 @@ else whether the quoted code fails:
   is counted.
 - One summary comment on a merge request, edited each run
   (`forge-writes`), a blocked run's too ([on a merge request](run.md#on-a-merge-request)).
+- A finding that blocks stands until a commit answers it
+  ([below](#a-block-stands-until-a-commit-answers-it)).
 
 When something fails:
 
@@ -75,6 +77,29 @@ When something fails:
 - A lens that fails is said (`lens-failed`), the commits left unrecorded.
 - An agent unreachable: `blocked-external`.
 - No agent: the rules alone, the change left for a person (`not-reviewed`).
+
+### A block stands until a commit answers it
+
+[#326](https://github.com/JN0V/workline/issues/326): the record keeps
+each finding that blocked, its cause quoted, beside the commits reviewed
+([the record](run.md#13-the-range-the-rules-the-record)).
+
+- **Nothing new to read** — the job run again on the same commits, a merge
+  of the base that settled nothing, new commits changing no code, a rule
+  holding the run, no agent: the block stands. No agent is asked; the
+  summary comment names the finding again, marked `**blocks**`.
+- **It goes** when a commit answers it:
+  - its cause is no longer found on the change (the line changed, or
+    removed);
+  - or its lens reads the cause's file again, in a whole review, and does
+    not find it, or its judge says no. Found again and verified, it is
+    the new review's finding, shown once.
+- **It stays past a commit elsewhere**: a lens that did not read the cause
+  again leaves it. One quoted from an issue stays until its lens reads the
+  issue again.
+- **Its lens set back to `warn`** (`ai-findings`): it goes.
+- **Resolving its comment on the line does not lift it**: a person who
+  disagrees merges where the forge lets them, or sets its lens to `warn`.
 
 ## The budget
 

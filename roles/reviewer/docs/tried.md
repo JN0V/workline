@@ -762,3 +762,27 @@ line is keyed by its number (`TestLineKey`).
 Both sandboxes closed after, their branches deleted. **Not tried**: a token without
 the right to review (the simulated forges and a scripted `gh` only); a
 fork; CI's two jobs, judged then applied; a real agent's findings.
+
+## 2026-10-12 — a block stands until a commit answers it (#326), on a copy of workline
+
+A copy of workline, `workline review --lenses correctness`, the engine of
+`main` and the one fixing #326, `ai-findings: block`, fake agents (no
+paid call): a lens finding `Any` in `internal/pathglob/pathglob.go`
+returning `len(patterns) > 0`, a judge saying yes. Six runs in a row on
+one branch:
+
+| Run | `main`'s engine | This one |
+|---|---|---|
+| 1. The first review | block, 2 calls | block, 2 calls |
+| 2. The same commits again | **pass**, no call | block, no call, "1 finding of a review before still blocks" |
+| 3. The base moved (another file), merged in, `Workline-Role: documentalist` | **pass**, no call | block, no call, the merge recorded |
+| 4. A commit in the cause's file, the lens finding it again | block, 2 calls | block, 2 calls, the finding shown once |
+| 5. The author removes the cause, the lens finding nothing | pass, 1 call | pass, 1 call |
+| 6. The same commits again | pass, no call | pass, no call |
+
+- **The bug**, as the issue said: runs 2 and 3 turned green with nothing
+  read.
+- **Not tried**: a pull request on the forge (the record in the summary
+  comment, conformance only); the line on `workline follow`'s merge
+  ([#325](https://github.com/JN0V/workline/pull/325), not merged); a real
+  agent.

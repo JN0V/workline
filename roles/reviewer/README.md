@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 5eb8a2f
+checked: 1be9bd7
 verified: agent:claude-code
 ---
 # Reviewer
@@ -93,8 +93,9 @@ Step by step, with every rule: [a run on code](docs/run.md).
 7. **The judge**: each important finding checked apart, reading the code
    it stands on; a no drops it ([more](docs/judge.md)).
 8. **The verdict**: rules block; findings warn until measured
-   (`ai-findings`); on a merge request, each finding on its line and one
-   summary comment.
+   (`ai-findings`); one that blocks stands until a commit answers it
+   ([more](docs/judge.md#a-block-stands-until-a-commit-answers-it)); on a
+   merge request, each finding on its line and one summary comment.
 
 The run's tokens are capped and said ([the budget](docs/judge.md#the-budget)).
 

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 5eb8a2f
+checked: 1be9bd7
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -42,6 +42,8 @@ flowchart LR
      resolution; never the base's code. Nothing settled: nobody asked.
    - New commits that change no code are recorded, nobody asked, the turn
      of the lenses kept.
+   - **What blocked stands**, recorded too, until a commit answers it
+     ([#326](https://github.com/JN0V/workline/issues/326), [more](judge.md#a-block-stands-until-a-commit-answers-it)).
    - The run when a merge request becomes ready reads the whole change,
      commits reviewed before too
      ([below](#every-lens-once-when-it-becomes-ready)).
