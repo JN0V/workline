@@ -1,0 +1,29 @@
+case: reviewer/line-comment-outside-the-diff-in-the-summary
+about: "A finding on a line the merge request's diff does not show — here a line a push put back as main has it — takes no comment on the forge: it stays in the summary comment, in full, said why; the run does not fail for it. The finding on a line the diff shows is posted on it (#277)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i 's|return total / (len(values) - 1)|return total / len(values)|' calc/calc.go && printf '\\n// Half returns half of n.\\nfunc Half(n int) int {\\n\\treturn n / 3\\n}\\n' >> calc/calc.go && git commit -qam 'feat: half a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: "HEAD~1..HEAD", lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-line-outside"}
+expect:
+  status: pass
+  applied: [comment]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average panics on no values"}
+    - {rule: correctness, where: "calc/calc.go:22", message: "Important: Half divides by three"}
+  no-findings: [{rule: line-comment-refused}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**On their lines**: 1 comment, in [the review](https://forge.example/merge-requests/5#review-1) (1 posted now)"
+          - "**Here only**, not on their lines — its line is not in the merge request's diff, where the forge takes a comment:\n\n`calc/calc.go:11`\n\n> **workline reviewer** · warns · correctness"
+          - "> an empty slice divides by zero"
+          - "> What would fix it: return 0 for no values"
+        threads: [{path: calc/calc.go, line: 22, contains: "**Important: Half divides by three**"}]

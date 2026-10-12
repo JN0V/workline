@@ -86,6 +86,7 @@ type Finding struct {
 	Cause    Quote     `json:"cause"`
 	Symptom  *Quote    `json:"symptom,omitempty"`
 	Where    string    `json:"where"`          // the cause's file and line
+	On       int       `json:"on,omitempty"`   // the change's: the line of its quote the change touched, where its comment goes on the forge (#277)
 	Related  bool      `json:"related"`        // the cause lies in the change: the author fixes it
 	Line     string    `json:"line,omitempty"` // outside the change: the line the cause starts at, as it reads, which keys its issue
 	Also     []Finding `json:"also,omitempty"` // other findings on the same line, grouped under this one, each judged by its own lens
@@ -242,14 +243,14 @@ func prepare(runDir, repo string, s Settings) int {
 	}
 	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Advisories: advisories}
 	if start == head {
-		return held(runDir, s, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(sp.Commits))))
+		return held(runDir, repo, s, st, review(st, nil, fmt.Sprintf("the %d commits were reviewed already: only the rules ran", len(sp.Commits))))
 	}
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
 	if status(mech) == verdict.Block {
 		v := review(st, nil, "the rules found what the author must fix first; the review follows once they pass")
 		v.Record.Owed = v.Record.Owed || ready
-		return held(runDir, s, v)
+		return held(runDir, repo, s, st, v)
 	}
 	// A lens reads what the commits not reviewed yet change, not every file
 	// of the merge request, nor the base's code they merged in; when they
@@ -388,7 +389,7 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	v.Record.Runs = st.Record.Runs
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
-		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0)}})
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0, nil, false)}})
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
@@ -938,7 +939,7 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		for _, p := range places {
 			for n := p.From; n <= p.To && f.Where == ""; n++ {
 				if in(f.Cause.Path, n) {
-					f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true
+					f.Where, f.Related, f.On = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, n
 				}
 			}
 		}
@@ -949,7 +950,8 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 			removed = append(removed, l.Text)
 		}
 		if at := locate(removed, f.Cause.Quote); len(at) > 0 {
-			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, st.Change.Removed[f.Cause.Path][at[0].From-1].At), true
+			f.On = st.Change.Removed[f.Cause.Path][at[0].From-1].At
+			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, f.On), true
 		}
 	}
 	if f.Where == "" && len(places) > 0 {
@@ -1246,7 +1248,7 @@ func settle(runDir, repo string, s Settings) int {
 	}
 	v.Summary += tokensLine(v.Calls, s.AIMaxTokens)
 	if onForge {
-		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, len(fallback))}})
+		fallback = append(fallback, summaryIntention(repo, s, st, v, related, len(fallback)))
 	}
 	if sp := st.Spec; sp != nil && sp.Issue > 0 && s.ForgeWrites {
 		// On the forge (#128): one comment on the issue, its record read
@@ -1471,12 +1473,33 @@ func summary(v Review, issues, failed, unjudged int) string {
 	return s
 }
 
+// summaryIntention is the summary comment, carrying the findings on lines
+// as its review (#277): each on its line, its row here kept to its title.
+func summaryIntention(repo string, s Settings, st state, v Review, related []Finding, issues int) intent.Intention {
+	lines := lineComments(repo, s, st, related)
+	short := map[string]string{}
+	for _, g := range related {
+		if _, _, ok := fileLine(g.Where); ok {
+			short[g.Lens+"\x00"+g.Where] = shortMessage(g)
+		}
+	}
+	value := map[string]any{"sticky": SummaryKey, "body": summaryComment(v, issues, short, len(lines) > 0)}
+	if len(lines) > 0 {
+		value["review"] = reviewOf(st, lines)
+	}
+	return intent.Intention{Kind: "comment", Value: value}
+}
+
 // summaryComment is the one summary the merge request gets, edited on each run,
-// the record hidden in it.
-func summaryComment(v Review, issues int) string {
+// the record hidden in it. With findings on lines, the engine says where
+// the review stands (forge.ReviewHere), and a row on its line is short.
+func summaryComment(v Review, issues int, short map[string]string, lines bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "**workline reviewer** — %s.\n\n", v.Summary)
-	b.WriteString(findingsTable(v, "No finding on the commits reviewed."))
+	if lines {
+		b.WriteString(forge.ReviewHere + "\n\n")
+	}
+	b.WriteString(findingsTable(v, "No finding on the commits reviewed.", short))
 	if len(v.Questions) > 0 {
 		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the change leaves to a person; a reply here is enough, the reviewer does not wait for it.\n\n")
 		for _, q := range v.Questions {
@@ -1493,8 +1516,9 @@ func summaryComment(v Review, issues int) string {
 }
 
 // findingsTable is the findings as a table, what blocks first (#226), the
-// decisions left out: they are asked apart (#126); none, empty.
-func findingsTable(v Review, empty string) string {
+// decisions left out: they are asked apart (#126); none, empty. A finding
+// on its line on the forge reads short, by its rule and place (#277).
+func findingsTable(v Review, empty string, short map[string]string) string {
 	var b strings.Builder
 	rows := slices.DeleteFunc(slices.Clone(v.Findings), func(f verdict.Finding) bool { return f.Rule == "decision" })
 	if len(rows) == 0 {
@@ -1512,7 +1536,11 @@ func findingsTable(v Review, empty string) string {
 		if blocks(f) {
 			holds = "**blocks**"
 		}
-		fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", holds, f.Rule, where, strings.ReplaceAll(f.Message, "|", "\\|"))
+		message := f.Message
+		if m, ok := short[f.Rule+"\x00"+f.Where]; ok {
+			message = m
+		}
+		fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", holds, f.Rule, where, strings.ReplaceAll(message, "|", "\\|"))
 	}
 	b.WriteString("\n")
 	return b.String()
@@ -1521,11 +1549,11 @@ func findingsTable(v Review, empty string) string {
 // held settles a run the rules alone decide: blocked on a merge request it
 // may write to, the summary comment still says why, the record left as it
 // was, no lens having run (#226); post then blocks. Otherwise, final.
-func held(runDir string, s Settings, v Review) int {
+func held(runDir, repo string, s Settings, st state, v Review) int {
 	if v.Status != verdict.Block || mergeRequest() == nil || !s.ForgeWrites {
 		return final(runDir, v)
 	}
-	fallback := []intent.Intention{{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0)}}}
+	fallback := []intent.Intention{summaryIntention(repo, s, st, v, nil, 0)}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
 	}

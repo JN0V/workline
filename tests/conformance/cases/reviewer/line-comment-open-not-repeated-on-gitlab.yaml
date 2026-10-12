@@ -1,0 +1,31 @@
+case: reviewer/line-comment-open-not-repeated-on-gitlab
+about: "On GitLab, a finding whose discussion is still open on the same line is not posted again: its key is found in a discussion not resolved. One a person resolved is posted again (#277)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf '\\n// Double returns twice n,\\n// for a count.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {comment-block-max: 1}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: []
+        threads:
+          - {path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · correctness\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}
+          - {path: calc/calc.go, line: 20, resolved: true, body: "**workline reviewer** · warns · long-comment\n\n<!-- workline:line=long-comment/4470aadae568 -->"}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", forge: gitlab}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: "**On their lines**: 2 comments, in [the review](https://gitlab.example/group/proj/-/merge_requests/5/diffs) (1 posted now, 1 still open from before, not posted again)"
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: false}
+          - {path: calc/calc.go, line: 20, resolved: true}
+          - {path: calc/calc.go, line: 20, resolved: false, contains: "<!-- workline:line=long-comment/4470aadae568 -->"}

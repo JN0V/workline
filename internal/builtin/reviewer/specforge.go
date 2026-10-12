@@ -179,7 +179,7 @@ func specComment(v Review, r backlog.SpecReview, rounds int) string {
 	default:
 		b.WriteString("No important finding open: the product owner may move it to ready.\n\n")
 	}
-	b.WriteString(findingsTable(v, "No finding on the spec."))
+	b.WriteString(findingsTable(v, "No finding on the spec.", nil))
 	if len(v.Questions) > 0 {
 		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n")
 		for _, q := range v.Questions {

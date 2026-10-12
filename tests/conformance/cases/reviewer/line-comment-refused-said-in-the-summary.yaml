@@ -1,0 +1,26 @@
+case: reviewer/line-comment-refused-said-in-the-summary
+about: "A forge refusing the review — a token that may not review, as GitHub's without `pull-requests: write` — posts no comment on a line: each finding is in the summary comment, in full, with what the forge said, and the run says it (`line-comment-refused`, a warning), never silent nor failed (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    review-refused: "Resource not accessible by integration (HTTP 403)"
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  applied: [comment]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}
+    - {rule: line-comment-refused, where: "calc/calc.go:11", message: "the forge refused the review: Resource not accessible by integration (HTTP 403)"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**Here only**, not on their lines — the forge refused the review: Resource not accessible by integration (HTTP 403):\n\n`calc/calc.go:11`"
+          - "> the mean of [2, 4] comes out 6, and one value divides by zero"
+        comment-lacks: "**On their lines**"
+        threads: []

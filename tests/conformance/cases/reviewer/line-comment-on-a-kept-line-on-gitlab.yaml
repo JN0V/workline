@@ -1,0 +1,21 @@
+case: reviewer/line-comment-on-a-kept-line-on-gitlab
+about: "On GitLab, a finding on a line the change kept — beside lines it removed — is a discussion on that line, given with its line before the change too, as GitLab asks of a line its diff shows as context (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i '/for _, v := range values {/,/^\\t}$/d' calc/calc.go && git commit -qam 'refactor: drop the loop'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-beside-removed", forge: gitlab}
+expect:
+  status: pass
+  applied: [comment]
+  findings: [{rule: correctness, where: "calc/calc.go:8", message: "Important: Average always returns 0"}]
+  no-findings: [{rule: line-comment-refused}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: "(1 posted now)"
+        threads: [{path: calc/calc.go, line: 8, contains: "**Important: Average always returns 0**"}]

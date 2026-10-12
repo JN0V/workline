@@ -1,0 +1,26 @@
+case: reviewer/line-comment-refused-on-gitlab
+about: "On GitLab, a token that may not start a discussion (403) posts none: each finding is in the summary comment, in full, with what GitLab said, and the run says it (`line-comment-refused`, a warning), never silent nor failed (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    review-refused: "the token may not comment"
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", forge: gitlab}
+expect:
+  status: pass
+  applied: [comment]
+  findings:
+    - {rule: line-comment-refused, where: "calc/calc.go:11", message: "the forge refused the discussion: GitLab POST projects/:id/merge_requests/5/discussions: 403 Forbidden"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**Here only**, not on their lines — the forge refused the discussion: GitLab POST projects/:id/merge_requests/5/discussions: 403 Forbidden"
+          - "(the token's role or scope does not allow it):\n\n`calc/calc.go:11`"
+          - "> the mean of [2, 4] comes out 6, and one value divides by zero"
+        comment-lacks: "**On their lines**"
+        threads: []
