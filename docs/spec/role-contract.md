@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 68b431f
+checked: 5eb8a2f
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -312,7 +312,8 @@ token), **apply** (trusted, no AI key).
 
 Writes to git and to a forge are not transactional: a comment can be posted and
 the label call fail. So every intention is applied idempotently — a label that
-is already there, a comment carrying the run's marker, a merge request already
+is already there, a comment carrying the run's marker, a comment on a line
+whose key an open thread holds, a merge request already
 open from the branch (updated, not opened again) all count as done — and `workline apply <run-dir>` resumes a
 run from `out/run.yaml`, with the evidence of the original run, without calling
 the agent again.

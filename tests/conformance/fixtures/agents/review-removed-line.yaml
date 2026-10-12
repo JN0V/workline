@@ -1,0 +1,8 @@
+# A lens of the reviewer, on the `reviewed` fixture once the line adding
+# each value to the total is removed: the defect quoted on the removed line.
+- finding:
+    severity: important
+    title: Average no longer adds the values
+    why: total stays 0 whatever the values
+    cause: {path: calc/calc.go, quote: "total += v"}
+    fix: put back total += v

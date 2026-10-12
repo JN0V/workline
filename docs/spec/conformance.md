@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 066d097
+checked: 5eb8a2f
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -98,7 +98,11 @@ What else a case can give, run and expect, and how each is checked, is in
   `label-events`, its labels set and taken off with who (`{label, added,
   author, insider, bot, created}`). A comment is its text, or `{body,
   author, insider, bot, id}`, its id its place from 1 when not given; with
-  `scoped-labels: true`, the forge's labels are scoped, as GitLab's. The
+  `scoped-labels: true`, the forge's labels are scoped, as GitLab's. A
+  merge request's `threads` are its comments on lines, `{path, line,
+  body, resolved}`: a review is posted whole, as GitHub's, on the lines
+  of the repository's diff from the merge request's `base` (main) to the
+  head reviewed; `review-refused: <why>` refuses every review (403). The
   repository's `setup` may write into it, at `$FORGE_FILE`, what only the
   built repository knows: a commit's id in a record a comment holds.
 - **Simulated GitLab.** `forge: gitlab` runs the engine's own GitLab forge
@@ -106,7 +110,11 @@ What else a case can give, run and expect, and how each is checked, is in
   over the same file: its `members` (`{username, access_level}`) are the
   project's, what the engine writes is the token user's, a note another
   user wrote refuses an edit (403), an `is_blocked_by` link is refused for
-  its license (403) as on GitLab Free, and GraphQL refuses all.
+  its license (403) as on GitLab Free, and GraphQL refuses all. A merge
+  request's diffs are the repository's, from its `base` (main) to its
+  `branch` (HEAD); a discussion on a line they do not show, or on a kept
+  line without its old one, lands on no line, as on gitlab.com;
+  `review-refused` refuses every discussion (403).
 
 ## Evaluation
 

@@ -1,0 +1,28 @@
+case: reviewer/line-comment-on-each-finding-on-gitlab
+about: "On GitLab, each finding with a file and a line is a discussion on that line of the merge request's diff, which its author answers and resolves there: a rule's, then a lens's, each saying whether it blocks. The summary comment stays, links to the merge request's changes and keeps each finding on a line to its title (#277)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf '\\n// Double returns twice n,\\n// for a count.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: {correctness: block}, comment-block-max: 1}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", forge: gitlab}
+expect:
+  status: block
+  applied: [comment]
+  no-findings: [{rule: line-comment-refused}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**On their lines**: 2 comments, in [the review](https://gitlab.example/group/proj/-/merge_requests/5/diffs) (2 posted now): reply to each, or resolve it, there."
+          - "| **blocks** | correctness | `calc/calc.go:11` | Important: Average divides by one less than the count |"
+        comment-lacks: "the mean of [2, 4]"
+        threads:
+          - {path: calc/calc.go, line: 20, contains: "**workline reviewer** · warns · long-comment"}
+          - {path: calc/calc.go, line: 11, contains: ["**workline reviewer** · **blocks** · correctness", "What would fix it: divide by len(values)", "<!-- workline:line=correctness/d861c7fa46d7 -->"]}

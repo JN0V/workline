@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 01f4f82
+checked: 5eb8a2f
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -93,6 +93,10 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
 - `apply` runs when `judge` failed too (`if: always()`): a pull request
   the reviewer holds still gets its comment ([#226](https://github.com/JN0V/workline/issues/226)); the workflow fails
   by `judge`'s verdict.
+- `apply` posts the reviewer's findings on their lines, a pull request
+  review (`pull-requests: write`); a token without it leaves them in the
+  summary comment, said
+  ([more](../roles/reviewer/docs/lines.md)).
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
 - **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,

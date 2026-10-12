@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 01f4f82
+checked: 5eb8a2f
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -186,7 +186,8 @@ comment of a reviewer that blocks (`artifacts: when: always`,
 - **Runs**: `$WORKLINE_RUNS_DIR` (else `.git/workline/runs/`), each with
   `out/calls.jsonl`, the agent's answer and what was refused.
 - **On the forge**: a comment on the merge request (the documentalist's list
-  for a person, the reviewer's summary), edited on each run; doc fixes
+  for a person, the reviewer's summary), edited on each run; the
+  reviewer's findings on their lines, in the forge's review; doc fixes
   committed to its branch (`Workline-Role: documentalist`); gardening's
   merge requests on `workline/<role>/<task>`; a release's fix on
   `workline/<role>/release`; issues (the product owner's comment and

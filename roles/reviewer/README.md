@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 76661ee
+checked: 5eb8a2f
 verified: agent:claude-code
 ---
 # Reviewer
@@ -12,7 +12,7 @@ flowchart LR
   finds["<b>Finds</b><br/>what the change breaks<br/>what it leaves out<br/>each finding checked"]
   asks["<b>Asks</b><br/>a choice only<br/>a person makes"]
   person["<b>Left to a person</b><br/>fix, approve, merge"]
-  out["<b>Lands in</b><br/>your terminal<br/>one comment<br/>issues"]
+  out["<b>Lands in</b><br/>your terminal<br/>its lines, one summary<br/>issues"]
   when --> role
   role --> finds --> out
   role --> asks --> out
@@ -55,10 +55,11 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 | `schedule` | CI gardening, opt-in: `reviewer` after `product-owner` in the `schedule` line | one issue the product owner refined, every spec lens |
 
 - **Outputs**: on a machine, the findings and `out/review.json` for your
-  agent to fix; on a merge request, one summary comment edited each run,
-  the findings for GitHub's code scanning or GitLab's Code Quality
-  (`--sarif`, `--code-quality`), and an issue (`needs-triage`) for each
-  verified finding outside the change.
+  agent to fix; on a merge request, each finding as a comment on its
+  line in the forge's own review ([more](docs/lines.md)), one summary
+  comment edited each run, the findings for GitHub's code scanning or
+  GitLab's Code Quality (`--sarif`, `--code-quality`), and an issue
+  (`needs-triage`) for each verified finding outside the change.
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request), one judge call for each important
   finding; a spec, one call. Capped at 200000 tokens a run
@@ -92,7 +93,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
 7. **The judge**: each important finding checked apart, reading the code
    it stands on; a no drops it ([more](docs/judge.md)).
 8. **The verdict**: rules block; findings warn until measured
-   (`ai-findings`); one summary comment on a merge request.
+   (`ai-findings`); on a merge request, each finding on its line and one
+   summary comment.
 
 The run's tokens are capped and said ([the budget](docs/judge.md#the-budget)).
 
@@ -112,7 +114,9 @@ gives them to your agent ([more](docs/run.md#on-a-machine)).
 `workline init --review` adds the reviewer to the project's merge-request
 line. On GitHub the judging job needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which the [template](../../ci/github/workline.yml)
-gives it. A blocked merge request still gets the comment
+gives it. Each finding is a comment on its line, which the author answers
+or resolves there; one still open is not posted again
+([more](docs/lines.md)). A blocked merge request still gets its comments
 ([more](docs/run.md#on-a-merge-request)).
 
 ## Settings
@@ -134,7 +138,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}` (below) |
 | `judge-at-least` | `context` | `model` or `provider`: the judge's independence |
-| `forge-writes` | `true` | `false`: no summary comment nor issue, the verdict only |
+| `forge-writes` | `true` | `false`: no comment, on a line or the summary, nor issue: the verdict only |
 | `finder-floor` | `true` | each lens looks for a number of candidates first; never a floor on what is shown |
 | `tests` | `**/*_test.*`, `**/test_*`, `**/*.spec.*`, `**/tests/**`, … | the test files a tests-lens judge is shown |
 

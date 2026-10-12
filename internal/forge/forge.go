@@ -281,7 +281,7 @@ func Open(spec, repo string) (Forge, error) {
 		}
 		return &command{repo: repo, script: strings.TrimPrefix(spec, "cmd:")}, nil
 	case strings.HasPrefix(spec, "fake:"):
-		return &Fake{Path: strings.TrimPrefix(spec, "fake:")}, nil
+		return &Fake{Path: strings.TrimPrefix(spec, "fake:"), Repo: repo}, nil
 	}
 	return nil, fmt.Errorf("unknown forge %q (github, gitlab, local, cmd:<command>, fake:<file>, none)", spec)
 }
@@ -299,5 +299,9 @@ func KeepsBranches(f Forge) bool {
 // Marker is the hidden text that makes a comment findable again.
 func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
-// Every forge workline speaks keeps a backlog.
-var _ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
+// Every forge workline speaks keeps a backlog; GitHub, GitLab and the
+// simulated forge take comments on a merge request's lines.
+var (
+	_ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
+	_ = []LineReviewer{&github{}, &gitlab{}, &Fake{}}
+)

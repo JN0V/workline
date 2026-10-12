@@ -1,0 +1,24 @@
+case: reviewer/line-comment-open-not-repeated
+about: "A finding whose comment is still open on the merge request, on the same line, is not posted again: the review finds its key — its lens, its file and the line's text — in a thread no one resolved. The summary comment says it is still open, and links to the merge request's changes, where it shows (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: []
+        threads: [{path: calc/calc.go, line: 11, body: "**workline reviewer** · warns · correctness\n\n**Important: Average divides by one less than the count**\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  applied: [comment]
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count"}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains: "**On their lines**: 1 comment, in [the review](https://forge.example/merge-requests/5/changes) (1 still open from before, not posted again)"
+        threads: [{path: calc/calc.go, line: 11, contains: "<!-- workline:line=correctness/d861c7fa46d7 -->"}]

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strconv"
@@ -23,9 +24,13 @@ import (
 // engine writes is written by "workline-bot", the token's user. GraphQL
 // refuses all: a split's children are listed in the parent's body. Its
 // issue links are GitLab Free's: is_blocked_by refused, for its license.
+// A merge request's diff is the repository's, from its base (main) to its
+// branch (HEAD), as GitLab computes it; a discussion on a line it does not
+// show, or a kept line without its old one, is taken on no line, as
+// gitlab.com does (#277).
 type gitlabMock struct {
-	file string
-	mu   sync.Mutex
+	file, repo string
+	mu         sync.Mutex
 }
 
 type gitlabState struct {
@@ -38,12 +43,12 @@ type gitlabState struct {
 
 var (
 	issuePath   = regexp.MustCompile(`^/issues/(\d+)$`)
-	notesPath   = regexp.MustCompile(`^/issues/(\d+)/notes(?:/(\d+))?$`)
+	notesPath   = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
+	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions)?$`)
 	linksPath   = regexp.MustCompile(`^/issues/(\d+)/links$`)
 	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
 	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
 	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
-	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/notes)?$`)
 )
 
 const tokenUser = "workline-bot"
@@ -86,6 +91,14 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		}
 		return nil
 	}
+	mergeRequest := func(id int) *forge.FakeItem {
+		for i := range s.MergeRequests {
+			if s.MergeRequests[i].ID == id {
+				return &s.MergeRequests[i]
+			}
+		}
+		return nil
+	}
 	user := func(name string) map[string]any { return map[string]any{"username": name} }
 	asIssue := func(it forge.FakeItem) map[string]any {
 		v := map[string]any{"id": it.ID + 1000, "iid": it.ID, "title": it.Title, "description": it.Body,
@@ -110,35 +123,6 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed]})
 		}
 		return out, 200
-	case mrPath.MatchString(p):
-		// A merge request: its notes, read and written; closed by PUT
-		// state_event=close.
-		sm := mrPath.FindStringSubmatch(p)
-		id, _ := strconv.Atoi(sm[1])
-		var mr *forge.FakeItem
-		for i := range s.MergeRequests {
-			if s.MergeRequests[i].ID == id {
-				mr = &s.MergeRequests[i]
-			}
-		}
-		if mr == nil {
-			return notFound, 404
-		}
-		switch {
-		case sm[2] != "" && method == "GET":
-			out := []map[string]any{}
-			for i, c := range mr.Comments {
-				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
-			}
-			return out, 200
-		case sm[2] != "" && method == "POST":
-			mr.Comments = append(mr.Comments, forge.FakeComment{Body: form.Get("body"), Author: tokenUser})
-			return map[string]any{"id": id*1000 + len(mr.Comments)}, 201
-		case method == "PUT" && form.Get("state_event") == "close":
-			mr.Closed = true
-		}
-		return map[string]any{"iid": mr.ID, "source_branch": mr.Branch, "target_branch": mr.Base, "source_project_id": 1, "target_project_id": 1,
-			"state": map[bool]string{true: "closed", false: "opened"}[mr.Closed]}, 200
 	case p == "/issues" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.Issues {
@@ -189,8 +173,11 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		return asIssue(*it), 200
 	case notesPath.MatchString(p):
 		sm := notesPath.FindStringSubmatch(p)
-		id, _ := strconv.Atoi(sm[1])
+		id, _ := strconv.Atoi(sm[2])
 		it := issue(id)
+		if sm[1] == "merge_requests" {
+			it = mergeRequest(id)
+		}
 		if it == nil {
 			return notFound, 404
 		}
@@ -200,6 +187,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			for i, c := range it.Comments {
 				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
 			}
+			for i, t := range it.Threads { // a discussion's note is a note too, as GitLab lists it
+				out = append(out, map[string]any{"id": id*1000 + 500 + i + 1, "body": t.Body, "system": false, "author": user(tokenUser), "type": "DiffNote"})
+			}
 			if q.Get("sort") != "asc" { // GitLab's default: the newest first
 				slices.Reverse(out)
 			}
@@ -208,7 +198,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			it.Comments = append(it.Comments, forge.FakeComment{Body: form.Get("body"), Author: tokenUser})
 			return map[string]any{"id": id*1000 + len(it.Comments)}, 201
 		case method == "PUT":
-			n, _ := strconv.Atoi(sm[2])
+			n, _ := strconv.Atoi(sm[3])
 			i := n - id*1000 - 1
 			if i < 0 || i >= len(it.Comments) {
 				return notFound, 404
@@ -219,6 +209,14 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			it.Comments[i] = forge.FakeComment{Body: form.Get("body"), Author: tokenUser}
 			return map[string]any{"id": n}, 200
 		}
+	case mrPath.MatchString(p):
+		sm := mrPath.FindStringSubmatch(p)
+		id, _ := strconv.Atoi(sm[1])
+		it := mergeRequest(id)
+		if it == nil {
+			return notFound, 404
+		}
+		return m.mergeRequest(s, it, sm[2], method, form)
 	case closedBy.MatchString(p):
 		// The merge requests that closed it, merged; refs "!7", id 5000+7.
 		id, _ := strconv.Atoi(closedBy.FindStringSubmatch(p)[1])
@@ -292,4 +290,123 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		return map[string]any{"name": form.Get("name")}, 201
 	}
 	return notFound, 404
+}
+
+// mergeRequest answers a merge request — closed by PUT state_event=close —,
+// its diffs and its discussions; its notes are notesPath's.
+func (m *gitlabMock) mergeRequest(s *gitlabState, it *forge.FakeItem, part, method string, form url.Values) (any, int) {
+	base, head := it.Base, it.Branch
+	if base == "" {
+		base = "main"
+	}
+	if head == "" {
+		head = "HEAD"
+	}
+	git := func(args ...string) string {
+		out, _ := exec.Command("git", append([]string{"-C", m.repo}, args...)...).Output()
+		return strings.TrimSpace(string(out))
+	}
+	web := fmt.Sprintf("https://gitlab.example/group/proj/-/merge_requests/%d", it.ID)
+	switch {
+	case part == "" && (method == "GET" || method == "PUT"):
+		if method == "PUT" && form.Get("state_event") == "close" {
+			it.Closed = true
+		}
+		source := 1
+		if it.Fork {
+			source = 2
+		}
+		return map[string]any{"iid": it.ID, "title": it.Title, "description": it.Body, "source_branch": it.Branch, "target_branch": it.Base,
+			"source_project_id": source, "target_project_id": 1, "web_url": web, "state": map[bool]string{true: "closed", false: "opened"}[it.Closed],
+			"diff_refs": map[string]any{"base_sha": git("merge-base", base, head), "start_sha": git("rev-parse", base), "head_sha": git("rev-parse", head)}}, 200
+	case part == "/diffs" && method == "GET":
+		return diffsOf(git("diff", "--no-color", "--no-ext-diff", "-M", "-U3", base+"..."+head)), 200
+	case part == "/discussions" && method == "GET":
+		out := []map[string]any{}
+		for i, t := range it.Threads {
+			out = append(out, map[string]any{"id": fmt.Sprintf("d%d", i+1), "notes": []map[string]any{{"id": it.ID*1000 + 500 + i + 1, "body": t.Body,
+				"resolvable": true, "resolved": t.Resolved, "position": map[string]any{"new_path": t.Path, "new_line": t.Line}}}})
+		}
+		return out, 200
+	case part == "/discussions" && method == "POST":
+		if s.ReviewRefused != "" {
+			return map[string]any{"message": "403 Forbidden"}, 403
+		}
+		path, line, old := form.Get("position[new_path]"), form.Get("position[new_line]"), form.Get("position[old_line]")
+		n, _ := strconv.Atoi(line)
+		shown := false
+		for _, d := range diffsOf(git("diff", "--no-color", "--no-ext-diff", "-M", "-U3", base+"..."+head)) {
+			if d["new_path"] == path {
+				kept, ok := newLines(fmt.Sprint(d["diff"]))[n]
+				shown = ok && (kept == 0 && old == "" || kept > 0 && old == strconv.Itoa(kept))
+			}
+		}
+		if form.Get("position[head_sha]") != git("rev-parse", head) || !shown {
+			path, n = "", 0 // tried on gitlab.com: a discussion on no line, said by nothing
+		}
+		it.Threads = append(it.Threads, forge.FakeThread{Path: path, Line: n, Body: form.Get("body")})
+		return map[string]any{"id": fmt.Sprintf("d%d", len(it.Threads))}, 201
+	}
+	return map[string]any{"message": "404 Not Found"}, 404
+}
+
+// diffsOf splits a git diff by file, as GitLab's diffs give it: each
+// file's paths and its hunks.
+func diffsOf(out string) []map[string]any {
+	diffs := []map[string]any{}
+	var cur map[string]any
+	var hunks []string
+	header := false
+	flush := func() {
+		if cur != nil {
+			cur["diff"] = strings.Join(hunks, "\n") + "\n"
+			diffs = append(diffs, cur)
+		}
+		cur, hunks = nil, nil
+	}
+	for _, l := range strings.Split(out, "\n") {
+		switch {
+		case strings.HasPrefix(l, "diff --git "):
+			flush()
+			cur, header = map[string]any{}, true
+		case header && strings.HasPrefix(l, "--- "):
+			cur["old_path"] = strings.TrimPrefix(strings.TrimPrefix(l, "--- "), "a/")
+		case header && strings.HasPrefix(l, "+++ "):
+			cur["new_path"] = strings.TrimPrefix(strings.TrimPrefix(l, "+++ "), "b/")
+		case strings.HasPrefix(l, "@@"):
+			header = false
+			hunks = append(hunks, l)
+		case !header && cur != nil:
+			hunks = append(hunks, l)
+		}
+	}
+	flush()
+	return diffs
+}
+
+// newLines are the new lines a file's hunks show, each with its old line
+// when kept, 0 when added.
+func newLines(diff string) map[int]int {
+	lines := map[int]int{}
+	o, n := 0, 0
+	for _, l := range strings.Split(diff, "\n") {
+		if strings.HasPrefix(l, "@@") {
+			fmt.Sscanf(l, "@@ -%d", &o)
+			if i := strings.Index(l, "+"); i > 0 {
+				fmt.Sscanf(l[i:], "+%d", &n)
+			}
+			continue
+		}
+		switch {
+		case strings.HasPrefix(l, "+"):
+			lines[n] = 0
+			n++
+		case strings.HasPrefix(l, "-"):
+			o++
+		case strings.HasPrefix(l, " "):
+			lines[n] = o
+			n, o = n+1, o+1
+		}
+	}
+	return lines
 }

@@ -205,6 +205,17 @@ type itemWant struct {
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
 	Labels          *[]string           `yaml:"labels"`     // the exact set
 	Reactions       map[string][]string `yaml:"reactions"`  // on its comments, by the comment's id
+	Threads         *[]threadWant       `yaml:"threads"`    // a merge request's comments on lines, exactly these, in the order posted
+}
+
+// threadWant is a comment on a line of a merge request: its file and
+// line, texts it holds and does not, whether it is resolved.
+type threadWant struct {
+	Path     string `yaml:"path"`
+	Line     int    `yaml:"line"`
+	Contains texts  `yaml:"contains"`
+	Lacks    texts  `yaml:"lacks"`
+	Resolved *bool  `yaml:"resolved"`
 }
 
 type result struct {
@@ -400,7 +411,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		if forgeFile == "" {
 			return []string{"run.forge gitlab needs given.forge"}
 		}
-		srv := httptest.NewServer(&gitlabMock{file: forgeFile})
+		srv := httptest.NewServer(&gitlabMock{file: forgeFile, repo: repo})
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
@@ -1063,6 +1074,44 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 		}
 		if fmt.Sprint(gr) != fmt.Sprint(wm.Reactions) {
 			p = append(p, fmt.Sprintf("forge: %s %v reactions = %v, want %v", kind, wm.ID, gr, wm.Reactions))
+		}
+	}
+	if wm.Threads != nil {
+		p = append(p, compareThreads(fmt.Sprintf("%s %v", kind, wm.ID), *wm.Threads, found["threads"])...)
+	}
+	return p
+}
+
+// compareThreads checks a merge request's comments on lines, in the order
+// posted: exactly as many as wanted, each on its path and line, holding
+// what it should and not what it should not, resolved or not when said.
+func compareThreads(item string, want []threadWant, got any) []string {
+	have, _ := got.([]any)
+	if len(have) != len(want) {
+		return []string{fmt.Sprintf("forge: %s has %d threads, want %d (threads: %v)", item, len(have), len(want), have)}
+	}
+	var p []string
+	for i, w := range want {
+		g, _ := have[i].(map[string]any)
+		if w.Path != "" && fmt.Sprint(g["path"]) != w.Path {
+			p = append(p, fmt.Sprintf("forge: %s thread %d path = %v, want %s", item, i+1, g["path"], w.Path))
+		}
+		if w.Line != 0 && fmt.Sprint(g["line"]) != fmt.Sprint(w.Line) {
+			p = append(p, fmt.Sprintf("forge: %s thread %d line = %v, want %d", item, i+1, g["line"], w.Line))
+		}
+		if w.Resolved != nil && (g["resolved"] == true) != *w.Resolved {
+			p = append(p, fmt.Sprintf("forge: %s thread %d resolved = %v, want %v", item, i+1, g["resolved"] == true, *w.Resolved))
+		}
+		body := fmt.Sprint(g["body"])
+		for _, t := range w.Contains {
+			if !strings.Contains(body, t) {
+				p = append(p, fmt.Sprintf("forge: %s thread %d does not hold %q: %q", item, i+1, t, body))
+			}
+		}
+		for _, t := range w.Lacks {
+			if strings.Contains(body, t) {
+				p = append(p, fmt.Sprintf("forge: %s thread %d holds %q: %q", item, i+1, t, body))
+			}
 		}
 	}
 	return p

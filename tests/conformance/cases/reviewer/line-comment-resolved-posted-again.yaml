@@ -1,0 +1,24 @@
+case: reviewer/line-comment-resolved-posted-again
+about: "A finding found again on a line where a person resolved its comment is posted again, in a new review: resolved said it was dealt with, and it still stands (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: []
+        threads: [{path: calc/calc.go, line: 11, resolved: true, body: "**workline reviewer** · warns · correctness\n\n<!-- workline:line=correctness/d861c7fa46d7 -->"}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comment-contains: "**On their lines**: 1 comment, in [the review](https://forge.example/merge-requests/5#review-1) (1 posted now)"
+        threads:
+          - {path: calc/calc.go, line: 11, resolved: true}
+          - {path: calc/calc.go, line: 11, resolved: false, contains: ["the mean of [2, 4] comes out 6", "<!-- workline:line=correctness/d861c7fa46d7 -->"]}

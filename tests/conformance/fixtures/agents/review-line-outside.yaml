@@ -1,0 +1,16 @@
+# A lens of the reviewer, on the `reviewed` fixture once a push has put
+# Average's division back as main has it and added Half: two defects on
+# lines the push changed, one of them a line the merge request's diff no
+# longer shows.
+- finding:
+    severity: important
+    title: Average panics on no values
+    why: an empty slice divides by zero
+    cause: {path: calc/calc.go, quote: "return total / len(values)"}
+    fix: return 0 for no values
+- finding:
+    severity: important
+    title: Half divides by three
+    why: Half(6) is 2, not 3
+    cause: {path: calc/calc.go, quote: "return n / 3"}
+    fix: divide by 2

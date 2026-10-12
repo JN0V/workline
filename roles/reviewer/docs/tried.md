@@ -712,3 +712,53 @@ branch each time.
   the conflict's markers, #304's line and import marked removed.
 - **Not tried**: a real agent on the resolution; a real pull request on
   the forge, rebased or merged (the record in the summary comment).
+
+## 2026-10-12 — each finding on its line (#277), live
+
+The engine of the branch, run by hand in clones of the sandboxes,
+`run-role reviewer --event merge-request`; the lenses a `cmd:` agent
+printing planted findings, the judge a `cmd:` printing yes: no paid
+agent, no token counted. Each commit said `[skip ci]`: no pipeline ran
+(GitLab's sandbox holds an agent's token).
+
+**GitHub**, jn0v-lab/workline-sandbox#1: `src/auth/expiry.go` new, the
+token's lifetime doubled; `ai-findings: {correctness: block}`.
+
+- **First push**, one lens: one review, state `COMMENTED`, two comments
+  on their lines (`expiry.go:6` marked `**blocks**`, verified;
+  `token.go:4`, a nit, `warns`); the summary comment one row each, its
+  title, linking to the review.
+- **Second push**: the lifetime put back as `main` has it, `Valid` added.
+  One comment posted, on `Valid`'s line. The nit planted on the line put
+  back was read outside the change, the reviewer's change being the whole
+  merge request's: counted (`nits-outside`), on no line.
+- **Every lens on the whole change** (`lenses=all`): the two open
+  correctness findings not posted again, one of them under a reworded
+  title; the tests lens's finding on `Valid`'s line posted as a thread of
+  its own beside the open one. The summary: "1 posted now, 2 still open".
+- **A thread resolved by hand**, the same run again: posted again.
+- **A line outside the diff**, posted by hand: GitHub refused the whole
+  review, 422 "Path could not be resolved"; why the diff is read first.
+
+**GitLab**, gitlab.com JN0V/workline-sandbox!5: `idle.go`'s comment line
+removed, its timeout turned to seconds.
+
+- **First push**: two discussions, a new line (`idle.go:5`) and a kept
+  one beside the removal (`idle.go:8`, given with its old line 9); the
+  summary linking to the merge request's changes.
+- **Every lens on the whole change**: none posted, "2 still open".
+- **A discussion resolved by hand**, the same run again: posted again.
+- **A line outside the diff**, posted by hand: GitLab answered 201 and
+  made a discussion on no line, silently (deleted after).
+
+**workline#316 itself**, the pull request building this: judged by the
+branch's engine, applied by the last release, which knows no review. The
+summary kept its placeholder and lost the finding's why. **Fixed**: the
+summary holds each finding in full where the review is said, which such
+an engine leaves as it is (`TestSummaryReviewRegion`). The finding, true:
+a file gone at the head gave every line the same key. **Fixed**: such a
+line is keyed by its number (`TestLineKey`).
+
+Both sandboxes closed after, their branches deleted. **Not tried**: a token without
+the right to review (the simulated forges and a scripted `gh` only); a
+fork; CI's two jobs, judged then applied; a real agent's findings.

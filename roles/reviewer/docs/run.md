@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 76661ee
+checked: 5eb8a2f
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -151,6 +151,9 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 `pull-requests: read`), which
 [ci/github/workline.yml](../../../ci/github/workline.yml) gives it.
 
+- **Each finding on its line**, in the forge's own review; the summary
+  comment keeps a row for each, its title, and links to the review
+  ([each finding on its line](lines.md)).
 - **A blocked merge request still gets the comment**
   ([#226](https://github.com/JN0V/workline/issues/226)): what blocks
   first, marked `**blocks**`, then the warnings; the issues outside the

@@ -1,0 +1,19 @@
+case: reviewer/line-comment-on-a-forge-without-them
+about: "On a forge that takes no comment on a line — one plugged by a command — each finding goes, in full, into the summary comment, said why; nothing fails and no warning is raised: the forge has no such thing to refuse (#277)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {forge: 'cmd:sh "$FIXTURES/forges/logged.sh"'}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 1}, ai: "fake:review-related"}
+expect:
+  status: pass
+  applied: [comment]
+  no-findings: [{rule: line-comment-refused}]
+  files:
+    .git/forge-requests.jsonl:
+      contains:
+        - '"operation":"sticky"'
+        - "**Here only**, not on their lines — this forge takes no comment on a line:\\n\\n`calc/calc.go:11`"
+        - "> the mean of [2, 4] comes out 6, and one value divides by zero"
+      lacks: "**On their lines**"

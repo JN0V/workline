@@ -17,14 +17,14 @@ hold:
 
 1. **Nothing buildable in Missing**: open. Most of Missing is still to
    build: the developer's loop
-   ([#117](https://github.com/JN0V/workline/issues/117)), inline comments,
-   a removal's reach.
+   ([#117](https://github.com/JN0V/workline/issues/117)), a removal's
+   reach.
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
 3. **AI verdicts measured**: in part.
    [#90](https://github.com/JN0V/workline/issues/90)'s step 1 ran once
    (Missing 3); five runs a case (ADR-0014) and the judge's false
-   negatives counted again (Missing 9) are left.
+   negatives counted again (Missing 8) are left.
 
 ## Built
 
@@ -46,6 +46,7 @@ hold:
 | `ai-findings` by lens (#222): a lens set to block fails the run, the others warn, a lens not named warns, one value still sets every lens; a misspelt lens or value stops the run; of two findings on one line, the blocking lens leads (tried.md, planted) | `ai-findings-by-lens-blocks`, `ai-findings-by-lens-warns`, `ai-findings-lens-unnamed-warns`, `ai-findings-one-value-every-lens`, `ai-findings-misspelt-refused`, `ai-findings-blocking-lens-leads-merge` |
 | A blocked merge request still gets the comment (#226): what blocks first, marked; the record moved when every lens answered; a rule that blocks comments too; applied by the applying job, the judging one failing (tried.md, planted) | `blocked-run-still-comments`, `blocked-run-moves-the-record`, `blocked-run-judged-apart-still-blocks`, `rules-block-still-comments`, `TestGitLabApplyRunsWhenTheJudgeFails`, `TestGitHubApplyRunsWhenTheJudgeFails` |
 | `workline review`, findings as JSON; findings on one line merged | `local-review-outputs-json` |
+| Each finding on its line (#277), in the forge's own review: GitHub's pull request review (event `COMMENT`), GitLab's discussions, a kept line with its old line; one comment a finding, its key (lens or rule, file, the line's text) hidden; open, not posted again; resolved and found again, posted again; the diff read first, a line it does not show or a forge refusing leaves the finding in full in the summary comment, said (`line-comment-refused`), never a failed run; the summary a row each, its title, a link to the review. Live: jn0v-lab/workline-sandbox#1 and gitlab.com JN0V/workline-sandbox!5, planted findings, no paid agent (tried.md) | `line-comment-on-each-finding`, `line-comment-on-a-removed-line`, `line-comment-open-not-repeated`, `line-comment-resolved-posted-again`, `line-comment-outside-the-diff-in-the-summary`, `line-comment-refused-said-in-the-summary`, and on GitLab `line-comment-on-each-finding-on-gitlab`, `line-comment-on-a-kept-line-on-gitlab`, `line-comment-open-not-repeated-on-gitlab`, `line-comment-outside-the-diff-on-gitlab`, `line-comment-refused-on-gitlab`; on a forge with none, `line-comment-on-a-forge-without-them`; `TestGitHubReview`, `TestGitHubReviewRefused`, `TestShown`, `TestFillReview`, `TestLineKey`, `TestSummaryReviewRegion` |
 | Intent (#126): a change saying `Closes #N` (a commit or the merge request) has N read from the forge, its Need, Verification and Scope given to the `intent` lens; a part left out quoted from the issue (`#N`), found again there, judged shown the issue and the whole merge request's change, so a part an earlier commit did is refused; no issue closed, not asked, said; one unread, said (`issue-unread`). Live on the sandbox: #39's token-age part found, verified (tried.md) | `intent-need-left-out-found`, `intent-not-asked-without-an-issue`, `intent-issue-unread-said`, `intent-judge-reads-the-whole-merge-request`, `TestCloses`, `TestIssueText` |
 | The author's claims contested (#126): the commit messages whole and the merge request's title and body given as testimony; the `claims` lens quotes the claim, found again in what the author said or dropped, its cause the contradicting line. Live: "No change in behaviour." over `>` turned `>=`, verified (tried.md) | `claim-contradicted-is-a-finding-on-the-line`, `merge-request-body-given-as-testimony`, `TestGitHubMergeRequest` |
 | A decision for a person (#126): a finding holding `decision` — a trade-off, what the issue leaves open — asked as a question under **Questions for a person**, its cause quoted; never important, judged, blocking nor an issue; one outside the change dropped. Live: workline-sandbox#42, the lock's length #41 leaves open asked, not reported as a defect (tried.md) | `decision-asked-of-a-person-not-judged`, `decision-in-its-own-section-on-the-merge-request` |
@@ -106,32 +107,36 @@ Each measure's story is in tried.md.
    lenses in doubt. Not measured yet: the
    finder floor's worth (a run with `finder-floor: false`), five runs a
    case (ADR-0014).
-4. **Inline comments** on the forge's own review (#277).
-5. **Every lens once when ready, tried live** (#129): opened ready is
+4. **Every lens once when ready, tried live** (#129): opened ready is
    tried on GitHub (workline#307: five lenses, 33k tokens in, then one a
    push); a draft marked ready is not, nor a run on ready a rule held;
    on GitLab, whether `CI_JOB_TOKEN` reads the notes on gitlab.com, and
    the next pipeline after marking ready.
-6. **The tests lens outside the change**: a test missing for code the
+5. **The tests lens outside the change**: a test missing for code the
    change did not touch was opened as an issue (tried.md, runs 9 to 11);
    in #90's step 1 the tests lens left such code alone (0 of 1), while the
    edge-cases lens had three weak overflow findings outside the change
    verified, each an issue on a forge.
-7. **A removal's reach past three lines**: a removed guard whose defect
+6. **A removal's reach past three lines**: a removed guard whose defect
    shows further down (a slice ten lines on) is still sent outside the
    change; the window is a diff's context, not the code's flow.
-8. **The lenses together, measured** (#147): validated on #146's
+7. **The lenses together, measured** (#147): validated on #146's
    commits, 104.7k tokens against 430k, two of the three true findings
    verified, the third refused by the judge for want of material — since
    #127, verified (tried.md); the lenses together not yet measured against
    the lenses apart on the evaluation's cases.
-9. **The judge's false negatives, counted again** (#90, #127): the
+8. **The judge's false negatives, counted again** (#90, #127): the
    evaluation's cases with the judges reading whole functions, by a real
    agent; and a call across languages other than by name (a script's
    JSON read by Go) is found only when the finding names the function.
-10. **#126, measured further**: intent, claims and decisions by #90 (on
+9. **#126, measured further**: intent, claims and decisions by #90 (on
     by default until then); a decision on workline's own pull requests,
     not tried. The diff-alone facet, off: worth trying again on changes
     whose context explains a wrong line away (a helper elsewhere that
     seems to guard it), which the evaluation's cases do not plant, and
     with five runs (ADR-0014).
+10. **A file moved** (seen building #277): the change is read without
+    renames, so every line of a moved file is the change's; a defect from
+    before on a line the move kept goes to the author, and on the forge,
+    whose diff follows the move, stays in the summary comment, not on its
+    line.

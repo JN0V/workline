@@ -1,0 +1,25 @@
+case: reviewer/line-comment-outside-the-diff-on-gitlab
+about: "On GitLab, a finding on a line the merge request's diff does not show gets no discussion — GitLab would take it as a discussion on no line, silently: it stays in the summary comment, in full, said why; the run does not fail for it. The one on a line the diff shows is a discussion there (#277)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i 's|return total / (len(values) - 1)|return total / len(values)|' calc/calc.go && printf '\\n// Half returns half of n.\\nfunc Half(n int) int {\\n\\treturn n / 3\\n}\\n' >> calc/calc.go && git commit -qam 'feat: half a count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: "HEAD~1..HEAD", lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-line-outside", forge: gitlab}
+expect:
+  status: pass
+  applied: [comment]
+  no-findings: [{rule: line-comment-refused}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "**On their lines**: 1 comment, in [the review](https://gitlab.example/group/proj/-/merge_requests/5/diffs) (1 posted now)"
+          - "**Here only**, not on their lines — its line is not in the merge request's diff, where the forge takes a comment:\n\n`calc/calc.go:11`"
+          - "> an empty slice divides by zero"
+        threads: [{path: calc/calc.go, line: 22, contains: "**Important: Half divides by three**"}]

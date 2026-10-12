@@ -95,6 +95,8 @@ before the push; and on the merge request, a safety net.
 every role's), and one summary comment on the merge request, edited on each
 run. Inline review comments, native to each forge, wait for the bot's own
 identity (#81).
+*(Amended 2026-10-12: each finding is a comment on its line, in the
+forge's own review; see Amendment, #277.)*
 
 **Caps.** Findings shown a run (`findings-max`, the rest counted); issues
 opened a run (`issues-max`); tokens (`ai-max-tokens`); only commits not
@@ -446,3 +448,33 @@ merge-request line; on in workline's own repository.
   merge request); every lens on every push of a ready merge request (the
   cost #147 cut); a label marking the review on ready (a second state
   beside the record).
+
+## Amendment (2026-10-12, #277: each finding on its line)
+
+- **Each finding with a line is a comment on it**, in the forge's own
+  review: GitHub's pull request review, event `COMMENT`; GitLab's
+  discussions on the diff. The author answers it, or resolves it, there,
+  as a person's. The summary comment keeps a row for each, its title,
+  and links to the review.
+- **Not waiting for #81**: a comment only says what was found, as the
+  summary did, and a review of event `COMMENT` neither approves nor
+  blocks, whoever posts it. Telling an agent from a person on the forge
+  stays #81's.
+- **One comment a finding**, keyed by its lens or rule, its file and the
+  line's text: open on the merge request, not posted again; resolved and
+  found again, posted again. Two lenses on one line, two comments, each
+  resolved apart.
+- **The diff read first**: GitHub refuses a whole review for one line its
+  diff does not show (422); GitLab takes it as a discussion on no line,
+  silently (both tried live, roles/reviewer/docs/tried.md). Such a
+  finding, or one a forge refuses (a token without the right), goes in
+  full into the summary comment, said, never a failed run.
+- **The trust split kept**: the judging job proposes the comments with
+  the summary, the applying job posts them with the write token
+  ([principle 6](../PRINCIPLES.md)).
+- **Rejected**: one comment a line, the lenses grouped (resolving one
+  finding would resolve the other); a key holding the line's number
+  (lines added above would post it again); a review of its own for each
+  GitHub comment, to get past a refused line (a notification each); an
+  unshown line's finding forced onto the nearest line shown (the comment
+  would point at code it is not about).
