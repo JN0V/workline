@@ -201,6 +201,8 @@ puts the label.
 - **Draft** turns auto-merge off; **another bot's own auto-merge** (a
   dependency bot's) is left to it; a fork's run is the fork's, so the
   templates keep no verdict of it.
+- **The texts**: principle 1 holds as written, the label being the
+  acceptance; concepts.md, ADR-0011, ADR-0020 and AGENTS.md amended.
 - **Tried live** on both forges, real auto-merges and merges, no agent:
   [tried.md](../../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live).
 - Conformance: merge/* (28 cases), the simulated forge, GitLab's mock, a
