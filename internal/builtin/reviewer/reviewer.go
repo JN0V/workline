@@ -234,7 +234,10 @@ func prepare(runDir, repo string, s Settings) int {
 	start := sp.From
 	// The run on ready (#129), every lens once, reads the whole change: its
 	// commits each read by one lens only, skipping them could leave nothing.
-	if os.Getenv("WORKLINE_EVENT") == "merge-request" && input(runDir, "lenses") == "all" {
+	// One a rule held owes it to the next run (Owed).
+	asked := input(runDir, "lenses")
+	ready := os.Getenv("WORKLINE_EVENT") == "merge-request" && (asked == "all" || asked == "" && rec.Owed)
+	if ready {
 		start = base
 	}
 	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Advisories: advisories}
@@ -244,7 +247,9 @@ func prepare(runDir, repo string, s Settings) int {
 	// The rules first: what they block on is fixed before any agent is
 	// asked, and asked again after each push while it is not.
 	if status(mech) == verdict.Block {
-		return held(runDir, s, review(st, nil, "the rules found what the author must fix first; the review follows once they pass"))
+		v := review(st, nil, "the rules found what the author must fix first; the review follows once they pass")
+		v.Record.Owed = v.Record.Owed || ready
+		return held(runDir, s, v)
 	}
 	// A lens reads what the commits not reviewed yet change, not every file
 	// of the merge request, nor the base's code they merged in; when they
@@ -395,7 +400,8 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 }
 
 // lenses are the lenses this run asks: every one on a machine, or when the
-// run is told `lenses=all`; on a merge request, the next in turn. A lens
+// run is told `lenses=all`, or the record owes them; on a merge request,
+// the next in turn. A lens
 // in skip, which has nothing to read in this change, is never asked. With
 // them, the diff-alone facet, when its setting is on; a run told which
 // lenses to ask asks it only when it names it, whatever its setting.
@@ -430,7 +436,7 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]st
 			}
 		}
 		return out, named, nil
-	case os.Getenv("WORKLINE_EVENT") != "merge-request":
+	case os.Getenv("WORKLINE_EVENT") != "merge-request", rec.Owed: // every lens owed by a run on ready a rule held (#129)
 		return usable, s.DiffAlone, nil
 	case len(usable) == 0:
 		return nil, s.DiffAlone, nil
@@ -1231,6 +1237,7 @@ func settle(runDir, repo string, s Settings) int {
 	if v.Complete && st.Spec == nil { // a spec is read whole each run: no commits to record
 		v.Record = st.Record.add(st.Commits, st.Patches)
 	}
+	v.Record.Owed = false // the lenses were asked: no lens is owed any more, whatever they answered
 	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged)

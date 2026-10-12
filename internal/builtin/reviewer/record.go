@@ -22,6 +22,7 @@ type Record struct {
 	Reviewed []string `json:"reviewed"`
 	Patches  []string `json:"patches,omitempty"`
 	Runs     int      `json:"runs"`
+	Owed     bool     `json:"owed,omitempty"` // every lens owed: the run on ready, a rule holding it, asked none (#129)
 }
 
 // SummaryKey keys the reviewer's one comment on a merge request.
@@ -29,7 +30,7 @@ const SummaryKey = "summary"
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
 // `patches=`, and still reads.
-var recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+) -->`)
+var recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)? -->`)
 
 // String is the record as the summary comment and the local file hold it;
 // with no patch id, as an engine before them wrote it.
@@ -38,7 +39,11 @@ func (r Record) String() string {
 	if len(r.Patches) > 0 {
 		patches = " patches=" + strings.Join(r.Patches, ",")
 	}
-	return fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d -->", strings.Join(r.Reviewed, ","), patches, r.Runs)
+	owed := ""
+	if r.Owed {
+		owed = " owed=all"
+	}
+	return fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 }
 
 // parseRecord reads a record from a text holding one; an empty one when none.
@@ -50,6 +55,7 @@ func parseRecord(text string) Record {
 	var r Record
 	r.Reviewed, r.Patches = ids(m[1]), ids(m[2])
 	r.Runs, _ = strconv.Atoi(m[3])
+	r.Owed = m[4] != ""
 	return r
 }
 

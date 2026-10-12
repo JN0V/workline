@@ -435,6 +435,12 @@ merge-request line; on in workline's own repository.
     (`CI_JOB_TOKEN`); unread, one lens, said in the log.
 - **Cost**: the run on ready is a full review, every lens on the whole
   change, as on a machine; within the same `ai-max-tokens`, unchanged.
+- **Owed when a rule holds it**: the run on ready a rule blocks asks no
+  lens; its record says so (`owed=all`), and the next run on the merge
+  request, whatever the template passed, reads every lens on the whole
+  change, then owes nothing. Only then: once the lenses were asked, a
+  budget spent or a lens failing owes nothing, or each push of a change
+  too large for the budget would pay a full review.
 - **Rejected**: the record saying which lenses read each commit (a
   record per lens, kept in step on every push, to spare a review once a
   merge request); every lens on every push of a ready merge request (the
