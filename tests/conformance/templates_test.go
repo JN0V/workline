@@ -3,7 +3,9 @@ package conformance
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -283,5 +285,178 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 	}
 	if n < 4 {
 		t.Fatalf("found %d jobs running workline apply, want the merge request's and the gardening's, here and in workline's own", n)
+	}
+}
+
+// Every lens of the reviewer once when a merge request becomes ready
+// (ADR-0020, #129): the templates pass `--input lenses=all` then, and only
+// then. GitHub says so by the event; GitLab starts no pipeline on draft →
+// ready, so its next pipeline reads the merge request's draft state and its
+// notes, a ready note newer than the reviewer's comment.
+
+func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
+	n := 0
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf struct {
+			On struct {
+				PullRequest struct {
+					Types []string `yaml:"types"`
+				} `yaml:"pull_request"`
+			} `yaml:"on"`
+			Jobs map[string]struct {
+				Steps []struct {
+					Env map[string]string `yaml:"env"`
+					Run string            `yaml:"run"`
+				} `yaml:"steps"`
+			} `yaml:"jobs"`
+		}
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		for _, ty := range []string{"opened", "synchronize", "reopened", "ready_for_review"} {
+			if !slices.Contains(wf.On.PullRequest.Types, ty) {
+				t.Errorf("%s: pull_request types %v lack %s", filepath.Base(f), wf.On.PullRequest.Types, ty)
+			}
+		}
+		for name, job := range wf.Jobs {
+			for _, st := range job.Steps {
+				if !strings.Contains(st.Run, "workline route merge-request") {
+					continue
+				}
+				n++
+				if st.Env["ACTION"] != "${{ github.event.action }}" || st.Env["DRAFT"] != "${{ github.event.pull_request.draft }}" {
+					t.Errorf("%s, job %s: ACTION and DRAFT are not the event's action and the pull request's draft: %v", filepath.Base(f), name, st.Env)
+				}
+				if !strings.Contains(st.Run, "${ready:+--input lenses=all}") {
+					t.Errorf("%s, job %s: the line is not given lenses=all when ready", filepath.Base(f), name)
+				}
+				var decide string
+				for _, l := range strings.Split(st.Run, "\n") {
+					if strings.HasPrefix(strings.TrimSpace(l), "ready=;") {
+						decide = l
+					}
+				}
+				for _, c := range []struct {
+					action, draft string
+					ready         bool
+				}{
+					{"opened", "false", true}, {"opened", "true", false}, {"ready_for_review", "false", true},
+					{"synchronize", "false", false}, {"reopened", "false", false},
+				} {
+					cmd := exec.Command("sh", "-ec", decide+"\necho \"[$ready]\"")
+					cmd.Env = []string{"ACTION=" + c.action, "DRAFT=" + c.draft}
+					out, err := cmd.CombinedOutput()
+					if got := strings.TrimSpace(string(out)) == "[1]"; err != nil || got != c.ready {
+						t.Errorf("%s, job %s: %s, draft %s: ready %v (%s, %v), want %v", filepath.Base(f), name, c.action, c.draft, got, out, err, c.ready)
+					}
+				}
+			}
+		}
+	}
+	if n < 2 {
+		t.Fatalf("found %d steps running the merge request's line, want the template's and workline's own", n)
+	}
+}
+
+func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
+	if _, err := exec.LookPath("jq"); err != nil {
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			t.Fatal("jq is not on PATH: the GitLab template's check runs it, in its image")
+		}
+		t.Skip("jq is not on PATH: the GitLab template's check for ready is not tried here")
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	ready, _ := top[".workline:ready"].([]any)
+	if len(ready) != 1 {
+		t.Fatalf(".workline:ready: %v, want one script", top[".workline:ready"])
+	}
+	judge, _ := top["workline:judge"].(map[string]any)
+	if script := fmt.Sprint(judge["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses") ||
+		!strings.Contains(script, "lenses=;") {
+		t.Errorf("workline:judge does not run .workline:ready and pass $lenses: %s", script)
+	}
+	// The API as GitLab answers it: the merge request, then its notes, the
+	// most recently updated first, a hundred a page (NOTES_<page>, the
+	// pages not named NOTES_REST, else none); read with the token the
+	// engine reads with. A query asking anything else is refused.
+	dir := t.TempDir()
+	curl := `#!/bin/sh
+case "$*" in *"$AUTH"*) ;; *) exit 22 ;; esac
+for a; do url=$a; done
+case "$url" in
+  *'/notes?order_by=updated_at&sort=desc&per_page=100&page='*)
+    [ -z "$NOTES_UNREAD" ] || exit 22
+    n=${url##*page=}; eval "f=\${NOTES_$n:-}"; [ -n "$f" ] || f=${NOTES_REST:-[]} ;;
+  */notes*) exit 22 ;;
+  *) f=$MR ;;
+esac
+[ -n "$f" ] || exit 22
+printf '%s' "$f"
+`
+	if err := os.WriteFile(filepath.Join(dir, "curl"), []byte(curl), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const (
+		summary = `{"system": false, "body": "Reviewed.\n\n<!-- workline:sticky=reviewer/summary -->"}`
+		marked  = `{"system": true, "body": "marked this merge request as **ready**"}`
+		other   = `{"system": false, "body": "Looks good."}`
+	)
+	full := "[" + strings.Repeat(other+",", 99) + other + "]" // a full page, neither note on it
+	for _, c := range []struct {
+		name, draft, mr, token string
+		pages                  []string // the notes, a page each
+		rest                   string   // every page after them
+		unread, all            bool
+	}{
+		{name: "opened ready: no comment yet", draft: "false", pages: []string{"[" + other + "]"}, all: true},
+		{name: "marked ready since the last review", draft: "false", pages: []string{"[" + marked + "," + summary + "]"}, all: true},
+		{name: "a push after the review on ready", draft: "false", pages: []string{"[" + other + "," + summary + "," + marked + "]"}},
+		{name: "a draft", draft: "true", pages: []string{"[" + marked + "]"}},
+		{name: "before GitLab 17.10: ready, by the API", mr: `{"draft": false}`, pages: []string{"[" + marked + "," + summary + "]"}, all: true},
+		{name: "before GitLab 17.10: a draft, by the API", mr: `{"draft": true}`, pages: []string{"[" + marked + "]"}},
+		{name: "read with GITLAB_TOKEN when the job has one", draft: "false", token: "read", pages: []string{"[" + marked + "]"}, all: true},
+		{name: "the comment past a full page", draft: "false", pages: []string{full, "[" + summary + "," + marked + "]"}},
+		{name: "the ready note past a full page", draft: "false", pages: []string{full, "[" + marked + "," + summary + "]"}, all: true},
+		{name: "the comment past two full pages", draft: "false", pages: []string{full, full, "[" + summary + "]"}},
+		{name: "every page full, neither note: 50 pages read, then one lens", draft: "false", rest: full},
+		{name: "the notes unread", draft: "false", unread: true},
+	} {
+		env := []string{"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), "CI_API_V4_URL=https://gitlab.invalid/api/v4",
+			"CI_PROJECT_ID=1", "CI_MERGE_REQUEST_IID=5", "CI_JOB_TOKEN=job", "MR=" + c.mr, "NOTES_REST=" + c.rest, "AUTH=JOB-TOKEN: job"}
+		for i, p := range c.pages {
+			env = append(env, fmt.Sprintf("NOTES_%d=%s", i+1, p))
+		}
+		if c.unread {
+			env = append(env, "NOTES_UNREAD=1")
+		}
+		if c.token != "" {
+			env = append(env, "GITLAB_TOKEN="+c.token, "AUTH=PRIVATE-TOKEN: "+c.token)
+		}
+		if c.draft != "" {
+			env = append(env, "CI_MERGE_REQUEST_DRAFT="+c.draft)
+		}
+		cmd := exec.Command("sh", "-ec", fmt.Sprint(ready[0])+"\necho \"lenses[$lenses] page[$page]\"")
+		cmd.Env = env
+		out, err := cmd.CombinedOutput()
+		if got := strings.Contains(string(out), "lenses[--input lenses=all]"); err != nil || got != c.all {
+			t.Errorf("%s: every lens %v, want %v (%v)\n%s", c.name, got, c.all, err, out)
+		}
+		if (c.unread || c.rest != "") && !strings.Contains(string(out), "could not be read") {
+			t.Errorf("%s: not said in the log:\n%s", c.name, out)
+		}
+		if c.rest != "" && !strings.Contains(string(out), "page[50]") {
+			t.Errorf("%s: not stopped at page 50:\n%s", c.name, out)
+		}
 	}
 }

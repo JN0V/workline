@@ -1,0 +1,18 @@
+case: reviewer/run-on-ready-held-by-a-rule-owes-every-lens
+about: "A merge request opened ready whose change a rule blocks asks no lens (#129): the comment's record says every lens is owed, for the run after the fix."
+given:
+  repo: reviewed
+  setup:
+    - "printf '\\n// Double returns twice n.\\n// The bug was an overflow here.\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: block
+  agent-calls: 0
+  applied: [comment]
+  findings: [{rule: bug-story, where: "calc/calc.go:21"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| **blocks** | bug-story |", "reviewed= runs=0 owed=all -->"]}

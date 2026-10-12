@@ -152,6 +152,15 @@ func TestRecord(t *testing.T) {
 	if old := parseRecord("<!-- workline:record reviewed=aa,bb runs=3 -->"); !slices.Equal(old.Reviewed, []string{"aa", "bb"}) || len(old.Patches) != 0 || old.Runs != 3 {
 		t.Errorf("a record without patch ids: %+v", old)
 	}
+	// Every lens owed by a run on ready a rule held (#129) reads back; a run
+	// added after it owes none.
+	owed := Record{Reviewed: []string{"aa"}, Runs: 1, Owed: true}
+	if back := parseRecord(owed.String()); !back.Owed || back.Runs != 1 || !slices.Equal(back.Reviewed, []string{"aa"}) {
+		t.Errorf("an owed record read back: %+v from %s", back, owed)
+	}
+	if back := parseRecord(owed.add([]string{"bb"}, nil).String()); back.Owed {
+		t.Errorf("a run added still owes every lens: %+v", back)
+	}
 }
 
 func TestAIFindingsByLens(t *testing.T) {

@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: a86296b
+checked: 7ebf882
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -206,7 +206,9 @@ saying so.
   `label-events`, its labels set and taken off with who (`{label, added,
   author, insider, bot, created}`). A comment is its text, or `{body,
   author, insider, bot, id}`, its id its place from 1 when not given; with
-  `scoped-labels: true`, the forge's labels are scoped, as GitLab's.
+  `scoped-labels: true`, the forge's labels are scoped, as GitLab's. The
+  repository's `setup` may write into it, at `$FORGE_FILE`, what only the
+  built repository knows: a commit's id in a record a comment holds.
 - **Simulated GitLab.** `forge: gitlab` runs the engine's own GitLab forge
   against a mock of GitLab's REST API (tests/conformance/gitlab_test.go)
   over the same file: its `members` (`{username, access_level}`) are the

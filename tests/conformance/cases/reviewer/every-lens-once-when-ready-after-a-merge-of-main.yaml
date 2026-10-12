@@ -1,0 +1,25 @@
+case: reviewer/every-lens-once-when-ready-after-a-merge-of-main
+about: "A branch that merged main in, every commit reviewed, then marked ready (#129): every lens reads the branch's whole change, not skipped as reviewed (#286, #134), and never main's code nor its commits."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "git checkout -q main && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add calc && git commit -qm 'feat: sum the values' && git checkout -q feature"
+    - "git merge -q --no-edit main"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD^1),$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by the tests lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=2 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: all}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-lenses}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "### calc/calc.go"], not-contains: ["calc/sum.go", "feat: sum the values"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=3 -->"}

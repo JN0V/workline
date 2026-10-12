@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -253,8 +254,18 @@ func runCase(t *testing.T, c *caseFile) []string {
 		}
 		env = append(env, n+"="+dir)
 	}
+	// The simulated forge first: the repository's setup may write into it
+	// (FORGE_FILE) what only the built repository knows, a commit's id.
+	forgeFile := ""
+	setupEnv := env
+	if len(c.Given.Forge) > 0 {
+		forgeFile = filepath.Join(work, "forge.json")
+		data, _ := json.Marshal(c.Given.Forge)
+		os.WriteFile(forgeFile, data, 0o644)
+		setupEnv = append(slices.Clone(env), "FORGE_FILE="+forgeFile)
+	}
 	repo := filepath.Join(work, "repo")
-	if err := build(repo, c.Given.Repo, c.Given.Setup, env); err != nil {
+	if err := build(repo, c.Given.Repo, c.Given.Setup, setupEnv); err != nil {
 		return []string{err.Error()}
 	}
 	if c.Given.Config != nil {
@@ -263,12 +274,6 @@ func runCase(t *testing.T, c *caseFile) []string {
 		os.WriteFile(filepath.Join(repo, ".workline", "config.yaml"), data, 0o644)
 	}
 
-	forgeFile := ""
-	if len(c.Given.Forge) > 0 {
-		forgeFile = filepath.Join(work, "forge.json")
-		data, _ := json.Marshal(c.Given.Forge)
-		os.WriteFile(forgeFile, data, 0o644)
-	}
 	forgeSpec := ""
 	if forgeFile != "" {
 		forgeSpec = "fake:" + forgeFile
