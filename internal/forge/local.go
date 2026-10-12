@@ -425,11 +425,12 @@ func (l *Local) CloseMergeRequest(branch, body, marker string) error {
 	}
 	for _, it := range items {
 		if it.Branch == branch && l.StateOf(it) == "open" {
-			t := Target{Kind: "merge-request", ID: it.ID}
-			if err := l.Comment(t, body, marker); err != nil {
-				return err
+			// One write, its comment and its state: never said closed and left open.
+			if !slices.ContainsFunc(it.Comments, func(c string) bool { return strings.Contains(c, marker) }) {
+				it.Comments = append(it.Comments, body+"\n\n"+marker)
 			}
-			return l.change(t, func(it *LocalItem) { it.State = "closed" })
+			it.State = "closed"
+			return l.save("merge-request", it)
 		}
 	}
 	return nil

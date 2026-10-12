@@ -62,6 +62,54 @@ func TestLocalRoundTrip(t *testing.T) {
 	}
 }
 
+// A merge request closed by a role: its comment and its state in one
+// write, so it is never said closed and left open; a write that fails is
+// said, the merge request still open.
+func TestLocalCloseMergeRequest(t *testing.T) {
+	for _, v := range []string{"CI", "GITHUB_ACTIONS", "GITLAB_CI"} {
+		t.Setenv(v, "")
+	}
+	repo := t.TempDir()
+	run := func(args ...string) {
+		cmd := exec.Command("git", append([]string{"-C", repo, "-c", "core.hooksPath=/dev/null", "-c", "user.name=T", "-c", "user.email=t@example.invalid"}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	run("init", "-q", "-b", "main")
+	run("commit", "-q", "--allow-empty", "-m", "first")
+	l := &Local{Repo: repo}
+	for _, b := range []string{"workline/documentalist/suspect", "workline/documentalist/stale"} {
+		run("checkout", "-q", "-b", b, "main")
+		run("commit", "-q", "--allow-empty", "-m", b)
+		if _, err := l.OpenMergeRequest(b, "main", "docs: "+b, "body"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dir := filepath.Join(repo, ".git", "workline", "merge-requests")
+	os.Chmod(dir, 0o555)
+	err := l.CloseMergeRequest("workline/documentalist/stale", "Closed: nothing is left to merge.", Marker("closed"))
+	os.Chmod(dir, 0o755)
+	if err == nil {
+		t.Fatal("a close that could not be written passed")
+	}
+	if open, _ := l.OpenMergeRequests("workline/"); len(open) != 2 {
+		t.Fatalf("after a failed close, open: %v", open)
+	}
+	for range 2 { // again: one comment, still closed
+		if err := l.CloseMergeRequest("workline/documentalist/stale", "Closed: nothing is left to merge.", Marker("closed")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	it, _ := l.Item("merge-request", 2)
+	if l.StateOf(it) != "closed" || len(it.Comments) != 1 || !strings.Contains(it.Comments[0], "nothing is left to merge") {
+		t.Fatalf("closed: %+v", it)
+	}
+	if open, _ := l.OpenMergeRequests("workline/"); len(open) != 1 || open[0] != "workline/documentalist/suspect" {
+		t.Fatalf("open: %v", open)
+	}
+}
+
 // The backlog of the local forge: the open issues listed, their comments
 // read back, a closing that lists the issue no more, closing again nothing.
 func TestLocalBacklog(t *testing.T) {
