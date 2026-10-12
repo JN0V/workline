@@ -225,7 +225,7 @@ puts the label.
   on GitHub, a head pushed after the yes, its other checks green, held
   five minutes by the required status until `follow` took the yes back:
   [tried.md](../../roles/documentalist/docs/tried.md#2026-10-12--the-merge-policy-cautious-live).
-- Conformance: merge/* (37 cases), the simulated forge, GitLab's mock, a
+- Conformance: merge/* (39 cases), the simulated forge, GitLab's mock, a
   `cmd:` forge; routing/forged-merge-is-judged;
   TestMergePolicyRunsAfterTheJudgeAndOnLabels, TestGitHubGuarded,
   TestSumChecks.
