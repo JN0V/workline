@@ -185,12 +185,12 @@ belong to that decision.
   in: their author pulls before pushing again.
 - **The checks run again** on each pull request merged into (with an App
   token): only those left in conflict.
-- **Approvals**: where the forge dismisses them on a push (GitHub's
-  "dismiss stale reviews", GitLab's "reset approvals on push"), a merge
-  resets them. Off here.
+- **Approvals**: a merge resets them where the forge dismisses them on a
+  push (GitHub's "dismiss stale reviews", GitLab's "reset approvals"). Off here.
 - **On the next push, the reviewer sees what the merge settled**
   ([ADR-0013's amendment](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12)):
   header lines, no lens asked for them alone. A protected branch: `merge-refused`.
+  A reviewer's block survives the merge once [#326](https://github.com/JN0V/workline/issues/326) is fixed; not exposed here, AI findings only warn.
 - **9 of 24 pull requests in two weeks** would have met no conflict by
   hand; the 9 mixed with a real overlap,
   [#316](https://github.com/JN0V/workline/pull/316) among them, still meet

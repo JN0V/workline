@@ -68,7 +68,10 @@ push to the default branch.
 - **The forge's message**, `Merge branch 'main' into <branch>`, the files
   settled, the trailer `Workline-Role: documentalist`: the line on it
   judges the commits before it, through its first parent, so a red verdict
-  stays red; the reviewer asks no lens for what it read already.
+  stays red; the reviewer asks no lens for what it read already. A
+  reviewer's own block surviving it waits on
+  [#326](https://github.com/JN0V/workline/issues/326); workline's
+  repository is not exposed, its AI findings only warn (`ai-findings`).
 - **Pushed as a fast-forward, never forced**, a lease on the tip it read:
   a push of theirs meanwhile stays, a branch deleted is not brought back;
   the next push to the base tries again.
