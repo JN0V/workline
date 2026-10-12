@@ -1,0 +1,16 @@
+case: documentalist/gardening-branch-close-refused-said
+about: "A close the forge refuses is said, never passed: gardening's tending stops `blocked-external`, the merge request still open, and runs again the next night (#303)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/checked: 1a8e5a4/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/^checked: .*/checked: abcdef1/; s/one hour/two hours/' docs/tech/auth.md && git commit -qam 'docs: tokens last two hours' && git push -q origin main"
+  forge: {fail-on-write: 1, merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: blocked-external
+  findings: [{rule: follow-failed, message: "the simulated forge failed write 1"}]
+  forge:
+    merge-requests:
+      - {id: 4, closed: false, comments: 0}

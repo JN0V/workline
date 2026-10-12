@@ -119,11 +119,12 @@ func follow(repo, base, branch, role string, local, gardening bool) (verdict.Fin
 				Message: fmt.Sprintf("%s moved under it, but %s: not rebuilt over it; rebase it by hand, or close it and the next release run proposes the fix again", base, who)}, nil
 		}
 		// Theirs now: said only when it no longer merges, as the forge
-		// shows it — git's own merge, in memory.
+		// shows it — git's own merge, in memory — or when that could not
+		// be told, never as a conflict it may not be.
 		clash, err := conflicts(repo, baseTip, tip)
 		switch {
 		case err != nil:
-			return verdict.Finding{Rule: "not-rebuilt", Level: "warn", Where: branch,
+			return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: branch,
 				Message: fmt.Sprintf("%s: left to them, neither rebuilt nor closed; whether it is in conflict with %s could not be told: %v", who, base, err)}, nil
 		case clash:
 			return verdict.Finding{Rule: "not-rebuilt", Level: "warn", Where: branch,
@@ -153,13 +154,27 @@ func follow(repo, base, branch, role string, local, gardening bool) (verdict.Fin
 			Message: fmt.Sprintf("%s holds its change already: nothing left to merge; close it", base)}, nil
 	}
 	if gardening {
-		only, err := recordOnly(repo, baseTip, tree)
+		// A record only: closed once base changed the docs it records —
+		// read again or vouched for there, it says nothing more. Base
+		// moving elsewhere leaves it true: rebuilt, so its docs are not
+		// judged again, an agent asked for the same record (#303).
+		docs, err := recordOnly(repo, baseTip, tree)
 		if err != nil {
 			return verdict.Finding{}, err
 		}
-		if only { // a record waiting on a moved base holds its task's docs back for nothing (#303)
-			return verdict.Finding{Rule: "closed", Where: branch,
-				Message: fmt.Sprintf("it only records when docs were read (`judged`), and %s moved since; the next gardening judges again those still due", base)}, nil
+		if len(docs) > 0 {
+			from, err := git(repo, nil, "merge-base", baseTip, tip)
+			if err != nil {
+				return verdict.Finding{}, err
+			}
+			moved, err := git(repo, nil, append([]string{"diff", "--name-only", from, baseTip, "--"}, docs...)...)
+			if err != nil {
+				return verdict.Finding{}, err
+			}
+			if moved != "" {
+				return verdict.Finding{Rule: "closed", Where: branch,
+					Message: fmt.Sprintf("it only records when docs were read (`judged`), and %s changed %s since; the next gardening judges again those still due", base, strings.Join(strings.Split(moved, "\n"), ", "))}, nil
+			}
 		}
 	}
 	commit, err := recommit(repo, tip, tree, baseTip)
@@ -181,8 +196,9 @@ func follow(repo, base, branch, role string, local, gardening bool) (verdict.Fin
 }
 
 // conflicts says whether merging tip into baseTip meets a conflict, as the
-// forge shows it: git's own merge, in memory (git merge-tree, 2.38).
-func conflicts(repo, baseTip, tip string) (bool, error) {
+// forge shows it: git's own merge, in memory (git merge-tree, 2.38). A
+// variable, for a test to make git fail.
+var conflicts = func(repo, baseTip, tip string) (bool, error) {
 	out, err := exec.Command("git", "-C", repo, "merge-tree", "--write-tree", "--no-messages", baseTip, tip).CombinedOutput()
 	var ee *exec.ExitError
 	switch {
@@ -198,26 +214,29 @@ func conflicts(repo, baseTip, tip string) (bool, error) {
 // never what the doc says (ADR-0013).
 var recordKey = regexp.MustCompile(`^(judged|judged-in-parts|verified):`)
 
-// recordOnly says whether going from baseTip to tree changes nothing but
-// the header lines recording when docs were read: what merging a merge
-// request holding only `judged` would bring.
-func recordOnly(repo, baseTip, tree string) (bool, error) {
+// recordOnly gives the docs, when going from baseTip to tree changes
+// nothing but the header lines recording when they were read — what
+// merging a merge request holding only `judged` would bring; none when it
+// changes anything else.
+func recordOnly(repo, baseTip, tree string) ([]string, error) {
 	changes, err := git(repo, nil, "diff", "--name-status", "--no-renames", "-z", baseTip, tree)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
+	var docs []string
 	parts := strings.Split(strings.TrimSuffix(changes, "\x00"), "\x00")
 	for i := 0; i+1 < len(parts); i += 2 {
 		if parts[i] != "M" {
-			return false, nil
+			return nil, nil
 		}
 		was, _ := blob(repo, baseTip, parts[i+1])
 		now, _ := blob(repo, tree, parts[i+1])
 		if unrecorded(was) != unrecorded(now) {
-			return false, nil
+			return nil, nil
 		}
+		docs = append(docs, parts[i+1])
 	}
-	return len(parts) > 1, nil
+	return docs, nil
 }
 
 // unrecorded is a doc without the lines of its header that record when it

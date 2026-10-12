@@ -1,0 +1,20 @@
+case: documentalist/gardening-branch-only-judged-rebuilt
+about: "A gardening merge request that only records when its doc was read (`judged`), main moved elsewhere — its doc unchanged there — is rebuilt on main, not closed: closed, the doc would be put before an agent again the next night, to the same record (#303)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/^checked: .*/&\\njudged: 1a8e5a4/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: [{id: 4, branch: workline/documentalist/suspect, base: main, labels: [], comments: []}]}
+run: {follow: [--gardening, --base, main]}
+expect:
+  status: pass
+  findings: [{rule: rebuilt, where: workline/documentalist/suspect, message: "on main"}]
+  no-findings: [{rule: closed, where: workline/documentalist/suspect}]
+  pushed:
+    workline/documentalist/suspect: {docs/tech/auth.md: "judged: 1a8e5a4", src/auth/token.go: "7200"}
+  on-top: {workline/documentalist/suspect: main}
+  forge:
+    merge-requests:
+      - {id: 4, closed: false, comments: 0}
