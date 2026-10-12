@@ -1,0 +1,18 @@
+case: reviewer/passed-stays-passed-on-the-same-commits-again
+about: "The reviewer passed a merge request, its finding warning: its lens is not set to block. The job runs again on the same commits, nothing new to read (#326): it passes again, no agent asked, nothing carried."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-related", then: again}
+expect:
+  status: pass
+  # The first run's lens and judge; none the second.
+  agent-calls: 2
+  summary: "the 1 commit was reviewed already: only the rules ran"
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 -->", comment-lacks: ["**blocks**", "workline:blocks"]}

@@ -98,7 +98,7 @@ func holds(blocks bool) string {
 // lineBody is a lens's finding on its line: what it holds and which lens
 // found it, then the finding whole — title, why, fix, how it was verified.
 func lineBody(s Settings, f Finding) string {
-	blocks := s.AIFindings.Blocks(f.Lens) && f.Severity == "important" && strings.HasPrefix(f.Verified, "verified")
+	blocks := s.blocking(f)
 	sev := "Important"
 	if f.Severity != "important" {
 		sev = "Nit"

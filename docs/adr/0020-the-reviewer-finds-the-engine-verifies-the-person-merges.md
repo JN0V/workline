@@ -478,3 +478,35 @@ merge-request line; on in workline's own repository.
   GitHub comment, to get past a refused line (a notification each); an
   unshown line's finding forced onto the nearest line shown (the comment
   would point at code it is not about).
+
+## Amendment (2026-10-12, #326: a block stands until a commit answers it)
+
+- **What was wrong**: a review that blocked still recorded its commits as
+  read. Run again with nothing new — the job again on the same commits, a
+  merge of the base that settled nothing — only the rules ran, and the
+  check turned green over a finding nobody answered
+  (roles/reviewer/docs/tried.md).
+- **The record keeps what blocked**: each finding that blocked, its lens,
+  its cause quoted, the commit reviewed; a line of its own beside the
+  record (`workline:blocks`), JSON with no `--` in it, which an engine
+  before it leaves. One that does not read is said, the record read as
+  unread (`record-unread`).
+- **It stands** on every run that reads nothing new, a rule holding it or
+  no agent included: no agent asked, the summary naming it, marked
+  `**blocks**`.
+- **It goes when a commit answers it**: its cause no longer found on the
+  change, as the engine finds a lens's (principle 4); or its lens reading
+  the cause's file again, in a whole review, without finding it, or its
+  judge saying no. Found again and verified, it is the new review's,
+  shown once. Its lens set back to `warn`, it goes.
+- **A commit elsewhere does not answer it**: the lens in turn reads the
+  new commits only, and would never see the cause again.
+- **No person's lift**: resolving its comment on the line is a reply, not
+  a verdict. The person merges where the forge lets them, or sets the
+  lens to `warn` (principle 1).
+- **Rejected**: the findings read back from the summary comment's table
+  (text written for people, cut to a title on a line, #277); a block
+  dropped on any new commit (an unrelated one would turn it green); a
+  block kept until its cause's line changes, whatever its lens reads
+  again (a finding the lens no longer makes would hold the merge request
+  for good).

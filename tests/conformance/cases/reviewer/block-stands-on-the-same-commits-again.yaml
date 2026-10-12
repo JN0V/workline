@@ -1,0 +1,19 @@
+case: reviewer/block-stands-on-the-same-commits-again
+about: "The reviewer blocked a merge request, a verified finding of a lens set to block; the job runs again on the same commits, nothing new to read (#326). The block stands, no agent asked again, and the summary comment names the finding."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-related", then: again}
+expect:
+  status: block
+  # The first run's lens and judge; none the second.
+  agent-calls: 2
+  summary: "the 1 commit was reviewed already: only the rules ran; 1 finding of a review before still blocks"
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| **blocks** | correctness | `calc/calc.go:11` | Important: Average divides by one less than the count", "no commit since answers it", " runs=1 -->", "<!-- workline:blocks "]}

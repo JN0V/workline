@@ -1,0 +1,35 @@
+case: reviewer/block-stands-after-workline-merges-main
+about: "The reviewer blocked a merge request on its commit, a verified finding of a lens set to block; then workline merges main into the branch, its trailer saying so, main having changed code (#326). The merge brings nothing to read: no agent asked, the merge recorded, and the block stands, the summary comment naming the finding again."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "git checkout -q main && printf 'package calc\\n\\n// Sum adds the values.\\nfunc Sum(values []int) int { return 0 }\\n' > calc/sum.go && git add calc && git commit -qm 'feat: sum the values' && git checkout -q feature"
+    - "git merge -q --no-ff --no-commit main && git commit -qm \"Merge branch 'main' into feature\" -m 'Workline-Role: documentalist'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "Important: Average divides by one less than the count (found reviewing"}]
+  summary: "no code changed since the last review"
+  forge:
+    merge-requests:
+      # The merge recorded beside the commit, the run not counted, the finding kept.
+      - {id: 5, comments: 1, comment-contains: ["| **blocks** | correctness | `calc/calc.go:11` | Important: Average divides by one less than the count", "nobody asked, the 1 new commits recorded; 1 finding of a review before still blocks", " runs=1 -->", "<!-- workline:blocks "]}

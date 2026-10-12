@@ -1,0 +1,14 @@
+case: reviewer/block-stands-on-a-machine-too
+about: "On a machine, a review blocked on a verified finding of a lens set to block; the review runs again with no new commit (#326). The record in the git directory keeps the finding: the block stands, no agent asked again."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related", then: again}
+expect:
+  status: block
+  # The first run's lens and judge; none the second.
+  agent-calls: 2
+  summary: "only the rules ran; 1 finding of a review before still blocks"
+  files: {.git/workline/reviewer-record: {contains: [" runs=1 -->", "<!-- workline:blocks [{\"lens\":\"correctness\""]}}

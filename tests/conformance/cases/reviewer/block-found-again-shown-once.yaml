@@ -1,0 +1,32 @@
+case: reviewer/block-found-again-shown-once
+about: "The reviewer blocked a merge request on its commit; the author pushes a commit changing the cause's file elsewhere, its cause left as it was (#326). The lens that found it reads the file again and finds it again, verified: it blocks as this review's finding, shown once, not again as the one standing from before."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "sed -i 's|// Parse reads a count.|// Parse reads a count, zero when it is no number.|' calc/calc.go && git commit -qam 'docs: say what Parse gives for no number'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: block
+  findings: [{rule: correctness, level: block, where: "calc/calc.go:11", message: "Average divides by one less than the count"}]
+  no-findings: [{rule: correctness, message: "no commit since answers it"}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: [" runs=2 -->", "| **blocks** | correctness |", "<!-- workline:blocks "], comment-lacks: ["no commit since answers it", "of a review before"]}
