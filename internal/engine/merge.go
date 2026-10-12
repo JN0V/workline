@@ -325,6 +325,18 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result) (strin
 			Message: why + ": nothing turned on, no merge request brought up to date"})
 		return sum + ": nothing turned on, the token's merges would start no pipeline", nil
 	}
+	// The label in the forge's list, for a person to put, in bulk, from a
+	// saved filter (ADR-0038).
+	if b, ok := f.(forge.Backlog); ok {
+		err := b.EnsureLabel(backlog.AcceptedLabel(f), "0e8a16", backlog.AcceptedSays)
+		switch {
+		case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+			return "", err
+		case err != nil:
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "label-not-made", Level: "warn",
+				Message: fmt.Sprintf("the label %s could not be made in the forge's list, for a person to put: %v", backlog.AcceptedLabel(f), err)})
+		}
+	}
 	open, err := f.ListMergeRequests()
 	if err != nil {
 		return "", err
@@ -466,6 +478,15 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	}
 	by := "@" + yes.Author
 	if st.Draft {
+		// The veto by Draft: auto-merge on goes off, and stays off once
+		// it is ready until the label is put again.
+		if st.AutoMerge {
+			if err := off(); err != nil {
+				return nil, false, err
+			}
+			say("draft", "", fmt.Sprintf("accepted by %s, then marked a draft: auto-merge turned off, until the label is put again", by))
+			return nil, false, nil
+		}
 		say("draft", "", fmt.Sprintf("accepted by %s, but a draft: nothing turned on until it is marked ready", by))
 		return nil, false, nil
 	}
