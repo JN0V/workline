@@ -281,19 +281,31 @@ func explainsFlow(p string, lines []line, flow, headings []string) string {
 	if matchAny(flow, p) {
 		return "it explains a flow (`reader.flow`)"
 	}
-	var res []*regexp.Regexp
+	type named struct {
+		heading string
+		re      *regexp.Regexp
+	}
+	var res []named
 	for _, h := range headings {
-		if h = strings.TrimSpace(h); h != "" {
-			res = append(res, regexp.MustCompile(`(?i)(?:^|[^\pL\pN])`+regexp.QuoteMeta(h)+`(?:$|[^\pL\pN])`))
+		words := strings.Fields(h)
+		if len(words) == 0 {
+			continue
 		}
+		quoted := make([]string, len(words))
+		for i, w := range words {
+			quoted[i] = regexp.QuoteMeta(w)
+		}
+		// Words apart by any space, so "How  it works" or a no-break space still match.
+		res = append(res, named{strings.Join(words, " "),
+			regexp.MustCompile(`(?i)(?:^|[^\pL\pN])` + strings.Join(quoted, `[\s\p{Zs}]+`) + `(?:$|[^\pL\pN])`)})
 	}
 	for _, l := range lines {
 		if l.heading == 0 {
 			continue
 		}
-		for i, re := range res {
-			if re.MatchString(l.text) {
-				return fmt.Sprintf("its heading at line %d names a flow (%q, `reader.flow-headings`)", l.n, strings.TrimSpace(headings[i]))
+		for _, h := range res {
+			if h.re.MatchString(l.text) {
+				return fmt.Sprintf("its heading at line %d names a flow (%q, `reader.flow-headings`)", l.n, h.heading)
 			}
 		}
 	}
