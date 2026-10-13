@@ -99,20 +99,28 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 	}
 	if mr.Here {
 		out, err := g.api("--paginate", "repos/{owner}/{repo}/activity?per_page=100&ref="+url.QueryEscape("refs/heads/"+mr.Branch),
-			"--jq", `.[] | select(.activity_type == "push" or .activity_type == "force_push" or .activity_type == "branch_creation") | {head: .after, at: .timestamp, by: (.actor.login // "")}`)
+			"--jq", `.[] | select(.activity_type == "push" or .activity_type == "force_push" or .activity_type == "branch_creation") | {head: .after, at: .timestamp, by: (.actor.login // ""), created: (.activity_type == "branch_creation")}`)
 		if err != nil {
 			return MergeState{}, err
 		}
 		pushes, err := lines[struct {
 			Push
-			By string `json:"by"`
+			By      string `json:"by"`
+			Created bool   `json:"created"`
 		}](out)
 		if err != nil {
 			return MergeState{}, err
 		}
 		for i := len(pushes) - 1; i >= 0; i-- { // newest first: oldest first
 			st.Pushes = append(st.Pushes, pushes[i].Push)
-			st.Pushers = append(st.Pushers, pushes[i].By)
+			// Who pushed since the branch was created: its creation not in
+			// the activity, they are not known.
+			if pushes[i].Created {
+				st.Pushers = []string{}
+			}
+			if st.Pushers != nil {
+				st.Pushers = append(st.Pushers, pushes[i].By)
+			}
 		}
 		if st.Pushes == nil {
 			st.Pushes = []Push{} // the activity says none: not "unknown"

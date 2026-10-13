@@ -144,8 +144,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		// pushes, by whom the simulated forge says.
 		out := []map[string]any{}
 		for _, it := range s.MergeRequests {
-			for _, push := range it.Pushes {
-				out = append(out, map[string]any{"action_name": "pushed to", "author_username": push.By, "created_at": push.At,
+			for i, push := range it.Pushes {
+				action := map[bool]string{true: "pushed new", false: "pushed to"}[i == 0] // the first creates the branch
+				out = append(out, map[string]any{"action_name": action, "author_username": push.By, "created_at": push.At,
 					"push_data": map[string]any{"ref": it.Branch, "ref_type": "branch"}})
 			}
 		}

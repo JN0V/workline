@@ -15,14 +15,10 @@ import (
 )
 
 // The merge policy's `normal` level (ADR-0042, amended): workline's own
-// routine merge requests merge with no person's yes. Workline's own is told
-// by the forge, never by what a commit says of itself: opened by the App
-// workline's token writes as, every push to its branch the App's, every
-// commit committed under its name and workline's own by its tree, every
-// page it changes a doc of the documentalist's that agents are not told to
-// read. The line passed on the head with every agent's review whole. Each
-// such merge is recorded on the merge request; a revert of one sends its
-// kind back to a person's yes (ADR-0026; demote.go).
+// routine merge requests — as the forge says it: opened and pushed by the
+// App, its commits and pages workline's — merge with no person's yes, the
+// line passed on the head. Each is recorded on it; a revert of one sends
+// its kind back to a person's yes (demote.go).
 
 // MergeNormal is the merge policy's level where workline's own routine
 // merge requests need no person's yes (role.MergeLevels).
@@ -327,8 +323,9 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 		w.say("draft", "", "workline's own, but a draft: nothing turned on")
 		return nil, nil
 	}
-	// Who pushed, as the forge says: a commit says anything of itself.
-	if st.Pushers == nil {
+	// Who pushed, as the forge says: a commit says anything of itself. None
+	// named is not known: never taken for the App's.
+	if len(st.Pushers) == 0 {
 		return waits("", "opened by workline, but who pushed to its branch the forge does not say")
 	}
 	for _, p := range st.Pushers {

@@ -275,9 +275,18 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 		return nil, err
 	}
 	was := rec.text()
+	// Past the commit the record read; the base rewritten since, past what
+	// it shares with it; no record yet, the last revertWindow, said.
 	from := ""
-	if rec.read != "" && isAncestor(o.Repo, rec.read, baseTip) {
+	switch {
+	case rec.read != "" && isAncestor(o.Repo, rec.read, baseTip):
 		from = rec.read
+	case rec.read != "":
+		from, _ = git(o.Repo, nil, "merge-base", rec.read, baseTip)
+	}
+	if from == "" {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-record-started",
+			Message: fmt.Sprintf("no record of the merge policy to read from (%s): the base's last %d commits read for reverts, none before", recordRef, revertWindow)})
 	}
 	// Every parent: a revert merged with a merge commit is on its second.
 	history, err := commits(o.Repo, baseTip, from, revertWindow)

@@ -94,9 +94,10 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 	return st, nil
 }
 
-// pushers are who pushed to branch, oldest first, as the project's push
-// events name them, from a week before the merge request was opened:
-// workline's own branch is pushed as its merge request is opened.
+// pushers are who pushed to branch since it was created, oldest first, as
+// the project's push events name them, read from a week before the merge
+// request was opened — workline's own branch is created as its merge
+// request is opened —; nil when its creation is not among them: not known.
 func (g *gitlab) pushers(branch, opened string) ([]string, error) {
 	q := "projects/:id/events?action=pushed&per_page=100"
 	if t, err := time.Parse(time.RFC3339, opened); err == nil {
@@ -107,6 +108,7 @@ func (g *gitlab) pushers(branch, opened string) ([]string, error) {
 		return nil, err
 	}
 	events, err := pages[struct {
+		Action string `json:"action_name"`
 		Author string `json:"author_username"`
 		Push   struct {
 			Ref     string `json:"ref"`
@@ -116,9 +118,16 @@ func (g *gitlab) pushers(branch, opened string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	who := []string{}
+	var who []string
 	for i := len(events) - 1; i >= 0; i-- { // newest first: oldest first
-		if e := events[i]; e.Push.RefType == "branch" && e.Push.Ref == branch {
+		e := events[i]
+		if e.Push.RefType != "branch" || e.Push.Ref != branch {
+			continue
+		}
+		if e.Action == "pushed new" {
+			who = []string{}
+		}
+		if who != nil {
 			who = append(who, e.Author)
 		}
 	}
