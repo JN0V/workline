@@ -283,11 +283,15 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   kind. **In the job's summary**: the pull request, "with no person's
   yes", its kind and why; its first line says which kinds merge alone and
   which wait again.
-- **A revert is read on the base**, its last 100 first-parent commits at
-  each run, in git's words (`This reverts commit …`, the commit reverted
+- **A revert is read on the base**, its last 100 commits at each run —
+  every parent: a revert merged by a merge commit is on its second —, in
+  git's words (`This reverts commit …`, the commit reverted
   naming `#N`), GitLab's (`This reverts merge request !N`) or GitHub's
-  (`Reverts owner/repo#N`). The pull request it names holds the record:
-  its kind waits for a person's yes again ([ADR-0026]).
+  (`Reverts owner/repo#N`). GitHub's own Revert says only `Revert
+  "<title>"`, tried live: the merge of that title it undoes exactly — the
+  same change, inverted (`git patch-id`) —, else the newest. The pull
+  request it names holds the record: its kind waits for a person's yes
+  again ([ADR-0026]).
 - **Kept in an issue**, one per kind, opened by `follow`: which pull
   request, which revert, and how to restore — **close the issue**. Each
   run reads the open ones. A comment on the reverted pull request, its
