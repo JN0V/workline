@@ -55,8 +55,9 @@
 - **Where a measure lives**: one that decides something (a default, a
   bar, a criterion) in an ADR or docs/research/; a try's numbers in its
   pull request.
-- **ADR-0036, amended**: its third criterion's result is recorded in an
-  ADR or docs/research/, linked from status.md, no longer in status.md or
+- **[ADR-0036](0036-a-roles-status-is-earned-by-written-criteria.md),
+  amended**: its third criterion's result is recorded in an ADR or
+  docs/research/, linked from status.md, no longer in status.md or
   tried.md.
 
 ## Consequences
