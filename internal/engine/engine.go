@@ -905,6 +905,10 @@ type runState struct {
 	// branch, which the tool rewrites: the patches go to a merge request of
 	// their own on its base instead (ADR-0017).
 	Release string `yaml:"release,omitempty"`
+	// releaseHeld: why the release's fix is no merge request of the
+	// role's, but a comment for a person (ResumeFrom, a release branch
+	// someone else than workline's App pushed to).
+	releaseHeld string
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
@@ -1121,7 +1125,10 @@ func fixElsewhere(f forge.Forge, st runState, runDir string) (verdict.Finding, i
 		return verdict.Finding{}, 0, err
 	}
 	why := "the forge does not say which branch the release goes into"
-	if to.Base != "" {
+	switch {
+	case st.releaseHeld != "":
+		why = st.releaseHeld
+	case to.Base != "":
 		why, err = commitOntoBase(st, to.Base, mr.Title, forge.KeepsBranches(f))
 		if err != nil {
 			return verdict.Finding{}, 0, err

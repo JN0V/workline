@@ -123,13 +123,14 @@ type runSpec struct {
 // the base checked out, the head the tip of a branch of origin, the run's
 // folders first changed as the merge request's code could have.
 type applyFrom struct {
-	MergeRequest int              `yaml:"merge-request"`
-	Base         string           `yaml:"base"`    // the branch checked out before applying
-	Head         string           `yaml:"head"`    // a branch of origin: its tip is --head
-	Run          map[string]any   `yaml:"run"`     // keys of out/run.yaml written over
-	Intents      []map[string]any `yaml:"intents"` // proposals added to out/intentions.yaml
-	Listed       string           `yaml:"listed"`  // the run listed at this path, not its own
-	Setup        []string         `yaml:"setup"`   // commands run in the repository first: what its branches became since the run
+	MergeRequest int               `yaml:"merge-request"`
+	Base         string            `yaml:"base"`    // the branch checked out before applying
+	Head         string            `yaml:"head"`    // a branch of origin: its tip is --head
+	Run          map[string]any    `yaml:"run"`     // keys of out/run.yaml written over
+	Intents      []map[string]any  `yaml:"intents"` // proposals added to out/intentions.yaml
+	Listed       string            `yaml:"listed"`  // the run listed at this path, not its own
+	Setup        []string          `yaml:"setup"`   // commands run in the repository first: what its branches became since the run
+	Env          map[string]string `yaml:"env"`     // variables of the applying job (WORKLINE_APP)
 }
 
 // thenLine is the line run after a case's run: the event, the branch of
@@ -656,6 +657,11 @@ func runCase(t *testing.T, c *caseFile) []string {
 		resume := exec.Command(engineBin, resumeArgs...)
 		resume.Env = env
 		resume.Dir = repo
+		if a := c.Run.ApplyFrom; a != nil {
+			for k, v := range a.Env {
+				resume.Env = append(slices.Clone(resume.Env), k+"="+v)
+			}
+		}
 		if judgeCache != "" {
 			os.RemoveAll(judgeCache)
 			resume.Env = append(env, "XDG_CACHE_HOME="+t.TempDir())

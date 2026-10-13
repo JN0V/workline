@@ -152,6 +152,9 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
 			case rs.IsBranch(mr.Branch):
 				st.Release = mr.Branch
+				if st.releaseHeld, err = releaseNotOwn(f, mr.Branch); err != nil {
+					return err
+				}
 			}
 		}
 		back, err := onHead(from.Repo, from.Head)
@@ -177,6 +180,35 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
 	}
 	return res
+}
+
+// releaseNotOwn says why a release tool's branch is not workline's App's
+// alone, "" when it is: whoever else pushed to it could change its run, and
+// that run's fix would become a merge request the App opens, workline's own
+// work at the merge policy's `normal`. With the job's own token, the fix's
+// merge request is never workline's own: nothing to check.
+func releaseNotOwn(f forge.Forge, branch string) (string, error) {
+	app := strings.TrimSpace(os.Getenv("WORKLINE_APP"))
+	if app == "" {
+		return "", nil
+	}
+	who, err := forge.BranchPushers(f, branch)
+	if err != nil {
+		return "", err
+	}
+	if who == nil {
+		return fmt.Sprintf("who pushed to %s since it was created, the forge does not say; only workline's App may have, for its run's fix to be a merge request of the App's", branch), nil
+	}
+	for _, p := range who {
+		if p != app+"[bot]" {
+			name := "a hand the forge does not name"
+			if p != "" {
+				name = "@" + p
+			}
+			return fmt.Sprintf("%s pushed to %s, not workline's App alone: its run's fix is not opened as the App's merge request", name, branch), nil
+		}
+	}
+	return "", nil
 }
 
 // outOfLine says why a proposal is not one a merge request's line may

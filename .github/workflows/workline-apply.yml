@@ -99,6 +99,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
           APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # a release's fix is its merge request only if it alone pushed there
           NUMBER: ${{ steps.judged.outputs.number }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |

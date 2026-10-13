@@ -167,6 +167,9 @@ func checkReadsRunAsData(t *testing.T, name, jobName string, job keyJob) {
 			if !strings.Contains(s.Run, `--from-merge-request "$NUMBER" --head "$HEAD_SHA"`) || s.Env["HEAD_SHA"] != head {
 				t.Errorf("%s, job %s: applies a pull request's run without --from-merge-request and the event's head", name, jobName)
 			}
+			if s.Env["WORKLINE_APP"] != "${{ steps.app.outputs.app-slug }}" {
+				t.Errorf("%s, job %s: applies a pull request's run without naming the App, whose pushes alone let a release's fix be its merge request", name, jobName)
+			}
 		}
 		if strings.Contains(s.Run, "--verdict-only") && s.Env["HEAD_SHA"] != head {
 			t.Errorf("%s, job %s: keeps a verdict for another head than the event's", name, jobName)
