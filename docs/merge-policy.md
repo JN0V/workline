@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 1b219fa4
+checked: 9e9b88a9
 verified: agent:claude-code
 ---
 # The merge policy
@@ -110,10 +110,17 @@ merge: {autonomy: normal}   # a project's choice, never a default
   and that kind needs the label until a person who may push and merge
   **closes the issue**. A revert it cannot tie to a pull request holds
   every kind.
+- **What it read is the App's mark** on the base, a status only the App's
+  counts. None found — the first run at `normal` too —: every kind waits,
+  in an issue, until such a person closes it.
 - **Never alone**: the release tool's, a fork's, a person's, another
   bot's, a Draft; with a person's token, nothing.
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
+- **Not before [#331](https://github.com/JN0V/workline/issues/331)**, on
+  any project, workline included: a pull request's own run can reach the
+  App's key today, and with it open and push a `workline/` pull request
+  as the App, merged alone — bounded to the docs above.
 - **Tried on workline's own repository first**; agents' pull requests come
   later ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).
@@ -158,11 +165,12 @@ merge: {autonomy: normal}   # a project's choice, never a default
   waits for that merge request's own next pipeline.
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
   `guarded`, `accept`, `keep-verdict` and `verdict`; at `normal`, also
-  `app`, `merge-state`'s `pushers`, `closing`, `comments`, `comment`,
-  `issue` and `open-issue` ([forge command](spec/forge-command.md)). The
-  local forge has no auto-merge: said, nothing turned on.
-- **At `normal`**, `follow` pushes its record, `refs/workline/merge-policy`:
-  its token must write there.
+  `app`, `merge-state`'s `pushers`, `closing`, `mark`, `marked`,
+  `comments`, `comment`, `issue` and `open-issue`
+  ([forge command](spec/forge-command.md)). The local forge has no
+  auto-merge: said, nothing turned on.
+- **At `normal`**, the App marks each base commit it read for reverts
+  with the status `workline/merge-read`.
 
 ## What the summary says
 
@@ -174,7 +182,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `revert-unread` | a revert tied to no merge request: every kind demoted |
 | `merge-restored`, `restore-ignored`, `restore-unread` | a demotion's issue closed by a person who may lift it; by anyone else; unread |
-| `merge-record-started` | no record yet: the base's last 100 commits read for reverts |
+| `merge-record-lost`, `merge-unmarked` | no mark of the App's on the base's last 100 commits, or none kept: every kind held |
 | `updated` | first in line, brought up to date |
 | `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |

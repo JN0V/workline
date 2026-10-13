@@ -153,6 +153,9 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   to restore it —; the release tool's always.
 - `merge-app-unknown`: at `normal`, the token is a person's, or the forge
   does not say its App (GitHub: `WORKLINE_APP`): nothing merges alone.
+- `merge-record-lost`: at `normal`, no mark of the App's on the base's last
+  100 commits — the first run too —: someone who may push and merge closes
+  the issue it names, and workline's own work merges alone again.
 - `merge-unsupported`, `merge-token`, `merge-unguarded`: nothing is
   turned on — the local forge has no auto-merge, a GitHub job's own
   token, a base that does not require `workline/accepted`

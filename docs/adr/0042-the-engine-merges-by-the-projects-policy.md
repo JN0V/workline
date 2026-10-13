@@ -295,12 +295,17 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   kind, read back only from the App. **In the job's summary**: the pull
   request, "with no person's yes", its kind and why; its first line says
   which kinds merge alone and which wait again.
-- **Every revert on the base is read, once**: the engine's record on the
-  forge, the ref `refs/workline/merge-policy` — pushed by `follow`, whose
-  token writes, with a lease —, keeps the last base commit read and each
-  demotion; each run reads every commit past it, every parent — the base
-  rewritten, past what they share; no record yet, the last 100, said
-  (`merge-record-started`).
+- **Every revert on the base is read, once, from the App's mark**: a
+  status, `workline/merge-read`, the App sets on the base commit it read,
+  with the demotion issues then held — read back from the App only, as
+  `workline/verdict`: whoever can push sets a status of their own, never
+  the App's. Each run reads every commit past the newest mark on the
+  base's last 100 first-parent commits, every parent. A ref was tried
+  first: whoever can push rewrites one, and nothing records who did.
+- **No mark found — the first run at `normal`, a mark lost, `follow` not
+  run for long —: every kind waits for a person's yes**, in an issue the
+  App opens (`merge-record-lost`), until a person who may push and merge
+  closes it; the last 100 commits are read meanwhile.
 - **A revert names what it reverts** in git's words (`This reverts commit
   …`, the commit reverted naming `#N`), GitLab's (`This reverts merge
   request !N`) or GitHub's (`Reverts owner/repo#N`). GitHub's own Revert
@@ -311,12 +316,16 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   request reverted holds the App's record. **A revert tied to none** — a
   rebase merge, an edited squash message, an undo by hand — **sends every
   kind back**, said (`revert-unread`): failing closed.
-- **Said in an issue**, one per revert, opened by `follow` — its title
-  names the revert, so nobody opens it before; one of that title by
-  anyone else is never taken for it, and the demotion holds all the same.
+- **Held by an issue the App opened**, one per revert — its title names
+  the revert, so nobody opens it before. The forge records who opened an
+  issue, and that cannot be faked: each open demotion issue of the App's
+  holds its kind, whatever any mark says. One of that title by anyone
+  else is never taken for it: the revert is read again next run, held
+  meanwhile.
 - **Lifted only by a person**: the issue closed by someone who may push
   and merge, not a bot, as the forge says who closed it. Closed by anyone
-  else, the demotion holds, said (`restore-ignored`).
+  else, the demotion holds while the mark lists it, said
+  (`restore-ignored`).
 - **Why an issue**: written where people look, with what to do
   (principle 14), one notification, one click to restore. Not a label on
   the reverted pull request: closed, nobody looks there. Not the setting:
@@ -332,6 +341,11 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   in the summary at `normal`: merging it is the decision to release), a
   fork's, a person's, another bot's, one with a push or a commit not the
   App's, one changing what steers agents, a Draft.
+- **[#331] first, before `normal` is turned on anywhere, workline
+  included**: a pull request's own workflow run can reach the App's key
+  today, and with it open and push a `workline/` pull request as the App —
+  merged alone, bounded to the documentalist's docs agents are not told
+  to read. `normal` waits for the key to leave the pull request's runs.
 - **Criteria for offering `normal`** to other projects, as [ADR-0036]
   wrote a role's status — until they hold, the page says it is tried on
   workline's own repository first:
@@ -340,22 +354,23 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
      merges with no yes, each recorded, a revert demoting its kind as
      written;
   3. the maintainer validates [#322]'s Validation on real use.
-- **Limits**: whoever holds the App's key could act as it — the key in a
-  pull request's own run, [#331]. GitLab: the push events read from a
-  week before the merge request opened, the branch's creation among them
-  or it waits; the ref pushed there not tried live. A forge that does not
-  name who pushed or who closed (a `cmd:`
-  forge without `pushers`, `closing`): nothing merges alone, no demotion
-  is lifted.
+- **Limits**: whoever holds the App's key acts as it ([#331], above).
+  GitLab: the push events read from a week before the merge request
+  opened, the branch's creation among them or it waits; the mark is a
+  commit status of the project bot's — on a commit with a pipeline, an
+  external job of it —, not tried live. A forge that does not name who
+  pushed, who closed, or keeps no mark only the App writes (a `cmd:`
+  forge without `pushers`, `closing`, `mark`): nothing merges alone, no
+  demotion is lifted.
 - **Texts changed**: principle 1 — people accept the result, or write in
   advance the narrow class the line accepts for them;
   [concepts.md](../concepts.md#people); [config.md](../config.md), the
   governance line beside the key.
 
-Conformance: merge/normal-* (12), gitlab-normal-routine-merges-alone,
+Conformance: merge/normal-* (14), gitlab-normal-routine-merges-alone,
 cmd-normal-routine-merges-alone, cautious-routine-waits-for-a-yes;
 TestRoutineKind, TestSteering, TestRevertOf, TestOwnNote,
-TestRevertsPastTheRecordRead.
+TestMarkAndIssuesHoldDemotions.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md

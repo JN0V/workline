@@ -49,7 +49,7 @@ JSON request per operation ([forge-command.md](spec/forge-command.md)).
   of the API only: tell us what differs.
 - **The [merge policy](merge-policy.md)** needs `merge-state`,
   `auto-merge`, `guarded` and the verdict's operations — at `normal`,
-  `app` and `closing` too —, which the sample does not answer yet: said,
+  `app`, `closing`, `mark` and `marked` too —, which the sample does not answer yet: said,
   nothing turned on. The local forge has no auto-merge.
 - A forge of another shape: write the command the contract asks.
 

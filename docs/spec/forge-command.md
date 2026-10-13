@@ -88,6 +88,8 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `merge-state` | `id`, `branch` | what the merge policy weighs of an open merge request (ADR-0042) | `{head, draft, auto-merge, auto-merge-at, auto-merge-by, auto-merge-bot, checks, label-events, pushes, pushers}` — `auto-merge-at` when auto-merge was last turned on, on now or not; `auto-merge-bot` true when a bot turned it on; `checks` its head's, `success`, `pending` or `failure`, left out when unknown; `label-events` as `label-events` answers them, left out: no one's yes is read; `pushes` `[{head, at}]`, each head pushed and when, oldest first, left out: the commits' own dates are read; `pushers`, who pushed to its branch, each push, as the forge names them, left out: nothing is workline's own at `normal`. An error answered: said, the merge request left as it is |
 | `app` | | the bot the token writes as, and the name its jobs commit with: only what it opened, pushed and committed is workline's own at `normal` (ADR-0042) | `{login, committer}`; `{}` for a person's token, and nothing merges with no person's yes |
 | `closing` | `id` | who closed the issue last: a demotion at `normal` is lifted only by a person who may push and merge | `{author, bot, writer}`; `{}` when open or not said: the demotion holds |
+| `mark` | `commit`, `text` | keeps on the base commit, where only the App writes, that the merge policy read reverts up to it, with `text` (the issues held) | `{}`; an error answered: said, read again next run |
+| `marked` | `commit` | the mark the App kept on the commit, never one anyone else set | `{text}`; `{}` none; a command that knows neither: nothing merges alone at `normal` |
 | `auto-merge` | `id`, `branch`, `head`, `on` | turns the forge's own auto-merge on for the merge request at `head`, or off; off when off changes nothing | `{merged}` — true when the forge merged it at once, its rules met already; an error answered: said, nothing turned on |
 | `guarded` | `base` | whether a push after a person's yes is held until `follow` takes the yes back (ADR-0042) | `{why}` — empty when held; an error answered: said, nothing turned on |
 | `accept` | `head`, `ok`, `why` | marks the head accepted or not, where the forge needs it to hold a yes on that head (GitHub's required status); one that needs none does nothing | `{}` |
@@ -120,7 +122,7 @@ weekly sample written, a person's pull request merged with its base
 (`block`); merge/cmd-accepted-turns-auto-merge-on plugs another
 (fixtures/forges/merging.sh) answering `merge-state`, `auto-merge`,
 `guarded` and `verdict`; merge/cmd-normal-routine-merges-alone, a third
-(fixtures/forges/merging-routine.sh), `app` and `pushers` besides.
+(fixtures/forges/merging-routine.sh), `app`, `pushers`, `mark` and `marked` besides.
 The Forgejo sample, which knows neither yet, was run against a mock of the API only
 (ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
 pages, a pull request left out, `comments` with their authors,
