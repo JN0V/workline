@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.26.0](https://github.com/JN0V/workline/compare/v0.25.0...v0.26.0) (2026-10-13)
+
+
+### Features
+
+* **follow:** the forge merges what a person accepted (cautious) ([#329](https://github.com/JN0V/workline/issues/329)) ([b1f19b1](https://github.com/JN0V/workline/commit/b1f19b17e0ea74294d5bc0d206c7ba0b8c5c839f))
+
+
+### Bug Fixes
+
+* an unreadable hidden record is said, not taken as none ([#330](https://github.com/JN0V/workline/issues/330)) ([97fc1b9](https://github.com/JN0V/workline/commit/97fc1b96493bfbc9026f367be51c113ef67d07d2))
+
 ## [0.25.0](https://github.com/JN0V/workline/compare/v0.24.0...v0.25.0) (2026-10-12)
 
 
