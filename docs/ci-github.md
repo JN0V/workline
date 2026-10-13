@@ -179,7 +179,8 @@ with release-please, never a tag by hand:
   one pull request open, "chore(main): release X": the next version from
   the conventional commits since the last tag (`feat` moves the minor
   while workline is at 0.x, as a breaking change does), [CHANGELOG.md](../CHANGELOG.md), and
-  the templates' `WORKLINE_VERSION`, each on a line marked
+  the templates' `WORKLINE_VERSION` and the one in
+  [gitlab-trigger.md](gitlab-trigger.md)'s example, each on a line marked
   `x-release-please-version` (release-please-config.json);
 - the App's token, not the job's: a pull request opened with
   `GITHUB_TOKEN` starts no workflow, so its checks would never run;
