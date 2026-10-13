@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -109,7 +110,7 @@ func TestLocalCloseMergeRequest(t *testing.T) {
 		t.Fatalf("open: %v", open)
 	}
 	listed, err := l.ListMergeRequests()
-	if err != nil || len(listed) != 1 || listed[0] != (MergeRequest{ID: 1, Branch: "workline/documentalist/suspect", Base: "main", Here: true, Title: "docs: workline/documentalist/suspect", Body: "body"}) {
+	if err != nil || len(listed) != 1 || fmt.Sprint(listed[0]) != fmt.Sprint(MergeRequest{ID: 1, Branch: "workline/documentalist/suspect", Base: "main", Here: true, Title: "docs: workline/documentalist/suspect", Body: "body", Labels: []string{}}) {
 		t.Fatalf("open, listed: %+v, %v", listed, err)
 	}
 }

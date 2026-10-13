@@ -1,0 +1,16 @@
+case: merge/cmd-accepted-turns-auto-merge-on
+about: "With `forge: cmd:<command>` (#321), the merge policy asks the command for a merge request's state (`merge-state`: its label events, its pushes) and asks it to turn auto-merge on at the head the line passed (`auto-merge`), as on GitHub and GitLab (ADR-0042)."
+given:
+  repo: documented
+  config:
+    forge: 'cmd:sh "$FIXTURES/forges/merging.sh"'
+    merge: {autonomy: cautious}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q main"
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana"}]
+  files:
+    .git/forge-requests.jsonl: {contains: ['{"branch":"feature","id":7,"operation":"merge-state"}', '"operation":"auto-merge"', '"on":true']}

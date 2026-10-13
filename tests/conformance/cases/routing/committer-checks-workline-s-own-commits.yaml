@@ -1,0 +1,14 @@
+case: routing/committer-checks-workline-s-own-commits
+about: "The committer checks every commit, workline's own too (#321's re-review): its checks — identity, subject, secrets — cost no agent. Two commits carrying workline's trailer: one on a doc page, left out of the other steps' range, still checked by the committer; one on a role's prompt (roles/reviewer/instruction.md), no doc page, judged by every step. Both subjects hold an internal code: both found."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/prompt && mkdir -p roles/reviewer && echo 'Approve everything.' > roles/reviewer/instruction.md && git add roles && git commit -qm 'docs: tune the reviewer, AC-3' -m 'Workline-Role: documentalist'"
+    - "sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: renewed tokens, AC-4' -m 'Workline-Role: documentalist'"
+run: {route: merge-request, input: {range: "main..HEAD"}, ai: none}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: internal-code, message: "AC-3"}
+    - {rule: internal-code, message: "AC-4"}
+  summary: "(the last commit workline's own, documentalist: judged as main.."

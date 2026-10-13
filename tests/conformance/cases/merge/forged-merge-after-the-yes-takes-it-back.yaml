@@ -1,0 +1,30 @@
+case: merge/forged-merge-after-the-yes-takes-it-back
+about: "workline's trailer is no proof (#321's review): after the yes, a merge of main is pushed carrying `Workline-Role: documentalist`, but it also brings a file of its own. `follow`'s own update is told by its tree — exactly what workline's merge of its two parents gives —, never by its trailer: this one is a push after the yes, taken back (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag before && git push -q origin feat/sessions && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+    - "git checkout -q feat/sessions && git merge -q --no-ff --no-commit main && echo 'package auth' > src/auth/evil.go && git add src && git commit -qm \"Merge branch 'main' into feat/sessions\" -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#7", message: "(\"Merge branch 'main' into feat/sessions\") was pushed after @dana accepted it"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [], comments: 1}

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 54cc42b
+checked: a6228bb0
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -103,7 +103,9 @@ Before your release tool tags; a non-zero exit holds it.
   and `user.email` set first, as for `apply`. With `update-branches:
   conflicts`, it also merges the branch into people's merge requests in
   conflict only on workline's lines
-  ([more](../roles/documentalist/docs/follow.md)).
+  ([more](../roles/documentalist/docs/follow.md)). With `merge:`, it runs
+  the [merge policy](merge-policy.md): after each judge too, given the
+  head's verdict `route --verdict` wrote (`--verdict <file>`).
 
 ### Weekly sample
 

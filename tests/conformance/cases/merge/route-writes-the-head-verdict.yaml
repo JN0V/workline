@@ -1,0 +1,11 @@
+case: merge/route-writes-the-head-verdict
+about: "`workline route --verdict <file>` writes the line's verdict on the head it judged — the range's end —, its status, each step's and the findings, for the job holding the write token to keep (ADR-0042). Here the committer and the documentalist pass, with no agent."
+given:
+  repo: documented
+  setup:
+    - "git checkout -qb feat/notes && echo notes > notes.txt && git add notes.txt && git commit -qm 'chore: keep notes' && git checkout -q main"
+run: {cli: [route, merge-request, --ai, none, --input, "range=main..feat/notes", --verdict, verdict.json]}
+expect:
+  exit: 0
+  files:
+    verdict.json: {contains: ["\"head\": \"", "\"status\": \"pass\"", "\"name\": \"committer\"", "\"name\": \"documentalist\""]}

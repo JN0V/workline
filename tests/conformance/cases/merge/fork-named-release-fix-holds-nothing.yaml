@@ -1,0 +1,23 @@
+case: merge/fork-named-release-fix-holds-nothing
+about: "Only a role's own branch, in this repository, is the release's docs fix (#321's review): a fork's pull request from a branch named `workline/documentalist/release` holds nothing. The accepted release, held only for docs merged since, is brought up to date, not left waiting."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+    - "git checkout -qb forked && echo x > x.md && git add x.md && git commit -qm 'docs: x' && git push -q origin HEAD:refs/pull/11/head && git checkout -q main"
+    - "sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: what the release waits for (#5)' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: release-please--branches--main, name: workline/verdict, state: pending, description: "held: the release waits for its docs", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+      - {id: 11, branch: workline/documentalist/release, base: main, fork: true, author: zed, labels: [], comments: []}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: updated, where: "#10"}]
+  no-findings: [{rule: waits-for-docs}]
+  merged: {release-please--branches--main: main}

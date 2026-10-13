@@ -521,3 +521,80 @@ func TestGardeningTendsItsMergeRequests(t *testing.T) {
 		t.Errorf("workline:garden:apply does not run `workline follow --gardening` after applying: %s", script)
 	}
 }
+
+// The merge policy (ADR-0042) acts after each judge, its verdict kept by a
+// job no newer run cancels — in no concurrency group, where `follow` is in
+// one —, and when a label is put or taken off — never in the workflow
+// holding `judge`, whose run on a label would show the check skipped, which
+// GitHub takes as passed for a required check.
+func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
+	type workflow struct {
+		On struct {
+			PullRequest struct {
+				Types []string `yaml:"types"`
+			} `yaml:"pull_request"`
+			Target *struct {
+				Types []string `yaml:"types"`
+			} `yaml:"pull_request_target"`
+		} `yaml:"on"`
+		Jobs map[string]struct {
+			Needs       any `yaml:"needs"`
+			Concurrency any `yaml:"concurrency"`
+			Steps       []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	read := func(f string) workflow {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		return wf
+	}
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+		wf := read(f)
+		for _, ty := range []string{"labeled", "unlabeled", "converted_to_draft"} {
+			if slices.Contains(wf.On.PullRequest.Types, ty) || wf.On.Target != nil {
+				t.Errorf("%s: runs on %s, where judge would show skipped", filepath.Base(f), ty)
+			}
+		}
+		var route, keep string
+		for name, job := range wf.Jobs {
+			for _, s := range job.Steps {
+				switch {
+				case strings.Contains(s.Run, "workline route merge-request"):
+					route = s.Run
+				case strings.Contains(s.Run, "--verdict-only"):
+					keep = s.Run
+					if fmt.Sprint(job.Needs) != "judge" || job.Concurrency != nil {
+						t.Errorf("%s, job %s: the verdict is not kept after judge, in no concurrency group (needs %v, concurrency %v)", filepath.Base(f), name, job.Needs, job.Concurrency)
+					}
+					if !strings.Contains(s.Run, `[ "$head" = "$HEAD_SHA" ]`) {
+						t.Errorf("%s, job %s: the verdict is kept without checking it is the event's head's", filepath.Base(f), name)
+					}
+				case strings.Contains(s.Run, "workline follow"):
+					if fmt.Sprint(job.Needs) != "[judge verdict]" || job.Concurrency == nil {
+						t.Errorf("%s, job %s: follow does not run after the verdict is kept, one at a time (needs %v)", filepath.Base(f), name, job.Needs)
+					}
+				}
+			}
+		}
+		if !strings.Contains(route, "--verdict workline-verdict.json") || !strings.Contains(keep, "--verdict workline-verdict.json") {
+			t.Errorf("%s: judge does not write the head's verdict, or no job keeps it", filepath.Base(f))
+		}
+	}
+	for _, f := range []string{"../../ci/github/workline-merge.yml", "../../.github/workflows/workline-merge.yml"} {
+		wf := read(f)
+		if wf.On.Target == nil || !slices.Contains(wf.On.Target.Types, "labeled") || !slices.Contains(wf.On.Target.Types, "unlabeled") {
+			t.Errorf("%s: does not run on a label put and taken off", filepath.Base(f))
+		}
+		if _, ok := wf.Jobs["judge"]; ok {
+			t.Errorf("%s: holds a judge job, which would show skipped on a label", filepath.Base(f))
+		}
+	}
+}

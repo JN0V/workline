@@ -1,0 +1,26 @@
+case: merge/merge-of-another-branch-after-the-yes-takes-it-back
+about: "`follow`'s own update merges the base, nothing else (#321's re-review): after the yes, a clean merge carrying workline's trailer brings another branch in. Its tree is what merging its parents gives, but its second parent is no commit of main: a push after the yes, taken back (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb other && echo 'package auth' > src/auth/evil.go && git add src && git commit -qm 'feat(auth): something else' && git checkout -q main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag before && git merge -q --no-ff other -m \"Merge branch 'main' into feat/sessions\" -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#7", message: "was pushed after @dana accepted it"}]
+  no-findings: [{rule: auto-merge-on}]

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: c648a31
+checked: f7514347
 verified: agent:claude-code
 ---
 # Using workline
@@ -36,7 +36,7 @@ Each in detail: [the commands](commands.md), and
 | [`workline issues import <file>`](commands.md#workline-issues-import) | turns a roadmap or backlog file into issues |
 | [`workline docs`](commands.md#workline-docs) | your agent fixes the docs made suspect; you keep or drop each fix |
 | [`workline sample`](commands.md#workline-sample) | the weekly sample: a second look at the docs confirmed that week |
-| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too; merges it into people's in conflict only on workline's lines, when set |
+| [`workline follow`](commands.md#workline-follow) | rebuilds a release fix on the default branch's new tip; `--gardening`, gardening's merge requests too; merges it into people's in conflict only on workline's lines, when set; runs the [merge policy](merge-policy.md), when set |
 | [`workline hooks install --global`](commands-setup.md#workline-hooks) | installs the git hooks for every repository (`--repo`: this one) |
 | [`workline setup`](commands-setup.md#workline-setup) | sets up this machine: hooks, agent, tools |
 | [`workline init`](commands-setup.md#workline-init) | adopts this repository |
@@ -61,6 +61,7 @@ Each in detail: [the commands](commands.md), and
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
 | `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's ([role outcome](spec/role-outcome.md)) |
 | `--summary <file>` | also add what a CI job's page shows ([below](#the-jobs-summary)) |
+| `--verdict <file>` | `route` only: also write the line's verdict on the head it judged, for the [merge policy](merge-policy.md); `--verdict-head <commit>`, the head when the commit judged is a merge result |
 | `--json` | print the result as JSON ([below](#the-jobs-summary)) |
 
 ### The agent

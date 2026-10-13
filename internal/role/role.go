@@ -165,7 +165,21 @@ type ProjectConfig struct {
 		Settings map[string]any    `yaml:"settings"`
 		Enforce  map[string]string `yaml:"enforce"`
 	} `yaml:"roles"`
+	// Merge is the project's merge policy (ADR-0042): nil, none — no
+	// pull request's auto-merge is touched.
+	Merge *Merge `yaml:"merge"`
 }
+
+// Merge is the project's merge policy: which pull requests `workline
+// follow` turns the forge's auto-merge on for (ADR-0042).
+type Merge struct {
+	Autonomy string `yaml:"autonomy"`
+}
+
+// MergeLevels are the merge policy's levels, as the product owner's are
+// named (ADR-0042): `cautious`, a person's yes on each pull request.
+// `normal` comes later (#322).
+var MergeLevels = []string{"cautious"}
 
 // LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an
 // empty config; an unreadable or invalid one is an error.
@@ -183,6 +197,9 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	}
 	if err := yaml.Unmarshal(data, &c); err != nil {
 		return nil, &ConfigError{err.Error()}
+	}
+	if c.Merge != nil && !slices.Contains(MergeLevels, c.Merge.Autonomy) {
+		return nil, &ConfigError{fmt.Sprintf("merge.autonomy is %q: the levels are %s", c.Merge.Autonomy, strings.Join(MergeLevels, ", "))}
 	}
 	return &c, nil
 }

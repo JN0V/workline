@@ -1,0 +1,31 @@
+case: merge/job-token-nothing-turned-on
+about: "GitHub with the job's own token, no App (#321): a merge made with it starts no workflow on main — no follow, no release —, so `workline follow` turns nothing on and brings nothing up to date, and says why (ADR-0042, principle 12)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    job-token: true
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merge-token, level: warn, message: "the job's own token: a merge it makes starts no pipeline on the base: nothing turned on"}]
+  no-findings: [{rule: auto-merge-on}, {rule: updated}]
+  not-pushed: [feat/sessions]
+  summary-file: ["merge policy (cautious): nothing turned on"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}

@@ -44,6 +44,7 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/gate"
+	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/hooks"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/line"
@@ -76,6 +77,8 @@ func followCmd(args []string) int {
 	base := fs.String("base", "", "the branch the merge requests go into (default: the branch checked out)")
 	forgeSpec := fs.String("forge", "", "github, gitlab, local, cmd:<command> (default: the project's `forge` setting)")
 	gardening := fs.Bool("gardening", false, "also the roles' gardening merge requests: rebuilt, or closed when nothing is left to merge (run when gardening runs)")
+	verdictFile := fs.String("verdict", "", "with the project's `merge:` policy, keep first the line's verdict on a merge request's head, the file `workline route --verdict` wrote")
+	verdictOnly := fs.Bool("verdict-only", false, "with --verdict: keep the verdict, and follow nothing else (a job no newer run cancels)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
@@ -87,15 +90,28 @@ func followCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline: not in a git repository")
 		return 64
 	}
+	cfg, err := role.LoadProjectConfig(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
 	if *forgeSpec == "" {
-		cfg, err := role.LoadProjectConfig(root)
-		if err != nil {
+		*forgeSpec = cfg.Forge
+	}
+	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening, Verdict: *verdictFile, VerdictOnly: *verdictOnly}
+	if o.VerdictOnly && o.Verdict == "" {
+		fmt.Fprintln(os.Stderr, "workline: --verdict-only needs --verdict <file>")
+		return 64
+	}
+	if cfg.Merge != nil {
+		o.Merge = cfg.Merge.Autonomy
+	}
+	if o.Verdict != "" {
+		if o.Verdict, err = filepath.Abs(o.Verdict); err != nil {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 64
 		}
-		*forgeSpec = cfg.Forge
 	}
-	o := engine.FollowOptions{Repo: root, Forge: *forgeSpec, Base: *base, Gardening: *gardening}
 	if err := followSettings(&o); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 64
@@ -1006,6 +1022,8 @@ func routeCmd(args []string) int {
 	cqFile := fs.String("code-quality", "", "also write every step's findings to this file as a GitLab Code Quality report")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the line to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	verdictFile := fs.String("verdict", "", "also write the line's verdict on the head it judged (the range's end) to this file, for `workline follow --verdict` and the merge policy")
+	verdictHead := fs.String("verdict-head", "", "with --verdict: the head the verdict is for, when the commit judged is a merge result (GitLab's merged results pipelines)")
 	inputs := pairs{}
 	fs.Var(inputs, "input", "input name=value, given to every step (repeatable)")
 	event, code, done := parseAfter(fs, args, "an event")
@@ -1033,6 +1051,16 @@ func routeCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
+	if *verdictFile != "" {
+		rng := inputs["range"]
+		if *verdictHead != "" {
+			rng = *verdictHead
+		}
+		if err := writeVerdict(abs, *verdictFile, rng, res); err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 1
+		}
+	}
 	if *asJSON {
 		out, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(out))
@@ -1053,6 +1081,27 @@ func routeCmd(args []string) int {
 		}
 	}
 	return exitFor(res.Status)
+}
+
+// writeVerdict writes the line's verdict on the head it judged — the
+// range's end, else HEAD — for the merge policy (ADR-0042).
+func writeVerdict(repo, file, rng string, res *line.Result) error {
+	head := "HEAD"
+	if rng != "" {
+		head = gitrange.Head(rng)
+	}
+	out, err := exec.Command("git", "-C", repo, "rev-parse", "--verify", head+"^{commit}").Output()
+	switch {
+	case err == nil:
+		head = strings.TrimSpace(string(out))
+	case len(head) != 40 || strings.Trim(head, "0123456789abcdef") != "":
+		return fmt.Errorf("--verdict: the head judged, %s, is no commit here", head)
+	} // a full id not fetched here: the source head of a merge result
+	v := engine.HeadVerdict{Head: head, Status: res.Status, Findings: res.Findings}
+	for _, s := range res.Steps {
+		v.Steps = append(v.Steps, engine.StepStatus{Name: s.Name, Status: s.Status})
+	}
+	return engine.WriteVerdict(file, v)
 }
 
 func itemCmd(args []string) int {

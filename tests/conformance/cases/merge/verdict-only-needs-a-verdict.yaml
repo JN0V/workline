@@ -1,0 +1,8 @@
+case: merge/verdict-only-needs-a-verdict
+about: "`--verdict-only` with no verdict to keep is misuse, said (64): the job would do nothing, silently (principle 12)."
+given:
+  repo: documented
+run: {cli: [follow, --base, main, --verdict-only]}
+expect:
+  exit: 64
+  stderr: ["--verdict-only needs --verdict <file>"]

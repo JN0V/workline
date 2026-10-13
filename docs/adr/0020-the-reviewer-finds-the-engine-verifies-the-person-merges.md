@@ -2,7 +2,9 @@
 
 - **Status:** accepted; the code subject built (local, merge request), the
   spec subject on a machine and on the forge (#128); the developer's loop
-  to come (roles/reviewer/docs/status.md)
+  to come (roles/reviewer/docs/status.md); amended 2026-10-12: where the
+  project sets a merge policy, the person accepts and the forge merges
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md))
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -514,3 +516,17 @@ merge-request line; on in workline's own repository.
   block kept until its cause's line changes, whatever its lens reads
   again (a finding the lens no longer makes would hold the merge request
   for good).
+
+## Amendment (2026-10-12): the person accepts, the forge merges
+
+[ADR-0042](0042-the-engine-merges-by-the-projects-policy.md), built by
+[#321](https://github.com/JN0V/workline/issues/321) at its `cautious` level.
+
+- **"The person merges" becomes "the person accepts, the forge merges"**
+  where the project sets `merge:`: a person's `workline:accepted` on the
+  pull request, then the forge's own auto-merge, which `workline follow`
+  turns on.
+- **The reviewer's verdict counts there**: a review with no agent, a lens
+  not answered or the tokens spent (not reviewed whole) leaves auto-merge
+  off, said in the job's summary. A block stands as before.
+- **The reviewer still never approves, never patches, never merges.**

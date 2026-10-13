@@ -30,6 +30,16 @@ type FollowOptions struct {
 	// Release says whether a branch is a release tool's: its merge request
 	// is a bot's, rebuilt by the tool.
 	Release func(branch string) bool
+	// Merge is the project's merge policy, its level (`merge: {autonomy:
+	// cautious}`); "" none: no merge request's auto-merge is touched
+	// (ADR-0042, merge.go).
+	Merge string
+	// Verdict is a file holding the line's verdict on a merge request's
+	// head (`workline route --verdict`), kept first, for the merge policy;
+	// with VerdictOnly, nothing else is done: a job of its own keeps it,
+	// which no newer run cancels (GitHub's concurrency).
+	Verdict     string
+	VerdictOnly bool
 }
 
 // workKeys are the keys of a doc's header workline writes, recording when
@@ -68,7 +78,7 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, er
 			continue
 		}
 		mine++
-		finding, err := settle(o.Repo, o.Base, mr, local, o.IsDoc)
+		finding, err := settle(o.Repo, o.Base, mr, local, o.IsDoc, false)
 		if err != nil {
 			return "", err
 		}
@@ -92,9 +102,11 @@ func people(f forge.Forge, o FollowOptions, local bool, res *Result) (string, er
 // settle merges base into one person's merge request when every conflict
 // is in a line workline writes, and says what it did: nothing for one on
 // base's tip already, or behind it and merging clean — bringing it up to
-// date is for whoever merges it. A merge commit, never a rewrite, pushed
-// as a fast-forward, never forced: a push of theirs meanwhile stays.
-func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(string) bool) (verdict.Finding, error) {
+// date is for whoever merges it: with update, the merge policy's first in
+// line (ADR-0042), merged in too, as the forge's Update branch does. A
+// merge commit, never a rewrite, pushed as a fast-forward, never forced:
+// a push of theirs meanwhile stays.
+func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(string) bool, update bool) (verdict.Finding, error) {
 	where := mr.Branch
 	if !mr.Here && mr.Head == "" {
 		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
@@ -119,7 +131,7 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 	case err != nil:
 		return verdict.Finding{Rule: "conflict-unread", Level: "warn", Where: where,
 			Message: fmt.Sprintf("left to its author: whether it is in conflict with %s could not be told: %v", base, err)}, nil
-	case !clash:
+	case !clash && !update:
 		return verdict.Finding{}, nil
 	case !mr.Here:
 		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where,
@@ -137,7 +149,11 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 		}
 		return verdict.Finding{Rule: "not-merged", Level: "warn", Where: where, Message: msg}, nil
 	}
-	commit, err := gitIn(repo, mergeMessage(base, mr.Branch, settled), "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
+	msg := mergeMessage(base, mr.Branch, settled)
+	if len(settled) == 0 {
+		msg = updateMessage(base, mr.Branch)
+	}
+	commit, err := gitIn(repo, msg, "commit-tree", tree, "-p", tip, "-p", baseTip, "-F", "-")
 	if err != nil {
 		return verdict.Finding{}, err
 	}
@@ -163,11 +179,27 @@ func settle(repo, base string, mr forge.MergeRequest, local bool, isDoc func(str
 		// A branch protected, a token short of a permission (GitHub's
 		// `workflows`, for a base that changed a workflow): as a conflict
 		// left, the person's, said with the forge's words.
+		if !clash {
+			return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
+				Message: fmt.Sprintf("behind %s, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
+		}
 		return verdict.Finding{Rule: "merge-refused", Level: "warn", Where: where,
 			Message: fmt.Sprintf("in conflict with %s only on workline's lines, but the forge refused workline's merge: %s; left to its author", base, refusal(err))}, nil
 	}
+	if len(settled) == 0 {
+		return verdict.Finding{Rule: "merged", Where: where,
+			Message: fmt.Sprintf("%s merged in (%s), as the forge's Update branch does: a merge commit, its commits kept", base, short(baseTip))}, nil
+	}
 	return verdict.Finding{Rule: "merged", Where: where,
 		Message: fmt.Sprintf("%s merged in (%s), workline's own lines settled in %s: a merge commit, its commits kept", base, short(baseTip), strings.Join(settled, ", "))}, nil
+}
+
+// updateMessage is the forge's own message for a merge of base that met
+// no conflict — the merge policy bringing its first in line up to date —,
+// with the trailer of workline's own commits: the line judges the commits
+// before it.
+func updateMessage(base, branch string) string {
+	return fmt.Sprintf("Merge branch '%s' into %s\n\nBrought up to date with %s by the project's merge policy: first\nin line, it merges once its checks pass.\n\n%s: documentalist\n", base, branch, base, OwnTrailer)
 }
 
 // headTips are base's tip and the merge request's head: its branch here,
@@ -331,17 +363,53 @@ func settleDoc(repo, file, old, branch, onBase string) (string, bool, error) {
 // asBase is a doc with each derived block base's, where base has it.
 func asBase(doc, base string) string {
 	blocks := map[string]string{}
-	for _, m := range derived.FindAllStringSubmatch(base, -1) {
-		if _, seen := blocks[m[1]]; !seen {
-			blocks[m[1]] = m[0]
+	for _, b := range derivedBlocks(base) {
+		if _, seen := blocks[b.name]; !seen {
+			blocks[b.name] = base[b.start:b.end]
 		}
 	}
-	return derived.ReplaceAllStringFunc(doc, func(b string) string {
-		if theirs, ok := blocks[derived.FindStringSubmatch(b)[1]]; ok {
-			return theirs
+	var out strings.Builder
+	at := 0
+	for _, b := range derivedBlocks(doc) {
+		theirs, ok := blocks[b.name]
+		if !ok {
+			continue
 		}
-		return b
-	})
+		out.WriteString(doc[at:b.start] + theirs)
+		at = b.end
+	}
+	return out.String() + doc[at:]
+}
+
+// derivedBlock is a derived block's name, and where it is in a doc.
+type derivedBlock struct {
+	name       string
+	start, end int
+}
+
+// derivedBlocks finds a doc's derived blocks, as `derived` reads them,
+// each closed before the next opens: a marker with no end of its own is
+// no block, left as it is, never swallowing the text after it up to
+// another block's end (the documentalist's `derive-unclosed`).
+func derivedBlocks(doc string) []derivedBlock {
+	const open, end = "<!-- workline:derive ", "<!-- workline:end -->"
+	var all []derivedBlock
+	for at := 0; ; {
+		s := strings.Index(doc[at:], open)
+		if s < 0 {
+			return all
+		}
+		s += at
+		m := derived.FindStringSubmatchIndex(doc[s:])
+		next := strings.Index(doc[s+len(open):], open)
+		closes := strings.Index(doc[s+len(open):], end)
+		if m == nil || m[0] != 0 || closes < 0 || next >= 0 && next < closes {
+			at = s + len(open) // unclosed: left as it is
+			continue
+		}
+		all = append(all, derivedBlock{name: doc[s+m[2] : s+m[3]], start: s, end: s + m[1]})
+		at = s + m[1]
+	}
 }
 
 // mergeBlobs merges three versions of a file by git's own merge, the one
@@ -417,6 +485,15 @@ func refusal(err error) string {
 			}
 		} else if i := strings.Index(l, "! ["); i >= 0 {
 			said = append(said, strings.TrimSpace(l[i:]))
+		}
+	}
+	if len(said) == 0 {
+		// No forge's words: what stopped it here — a pre-push hook of the
+		// machine's —, git's own last line left out.
+		for _, l := range strings.Split(strings.TrimSpace(err.Error()), "\n") {
+			if l = strings.TrimSpace(l); l != "" && !strings.Contains(l, "failed to push some refs") {
+				said = append(said, l)
+			}
 		}
 	}
 	if len(said) == 0 {

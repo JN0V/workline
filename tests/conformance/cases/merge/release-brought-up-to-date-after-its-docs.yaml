@@ -1,0 +1,25 @@
+case: merge/release-brought-up-to-date-after-its-docs
+about: "The release order (#321), its second half: the release's docs merged, main moved; the accepted release pull request, held only for them, is brought up to date as Update branch does — main merged into the release tool's branch —, so its line runs again and passes; it is not out of line for the hold it had (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+    - "sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: what the release waits for (#11)' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "release-please--branches--main", name: workline/verdict, state: pending, description: "held: the release waits for its docs, fixed in a merge request of their own", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+      - {id: 11, branch: workline/documentalist/release, base: main, closed: true, merged: true, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: []}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: updated, where: "#10", message: "main merged in"}]
+  no-findings: [{rule: waits-for-docs}, {rule: verdict-red}]
+  merged: {release-please--branches--main: main}
+  pushed:
+    release-please--branches--main: {version.txt: "1.1.0", docs/tech/auth.md: "renewed"}
+  summary-file: ["first in line #10, brought up to date"]

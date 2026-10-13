@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/forge"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -198,6 +199,20 @@ type forgeWant struct {
 	Issues        []itemWant `yaml:"issues"`
 	MergeRequests []itemWant `yaml:"merge-requests"`
 	Labels        []itemWant `yaml:"labels"` // labels defined, their name as id
+	// Statuses: each must be the last status of its name on its commit (a
+	// revision of the repository) — by, state and a part of its description
+	// when given; absent: none of that name there.
+	Statuses []statusWant `yaml:"statuses"`
+}
+
+// statusWant is a status the simulated forge holds on a commit.
+type statusWant struct {
+	Commit      string `yaml:"commit"`
+	Name        string `yaml:"name"`
+	State       string `yaml:"state"`
+	By          string `yaml:"by"`
+	Description string `yaml:"description"`
+	Absent      bool   `yaml:"absent"`
 }
 
 // itemWant is an item of the forge, by id: each field given is checked
@@ -212,6 +227,8 @@ type itemWant struct {
 	Milestone       *string             `yaml:"milestone"`
 	Parent          *int                `yaml:"parent"` // the issue it is a sub-issue of, 0 for none
 	Closed          *bool               `yaml:"closed"`
+	AutoMerge       *bool               `yaml:"auto-merge"` // a merge request's auto-merge on (ADR-0042)
+	Merged          *bool               `yaml:"merged"`     // a merge request the forge merged
 	BodyContains    texts               `yaml:"body-contains"`
 	BodyLacks       texts               `yaml:"body-lacks"`
 	Comments        *int                `yaml:"comments"` // how many
@@ -694,6 +711,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	}
 	if c.Expect.Forge != nil {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
+		problems = append(problems, compareStatuses(c.Expect.Forge.Statuses, forgeFile, repo)...)
 	}
 	return problems
 }
@@ -729,7 +747,7 @@ func runCLI(engineBin string, c *caseFile, repo string, env []string) []string {
 	if len(c.Expect.SummaryFile) > 0 { // the arguments name it, as CI's templates do
 		p = append(p, compareSummaryFile(c.Expect.SummaryFile, filepath.Join(repo, "workline-summary.md"))...)
 	}
-	return p
+	return append(p, compareFiles(c.Expect.Files, repo)...)
 }
 
 func compare(c *caseFile, r *result, repo string) []string {
@@ -882,7 +900,14 @@ func compare(c *caseFile, r *result, repo string) []string {
 			p = append(p, fmt.Sprintf("no note holds %q (notes: %q)", text, r.Notes))
 		}
 	}
-	for path, want := range e.Files {
+	return append(p, compareFiles(e.Files, repo)...)
+}
+
+// compareFiles says how the files the case names differ from what it
+// wants of them, each path from the repository.
+func compareFiles(files map[string]fileWant, repo string) []string {
+	var p []string
+	for path, want := range files {
 		data, err := os.ReadFile(filepath.Join(repo, path))
 		if want.Exists != nil && *want.Exists != (err == nil) {
 			p = append(p, fmt.Sprintf("%s exists = %v, want %v", path, err == nil, *want.Exists))
@@ -1029,6 +1054,45 @@ func editForge(file string, edits map[string]any) error {
 	return os.WriteFile(file, data, 0o644)
 }
 
+// compareStatuses checks the statuses the simulated forge holds: the last
+// of each name on each commit, the commits revisions of the repository.
+func compareStatuses(want []statusWant, file, repo string) []string {
+	if len(want) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{err.Error()}
+	}
+	var s forge.FakeState
+	if err := json.Unmarshal(data, &s); err != nil {
+		return []string{err.Error()}
+	}
+	commit := func(rev string) string {
+		out, _ := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
+		return strings.TrimSpace(string(out))
+	}
+	var p []string
+	for _, w := range want {
+		var last *forge.FakeStatus
+		for i := range s.Statuses {
+			if st := &s.Statuses[i]; st.Name == w.Name && commit(st.Commit) == commit(w.Commit) {
+				last = st
+			}
+		}
+		switch {
+		case w.Absent && last != nil:
+			p = append(p, fmt.Sprintf("forge: status %s on %s is there (%+v), want none", w.Name, w.Commit, *last))
+		case w.Absent:
+		case last == nil:
+			p = append(p, fmt.Sprintf("forge: no status %s on %s", w.Name, w.Commit))
+		case w.State != "" && last.State != w.State, w.By != "" && last.By != w.By, !strings.Contains(last.Description, w.Description):
+			p = append(p, fmt.Sprintf("forge: status %s on %s is %+v, want %+v", w.Name, w.Commit, *last, w))
+		}
+	}
+	return p
+}
+
 // compareForge checks the simulated forge's state: each item listed, by
 // id, holds what itemWant says of it; `absent: true`, no item with that id.
 func compareForge(want *forgeWant, file string) []string {
@@ -1081,6 +1145,12 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	}
 	if wm.Closed != nil && (found["closed"] == true) != *wm.Closed {
 		p = append(p, fmt.Sprintf("forge: %s %v closed = %v, want %v", kind, wm.ID, found["closed"] == true, *wm.Closed))
+	}
+	if wm.AutoMerge != nil && (found["auto-merge"] == true) != *wm.AutoMerge {
+		p = append(p, fmt.Sprintf("forge: %s %v auto-merge = %v, want %v", kind, wm.ID, found["auto-merge"] == true, *wm.AutoMerge))
+	}
+	if wm.Merged != nil && (found["merged"] == true) != *wm.Merged {
+		p = append(p, fmt.Sprintf("forge: %s %v merged = %v, want %v", kind, wm.ID, found["merged"] == true, *wm.Merged))
 	}
 	if found["parent"] == nil {
 		found["parent"] = 0 // not a sub-issue

@@ -1,0 +1,31 @@
+case: merge/unguarded-base-nothing-turned-on
+about: "A yes must hold through a required check, not a race (#321's review): on GitHub, after a writer's push, auto-merge stays on and the checks may pass before `follow` runs again. The base must require the status `workline/accepted`, which a new head lacks until `follow` sets it on a head the yes covers; a base that does not require it gets nothing turned on, and is told why (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    unguarded: "main does not require the status workline/accepted"
+    statuses:
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: merge-unguarded, level: warn, message: "main does not require the status workline/accepted: nothing turned on"}]
+  no-findings: [{rule: auto-merge-on}]
+  summary-file: ["nothing turned on, a push after a yes would not be held"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, absent: true}

@@ -204,7 +204,7 @@ func TestGitLabAnswers(t *testing.T) {
 	events, err := g.LabelEvents(3)
 	want := []LabelEvent{
 		{Label: "workline::proposed", Added: true, Note: Note{Author: "project_1_bot_0a1b", Bot: true, Created: "2026-10-08T08:36:31Z"}},
-		{Label: "workline::proposed", Note: Note{Author: "owner", Insider: true, Created: "2026-10-09T07:00:00Z"}},
+		{Label: "workline::proposed", Writer: true, Note: Note{Author: "owner", Insider: true, Created: "2026-10-09T07:00:00Z"}},
 	}
 	if err != nil || fmt.Sprint(events) != fmt.Sprint(want) {
 		t.Fatalf("label events: %+v %v\nwant %+v", events, err, want)

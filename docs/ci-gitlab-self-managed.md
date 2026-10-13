@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, Dockerfile]
-checked: 54cc42b
+checked: a6228bb0
 verified: agent:claude-code
 ---
 # workline on a self-managed GitLab
@@ -27,3 +27,7 @@ own changes. **Not tried yet on one**: tell us what differs.
   the API; a job token that reads no notes leaves one lens, said in the
   log, unless the job has `GITLAB_TOKEN`
   ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
+- **The [merge policy](merge-policy.md)**: a merge request is set to merge
+  when its pipeline succeeds by the merge API, both its names sent —
+  `auto_merge`, and the older `merge_when_pipeline_succeeds` an instance
+  from before it reads.

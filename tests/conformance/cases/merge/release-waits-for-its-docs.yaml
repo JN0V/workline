@@ -1,0 +1,31 @@
+case: merge/release-waits-for-its-docs
+about: "The release order (#321), its first half: the maintainer accepted the release pull request and the documentalist's release docs. The release is held — its line blocked on `fixed-elsewhere`, the docs fixed in a pull request of their own (ADR-0017) —, so it waits, said; the docs come first in line, whatever order the labels were put in, and their auto-merge is turned on (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: what the release waits for' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "release-please--branches--main", name: workline/verdict, state: pending, description: "held: the release waits for its docs, fixed in a merge request of their own", by: workline-bot}
+      - {commit: "workline/documentalist/release", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+      - {id: 11, branch: workline/documentalist/release, base: main, author: "workline-app[bot]", bot: true, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:05:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-docs, where: "#10", message: "the release waits for its docs, #11, to merge first"}
+    - {rule: auto-merge-on, where: "#11"}
+  no-findings: [{rule: auto-merge-on, where: "#10"}, {rule: updated}]
+  not-pushed: [release-please--branches--main, workline/documentalist/release]
+  summary-file: ["in line into main, #11", "first in line #11, up to date"]
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: false}
+      - {id: 11, auto-merge: true}

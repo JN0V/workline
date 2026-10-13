@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 54cc42b
+checked: f7514347
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -57,8 +57,8 @@ saying so.
   push: status, steps and calls are the line's, the findings both runs';
 - `cli: [<argument>...]` instead of `role` — `workline` with these
   arguments, as typed, in the repository: help, misuse; checked by `exit`,
-  `stdout`, `stderr`, and `summary-file` for the `workline-summary.md`
-  its arguments name;
+  `stdout`, `stderr`, `files`, and `summary-file` for the
+  `workline-summary.md` its arguments name;
 
 ## Run, around the role
 
@@ -114,10 +114,13 @@ saying so.
   `body-lacks` (a text its body holds, or does not, or a list of them),
   `reactions` (the reactions on its comments, by the comment's id),
   `threads` (a merge request's comments on lines, exactly these, in the
-  order posted: each `{path, line, contains, lacks, resolved}`);
+  order posted: each `{path, line, contains, lacks, resolved}`),
+  `auto-merge` (a merge request's on) and `merged` (the forge merged it);
   `absent: true` — no item with that id. Items are listed by kind:
   `issues`, `merge-requests`, and `labels`, the labels the forge defines,
-  their order as id, by `title`.
+  their order as id, by `title`; `statuses`, the last status of a name on
+  a commit (a revision), by `state`, `by` and a part of its
+  `description`, or `absent: true`.
 
 ## Expect, after the run
 

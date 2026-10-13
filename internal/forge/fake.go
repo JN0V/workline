@@ -33,6 +33,25 @@ type FakeState struct {
 	// token that may not review does, with this reason (HTTP 403).
 	ReviewRefused string `json:"review-refused,omitempty"`
 	Reviews       int    `json:"reviews,omitempty"` // the reviews posted, each holding comments on lines
+	// JobToken: the token is a CI job's own, whose merges start no
+	// pipeline, as GitHub's GITHUB_TOKEN (MergeToken, ADR-0042).
+	JobToken bool `json:"job-token,omitempty"`
+	// Unguarded: why a push after a yes could merge before follow takes
+	// it back — a base not requiring workline/accepted (Guarded).
+	Unguarded string `json:"unguarded,omitempty"`
+	// Statuses are the statuses set on commits, as GitHub keeps them: the
+	// commit a revision of the repository, who set it (`workline-bot`, the
+	// token's user, or another).
+	Statuses []FakeStatus `json:"statuses,omitempty"`
+}
+
+// FakeStatus is a status set on a commit.
+type FakeStatus struct {
+	Commit      string `json:"commit"`
+	Name        string `json:"name"`
+	State       string `json:"state,omitempty"`
+	Description string `json:"description,omitempty"`
+	By          string `json:"by"`
 }
 
 // FakeItem is an issue or a merge request.
@@ -65,6 +84,26 @@ type FakeItem struct {
 	// Threads are a merge request's comments on lines, as a review leaves
 	// them (LineReviewer).
 	Threads []FakeThread `json:"threads,omitempty"`
+	// A merge request's state for the merge policy (MergeState, ADR-0042):
+	// a draft; its auto-merge on, when it was last turned on and by whom;
+	// its head's checks; its branch's pushes, each head a revision of the
+	// repository. Clean: the forge would merge it at once, its rules met,
+	// so turning auto-merge on merges it (Merged).
+	Draft       bool       `json:"draft,omitempty"`
+	AutoMerge   bool       `json:"auto-merge,omitempty"`
+	AutoMergeAt string     `json:"auto-merge-at,omitempty"`
+	AutoMergeBy string     `json:"auto-merge-by,omitempty"`
+	Checks      string     `json:"checks,omitempty"`
+	Pushes      []FakePush `json:"pushes,omitempty"`
+	Clean       bool       `json:"clean,omitempty"`
+	Merged      bool       `json:"merged,omitempty"`
+}
+
+// FakePush is a push to a merge request's branch: the head, a revision
+// of the repository (a branch, branch~1), and when.
+type FakePush struct {
+	Head string `json:"head"`
+	At   string `json:"at"`
 }
 
 // FakeThread is a comment on a line of a merge request: its file and line
@@ -432,7 +471,8 @@ func (f *Fake) ListMergeRequests() ([]MergeRequest, error) {
 	for _, m := range s.MergeRequests {
 		if !m.Closed && m.Branch != "" {
 			out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: !m.Fork, Title: m.Title, Body: m.Body,
-				Author: m.Author, Bot: m.Bot, Head: fmt.Sprintf("refs/pull/%d/head", m.ID)})
+				Author: m.Author, Bot: m.Bot, Head: fmt.Sprintf("refs/pull/%d/head", m.ID),
+				Labels: m.Labels, Draft: m.Draft, AutoMerge: m.AutoMerge})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

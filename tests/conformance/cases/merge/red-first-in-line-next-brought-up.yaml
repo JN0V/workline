@@ -1,0 +1,33 @@
+case: merge/red-first-in-line-next-brought-up
+about: "A red one in line (#321): the first in line was brought up to date, and its line then blocked on its new head; when its checks finish, `workline follow` takes it out of line — its auto-merge, workline's, turned off — and brings the next one up to date; the summary names the red one and why (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/a && echo a > a.txt && git add a.txt && git commit -qm 'feat: a' && git checkout -q main"
+    - "git checkout -qb feat/b && echo b > b.txt && git add b.txt && git commit -qm 'feat: b' && git push -q origin feat/b && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+    - "git checkout -q feat/a && git merge -q --no-ff main -m \"Merge branch 'main' into feat/a\" -m 'Workline-Role: documentalist' && git push -q origin feat/a && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/b", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "feat/a", name: workline/verdict, state: failure, description: "red: the line's verdict on its head is block: correctness", by: workline-bot}
+    merge-requests:
+      - {id: 7, branch: feat/a, base: main, author: dana, labels: [workline:accepted], auto-merge: true, auto-merge-by: workline-bot, auto-merge-at: "2026-01-04T10:01:00Z", comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+      - {id: 8, branch: feat/b, base: main, author: dana, labels: [workline:accepted], auto-merge: true, auto-merge-by: workline-bot, auto-merge-at: "2026-01-04T11:01:00Z", comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T11:00:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: verdict-red, where: "#7", level: warn, message: "the line's verdict on its head is block: correctness; auto-merge turned off, out of line"}
+    - {rule: updated, where: "#8", message: "first in line, brought up to date"}
+  merged: {feat/b: main}
+  not-pushed: [feat/a]
+  summary-file: ["first in line #8, brought up to date", "#7, warn: accepted by @dana, but the line's verdict on its head is block"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [workline:accepted]}
+      - {id: 8, auto-merge: true}
