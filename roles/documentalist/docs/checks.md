@@ -58,6 +58,9 @@ edited.
 
 - Every link to a file of the repository, and to a heading in it, must
   lead somewhere.
+  - A heading's anchor is GitHub's, whatever the forge: its shown text
+    lowercased, punctuation dropped (en and em dash too), spaces made
+    hyphens, a repeat numbered `-1`, `-2`. GitLab documents the same rule.
 - Links to other sites need the network, and break with no change to the
   repository: on `schedule` only, [lychee](https://lychee.cli.rs) checks
   them, with its own `lychee.toml` and `.lycheeignore` if the project has

@@ -242,15 +242,20 @@ func sections(lines []line) []section {
 	return out
 }
 
-// uniqueSlug is slug with the suffix GitHub and GitLab add to repeated headings.
+// uniqueSlug is slug with the suffix GitHub adds to an anchor already given:
+// -1, -2…, skipping one an earlier heading took (github-slugger's rule).
 func uniqueSlug(seen map[string]int, heading string) string {
 	s := slug(heading)
-	n := seen[s]
-	seen[s]++
-	if n > 0 {
-		return fmt.Sprintf("%s-%d", s, n)
+	u := s
+	for {
+		if _, taken := seen[u]; !taken {
+			break
+		}
+		seen[s]++
+		u = fmt.Sprintf("%s-%d", s, seen[s])
 	}
-	return s
+	seen[u] = 0
+	return u
 }
 
 // anchors lists the anchors a doc's headings give.
