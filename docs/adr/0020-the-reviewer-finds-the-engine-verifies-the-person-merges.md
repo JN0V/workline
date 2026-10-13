@@ -388,9 +388,13 @@ merge-request line; on in workline's own repository.
   engine reads back: the body's digest, the round, the important
   findings open and the sections they lie in. Open: an important
   finding not refused by its judge; a nit or a decision holds nothing.
+  A record that does not read is never none (#302): the issue is passed
+  over and held, said each run, until a person deletes the comment or
+  accepts the issue — read as none, it cost an agent call a night.
 - **The hold**: the product owner's `ready` check, when the line runs the
   reviewer after it. Dropped while the reviewer has not read the body as
-  it is (`spec-not-reviewed`), while a finding is open
+  it is (`spec-not-reviewed`), while its record does not read
+  (`spec-record-unread`), while a finding is open
   (`spec-findings-open`), once the rounds are spent
   (`spec-rounds-spent`). The same at every autonomy level
   ([ADR-0026](0026-the-product-owners-autonomy-is-a-level.md)): a check,

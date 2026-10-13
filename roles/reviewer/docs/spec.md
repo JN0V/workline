@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 1be9bd7
+checked: f78d077
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -80,6 +80,13 @@ routing:
 - **A review not whole** (a lens failed, the tokens spent) keeps the last
   record, its body unread: read again at the next run, the rounds counted
   as before, ready still held.
+- **A record that does not read**
+  ([#302](https://github.com/JN0V/workline/issues/302)) is never taken
+  for none, which read the spec again at round 1, an agent call a night.
+  - The issue is passed over, ready held, the next issue read instead.
+  - Said each run (`spec-record-unread`), naming the issue and the line.
+  - Released when a person deletes the comment (read anew, round 1) or
+    accepts the issue (`workline:accepted`).
 - **In CI**: judged, then applied; the reviewer reads what an earlier run
   refined, so a round takes two nights. `forge-writes: false` writes no
   comment: ready then stays held, `spec-not-reviewed`.

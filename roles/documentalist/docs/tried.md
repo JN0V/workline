@@ -884,6 +884,17 @@ documentalist, reviewer, 0 calls — and listed the 18 docs whose `checked`
 took `main`'s value. #315's and #316's tries gave the same merges as
 before.
 
+On 2026-10-12, a derive marker left open (#302), on a copy of workline, no
+agent: a line `<!-- workline:derive conformance-cases -->600 cases, its end
+forgotten.` planted above the README's real block, then
+`workline route schedule --ai none --no-apply`. The run said
+`derive-unclosed` on README.md and regenerated the real block alone; the
+words between were left as they were. `main`'s engine, on the same text in
+conformance (`derived-block-unclosed-left-as-it-is`), read the opening up to
+the next block's end and replaced the person's words with the count. The
+copy's own docs, before the plant, gave no `derive-unclosed`: their examples
+in code are not blocks.
+
 ## 2026-10-12 — the merge policy, `cautious`, live
 
 ADR-0042, #321: the engine of the branch, run by hand in clones of the

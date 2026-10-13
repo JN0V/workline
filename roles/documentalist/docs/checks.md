@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: c648a31
+checked: f78d077
 judged: f70db89
 verified: agent:documentalist
 ---
@@ -216,6 +216,7 @@ turns one off with `enforce`.
   parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
+- **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
 - **Reported; the block left for gardening**: `derived-behind` (push,
   merge request, release).
 - **Blocks**:

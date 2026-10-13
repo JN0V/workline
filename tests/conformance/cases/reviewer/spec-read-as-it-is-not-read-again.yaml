@@ -24,6 +24,7 @@ expect:
   status: pass
   agent-calls: 0
   summary: "no refined issue waits on a spec review"
+  no-findings: [{rule: spec-record-unread, where: "#6"}, {rule: spec-record-unread, where: "#7"}]
   forge:
     issues:
       - {id: 6, comments: 2}

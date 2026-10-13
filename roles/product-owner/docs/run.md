@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, roles/product-owner/instruction.md, roles/product-owner/policy.md, internal/builtin/productowner, internal/backlog]
-checked: a7c3acb5
+checked: f78d077
 verified: agent:claude-code
 ---
 # Product owner — a run
@@ -43,7 +43,10 @@ A share of the open issues (`issues-per-run`), in this order:
 
 Past `proposals-max` issues waiting on you, only those you commented on
 are read. The role's own comment is told by its hidden mark, never by
-who posted it: it may run with your token.
+who posted it: it may run with your token. One whose hidden record does
+not read holds its issue, a warning each run, never read as none
+([#302](https://github.com/JN0V/workline/issues/302), `state-broken`):
+mend that comment, or delete it for a state anew.
 
 Each issue comes with:
 
@@ -109,7 +112,9 @@ On an issue waiting on you, it is "revise":
   a question asked before is left out, the rest of the proposal kept.
 - **An outsider's issue** gets no section in its body: the engine comments
   to its reporter what it understood and the sections it would write. A
-  reply `agreed`, or `workline:accepted`, has them written.
+  reply `agreed`, or `workline:accepted`, has them written. If that
+  comment's hidden block does not read, nothing is written, said each run
+  (`proposal-unread`): copy the sections in by hand.
 
 ## Importing a file
 

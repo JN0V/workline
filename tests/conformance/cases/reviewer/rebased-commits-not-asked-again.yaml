@@ -11,4 +11,5 @@ run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, ai: "fak
 expect:
   status: pass
   agent-calls: 0
+  no-findings: [{rule: record-unread}]
   run-files: {out/review.json: {contains: "the 2 commits were reviewed already"}}

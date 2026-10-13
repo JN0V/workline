@@ -1,0 +1,33 @@
+case: reviewer/spec-record-unread-holds-the-issue
+about: "The record hidden in the reviewer's comment on an issue's spec does not read (#302): it is never taken for none, which read the spec again at round 1, an agent call a night, the issues after it waiting. The issue is passed over, held, and the night's summary names it and the record, and says what a person may do; the next issue waiting is read instead, its comment saying nothing of the other."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues:
+      - id: 2
+        title: Average crashes on an empty list
+        body: "## Need\n\nAverage gives 0 for an empty list instead of crashing.\n\n## Steps to reproduce\n\n1. Call Average on an empty list.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=000000000000 round=1 open=1 in=Steps to reproduce -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope", summary: true}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: spec-record-unread, where: "#2", level: warn, message: "`<!-- workline:spec-review body=000000000000 round=1 open=1 in=Steps to reproduce -->` does not read): not read again, and held from ready, until a person deletes that comment"}
+    - {rule: out-of-scope, where: "#4:3", message: "verified"}
+  summary-file:
+    - "#2, warn: the record hidden in the reviewer's comment on its spec does not read"
+  forge:
+    issues:
+      - {id: 2, comments: 2, comment-contains: "in=Steps to reproduce -->"}
+      - {id: 4, comments: 2, comment-contains: "round=1 open=1 in=Need -->", comment-lacks: "#2"}

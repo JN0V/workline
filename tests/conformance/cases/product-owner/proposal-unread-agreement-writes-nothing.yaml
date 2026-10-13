@@ -1,0 +1,18 @@
+case: product-owner/proposal-unread-agreement-writes-nothing
+about: "The engine's block in the text last proposed to an outsider's issue does not read (#302): the reporter's reply `agreed` writes nothing in the body, as before, but no longer in silence — the summary names the issue and the record, and says the body waits on a person to copy the sections in."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: [Every row exported.\nverification: A test writes three rows.\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: zed, body: "Agreed!\n\nThanks."}]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing, summary: true}
+expect:
+  findings:
+    - {rule: proposal-unread, where: "#9", level: warn, message: "the engine's block in the text last proposed to its reporter does not read (its YAML: yaml: "}
+    - {rule: proposal-unread, where: "#9", message: "an agreement to it writes nothing in the body, which waits on a person to copy the sections in"}
+  no-findings: [{rule: done, where: "#9"}]
+  summary-file:
+    - "#9](https://forge.example/issues/9), warn: the engine's block in the text last proposed to its reporter does not read"
+  forge:
+    issues:
+      - {id: 9, body-lacks: "## Need", labels: [workline:to-refine]}

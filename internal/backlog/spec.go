@@ -58,16 +58,18 @@ func (r SpecReview) String() string {
 }
 
 // ReadSpecReview reads the reviewer's record from an issue's comments: nil
-// when it has none, or one that does not read. The last comment carrying
-// the marker is read (GitLab: one another token wrote is left behind).
-func ReadSpecReview(comments []string) *SpecReview {
+// when it has none. The last comment carrying the marker is read (GitLab:
+// one another token wrote is left behind). One that does not read is an
+// error (#302), never taken for none: read as none, the spec was read
+// again at round 1, night after night, in silence.
+func ReadSpecReview(comments []string) (*SpecReview, error) {
 	for i := len(comments) - 1; i >= 0; i-- {
 		if !strings.Contains(comments[i], SpecMarker) {
 			continue
 		}
 		m := specRecord.FindStringSubmatch(comments[i])
 		if m == nil {
-			return nil
+			return nil, UnreadRecord(comments[i], specOpening)
 		}
 		r := &SpecReview{Body: m[1], Stopped: m[5] != ""}
 		r.Round, _ = strconv.Atoi(m[2])
@@ -75,15 +77,46 @@ func ReadSpecReview(comments []string) *SpecReview {
 		for _, h := range strings.Split(m[4], ",") {
 			name, err := url.QueryUnescape(h)
 			if err != nil {
-				return nil
+				return nil, UnreadRecord(comments[i], specOpening)
 			}
 			if name != "" {
 				r.In = append(r.In, name)
 			}
 		}
-		return r
+		return r, nil
 	}
-	return nil
+	return nil, nil
+}
+
+// specOpening opens the reviewer's record in its comment on a spec.
+const specOpening = "<!-- workline:spec-review"
+
+// UnreadRecord says why a record the engine hid in a text does not read
+// (#302): the line holding its opening, quoted as code so a summary shows
+// it, or that the text holds none.
+func UnreadRecord(text, opening string) error {
+	for _, l := range strings.Split(text, "\n") {
+		if i := strings.Index(l, opening); i >= 0 {
+			line := []rune(strings.ReplaceAll(strings.TrimSpace(l[i:]), "`", "'"))
+			if len(line) > 120 {
+				line = append(line[:119], '…')
+			}
+			return fmt.Errorf("`%s` does not read", string(line))
+		}
+	}
+	return fmt.Errorf("no `%s` line in it", strings.TrimPrefix(opening, "<!-- "))
+}
+
+// SpecRecordUnread is the rule said of an issue whose reviewer's record
+// does not read (#302).
+const SpecRecordUnread = "spec-record-unread"
+
+// SpecUnread is what is said of an issue whose reviewer's record does not
+// read: the record, why, and what becomes of the issue — held for a
+// person, never read again in silence, which loops an agent call a night.
+func SpecUnread(err error) string {
+	return "the record hidden in the reviewer's comment on its spec does not read (" + err.Error() + "): not read again, and held from ready, " +
+		"until a person deletes that comment — the spec then read anew, at round 1 — or accepts the issue (" + LabelAccepted + ")"
 }
 
 // SpecHold says why an issue's spec holds it from ready, "" when nothing
@@ -94,8 +127,10 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 	if Accepted(is) {
 		return "", ""
 	}
-	r := ReadSpecReview(comments)
+	r, err := ReadSpecReview(comments)
 	switch {
+	case err != nil:
+		return SpecRecordUnread, SpecUnread(err)
 	case r == nil:
 		return "spec-not-reviewed", "the reviewer has not read its spec yet: ready once it has and no important finding is open, or a person accepts it (" + LabelAccepted + ")"
 	case r.Stopped:
@@ -111,14 +146,14 @@ func SpecHold(is forge.Issue, comments []string) (rule, why string) {
 // SpecCleared says whether the reviewer read the issue's body as it is and
 // found no important finding open.
 func SpecCleared(is forge.Issue, comments []string) (*SpecReview, bool) {
-	r := ReadSpecReview(comments)
+	r, _ := ReadSpecReview(comments) // one that does not read clears nothing (SpecHold says it)
 	return r, r != nil && !r.Stopped && r.Open == 0 && r.Body == BodyDigest(is.Body)
 }
 
 // SpecOpen is the reviewer's record when it holds important findings open
 // on the body as it is, for the product owner to answer; nil otherwise.
 func SpecOpen(is forge.Issue, comments []string) *SpecReview {
-	r := ReadSpecReview(comments)
+	r, _ := ReadSpecReview(comments) // one that does not read holds nothing to answer
 	if r == nil || r.Stopped || r.Open == 0 || r.Body != BodyDigest(is.Body) {
 		return nil
 	}

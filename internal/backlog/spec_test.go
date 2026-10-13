@@ -2,6 +2,7 @@ package backlog
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -10,12 +11,34 @@ import (
 
 func TestSpecReviewReadsBack(t *testing.T) {
 	r := SpecReview{Body: "3f9a1c0e2b7d", Round: 2, Open: 1, In: []string{"Verification", "Scope"}, Stopped: true}
-	got := ReadSpecReview([]string{"state", "findings\n\n" + r.String() + "\n\n" + SpecMarker})
-	if got == nil || got.Body != r.Body || got.Round != 2 || got.Open != 1 || !slices.Equal(got.In, r.In) || !got.Stopped {
-		t.Fatalf("read back %+v from %q", got, r.String())
+	got, err := ReadSpecReview([]string{"state", "findings\n\n" + r.String() + "\n\n" + SpecMarker})
+	if err != nil || got == nil || got.Body != r.Body || got.Round != 2 || got.Open != 1 || !slices.Equal(got.In, r.In) || !got.Stopped {
+		t.Fatalf("read back %+v (%v) from %q", got, err, r.String())
 	}
-	if ReadSpecReview([]string{r.String()}) != nil {
-		t.Fatal("a record without the reviewer's marker read")
+	if got, err := ReadSpecReview([]string{r.String()}); got != nil || err != nil {
+		t.Fatalf("a record without the reviewer's marker read: %+v, %v", got, err)
+	}
+}
+
+// A record the reviewer's comment holds that does not read is said (#302),
+// never taken for none; the line is quoted as code, a summary showing it.
+func TestSpecReviewUnreadSaid(t *testing.T) {
+	for _, c := range []struct{ comment, says string }{
+		{"<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Steps to reproduce -->", "`<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Steps to reproduce -->` does not read"},
+		{"<!-- workline:spec-review body=d424ff914f28 round=1 open=1 in=Need%zz -->", "in=Need%zz -->` does not read"},
+		{"Findings, the record taken out by hand.", "no `workline:spec-review` line in it"},
+	} {
+		got, err := ReadSpecReview([]string{c.comment + "\n\n" + SpecMarker})
+		if got != nil || err == nil || !strings.Contains(err.Error(), c.says) {
+			t.Errorf("%q: %+v, %v; want an error saying %q", c.comment, got, err, c.says)
+		}
+		is := forge.Issue{Body: "## Need\n\nA."}
+		if rule, why := SpecHold(is, []string{c.comment + "\n\n" + SpecMarker}); rule != SpecRecordUnread || !strings.Contains(why, "held from ready") {
+			t.Errorf("%q: held %q, %q", c.comment, rule, why)
+		}
+		if r, cleared := SpecCleared(is, []string{c.comment + "\n\n" + SpecMarker}); r != nil || cleared {
+			t.Errorf("%q: cleared %+v", c.comment, r)
+		}
 	}
 }
 
@@ -25,19 +48,19 @@ func TestSpecReviewReadsBack(t *testing.T) {
 func TestSpecReviewHoldsAnyHeading(t *testing.T) {
 	in := []string{work.Name(work.Steps), "Acceptance criteria", "What happened?", "Notes, ideas", "Critères", "a --> b", "C++ at 100%"}
 	r := SpecReview{Body: "3f9a1c0e2b7d", Round: 3, Open: 2, In: in}
-	got := ReadSpecReview([]string{r.String() + "\n\n" + SpecMarker})
-	if got == nil || got.Round != 3 || got.Open != 2 || !slices.Equal(got.In, in) {
-		t.Fatalf("read back %+v from %q", got, r.String())
+	got, err := ReadSpecReview([]string{r.String() + "\n\n" + SpecMarker})
+	if err != nil || got == nil || got.Round != 3 || got.Open != 2 || !slices.Equal(got.In, in) {
+		t.Fatalf("read back %+v (%v) from %q", got, err, r.String())
 	}
 	old := "<!-- workline:spec-review body=d424ff914f28 round=1 open=2 in=Verification,Scope -->"
-	if got := ReadSpecReview([]string{old + "\n\n" + SpecMarker}); got == nil || got.Round != 1 || !slices.Equal(got.In, []string{"Verification", "Scope"}) {
-		t.Fatalf("a record written before read %+v", got)
+	if got, err := ReadSpecReview([]string{old + "\n\n" + SpecMarker}); err != nil || got == nil || got.Round != 1 || !slices.Equal(got.In, []string{"Verification", "Scope"}) {
+		t.Fatalf("a record written before read %+v (%v)", got, err)
 	}
 	if s := (SpecReview{Body: "d424ff914f28", Round: 1, Open: 2, In: []string{"Verification", "Scope"}}).String(); s != old {
 		t.Fatalf("headings of letters only written %q, want as before: %q", s, old)
 	}
-	if got := ReadSpecReview([]string{"<!-- workline:spec-review body= round=1 open=0 in= -->\n\n" + SpecMarker}); got == nil || got.In != nil {
-		t.Fatalf("a record of no section read %+v", got)
+	if got, err := ReadSpecReview([]string{"<!-- workline:spec-review body= round=1 open=0 in= -->\n\n" + SpecMarker}); err != nil || got == nil || got.In != nil {
+		t.Fatalf("a record of no section read %+v (%v)", got, err)
 	}
 }
 

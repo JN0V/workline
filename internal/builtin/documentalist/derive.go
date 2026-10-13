@@ -12,9 +12,39 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// derived matches a block of facts regenerated from the code: inline
-// (`<!-- workline:derive name -->3<!-- workline:end -->`) or on lines of its own.
-var derived = regexp.MustCompile(`(?s)<!-- workline:derive (\S+) -->(.*?)<!-- workline:end -->`)
+// A block of facts regenerated from the code opens with deriveOpening and
+// ends at deriveEnd: inline (`<!-- workline:derive name -->3<!-- workline:end -->`)
+// or on lines of its own.
+var deriveOpening = regexp.MustCompile(`<!-- workline:derive (\S+) -->`)
+
+const deriveEnd = "<!-- workline:end -->"
+
+// derivedBlocks finds a doc's derived blocks outside code, each as
+// FindAllStringSubmatchIndex gives it: the block, its name, what it holds.
+// An opening with another before its end, or no end at all, is unclosed
+// (#302): its name said, the opening left as it is — read up to the next
+// block's end, the text between was taken for its fact and replaced.
+func derivedBlocks(content string) (blocks [][]int, unclosed []string) {
+	code := codeRanges(content)
+	opens := deriveOpening.FindAllStringSubmatchIndex(content, -1)
+	for i, o := range opens {
+		if inRanges(code, o[0]) {
+			continue
+		}
+		next := len(content) // the next opening, in code too: an example's end is not this block's
+		if i+1 < len(opens) {
+			next = opens[i+1][0]
+		}
+		end := strings.Index(content[o[1]:next], deriveEnd)
+		if end < 0 {
+			unclosed = append(unclosed, content[o[2]:o[3]])
+			continue
+		}
+		end += o[1]
+		blocks = append(blocks, []int{o[0], end + len(deriveEnd), o[2], o[3], o[1], end})
+	}
+	return blocks, unclosed
+}
 
 // Derive regenerates the derived blocks of the docs from the commands the
 // project declares by name (`settings.derive`). Commands live in the config,
@@ -33,13 +63,14 @@ func Derive(repo string, docs map[string]string, commands map[string]string, beh
 	sort.Strings(paths)
 	for _, p := range paths {
 		content := docs[p]
-		code := codeRanges(content)
 		var now strings.Builder
 		last, stale := 0, 0
-		for _, loc := range derived.FindAllStringSubmatchIndex(content, -1) {
-			if inRanges(code, loc[0]) {
-				continue
-			}
+		blocks, unclosed := derivedBlocks(content)
+		for _, name := range unclosed {
+			d.findings = append(d.findings, verdict.Finding{Rule: "derive-unclosed", Where: p, Level: "warn",
+				Message: fmt.Sprintf("`<!-- workline:derive %s -->` has no `%s` before the next block: left as it is, not regenerated, until a person closes it", name, deriveEnd)})
+		}
+		for _, loc := range blocks {
 			block := d.block(p, content[loc[2]:loc[3]], content[loc[4]:loc[5]])
 			if block == "" {
 				continue // could not be regenerated; left as it is, and reported

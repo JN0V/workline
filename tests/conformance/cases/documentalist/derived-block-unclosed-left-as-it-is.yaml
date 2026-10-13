@@ -1,0 +1,15 @@
+case: documentalist/derived-block-unclosed-left-as-it-is
+about: "A derive marker with no end before the next block's (#302) is not read up to that end — which took the person's text between for its fact and replaced it — but left as it is and said, a warning naming the doc and the block; the block after it, closed, is regenerated."
+given:
+  repo: documented
+  setup: ["printf '\\nThe code holds <!-- workline:derive auth-files -->3 files.\\n\\nWords a person wrote.\\n\\nIn all: <!-- workline:derive auth-files -->3<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"]
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: derive-unclosed, where: docs/tech/auth.md, level: warn, message: "`<!-- workline:derive auth-files -->` has no `<!-- workline:end -->` before the next block: left as it is, not regenerated"}
+    - {rule: derived-stale, where: docs/tech/auth.md}
+  files:
+    "docs/tech/auth.md": {contains: "The code holds <!-- workline:derive auth-files -->3 files.\n\nWords a person wrote.\n\nIn all: <!-- workline:derive auth-files -->1<!-- workline:end --> files."}

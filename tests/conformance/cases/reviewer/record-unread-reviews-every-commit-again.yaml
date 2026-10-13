@@ -1,0 +1,28 @@
+case: reviewer/record-unread-reviews-every-commit-again
+about: "The record of what was reviewed, hidden in the reviewer's summary comment on a merge request, does not read (#302): it is never taken for none in silence. The summary names the merge request and the record, and says what the reviewer does: every commit of the range reviewed again, once — the review writes the record anew, which the next push reads."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed.\n\n<!-- workline:record reviewed=@reviewed@ runs=one -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-nothing", summary: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: record-unread, level: warn, message: "the record of what was reviewed before, in its summary comment on merge request 5, could not be read (`<!-- workline:record reviewed="}
+    - {rule: record-unread, message: "runs=one -->` does not read): every commit of the range is reviewed again, and a whole review writes it anew"}
+  summary-file:
+    - "record-unread"
+  run-files:
+    in/parts/1-correctness/task.md: {contains: ["### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| warns | record-unread |", " runs=1 -->\n"]}
