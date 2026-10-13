@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: c78bafd7
+checked: e42a21a1
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -91,7 +91,8 @@ saying so.
   run's code could have done to its folders: `run` (keys of
   `out/run.yaml` written over), `intents` (proposals added), `listed` (the
   run listed at that path instead), `setup` (commands run first: what the
-  branches became since);
+  branches became since); `env`, the applying job's variables
+  (`WORKLINE_APP`);
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 ## Expect
