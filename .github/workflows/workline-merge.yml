@@ -11,6 +11,7 @@ jobs:
   follow:
     concurrency: {group: "workline-follow-${{ github.base_ref }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: read}
     steps:
       - id: app

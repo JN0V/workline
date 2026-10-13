@@ -61,6 +61,7 @@ jobs:
     needs: read
     if: always() && needs.read.outputs.drawn == 'true'
     runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app

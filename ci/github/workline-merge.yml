@@ -1,9 +1,11 @@
 # workline's merge policy when a label is put or taken off, or a draft
-# made — copy to .github/workflows/workline-merge.yml, beside workline.yml,
+# made — copy to .github/workflows/workline-merge.yml, beside workline.yml
+# and workline-apply.yml,
 # with `merge: {autonomy: cautious}` (the first release after v0.25.0).
 # pull_request_target: the repository's own run and secrets, the base
 # checked out, nothing of the pull request. No `judge` here: a skipped one
-# would show the check passed. Only with the GitHub App's token.
+# would show the check passed. Only with the GitHub App's token, its key in
+# the environment workline-app, which only the default branch may use.
 # What it does: docs/merge-policy.md.
 name: workline merge
 on:
@@ -15,10 +17,11 @@ env:
 
 jobs:
   follow:
-    # One at a time on a branch, with workline.yml's: the first in line is
+    # One at a time on a branch, with workline-apply.yml's: the first in line is
     # brought up once.
     concurrency: {group: "workline-follow-${{ github.base_ref }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: read}
     steps:
       - id: app

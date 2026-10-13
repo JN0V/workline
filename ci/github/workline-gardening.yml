@@ -19,7 +19,8 @@
 #          on main those main moved under, or closes them, saying why, when
 #          nothing is left to merge (`workline follow --gardening`,
 #          ADR-0034). With a GitHub App
-#          (variable WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY), the
+#          (variable WORKLINE_APP_ID, secret WORKLINE_APP_PRIVATE_KEY in the
+#          environment workline-app, which only the default branch may use), the
 #          pull request runs your checks by itself; with the job's own token,
 #          GitHub waits for someone to approve them, and the repository must
 #          let Actions create pull requests (Settings → Actions → General).
@@ -93,6 +94,7 @@ jobs:
     needs: judge
     if: always()
     runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     # issues: the product owner's acts (comments, labels, closings,
     # reactions) on each issue.
     permissions: {contents: write, pull-requests: write, issues: write}
