@@ -68,7 +68,8 @@ func TestRoutineKind(t *testing.T) {
 
 // A revert names what it reverts in git's words, GitLab's or GitHub's; the
 // merge request is the one the reverted merge names, else the one the
-// revert's subject quotes.
+// revert's subject quotes; GitHub's own revert, `Revert "<title>"` alone,
+// the merge of that title it undoes exactly, else the newest of that title.
 func TestRevertOf(t *testing.T) {
 	repo, run, write := gitRepo(t)
 	write("doc.md", "One.\n")
@@ -78,6 +79,31 @@ func TestRevertOf(t *testing.T) {
 	write("doc.md", "Two.\n")
 	run("commit", "-q", "-am", "Merge pull request #12 from acme/workline/documentalist/derived")
 	merge := run("rev-parse", "HEAD")
+	// Two merges of the same title, by merge commits; the older reverted.
+	same := func(n, line string) string {
+		run("checkout", "-q", "-b", "b"+n)
+		write("doc"+n+".md", line)
+		run("add", "doc"+n+".md")
+		run("commit", "-q", "-m", "docs: bring the docs in line")
+		run("checkout", "-q", "main")
+		run("merge", "-q", "--no-ff", "b"+n, "-m", "Merge pull request #"+n+" from acme/workline/documentalist/release", "-m", "docs: bring the docs in line")
+		return run("rev-parse", "HEAD")
+	}
+	same("20", "Three.\n")
+	older := run("rev-parse", "HEAD")
+	same("21", "Four.\n")
+	run("revert", "--no-edit", "-m", "1", older)
+	reverted := run("rev-parse", "HEAD")
+	run("commit", "-q", "--amend", "-m", "Revert \"docs: bring the docs in line\"") // GitHub's: no body
+	githubs := run("rev-parse", "HEAD")
+	if githubs == reverted {
+		t.Fatal("the revert's message was not rewritten")
+	}
+	history, err := commits(repo, "HEAD", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	none := func() []logged { return nil }
 	for _, c := range []struct {
 		msg  string
 		want int
@@ -91,9 +117,15 @@ func TestRevertOf(t *testing.T) {
 		{"docs: the word Revert in a subject (#5)\n", 0},
 		{"feat: a feature (#6)\n", 0},
 	} {
-		if got := revertOf(repo, c.msg); got != c.want {
+		if got := revertOf(repo, logged{"", c.msg}, none); got != c.want {
 			t.Errorf("%q: %d, want %d", c.msg, got, c.want)
 		}
+	}
+	if got := revertOf(repo, history[0], func() []logged { return history[1:] }); got != 20 {
+		t.Errorf("GitHub's revert of the older of two merges of one title: %d, want 20, the one it undoes", got)
+	}
+	if n, title := requestOf("Merge branch 'derived' into 'main'\n\ndocs: regenerate the derived blocks\n\nSee merge request acme/workline!21"); n != 21 || title != "docs: regenerate the derived blocks" {
+		t.Errorf("GitLab's merge: %d %q", n, title)
 	}
 }
 
@@ -106,10 +138,13 @@ func TestOwnNote(t *testing.T) {
 		{Body: "**Merging with no person's yes**\n\n<!-- workline:merge-alone=records -->", Author: "workline-app[bot]", Bot: true},
 		{Body: "Quoting <!-- workline:merge-demoted=abc --> in a sentence.", Author: ""},
 	}
-	if kind, ok := ownNote(notes, "merge-alone="); !ok || kind != "records" {
+	if kind, ok := ownNote(notes, "merge-alone=", "workline-app[bot]"); !ok || kind != "records" {
 		t.Errorf("merge-alone: %q, %v; want records, the bot's", kind, ok)
 	}
-	if _, ok := ownNote(notes, "merge-demoted=abc"); ok {
+	if kind, ok := ownNote(notes, "merge-alone=", "dana"); !ok || kind != "docs" {
+		t.Errorf("merge-alone, the token dana's: %q, %v; want docs, written as the token's user", kind, ok)
+	}
+	if _, ok := ownNote(notes, "merge-demoted=abc", ""); ok {
 		t.Errorf("a marker inside a sentence read as the engine's")
 	}
 }

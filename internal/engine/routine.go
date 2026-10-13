@@ -43,8 +43,29 @@ var kindSays = map[string]string{
 }
 
 // revertWindow is how many commits of the base's history, from its tip,
-// are read for reverts: each is read once, its demotion kept in an issue.
-const revertWindow = 100
+// are read for reverts: each is read once, its demotion kept in an issue;
+// mergeWindow, how many for the merge a revert quoting a title undoes.
+const (
+	revertWindow = 100
+	mergeWindow  = 1000
+)
+
+// commits are the last n commits of tip's history, every parent, newest
+// first, with their messages: a commit before its parents, whatever their
+// dates.
+func commits(repo, tip string, n int) ([]logged, error) {
+	out, err := git(repo, nil, "log", "--topo-order", "-n", strconv.Itoa(n), "--format=%H%x1f%B%x1e", tip)
+	if err != nil {
+		return nil, err
+	}
+	var all []logged
+	for _, rec := range strings.Split(out, "\x1e") {
+		if sha, msg, ok := strings.Cut(strings.TrimSpace(rec), "\x1f"); ok {
+			all = append(all, logged{sha, msg})
+		}
+	}
+	return all, nil
+}
 
 // routineCandidate says whether a merge request may be workline's own
 // routine one, at `normal`: from a role's branch of this repository
@@ -253,42 +274,99 @@ var (
 	mergeRequestOf = regexp.MustCompile(`(?m)^See merge request \S*!(\d+)\b`)
 )
 
-// revertOf is the merge request a commit's message says it reverts, 0 when
-// it is no revert or names none.
-func revertOf(repo, msg string) int {
-	subject, _, _ := strings.Cut(msg, "\n")
-	if !revertSubject.MatchString(subject) && !strings.Contains(msg, "This reverts ") && !revertsPull.MatchString(msg) {
+// logged is a commit of the base's history and its message.
+type logged struct{ sha, msg string }
+
+// revertOf is the merge request commit r reverts, 0 when it is no revert or
+// names none. Named in its message — git's words naming the commit
+// reverted, GitLab's or GitHub's naming the merge request —, else found by
+// the title it quotes: GitHub's own revert says only `Revert "<title>"`.
+// Among the merges with that title in older, the commits older than r,
+// newest first, the one r undoes exactly — the same change, inverted — is
+// taken, else the newest.
+func revertOf(repo string, r logged, older func() []logged) int {
+	subject, _, _ := strings.Cut(r.msg, "\n")
+	if !revertSubject.MatchString(subject) && !strings.Contains(r.msg, "This reverts ") && !revertsPull.MatchString(r.msg) {
 		return 0
 	}
 	for _, re := range []*regexp.Regexp{revertsRequest, revertsPull} {
-		if m := re.FindStringSubmatch(msg); m != nil {
+		if m := re.FindStringSubmatch(r.msg); m != nil {
 			n, _ := strconv.Atoi(m[1])
 			return n
 		}
 	}
-	if m := revertsCommit.FindStringSubmatch(msg); m != nil {
+	if m := revertsCommit.FindStringSubmatch(r.msg); m != nil {
 		if was, err := git(repo, nil, "log", "-1", "--format=%B", m[1]); err == nil {
-			if n := requestOf(was); n > 0 {
+			if n, _ := requestOf(was); n > 0 {
 				return n
 			}
 		}
 	}
-	if m := revertSubject.FindStringSubmatch(subject); m != nil {
-		return requestOf(m[1])
+	m := revertSubject.FindStringSubmatch(subject)
+	if m == nil {
+		return 0
 	}
-	return 0
-}
-
-// requestOf is the merge request a merge's message names, 0 none.
-func requestOf(msg string) int {
-	subject, _, _ := strings.Cut(msg, "\n")
-	for _, m := range [][]string{squashSubject.FindStringSubmatch(strings.TrimSpace(subject)), mergeSubject.FindStringSubmatch(subject), mergeRequestOf.FindStringSubmatch(msg)} {
-		if m != nil {
-			n, _ := strconv.Atoi(m[1])
+	if n, _ := requestOf(m[1]); n > 0 {
+		return n // `Revert "<title> (#N)"`
+	}
+	undone, first := "", 0
+	for _, c := range older() {
+		n, title := requestOf(c.msg)
+		if n == 0 || title != m[1] {
+			continue
+		}
+		if undone == "" {
+			undone = patchID(repo, r.sha, r.sha+"^")
+		}
+		if undone != "" && patchID(repo, c.sha+"^1", c.sha) == undone {
 			return n
 		}
+		if first == 0 {
+			first = n
+		}
 	}
-	return 0
+	return first
+}
+
+// patchID is the id git gives the change from a to b, whatever its
+// context lines; "" when it cannot be told.
+func patchID(repo, a, b string) string {
+	diff, err := git(repo, nil, "diff", a, b)
+	if err != nil || diff == "" {
+		return ""
+	}
+	out, err := gitIn(repo, diff+"\n", "patch-id", "--stable")
+	if err != nil {
+		return ""
+	}
+	id, _, _ := strings.Cut(out, " ")
+	return id
+}
+
+// requestOf is the merge request a merge's message names, 0 none, and its
+// title: GitHub's squash, `<title> (#N)`; GitHub's merge, `Merge pull
+// request #N …` and the title below; GitLab's merge, the title below and
+// `See merge request …!N`.
+func requestOf(msg string) (int, string) {
+	subject, body, _ := strings.Cut(msg, "\n")
+	subject = strings.TrimSpace(subject)
+	below := ""
+	for _, l := range strings.Split(body, "\n") {
+		if below = strings.TrimSpace(l); below != "" {
+			break
+		}
+	}
+	if m := squashSubject.FindStringSubmatchIndex(subject); m != nil {
+		n, _ := strconv.Atoi(subject[m[2]:m[3]])
+		return n, strings.TrimSpace(subject[:m[0]])
+	}
+	for _, m := range [][]string{mergeSubject.FindStringSubmatch(subject), mergeRequestOf.FindStringSubmatch(msg)} {
+		if m != nil {
+			n, _ := strconv.Atoi(m[1])
+			return n, below
+		}
+	}
+	return 0, ""
 }
 
 // remoteTip is base's tip on origin, fetched with its history.
@@ -305,13 +383,14 @@ func demotedTitle(kind string) string {
 }
 
 // ownNote finds, among a merge request's comments, the engine's one whose
-// marker starts with key — written by a bot, or by no one the forge names
-// (the simulated forge's own) —: the marker's value after key, and whether
-// there is one. A person's comment ending with a marker is theirs.
-func ownNote(notes []forge.Note, key string) (string, bool) {
+// marker starts with key — written by a bot, by self, the user the token
+// writes as, or by no one the forge names (the simulated forge's own) —:
+// the marker's value after key, and whether there is one. A person's
+// comment ending with a marker is theirs.
+func ownNote(notes []forge.Note, key, self string) (string, bool) {
 	for _, n := range notes {
 		last, engine := backlog.EngineMarker(n.Body)
-		if !engine || !n.Bot && n.Author != "" {
+		if !engine || !n.Bot && n.Author != "" && n.Author != self {
 			continue
 		}
 		if v, ok := strings.CutPrefix(last, "<!-- workline:"+key); ok {
@@ -332,20 +411,33 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 	if !ok {
 		return nil, nil
 	}
-	out, err := git(o.Repo, nil, "log", "--first-parent", "-n", strconv.Itoa(revertWindow), "--format=%H%x1f%B%x1e", baseTip)
+	// Every parent: a revert merged with a merge commit is on its second.
+	history, err := commits(o.Repo, baseTip, revertWindow)
 	if err != nil {
 		return nil, err
 	}
+	var deeper []logged // what a revert may name, read once if needed
 	demoted := map[string]string{}
-	for _, rec := range strings.Split(out, "\x1e") {
-		sha, msg, ok := strings.Cut(strings.TrimSpace(rec), "\x1f")
-		if !ok {
-			continue
+	for i, r := range history {
+		older := func() []logged {
+			if deeper == nil {
+				d, err := commits(o.Repo, baseTip, mergeWindow)
+				if err != nil {
+					d = []logged{}
+				}
+				deeper = d
+			}
+			at := slices.IndexFunc(deeper, func(c logged) bool { return c.sha == r.sha })
+			if at < 0 {
+				return history[i+1:]
+			}
+			return deeper[at+1:]
 		}
-		n := revertOf(o.Repo, msg)
+		n := revertOf(o.Repo, r, older)
 		if n == 0 {
 			continue
 		}
+		sha, msg := r.sha, r.msg
 		t := forge.Target{Kind: "merge-request", ID: n}
 		notes, err := b.Notes(t)
 		switch {
@@ -354,15 +446,16 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 		case err != nil:
 			continue // no merge request of that number here
 		}
-		kind, alone := ownNote(notes, "merge-alone=")
+		self := forge.Self(f)
+		kind, alone := ownNote(notes, "merge-alone=", self)
 		if !alone || !slices.Contains(RoutineKinds, kind) {
 			continue
 		}
-		if _, read := ownNote(notes, "merge-demoted="+sha); read {
+		if _, read := ownNote(notes, "merge-demoted="+sha, self); read {
 			continue // read already: its issue opened, closed since or not
 		}
 		where, subject := forge.MergeRef(f, n), firstSentence(msg)
-		body := fmt.Sprintf("**%s merged with no person's yes, and was reverted** by %s (%q). Its kind, %s — %s —, now waits for a person's yes, the label `workline:accepted`, on each merge request, as at `cautious`.\n\n**To let workline merge its %s merge requests alone again, close this issue.** Leave it open while you are not sure.",
+		body := fmt.Sprintf("**%s merged with no person's yes, and was reverted** by %s, `%s`. Its kind, %s — %s —, now waits for a person's yes, the label `workline:accepted`, on each merge request, as at `cautious`.\n\n**To let workline merge its %s merge requests alone again, close this issue.** Leave it open while you are not sure.",
 			where, short(sha), subject, kind, kindSays[kind], kind)
 		id, err := f.OpenIssue(demotedTitle(kind), body, forge.Marker("merge-demoted="+sha))
 		if err != nil {
@@ -375,13 +468,15 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 				Message: fmt.Sprintf("merged with no person's yes, reverted by %s: workline's %s merge requests wait for a person's yes in this run, but the issue that keeps it could not be opened: %s", short(sha), kind, forge.Said(err))})
 			continue
 		}
+		// Held from this run, whether the forge lists the issue yet or not.
 		issue := fmt.Sprintf("#%d", id)
+		demoted[kind] = issue
 		if err := f.Comment(t, fmt.Sprintf("**Reverted** by %s: workline's %s merge requests wait for a person's yes again, until a person closes %s.", short(sha), kind, issue),
 			forge.Marker("merge-demoted="+sha)); err != nil {
 			return nil, err
 		}
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-demoted", Level: "warn", Where: where,
-			Message: fmt.Sprintf("merged with no person's yes, reverted by %s (%q): workline's %s merge requests wait for a person's yes again, until a person closes %s", short(sha), subject, kind, issue)})
+			Message: fmt.Sprintf("merged with no person's yes, reverted by %s, `%s`: workline's %s merge requests wait for a person's yes again, until a person closes %s", short(sha), subject, kind, issue)})
 	}
 	open, err := b.Issues()
 	if err != nil {
@@ -389,7 +484,7 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 	}
 	for _, is := range open {
 		for _, kind := range RoutineKinds {
-			if is.Title == demotedTitle(kind) {
+			if is.Title == demotedTitle(kind) && demoted[kind] == "" {
 				demoted[kind] = fmt.Sprintf("#%d", is.ID)
 			}
 		}

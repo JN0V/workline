@@ -1,11 +1,12 @@
 case: merge/normal-revert-demotes-until-restored
-about: "A revert demotes (#322): at `normal`, #9, a records pull request workline merged with no person's yes — recorded on it —, was reverted on main (`git revert`, its message naming the commit, the commit naming #9). `workline follow` sends records back to a person's yes (ADR-0026): an issue kept open says why and how to restore it, #9 is told, the summary says it, and the next records pull request, #10, waits. A person closes the issue: the next run merges #10 alone, and the same revert is never read twice (ADR-0042, amended)."
+about: "A revert demotes (#322): at `normal`, #9, a records pull request workline merged with no person's yes — recorded on it —, was reverted with GitHub's own Revert: a commit saying only `Revert \"<its title>\"`, in a pull request of its own, #11, both merged by merge commits. `workline follow` finds the merge it undoes by its title and its change, and sends records back to a person's yes (ADR-0026): an issue kept open says why and how to restore it, #9 is told, the summary says it, and the next records pull request, #10, waits. A person closes the issue: the next run merges #10 alone, and the same revert is never read twice (ADR-0042, amended)."
 given:
   repo: documented
   config: {merge: {autonomy: normal}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
-    - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged (#9)' && git revert --no-edit HEAD >/dev/null && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git checkout -q main && git merge -q --no-ff workline/documentalist/suspect -m 'Merge pull request #9 from acme/workline/documentalist/suspect' -m 'docs: record the docs judged'"
+    - "git checkout -qb revert-9-workline/documentalist/suspect && git revert --no-edit HEAD -m 1 >/dev/null && git commit -q --amend -m 'Revert \"docs: record the docs judged\"' && git checkout -q main && git merge -q --no-ff revert-9-workline/documentalist/suspect -m 'Merge pull request #11 from acme/revert-9-workline/documentalist/suspect' -m 'Revert \"docs: record the docs judged\"' && git push -q origin main"
     - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
   forge:
     statuses:
