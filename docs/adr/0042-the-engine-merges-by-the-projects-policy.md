@@ -1,8 +1,10 @@
 # ADR-0042: The engine merges by the project's written policy, through the forge's auto-merge
 
 - **Status:** accepted, "For the person" as proposed; `cautious` built by
-  [#321] ([page](../merge-policy.md), [below](#built-2026-10-12-321)),
-  `normal` parked in [#322]
+  [#321] ([page](../merge-policy.md), [below](#built-2026-10-12-321));
+  `normal` built for workline's own routine pull requests by [#322]
+  ([amendment](#amendment-2026-10-13-322-normal-routine-pull-requests-first)),
+  agents' pull requests next
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -92,6 +94,9 @@ puts the label.
 - **A person's pull request**, or an agent's, with no label.
 
 ### `normal`, later ([#322])
+
+Built for workline's own routine pull requests: the
+[amendment](#amendment-2026-10-13-322-normal-routine-pull-requests-first).
 
 - **Also with no label**: workline's own routine pull requests — records
   only, derived blocks, `follow`'s rebuilds; then an agent's, told from
@@ -242,6 +247,90 @@ puts the label.
   TestMergePolicyRunsAfterTheJudgeAndOnLabels, TestGitHubGuarded,
   TestSumChecks.
 
+## Amendment (2026-10-13, #322): `normal`, routine pull requests first
+
+The maintainer, 2026-10-13: build `normal` now, workline's own routine
+pull requests first; the agents' pull requests in a second part. What the
+build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
+
+### What merges with no person's yes
+
+- **Workline's own pull request**, all of these:
+  - from a role's branch, `workline/<role>/<task>`, of this repository;
+  - opened by workline — a bot, as the forge says (an App, a project
+    bot), or the user `follow`'s token writes as —, not a release tool's;
+  - every commit workline's own as `follow` already tells it ([#329]): a
+    merge of the base whose tree is exactly workline's merge, or a commit
+    changing doc pages alone; its trailer is never enough;
+  - not a Draft, its auto-merge not turned off since it was turned on.
+- **Its head's verdict passed**, as for a yes: `judge` green, an agent
+  really answered where one is set, no lens short.
+- **Three kinds, told by what the change is**, never by the branch's
+  name, which whoever can push chooses:
+  - `records`: only the lines recording when docs were read (`judged`,
+    `judged-in-parts`, `verified`);
+  - `derived`: derived blocks regenerated, besides;
+  - `docs`: any other doc text — the release's docs fix, gardening's
+    fixes, a page condensed.
+- **The same path as a yes**: `follow` sets `workline/accepted` on the
+  head itself, by the App, then turns auto-merge on or merges at once; in
+  line, one at a time, the release's docs first.
+
+### Each merge recorded, a revert demotes its kind
+
+- **On the pull request**: one comment as auto-merge is turned on — no
+  person's yes, its kind, why, how to hold it —, its marker naming the
+  kind. **In the job's summary**: the pull request, "with no person's
+  yes", its kind and why; its first line says which kinds merge alone and
+  which wait again.
+- **A revert is read on the base**, its last 100 first-parent commits at
+  each run, in git's words (`This reverts commit …`, the commit reverted
+  naming `#N`), GitLab's (`This reverts merge request !N`) or GitHub's
+  (`Reverts owner/repo#N`). The pull request it names holds the record:
+  its kind waits for a person's yes again ([ADR-0026]).
+- **Kept in an issue**, one per kind, opened by `follow`: which pull
+  request, which revert, and how to restore — **close the issue**. Each
+  run reads the open ones. A comment on the reverted pull request, its
+  marker naming the revert, has it read once: closed, the issue is not
+  opened again by the same revert.
+- **Why an issue**: written where people look, with what to do
+  (principle 14), one notification, one click to restore. Not a label on
+  the reverted pull request: closed, nobody looks there. Not a record of
+  the engine's own (a ref): no person restores it in a click. Not the
+  setting: changing the level never restores trust lost ([ADR-0026]).
+
+### The veto, what never merges alone, the criteria
+
+- **The veto stays the forge's**: Draft; auto-merge turned off after it
+  was turned on stays off until a person labels it — by whoever turned it
+  off, the forge too, on the safe side. No hold label: "Not chosen" above
+  stands.
+- **Never alone, at any level**: the release tool's pull request (said
+  in the summary at `normal`: merging it is the decision to release), a
+  fork's, a person's, one with a commit not workline's own, a Draft.
+- **Criteria for offering `normal`** to other projects, as [ADR-0036]
+  wrote a role's status — until they hold, the page says it is tried on
+  workline's own repository first:
+  1. built: the record, the demotion, their cases (this build);
+  2. run on workline's own repository for two weeks and at least 20
+     merges with no yes, each recorded, a revert demoting its kind as
+     written;
+  3. the maintainer validates [#322]'s Validation on real use.
+- **Limits**: a doc-only commit bearing workline's trailer is taken as
+  its own, as the line takes it: whoever can push could write one, as
+  they could put the label, agents acting with the person's account until
+  [#117]. A revert past the base's last 100 commits when `follow` runs, or
+  naming no merge request (a GitLab squash), is not read. The issue
+  closed is a person's restore by rule, as the label is a person's yes.
+- **Texts changed**: principle 1 — people accept the result, or write in
+  advance the narrow class the line accepts for them;
+  [concepts.md](../concepts.md#people); [config.md](../config.md), the
+  governance line beside the key.
+
+Conformance: merge/normal-* (8), gitlab-normal-routine-merges-alone,
+cmd-normal-routine-merges-alone, cautious-routine-waits-for-a-yes;
+TestRoutineKind, TestRevertOf, TestOwnNote.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -258,3 +347,4 @@ puts the label.
 [#260]: https://github.com/JN0V/workline/pull/260
 [#321]: https://github.com/JN0V/workline/issues/321
 [#322]: https://github.com/JN0V/workline/issues/322
+[#329]: https://github.com/JN0V/workline/pull/329

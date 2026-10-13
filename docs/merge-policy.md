@@ -1,6 +1,6 @@
 ---
-sources: [internal/engine/merge.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 72bfb8fd
+sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
+checked: 51413ec3
 verified: agent:claude-code
 ---
 # The merge policy
@@ -22,6 +22,7 @@ and keeps the line moving, one pull request at a time. No agent is called
 ```yaml
 # .workline/config.yaml
 merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
+                              # normal: workline's own routine work with no yes, below
 ```
 
 ## What it does
@@ -74,9 +75,41 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 - **A fork's** is never brought up to date: the token cannot write to a
   fork. Its CI run is the fork's own, so the templates keep no verdict of
   it: it waits for a person.
-- **Any other** with no label, whoever opened it. A bot's own auto-merge
-  (a dependency bot's) is left to it.
+- **Any other** with no label, whoever opened it — but, at `normal`,
+  workline's own routine work. A bot's own auto-merge (a dependency
+  bot's) is left to it.
 - **An agent never puts the label**: it is the person's yes.
+
+## `normal`: routine work with no yes
+
+```yaml
+merge: {autonomy: normal}   # a project's choice, never a default
+```
+
+- **Merged with no label**: workline's own pull requests — from a role's
+  branch (`workline/<role>/…`), opened by workline, every commit its own
+  (checked by its tree, never by its trailer alone) —, their head's
+  verdict passed, every agent's review whole. Three kinds, by what changed:
+  - `records`: only when docs were read (`judged`);
+  - `derived`: derived blocks regenerated;
+  - `docs`: doc text a role wrote — the release's docs fix, gardening's.
+- **The same path as a yes**: `workline/accepted` set on the head, auto-merge
+  on, in line. The veto is the forge's, as above.
+- **Each one recorded**: a comment on it — no person's yes, its kind,
+  why —, and the job's summary, whose first line says which kinds merge
+  alone.
+- **A revert demotes its kind**
+  ([why](adr/0042-the-engine-merges-by-the-projects-policy.md#each-merge-recorded-a-revert-demotes-its-kind)):
+  `follow` reads the reverts on the base, opens an issue "workline: its
+  `<kind>` merge requests wait for a person's yes again", and that kind
+  needs the label until a person **closes the issue**.
+- **Never alone**: the release tool's, a fork's, a person's, one with a
+  commit not workline's own, a Draft.
+- **The governance line**: a change an AI wrote and an AI reviewed merges
+  with no person's approval — past the two-person rule of SLSA and SOC 2.
+- **Tried on workline's own repository first**; agents' pull requests come
+  later ([#322](https://github.com/JN0V/workline/issues/322); the
+  [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).
 
 ## The veto is the forge's
 
@@ -117,7 +150,8 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   the judge; the project bot's token. A label starts no pipeline there: it
   waits for that merge request's own next pipeline.
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
-  `guarded`, `accept`, `keep-verdict` and `verdict`
+  `guarded`, `accept`, `keep-verdict` and `verdict`; at `normal`, also
+  `comments`, `comment`, `issues` and `open-issue`
   ([forge command](spec/forge-command.md)). The local forge has no
   auto-merge: said, nothing turned on.
 
@@ -125,7 +159,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 
 | Said | When |
 |---|---|
-| `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed |
+| `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
+| `waits-for-a-yes` | at `normal`: the release tool's, a commit not workline's own, a kind demoted |
+| `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `updated` | first in line, brought up to date |
 | `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
