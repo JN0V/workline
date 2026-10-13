@@ -1,8 +1,7 @@
 ---
 sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/work/work.go]
-checked: f78d077
-verified: agent:documentalist
-judged: 69879f6
+checked: 55569113
+verified: agent:claude-code
 ---
 # Writing an issue a person reads
 

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/scale, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: f78d077
+checked: 55569113
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -455,7 +455,9 @@ what it can and asks for the rest:
   `workline:accepted`** — on the issue, or on many at once from the list of
   issues; the engine creates that label with the first draft, so it is
   there to pick; only who may triage sets a label, so it is a person of the
-  project's. The engine then takes the draft marks out and moves the issue
+  project's. Its description (`backlog.AcceptedSays`) names its other use:
+  on a pull request, a yes to merge it, by the
+  [merge policy](../merge-policy.md), which creates it too. The engine then takes the draft marks out and moves the issue
   to ready, with no agent. **Editing a draft makes it a person's too**:
   its text no longer the one the role wrote (the state's `wrote`, a
   digest per section), the mark left in it or not (`backlog.IsDraft`). A
@@ -577,7 +579,8 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   a comma `%2C`). A heading of letters only is written as it always was,
   so a record written before reads the same.
 - **A record that does not read** (#302): the issue passed over, ready
-  held, said (`spec-record-unread`) until a person deletes the comment.
+  held, said (`spec-record-unread`) until a person deletes the comment —
+  the spec then read anew, at round 1 — or accepts the issue.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
   a proposal accepted — and at every level: `spec-not-reviewed` (no record, or

@@ -1,8 +1,7 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: f78d077
-verified: agent:documentalist
-judged: 69879f6
+checked: 55569113
+verified: agent:claude-code
 ---
 # Product owner
 
@@ -75,6 +74,8 @@ is on each issue; you answer there
   on any issue is read first. A bot's, a stranger's or a "+1" comment
   never brings an issue back.
 - Accepting many issues from the list is quick: read what you accept.
+- **The same label on a pull request** is a yes to merge it, where the
+  project sets a [merge policy](../../docs/merge-policy.md).
 
 ## Alone or proposed
 
