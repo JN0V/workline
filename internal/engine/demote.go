@@ -231,8 +231,11 @@ func lostTitle(tip string) string {
 // merge. Then it marks the base's tip as read, with the issues held.
 func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result) (map[string]string, error) {
 	b, ok := f.(forge.Backlog)
-	if !ok {
+	switch {
+	case !ok:
 		return map[string]string{kindAll: "no backlog on this forge"}, nil
+	case app == "": // no App: no issue nor mark is ever taken for its own
+		return map[string]string{kindAll: "no App"}, nil
 	}
 	chain, err := git(o.Repo, nil, "rev-list", "--first-parent", "-n", strconv.Itoa(revertWindow), baseTip)
 	if err != nil {
