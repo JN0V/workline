@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.1](https://github.com/JN0V/workline/compare/v0.26.0...v0.26.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **documentalist:** give heading anchors as GitHub does ([#338](https://github.com/JN0V/workline/issues/338)) ([279a67d](https://github.com/JN0V/workline/commit/279a67d342a01bb5656608502ce8776ff04294a9))
+* **follow:** merge at once what GitHub could merge now, unstable too ([#342](https://github.com/JN0V/workline/issues/342)) ([f359cc8](https://github.com/JN0V/workline/commit/f359cc84b7eea719495a583a4bccfc67f100a947))
+
 ## [0.26.0](https://github.com/JN0V/workline/compare/v0.25.0...v0.26.0) (2026-10-13)
 
 
