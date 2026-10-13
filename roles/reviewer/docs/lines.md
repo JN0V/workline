@@ -1,7 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: f78d077
-judged: e35f0f2
+checked: 55569113
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
@@ -74,9 +73,10 @@ summary comment under **Here only**, with why.
 - **A line the merge request's diff does not show**: a range reviewed
   other than the merge request's, a file the forge gives no patch of
   (binary, too large).
-- **A forge that refuses** (403, 422, 400): a token that may not review,
-  GitHub's without `pull-requests: write`. Said in the run's findings too,
-  `line-comment-refused`, a warning, and in the job's summary.
+- **A forge that refuses** (403, 422, 400; on GitLab 405, 406, 409 too):
+  a token that may not review, GitHub's without `pull-requests: write`.
+  Said in the run's findings too, `line-comment-refused`, a warning, and
+  in the job's summary.
 - **A fork's merge request**: nothing is applied there. On GitHub the
   fork workflow comments the job's summary, each finding in full; on
   GitLab nothing is commented

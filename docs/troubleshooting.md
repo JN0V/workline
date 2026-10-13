@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: f78d077
+checked: 55569113
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -136,3 +136,20 @@ gardening proposes again when fewer wait.
 - GitLab: `CI_JOB_TOKEN` reaches no issue; give `GITLAB_TOKEN`
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom)). A **protected** variable never reaches a merge
   request's pipeline on an unprotected branch.
+
+## Nothing merges
+
+The [merge policy](merge-policy.md) acts only with `merge:` in
+`.workline/config.yaml`; `workline follow` says why in the job's summary
+([each word](merge-policy.md#what-the-summary-says)):
+
+- `label-ignored`: the label was put by someone who may not push nor
+  merge; one who may puts it again.
+- `verdict-missing`: no verdict of the line on that head yet; it waits
+  for the next judge.
+- `merge-unsupported`, `merge-token`, `merge-unguarded`: nothing is
+  turned on — the local forge has no auto-merge, a GitHub job's own
+  token, a base that does not require `workline/accepted`
+  ([set up](merge-policy.md#set-up)).
+- `verdict-not-kept`: `follow --verdict` with no `merge:` set, or on a
+  forge without auto-merge.

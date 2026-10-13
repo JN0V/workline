@@ -1,8 +1,7 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: a6228bb0
-judged: e49dcd6
-verified: agent:documentalist
+checked: 55569113
+verified: agent:claude-code
 ---
 # GitLab: pipelines a tool starts
 
@@ -48,7 +47,7 @@ none of them:
 | Variable | Value |
 |---|---|
 | `WORKLINE_TASK` | `merge-request`, `garden`, `product-owner`, `release`, `sample`, `follow` (when the default branch moved: the release fix rebuilt on it, [ADR-0034](adr/0034-the-release-fix-follows-its-base.md); people's too, when set, [ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), `import` |
-| `MR_IID`, `MR_SOURCE_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
+| `MR_IID`, `MR_SOURCE_BRANCH`, `MR_TARGET_BRANCH`, `MR_BASE_SHA` | for `merge-request`: from the merge request (`diff_refs.base_sha`); the pipeline's `ref` is the source branch |
 | `MR_READY` | for `merge-request`, set when it becomes ready: opened not a draft, or a webhook's `update` whose `changes.draft` went to false; every reviewer lens once ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)) |
 | `WORKLINE_IMPORT` | for `import`: the file moved to issues, as committed on the pipeline's `ref` |
 
@@ -71,7 +70,7 @@ curl -fsS -X POST --form token="$TRIGGER_TOKEN" --form ref=main \
 
 ```yaml
 stages: [test, deploy]
-variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.25.1, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}
+variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.26.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}
 .workline:
   image: ghcr.io/jn0v/workline:$WORKLINE_VERSION
   rules: [{if: '$CI_PIPELINE_SOURCE =~ /^(api|trigger|pipeline|parent_pipeline)$/ && $WORKLINE_TASK'}]
@@ -87,13 +86,14 @@ workline:judge:
   stage: test
   script: [sh ci/workline-job.sh judge]
   artifacts:
-    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, sample.json]
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, sample.json, workline-verdict.json]
     reports: {codequality: gl-code-quality.json, annotations: workline-annotations.json}
 workline:apply:
   extends: .workline
   stage: deploy
   needs: [workline:judge]
   when: always
+  resource_group: workline-follow   # one at a time: follow and the merge policy push
   script: [sh ci/workline-job.sh apply]
 ```
 
@@ -125,7 +125,7 @@ case "$step:$WORKLINE_TASK" in
     workline route merge-request --ai "$ai" --no-apply --push-to-merge-request --forge gitlab \
       --target "merge-request:$MR_IID" --branch "$MR_SOURCE_BRANCH" \
       --input "range=$MR_BASE_SHA..$CI_COMMIT_SHA" ${MR_READY:+--input lenses=all} \
-      --code-quality gl-code-quality.json $sum --json > line.json || status=$? ;;
+      --code-quality gl-code-quality.json --verdict workline-verdict.json $sum --json > line.json || status=$? ;;
   judge:garden)
     workline route schedule --ai "$ai" --no-apply --forge gitlab --open-merge-request $sum --json > line.json || status=$? ;;
   judge:product-owner)
@@ -140,6 +140,13 @@ case "$step:$WORKLINE_TASK" in
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;
   judge:follow) ;;                                # no agent: all in the applying job
   apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab $sum || status=$? ;;
+  apply:merge-request)                            # then the merge policy, by the target branch's config
+    [ ! -f line.json ] || workline apply --line line.json $sum || status=$?
+    git fetch -q origin "$MR_TARGET_BRANCH"; git checkout -q -B "$MR_TARGET_BRANCH" FETCH_HEAD
+    v=; [ ! -s workline-verdict.json ] || v="--verdict workline-verdict.json"
+    if grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then
+      workline follow --base "$MR_TARGET_BRANCH" --forge gitlab $v $sum || status=$?
+    fi ;;
   apply:garden)                                   # then its merge requests the branch moved under
     workline apply --line line.json $sum || status=$?
     workline follow --gardening --base "$CI_COMMIT_REF_NAME" --forge gitlab $sum || status=$? ;;
@@ -166,12 +173,15 @@ exit "$status"
 - On `release`, a judging job that does not pass holds the release; the
   docs' fix goes to a merge request of its own (untried outside a release
   tool's merge request).
-- With the [merge policy](merge-policy.md): `--verdict
-  workline-verdict.json --verdict-head <the source branch's head>` on
-  `judge:merge-request`, then, after `apply:merge-request`, the target
-  branch checked out, `workline follow --base <target> --forge gitlab
-  --verdict workline-verdict.json`, as the template's `workline:merge`
-  does; the first release after v0.25.0.
+- The [merge policy](merge-policy.md), with `merge:` in the target
+  branch's `.workline/config.yaml`, v0.26.0 or later:
+  - `judge:merge-request` writes the head's verdict (`--verdict`);
+  - `apply:merge-request` then runs `workline follow --verdict` from the
+    target branch, as the template's `workline:merge` does;
+  - `apply:follow` runs the policy too, each time the default branch
+    moves;
+  - a label starts no pipeline: the merge waits for that merge request's
+    next one. Untried from a triggered pipeline.
 
 ## Tokens and variables
 
