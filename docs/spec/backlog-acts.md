@@ -579,8 +579,8 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   a comma `%2C`). A heading of letters only is written as it always was,
   so a record written before reads the same.
 - **A record that does not read** (#302): the issue passed over, ready
-  held, said (`spec-record-unread`) until a person deletes the comment —
-  the spec then read anew, at round 1 — or accepts the issue.
+  held, said (`spec-record-unread`) until a person deletes the comment or
+  accepts the issue.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
   a proposal accepted — and at every level: `spec-not-reviewed` (no record, or
