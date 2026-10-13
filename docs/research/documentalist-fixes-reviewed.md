@@ -63,7 +63,7 @@ What it writes is right about four times in five: versions read from
    stale in its siblings; a claim about a file outside the doc's sources is
    neither checked nor said unchecked.
 5. **The evaluation did not see it.** Every documentalist case passes at its
-   best (status.md, "Measures"): the cases are cleaner than real docs, and
+   best (tests/evaluation/results.tsv): the cases are cleaner than real docs, and
    none plants a frozen number, a stale comment or a sibling.
 
 ## The solo repository (a copy of WaterMeter)
@@ -194,7 +194,7 @@ Since (0e00fbe), a run keeps them, and the agent's answers as they came.
 
 On 2026-10-02, five runs of the gardening path on WaterMeter, DomoticsCore
 after #114 and workline, Claude Sonnet, graded against the code by another
-agent (roles/documentalist/docs/tried.md has the runs, status.md the bars). The
+agent (roles/documentalist/docs/tried.md has the runs and the bars). The
 kinds above stay away: nothing false vouched for or written, no true claim
 removed, no comment winning, no fixed bug rewritten. Step 4 does not hold
 on its tokens. New kinds, none a falsehood:

@@ -26,6 +26,15 @@ control, doing both right must lose neither; the `count-off` findings,
 reported by the engine with no agent (ADR-0014, step 2), are graded there
 too and must never be lost.
 
+To measure the `drifted` cases again, five runs, as ADR-0014's steps 1
+and 3 ran them (`-v` for the notes):
+
+```sh
+for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m -run 'TestEvaluation/documentalist/drifted' ./tests/evaluation/; done
+# the summary pools every run of a case: keep one engine's rows apart (the workline column)
+awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
+```
+
 ## The reviewer's measure
 
 **The reviewer's measure** (#90). A reviewer case adds `review:` to
