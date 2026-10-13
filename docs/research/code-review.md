@@ -166,3 +166,29 @@ What reviews a spec before it is built, in the field's words:
 - **Refused**: word lists as rules (Smella's precision on vague pronouns
   and comparatives would block on noise); writing answers into the spec
   (the product owner does, part 2 of #128).
+
+## The reviewer's cost, measured
+
+workline's own reviewer, 2026-10-06 to 10-12, on its pull requests and
+the sandboxes. Each run is told in the reviewer's
+[tried.md](../../roles/reviewer/docs/tried.md), an archive since
+[ADR-0043](../adr/0043-a-try-is-told-in-its-pull-request.md); what the
+measures decided, in
+[ADR-0020](../adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md).
+
+- **Code, every lens**: #146's eight commits, 142k tokens in, estimated;
+  the lenses' call 73.6k (430k before #147). The judges reading whole
+  functions (#127): about 160k. The run when a merge request becomes
+  ready is such a review, on the whole change (#129): not measured on
+  the forge yet.
+- **Intent and claims** (#126): the lenses' prompt 0.7% larger, 3.0% when
+  the change closes an issue; a decision for a person, 0.4% more, no judge
+  call.
+- **The diff-alone facet**, off: one call more, the change's size (about
+  4.6k tokens on the evaluation's cases, 53k on #146's).
+- **A spec on a machine** (#128): one call, 9k to 13k characters measured
+  (#128's body; a spec naming a Go file), at most the spec and
+  `code-lines-max` lines of code; on workline-sandbox#43, 22.5k tokens with
+  two judges.
+- **A spec on the forge**: one spec a run, 19.2k and 23.3k tokens on the
+  sandbox, three and four judges.

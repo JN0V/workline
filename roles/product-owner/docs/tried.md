@@ -1,5 +1,9 @@
 # Product owner — tried for real
 
+> **Archive.** No new entry since 2026-10-13: a try is told in its pull
+> request, under `## Tried`, and the role's [status](status.md) links to
+> it ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
+
 Each try with a real agent or on a real backlog, newest last.
 
 ## 2026-10-03 — planted issues, local forge, Sonnet

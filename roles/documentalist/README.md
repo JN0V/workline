@@ -137,4 +137,4 @@ comment. Gardening only regenerates derived blocks.
   in, when set.
 
 **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), used on workline and DomoticsCore in CI;
-[docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).
+[docs/status.md](docs/status.md); each try in its pull request ([before 2026-10-13](docs/tried.md)).

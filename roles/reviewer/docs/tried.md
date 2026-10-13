@@ -1,5 +1,9 @@
 # Reviewer — tried for real
 
+> **Archive.** No new entry since 2026-10-13: a try is told in its pull
+> request, under `## Tried`, and the role's [status](status.md) links to
+> it ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
+
 Each try with a real agent, newest last. Tokens as the agent reports them,
 the whole input counted (on a subscription, the tokens are what counts).
 

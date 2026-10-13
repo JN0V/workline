@@ -115,4 +115,4 @@ each finding that blocked, its cause quoted, beside the commits reviewed
   ([#235](https://github.com/JN0V/workline/issues/235)); a larger prompt
   is not sent, the lens failing, said (`lens-failed`).
 
-What a run cost when measured: [status](status.md#cost-measured).
+What a run cost when measured: [research](../../../docs/research/code-review.md#the-reviewers-cost-measured).
