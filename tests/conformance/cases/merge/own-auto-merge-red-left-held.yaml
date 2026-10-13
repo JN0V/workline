@@ -1,0 +1,22 @@
+case: merge/own-auto-merge-red-left-held
+about: "A person turned auto-merge on by hand, their own yes, weighed as the label's; its head's verdict is red. Their auto-merge is left as they set it — never said \"stays off\" —, and the head is marked not accepted (`workline/accepted`), which the base requires: it does not merge (#321's review, ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: feat/sessions, name: workline/verdict, state: failure, description: "red: the line's verdict on its head is block: correctness", by: workline-bot}
+    merge-requests:
+      - {id: 7, branch: feat/sessions, base: main, author: dana, labels: [], auto-merge: true, auto-merge-by: dana, auto-merge-at: "2026-01-04T10:00:00Z", comments: []}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: verdict-red, where: "#7", message: "@dana's auto-merge left on, held by the yes not given, out of line"}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: failure, by: workline-bot}

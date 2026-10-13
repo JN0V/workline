@@ -99,7 +99,8 @@ workline:judge:
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses
-      --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html --json > line.json || status=$?
+      --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
+      --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a
   # person judges what it would have (ADR-0010).
@@ -108,7 +109,7 @@ workline:judge:
   artifacts:
     when: always                    # steps that passed before one blocked are still applied
     expose_as: workline summary
-    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json]
+    paths: [workline-summary.html, workline-summary.md, .workline-runs/, line.json, workline-verdict.json]
     reports: {codequality: gl-code-quality.json, annotations: workline-annotations.json}
     expire_in: 1 day
 
@@ -129,6 +130,40 @@ workline:apply:
   artifacts:
     when: always
     expose_as: workline applied
+    paths: [workline-summary.html, workline-summary.md]
+    reports: {annotations: workline-annotations.json}
+    expire_in: 1 week
+
+# The merge policy, `merge: {autonomy: cautious}` (ADR-0042; the first
+# release after v0.25.0), after the judge: the head's verdict kept, the
+# merge requests a person accepted set to merge when their pipeline
+# succeeds, the first in line brought up to date. A label starts no
+# pipeline: it waits for that merge request's own next one. The target
+# branch checked out, for its config; never a fork's. Without `merge:`,
+# it stops at once (docs/merge-policy.md).
+workline:merge:
+  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
+  stage: deploy
+  needs: [workline:judge]
+  variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  resource_group: workline-follow   # one at a time, with workline:follow
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID == $CI_PROJECT_ID
+      when: always
+  script:
+    - *trust
+    - git fetch -q origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" && git checkout -q -B "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" FETCH_HEAD
+    - if ! grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then echo "workline:" "no merge policy (merge:), nothing to do"; exit 0; fi
+    - workline version
+    - export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
+    - git config user.name "workline"
+    - git config user.email "workline@noreply.$CI_SERVER_HOST"
+    - git remote set-url origin "https://oauth2:${WORKLINE_GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - verdict=; [ ! -s workline-verdict.json ] || verdict=workline-verdict.json
+    - workline follow --base "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" --forge gitlab ${verdict:+--verdict "$verdict"} --summary workline-summary.md --summary workline-summary.html
+  after_script: *summary
+  artifacts:
+    when: always
     paths: [workline-summary.html, workline-summary.md]
     reports: {annotations: workline-annotations.json}
     expire_in: 1 week
@@ -205,11 +240,13 @@ workline:garden:apply:
 # default; the first release after v0.24.0), a person's merge request from
 # this project in conflict with the default branch only on lines workline
 # writes gets it merged in, by the project's bot: a merge commit, never
-# forced. The summary names each one merged into, and each left.
+# forced. The summary names each one merged into, and each left. With the
+# merge policy (`merge:`), as workline:merge.
 workline:follow:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
+  resource_group: workline-follow   # one at a time, with workline:merge
   rules:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $WORKLINE_GITLAB_TOKEN
   script:

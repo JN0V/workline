@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 54cc42b
+checked: f7514347
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -62,7 +62,7 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `issues` | | lists the open issues, merge requests left out | `{issues: [{id, title, body, labels, milestone, milestone-due, author, insider, blocked-by, children}]}` — `milestone-due` its milestone's due date, `YYYY-MM-DD`, left out when it has none; `insider` true when the author has write access to the project; left out, the author is taken for an outsider; `blocked-by` the issues it waits on in the forge's own relation, left out on a forge without one: a "Blocked by" line in the body says it (ADR-0028); `children` its sub-issues, open or closed, left out on a forge without them: the task list under `## Sub-issues` in the body says them (ADR-0029) |
 | `all-issues` | | lists the issues open and closed, merge requests left out: a subject a role found is looked for in both | `{issues: [{id, title, body, labels, closed, reason}]}` — `reason` why it was closed, when the forge keeps one: `completed`, `not_planned` or `duplicate`; a command that does not know it answers an error, and the issue is not opened |
 | `comments` | `target` | reads the comments on the target, oldest first | `{comments: [{body, author, insider, bot, created, id}]}` — `insider` as for `issues`, `bot` true for an app's or a token's user, `created` when it was written (RFC 3339 or `YYYY-MM-DD`), left out when the forge does not say: a question to a reporter is then never said stuck (ADR-0031); `id` the forge's own, for `react`, left out: no reaction; a comment may be its body alone, a text, its author then unknown: a reply of theirs never agrees to a proposal (ADR-0021), nor brings an issue back (ADR-0038) |
-| `label-events` | `id` | the labels set on the issue and taken off, oldest first, with who did each and when | `{events: [{label, added, author, insider, bot, created}]}` — `added` false for one taken off; an error answered: the forge does not say, and a label taken off is read as a person's (ADR-0038) |
+| `label-events` | `id` | the labels set on the issue and taken off, oldest first, with who did each and when | `{events: [{label, added, author, insider, writer, bot, created}]}` — `added` false for one taken off; `writer` true when who did it may push and merge, the merge policy's yes (ADR-0042); an error answered: the forge does not say, and a label taken off is read as a person's (ADR-0038) |
 | `react` | `id`, `note`, `emoji` | puts the reaction (`eyes`) on the issue's comment with that id; one there already changes nothing | `{}`; an error answered: no reaction, nothing failed (ADR-0038) |
 | `close` | `id`, `duplicate-of` when a duplicate | closes the issue: as a duplicate of `duplicate-of`, else as completed; one already closed changes nothing | `{}` |
 | `milestones` | | lists the open milestones | `{milestones: [titles]}`, or `{milestones: [{title, due}]}` — `due` a due date, `YYYY-MM-DD`, what the backlog's order ranks milestones by first |
@@ -84,7 +84,13 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `open-merge-requests` | `prefix` | lists the open merge requests whose branch starts with `prefix` | `{branches: [names]}` |
 | `close-merge-request` | `branch`, `body`, `marker` | closes the merge request open from `branch`, after commenting as `comment` does; none open changes nothing, and the branch stays. Asked by `workline follow --gardening` for a role's own merge request with nothing left to merge (ADR-0034) | `{}` |
 | `merge-request-branch` | `id` | the branch a merge request comes from, the branch it goes into, whether it lives in this repository rather than a fork, its title and its description | `{branch, base, here, title, body}`; without `base`, a fix for a release pull request goes in a comment (ADR-0017); `title` and `body` are what a review reads as the author's testimony (ADR-0020) |
-| `merge-requests` | | lists the open merge requests, each with where it comes from and goes, and who opened it. Asked by `workline follow` when the documentalist's `update-branches` is `conflicts` (ADR-0041): those into the branch that moved are a person's to settle, a head branch another goes into is a long-lived one | `{merge-requests: [{id, branch, base, here, title, author, bot, head}]}` — `here` as for `merge-request-branch`; `bot` true for one an app or a token's user opened, left to its bot; `head` the ref the forge keeps a fork's head under in this repository (`refs/pull/<n>/head`), left out: a fork's is said unread; a command that does not know it answers an error, and the run says so |
+| `merge-requests` | | lists the open merge requests, each with where it comes from and goes, and who opened it. Asked by `workline follow` when the documentalist's `update-branches` is `conflicts` (ADR-0041): those into the branch that moved are a person's to settle, a head branch another goes into is a long-lived one | `{merge-requests: [{id, branch, base, here, title, author, bot, head, labels, draft, auto-merge}]}` — `here` as for `merge-request-branch`; `bot` true for one an app or a token's user opened, left to its bot; `head` the ref the forge keeps a fork's head under in this repository (`refs/pull/<n>/head`), left out: a fork's is said unread; `labels`, `draft`, `auto-merge` (on) what the merge policy weighs first (ADR-0042); a command that does not know it answers an error, and the run says so |
+| `merge-state` | `id`, `branch` | what the merge policy weighs of an open merge request (ADR-0042) | `{head, draft, auto-merge, auto-merge-at, auto-merge-by, auto-merge-bot, checks, label-events, pushes}` — `auto-merge-at` when auto-merge was last turned on, on now or not; `auto-merge-bot` true when a bot turned it on; `checks` its head's, `success`, `pending` or `failure`, left out when unknown; `label-events` as `label-events` answers them, left out: no one's yes is read; `pushes` `[{head, at}]`, each head pushed and when, oldest first, left out: the commits' own dates are read. An error answered: said, the merge request left as it is |
+| `auto-merge` | `id`, `branch`, `head`, `on` | turns the forge's own auto-merge on for the merge request at `head`, or off; off when off changes nothing | `{merged}` — true when the forge merged it at once, its rules met already; an error answered: said, nothing turned on |
+| `guarded` | `base` | whether a push after a person's yes is held until `follow` takes the yes back (ADR-0042) | `{why}` — empty when held; an error answered: said, nothing turned on |
+| `accept` | `head`, `ok`, `why` | marks the head accepted or not, where the forge needs it to hold a yes on that head (GitHub's required status); one that needs none does nothing | `{}` |
+| `keep-verdict` | `head`, `class`, `why` | keeps the line's verdict on the head — `class` pass, held, short or red — where only this token writes it | `{}` |
+| `verdict` | `head` | the verdict this token kept on the head | `{class, why}`; `{}` when none |
 
 Arguments not listed are not sent; an operation the command does not know
 answers `{"error": …}`. The engine keeps, of `open-merge-requests`, only the
@@ -109,7 +115,10 @@ The conformance cases `forge/cmd-*` plug a fake script
 merge request's comment, a work item read and labelled, the
 weekly sample written, a person's pull request merged with its base
 (`merge-requests`), a forge failing (`blocked-external`) and refusing
-(`block`). The Forgejo sample was run against a mock of the API only
+(`block`); merge/cmd-accepted-turns-auto-merge-on plugs another
+(fixtures/forges/merging.sh) answering `merge-state`, `auto-merge`,
+`guarded` and `verdict`.
+The Forgejo sample, which knows neither yet, was run against a mock of the API only
 (ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
 pages, a pull request left out, `comments` with their authors,
 `merge-requests` with theirs, and

@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 54cc42b
+checked: a6228bb0
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -127,12 +127,12 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     ([#226](https://github.com/JN0V/workline/issues/226)).
   - An agent out of reach (3) warns (`allow_failure: {exit_codes: [3]}`),
     as on GitHub: a person judges what it would have.
-- **`workline:follow`**, on each push to the default branch: the
-  documentalist's merge request for the release, when one is open, is
-  rebuilt on the branch's new tip, with `WORKLINE_GITLAB_TOKEN` and no
-  agent ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when
-  set, the branch merged into people's merge requests in conflict only on
-  workline's lines ([more](../roles/documentalist/docs/follow.md)).
+- **`workline:follow`**, each push to the default branch, its bot's token,
+  no agent: the documentalist's release merge request rebuilt on the new
+  tip ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set,
+  the branch merged into people's merge requests in conflict only on
+  workline's lines ([more](../roles/documentalist/docs/follow.md)), and the
+  [merge policy](merge-policy.md), also after each judge (`workline:merge`).
 - **`workline:garden:apply`** then rebuilds gardening's earlier merge
   requests, or closes those with nothing left to merge
   ([ADR-0034, amended](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)).

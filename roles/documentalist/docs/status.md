@@ -79,6 +79,12 @@ its evaluation in
   `task-waits-for-its-merge-request`, `parts-go-while-suspect-waits`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
 - **People's pull requests settled on its own lines**: `persons-branch*`.
+- **The merge policy**, `cautious`
+  ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
+  the forge merges what a person accepted, kept up to date, the yes taken
+  back on a later push: the
+  [merge cases](../../../tests/conformance/cases/merge), routing's
+  `forged-merge-is-judged`, `merge-of-another-branch-is-judged`.
 - **A release tool's pull request held as the release**, its fix on a
   merge request of its own that follows `main`: `release-*`; on workline,
   [#258](https://github.com/JN0V/workline/pull/258) held,
@@ -143,10 +149,15 @@ its evaluation in
 8. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
-9. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
+9. **The merge policy, what is left**: the GitHub App's key kept out of a
+   pull request's own run
+   ([#331](https://github.com/JN0V/workline/issues/331)); routine pull
+   requests merged with no label, at `normal`
+   ([#322](https://github.com/JN0V/workline/issues/322), parked).
+10. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.
-10. **Tries on real use** (no issue yet):
+11. **Tries on real use** (no issue yet):
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;
@@ -155,4 +166,8 @@ its evaluation in
       `checked` found false;
     - `checked` earned by what was read, with a real agent;
     - the Forgejo sample on a live instance;
-    - `whole-chars` raised, its tokens measured.
+    - `whole-chars` raised, its tokens measured;
+    - the merge policy in CI: its jobs with the GitHub App's token, the
+      `verdict` job, a merge starting `follow` and release-please on
+      `main`, a release and its docs, a fork's pull request; on GitLab, a
+      yes held through the new head's pipeline.

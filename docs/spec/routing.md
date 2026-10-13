@@ -1,6 +1,6 @@
 ---
 sources: [internal/line, internal/routing, internal/work, routing.default.yaml]
-checked: 54cc42b
+checked: a6228bb0
 verified: agent:claude-code
 ---
 # Routing — v1 (draft)
@@ -120,8 +120,14 @@ names the retired `release-manager` is refused, saying which tool to use.
   each left for its parent, a merge of the base (`workline follow`,
   ADR-0041) for its first: what the engine wrote never wakes the line on
   itself, and a person's commit that blocked still blocks, never turned
-  green unjudged. With nothing of a person's left in the range, it judges
-  nothing.
+  green unjudged. With nothing of a person's left in the range, only the
+  committer runs; it checks every commit, the engine's too. A trailer is not
+  taken on trust: a merge is the engine's only when it merges the range's
+  base, or a commit of its history, and its tree is exactly what
+  workline's own merge of its two parents gives; another commit only when
+  it changes doc pages alone — Markdown, never under `roles/` nor a tool's
+  folder, never a file steering agents (AGENTS.md, CLAUDE.md…); else it is
+  judged as a person's (ADR-0042).
 
 ### On a forge: judge, then apply
 

@@ -1,0 +1,31 @@
+case: merge/own-branch-rebuilt-keeps-the-yes
+about: "The documentalist's own branch, accepted, then rebuilt on main by `follow` (ADR-0034): pushed after the yes, its history rewritten, but the same change — the commit's message, author and date kept. No push of a person's or an agent's: the yes still covers it, auto-merge is turned on (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: the auth doc says tokens are renewed' -m 'Workline-Role: documentalist' && git tag before && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+    - "git checkout -q -B rebuilt main && GIT_COMMITTER_DATE=2026-01-04T11:00:00Z git cherry-pick before >/dev/null && git push -q -f origin rebuilt:workline/documentalist/suspect && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "rebuilt", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 12
+        branch: workline/documentalist/suspect
+        base: main
+        author: "workline-app[bot]"
+        bot: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: rebuilt, at: "2026-01-04T11:00:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#12"}]
+  no-findings: [{rule: accepted-reset}]
+  forge:
+    merge-requests:
+      - {id: 12, auto-merge: true, labels: [workline:accepted], comments: 0}

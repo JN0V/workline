@@ -96,7 +96,9 @@ own line (.workline/config.yaml):
   with no agent: it lists the docs they made suspect. The review is on the
   pull request (ADR-0011): `main` takes pull requests only, the checks
   green. Push a branch and open the pull request when the person asks;
-  never merge it, never turn auto-merge on: the person does.
+  never merge it, never turn auto-merge on, never put `workline:accepted`
+  on it: the person accepts it, and merges it or, by the project's merge
+  policy, the forge does (ADR-0042).
 - **follow** — when `main` moves, workline's bot may merge it into your
   pull request, if it conflicts only on lines workline writes (a doc's
   `checked`, ADR-0041). Pull before pushing again (`git pull`, a

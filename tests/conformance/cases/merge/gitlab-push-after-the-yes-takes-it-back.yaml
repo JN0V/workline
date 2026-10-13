@@ -1,0 +1,34 @@
+case: merge/gitlab-push-after-the-yes-takes-it-back
+about: "On GitLab, a push after the yes (#321): the merge request's versions say a head was pushed after `workline::accepted` was put; `workline follow` cancels its auto-merge, takes the label off and says why in one note (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && echo more > more.txt && git add more.txt && git commit -qm 'feat(auth): one more thing' && git push -q origin feat/sessions && git checkout -q main"
+    - "sh \"$FIXTURES/verdict.sh\" feat/sessions pass ../verdict.json"
+  forge:
+    members: [{username: dana, access_level: 30}]
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: ["workline::accepted"]
+        label-events: [{label: "workline::accepted", added: true, author: dana, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: "feat/sessions~1", at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        auto-merge: true
+        auto-merge-by: workline-bot
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        comments: []
+run: {follow: [--base, main, --verdict, ../verdict.json], forge: gitlab}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "!7", level: warn, message: "was pushed after @dana accepted it: the yes and auto-merge taken off"}]
+  forge:
+    merge-requests:
+      - id: 7
+        auto-merge: false
+        labels: []
+        comments: 1
+        comment-contains: ["workline took `workline::accepted` off"]

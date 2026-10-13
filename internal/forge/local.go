@@ -454,7 +454,7 @@ func (l *Local) ListMergeRequests() ([]MergeRequest, error) {
 	var out []MergeRequest
 	for _, it := range items {
 		if it.Branch != "" && l.StateOf(it) == "open" {
-			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body})
+			out = append(out, MergeRequest{ID: it.ID, Branch: it.Branch, Base: it.Base, Here: true, Title: it.Title, Body: it.Body, Labels: it.Labels})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })

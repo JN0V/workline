@@ -1,0 +1,62 @@
+# workline's merge policy on its own repository, when a pull request's
+# label changes: ci/github/workline-merge.yml, with the engine built from
+# the default branch's commit rather than installed — merged, it is
+# reviewed. Without `merge:` in .workline/config.yaml, it stops at once.
+name: workline merge
+on:
+  pull_request_target: {types: [labeled, unlabeled, converted_to_draft]}
+permissions: {}
+
+jobs:
+  follow:
+    concurrency: {group: "workline-follow-${{ github.base_ref }}", cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    permissions: {contents: write, pull-requests: read}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.base_ref }}
+          token: ${{ steps.app.outputs.token || github.token }}
+      - name: Whether the project has a merge policy
+        id: policy
+        run: |
+          if grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no merge policy (merge:): nothing to do"
+          fi
+      - uses: actions/setup-go@v5
+        if: steps.policy.outputs.run == 'true'
+        with: {go-version-file: go.mod}
+      - name: workline
+        if: steps.policy.outputs.run == 'true'
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          go build -o "$bin/workline" ./cmd/workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      - if: steps.policy.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # who holds the yes, and reads the verdict
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
+        run: |
+          if [ -n "$APP" ]; then
+            git config user.name "$APP[bot]"
+            git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          status=0
+          workline follow --base "$GITHUB_BASE_REF" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

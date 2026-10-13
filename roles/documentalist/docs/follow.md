@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/settle.go, internal/engine/follow.go, roles/documentalist/role.yaml]
-checked: 54cc42b
+checked: f7514347
 verified: agent:claude-code
 ---
 # Documentalist — a pull request in conflict on workline's lines
@@ -40,7 +40,9 @@ push to the default branch.
 - **Left, named**: one from a fork, in conflict (the job's token may not
   write there).
 - **Left**: one behind but merging clean; bringing it up to date is for
-  whoever merges it.
+  whoever merges it — with the project's
+  [merge policy](../../../docs/merge-policy.md), `follow` does so for the
+  first in line, the same merge.
 
 ## Which lines are workline's
 
@@ -56,7 +58,8 @@ push to the default branch.
 - **The header, key by key**: a key one side changed keeps that side's
   value; one of the four both changed, the base's; `sources` or another
   key both changed is left to the person.
-- **A derived block**: the base's, which gardening regenerates there.
+- **A derived block**: the base's, which gardening regenerates there. A
+  marker with no end of its own is no block: left as it is.
 - **The rest**: git's own merge; a conflict there is the person's.
 - **Any conflict left**: nothing is pushed, the files named.
 
@@ -68,10 +71,9 @@ push to the default branch.
 - **The forge's message**, `Merge branch 'main' into <branch>`, the files
   settled, the trailer `Workline-Role: documentalist`: the line on it
   judges the commits before it, through its first parent, so a red verdict
-  stays red; the reviewer asks no lens for what it read already. A
-  reviewer's own block surviving it waits on
-  [#326](https://github.com/JN0V/workline/issues/326); workline's
-  repository is not exposed, its AI findings only warn (`ai-findings`).
+  stays red; the reviewer asks no lens for what it read already, and a
+  block of its own stands
+  ([#326](https://github.com/JN0V/workline/issues/326)).
 - **Pushed as a fast-forward, never forced**, a lease on the tip it read:
   a push of theirs meanwhile stays, a branch deleted is not brought back;
   the next push to the base tries again.
@@ -95,5 +97,5 @@ push to the default branch.
 |---|---|
 | `merged` | the base merged in; the files settled |
 | `not-merged` (warning) | a conflict of the person's too, its files named; or a fork's |
-| `merge-refused` (warning) | the branch moved or was deleted meanwhile, or the forge refused the push, in its words |
+| `merge-refused` (warning) | the branch moved or was deleted meanwhile, or the forge — or a hook on the machine — refused the push, in its words |
 | `conflict-unread` (warning) | git could not tell whether it merges |

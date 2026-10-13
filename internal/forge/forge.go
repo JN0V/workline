@@ -78,6 +78,10 @@ type Note struct {
 type LabelEvent struct {
 	Label string `json:"label"`
 	Added bool   `json:"added,omitempty"` // set; false: taken off
+	// Writer: who did it may push and merge — GitHub's write, maintain or
+	// admin; GitLab's Developer or above —, the merge policy's yes
+	// (ADR-0042); Insider, a person of the project, is wider on GitLab.
+	Writer bool `json:"writer,omitempty"`
 	Note
 }
 
@@ -267,6 +271,12 @@ type MergeRequest struct {
 	// Head is the ref this repository keeps its head under, for one from a
 	// fork (GitHub's refs/pull/<n>/head); "" when the forge keeps none.
 	Head string
+	// Labels, Draft and AutoMerge are what ListMergeRequests reads of it
+	// for the merge policy (ADR-0042): its labels, whether it is a draft,
+	// whether the forge's auto-merge is on.
+	Labels    []string
+	Draft     bool
+	AutoMerge bool
 }
 
 // botBranches are the branches of the merge requests the dependency bots

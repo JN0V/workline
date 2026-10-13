@@ -158,10 +158,32 @@ func TestSettleDoc(t *testing.T) {
 			t.Errorf("%s: got %v %q (%v), want %v %q", c.name, ok, got, err, c.ok, c.want)
 		}
 	}
+	// A derive marker with no end of its own is no block: the person's
+	// text after it, up to another block's end, is never taken for base's.
+	unclosed := "# T\n\n<!-- workline:derive a --> stray\n\nMy words.\n\n<!-- workline:derive n -->3<!-- workline:end --> cases.\n"
+	onBase := "# T\n\n<!-- workline:derive a --> stray\n\nTheir words.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases.\n"
+	if got := asBase(unclosed, onBase); got != "# T\n\n<!-- workline:derive a --> stray\n\nMy words.\n\n<!-- workline:derive n -->5<!-- workline:end --> cases.\n" {
+		t.Errorf("an unclosed marker: %q", got)
+	}
 	// A header not set one key a line is merged as text: both moving
 	// `checked` beside a list of sources is left to the person.
 	listed := "---\nsources:\n  - a.go\nchecked: 111\n---\n# T\n"
 	if _, ok, err := settleDoc(repo, "docs/t.md", listed, strings.Replace(listed, "111", "222", 1), strings.Replace(listed, "111", "333", 1)); ok || err != nil {
 		t.Errorf("a header of several lines a key: settled (%v), want it left", err)
+	}
+}
+
+// Only doc pages make a commit workline's own on its trailer's word: a
+// role's prompt, a tool's folder, a file steering agents never do.
+func TestDocPage(t *testing.T) {
+	for path, want := range map[string]bool{
+		"docs/tech/auth.md": true, "README.md": true, "roles/reviewer/README.md": false,
+		"roles/reviewer/instruction.md": false, "roles/reviewer/lenses/correctness.md": false,
+		".workline/roles/committer/policy.md": false, ".github/copilot-instructions.md": false,
+		"AGENTS.md": false, "sub/CLAUDE.md": false, "docs/x.go": false,
+	} {
+		if got := docPage(path); got != want {
+			t.Errorf("%s: %v, want %v", path, got, want)
+		}
 	}
 }

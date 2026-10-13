@@ -1,0 +1,28 @@
+case: merge/review-with-no-agent-stays-off
+about: "A review short (#321): an accepted pull request whose line passed with no agent — the reviewer ran its rules only, `not-reviewed` — is no yes the engine may act on: an agent must really have answered where the project sets one; auto-merge stays off, and the job's summary says why (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: failure, description: "short: its review falls short (not-reviewed): no agent: only the rules that need no judgement ran", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings: [{rule: review-short, where: "#7", level: warn, message: "its review falls short (not-reviewed): no agent"}]
+  no-findings: [{rule: auto-merge-on}]
+  summary-file: ["#7, warn: accepted by @dana, but its review falls short (not-reviewed): no agent", "auto-merge stays off"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [workline:accepted]}

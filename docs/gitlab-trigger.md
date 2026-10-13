@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 54cc42b
+checked: a6228bb0
 judged: 8f672b9
 verified: agent:documentalist
 ---
@@ -166,6 +166,12 @@ exit "$status"
 - On `release`, a judging job that does not pass holds the release; the
   docs' fix goes to a merge request of its own (untried outside a release
   tool's merge request).
+- With the [merge policy](merge-policy.md): `--verdict
+  workline-verdict.json --verdict-head <the source branch's head>` on
+  `judge:merge-request`, then, after `apply:merge-request`, the target
+  branch checked out, `workline follow --base <target> --forge gitlab
+  --verdict workline-verdict.json`, as the template's `workline:merge`
+  does; the first release after v0.25.0.
 
 ## Tokens and variables
 

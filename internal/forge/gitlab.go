@@ -35,6 +35,11 @@ type gitlab struct {
 // (10) or a Minimal Access member (5) is outside, as anyone not a member.
 const planner = 15
 
+// developer is GitLab's access level from which a member may push and
+// merge: a yes the merge policy acts on (ADR-0042), where a Planner's or a
+// Reporter's label is only a person of the project's.
+const developer = 30
+
 // botName matches the users of project and group access tokens:
 // project_<id>_bot_<random>, group_<id>_bot_<random> (GitLab's naming).
 var botName = regexp.MustCompile(`^(project|group)_\d+_bot(_|$)`)
@@ -167,7 +172,10 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 			return nil, fmt.Errorf("%w: %s %s", errNotFound, method, path)
 		case resp.StatusCode == http.StatusForbidden, resp.StatusCode == http.StatusUnauthorized && method != "GET":
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s (the token's role or scope does not allow it)", errForbidden, method, path, resp.Status, strings.TrimSpace(string(data)))
-		case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity:
+		case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity,
+			// The merge API's: a merge request it cannot merge, nor set to
+			// (405, 406), a head that moved (409).
+			resp.StatusCode == http.StatusMethodNotAllowed, resp.StatusCode == http.StatusNotAcceptable, resp.StatusCode == http.StatusConflict:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, resp.Status, strings.TrimSpace(string(data)))
 		case resp.StatusCode >= 300:
 			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", ErrUnreachable, method, path, resp.Status, strings.TrimSpace(string(data)))
@@ -669,7 +677,12 @@ func (g *gitlab) Trail(id int, label string) (Trail, error) {
 // project or group access token's is a bot's; a person of the project by
 // their access level (ADR-0038).
 func (g *gitlab) LabelEvents(id int) ([]LabelEvent, error) {
-	out, err := g.api("--paginate", path(Target{Kind: "issue", ID: id})+"/resource_label_events?per_page=100")
+	return g.labelEvents(Target{Kind: "issue", ID: id})
+}
+
+// labelEvents reads an issue's or a merge request's label events.
+func (g *gitlab) labelEvents(t Target) ([]LabelEvent, error) {
+	out, err := g.api("--paginate", path(t)+"/resource_label_events?per_page=100")
 	if err != nil {
 		return nil, err
 	}
@@ -697,6 +710,7 @@ func (g *gitlab) LabelEvents(id int) ([]LabelEvent, error) {
 			if ev.Insider, err = g.insider(ev.Author); err != nil {
 				return nil, err
 			}
+			ev.Writer = g.members[ev.Author] >= developer
 		}
 		events = append(events, ev)
 	}
@@ -980,6 +994,9 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 			ID       int    `json:"id"`
 			Username string `json:"username"`
 		} `json:"author"`
+		Labels []string `json:"labels"`
+		Draft  bool     `json:"draft"`
+		Auto   bool     `json:"merge_when_pipeline_succeeds"`
 	}
 	var all []MergeRequest
 	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
@@ -995,7 +1012,8 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 				}
 			}
 			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
-				Title: m.Title, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID)})
+				Title: m.Title, Author: m.Author.Username, Bot: bot, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID),
+				Labels: m.Labels, Draft: m.Draft, AutoMerge: m.Auto})
 		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })

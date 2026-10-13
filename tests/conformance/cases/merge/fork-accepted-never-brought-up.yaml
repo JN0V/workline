@@ -1,0 +1,32 @@
+case: merge/fork-accepted-never-brought-up
+about: "A fork's accepted pull request (ADR-0042): admitted only labelled — its auto-merge turned on, its head's verdict passed —, but never brought up to date, the token not writing to a fork: named when behind, and the next in line is brought up instead."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb patch-1 && echo typo > typo.txt && git add typo.txt && git commit -qm 'fix: a typo' && git push -q origin HEAD:refs/pull/7/head && git checkout -q main"
+    - "git checkout -qb feat/b && echo b > b.txt && git add b.txt && git commit -qm 'feat: b' && git push -q origin feat/b && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "patch-1", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "feat/b", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 7, branch: patch-1, base: main, fork: true, author: zed, labels: [workline:accepted], comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]}
+      - {id: 8, branch: feat/b, base: main, author: dana, labels: [workline:accepted], auto-merge: true, auto-merge-by: workline-bot, auto-merge-at: "2026-01-04T11:01:00Z", comments: [],
+         label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T11:00:00Z"}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#7"}
+    - {rule: fork-behind, where: "#7", level: warn, message: "behind main, from a fork: never brought up to date"}
+    - {rule: updated, where: "#8"}
+  merged: {feat/b: main}
+  summary-file: ["in line into main, #7, #8", "first in line #8, brought up to date"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true}
+      - {id: 8, auto-merge: true}

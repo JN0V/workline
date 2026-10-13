@@ -66,22 +66,26 @@ func Run(event string, base engine.Options) *Result {
 	// judged as it stood before the engine's last commits, a merge of the
 	// base through its first parent (ADR-0041). The person's commits keep
 	// their verdict; what was judged already is not asked of an agent again.
-	own := ""
+	// The committer alone checks every commit, workline's own too:
+	// identity, subject, secrets cost no agent and are never skipped.
+	own, whole, nothingElse := "", base.Inputs, false
 	if role, rng := beforeOwn(base.Repo, base.Inputs["range"]); role != "" {
-		if rng == "" {
-			res.Summary = fmt.Sprintf("%s: the last commits are workline's own (%s): nothing else to judge", event, role)
-			return res
-		}
 		inputs := maps.Clone(base.Inputs)
 		inputs["range"] = rng
 		base.Inputs = inputs
 		own = fmt.Sprintf(" (the last commit workline's own, %s: judged as %s)", role, rng)
+		if nothingElse = rng == ""; nothingElse {
+			own = fmt.Sprintf(" (the last commits workline's own, %s: the committer checked them, nothing else to judge)", role)
+		}
 	}
 	defer func() { res.Summary += own }()
 	stopAtFirst := cfg.StopsAtFirst(event)
 	var notPassed []string // with every step run: those that did not pass, and how
 	for _, name := range steps {
 		step, status := name, verdict.Pass
+		if nothingElse && name != committerRole {
+			continue
+		}
 		if g, isGate := strings.CutPrefix(name, "gate:"); isGate {
 			v := gate.Run(base.Repo, g)
 			res.Steps = append(res.Steps, Step{Name: name, Status: v.Status, Gate: v})
@@ -89,6 +93,9 @@ func Run(event string, base engine.Options) *Result {
 			status = v.Status
 		} else {
 			o := base
+			if name == committerRole {
+				o.Inputs = whole
+			}
 			o.Role, o.Event = name, event
 			step, status = runRole(res, cfg, o, 0)
 		}
@@ -111,6 +118,10 @@ func Run(event string, base engine.Options) *Result {
 	}
 	return res
 }
+
+// committerRole is the step that checks every commit of a range, workline's
+// own included (beforeOwn leaves them to it).
+const committerRole = "committer"
 
 // worst is the verdict of a line whose steps all ran: a block on the work
 // first, then a person's decision, then an outside failure, which is never
@@ -182,12 +193,15 @@ func failed(res *Result, where, msg string) *Result {
 // left for its parent, a merge for its first, the branch's side (`workline
 // follow`'s merge of the base, ADR-0041). The range is "" when nothing is
 // left in it; role is "" when its last commit is a person's, or with no
-// range.
+// range. A trailer is not taken on trust (engine.OwnCommit): a merge of
+// anything but the range's base, or bringing more than it, a commit
+// changing more than doc pages, is judged as a person's. The committer
+// checks them all the same (Run).
 func beforeOwn(repo, rng string) (role, before string) {
 	if rng == "" {
 		return "", rng
 	}
-	head := gitrange.Head(rng)
+	head, base := gitrange.Head(rng), gitrange.Base(rng)
 	cur := head
 	for range 1000 {
 		out, err := exec.Command("git", "-C", repo, "log", "-1", "--format=%P%x1f%(trailers:key="+engine.OwnTrailer+",valueonly,separator=%x2c)", cur).Output()
@@ -195,7 +209,7 @@ func beforeOwn(repo, rng string) (role, before string) {
 			break
 		}
 		parents, by, _ := strings.Cut(strings.TrimSpace(string(out)), "\x1f")
-		if by = strings.TrimSpace(by); by == "" {
+		if by = strings.TrimSpace(by); by == "" || engine.OwnCommit(repo, cur, base) == "" {
 			break
 		}
 		if role == "" {

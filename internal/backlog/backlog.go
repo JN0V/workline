@@ -1860,6 +1860,12 @@ const (
 	LabelReady    = "workline:ready"
 )
 
+// AcceptedSays is the description of a person's yes, as the forge's list of
+// labels shows it: on an issue, to what the product owner proposes
+// (ADR-0038); on a pull request, to merge it, by the project's merge policy
+// (ADR-0042). GitHub keeps 100 characters.
+const AcceptedSays = "A person's yes: to what the product owner proposes; on a pull request, to merge it"
+
 // Accepted says whether a person accepted an issue's drafts, by its label
 // — read on the issue, never taken from a proposal.
 func Accepted(is forge.Issue) bool {

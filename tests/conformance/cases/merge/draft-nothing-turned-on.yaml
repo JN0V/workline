@@ -1,0 +1,30 @@
+case: merge/draft-nothing-turned-on
+about: "My veto (#321), as a draft: an accepted pull request marked Draft never merges; `workline follow` turns nothing on for it and does not bring it up to date, said (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        draft: true
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: draft, where: "#7", message: "a draft: nothing turned on until it is marked ready"}]
+  no-findings: [{rule: auto-merge-on}, {rule: updated}]
+  not-pushed: [feat/sessions]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false}
