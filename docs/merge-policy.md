@@ -117,11 +117,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
   bot's, a Draft; with a person's token, nothing.
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
-- **The App's key, out of a pull request's own run**
-  ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)):
-  that run cannot open nor push a `workline/` pull request as the App. A
-  release's docs fix is the App's pull request only when the App alone
-  pushed to the release tool's branch.
+- **The App's key, out of a pull request's own run**: none opens a
+  `workline/` pull request as the App; a release's fix only when the App
+  alone pushed to its branch ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **Tried on workline's own repository first**; agents' pull requests come
   later ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).
