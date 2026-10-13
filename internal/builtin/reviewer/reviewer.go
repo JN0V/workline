@@ -218,11 +218,13 @@ func prepare(runDir, repo string, s Settings) int {
 	if err != nil {
 		return fail(err)
 	}
-	rec, _, err := loadRecord(repo, s)
+	rec, where, err := loadRecord(repo, s)
 	var advisories []verdict.Finding
 	if err != nil {
+		// Never read as none in silence (#302): the range is reviewed whole,
+		// once, and a whole review writes the record anew.
 		advisories = append(advisories, verdict.Finding{Rule: "record-unread", Level: "warn",
-			Message: "what was reviewed before could not be read (" + err.Error() + "): every commit of the range is reviewed again"})
+			Message: "the record of what was reviewed before, " + where + ", could not be read (" + err.Error() + "): every commit of the range is reviewed again, and a whole review writes it anew"})
 		rec = Record{}
 	}
 	sp, err := rec.since(repo, base, head)

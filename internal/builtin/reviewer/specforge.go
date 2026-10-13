@@ -43,11 +43,13 @@ type waiting struct {
 // nextSpec finds the first issue in the backlog's order whose spec waits on
 // a review: kept by the product owner, not ready, its four sections
 // written (drafts too), its body not read as it is, its rounds not stopped.
-// ok is false when none waits.
-func nextSpec(f forge.Backlog) (w waiting, ok bool, err error) {
+// ok is false when none waits. One whose record does not read is passed
+// over and said (#302): read again as round 1, it cost an agent call a
+// night, and the issues after it waited.
+func nextSpec(f forge.Backlog) (w waiting, ok bool, unread []verdict.Finding, err error) {
 	open, err := f.Issues()
 	if err != nil {
-		return w, false, err
+		return w, false, nil, err
 	}
 	backlog.Order(open)
 	for _, is := range open {
@@ -56,12 +58,18 @@ func nextSpec(f forge.Backlog) (w waiting, ok bool, err error) {
 		}
 		comments, err := f.Comments(forge.Target{Kind: "issue", ID: is.ID})
 		if err != nil {
-			return w, false, err
+			return w, false, unread, err
 		}
 		if _, kept, _ := backlog.ReadState(comments, keeper); !kept {
 			continue
 		}
-		prior := backlog.ReadSpecReview(comments)
+		prior, err := backlog.ReadSpecReview(comments)
+		if err != nil {
+			if !backlog.Accepted(is) { // accepted: a person's yes, the record read by nobody
+				unread = append(unread, verdict.Finding{Rule: backlog.SpecRecordUnread, Where: fmt.Sprintf("#%d", is.ID), Level: "warn", Message: backlog.SpecUnread(err)})
+			}
+			continue
+		}
 		if prior != nil && (prior.Stopped || prior.Body == backlog.BodyDigest(is.Body)) {
 			continue
 		}
@@ -72,9 +80,9 @@ func nextSpec(f forge.Backlog) (w waiting, ok bool, err error) {
 				break
 			}
 		}
-		return w, true, nil
+		return w, true, unread, nil
 	}
-	return w, false, nil
+	return w, false, unread, nil
 }
 
 // round is the review this one is: one more after a review that left an
@@ -88,8 +96,9 @@ func round(prior *backlog.SpecReview) int {
 
 // specOnForge is a spec run's first step on the forge: the issue that
 // waits, read as the spec; none, nothing asked; its rounds spent, a
-// question to a person and no agent.
-func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, int, bool) {
+// question to a person and no agent. The issues passed over for a record
+// that does not read are said, whatever the run does next.
+func specOnForge(runDir, repo string, s Settings) (*Spec, []verdict.Finding, int, bool) {
 	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 	if err != nil {
 		return nil, nil, fail(fmt.Errorf("the issues to read: the forge: %v", err)), false
@@ -99,7 +108,7 @@ func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, i
 		return nil, nil, final(runDir, Review{Subject: "spec", Status: verdict.Pass, Summary: "no forge: no refined issue to read",
 			Findings: []verdict.Finding{{Rule: "no-forge", Level: "warn", Message: "on " + gardening + ", the reviewer reads the issues the product owner refined; " + forge.Missing}}}), false
 	}
-	w, found, err := nextSpec(b)
+	w, found, unread, err := nextSpec(b)
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
 		return nil, nil, exitExternal, false
@@ -108,7 +117,7 @@ func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, i
 		return nil, nil, fail(err), false
 	}
 	if !found {
-		return nil, nil, final(runDir, Review{Subject: "spec", Status: verdict.Pass, Summary: "no refined issue waits on a spec review"}), false
+		return nil, nil, final(runDir, Review{Subject: "spec", Status: verdict.Pass, Summary: "no refined issue waits on a spec review", Findings: unread}), false
 	}
 	n := round(w.prior)
 	where := fmt.Sprintf("#%d", w.issue.ID)
@@ -118,8 +127,8 @@ func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, i
 		rec.Stopped = true
 		v := Review{Subject: "spec", Spec: where, Status: verdict.Pass,
 			Summary: fmt.Sprintf("%s: %d important %s still open after %d rounds: put to a person, not read again", where, rec.Open, plural(rec.Open, "finding", "findings"), rec.Round),
-			Findings: []verdict.Finding{{Rule: "spec-rounds-spent", Where: where, Level: "warn",
-				Message: fmt.Sprintf("its spec answered %d times, %d important %s still open: a question for a person, on the issue; ready stays held until they decide", rec.Round, rec.Open, plural(rec.Open, "finding", "findings"))}}}
+			Findings: append(unread, verdict.Finding{Rule: "spec-rounds-spent", Where: where, Level: "warn",
+				Message: fmt.Sprintf("its spec answered %d times, %d important %s still open: a question for a person, on the issue; ready stays held until they decide", rec.Round, rec.Open, plural(rec.Open, "finding", "findings"))})}
 		if s.ForgeWrites {
 			fallback := []intent.Intention{{Kind: "comment", Value: map[string]any{"issue": w.issue.ID, "sticky": backlog.SpecKey, "body": stopComment(w, rec, s.SpecRounds)}}}
 			if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
@@ -133,7 +142,7 @@ func specOnForge(runDir, repo string, s Settings) (*Spec, *backlog.SpecReview, i
 	}
 	sp := Spec{Path: where, Title: strings.TrimSpace(w.issue.Title), Text: w.issue.Body, Issue: w.issue.ID,
 		Digest: backlog.BodyDigest(w.issue.Body), Round: n, Prior: w.prior}
-	return &sp, w.prior, 0, true
+	return &sp, unread, 0, true
 }
 
 // specRecord is what the comment on the issue records of this review: the
@@ -179,6 +188,9 @@ func specComment(v Review, r backlog.SpecReview, rounds int) string {
 	default:
 		b.WriteString("No important finding open: the product owner may move it to ready.\n\n")
 	}
+	// The issues passed over for a record that does not read are the run's
+	// to say, never this issue's.
+	v.Findings = slices.DeleteFunc(slices.Clone(v.Findings), func(f verdict.Finding) bool { return f.Rule == backlog.SpecRecordUnread })
 	b.WriteString(findingsTable(v, "No finding on the spec.", nil))
 	if len(v.Questions) > 0 {
 		b.WriteString("**Questions for a person**\n\nNot defects, not judged: choices the spec leaves to a person; a reply here is enough, they hold nothing.\n\n")

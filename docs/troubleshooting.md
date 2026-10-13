@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 54cc42b
+checked: f78d077
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -91,6 +91,13 @@ gardening proposes again when fewer wait.
   without an agent or with `forge-writes: false`; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
+- A hidden record does not read
+  ([#302](https://github.com/JN0V/workline/issues/302)): the issue is
+  held, said each run, never read as none.
+  - `state-broken`: mend the product owner's comment, or delete it.
+  - `proposal-unread`: copy the proposed sections into the issue.
+  - `spec-record-unread`: delete the reviewer's comment, or accept the
+    issue (`workline:accepted`).
 - A kind of act stays proposed on an issue where a person undid one, and
   on every issue once undone `undone-max` times (`demoted`).
 - A file the issues were imported from, archived since, flags them each

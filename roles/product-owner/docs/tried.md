@@ -1093,3 +1093,21 @@ fake forge, the run's engine with a planted answer, no agent
 
 **Not tried**: a real agent writing the `description`; a live forge; the
 maintainer reading the result.
+
+## 2026-10-12 — a hidden record that does not read (#302), during the trial, no agent
+
+Landed during the trial of
+[ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
+(until 2026-10-16). Nothing changed in what the role decides or writes on
+an issue, nor in its prompts: only warnings in its summary.
+
+- **What it says now**: `state-broken` a warning, with what a person may
+  do; `proposal-unread` (new), the engine's block of a proposal that does
+  not read; `spec-record-unread`, the reason a ready is held when the
+  reviewer's record does not read (was `spec-not-reviewed`).
+- **Tried**: a copy of workline, its local forge, four issues planted —
+  #302's and #303's own bodies, a broken state, a proposal whose block does
+  not read with `Agreed!` after it —, `workline route schedule --ai none
+  --no-apply`. The summary said #3 (`state-broken`) and #4
+  (`proposal-unread`); nothing else on the issues.
+- **Not tried**: a live forge; a night of the trial with it.

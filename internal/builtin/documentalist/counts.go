@@ -109,11 +109,8 @@ func sourceNamed(named string, files []string) string {
 // code's own facts, regenerated, never a count to check.
 func derivedLines(content string) map[int]bool {
 	out := map[int]bool{}
-	code := codeRanges(content)
-	for _, loc := range derived.FindAllStringIndex(content, -1) {
-		if inRanges(code, loc[0]) {
-			continue
-		}
+	blocks, _ := derivedBlocks(content)
+	for _, loc := range blocks {
 		from := strings.Count(content[:loc[0]], "\n") + 1
 		to := strings.Count(content[:loc[1]], "\n") + 1
 		for n := from; n <= to; n++ {

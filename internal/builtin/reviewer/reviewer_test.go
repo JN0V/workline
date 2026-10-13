@@ -189,6 +189,16 @@ func TestRecord(t *testing.T) {
 	if _, err := parseRecord(r.String() + "\n<!-- workline:blocks [{\"lens\": -->"); err == nil {
 		t.Error("blocks that do not read: no error")
 	}
+	// A record line that does not read, blocks without their record, and
+	// a summary comment or a file holding no record are said (#302).
+	for _, text := range []string{"<!-- workline:record reviewed=aa runs=one -->", "<!-- workline:blocks [] -->"} {
+		if _, err := parseRecord(text); err == nil {
+			t.Errorf("%s: no error", text)
+		}
+	}
+	if _, err := readRecord("Reviewed.\n\n<!-- workline:sticky=reviewer/summary -->"); err == nil || !strings.Contains(err.Error(), "no `workline:record` line") {
+		t.Errorf("a summary comment holding no record: %v", err)
+	}
 }
 
 func TestAIFindingsByLens(t *testing.T) {

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog, internal/scale, internal/work, internal/builtin/productowner, internal/sample/acts.go, internal/engine, internal/forge, internal/routing, roles/product-owner/role.yaml, roles/product-owner/instruction.md]
 status: draft
-checked: 54cc42b
+checked: f78d077
 verified: agent:claude-code
 ---
 # Acts on the backlog
@@ -71,7 +71,10 @@ anew after it (ADR-0023).
 
 An issue without that comment, or with one that does not read, is never
 acted on: an act on it is dropped (`no-state`, `state-broken`) and nothing is
-written on the issue. The role's `pre` gives an issue it takes its first
+written on the issue. One that does not read is never taken for none, which
+would write a state anew over what the role held there: `pre` says it each
+run, a warning (`state-broken`, #302), until a person mends that comment or
+deletes it. The role's `pre` gives an issue it takes its first
 state, `confirmed` at the commit it read, with no sources until an act
 names them. An issue another role opens for what it found outside its task
 (the reviewer's, ADR-0020) gets its state from the engine as it is opened —
@@ -572,8 +575,9 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   `wrote` and `deleted` are, read by meaning (ADR-0039): any heading,
   each escaped as a URL's query escapes a value (`in=Steps+to+reproduce`,
   a comma `%2C`). A heading of letters only is written as it always was,
-  so a record written before reads the same; one that does not read is
-  none, the issue read again as round 1.
+  so a record written before reads the same.
+- **A record that does not read** (#302): the issue passed over, ready
+  held, said (`spec-record-unread`) until a person deletes the comment.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
   the four sections, whoever proposed it — the agent, an accepted draft,
   a proposal accepted — and at every level: `spec-not-reviewed` (no record, or
@@ -583,9 +587,8 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
 - **Read again**: an issue with findings open on its body as it is, a
   review its state has not `answered` — kept by the body that review
   read, never by its round, which restarts at 1 after a clean review —,
-  is read again, the comment given
-  to the agent (clipped at 3000 characters) with the sections it may
-  rewrite.
+  is read again, the comment given to the agent (3000 characters at
+  most) with the sections it may rewrite.
 - **Answered**: a `refine` may rewrite a section with text when a finding
   open lies in it and it is the role's own (`backlog.Revisable`): a draft
   no person accepted, or a text whose digest is the one the state's
@@ -859,6 +862,13 @@ reads it" — the block read back, the agent's fences turned to `'''` so none en
   drafts, and does not read the issue again for that reply; ready, a
   split, a rename stay the label's. The plan checks the agreement again
   on the forge, and that the sections are those proposed (`not-agreed`).
+
+The engine's block of the last proposal that does not read (#302) writes
+nothing, whoever agrees: `pre` says it each run while the body lacks a
+section, a warning (`proposal-unread`), for a person to copy the sections
+in. The ask, draft and reply marks hold nothing but their name, nothing
+that can fail to read: a comment ending in one is the engine's, any other
+a person's.
 
 Any other reply of the reporter's, or of a person of the project, is read
 as an answer — the agent may propose a revised text, a round; a

@@ -10,4 +10,5 @@ expect:
   agent-calls: 0
   applied: [patch]
   findings: [{rule: derived-stale, where: docs/tech/auth.md}]
+  no-findings: [{rule: derive-unclosed, where: docs/tech/auth.md}]
   files: {"docs/tech/auth.md": {contains: "<!-- workline:derive auth-files -->1<!-- workline:end -->"}}

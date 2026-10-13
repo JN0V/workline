@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 )
 
@@ -50,6 +51,13 @@ var (
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
 )
 
+// The openings of the record and of its blocks: a text holding one that
+// does not read holds a record damaged, never none.
+const (
+	recordOpening = "<!-- workline:record"
+	blocksOpening = "<!-- workline:blocks"
+)
+
 // String is the record as the summary comment and the local file hold it;
 // with no patch id, as an engine before them wrote it. The blocks follow,
 // as JSON on one line: a dash written \u002d, and `<`, `>` escaped by the
@@ -72,10 +80,14 @@ func (r Record) String() string {
 }
 
 // parseRecord reads a record from a text holding one; an empty one when
-// none. Blocks that do not read are an error: never read as none.
+// none. A record or blocks that do not read are an error (#302): never
+// read as none.
 func parseRecord(text string) (Record, error) {
 	m := recordLine.FindStringSubmatch(text)
 	if m == nil {
+		if strings.Contains(text, recordOpening) || strings.Contains(text, blocksOpening) {
+			return Record{}, backlog.UnreadRecord(text, recordOpening)
+		}
 		return Record{}, nil
 	}
 	var r Record
@@ -288,41 +300,57 @@ func localRecord(repo string) string {
 
 // loadRecord reads the record: from the merge request's summary comment when
 // the run is on one and may write there, else from the machine's. It says
-// where it read it, and why it could not, when it could not.
+// where it read it, and why it could not, when it could not. The summary
+// comment and the machine's file always hold a record: one holding none
+// was damaged, said as one that does not read (#302).
 func loadRecord(repo string, s Settings) (Record, string, error) {
 	if t := mergeRequest(); t != nil && s.ForgeWrites {
+		where := fmt.Sprintf("in its summary comment on merge request %d", t.ID)
 		f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 		if err != nil {
-			return Record{}, "forge", fmt.Errorf("the forge: %v", err)
+			return Record{}, where, fmt.Errorf("the forge: %v", err)
 		}
 		if f == nil {
-			return Record{}, "forge", fmt.Errorf("no forge to read the merge request's comments from")
+			return Record{}, where, fmt.Errorf("no forge to read the merge request's comments from")
 		}
 		b, ok := f.(forge.Backlog)
 		if !ok {
-			return Record{}, "forge", fmt.Errorf("this forge cannot list a merge request's comments")
+			return Record{}, where, fmt.Errorf("this forge cannot list a merge request's comments")
 		}
 		comments, err := b.Comments(*t)
 		if err != nil {
-			return Record{}, "forge", err
+			return Record{}, where, err
 		}
 		for _, c := range comments {
 			if strings.Contains(c, forge.Marker("sticky=reviewer/"+SummaryKey)) {
-				r, err := parseRecord(c)
-				return r, "forge", err
+				r, err := readRecord(c)
+				return r, where, err
 			}
 		}
-		return Record{}, "forge", nil
+		return Record{}, where, nil
 	}
-	data, err := os.ReadFile(localRecord(repo))
+	file := localRecord(repo)
+	where := "in " + file
+	if rel, err := filepath.Rel(repo, file); err == nil && !strings.HasPrefix(rel, "..") {
+		where = "in " + rel
+	}
+	data, err := os.ReadFile(file)
 	if os.IsNotExist(err) {
-		return Record{}, "local", nil
+		return Record{}, where, nil
 	}
 	if err != nil {
-		return Record{}, "local", err
+		return Record{}, where, err
 	}
-	r, err := parseRecord(string(data))
-	return r, "local", err
+	r, err := readRecord(string(data))
+	return r, where, err
+}
+
+// readRecord reads the record of a text that always holds one.
+func readRecord(text string) (Record, error) {
+	if !strings.Contains(text, recordOpening) {
+		return Record{}, backlog.UnreadRecord(text, recordOpening)
+	}
+	return parseRecord(text)
 }
 
 // saveLocal keeps the record on this machine.

@@ -1,0 +1,28 @@
+case: product-owner/ready-held-while-the-spec-record-does-not-read
+about: "The record hidden in the reviewer's comment on an issue's spec does not read (#302): ready stays held, as for a spec not reviewed, and the summary says why and what a person may do — never that the reviewer will read it, which it does not until a person deletes that comment."
+given:
+  repo: backlog
+  config:
+    routing:
+      events: {schedule: [product-owner, reviewer]}
+  forge:
+    issues:
+      - id: 9
+        title: Rows lost
+        body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        author: ann
+        insider: true
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=000000000000 round=1 open=1 in=Steps to reproduce -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - {id: 10, title: "Rows lost again", body: "## Need\n\nThe monthly report counts every sale.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go", author: ann, insider: true, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-nine-ten}
+expect:
+  findings:
+    - {rule: spec-record-unread, where: "#9", message: "does not read (`<!-- workline:spec-review body=000000000000 round=1 open=1 in=Steps to reproduce -->` does not read): not read again, and held from ready, until a person deletes that comment"}
+    - {rule: spec-not-reviewed, where: "#10"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine]}
+      - {id: 10, labels: [workline:to-refine]}

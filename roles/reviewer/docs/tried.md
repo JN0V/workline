@@ -786,3 +786,21 @@ one branch:
   comment, conformance only); the line on `workline follow`'s merge
   ([#325](https://github.com/JN0V/workline/pull/325), not merged); a real
   agent.
+
+## 2026-10-12 — a record that does not read (#302), on a copy of workline
+
+A copy of workline, its local forge, no agent (`--ai none`, no paid call),
+`main`'s engine and the one fixing #302:
+
+- **A spec on the forge**: #302's and #303's own bodies planted as issues
+  1 and 2, the first with the reviewer's comment holding the record as
+  #300's bug wrote it (`in=Steps to reproduce`). `workline run-role
+  reviewer --event schedule`: `main`'s engine took issue 1 for a spec never
+  read, round 1, in silence — with an agent, one call a night, issue 2
+  never reached. This one said issue 1 (`spec-record-unread`, the line
+  quoted, what a person may do) and read issue 2.
+- **On a machine**: `.git/workline/reviewer-record` holding `runs=one`,
+  `workline review`: `record-unread`, the file and the line named, every
+  commit reviewed again; `main`'s engine said nothing.
+- **Not tried**: a pull request on the forge (the summary comment's record,
+  conformance only); a real agent.
