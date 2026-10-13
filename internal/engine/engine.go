@@ -908,6 +908,9 @@ type runState struct {
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
+	// fromRun: applied from a merge request's own CI run (ResumeFrom),
+	// whose head's files are read as data: never written through a link.
+	fromRun bool
 }
 
 // authors are the agents and models whose answers a run applies, as
@@ -952,7 +955,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		return err
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
-		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings}
+		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings, noLinks: st.fromRun}
 	for _, c := range res.Calls {
 		if c.Task != "judge" && c.Model != "" {
 			ap.model = c.Model
@@ -1851,6 +1854,7 @@ type applier struct {
 	capped       int               // findings not opened as issues, past issues-max
 	findings     []verdict.Finding // what the applying says
 	model        string            // the model whose answer is applied, as an announcement records it
+	noLinks      bool              // a file is never written through a link (ResumeFrom)
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -2557,6 +2561,11 @@ func (a *applier) patch(v any) error {
 		if !a.allowed(file) {
 			return fmt.Errorf("%s is outside what this role may write", file)
 		}
+		if a.noLinks {
+			if link := throughLink(a.repo, file); link != "" {
+				return fmt.Errorf("%s is a link, in the files of the merge request's head: nothing is written through it", link)
+			}
+		}
 		if err := os.WriteFile(filepath.Join(a.repo, file), []byte(content), 0o644); err != nil {
 			return err
 		}
@@ -2619,13 +2628,7 @@ const keepRuns = 50
 // newRunDir creates the run's folder inside the repository's git directory,
 // where it is never tracked and never shows up as a change.
 func newRunDir(repo, roleName string) (string, error) {
-	base := filepath.Join(repo, ".workline", "runs")
-	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
-		base = filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
-	}
-	if d := os.Getenv("WORKLINE_RUNS_DIR"); d != "" {
-		base = d // in CI, somewhere an artifact can carry it to the job that applies
-	}
+	base := RunsDir(repo)
 	id := fmt.Sprintf("%s-%s", time.Now().UTC().Format("20060102T150405.000000000"), roleName)
 	dir := filepath.Join(base, id)
 	for _, d := range []string{"in/input", "out"} {
@@ -2639,6 +2642,19 @@ func newRunDir(repo, roleName string) (string, error) {
 		}
 	}
 	return dir, nil
+}
+
+// RunsDir is where repo's runs are kept: WORKLINE_RUNS_DIR when set — in
+// CI, somewhere an artifact can carry them to the job that applies —, else
+// its git folder's workline/runs.
+func RunsDir(repo string) string {
+	if d := os.Getenv("WORKLINE_RUNS_DIR"); d != "" {
+		return d
+	}
+	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
+		return filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
+	}
+	return filepath.Join(repo, ".workline", "runs")
 }
 
 // intSetting reads a whole number from the role's settings; 0 when unset.

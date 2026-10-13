@@ -25,6 +25,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -1260,8 +1261,24 @@ func applyCmd(args []string) int {
 	lineFile := fs.String("line", "", "apply the runs `workline route --no-apply --json` listed as pending in this file")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of what was applied to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
+	fromMR := fs.Int("from-merge-request", 0, "the runs come from this merge request's own CI run, which its code can change: only their proposals are read, found by name in the runs folder; the repository, the roles and the forge are this job's, and only what that merge request's line may do is applied, to it")
+	head := fs.String("head", "", "with --from-merge-request: the commit its run judged; nothing is applied once its branch moved on")
+	repo := fs.String("repo", ".", "with --from-merge-request: this job's checkout of the base, whose settings are read")
+	forgeSpec := fs.String("forge", "", "with --from-merge-request: github, gitlab, cmd:<command> (default: the project's `forge` setting)")
 	if code, done := parseOnly(fs, args); done {
 		return code
+	}
+	resume := engine.Resume
+	if *fromMR != 0 {
+		from, err := fromMergeRequest(*fromMR, *head, *repo, *forgeSpec)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "workline:", err)
+			return 64
+		}
+		resume = func(listed string) *engine.Result { return engine.ResumeFrom(listed, from) }
+	} else if *head != "" {
+		fmt.Fprintln(os.Stderr, "workline: --head goes with --from-merge-request")
+		return 64
 	}
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
@@ -1287,14 +1304,14 @@ func applyCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "usage: workline apply <run-dir>... | --line <route result> [--json] [--summary <file>]")
 		return 64
 	}
-	res := engine.Resume(dirs[0])
+	res := resume(dirs[0])
 	stopped := len(dirs) - 1 // the last run applied
 	for i, d := range dirs[1:] {
 		if res.Status != verdict.Pass {
 			stopped = i
 			break
 		}
-		next := engine.Resume(d)
+		next := resume(d)
 		res.Status, res.Summary, res.RunDir = next.Status, next.Summary, next.RunDir
 		res.Applied = append(res.Applied, next.Applied...)
 		res.Refused = append(res.Refused, next.Refused...)
@@ -1326,6 +1343,30 @@ func applyCmd(args []string) int {
 		report(res)
 	}
 	return exitFor(res.Status)
+}
+
+// fromMergeRequest is what `apply --from-merge-request` takes from this
+// job: its checkout of the base, its engine's roles, its forge.
+func fromMergeRequest(id int, head, repo, forgeSpec string) (engine.FromMergeRequest, error) {
+	if head == "" {
+		return engine.FromMergeRequest{}, errors.New("--from-merge-request needs --head, the commit its run judged")
+	}
+	root, err := gitRoot(repo)
+	if err != nil {
+		return engine.FromMergeRequest{}, errors.New("not in a git repository")
+	}
+	if forgeSpec == "" {
+		cfg, err := role.LoadProjectConfig(root)
+		if err != nil {
+			return engine.FromMergeRequest{}, err
+		}
+		forgeSpec = cfg.Forge
+	}
+	roles, err := resolveRoles(os.Getenv("WORKLINE_ROLES"))
+	if err != nil {
+		return engine.FromMergeRequest{}, err
+	}
+	return engine.FromMergeRequest{Repo: root, RolesDir: roles, Forge: forgeSpec, ID: id, Head: head}, nil
 }
 
 type multi []string

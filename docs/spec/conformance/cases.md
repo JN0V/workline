@@ -84,6 +84,14 @@ saying so.
   each item, by kind and id, takes the fields given): what one run
   records, the next reads back. Both runs' agent calls, calls and findings
   are counted together, the rest is the second's;
+- `apply-from` — with `then: resume`, apply as a job of the base's
+  applies a merge request's own CI run (`apply --from-merge-request`):
+  `merge-request`, the one it judged; `base`, the branch checked out
+  first; `head`, a branch of `origin` whose tip is `--head`; what that
+  run's code could have done to its folders: `run` (keys of
+  `out/run.yaml` written over), `intents` (proposals added), `listed` (the
+  run listed at that path instead), `setup` (commands run first: what the
+  branches became since);
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 ## Expect

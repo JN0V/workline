@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -113,6 +114,22 @@ type runSpec struct {
 	// status, steps and calls is its; the findings are both runs'.
 	ThenLine *thenLine `yaml:"then-line"`
 	CLI     []string          `yaml:"cli"`           // workline with these arguments, as typed: its exit code, what it prints
+	// ApplyFrom: with then: resume, the runs applied as the base's job
+	// applies a merge request's own CI run (apply --from-merge-request).
+	ApplyFrom *applyFrom `yaml:"apply-from"`
+}
+
+// applyFrom is a merge request's own run applied by a job of the base's:
+// the base checked out, the head the tip of a branch of origin, the run's
+// folders first changed as the merge request's code could have.
+type applyFrom struct {
+	MergeRequest int              `yaml:"merge-request"`
+	Base         string           `yaml:"base"`    // the branch checked out before applying
+	Head         string           `yaml:"head"`    // a branch of origin: its tip is --head
+	Run          map[string]any   `yaml:"run"`     // keys of out/run.yaml written over
+	Intents      []map[string]any `yaml:"intents"` // proposals added to out/intentions.yaml
+	Listed       string           `yaml:"listed"`  // the run listed at this path, not its own
+	Setup        []string         `yaml:"setup"`   // commands run in the repository first: what its branches became since the run
 }
 
 // thenLine is the line run after a case's run: the event, the branch of
@@ -625,12 +642,20 @@ func runCase(t *testing.T, c *caseFile) []string {
 		if len(dirs) == 0 {
 			return []string{"the first run reported no run folder to resume"}
 		}
-		resumeArgs := append(append([]string{"apply"}, dirs...), "--json")
+		var fromArgs []string
+		if a := c.Run.ApplyFrom; a != nil {
+			var problems []string
+			if dirs, fromArgs, problems = poisoned(a, dirs, repo, forgeSpec); len(problems) > 0 {
+				return problems
+			}
+		}
+		resumeArgs := append(append(append([]string{"apply"}, dirs...), "--json"), fromArgs...)
 		if c.Run.JobSum {
 			resumeArgs = append(resumeArgs, "--summary", summaryFile, "--summary", summaryHTML)
 		}
 		resume := exec.Command(engineBin, resumeArgs...)
 		resume.Env = env
+		resume.Dir = repo
 		if judgeCache != "" {
 			os.RemoveAll(judgeCache)
 			resume.Env = append(env, "XDG_CACHE_HOME="+t.TempDir())
@@ -1017,6 +1042,58 @@ func readPending(t *testing.T) map[string]bool {
 
 // editForge makes a person's edits to the simulated forge between two runs
 // (between): each item listed, by kind and id, takes the fields given.
+// poisoned changes the runs' folders as a merge request's own run could
+// have (run.yaml's keys, proposals added), checks the base out, and gives
+// the runs as listed and the options `apply --from-merge-request` takes.
+func poisoned(a *applyFrom, dirs []string, repo, forgeSpec string) (listed, args []string, problems []string) {
+	for _, d := range dirs {
+		if len(a.Run) > 0 {
+			file := filepath.Join(d, "out", "run.yaml")
+			var st map[string]any
+			data, err := os.ReadFile(file)
+			if err == nil {
+				err = yaml.Unmarshal(data, &st)
+			}
+			if err != nil {
+				return nil, nil, []string{"apply-from: " + err.Error()}
+			}
+			maps.Copy(st, a.Run)
+			data, _ = yaml.Marshal(st)
+			os.WriteFile(file, data, 0o644)
+		}
+		if len(a.Intents) > 0 {
+			file := filepath.Join(d, "out", "intentions.yaml")
+			var in []map[string]any
+			if data, err := os.ReadFile(file); err == nil {
+				yaml.Unmarshal(data, &in)
+			}
+			data, _ := yaml.Marshal(append(in, a.Intents...))
+			os.WriteFile(file, data, 0o644)
+		}
+	}
+	listed = dirs
+	if a.Listed != "" {
+		listed = []string{a.Listed}
+	}
+	for _, s := range a.Setup {
+		cmd := exec.Command("sh", "-c", s)
+		cmd.Dir, cmd.Env = repo, hermeticEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return nil, nil, []string{fmt.Sprintf("apply-from: %q failed: %v\n%s", s, err, out)}
+		}
+	}
+	if a.Base != "" {
+		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", a.Base).CombinedOutput(); err != nil {
+			return nil, nil, []string{fmt.Sprintf("apply-from: %s not checked out: %s", a.Base, out)}
+		}
+	}
+	head, err := exec.Command("git", "-C", repo, "rev-parse", "origin/"+a.Head).Output()
+	if err != nil {
+		return nil, nil, []string{fmt.Sprintf("apply-from: no branch %s on origin", a.Head)}
+	}
+	return listed, []string{"--from-merge-request", fmt.Sprint(a.MergeRequest), "--head", strings.TrimSpace(string(head)), "--forge", forgeSpec}, nil
+}
+
 func editForge(file string, edits map[string]any) error {
 	if len(edits) == 0 {
 		return nil
