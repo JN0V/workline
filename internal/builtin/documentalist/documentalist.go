@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/JN0V/workline/internal/gitrange"
 	"github.com/JN0V/workline/internal/intent"
@@ -198,15 +199,21 @@ func Section(content, anchor string) (string, bool) {
 	return "", false
 }
 
-// slug is the anchor a heading gets on GitHub and GitLab.
+// slug is the anchor a heading gets on GitHub, by github-slugger's rule:
+// lowercased, every character dropped but letters, marks, digits, letter
+// numbers, connectors such as `_`, and `-`; each space made a hyphen. The en
+// and em dash are punctuation: dropped. GitHub slugs the text it shows: a
+// link gives its words, not its target. The capital dotted I lowers to i and a
+// dot, as JavaScript and Ruby lower it.
 func slug(heading string) string {
+	heading = strings.ReplaceAll(inlineLink.ReplaceAllString(heading, ""), "İ", "i̇")
 	var b strings.Builder
 	for _, r := range strings.ToLower(heading) {
 		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '-', r == '_', r > 127:
-			b.WriteRune(r)
 		case r == ' ':
 			b.WriteRune('-')
+		case r == '-', unicode.In(r, unicode.L, unicode.M, unicode.Nd, unicode.Nl, unicode.Pc, unicode.Other_Alphabetic):
+			b.WriteRune(r)
 		}
 	}
 	return b.String()

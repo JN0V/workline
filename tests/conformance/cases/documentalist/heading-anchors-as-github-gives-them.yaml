@@ -1,0 +1,22 @@
+case: documentalist/heading-anchors-as-github-gives-them
+about: "A link to a heading is checked against the anchor GitHub gives it: punctuation dropped, the en and em dash included, spaces made hyphens, a repeated heading numbered; an anchor that keeps a dash GitHub drops is dead."
+given:
+  repo: untidy
+  env: {PATH: "/usr/bin:/bin"}
+  setup:
+    - |
+      printf '%s\n' '# Range' '' '## 1–3. The range, the rules, the record' '' 'Text.' '' '## Open — for the person' '' 'Text.' '' "## What's new? (v2.0)" '' 'Text.' '' '## Notes' '' 'Text.' '' '## Notes' '' 'Text.' > docs/range.md
+      printf '%s\n' '# Links' '' 'See [en](range.md#13-the-range-the-rules-the-record), [em](range.md#open--for-the-person),' '[new](range.md#whats-new-v20), [notes](range.md#notes) and [more notes](range.md#notes-1).' 'Not [en kept](range.md#1–3-the-range-the-rules-the-record), [em kept](range.md#open-—-for-the-person), [a third](range.md#notes-2).' > docs/links.md
+      git add docs && git commit -qm 'docs: link to headings with dashes'
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  findings:
+    - {rule: dead-link, where: docs/links.md, message: "#1–3-the-range-the-rules-the-record"}
+    - {rule: dead-link, where: docs/links.md, message: "#open-—-for-the-person"}
+    - {rule: dead-link, where: docs/links.md, message: "#notes-2"}
+  no-findings:
+    - {rule: dead-link, where: docs/links.md, message: "#13-the-range-the-rules-the-record"}
+    - {rule: dead-link, where: docs/links.md, message: "#open--for-the-person"}
+    - {rule: dead-link, where: docs/links.md, message: "#whats-new-v20"}
+    - {rule: dead-link, where: docs/links.md, message: "#notes:"}
+    - {rule: dead-link, where: docs/links.md, message: "#notes-1"}
