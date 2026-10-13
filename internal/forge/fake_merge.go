@@ -49,6 +49,7 @@ func (f *Fake) MergeState(mr MergeRequest) (MergeState, error) {
 			return MergeState{}, fmt.Errorf("the simulated forge's push %q is no revision of the repository", p.Head)
 		}
 		st.Pushes = append(st.Pushes, Push{Head: strings.TrimSpace(string(h)), At: p.At})
+		st.Pushers = append(st.Pushers, p.By)
 	}
 	return st, nil
 }

@@ -97,13 +97,17 @@ type FakeItem struct {
 	Pushes      []FakePush `json:"pushes,omitempty"`
 	Clean       bool       `json:"clean,omitempty"`
 	Merged      bool       `json:"merged,omitempty"`
+	// Closing: who closed an issue, as Closing reads it.
+	Closing *LabelEvent `json:"closing,omitempty"`
 }
 
 // FakePush is a push to a merge request's branch: the head, a revision
-// of the repository (a branch, branch~1), and when.
+// of the repository (a branch, branch~1), when, and who pushed it ("" the
+// forge does not say).
 type FakePush struct {
 	Head string `json:"head"`
 	At   string `json:"at"`
+	By   string `json:"by,omitempty"`
 }
 
 // FakeThread is a comment on a line of a merge request: its file and line
@@ -326,7 +330,7 @@ func (f *Fake) Comment(t Target, body, marker string) error {
 				return nil
 			}
 		}
-		it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker})
+		it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true})
 		return nil
 	})
 }
@@ -340,13 +344,13 @@ func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
 		for i := len(it.Comments) - 1; i >= 0; i-- { // the last, as a forge's
 			if strings.Contains(it.Comments[i].Body, marker) {
 				if it.Comments[i].Body != body+"\n\n"+marker {
-					it.Comments[i] = FakeComment{Body: body + "\n\n" + marker}
+					it.Comments[i] = FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true}
 				}
 				return nil
 			}
 		}
 		if create {
-			it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker})
+			it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true})
 		}
 		return nil
 	})
@@ -375,14 +379,14 @@ func (f *Fake) OpenIssue(title, body, marker string) (int, error) {
 	id := 0
 	err := f.write(func(s *FakeState) error {
 		for i := range s.Issues {
-			if s.Issues[i].Title == title {
+			if s.Issues[i].Title == title && !s.Issues[i].Closed { // an open one, as GitHub reuses it
 				id = s.Issues[i].ID
 				for _, c := range s.Issues[i].Comments {
 					if strings.Contains(c.Body, marker) {
 						return nil
 					}
 				}
-				s.Issues[i].Comments = append(s.Issues[i].Comments, FakeComment{Body: body + "\n\n" + marker})
+				s.Issues[i].Comments = append(s.Issues[i].Comments, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true})
 				return nil
 			}
 		}
@@ -390,7 +394,7 @@ func (f *Fake) OpenIssue(title, body, marker string) (int, error) {
 		for _, it := range s.Issues {
 			id = max(id, it.ID+1)
 		}
-		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body + "\n\n" + marker, Labels: []string{}, Comments: []FakeComment{}})
+		s.Issues = append(s.Issues, FakeItem{ID: id, Title: title, Body: body + "\n\n" + marker, Labels: []string{}, Comments: []FakeComment{}, Author: fakeBot})
 		return nil
 	})
 	return id, err
@@ -439,7 +443,7 @@ func (f *Fake) CloseMergeRequest(branch, body, marker string) error {
 			}
 			said := slices.ContainsFunc(m.Comments, func(c FakeComment) bool { return strings.Contains(c.Body, marker) })
 			if !said {
-				m.Comments = append(m.Comments, FakeComment{Body: body + "\n\n" + marker})
+				m.Comments = append(m.Comments, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true})
 			}
 			m.Closed = true
 			return nil

@@ -1,0 +1,32 @@
+case: merge/normal-veto-holds
+about: "The veto stays the forge's (#322): at `normal`, two of workline's own records pull requests — opened, pushed and committed by its App —, green. One a person marked Draft: nothing turned on. On the other a person turned off the auto-merge workline had turned on: it stays off until a person labels it, as at `cautious` (ADR-0042). No new label to hold one."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/suspect", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, bot: true, draft: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/suspect, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+      - {id: 13, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [], auto-merge-at: "2026-01-04T10:00:00Z",
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings:
+    - {rule: draft, where: "#9", message: "workline's own, but a draft: nothing turned on"}
+    - {rule: vetoed, where: "#13", message: "its auto-merge turned off since it was turned on: left off until a person labels it"}
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: false, comments: 0}
+      - {id: 13, auto-merge: false, comments: 0}
+    statuses:
+      - {commit: "workline/documentalist/stale", name: workline/accepted, state: failure, by: workline-bot}

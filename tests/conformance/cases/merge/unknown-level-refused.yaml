@@ -6,4 +6,4 @@ given:
 run: {cli: [follow, --base, main]}
 expect:
   exit: 64
-  stderr: [".workline/config.yaml: merge.autonomy is \"bold\": the levels are cautious"]
+  stderr: [".workline/config.yaml: merge.autonomy is \"bold\": the levels are cautious, normal"]

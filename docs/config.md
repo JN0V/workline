@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: f7514347
+checked: 59210763
 verified: agent:claude-code
 ---
 # Configuration
@@ -28,7 +28,7 @@ owner), then the project's `settings`.
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
-| `merge` | `autonomy: cautious`: the forge's auto-merge turned on for what a person accepted ([merge policy](merge-policy.md)); off unless set |
+| `merge` | `autonomy: cautious`: the forge's auto-merge turned on for what a person accepted; `normal`: also for workline's own routine work, with no person's yes ([merge policy](merge-policy.md)); off unless set |
 
 ## `.workline/config.yaml`
 
@@ -71,6 +71,13 @@ release:                    # how the project's release tool works
   tags: "v*"                # its tags (the default); the last release is the highest version merged, prereleases left out
 merge: {autonomy: cautious} # the forge merges what a person labelled workline:accepted, its head's verdict passed
 ```
+
+**`merge: {autonomy: normal}` crosses a line**: a change an AI wrote and
+an AI reviewed — workline's own docs, records and derived blocks —
+merges with no person's approval. That is past the two-person rule of
+change control (SLSA's source level 4, SOC 2's change management): a
+project's choice, never a default
+([merge policy](merge-policy.md#normal-routine-work-with-no-yes)).
 
 Where the comments point:
 

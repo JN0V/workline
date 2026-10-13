@@ -46,14 +46,15 @@ type gitlabState struct {
 }
 
 var (
-	issuePath   = regexp.MustCompile(`^/issues/(\d+)$`)
-	notesPath   = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
-	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
-	linksPath   = regexp.MustCompile(`^/issues/(\d+)/links$`)
-	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
-	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
-	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
-	userPath    = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
+	issuePath      = regexp.MustCompile(`^/issues/(\d+)$`)
+	notesPath      = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
+	mrPath         = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
+	linksPath      = regexp.MustCompile(`^/issues/(\d+)/links$`)
+	closedBy       = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
+	stateEvents    = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
+	commit         = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
+	commitStatuses = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)/statuses$`)
+	userPath       = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
 )
 
 const tokenUser = "workline-bot"
@@ -131,14 +132,47 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
 				"source_project_id": source, "target_project_id": 1, "title": it.Title,
 				"author": map[string]any{"id": 1000 + it.ID, "username": it.Author},
-				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed],
+				"state":  map[bool]string{true: "closed", false: "opened"}[it.Closed],
 				"labels": it.Labels, "draft": it.Draft, "merge_when_pipeline_succeeds": it.AutoMerge})
 		}
 		return out, 200
-	case p == "/api/v4/users/999":
+	case p == "/api/v4/users/999", p == "/api/v4/user":
 		// The token's user, who sets a merge request to merge (merge_user):
 		// a bot, as a project access token's is.
 		return map[string]any{"id": 999, "username": tokenUser, "bot": true}, 200
+	case strings.HasPrefix(p, "/statuses/") && method == "POST":
+		// A commit status, set by the token's user (the merge policy's mark).
+		s.Statuses = append(s.Statuses, forge.FakeStatus{Commit: strings.TrimPrefix(p, "/statuses/"), Name: form.Get("name"),
+			State: form.Get("state"), Description: form.Get("description"), By: tokenUser})
+		return map[string]any{"id": len(s.Statuses)}, 201
+	case commitStatuses.MatchString(p) && method == "GET":
+		// A commit's statuses, the newest first, each with its author; the
+		// simulated forge's commits are revisions of the repository.
+		sha := commitStatuses.FindStringSubmatch(p)[1]
+		out := []map[string]any{}
+		for i, st := range s.Statuses {
+			c, err := exec.Command("git", "-C", m.repo, "rev-parse", "--verify", "-q", st.Commit+"^{commit}").Output()
+			if err != nil || strings.TrimSpace(string(c)) != sha || q.Has("name") && q.Get("name") != st.Name {
+				continue
+			}
+			out = append(out, map[string]any{"name": st.Name, "status": st.State, "description": st.Description,
+				"created_at": fmt.Sprintf("2026-01-04T10:%02d:00Z", i), "author": user(st.By)})
+		}
+		slices.Reverse(out)
+		return out, 200
+	case p == "/events" && method == "GET":
+		// The project's push events, newest first: each merge request's
+		// pushes, by whom the simulated forge says.
+		out := []map[string]any{}
+		for _, it := range s.MergeRequests {
+			for i, push := range it.Pushes {
+				action := map[bool]string{true: "pushed new", false: "pushed to"}[i == 0] // the first creates the branch
+				out = append(out, map[string]any{"action_name": action, "author_username": push.By, "created_at": push.At,
+					"push_data": map[string]any{"ref": it.Branch, "ref_type": "branch"}})
+			}
+		}
+		slices.Reverse(out)
+		return out, 200
 	case userPath.MatchString(p):
 		id, _ := strconv.Atoi(userPath.FindStringSubmatch(p)[1])
 		it := mergeRequest(id - 1000)
@@ -270,6 +304,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		out := []map[string]any{}
 		if it.Closed {
 			e := map[string]any{"state": "closed", "source_commit": nil, "source_merge_request_id": nil}
+			if it.Closing != nil {
+				e["user"] = user(it.Closing.Author)
+			}
 			for _, c := range it.ClosedBy {
 				if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
 					e["source_merge_request_id"] = 5000 + n

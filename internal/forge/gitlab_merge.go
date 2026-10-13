@@ -3,6 +3,7 @@ package forge
 import (
 	"fmt"
 	"regexp"
+	"time"
 )
 
 // autoMergeOn matches GitLab's system note on a merge request when
@@ -23,10 +24,11 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 		return MergeState{}, err
 	}
 	var v struct {
-		SHA   string `json:"sha"`
-		Draft bool   `json:"draft"`
-		Auto  bool   `json:"merge_when_pipeline_succeeds"`
-		User  *struct {
+		SHA     string `json:"sha"`
+		Draft   bool   `json:"draft"`
+		Auto    bool   `json:"merge_when_pipeline_succeeds"`
+		Created string `json:"created_at"`
+		User    *struct {
 			ID       int    `json:"id"`
 			Username string `json:"username"`
 		} `json:"merge_user"`
@@ -67,6 +69,11 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 	for i := len(versions) - 1; i >= 0; i-- { // newest first: oldest first
 		st.Pushes = append(st.Pushes, Push{Head: versions[i].Head, At: versions[i].At})
 	}
+	if mr.Here {
+		if st.Pushers, err = g.pushers(mr.Branch, v.Created); err != nil {
+			return MergeState{}, err
+		}
+	}
 	out, err = g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
 	if err != nil {
 		return MergeState{}, err
@@ -85,6 +92,46 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 		}
 	}
 	return st, nil
+}
+
+// pushers are who pushed to branch since it was created, oldest first, as
+// the project's push events name them, read from a week before the merge
+// request was opened — workline's own branch is created as its merge
+// request is opened —; nil when its creation is not among them: not known.
+func (g *gitlab) pushers(branch, opened string) ([]string, error) {
+	q := "projects/:id/events?action=pushed&per_page=100"
+	if t, err := time.Parse(time.RFC3339, opened); err == nil {
+		q += "&after=" + t.AddDate(0, 0, -7).Format("2006-01-02")
+	}
+	out, err := g.api("--paginate", q)
+	if err != nil {
+		return nil, err
+	}
+	events, err := pages[struct {
+		Action string `json:"action_name"`
+		Author string `json:"author_username"`
+		Push   struct {
+			Ref     string `json:"ref"`
+			RefType string `json:"ref_type"`
+		} `json:"push_data"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	var who []string
+	for i := len(events) - 1; i >= 0; i-- { // newest first: oldest first
+		e := events[i]
+		if e.Push.RefType != "branch" || e.Push.Ref != branch {
+			continue
+		}
+		if e.Action == "pushed new" {
+			who = []string{}
+		}
+		if who != nil {
+			who = append(who, e.Author)
+		}
+	}
+	return who, nil
 }
 
 // pipelineStatus reads a GitLab pipeline's status as the merge policy sums

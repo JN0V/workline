@@ -1,0 +1,28 @@
+case: merge/normal-persons-pull-request-waits
+about: "A person's pull request never merges alone (#322): at `normal`, two pull requests opened by a person, both green, neither labelled — one a feature, one from a branch named as workline's, its commit carrying workline's trailer and changing only a doc. Only what workline opened (a bot, or the user its token writes as) is weighed as its own: both wait for a person's label (ADR-0042, amended; telling an agent's from a person's is #117)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+    - "git checkout -qb workline/documentalist/mine && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/mine && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/documentalist/mine", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 7, branch: feat/sessions, base: main, author: dana, labels: [], comments: []}
+      - {id: 8, branch: workline/documentalist/mine, base: main, author: dana, labels: [], comments: []}
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, comments: 0}
+      - {id: 8, auto-merge: false, comments: 0}
+    statuses:
+      - {commit: "feat/sessions", name: workline/accepted, absent: true}
+      - {commit: "workline/documentalist/mine", name: workline/accepted, absent: true}

@@ -1,11 +1,11 @@
 # Principles
 
-The rules every role, spec and line of engine code follows. When a design
-choice is unclear, it is settled against this page.
+The rules every role, spec and line of engine code follows; an unclear
+choice is settled against this page.
 
 1. **People at both ends, the machine in between.** People state the need, how
-   the result is verified and who validates it; people accept the result. The
-   line does the work in between.
+   the result is verified and who validates it; they accept the result, or
+   write beforehand the narrow class the line accepts for them.
 2. **One role, one job.** Each role does one thing and hands over, like a post
    on an assembly line.
 3. **Each role reads only what it needs.** No catch-all constitution; a context
