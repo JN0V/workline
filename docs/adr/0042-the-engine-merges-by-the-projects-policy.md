@@ -263,9 +263,9 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
     (`WORKLINE_APP`), on GitLab the project's bot —; never another bot
     (an agent's app), never a person's token, which agents use too: with
     one, nothing merges alone, said;
-  - every push to its branch the App's, as the forge names the pusher:
-    GitHub's repository activity, GitLab's push events; not said, it
-    waits;
+  - every push to its branch since it was created the App's, as the
+    forge names the pusher: GitHub's repository activity, GitLab's push
+    events; its creation not among them, or no push named, it waits;
   - every commit committed under the name the App's jobs commit with, and
     workline's own by its tree as `follow` tells it ([#329]);
   - every page it changes a doc of the documentalist's (its `docs`
@@ -298,8 +298,9 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
 - **Every revert on the base is read, once**: the engine's record on the
   forge, the ref `refs/workline/merge-policy` — pushed by `follow`, whose
   token writes, with a lease —, keeps the last base commit read and each
-  demotion; each run reads every commit past it (the last 100 when there
-  is none), every parent.
+  demotion; each run reads every commit past it, every parent — the base
+  rewritten, past what they share; no record yet, the last 100, said
+  (`merge-record-started`).
 - **A revert names what it reverts** in git's words (`This reverts commit
   …`, the commit reverted naming `#N`), GitLab's (`This reverts merge
   request !N`) or GitHub's (`Reverts owner/repo#N`). GitHub's own Revert
@@ -341,8 +342,9 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   3. the maintainer validates [#322]'s Validation on real use.
 - **Limits**: whoever holds the App's key could act as it — the key in a
   pull request's own run, [#331]. GitLab: the push events read from a
-  week before the merge request opened; the ref pushed there not tried
-  live. A forge that does not name who pushed or who closed (a `cmd:`
+  week before the merge request opened, the branch's creation among them
+  or it waits; the ref pushed there not tried live. A forge that does not
+  name who pushed or who closed (a `cmd:`
   forge without `pushers`, `closing`): nothing merges alone, no demotion
   is lifted.
 - **Texts changed**: principle 1 — people accept the result, or write in

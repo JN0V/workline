@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 59210763
+checked: 1b219fa4
 verified: agent:claude-code
 ---
 # The merge policy
@@ -174,6 +174,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
 | `revert-unread` | a revert tied to no merge request: every kind demoted |
 | `merge-restored`, `restore-ignored`, `restore-unread` | a demotion's issue closed by a person who may lift it; by anyone else; unread |
+| `merge-record-started` | no record yet: the base's last 100 commits read for reverts |
 | `updated` | first in line, brought up to date |
 | `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
