@@ -56,3 +56,34 @@ func TestGitHubGuarded(t *testing.T) {
 		}
 	}
 }
+
+// GitHub turns no auto-merge on for a pull request it could merge now, a
+// check it does not require still running ("unstable status", as on
+// workline#341): it is merged at once, at the head checked.
+func TestGitHubAutoMergeMergesWhatItCouldMergeNow(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "calls")
+	script := "#!/bin/sh\necho \"$*\" >> " + log + "\ncase \"$*\" in\n" +
+		"*enablePullRequestAutoMerge*) echo \"gh: Pull request Pull request is in $STATE status\" >&2; exit 1 ;;\n" +
+		"*squashMergeAllowed*) printf '%s\\n' '{\"data\":{\"repository\":{\"squashMergeAllowed\":true,\"viewerDefaultMergeMethod\":\"SQUASH\",\"pullRequest\":{\"id\":\"PR_1\"}}}}' ;;\n" +
+		"*) ;;\nesac\n"
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	g := &github{repo: t.TempDir()}
+	for _, state := range []string{"clean", "unstable", "has_hooks"} {
+		os.Remove(log)
+		t.Setenv("STATE", state)
+		merged, err := g.AutoMerge(MergeRequest{ID: 341}, "abc123", true)
+		calls, _ := os.ReadFile(log)
+		if err != nil || !merged || !strings.Contains(string(calls), "pulls/341/merge") || !strings.Contains(string(calls), "sha=abc123") {
+			t.Errorf("%s status: merged %v, %v; calls:\n%s", state, merged, err, calls)
+		}
+	}
+	t.Setenv("STATE", "blocked")
+	os.Remove(log)
+	if merged, err := g.AutoMerge(MergeRequest{ID: 341}, "abc123", true); merged || err == nil {
+		t.Errorf("blocked status: merged %v, %v; want an error, no merge", merged, err)
+	}
+}

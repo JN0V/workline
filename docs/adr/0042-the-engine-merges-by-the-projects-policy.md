@@ -217,8 +217,10 @@ puts the label.
   tree does not bear out, leaves out only doc pages (never a role's prompt
   nor a file steering agents), and has the committer check every commit.
 - **GitHub turns no auto-merge on for a pull request it could merge now**
-  ("clean status"): it is merged at once, at the head checked, as `gh pr
-  merge --auto` does — the forge's rules met already.
+  ("clean status", or "unstable" while a check it does not require still
+  runs, as the merge job's own on workline#341): it is merged at once, at
+  the head checked, as `gh pr merge --auto` does — the forge's rules met
+  already.
 - **The workflows**: `follow` runs after `judge`, and on a label put or
   taken off in a workflow of its own (`pull_request_target`): a run with
   `judge` skipped would show the check passed. GitLab starts no pipeline
