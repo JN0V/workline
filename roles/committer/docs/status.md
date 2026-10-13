@@ -3,24 +3,32 @@
 **In one line:** runs on every commit and push of workline's author, and
 on each merge request in CI; its rewrites tried with Claude on refused
 messages of this repository; its hooks tried on a copy of DomoticsCore
-(its [page](../README.md#tried-for-real)). Built.
+(its [page](../README.md#tried-for-real)). Beta: built on 2026-10-09,
+back to beta on 2026-10-13 while a bug of its own,
+[#107](https://github.com/JN0V/workline/issues/107), is open.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
 
-## Criteria, met
+## To leave beta
 
-Built on 2026-10-09, by the maintainer, against the three criteria of
-[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md):
+Beta until the three criteria of
+[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
+hold:
 
-1. **Nothing buildable in Missing**: met. What is left is tries on real
-   use (below); one commit, one change is a new check, parked as
-   [#192](https://github.com/JN0V/workline/issues/192) (closed, not
-   planned).
-2. **The main issue validated on real use**: met. The maintainer validated
-   the role on 2026-10-09 from its real use on all their commits.
+1. **Nothing buildable in Missing**: open.
+   [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
+   asks "Nothing buildable is left in its status.md's "Missing": only
+   tries on real use, or items deferred and parked as issues", and makes
+   no exception for a bug. [#107](https://github.com/JN0V/workline/issues/107) is
+   buildable, open and not parked: fix it, or park it. One commit, one
+   change is parked as [#192](https://github.com/JN0V/workline/issues/192)
+   (closed, not planned).
+2. **The main issue validated on real use**: met. The maintainer
+   validated the role on 2026-10-09 from its real use on all their
+   commits.
 3. **AI verdicts measured**: in part, and the maintainer moved the status
-   knowing it.
+   to built on 2026-10-09 knowing it.
    - Measured: the weekly evaluation's four rewrite cases
      (tests/evaluation/results.tsv). From 2026-09-25 to 2026-09-30, 42 of
      56 runs passed every check (275 of 293 checks). The misses: too few
@@ -51,5 +59,7 @@ its evaluation in
 
 ## Missing
 
+- **A user's allow-list blocks the bot's commits**, outside CI
+  ([#107](https://github.com/JN0V/workline/issues/107)).
 - **Tries on real use**: a hook that reads `pre-push`'s input after
   workline's line; husky or lefthook. No issue yet.

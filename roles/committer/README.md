@@ -59,8 +59,9 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 **Cost**: no call when the message passes; one call of a light model,
 effort low, per refused message, and one more of a stronger model if the
 rewrite is refused (`promote-after: 1`). No cap needed.
-**Status**: [built](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
-used daily on workline itself since 2026-09;
+**Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
+used daily on workline itself since 2026-09, back from built while a bug
+is open;
 [where it stands](docs/status.md); tried with Claude below.
 
 ## Check (`pre`, no AI)
