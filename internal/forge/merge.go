@@ -2,6 +2,7 @@ package forge
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -249,6 +250,106 @@ func (f *Fake) closing(id int) (LabelEvent, bool, error) {
 		return LabelEvent{}, false, err
 	}
 	return *it.Closing, true, nil
+}
+
+// ReadStatus is the status the merge policy's App sets on the base commit
+// it read for reverts, at `normal` (ADR-0042): its mark, read back from
+// the App only, as VerdictStatus.
+const ReadStatus = "workline/merge-read"
+
+// Mark keeps on commit, where only this token writes — a status of the
+// App's —, what the merge policy read there: text, the demotion issues in
+// force. A forge that keeps no such mark answers ErrNoMark.
+func Mark(f any, commit, text string) error {
+	if m, ok := f.(interface {
+		mark(commit, text string) error
+	}); ok {
+		return m.mark(commit, text)
+	}
+	return ErrNoMark
+}
+
+// Marked reads the mark this token kept on commit: ok false when none.
+func Marked(f any, commit string) (text string, ok bool, err error) {
+	if m, can := f.(interface {
+		marked(commit string) (string, bool, error)
+	}); can {
+		return m.marked(commit)
+	}
+	return "", false, ErrNoMark
+}
+
+// ErrNoMark: the forge keeps no mark only workline's App writes.
+var ErrNoMark = fmt.Errorf("this forge keeps no mark only workline's App writes")
+
+func (g *github) mark(commit, text string) error {
+	return g.setStatus(commit, ReadStatus, "success", text)
+}
+
+func (g *github) marked(commit string) (string, bool, error) {
+	state, text, err := g.ownStatus(commit, ReadStatus)
+	return text, err == nil && state != "", err
+}
+
+func (f *Fake) mark(commit, text string) error {
+	return f.setStatus(commit, ReadStatus, "success", text)
+}
+
+func (f *Fake) marked(commit string) (string, bool, error) {
+	st, ok, err := f.ownStatus(commit, ReadStatus)
+	return st.Description, ok, err
+}
+
+// mark: a commit status of the project bot's — on a commit with a
+// pipeline, an external job of it.
+func (g *gitlab) mark(commit, text string) error {
+	_, err := g.api("-X", "POST", "projects/:id/statuses/"+commit, "-f", "state=success", "-f", "name="+ReadStatus, "-f", "description="+statusText(text))
+	return err
+}
+
+// marked: the newest status of that name on commit set by the project's
+// bot, the token's user; one anyone else set is never read.
+func (g *gitlab) marked(commit string) (string, bool, error) {
+	app, _, err := g.app()
+	if err != nil || app == "" {
+		return "", false, err
+	}
+	out, err := g.api("projects/:id/repository/commits/" + commit + "/statuses?all=true&per_page=100&name=" + url.QueryEscape(ReadStatus))
+	if err != nil {
+		return "", false, err
+	}
+	var found []struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Created     string `json:"created_at"`
+		Author      struct {
+			Username string `json:"username"`
+		} `json:"author"`
+	}
+	if err := decode(out, &found); err != nil {
+		return "", false, err
+	}
+	text, at, ok := "", "", false
+	for _, s := range found {
+		if s.Name == ReadStatus && s.Author.Username == app && s.Created >= at {
+			text, at, ok = s.Description, s.Created, true
+		}
+	}
+	return text, ok, nil
+}
+
+// mark asks mark: {commit, text}, answered {}.
+func (c *command) mark(commit, text string) error {
+	return c.call("mark", map[string]any{"commit": commit, "text": text}, nil)
+}
+
+// marked asks marked: {commit}, answered {text} — "" none.
+func (c *command) marked(commit string) (string, bool, error) {
+	var a struct {
+		Text string `json:"text"`
+	}
+	err := c.call("marked", map[string]any{"commit": commit}, &a)
+	return a.Text, a.Text != "", err
 }
 
 // Closing is who closed an issue last, as the forge says: a LabelEvent's

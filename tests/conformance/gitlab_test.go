@@ -46,14 +46,15 @@ type gitlabState struct {
 }
 
 var (
-	issuePath   = regexp.MustCompile(`^/issues/(\d+)$`)
-	notesPath   = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
-	mrPath      = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
-	linksPath   = regexp.MustCompile(`^/issues/(\d+)/links$`)
-	closedBy    = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
-	stateEvents = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
-	commit      = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
-	userPath    = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
+	issuePath      = regexp.MustCompile(`^/issues/(\d+)$`)
+	notesPath      = regexp.MustCompile(`^/(issues|merge_requests)/(\d+)/notes(?:/(\d+))?$`)
+	mrPath         = regexp.MustCompile(`^/merge_requests/(\d+)(/diffs|/discussions|/merge|/cancel_merge_when_pipeline_succeeds|/versions|/resource_label_events)?$`)
+	linksPath      = regexp.MustCompile(`^/issues/(\d+)/links$`)
+	closedBy       = regexp.MustCompile(`^/issues/(\d+)/closed_by$`)
+	stateEvents    = regexp.MustCompile(`^/issues/(\d+)/resource_state_events$`)
+	commit         = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)$`)
+	commitStatuses = regexp.MustCompile(`^/repository/commits/([0-9a-f]+)/statuses$`)
+	userPath       = regexp.MustCompile(`^/api/v4/users/(\d+)$`) // outside the project's path
 )
 
 const tokenUser = "workline-bot"
@@ -139,6 +140,26 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		// The token's user, who sets a merge request to merge (merge_user):
 		// a bot, as a project access token's is.
 		return map[string]any{"id": 999, "username": tokenUser, "bot": true}, 200
+	case strings.HasPrefix(p, "/statuses/") && method == "POST":
+		// A commit status, set by the token's user (the merge policy's mark).
+		s.Statuses = append(s.Statuses, forge.FakeStatus{Commit: strings.TrimPrefix(p, "/statuses/"), Name: form.Get("name"),
+			State: form.Get("state"), Description: form.Get("description"), By: tokenUser})
+		return map[string]any{"id": len(s.Statuses)}, 201
+	case commitStatuses.MatchString(p) && method == "GET":
+		// A commit's statuses, the newest first, each with its author; the
+		// simulated forge's commits are revisions of the repository.
+		sha := commitStatuses.FindStringSubmatch(p)[1]
+		out := []map[string]any{}
+		for i, st := range s.Statuses {
+			c, err := exec.Command("git", "-C", m.repo, "rev-parse", "--verify", "-q", st.Commit+"^{commit}").Output()
+			if err != nil || strings.TrimSpace(string(c)) != sha || q.Has("name") && q.Get("name") != st.Name {
+				continue
+			}
+			out = append(out, map[string]any{"name": st.Name, "status": st.State, "description": st.Description,
+				"created_at": fmt.Sprintf("2026-01-04T10:%02d:00Z", i), "author": user(st.By)})
+		}
+		slices.Reverse(out)
+		return out, 200
 	case p == "/events" && method == "GET":
 		// The project's push events, newest first: each merge request's
 		// pushes, by whom the simulated forge says.

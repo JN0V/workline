@@ -14,102 +14,58 @@ import (
 
 // A revert demotes (ADR-0042, `normal`; ADR-0026): a revert on the base of
 // a merge request workline merged with no person's yes sends its kind back
-// to a person's yes; a revert it cannot tie to a merge request, every kind.
-// Each is read once: the engine's record on the forge, the ref recordRef,
-// keeps the last base commit read and each demotion with the issue that
-// says it. A demotion is lifted when a person who may push and merge closes
-// that issue — never a bot, nor someone else.
+// to a person's yes; one it cannot tie to a merge request, every kind. What
+// holds a demotion is an open issue workline's App opened; it is lifted
+// when a person who may push and merge closes it. Where the reading of
+// reverts stopped is the App's mark on the base commit it read (a status
+// only the App's is read); none found, every kind waits until a person says.
 
-// recordRef is the engine's record of the merge policy on the forge.
-const recordRef = "refs/workline/merge-policy"
-
-// revertWindow is how many commits of the base's history are read for
-// reverts when no record says where the last run stopped; mergeWindow, how
+// revertWindow is how many commits of the base's history are looked at for
+// the App's mark, and read for reverts when there is none; mergeWindow, how
 // many for the merge a revert quoting a title undoes.
 const (
 	revertWindow = 100
 	mergeWindow  = 1000
 )
 
-// demotion is a kind sent back to a person's yes: the revert that did it,
-// the merge request it reverted (0: none found), the issue that says it (0:
-// none could be opened as workline's own yet).
+// demotion is a kind sent back to a person's yes: the revert that did it —
+// for one lost, the base commit from which nothing is known —, the merge
+// request it reverted (0: none found), the issue that says it (0: none
+// opened as workline's own yet).
 type demotion struct {
 	kind, revert string
 	request      int
 	issue        int
+	lost         bool
 }
 
-// record is what the engine keeps of the merge policy: the last base commit
-// read for reverts, and the demotions in force.
-type record struct {
-	read     string
-	demoted  []demotion
-	was, sha string // the record's commit as read, "" none
+// markText is the App's mark on a base commit: the reverts read up to it,
+// and the issues holding a demotion then.
+func markText(issues []int) string {
+	s := "reverts read; held:"
+	for _, id := range issues {
+		s += fmt.Sprintf(" #%d", id)
+	}
+	return s
 }
 
-// readRecord reads the record from origin; an empty one when there is none.
-func readRecord(repo string) (record, error) {
-	out, err := git(repo, nil, "ls-remote", "origin", recordRef)
-	if err != nil {
-		return record{}, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	}
-	sha, _, _ := strings.Cut(out, "\t")
-	if sha = strings.TrimSpace(sha); sha == "" {
-		return record{}, nil
-	}
-	if _, err := git(repo, nil, "fetch", "-q", "origin", recordRef); err != nil {
-		return record{}, fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	}
-	msg, err := git(repo, nil, "log", "-1", "--format=%B", sha)
-	if err != nil {
-		return record{}, err
-	}
-	r := record{was: sha}
-	for _, l := range strings.Split(msg, "\n") {
-		f := strings.Fields(l)
-		switch {
-		case len(f) == 2 && f[0] == "read":
-			r.read = f[1]
-		case len(f) == 5 && f[0] == "demoted":
-			n, _ := strconv.Atoi(f[3])
-			i, _ := strconv.Atoi(f[4])
-			r.demoted = append(r.demoted, demotion{kind: f[1], revert: f[2], request: n, issue: i})
-		}
-	}
-	return r, nil
-}
+var markIssue = regexp.MustCompile(`#(\d+)`)
 
-// text is the record as its commit's message.
-func (r record) text() string {
-	var b strings.Builder
-	b.WriteString("workline: the merge policy's record (ADR-0042)\n\nThe last base commit read for reverts, and each kind of workline's own\nmerge requests sent back to a person's yes: kind, revert, merge request\nreverted, issue.\n\n")
-	fmt.Fprintf(&b, "read %s\n", r.read)
-	for _, d := range r.demoted {
-		fmt.Fprintf(&b, "demoted %s %s %d %d\n", d.kind, d.revert, d.request, d.issue)
+// demotedKind reads a demotion issue's title: the kind it holds, kindAll
+// for every kind; ok false when it is no demotion's.
+func demotedKind(title string) (string, bool) {
+	rest, ok := strings.CutPrefix(title, "workline: its ")
+	if !ok {
+		return "", false
 	}
-	return b.String()
-}
-
-// writeRecord pushes the record to origin when it changed, its last
-// version as lease: a record moved meanwhile is no record overwritten.
-func writeRecord(repo string, r record) error {
-	tree, err := gitIn(repo, "", "mktree")
-	if err != nil {
-		return err
+	if strings.HasPrefix(rest, "merge requests wait for a person's yes again") {
+		return kindAll, true
 	}
-	args := []string{"-c", "user.name=workline", "-c", "user.email=workline@noreply.invalid", "commit-tree", tree, "-m", r.text()}
-	if r.was != "" {
-		args = append(args, "-p", r.was)
+	kind, after, _ := strings.Cut(rest, " ")
+	if slices.Contains(RoutineKinds, kind) && strings.HasPrefix(after, "merge requests wait for a person's yes again") {
+		return kind, true
 	}
-	commit, err := git(repo, nil, args...)
-	if err != nil {
-		return err
-	}
-	if _, err := git(repo, nil, "push", "-q", "--force-with-lease="+recordRef+":"+r.was, "origin", commit+":"+recordRef); err != nil {
-		return fmt.Errorf("%w: the merge policy's record (%s) not written: %v", forge.ErrUnreachable, recordRef, err)
-	}
-	return nil
+	return "", false
 }
 
 // The ways a revert names what it reverts: git's own message, GitLab's
@@ -262,31 +218,47 @@ func demotedTitle(kind, revert string) string {
 	return "workline: its " + kind + " merge requests wait for a person's yes again (revert " + short(revert) + ")"
 }
 
-// demotions reads the base's reverts past the record, demotes their kinds,
-// lifts those a person may lift, writes the record back, and returns each
-// kind demoted (kindAll: every kind) with the issue that says it.
+// lostTitle is the issue that says which reverts were read is not known
+// from a base commit on.
+func lostTitle(tip string) string {
+	return "workline: its merge requests wait for a person's yes again (no record of reverts read before " + short(tip) + ")"
+}
+
+// demotions reads the reverts on the base past the App's mark, opens an
+// issue for each demotion, and returns each kind held (kindAll: every
+// kind) with the issue holding it. What holds: each open demotion issue the
+// App opened, and one closed by anyone but a person who may push and
+// merge. Then it marks the base's tip as read, with the issues held.
 func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result) (map[string]string, error) {
 	b, ok := f.(forge.Backlog)
 	if !ok {
-		return nil, nil
+		return map[string]string{kindAll: "no backlog on this forge"}, nil
 	}
-	rec, err := readRecord(o.Repo)
+	chain, err := git(o.Repo, nil, "rev-list", "--first-parent", "-n", strconv.Itoa(revertWindow), baseTip)
 	if err != nil {
 		return nil, err
 	}
-	was := rec.text()
-	// Past the commit the record read; the base rewritten since, past what
-	// it shares with it; no record yet, the last revertWindow, said.
-	from := ""
-	switch {
-	case rec.read != "" && isAncestor(o.Repo, rec.read, baseTip):
-		from = rec.read
-	case rec.read != "":
-		from, _ = git(o.Repo, nil, "merge-base", rec.read, baseTip)
+	from, mark := "", ""
+	for _, c := range strings.Fields(chain) {
+		text, ok, err := forge.Marked(f, c)
+		switch {
+		case errors.Is(err, forge.ErrNoMark):
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unmarked", Level: "warn",
+				Message: "at `normal`, this forge keeps no mark only workline's App writes: which reverts were read cannot be known, so nothing merges with no person's yes"})
+			return map[string]string{kindAll: "no mark on this forge"}, nil
+		case err != nil && errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
+			return nil, err
+		case err != nil:
+			c = "" // its mark could not be read: as none
+		}
+		if ok && c != "" {
+			from, mark = c, text
+			break
+		}
 	}
+	var fresh []demotion
 	if from == "" {
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-record-started",
-			Message: fmt.Sprintf("no record of the merge policy to read from (%s): the base's last %d commits read for reverts, none before", recordRef, revertWindow)})
+		fresh = append(fresh, demotion{kind: kindAll, revert: baseTip, lost: true})
 	}
 	// Every parent: a revert merged with a merge commit is on its second.
 	history, err := commits(o.Repo, baseTip, from, revertWindow)
@@ -334,38 +306,120 @@ func demotions(f forge.Forge, o FollowOptions, baseTip, app string, res *Result)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "revert-unread", Level: "warn", Where: short(r.sha),
 				Message: fmt.Sprintf("`%s` reverts something workline cannot tie to a merge request: every kind of its own merge requests waits for a person's yes, until a person says", firstSentence(r.msg))})
 		}
-		rec.demoted = append(rec.demoted, demotion{kind: kind, revert: r.sha, request: n})
+		fresh = append(fresh, demotion{kind: kind, revert: r.sha, request: n})
 	}
-	rec.read = baseTip
 	demoted := map[string]string{}
-	var kept []demotion
-	for _, d := range rec.demoted {
-		lifted, err := demote(f, b, &d, app, res)
+	var issues []int
+	unrecorded := false
+	for _, d := range fresh {
+		if err := demote(f, &d, app, res); err != nil {
+			return nil, err
+		}
+		if d.issue == 0 {
+			unrecorded = true
+			if _, ok := demoted[d.kind]; !ok {
+				demoted[d.kind] = "its issue not opened yet"
+			}
+			continue
+		}
+		issues = append(issues, d.issue)
+	}
+	// What the mark held, and every open demotion issue the App opened:
+	// whatever any record says, those hold.
+	for _, m := range markIssue.FindAllStringSubmatch(mark, -1) {
+		id, _ := strconv.Atoi(m[1])
+		issues = append(issues, id)
+	}
+	open, err := b.Issues()
+	if err != nil {
+		return nil, err
+	}
+	for _, is := range open {
+		if _, ok := demotedKind(is.Title); ok && is.Author == app && strings.Contains(is.Body, "<!-- workline:merge-demoted=") {
+			issues = append(issues, is.ID)
+		}
+	}
+	slices.Sort(issues)
+	issues = slices.Compact(issues)
+	var kept []int
+	for _, id := range issues {
+		kind, hold, err := holds(f, id, app, res)
 		if err != nil {
 			return nil, err
 		}
-		if lifted {
+		if !hold {
 			continue
 		}
-		kept = append(kept, d)
-		if _, ok := demoted[d.kind]; !ok {
-			demoted[d.kind] = map[bool]string{true: fmt.Sprintf("#%d", d.issue), false: "its issue not opened yet"}[d.issue > 0]
+		kept = append(kept, id)
+		if _, ok := demoted[kind]; !ok {
+			demoted[kind] = fmt.Sprintf("#%d", id)
 		}
 	}
-	rec.demoted = kept
-	if rec.text() != was {
-		if err := writeRecord(o.Repo, rec); err != nil {
-			return nil, err
+	// A demotion not yet in an issue of the App's: the mark stays where it
+	// was, and the revert is read again at the next run.
+	if !unrecorded {
+		if err := forge.Mark(f, baseTip, markText(kept)); err != nil {
+			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+				return nil, err
+			}
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-unmarked", Level: "warn",
+				Message: fmt.Sprintf("the base's tip, %s, could not be marked as read (%s): the next run reads again from the last mark: %s", short(baseTip), forge.ReadStatus, forge.Said(err))})
 		}
 	}
 	return demoted, nil
 }
 
-// demote keeps one demotion: its issue opened as workline's own when it
-// has none — one of that title by anyone else is never taken for it —, the
-// merge request reverted told; lifted, true, when a person who may push
-// and merge closed the issue. Closed by anyone else, it holds, said.
-func demote(f forge.Forge, b forge.Backlog, d *demotion, app string, res *Result) (bool, error) {
+// holds says whether an issue holds a demotion, and of which kind: one the
+// App opened, open; or closed by anyone but a person who may push and merge
+// — a bot, someone with no write access, a hand the forge does not name —,
+// said. Closed by such a person, it is lifted, said.
+func holds(f forge.Forge, id int, app string, res *Result) (string, bool, error) {
+	where := fmt.Sprintf("#%d", id)
+	is, err := f.Issue(id)
+	if err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return "", false, err
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "restore-unread", Level: "warn", Where: where,
+			Message: "a demotion's issue could not be read: every kind of workline's own merge requests waits for a person's yes, " + forge.Said(err)})
+		return kindAll, true, nil
+	}
+	kind, ok := demotedKind(is.Title)
+	if !ok || is.Author != app {
+		return "", false, nil // never one of the App's demotions
+	}
+	which := "its " + kind + " merge requests"
+	if kind == kindAll {
+		which = "every kind of its own merge requests"
+	}
+	if !is.Closed {
+		return kind, true, nil
+	}
+	who, ok, err := forge.Closing(f, id)
+	if err != nil {
+		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+			return "", false, err
+		}
+		ok = false
+	}
+	if ok && who.Writer && !who.Bot && who.Author != "" && who.Author != app {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-restored", Where: where,
+			Message: fmt.Sprintf("closed by @%s: %s merge with no person's yes again", who.Author, which)})
+		return kind, false, nil
+	}
+	by := "a hand the forge does not name"
+	if ok && who.Author != "" {
+		by = "@" + who.Author
+	}
+	res.Findings = append(res.Findings, verdict.Finding{Rule: "restore-ignored", Level: "warn", Where: where,
+		Message: fmt.Sprintf("closed by %s, who may not lift it — a bot, or no write access —: %s still wait for a person's yes; reopen it, and a person who may push and merge closes it", by, which)})
+	return kind, true, nil
+}
+
+// demote opens a demotion's issue as workline's own — one of that title by
+// anyone else is never taken for it, and the demotion stays unrecorded —,
+// and tells the merge request reverted.
+func demote(f forge.Forge, d *demotion, app string, res *Result) error {
 	where := short(d.revert)
 	if d.request > 0 {
 		where = forge.MergeRef(f, d.request)
@@ -374,71 +428,44 @@ func demote(f forge.Forge, b forge.Backlog, d *demotion, app string, res *Result
 	if d.kind == kindAll {
 		which = "every kind of its own merge requests"
 	}
-	if d.issue == 0 {
-		body := fmt.Sprintf("**A revert, %s, sends %s back to a person's yes**: the label `workline:accepted` on each, as at `cautious`.", short(d.revert), which)
-		if d.request > 0 {
-			body = fmt.Sprintf("**%s merged with no person's yes, and was reverted** by %s. %s — %s — now wait for a person's yes, the label `workline:accepted`, on each, as at `cautious`.", where, short(d.revert), strings.ToUpper(which[:1])+which[1:], kindSays[d.kind])
-		} else {
-			body += " The revert names no merge request workline can find, so it may have undone one merged with no person's yes."
-		}
-		body += "\n\n**To let workline merge them alone again, close this issue** — a person who may push and merge. Leave it open while you are not sure."
-		id, err := f.OpenIssue(demotedTitle(d.kind, d.revert), body, forge.Marker("merge-demoted="+d.revert))
-		if err == nil {
-			var is *forge.Issue
-			if is, err = f.Issue(id); err == nil && (app == "" || is.Author != app) {
-				res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
-					Message: fmt.Sprintf("reverted by %s: %s wait for a person's yes, but #%d, of that title, is @%s's, not workline's: it is not taken for it", short(d.revert), which, id, is.Author)})
-				return false, nil
-			}
-		}
-		if err != nil {
-			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
-				return false, err
-			}
+	title := demotedTitle(d.kind, d.revert)
+	body := fmt.Sprintf("**A revert, %s, sends %s back to a person's yes**: the label `workline:accepted` on each, as at `cautious`. The revert names no merge request workline can find, so it may have undone one merged with no person's yes.", short(d.revert), which)
+	switch {
+	case d.lost:
+		title = lostTitle(d.revert)
+		body = fmt.Sprintf("**Workline cannot tell which reverts it read before %s**: no mark of its App's (the status `%s`) on the base's last %d commits — the first run at `normal`, a mark lost, or `follow` not run for long. A revert there may have undone a merge request merged with no person's yes, so every kind of its own merge requests waits for a person's yes, the label `workline:accepted`, as at `cautious`.", short(d.revert), forge.ReadStatus, revertWindow)
+	case d.request > 0:
+		body = fmt.Sprintf("**%s merged with no person's yes, and was reverted** by %s. %s — %s — now wait for a person's yes, the label `workline:accepted`, on each, as at `cautious`.", where, short(d.revert), strings.ToUpper(which[:1])+which[1:], kindSays[d.kind])
+	}
+	body += "\n\n**To let workline merge them alone again, close this issue** — a person who may push and merge; a bot's close never lifts it. Leave it open while you are not sure."
+	id, err := f.OpenIssue(title, body, forge.Marker("merge-demoted="+d.revert))
+	if err == nil {
+		var is *forge.Issue
+		if is, err = f.Issue(id); err == nil && (app == "" || is.Author != app) {
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
-				Message: fmt.Sprintf("reverted by %s: %s wait for a person's yes, but the issue that says it could not be opened: %s", short(d.revert), which, forge.Said(err))})
-			return false, nil
+				Message: fmt.Sprintf("%s: %s wait for a person's yes, but #%d, of that title, is @%s's, not workline's: it is not taken for it, and this is read again next run", short(d.revert), which, id, is.Author)})
+			return nil
 		}
-		d.issue = id
-		if d.request > 0 {
-			if err := f.Comment(forge.Target{Kind: "merge-request", ID: d.request}, fmt.Sprintf("**Reverted** by %s: workline's %s merge requests wait for a person's yes again, until a person closes #%d.", short(d.revert), d.kind, id),
-				forge.Marker("merge-demoted="+d.revert)); err != nil {
-				return false, err
-			}
-		}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-demoted", Level: "warn", Where: where,
-			Message: fmt.Sprintf("reverted by %s: %s wait for a person's yes again, until a person who may push and merge closes #%d", short(d.revert), which, id)})
-		return false, nil
 	}
-	is, err := f.Issue(d.issue)
 	if err != nil {
 		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
-			return false, err
+			return err
 		}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "restore-unread", Level: "warn", Where: fmt.Sprintf("#%d", d.issue),
-			Message: fmt.Sprintf("%s wait for a person's yes since %s; the issue that says it could not be read: %s", which, short(d.revert), forge.Said(err))})
-		return false, nil
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
+			Message: fmt.Sprintf("%s: %s wait for a person's yes, but the issue that says it could not be opened, read again next run: %s", short(d.revert), which, forge.Said(err))})
+		return nil
 	}
-	if !is.Closed {
-		return false, nil
-	}
-	who, ok, err := forge.Closing(f, d.issue)
-	if err != nil {
-		if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
-			return false, err
+	d.issue = id
+	if d.request > 0 {
+		if err := f.Comment(forge.Target{Kind: "merge-request", ID: d.request}, fmt.Sprintf("**Reverted** by %s: workline's %s merge requests wait for a person's yes again, until a person closes #%d.", short(d.revert), d.kind, id),
+			forge.Marker("merge-demoted="+d.revert)); err != nil {
+			return err
 		}
-		ok = false
 	}
-	if ok && who.Writer && !who.Bot && who.Author != "" && who.Author != app {
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-restored", Where: fmt.Sprintf("#%d", d.issue),
-			Message: fmt.Sprintf("closed by @%s: %s merge with no person's yes again, as before %s", who.Author, which, short(d.revert))})
-		return true, nil
+	rule, said := "merge-demoted", fmt.Sprintf("reverted by %s: %s wait for a person's yes again, until a person who may push and merge closes #%d", short(d.revert), which, id)
+	if d.lost {
+		rule, said = "merge-record-lost", fmt.Sprintf("no mark of workline's App on the base's last %d commits: which reverts were read is not known, so %s wait for a person's yes, until a person who may push and merge closes #%d", revertWindow, which, id)
 	}
-	by := "a hand the forge does not name"
-	if ok && who.Author != "" {
-		by = "@" + who.Author
-	}
-	res.Findings = append(res.Findings, verdict.Finding{Rule: "restore-ignored", Level: "warn", Where: fmt.Sprintf("#%d", d.issue),
-		Message: fmt.Sprintf("closed by %s, who may not lift it — a bot, or no write access —: %s still wait for a person's yes; reopen it, and a person who may push and merge closes it", by, which)})
-	return false, nil
+	res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: "warn", Where: where, Message: said})
+	return nil
 }

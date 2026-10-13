@@ -9,6 +9,7 @@ given:
     - "git checkout -qb workline/documentalist/derived && sed -i 's/3600/7200/' src/auth/token.go && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: regenerate the derived blocks' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/derived && git checkout -q main"
   forge:
     statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
       - {commit: "workline/documentalist/suspect", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
       - {commit: "workline/documentalist/derived", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:

@@ -4,10 +4,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // gitRepo is a repository for a test, and a way to run git in it.
@@ -198,48 +200,64 @@ func TestOwnNote(t *testing.T) {
 	}
 }
 
-// Each revert is read once, however far back: the record on the forge says
-// the last base commit read, and the next run reads every commit past it —
-// a revert 120 commits down is found, and once read, never again.
-func TestRevertsPastTheRecordRead(t *testing.T) {
+// Where reverts were read up to is the App's mark on a base commit, and what
+// holds a demotion is an open issue the App opened: a mark someone else set
+// is never read; a revert past the App's mark is read once; with no mark of
+// the App's on the base's last 100 commits, every kind waits for a person.
+func TestMarkAndIssuesHoldDemotions(t *testing.T) {
 	repo, run, write := gitRepo(t)
-	origin := filepath.Join(t.TempDir(), "origin.git")
-	if out, err := exec.Command("git", "init", "-q", "--bare", origin).CombinedOutput(); err != nil {
-		t.Fatalf("%s", out)
-	}
-	run("remote", "add", "origin", origin)
 	write("doc.md", "---\nchecked: 111\n---\nOne hour.\n")
 	run("add", "doc.md")
 	run("commit", "-q", "-m", "docs: one hour")
-	run("push", "-q", "origin", "main")
-	if err := writeRecord(repo, record{read: run("rev-parse", "HEAD")}); err != nil {
-		t.Fatal(err)
-	}
+	marked := run("rev-parse", "HEAD")
 	write("doc.md", "---\nchecked: 111\njudged: 222\n---\nOne hour.\n")
 	run("commit", "-q", "-am", "docs: record the docs judged (#9)")
 	run("revert", "--no-edit", "HEAD")
-	for i := 0; i < 120; i++ {
+	for i := 0; i < 90; i++ {
 		run("commit", "-q", "--allow-empty", "-m", "chore: and then")
 	}
-	run("push", "-q", "origin", "main")
-	state := filepath.Join(t.TempDir(), "forge.json")
-	if err := os.WriteFile(state, []byte(`{"issues": [], "merge-requests": [{"id": 9, "branch": "workline/documentalist/suspect", "base": "main", "closed": true, "labels": [],
-		"comments": [{"body": "Merging.\n\n<!-- workline:merge-alone=records -->", "author": "workline-bot", "bot": true}]}]}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	f := &forge.Fake{Path: state, Repo: repo}
 	tip := run("rev-parse", "HEAD")
+	state := filepath.Join(t.TempDir(), "forge.json")
+	forgeWith := func(statuses string) *forge.Fake {
+		t.Helper()
+		if err := os.WriteFile(state, []byte(`{"statuses": [`+statuses+`], "issues": [], "merge-requests": [{"id": 9, "branch": "workline/documentalist/suspect", "base": "main", "closed": true, "labels": [],
+			"comments": [{"body": "Merging.\n\n<!-- workline:merge-alone=records -->", "author": "workline-bot", "bot": true}]}]}`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return &forge.Fake{Path: state, Repo: repo}
+	}
+	own := `{"commit": "` + marked + `", "name": "workline/merge-read", "state": "success", "description": "reverts read; held:", "by": "workline-bot"}`
+	forged := `{"commit": "` + tip + `", "name": "workline/merge-read", "state": "success", "description": "reverts read; held:", "by": "mallory"}`
+
+	// The App's mark 92 commits down, someone else's on the tip: the revert
+	// past the App's is read, the tip's ignored.
+	f := forgeWith(own + ", " + forged)
 	res := &Result{}
 	demoted, err := demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
-	if err != nil || demoted[kindRecords] != "#1" {
-		t.Fatalf("120 commits past the record: %v, %v, %+v; want records demoted, #1", demoted, err, res.Findings)
+	if err != nil || demoted[kindRecords] != "#1" || demoted[kindAll] != "" {
+		t.Fatalf("past the App's mark: %v, %v, %+v; want records held by #1", demoted, err, res.Findings)
 	}
-	rec, err := readRecord(repo)
-	if err != nil || rec.read != tip || len(rec.demoted) != 1 || rec.demoted[0].issue != 1 || rec.demoted[0].request != 9 {
-		t.Fatalf("the record written back: %+v, %v", rec, err)
+	if text, ok, err := forge.Marked(f, tip); err != nil || !ok || text != "reverts read; held: #1" {
+		t.Fatalf("the tip marked: %q, %v, %v", text, ok, err)
 	}
+	// Read again: nothing past the mark; #1, open and the App's, holds —
+	// whatever a mark says, as one the App set on a later tip leaving it out.
 	res = &Result{}
 	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res); err != nil || demoted[kindRecords] != "#1" || len(res.Findings) != 0 {
 		t.Errorf("read again: %v, %v, %+v; want #1 still held, nothing said, no second issue", demoted, err, res.Findings)
+	}
+	if err := forge.Mark(f, tip, "reverts read; held:"); err != nil {
+		t.Fatal(err)
+	}
+	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", &Result{}); err != nil || demoted[kindRecords] != "#1" {
+		t.Errorf("a mark leaving #1 out: %v, %v; want #1 held, open and the App's", demoted, err)
+	}
+
+	// No mark of the App's on the last 100: every kind waits, an issue says it.
+	f = forgeWith(forged)
+	res = &Result{}
+	demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
+	if err != nil || demoted[kindAll] != "#1" || !slices.ContainsFunc(res.Findings, func(x verdict.Finding) bool { return x.Rule == "merge-record-lost" }) {
+		t.Errorf("no mark of the App's: %v, %v, %+v; want every kind held by #1, said", demoted, err, res.Findings)
 	}
 }

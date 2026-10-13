@@ -11,6 +11,7 @@ given:
     - "git checkout -qb workline/documentalist/condense && sed -i '/^checked:/a judged: 1a2b3c4' docs/review-prompt.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the prompt read' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/condense && git checkout -q main"
   forge:
     statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
       - {commit: "workline/documentalist/suspect", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
       - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
       - {commit: "workline/documentalist/condense", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}

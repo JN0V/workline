@@ -12,6 +12,8 @@ printf '%s\n' "$req" >> .git/forge-requests.jsonl
 head=$(git rev-parse workline/documentalist/suspect)
 case "$WORKLINE_FORGE_OPERATION" in
 app) echo '{"login": "workline-app[bot]", "committer": "workline-app[bot]"}' ;;
+marked) echo '{"text": "reverts read; held:"}' ;; # the App's mark on every commit: nothing left to read
+mark) echo '{}' ;;
 open-merge-requests) echo '{"branches": []}' ;;
 merge-requests) echo '{"merge-requests": [{"id": 9, "branch": "workline/documentalist/suspect", "base": "main", "here": true, "author": "workline-app[bot]", "bot": true, "labels": []}]}' ;;
 merge-state) echo '{"pushes": [{"head": "'"$head"'", "at": "2026-01-04T09:00:00Z"}], "pushers": ["workline-app[bot]"]}' ;;

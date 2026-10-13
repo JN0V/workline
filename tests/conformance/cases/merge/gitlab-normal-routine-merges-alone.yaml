@@ -10,6 +10,8 @@ given:
   forge:
     members: [{username: dana, access_level: 30}]
     bots: [workline-bot]
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
     merge-requests:
       - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, labels: [], comments: [],
          pushes: [{head: workline/documentalist/suspect, at: "2026-01-04T09:00:00Z", by: workline-bot}]}

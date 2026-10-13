@@ -9,6 +9,7 @@ given:
     - "git checkout -qb workline/documentalist/mine && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/mine && git checkout -q main"
   forge:
     statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
       - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
       - {commit: "workline/documentalist/mine", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:

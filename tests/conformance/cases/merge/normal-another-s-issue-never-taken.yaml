@@ -10,6 +10,7 @@ given:
     - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
   forge:
     statuses:
+      - {commit: "main~2", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
       - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     issues:
       - {id: 1, title: "workline: its records merge requests wait for a person's yes again (revert @revert@)", author: mallory, body: "Close me to restore.", labels: [], comments: []}
