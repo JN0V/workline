@@ -12,15 +12,13 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// The GitHub App's key sets the statuses the merge policy reads and opens
-// workline's own pull requests; a pull request's own run, whose workflow its
-// branch can change, never reaches it (ADR-0044, #331). No job of a workflow
-// a pull request runs names it, but to say whether it is there. Each job
-// using it runs the default branch's workflow — a push to it, a schedule, a
-// run by hand, the end of another workflow, pull_request_target — in the
-// environment workline-app, which only the default branch may use. One that
-// reads a pull request's run takes the head the event names, reads the run's
-// artifacts outside the checkout, and checks the base out, never the head.
+// The GitHub App's key never reaches a pull request's own run, whose
+// workflow its branch can change (ADR-0044, #331): no job of a workflow a
+// pull request runs names it, but to say whether it is there. Each job using
+// it runs the default branch's workflow, in the environment workline-app,
+// which only the default branch may use. One reading a pull request's run
+// takes the event's head, reads the run's artifacts outside the checkout,
+// and checks the base out, never the head.
 
 const appKey = "secrets.WORKLINE_APP_PRIVATE_KEY"
 
