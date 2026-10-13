@@ -187,7 +187,7 @@ is marked ready.
     token; unread, one lens, said in the log.
 - **Cost**: a review of the whole change by every lens, as on a machine,
   within the same `ai-max-tokens`
-  ([status](status.md#cost-measured)).
+  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
 - **Held by a rule**: the run on ready asks no lens, and its record owes
   every lens (`owed=all`); the next run, the fix pushed, reads every lens
   on the whole change, whatever the template passed.

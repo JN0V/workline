@@ -48,5 +48,8 @@ real cases, and costs tokens, so it runs only when asked:
 - **Pull requests** only reach `main`, the checks green; a person reviews
   and merges. The CI runs the committer, the documentalist and the
   reviewer on each one.
+- **A try for real** is told in the pull request's description, under
+  `## Tried`: what was run, where, the numbers, what was not tried
+  ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
 - Never commit a secret nor a forbidden term: the committer scans each
   commit with gitleaks.

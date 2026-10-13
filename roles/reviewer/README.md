@@ -64,14 +64,14 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   one a push on a merge request), one judge call for each important
   finding; a spec, one call. Capped at 200000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:
-  [status](docs/status.md#cost-measured).
+  [research](../../docs/research/code-review.md#the-reviewers-cost-measured).
 - **The run when a merge request becomes ready** costs more: every lens
   on the whole change, a full review as on a machine, under the same cap
   ([how the templates tell it](docs/run.md#every-lens-once-when-it-becomes-ready)).
 - **Without AI**: the rules alone; the change is left for a person
   (`not-reviewed`).
-- **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), released in v0.9.0; [where it stands](docs/status.md),
-  [each try](docs/tried.md).
+- **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), released in v0.9.0; [where it stands](docs/status.md); each try in its pull request
+  ([before 2026-10-13](docs/tried.md)).
 
 ## A run, in short
 

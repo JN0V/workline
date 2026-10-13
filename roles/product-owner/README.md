@@ -134,4 +134,4 @@ an `agreed` reply are still done, labels follow your answers, and the
 summary says what is next and stuck.
 
 **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md), nightly on workline's own issues and in the CI of
-another project of its author's; [docs/status.md](docs/status.md), each try in [docs/tried.md](docs/tried.md).
+another project of its author's; [docs/status.md](docs/status.md); each try in its pull request ([before 2026-10-13](docs/tried.md)).

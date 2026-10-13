@@ -24,7 +24,7 @@ roles/<name>/
   post              deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
   skills/           optional, Agent Skills format (SKILL.md); not read yet
-  docs/             about the role, never loaded: reference pages, status.md, tried.md
+  docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
 ```
 
 - The top level holds README.md and what the engine loads, nothing else.

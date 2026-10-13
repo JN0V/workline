@@ -4,6 +4,8 @@
 - **Date:** 2026-10-07
 - **Builds on:** [ADR-0014](0014-checked-is-earned-by-what-was-read.md)
   (a fix that vouches, measured); principles 7, 13, 14
+- **Amended by:** [ADR-0043](0043-a-try-is-told-in-its-pull-request.md)
+  — where a measure is recorded, what status.md holds (below)
 
 ## Context
 
@@ -41,3 +43,14 @@
   status.md for their list.
 - The documentalist goes back to `beta` in README's table, as its page
   said; the committer, the judge and the auditor leave `built`.
+
+## Amendment (2026-10-13)
+
+[ADR-0043](0043-a-try-is-told-in-its-pull-request.md):
+
+- **Criterion 3's result** is recorded in an ADR or docs/research/,
+  status.md linking to it; no longer in status.md or tried.md, which is
+  frozen.
+- **status.md holds** the summary, "To leave beta" with each criterion's
+  proof as links, "Built" with its cases, and "Missing" as links to
+  issues.

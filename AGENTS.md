@@ -6,7 +6,7 @@ against it. Then only what the task needs:
 | Task | Read |
 |---|---|
 | a role's behaviour | `roles/<name>/` (README for humans, facets for the AI, docs/ about the role) and docs/spec/role-contract.md |
-| where a role stands | `roles/<name>/docs/status.md` (built, tried, missing), then `docs/tried.md` |
+| where a role stands | `roles/<name>/docs/status.md`: its criteria to leave beta, what is built, what is missing, each a link ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)) |
 | the engine | docs/spec/ (role contract, routing, gates, model grid, conformance, multi-repo) and docs/adr/ |
 | what exists elsewhere | docs/research/ — its README says how to search |
 | what comes next | the GitHub issues (`gh issue list`); docs/BACKLOG.md is archived |
@@ -26,14 +26,16 @@ against it. Then only what the task needs:
   case count is a derived block: leave it as it is, gardening regenerates
   it on `main` after the merge (ADR-0027).
 - **Try it for real** before calling it done (a copy of a real repository, a real
-  agent call), and record what was tried and what was not.
+  agent call). Tell what was tried, and what was not, under `## Tried` in the
+  pull request's description; status.md links to it. tried.md is an archive:
+  never append to it ([ADR-0043](docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
 - **Commits**: conventional, atomic, each one builds; workline's own hook checks
   the messages. Explanations go in docs, not in commit bodies.
 
 ## Writing user docs
 
 For README.md, docs/ outside spec/, adr/ and research/, and each role's
-README and docs/ pages other than status.md and tried.md:
+README and docs/ pages other than status.md and the archived tried.md:
 
 - **Bullets over paragraphs**: short prose is fine, not a novel. A paragraph
   over ~80 words is a defect; a section over 400 words is too long; a doc
@@ -52,8 +54,9 @@ README and docs/ pages other than status.md and tried.md:
   command>`. An example naming one agent says the others exist.
 - **No unexplained internals**: no sandbox issue numbers, token histories
   ("430k before #147"), other projects by name, internal words ("vouched",
-  verdict codes) left unexplained to a newcomer. Measures go in status.md,
-  tried.md or an ADR; a user doc links to them.
+  verdict codes) left unexplained to a newcomer. A measure that decides
+  something goes in an ADR or docs/research/, a try's numbers in its pull
+  request; a user doc links to them.
 
 ## Writing issues
 

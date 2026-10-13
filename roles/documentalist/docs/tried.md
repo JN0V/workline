@@ -1,5 +1,9 @@
 # Documentalist — tried for real
 
+> **Archive.** No new entry since 2026-10-13: a try is told in its pull
+> request, under `## Tried`, and the role's [status](status.md) links to
+> it ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
+
 What each try on a real repository or with a real agent showed, newest last.
 The role's README says what the role does.
 
