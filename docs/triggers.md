@@ -41,10 +41,8 @@ Each event that writes runs in two jobs
 - `WORKLINE_RUNS_DIR` names where the runs are kept: carry that folder and
   the `--json` result from the first job to the second, at the same path;
 - where the merge request's code can change the first job (a GitHub pull
-  request's own run), the second runs from the base and reads it as data:
-  `workline apply --line line.json --from-merge-request <n> --head <sha>`,
-  the runs found by name in its `WORKLINE_RUNS_DIR`
-  ([more](commands.md#workline-apply)).
+  request's own run), the second runs from the base: `--from-merge-request
+  <n> --head <sha>` ([more](commands.md#workline-apply)).
 
 `$ai` below is your choice of agent: `none`, `claude`, `cmd:<command>`
 ([usage](usage.md)).

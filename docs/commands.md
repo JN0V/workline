@@ -37,20 +37,11 @@ refused there is said as warnings, not failed
   it (`runs-not-applied`), with the command that resumes them;
 - `--summary`, as for `route`: what was done on each issue, what failed,
   what was left.
-- `--from-merge-request <n> --head <sha>`: the runs come from merge
-  request `<n>`'s own CI run, which its code can change
-  ([#331](https://github.com/JN0V/workline/issues/331)). Only their
-  proposals are read:
-  - each run found by name in the runs folder (`WORKLINE_RUNS_DIR`), never
-    at a path the run wrote;
-  - the settings, the roles and the forge (`--forge`) are this job's: run
-    it from a checkout of the base (`--repo`);
-  - refused whole: a role that does not run on a merge request, a
-    proposal its role never makes, a comment on another issue;
-  - nothing applied once the branch moved on from `--head` (`moved-on`);
-  - the patches go on that head, never through a link, then to its branch;
-    a release's fix to a merge request of its own, as the base's settings
-    say it is one.
+- `--from-merge-request <n> --head <sha>`: the runs of merge request
+  `<n>`'s own CI run, which its code can change, read as data: only the
+  proposals, each run found by name; settings, roles and forge this job's,
+  from the base (`--repo`); nothing applied once the branch moved on
+  ([more](spec/routing.md#on-a-forge-judge-then-apply)).
 
 ### workline gate
 
