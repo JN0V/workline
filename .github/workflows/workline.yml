@@ -31,8 +31,9 @@
 #          which gets no secrets, the docs are listed for a person. The
 #          token is in reach of what the line runs, the project's `derive`
 #          commands included: only pull requests from the repository get it.
-#          It warns when the App's key is in its reach: a repository
-#          secret, not the environment's (docs/ci-github.md).
+#          It warns when the App's key is in its reach, a repository
+#          secret, not the environment's; and when no workflow applies
+#          what it proposed (docs/ci-github.md).
 name: workline
 on:
   # ready_for_review: a draft marked ready, read by every lens of the
@@ -107,6 +108,14 @@ jobs:
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
           echo "${{ github.event.pull_request.number }}" > report/number
+
+      # Applied by workline-apply.yml, from the default branch: said when
+      # this branch has no workflow run after this one.
+      - name: Whether anything applies what it proposed
+        if: steps.line.outputs.proposed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          grep -qs 'workflows: \[workline\]' .github/workflows/*.yml ||
+            echo "::warning title=workline::no workflow applies what this run proposed; copy workline-apply.yml beside workline.yml (docs/ci-github.md)"
 
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.
