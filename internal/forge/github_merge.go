@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -285,7 +286,7 @@ const pullQuery = `query($owner: String!, $name: String!, $number: Int!) { repos
 
 // AutoMerge turns GitHub's auto-merge on with the repository's merge
 // method, for head only (expectedHeadOid), or off. GitHub turns none on
-// for a pull request it could merge now ("clean status"): it is merged at
+// for a pull request it could merge now (mergeableNow): it is merged at
 // once, at head, as `gh pr merge --auto` does — GitHub checking its rules
 // on that merge as auto-merge would.
 func (g *github) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) {
@@ -323,12 +324,18 @@ func (g *github) AutoMerge(mr MergeRequest, head string, on bool) (bool, error) 
 	}
 	_, err = g.api("graphql", "-f", "query=mutation($id: ID!, $head: GitObjectID!, $method: PullRequestMergeMethod!) { enablePullRequestAutoMerge(input: {pullRequestId: $id, expectedHeadOid: $head, mergeMethod: $method}) { clientMutationId } }",
 		"-f", "id="+r.Pull.ID, "-f", "head="+head, "-f", "method="+method)
-	if err == nil || !strings.Contains(err.Error(), "clean status") {
+	if err == nil || !mergeableNow.MatchString(err.Error()) {
 		return false, graphqlRefusal(err)
 	}
 	_, err = g.api("-X", "PUT", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/merge", mr.ID), "-f", "sha="+head, "-f", "merge_method="+strings.ToLower(method))
 	return err == nil, err
 }
+
+// mergeableNow is GitHub's answer to auto-merge asked on a pull request it
+// could merge now: its required checks passed ("clean"), only checks it
+// does not require still running or red ("unstable", as the merge job's own
+// check while it runs), or hooks left ("has_hooks").
+var mergeableNow = regexp.MustCompile(`is in (clean|unstable|has_hooks) status`)
 
 // graphqlRefusal reads an error GitHub's GraphQL API answered — gh says
 // "GraphQL: …", the HTTP status a 200 — as the refusal it is: auto-merge
