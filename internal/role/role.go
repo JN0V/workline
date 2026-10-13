@@ -177,9 +177,9 @@ type Merge struct {
 }
 
 // MergeLevels are the merge policy's levels, as the product owner's are
-// named (ADR-0042): `cautious`, a person's yes on each pull request.
-// `normal` comes later (#322).
-var MergeLevels = []string{"cautious"}
+// named (ADR-0042): `cautious`, a person's yes on each pull request;
+// `normal`, workline's own routine ones merged with none.
+var MergeLevels = []string{"cautious", "normal"}
 
 // LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an
 // empty config; an unreadable or invalid one is an error.

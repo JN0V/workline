@@ -130,6 +130,23 @@ func (g *github) mergeToken() string {
 	return ""
 }
 
+// Self is who f's token writes as — on GitHub the App's bot, else the
+// token's user —, "" when the forge does not say: a merge request it
+// opened is workline's own, as one a bot opened (ADR-0042, `normal`).
+func Self(f any) string {
+	if s, ok := f.(interface{ self() (string, error) }); ok {
+		if who, err := s.self(); err == nil {
+			return who
+		}
+	}
+	return ""
+}
+
+func (g *github) self() (string, error) { return g.me() }
+
+// self: the simulated forge's token's user.
+func (f *Fake) self() (string, error) { return fakeBot, nil }
+
 // Every forge with an auto-merge workline speaks is a Merger; the local
 // forge has none.
 var _ = []Merger{&github{}, &gitlab{}, &command{}, &Fake{}}
