@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: a6228bb0
+checked: dc91ef34
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -187,7 +187,9 @@ with release-please, never a tag by hand:
   passes the branch it comes from (`--branch`), and the documentalist
   holds it on every doc made suspect since the last release; its fix goes
   to a pull request of its own on `main`, which `follow` rebuilds at each
-  push there, as release-please does its own;
+  push there, as release-please does its own (`always-update`: even when
+  only hidden types, `docs` or `test`, landed, so it is never left behind
+  `main`);
 - the person merges it: that is the decision. release-please tags the
   merged commit `vX.Y.Z` and writes the release with its notes; in the
   same run, release.yml builds the binaries with GoReleaser, which uploads
