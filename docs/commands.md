@@ -37,10 +37,9 @@ refused there is said as warnings, not failed
   it (`runs-not-applied`), with the command that resumes them;
 - `--summary`, as for `route`: what was done on each issue, what failed,
   what was left.
-- `--from-merge-request <n> --head <sha>`: the runs of merge request
-  `<n>`'s own CI run, which its code can change, read as data: only the
-  proposals, each run found by name; settings, roles and forge this job's,
-  from the base (`--repo`); nothing applied once the branch moved on
+- `--from-merge-request <n> --head <sha>`: merge request `<n>`'s own CI
+  run read as data — only its proposals; settings, roles, forge this
+  job's, from the base (`--repo`); nothing once the branch moved on
   ([more](spec/routing.md#on-a-forge-judge-then-apply)).
 
 ### workline gate
