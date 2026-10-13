@@ -905,6 +905,10 @@ type runState struct {
 	// branch, which the tool rewrites: the patches go to a merge request of
 	// their own on its base instead (ADR-0017).
 	Release string `yaml:"release,omitempty"`
+	// releaseHeld: why the release's fix is no merge request of the
+	// role's, but a comment for a person (ResumeFrom, a release branch
+	// someone else than workline's App pushed to).
+	releaseHeld string
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
@@ -1121,7 +1125,10 @@ func fixElsewhere(f forge.Forge, st runState, runDir string) (verdict.Finding, i
 		return verdict.Finding{}, 0, err
 	}
 	why := "the forge does not say which branch the release goes into"
-	if to.Base != "" {
+	switch {
+	case st.releaseHeld != "":
+		why = st.releaseHeld
+	case to.Base != "":
 		why, err = commitOntoBase(st, to.Base, mr.Title, forge.KeepsBranches(f))
 		if err != nil {
 			return verdict.Finding{}, 0, err
@@ -2557,6 +2564,9 @@ func (a *applier) patch(v any) error {
 		if !a.allowed(file) {
 			return fmt.Errorf("%s is outside what this role may write", file)
 		}
+		if link := throughLink(a.repo, file); link != "" {
+			return fmt.Errorf("%s is a link: nothing is written through it", link)
+		}
 		if err := os.WriteFile(filepath.Join(a.repo, file), []byte(content), 0o644); err != nil {
 			return err
 		}
@@ -2568,18 +2578,30 @@ func (a *applier) patch(v any) error {
 		return errors.New("expected a unified diff or {file, content}")
 	}
 	diff = intent.NormalizeDiff(diff)
-	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-")
+	if why := notText(diff); why != "" {
+		return errors.New(why)
+	}
+	// -z: each path whole, as git reads it, a space or a quote in it too.
+	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-z", "-")
 	if err != nil {
 		return fmt.Errorf("unreadable diff: %w", err)
 	}
 	var touched []string
-	for _, line := range strings.Split(strings.TrimSpace(files), "\n") {
-		if f := strings.Fields(line); len(f) == 3 {
-			if !a.allowed(f[2]) {
-				return fmt.Errorf("%s is outside what this role may write", f[2])
-			}
-			touched = append(touched, f[2])
+	for _, rec := range strings.Split(files, "\x00") {
+		if rec == "" {
+			continue
 		}
+		f := strings.SplitN(rec, "\t", 3)
+		if len(f) != 3 || f[2] == "" {
+			return fmt.Errorf("unreadable diff: git names no file in %q", rec)
+		}
+		if !a.allowed(f[2]) {
+			return fmt.Errorf("%s is outside what this role may write", f[2])
+		}
+		if link := throughLink(a.repo, f[2]); link != "" {
+			return fmt.Errorf("%s is a link: nothing is written through it", link)
+		}
+		touched = append(touched, f[2])
 	}
 	// --recount: a diff is applied as its lines read. Agents often get the
 	// counts of a hunk header wrong, and git would drop the lines past them.
@@ -2589,6 +2611,36 @@ func (a *applier) patch(v any) error {
 	}
 	a.written = append(a.written, touched...)
 	return nil
+}
+
+// notText says why a diff does more than change text files: a rename or a
+// copy — whose source git's count does not name —, a mode changed, a link,
+// a submodule or an executable made, a binary patch; "" when it does not.
+// Read from git's own extended headers, which a hunk's lines never start.
+func notText(diff string) string {
+	for _, l := range strings.Split(diff, "\n") {
+		if l == "" || strings.ContainsRune(" +-@\\", rune(l[0])) {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(l, "rename ") || strings.HasPrefix(l, "copy ") || strings.HasPrefix(l, "similarity index ") ||
+			strings.HasPrefix(l, "dissimilarity index "):
+			return "the patch renames or copies a file (" + l + "): a role changes text, in place"
+		case strings.HasPrefix(l, "old mode ") || strings.HasPrefix(l, "new mode "):
+			return "the patch changes a file's mode (" + l + "): a role changes text"
+		case strings.HasPrefix(l, "new file mode ") || strings.HasPrefix(l, "deleted file mode "):
+			if mode := l[strings.LastIndex(l, " ")+1:]; mode != "100644" {
+				return "the patch makes or deletes a file of mode " + mode + ": a role writes text files"
+			}
+		case strings.HasPrefix(l, "index "):
+			if f := strings.Fields(l); len(f) > 2 && f[2] != "100644" {
+				return "the patch names a file of mode " + f[2] + ": a role writes text files"
+			}
+		case strings.HasPrefix(l, "GIT binary patch") || strings.HasPrefix(l, "Binary files "):
+			return "the patch is binary: a role writes text files"
+		}
+	}
+	return ""
 }
 
 func strs(v any) []string {
@@ -2619,13 +2671,7 @@ const keepRuns = 50
 // newRunDir creates the run's folder inside the repository's git directory,
 // where it is never tracked and never shows up as a change.
 func newRunDir(repo, roleName string) (string, error) {
-	base := filepath.Join(repo, ".workline", "runs")
-	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
-		base = filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
-	}
-	if d := os.Getenv("WORKLINE_RUNS_DIR"); d != "" {
-		base = d // in CI, somewhere an artifact can carry it to the job that applies
-	}
+	base := RunsDir(repo)
 	id := fmt.Sprintf("%s-%s", time.Now().UTC().Format("20060102T150405.000000000"), roleName)
 	dir := filepath.Join(base, id)
 	for _, d := range []string{"in/input", "out"} {
@@ -2639,6 +2685,19 @@ func newRunDir(repo, roleName string) (string, error) {
 		}
 	}
 	return dir, nil
+}
+
+// RunsDir is where repo's runs are kept: WORKLINE_RUNS_DIR when set — in
+// CI, somewhere an artifact can carry them to the job that applies —, else
+// its git folder's workline/runs.
+func RunsDir(repo string) string {
+	if d := os.Getenv("WORKLINE_RUNS_DIR"); d != "" {
+		return d
+	}
+	if out, err := exec.Command("git", "-C", repo, "rev-parse", "--absolute-git-dir").Output(); err == nil {
+		return filepath.Join(strings.TrimSpace(string(out)), "workline", "runs")
+	}
+	return filepath.Join(repo, ".workline", "runs")
 }
 
 // intSetting reads a whole number from the role's settings; 0 when unset.

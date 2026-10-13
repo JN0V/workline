@@ -25,7 +25,8 @@
 #   write  holds the write token and no AI key: it comments on the tracking
 #          issue, labels it, and opens the pull request, with the GitHub App
 #          when there is one (variable WORKLINE_APP_ID, secret
-#          WORKLINE_APP_PRIVATE_KEY; Issues, Contents, Pull requests).
+#          WORKLINE_APP_PRIVATE_KEY in the environment workline-app, which
+#          only the default branch may use; Issues, Contents, Pull requests).
 name: workline sample
 on:
   # Mondays, 05:43 UTC, after the night's gardening. Off the hour: GitHub may
@@ -92,6 +93,7 @@ jobs:
     needs: read
     if: always() && needs.read.outputs.drawn == 'true'
     runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {contents: write, pull-requests: write, issues: write}
     steps:
       - id: app

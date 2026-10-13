@@ -1,0 +1,21 @@
+case: engine/from-a-merge-request-run-found-by-name-only
+about: "Applying a merge request's own CI run (#331): a run is found by its folder's name in the job's runs folder, never at a path the run wrote; one listed by a path naming no run is refused."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  role: documentalist
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:doc-fixed"
+  push-to-merge-request: true
+  no-apply: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: feature, listed: "../../.."}
+expect:
+  status: block
+  findings: [{rule: run-refused, level: block, message: "names no run's folder"}]
+  not-pushed: [feature]

@@ -145,6 +145,14 @@ keeping a backlog decides its acts in the judging job, reading the forge
 only, and keeps that plan for the apply (docs/spec/backlog-acts.md, "On the
 issue").
 
+Where the merge request's code can change its judging job (GitHub), the
+job that applies runs from the base and reads only the run's proposals
+(`--from-merge-request <n> --head <sha>`): refused whole, a role not on
+merge requests or a proposal its role never makes (`run-refused`);
+nothing applied once the branch moved on (`moved-on`). A release's fix
+goes to a merge request of the App's only when the forge says the App
+(`WORKLINE_APP`) alone pushed to the release branch; else in a comment.
+
 Applying runs no role, so a handoff proposed under `--no-apply` is recorded
 and not run: both steps say so (`handoff-deferred`), with the command that runs
 it where an agent may judge.

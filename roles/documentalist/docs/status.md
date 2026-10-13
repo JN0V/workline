@@ -151,9 +151,7 @@ its evaluation in
 8. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
-9. **The merge policy, what is left**: the GitHub App's key kept out of a
-   pull request's own run
-   ([#331](https://github.com/JN0V/workline/issues/331)); at `normal`,
+9. **The merge policy, what is left**: at `normal`,
    agents' pull requests, and its criteria to be offered
    ([#322](https://github.com/JN0V/workline/issues/322), second part).
 10. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
@@ -172,4 +170,7 @@ its evaluation in
     - the merge policy in CI: its jobs with the GitHub App's token, the
       `verdict` job, a merge starting `follow` and release-please on
       `main`, a release and its docs, a fork's pull request; on GitLab, a
-      yes held through the new head's pipeline.
+      yes held through the new head's pipeline;
+    - the jobs that write from workline-apply.yml, after a pull request's
+      run, the App's key in its environment
+      ([#331](https://github.com/JN0V/workline/issues/331)).

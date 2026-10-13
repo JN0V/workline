@@ -1,0 +1,31 @@
+case: engine/patch-a-rename-out-of-a-workflow-refused
+about: "A patch renaming a file is refused, whatever its two paths: here a workflow moved into the docs, whose destination alone the role may write. Read from a merge request's own run (#331): nothing of the run is pushed, the workflow stays."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  role: documentalist
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:doc-fixed"
+  push-to-merge-request: true
+  no-apply: true
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: feature
+    setup: ["git checkout -q feature && mkdir -p .github/workflows && echo 'on: push' > .github/workflows/ci.yml && git add .github && git commit -qm 'ci: a workflow' && git push -q origin feature && git checkout -q --detach"]
+    intents:
+      - patch: |
+          diff --git a/.github/workflows/ci.yml b/docs/ci.md
+          similarity index 100%
+          rename from .github/workflows/ci.yml
+          rename to docs/ci.md
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "renames"}]
+  pushed: {feature: {docs/tech/auth.md: "Access tokens last one hour.", .github/workflows/ci.yml: "on: push"}}

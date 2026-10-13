@@ -1,0 +1,233 @@
+# workline's jobs that write, on its own repository: ci/github/workline-apply.yml,
+# with the engine built from main's commit rather than installed — merged, it
+# is reviewed; what a pull request changes in the engine never runs with the
+# write token.
+#
+# They hold the write token, and the GitHub App's key, so they never run in a
+# pull request's own run, whose workflow its branch can change (ADR-0044):
+# `workflow_run` and `push` run this file as the default branch holds it,
+# the base checked out. The key sits in the environment `workline-app`,
+# which only the default branch may use (docs/ci-github.md). What a pull
+# request's run left is read as data: its head is the event's, its runs are
+# found by name, and only what that pull request's line may do is applied.
+#
+#   apply  after workline.yml's judge, holds the write token and no AI key:
+#          it applies what judge proposed (`apply --from-merge-request`). A
+#          doc fix is committed on the head judged and pushed to the pull
+#          request's branch. With a GitHub App (variable WORKLINE_APP_ID,
+#          secret WORKLINE_APP_PRIVATE_KEY in the environment; contents, pull
+#          requests and issues in read and write), the commit runs the checks
+#          again by itself; with the job's own token, GitHub waits for
+#          someone to approve them. The commit carries `Workline-Role:`: the
+#          line judges the commits before it, never the fix again. Nothing is
+#          applied for a fork: workline-fork.yml comments what was found.
+#   verdict with the merge policy, `merge: {autonomy: cautious}` (ADR-0042),
+#          after judge: the head's verdict kept as the status
+#          workline/verdict, by the App; in no concurrency group, so no newer
+#          run cancels it.
+#   follow on a push to main, holds the write token and no AI key: the
+#          documentalist's merge request for the release, when one is open
+#          (workline/documentalist/release), is rebuilt on main's new tip and
+#          force-pushed, as release-please rebuilds its own branch, so a pull
+#          request that touched the same doc leaves it mergeable (ADR-0034).
+#          One a person committed to is left as it is. With the job's own
+#          token, the force-push runs no check on that pull request.
+#          With the documentalist's `update-branches: conflicts` (ADR-0041,
+#          off by default), a person's pull request from this repository in
+#          conflict with main only on lines workline writes gets main merged
+#          in: a merge commit, never forced. The job's summary names each one
+#          merged into, and each left.
+#          With the merge policy, also after verdict: auto-merge turned on
+#          for what a person accepted, the first in line brought up to date;
+#          workline-merge.yml runs it on a label. Only with the App's token
+#          (docs/merge-policy.md).
+name: workline apply
+on:
+  workflow_run: {workflows: [workline], types: [completed]}
+  push: {branches: [main]}          # your default branch: for the follow job
+permissions: {}
+
+jobs:
+  apply:
+    # A pull request of this repository, judged, whatever judge's verdict:
+    # steps that passed before one blocked still get their proposals applied.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: workline-app
+    # actions: read, the artifacts of the pull request's run.
+    permissions: {actions: read, contents: write, pull-requests: write, issues: write}
+    steps:
+      # What judge proposed, outside the checkout: data, never run.
+      - name: What the pull request's run proposed
+        id: judged
+        env: {GH_TOKEN: "${{ github.token }}", RUN: "${{ github.event.workflow_run.id }}"}
+        run: |
+          names=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" --jq '.artifacts[].name')
+          grep -qx workline-runs <<<"$names" || { echo "nothing proposed on this head"; exit 0; }
+          gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n workline-runs -D "$RUNNER_TEMP/judged"
+          n=$(head -c 12 "$RUNNER_TEMP/judged/report/number" | tr -cd 0-9)
+          [ -n "$n" ] || { echo "::error title=workline::the run names no pull request: nothing applied"; exit 1; }
+          echo "number=$n" >> "$GITHUB_OUTPUT"
+      - id: app
+        if: steps.judged.outputs.number != '' && vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      # The base, never the pull request's code: its settings say what may
+      # be applied; the engine reads the head's files only to patch them.
+      - uses: actions/checkout@v4
+        if: steps.judged.outputs.number != ''
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
+      # The engine built from main's commit.
+      - uses: actions/setup-go@v5
+        if: steps.judged.outputs.number != ''
+        with: {go-version-file: go.mod}
+      - name: workline
+        if: steps.judged.outputs.number != ''
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          go build -o "$bin/workline" ./cmd/workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      # The pull request the run names must have the head judged as its
+      # head still, the event's: the engine checks it, and applies nothing
+      # else than that pull request's line may.
+      - if: steps.judged.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # a release's fix is its merge request only if it alone pushed there
+          NUMBER: ${{ steps.judged.outputs.number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ -n "$APP" ]; then
+            git config user.name "$APP[bot]"
+            git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          status=0
+          WORKLINE_RUNS_DIR="$RUNNER_TEMP/judged/.workline-runs" workline apply --line "$RUNNER_TEMP/judged/line.json" \
+            --from-merge-request "$NUMBER" --head "$HEAD_SHA" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  verdict:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: workline-app
+    permissions: {actions: read, contents: read}
+    steps:
+      # The base: its config says the policy.
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Whether there is anything to keep
+        id: policy
+        run: |
+          if grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no merge policy (merge:): nothing to keep"
+          fi
+      - id: app
+        if: steps.policy.outputs.run == 'true' && vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      - uses: actions/setup-go@v5
+        if: steps.policy.outputs.run == 'true'
+        with: {go-version-file: go.mod}
+      - name: workline
+        if: steps.policy.outputs.run == 'true'
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          go build -o "$bin/workline" ./cmd/workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      # The verdict the pull request's run wrote, outside the checkout:
+      # kept only for the head the event names.
+      - if: steps.policy.outputs.run == 'true'
+        env:
+          RUN: ${{ github.event.workflow_run.id }}
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          READ_TOKEN: ${{ github.token }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # who keeps the verdict and holds the yes
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          names=$(GH_TOKEN="$READ_TOKEN" gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" --jq '.artifacts[].name')
+          grep -qx workline-verdict <<<"$names" && GH_TOKEN="$READ_TOKEN" gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n workline-verdict -D "$RUNNER_TEMP/verdict"
+          verdict="$RUNNER_TEMP/verdict/workline-verdict.json"
+          [ -s "$verdict" ] || { echo "no verdict on $HEAD_SHA: judge stopped before writing it"; exit 0; }
+          head=$(jq -r .head "$verdict")
+          [ "$head" = "$HEAD_SHA" ] || { echo "::error title=workline::the verdict is for $head, not the head judged, $HEAD_SHA"; exit 1; }
+          status=0
+          workline follow --forge github --verdict "$RUNNER_TEMP/verdict/workline-verdict.json" --verdict-only --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  follow:
+    # A push to main; with the merge policy, a pull request's run too, once
+    # its verdict is kept: never a fork's, whose run gets no secret.
+    needs: verdict
+    if: always() && (github.event_name == 'push' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository))
+    # One at a time on a branch, with workline-merge.yml's: the first in
+    # line is brought up once.
+    concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}
+    runs-on: ubuntu-latest
+    environment: workline-app
+    permissions: {contents: write, pull-requests: read}
+    steps:
+      - id: app
+        if: vars.WORKLINE_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.WORKLINE_APP_ID }}
+          private-key: ${{ secrets.WORKLINE_APP_PRIVATE_KEY }}
+      # The base, not the pull request's code: its config says the policy.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
+      - name: Whether there is anything to follow
+        id: policy
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ] || grep -qE '^merge:' .workline/config.yaml 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no merge policy (merge:): nothing to follow after a pull request's run"
+          fi
+      - uses: actions/setup-go@v5
+        if: steps.policy.outputs.run == 'true'
+        with: {go-version-file: go.mod}
+      - name: workline
+        if: steps.policy.outputs.run == 'true'
+        run: |
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          go build -o "$bin/workline" ./cmd/workline
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/workline" version
+      - if: steps.policy.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || github.token }}
+          APP: ${{ steps.app.outputs.app-slug }}
+          WORKLINE_APP: ${{ steps.app.outputs.app-slug }}   # who keeps the verdict and holds the yes
+          WORKLINE_APP_ID: ${{ vars.WORKLINE_APP_ID }}
+          BASE: ${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}
+        run: |
+          if [ -n "$APP" ]; then
+            git config user.name "$APP[bot]"
+            git config user.email "$(gh api "/users/$APP%5Bbot%5D" --jq .id)+$APP[bot]@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          status=0
+          workline follow --base "$BASE" --forge github --summary workline-summary.md || status=$?
+          [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

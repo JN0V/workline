@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 59210763
+checked: 27755fce
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -37,6 +37,10 @@ refused there is said as warnings, not failed
   it (`runs-not-applied`), with the command that resumes them;
 - `--summary`, as for `route`: what was done on each issue, what failed,
   what was left.
+- `--from-merge-request <n> --head <sha>`: merge request `<n>`'s own CI
+  run read as data — only its proposals; settings, roles, forge this
+  job's, from the base (`--repo`); nothing once the branch moved on
+  ([more](spec/routing.md#on-a-forge-judge-then-apply)).
 
 ### workline gate
 

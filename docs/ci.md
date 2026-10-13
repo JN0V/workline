@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 59210763
+checked: 27755fce
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -41,6 +41,10 @@ then one that applies, with the write token and no AI key
   what the steps that passed proposed, and what a blocked role says why
   it blocks (`on-block`: the reviewer's comment, [#226](https://github.com/JN0V/workline/issues/226)). An agent out of
   reach (3) warns on both forges.
+- **The write token stays with the base**: on GitHub, a pull request's
+  own run can be changed by its branch, so the applying jobs run the
+  default branch's workflow and read that run as data
+  ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **The agent is a choice** (`--ai`): `none`, `claude` (`claude:opus`…),
   or `cmd:` running any other. The templates call Claude when its token is
   set, no agent otherwise: every check still runs, and what needs

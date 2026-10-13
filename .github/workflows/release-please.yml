@@ -6,7 +6,8 @@
 # binaries and the image on it.
 #
 # It runs with the GitHub App's token (variable WORKLINE_APP_ID, secret
-# WORKLINE_APP_PRIVATE_KEY), never the job's own: a pull request opened with
+# WORKLINE_APP_PRIVATE_KEY in the environment workline-app, which only the
+# default branch may use, ADR-0044), never the job's own: a pull request opened with
 # GITHUB_TOKEN starts no workflow, so the release pull request would get no
 # check. With no App, the job fails, loud.
 name: release-please
@@ -19,6 +20,7 @@ concurrency: {group: release-please, cancel-in-progress: false}
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    environment: workline-app       # the App's key: the default branch only (ADR-0044)
     permissions: {}                 # the App's token writes, not this job's
     outputs:
       created: ${{ steps.release.outputs.release_created }}

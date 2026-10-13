@@ -1,6 +1,6 @@
 ---
-sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 169fbad8
+sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
+checked: 27755fce
 verified: agent:claude-code
 ---
 # The merge policy
@@ -117,10 +117,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
   bot's, a Draft; with a person's token, nothing.
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
-- **Not before [#331](https://github.com/JN0V/workline/issues/331)**, on
-  any project, workline included: a pull request's own run can reach the
-  App's key today, and with it open and push a `workline/` pull request
-  as the App, merged alone — bounded to the docs above.
+- **The App's key, out of a pull request's own run**: none opens a
+  `workline/` pull request as the App; a release's fix only when the App
+  alone pushed to its branch ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 - **Tried on workline's own repository first**; agents' pull requests come
   later ([#322](https://github.com/JN0V/workline/issues/322); the
   [criteria](adr/0042-the-engine-merges-by-the-projects-policy.md#the-veto-what-never-merges-alone-the-criteria)).
@@ -142,21 +141,28 @@ merge: {autonomy: normal}   # a project's choice, never a default
 - **GitLab**: in hand in the merge request's pipeline, where
   `workline:merge` reads it; nothing kept elsewhere.
 - No verdict on the head yet: auto-merge waits for it.
-- **The limits**, where a token is in reach:
-  - GitHub runs a pull request's own copy of the workflow, with the App's
-    key: whoever can push a branch could make it set both statuses as the
-    App ([#331](https://github.com/JN0V/workline/issues/331));
+- **The App's key, out of a pull request's reach**: GitHub runs a pull
+  request's own copy of the workflow, which its branch can change. The key
+  sits in an environment only the default branch may use; the jobs
+  holding it run the default branch's workflow and read the pull
+  request's run as data
+  ([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
+- **The limits**:
+  - the verdict is the pull request's run's word: one changing its
+    workflow can pass its own head, as its own `judge`; the yes covers
+    that head;
   - on GitLab, whoever can run a pipeline can read the project bot's
     token, so a person who may push could act as it.
 
 ## Set up
 
-- **GitHub**: the [templates](ci-github.md) — `workline.yml`'s `verdict`
-  and `follow` jobs run after `judge`; `workline-merge.yml` runs when a
-  label changes. Then:
+- **GitHub**: the [templates](ci-github.md) — `workline-apply.yml`'s
+  `verdict` and `follow` jobs run after `judge`, from the default branch;
+  `workline-merge.yml` runs when a label changes. Then:
   - Settings → General → "Allow auto-merge";
-  - the GitHub App, with **Commit statuses** read and write besides its
-    other permissions; a merge made with the job's own token starts no
+  - the [GitHub App](ci-github-app.md), with **Commit statuses** read and
+    write besides its other permissions, its key in the environment
+    `workline-app`; a merge made with the job's own token starts no
     workflow on `main` — nothing is turned on then, said;
   - a ruleset on the base requiring the checks, and `workline/accepted`
     from the App.

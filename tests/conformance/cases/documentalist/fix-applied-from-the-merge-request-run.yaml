@@ -1,0 +1,24 @@
+case: documentalist/fix-applied-from-the-merge-request-run
+about: "A merge request's own CI run judges; a job of the base's applies it (apply --from-merge-request, #331): from the base checked out, the doc fix is committed on the head that run judged and pushed to the merge request's branch, then the base is checked out again."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  role: documentalist
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:doc-fixed"
+  push-to-merge-request: true
+  no-apply: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: feature}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [patch]
+  findings: [{rule: pushed, where: feature}]
+  pushed: {feature: {docs/tech/auth.md: "Access tokens last two hours."}}
+  files: {src/auth/token.go: {contains: "3600"}, docs/tech/auth.md: {contains: "Access tokens last one hour."}}

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 59210763
+checked: 27755fce
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -39,7 +39,10 @@ Each event that writes runs in two jobs
 - one judges with the agent and no write token (`--no-apply`);
 - one applies with the write token and no AI key;
 - `WORKLINE_RUNS_DIR` names where the runs are kept: carry that folder and
-  the `--json` result from the first job to the second, at the same path.
+  the `--json` result from the first job to the second, at the same path;
+- where the merge request's code can change the first job (a GitHub pull
+  request's own run), the second runs from the base: `--from-merge-request
+  <n> --head <sha>` ([more](commands.md#workline-apply)).
 
 `$ai` below is your choice of agent: `none`, `claude`, `cmd:<command>`
 ([usage](usage.md)).
