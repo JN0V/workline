@@ -15,7 +15,7 @@ run:
   push-to-merge-request: true
   no-apply: true
   then: resume
-  apply-from: {merge-request: 1, base: main, head: release-please--branches--main, env: {WORKLINE_APP: workline}}
+  apply-from: {merge-request: 1, base: main, head: release-please--branches--main}
 expect:
   status: block
   findings: [{rule: fix-in-comment, level: block, message: "the forge does not say"}]

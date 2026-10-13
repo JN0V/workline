@@ -7,8 +7,15 @@ given:
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
     - "git checkout -qb release-please--branches--main && git push -q origin release-please--branches--main && git checkout -q --detach"
   forge:
-    merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]
-    branch-pushers: {release-please--branches--main: ["workline[bot]", "mallory"]}
+    merge-requests:
+      - id: 1
+        branch: release-please--branches--main
+        base: main
+        labels: []
+        comments: []
+        pushes:
+          - {head: main, at: "2026-01-03T00:00:00Z", by: workline-bot}
+          - {head: release-please--branches--main, at: "2026-01-03T00:01:00Z", by: mallory}
 run:
   role: documentalist
   event: merge-request
@@ -17,7 +24,7 @@ run:
   push-to-merge-request: true
   no-apply: true
   then: resume
-  apply-from: {merge-request: 1, base: main, head: release-please--branches--main, env: {WORKLINE_APP: workline}}
+  apply-from: {merge-request: 1, base: main, head: release-please--branches--main}
 expect:
   status: block
   findings: [{rule: fix-in-comment, level: block, message: "@mallory pushed to release-please--branches--main"}]

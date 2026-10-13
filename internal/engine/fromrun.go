@@ -152,7 +152,7 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
 			case rs.IsBranch(mr.Branch):
 				st.Release = mr.Branch
-				if st.releaseHeld, err = releaseNotOwn(f, mr.Branch); err != nil {
+				if st.releaseHeld, err = releaseNotOwn(f, mr); err != nil {
 					return err
 				}
 			}
@@ -185,27 +185,32 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 // releaseNotOwn says why a release tool's branch is not workline's App's
 // alone, "" when it is: whoever else pushed to it could change its run, and
 // that run's fix would become a merge request the App opens, workline's own
-// work at the merge policy's `normal`. With the job's own token, the fix's
-// merge request is never workline's own: nothing to check.
-func releaseNotOwn(f forge.Forge, branch string) (string, error) {
-	app := strings.TrimSpace(os.Getenv("WORKLINE_APP"))
-	if app == "" {
-		return "", nil
-	}
-	who, err := forge.BranchPushers(f, branch)
-	if err != nil {
+// work at the merge policy's `normal`. Who pushed is the forge's word, read
+// as `normal` reads it (MergeState's Pushers). With the job's own token, the
+// fix's merge request is never workline's own: nothing to check.
+func releaseNotOwn(f forge.Forge, mr forge.MergeRequest) (string, error) {
+	app, _, err := forge.App(f)
+	if err != nil || app == "" {
 		return "", err
 	}
+	var who []string
+	if m, ok := f.(forge.Merger); ok {
+		st, err := m.MergeState(mr)
+		if err != nil {
+			return "", err
+		}
+		who = st.Pushers
+	}
 	if who == nil {
-		return fmt.Sprintf("who pushed to %s since it was created, the forge does not say; only workline's App may have, for its run's fix to be a merge request of the App's", branch), nil
+		return fmt.Sprintf("who pushed to %s since it was created, the forge does not say; only workline's App may have, for its run's fix to be a merge request of the App's", mr.Branch), nil
 	}
 	for _, p := range who {
-		if p != app+"[bot]" {
+		if p != app {
 			name := "a hand the forge does not name"
 			if p != "" {
 				name = "@" + p
 			}
-			return fmt.Sprintf("%s pushed to %s, not workline's App alone: its run's fix is not opened as the App's merge request", name, branch), nil
+			return fmt.Sprintf("%s pushed to %s, not workline's App alone: its run's fix is not opened as the App's merge request", name, mr.Branch), nil
 		}
 	}
 	return "", nil

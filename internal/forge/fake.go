@@ -43,9 +43,6 @@ type FakeState struct {
 	// commit a revision of the repository, who set it (`workline-bot`, the
 	// token's user, or another).
 	Statuses []FakeStatus `json:"statuses,omitempty"`
-	// BranchPushers are who pushed to a branch since it was created, oldest
-	// first, by branch (BranchPushers); a branch not named, not known.
-	BranchPushers map[string][]string `json:"branch-pushers,omitempty"`
 }
 
 // FakeStatus is a status set on a commit.
