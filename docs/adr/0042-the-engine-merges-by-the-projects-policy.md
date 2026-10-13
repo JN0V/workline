@@ -323,15 +323,17 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
 - **Limits**: a doc-only commit bearing workline's trailer is taken as
   its own, as the line takes it: whoever can push could write one, as
   they could put the label, agents acting with the person's account until
-  [#117]. A revert past the base's last 100 commits when `follow` runs, or
-  naming no merge request (a GitLab squash), is not read. The issue
-  closed is a person's restore by rule, as the label is a person's yes.
+  [#117]. A revert past the base's last 100 commits when `follow` runs is
+  not read; one naming no merge request found in its last 1000 (a GitLab
+  squash, a commit pushed straight) is said, `revert-unread`. The issue
+  closed is a person's restore by rule, as the label is a person's yes;
+  one is the engine's by its title and its marker.
 - **Texts changed**: principle 1 — people accept the result, or write in
   advance the narrow class the line accepts for them;
   [concepts.md](../concepts.md#people); [config.md](../config.md), the
   governance line beside the key.
 
-Conformance: merge/normal-* (8), gitlab-normal-routine-merges-alone,
+Conformance: merge/normal-* (9), gitlab-normal-routine-merges-alone,
 cmd-normal-routine-merges-alone, cautious-routine-waits-for-a-yes;
 TestRoutineKind, TestRevertOf, TestOwnNote.
 

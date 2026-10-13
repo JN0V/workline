@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 47370c1c
+checked: 975ddf7a
 verified: agent:claude-code
 ---
 # The merge policy
@@ -162,6 +162,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
 | `waits-for-a-yes` | at `normal`: the release tool's, a commit not workline's own, a kind demoted |
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
+| `revert-unread` | a revert on the base that names no merge request workline can find |
 | `updated` | first in line, brought up to date |
 | `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |
