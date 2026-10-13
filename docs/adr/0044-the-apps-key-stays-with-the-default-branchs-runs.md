@@ -53,8 +53,12 @@
     agents' proposals are read. The runs are found by name; the
     repository, roles, forge and merge request are the job's. A run whose
     role does not run on a merge request, or proposing what its role never
-    does, is refused whole. The patches go on the head, never through a
-    link. Whether it is a release's is the base's settings' word.
+    does, is refused whole. The patches go on the head; each path is
+    read whole (`--numstat -z`) and checked; a rename, a copy, a mode, a
+    link, a binary patch is refused. Whether it is a release's is the
+    base's settings' word, and its fix is a merge request of the App's
+    only when the App alone pushed to the release branch, as the forge's
+    activity says; else a comment for a person.
 - **A check**: no job of a pull request's workflow names the key; each
   job using it runs the default branch's workflow, in the environment;
   those after a pull request's run take the event's head, read its
@@ -89,10 +93,9 @@
     workflow can write a passing verdict for its own head, as it can pass
     its own `judge`. At `cautious`, the person's yes covers that head; at
     `normal`, a routine pull request's every push is the App's;
-  - a release pull request's run: whoever can push to the release tool's
-    branch can change it, and its docs fix goes to a pull request the App
-    opens, a `docs` kind at `normal`. A ruleset letting only the App push
-    to that branch closes it;
+  - a release tool pushing with another token than workline's App: its
+    fix is a comment, never the App's pull request. A ruleset letting only
+    the App push to that branch keeps others off it;
   - GitHub Enterprise Server before the 2025-12-08 change checks the
     environment's branch rule against the pull request's head branch;
   - `CLAUDE_CODE_OAUTH_TOKEN` stays a repository secret: an agent's quota
