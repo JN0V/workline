@@ -1,6 +1,6 @@
 ---
-sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: b848c762
+sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
+checked: c78bafd7
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -15,7 +15,7 @@ flowchart LR
     sample["<b>Mondays</b><br/>sample: read"]
     import["<b>By hand</b><br/>import: judge"]
   end
-  subgraph writes["The write token, no AI key"]
+  subgraph writes["The write token, no AI key: the default branch's runs"]
     apply["apply"]
     fork["fork: comment"]
     follow["<b>Push to main</b><br/>follow"]
@@ -32,13 +32,18 @@ flowchart LR
 
 What the jobs are, on every forge: [ci.md](ci.md). This page sets them up
 on GitHub. The agent's token reaches only the one step that calls it; a
-fork's pull request gets no secret, so no agent and no write.
+fork's pull request gets no secret, so no agent and no write. The jobs that
+write run the default branch's workflow, never a pull request's own
+([ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md)).
 
 ## Set up
 
 1. **Copy the workflows** into `.github/workflows/`:
-   - [workline.yml](../ci/github/workline.yml): `judge` and `apply` on
-     each pull request; `follow` on each push to `main`
+   - [workline.yml](../ci/github/workline.yml): `judge` on each pull
+     request, its own run: no write token.
+   - [workline-apply.yml](../ci/github/workline-apply.yml), from the
+     default branch: `apply` after each `judge`, the fixes committed to
+     the pull request's branch; `follow` on each push to `main`
      ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the
      documentalist's pull request for the release, when one is open, is
      rebuilt on `main`'s new tip, so a pull request merged meanwhile that
@@ -66,16 +71,9 @@ fork's pull request gets no secret, so no agent and no write.
    otherwise; for another agent, change their `--ai` to a `cmd:`.
 3. **A GitHub App** commits the fixes, so the checks run again by
    themselves (with the job's own token, GitHub waits for someone to
-   approve them):
-   - your settings → Developer settings → GitHub Apps → New GitHub App: no
-     webhook; repository permissions **Contents**, **Pull requests** and
-     **Issues**, read and write; with the merge policy, **Commit
-     statuses** too;
-   - generate a private key, install the App on the repository;
-   - in the repository: variable `WORKLINE_APP_ID` (the App's ID), secret
-     `WORKLINE_APP_PRIVATE_KEY` (the whole `.pem`);
-   - without an App, gardening needs Settings → Actions → General → "Allow
-     GitHub Actions to create and approve pull requests".
+   approve them): [set it up](ci-github-app.md) — variable
+   `WORKLINE_APP_ID`, its key `WORKLINE_APP_PRIVATE_KEY` in the
+   environment `workline-app`, which only the default branch may use.
 4. **Protect main** (Settings → Rules): pull requests only, the `judge`
    check required (workline.yml's verdict). The review is on the pull
    request ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)):
@@ -85,7 +83,8 @@ fork's pull request gets no secret, so no agent and no write.
    `upload-sarif` step of workline.yml, code scanning being paid there.
 
 Then open a pull request changing code a doc describes: `judge` judges it,
-and the App commits the fix to its branch, `Workline-Role: documentalist`.
+and `apply`, with the App, commits the fix to its branch,
+`Workline-Role: documentalist`.
 
 ## What the jobs may do
 
@@ -97,13 +96,15 @@ and the App commits the fix to its branch, `Workline-Role: documentalist`.
   reads every lens once, on the whole change
   ([more](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
 - `apply`, `follow` and each pair's second job hold the write token, the
-  App's when there is one, and no AI key. `follow`'s merge into a pull
-  request runs its checks again only with the App's token; the merge
-  policy acts only with it, and needs "Allow auto-merge" (Settings →
-  General).
-- `apply` runs when `judge` failed too (`if: always()`): a pull request
-  the reviewer holds still gets its comment ([#226](https://github.com/JN0V/workline/issues/226)); the workflow fails
-  by `judge`'s verdict.
+  App's when there is one, and no AI key, in the environment
+  `workline-app`. `follow`'s merge into a pull request runs its checks
+  again only with the App's token; the merge policy acts only with it,
+  and needs "Allow auto-merge" (Settings → General).
+- `apply` reads the pull request's run as data, only the agents'
+  proposals ([more](commands.md#workline-apply)), whatever `judge`
+  concluded: one the reviewer holds still gets its comment
+  ([#226](https://github.com/JN0V/workline/issues/226)). Its job is in
+  Actions, "workline apply"; the check is `judge`'s.
 - `apply` posts the reviewer's findings on their lines, a pull request
   review (`pull-requests: write`); a token without it leaves them in the
   summary comment, said
@@ -162,15 +163,13 @@ workline's .github/workflows/ are the templates, but for the engine:
 
 - they build it from the commit they run on rather than run a release:
   gardening and the sample, both jobs, from `main`; a pull request's
-  `judge`, from its commit; `follow`, from `main`'s commit, merged and
-  reviewed;
+  `judge`, from its commit; workline-apply.yml's jobs, from `main`'s
+  commit, merged and reviewed: what a pull request changes in the engine
+  never runs with the write token;
 - a project never runs, in a commit's checks, the pin that commit ships: a
   pull request moving the templates to a version not yet tagged would
   download nothing, as on each release from v0.2.0 to v0.2.3
   ([ADR-0017](adr/0017-the-release-manager.md));
-- a pull request's `apply`, which holds the write token, runs the last
-  release of workline holding its engine, looked up when it runs: a change
-  to the engine never runs with that token before it is released.
 
 **How workline releases** ([ADR-0017](adr/0017-the-release-manager.md)),
 with release-please, never a tag by hand:

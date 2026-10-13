@@ -170,4 +170,7 @@ its evaluation in
     - the merge policy in CI: its jobs with the GitHub App's token, the
       `verdict` job, a merge starting `follow` and release-please on
       `main`, a release and its docs, a fork's pull request; on GitLab, a
-      yes held through the new head's pipeline.
+      yes held through the new head's pipeline;
+    - the jobs that write from workline-apply.yml, after a pull request's
+      run, the App's key in its environment
+      ([#331](https://github.com/JN0V/workline/issues/331)).

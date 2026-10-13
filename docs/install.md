@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/setup, internal/hooks, internal/tools, internal/agent/agent.go, ci/github, ci/gitlab]
-checked: a6228bb0
+checked: c78bafd7
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -140,7 +140,9 @@ What the jobs are: [ci.md](ci.md); every detail on your forge's page. In short:
 
 - **GitHub**: copy the workflows of [ci/github](../ci/github/) into
   `.github/workflows/` — [workline.yml](../ci/github/workline.yml) (each
-  pull request, and each push to main for `workline follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
+  pull request), [workline-apply.yml](../ci/github/workline-apply.yml)
+  (what it proposed applied, and each push to main for `workline
+  follow`), [workline-fork.yml](../ci/github/workline-fork.yml) (a
   fork's), [workline-gardening.yml](../ci/github/workline-gardening.yml),
   [workline-sample.yml](../ci/github/workline-sample.yml),
   [workline-merge.yml](../ci/github/workline-merge.yml) (with the
@@ -157,7 +159,7 @@ What the templates need:
 | | GitHub | GitLab |
 |---|---|---|
 | the agent, your choice | its credentials; for Claude, which the templates install: secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`) | the same as a variable, masked, not protected |
-| writing | a GitHub App: variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository` |
+| writing | a [GitHub App](ci-github-app.md): variable `WORKLINE_APP_ID`, secret `WORKLINE_APP_PRIVATE_KEY` in the environment `workline-app` | variable `WORKLINE_GITLAB_TOKEN`: a project access token, `api` and `write_repository` |
 | the history | `fetch-depth: 0`, set | `GIT_DEPTH: 0`, set |
 | the sample's judge | variable `WORKLINE_JUDGE` (optional) | the same, and `WORKLINE_TASK=sample` on its schedule |
 

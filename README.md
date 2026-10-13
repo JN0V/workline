@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
-checked: 72bfb8fd
+checked: c78bafd7
 judged: cd97f28
 verified: agent:claude-code
 -->
@@ -118,7 +118,8 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | a fork's | judged with no agent | on GitHub, a comment; on GitLab, nothing |
 
 - The review is on the merge request; a person merges.
-- Templates: [GitHub Actions](ci/github/workline.yml) and
+- Templates: [GitHub Actions](ci/github/workline.yml),
+  [its jobs that write](ci/github/workline-apply.yml) and
   [its fork job](ci/github/workline-fork.yml),
   [GitLab CI](ci/gitlab/workline.gitlab-ci.yml). Setting up:
   [CI](docs/ci.md).
@@ -135,7 +136,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 - workline cuts no releases: it runs before your release tool.
 - Templates: GitHub's [gardening](ci/github/workline-gardening.yml) and
   [sample](ci/github/workline-sample.yml), `follow` in
-  [workline.yml](ci/github/workline.yml); on GitLab, two pipeline
+  [workline-apply.yml](ci/github/workline-apply.yml); on GitLab, two pipeline
   schedules and a push to the default branch, all in the same
   [template](ci/gitlab/workline.gitlab-ci.yml).
 - Each command in detail: [usage](docs/usage.md#commands).

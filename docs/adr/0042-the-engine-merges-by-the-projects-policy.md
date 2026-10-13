@@ -202,10 +202,12 @@ puts the label.
   elsewhere could become the merge request's pipeline.
 - **The limits, where a token is in reach**: GitHub runs a pull request's
   own copy of the workflow with the App's key, so whoever can push a
-  branch could set both statuses as the App — open in
-  [#331](https://github.com/JN0V/workline/issues/331), which moves the
-  key to the base's runs; a GitLab project bot's token can be read by
-  whoever runs a pipeline.
+  branch could set both statuses as the App — since
+  [ADR-0044](0044-the-apps-key-stays-with-the-default-branchs-runs.md)
+  ([#331](https://github.com/JN0V/workline/issues/331)), the key lives in
+  an environment only the default branch may use, and the jobs holding it
+  run the default branch's workflow; a GitLab project bot's token can be
+  read by whoever runs a pipeline.
 - **Who says yes** may push and merge: GitHub's write access, GitLab's
   Developer — not the product owner's wider "person of the project".
 - **A push after the yes** is told by the forge's own push times —
@@ -221,7 +223,8 @@ puts the label.
   runs, as the merge job's own on workline#341): it is merged at once, at
   the head checked, as `gh pr merge --auto` does — the forge's rules met
   already.
-- **The workflows**: `follow` runs after `judge`, and on a label put or
+- **The workflows**: `follow` runs after `judge` (in workline-apply.yml since
+  [ADR-0044](0044-the-apps-key-stays-with-the-default-branchs-runs.md)), and on a label put or
   taken off in a workflow of its own (`pull_request_target`): a run with
   `judge` skipped would show the check passed. GitLab starts no pipeline
   for a label: it waits for that merge request's own next pipeline.
