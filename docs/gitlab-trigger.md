@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 55569113
+checked: b848c762
 judged: bf016b7
 verified: agent:documentalist
 ---
@@ -71,7 +71,7 @@ curl -fsS -X POST --form token="$TRIGGER_TOKEN" --form ref=main \
 
 ```yaml
 stages: [test, deploy]
-variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.26.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}
+variables: {GIT_DEPTH: 0, WORKLINE_VERSION: v0.26.0, WORKLINE_RUNS_DIR: $CI_PROJECT_DIR/.workline-runs}  # x-release-please-version
 .workline:
   image: ghcr.io/jn0v/workline:$WORKLINE_VERSION
   rules: [{if: '$CI_PIPELINE_SOURCE =~ /^(api|trigger|pipeline|parent_pipeline)$/ && $WORKLINE_TASK'}]
