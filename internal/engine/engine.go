@@ -908,9 +908,6 @@ type runState struct {
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
-	// fromRun: applied from a merge request's own CI run (ResumeFrom),
-	// whose head's files are read as data: never written through a link.
-	fromRun bool
 }
 
 // authors are the agents and models whose answers a run applies, as
@@ -955,7 +952,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		return err
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
-		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings, noLinks: st.fromRun}
+		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings}
 	for _, c := range res.Calls {
 		if c.Task != "judge" && c.Model != "" {
 			ap.model = c.Model
@@ -1854,7 +1851,6 @@ type applier struct {
 	capped       int               // findings not opened as issues, past issues-max
 	findings     []verdict.Finding // what the applying says
 	model        string            // the model whose answer is applied, as an announcement records it
-	noLinks      bool              // a file is never written through a link (ResumeFrom)
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -2561,10 +2557,8 @@ func (a *applier) patch(v any) error {
 		if !a.allowed(file) {
 			return fmt.Errorf("%s is outside what this role may write", file)
 		}
-		if a.noLinks {
-			if link := throughLink(a.repo, file); link != "" {
-				return fmt.Errorf("%s is a link, in the files of the merge request's head: nothing is written through it", link)
-			}
+		if link := throughLink(a.repo, file); link != "" {
+			return fmt.Errorf("%s is a link: nothing is written through it", link)
 		}
 		if err := os.WriteFile(filepath.Join(a.repo, file), []byte(content), 0o644); err != nil {
 			return err
@@ -2577,18 +2571,30 @@ func (a *applier) patch(v any) error {
 		return errors.New("expected a unified diff or {file, content}")
 	}
 	diff = intent.NormalizeDiff(diff)
-	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-")
+	if why := notText(diff); why != "" {
+		return errors.New(why)
+	}
+	// -z: each path whole, as git reads it, a space or a quote in it too.
+	files, err := git(a.repo, strings.NewReader(diff), "apply", "--recount", "--unidiff-zero", "--numstat", "-z", "-")
 	if err != nil {
 		return fmt.Errorf("unreadable diff: %w", err)
 	}
 	var touched []string
-	for _, line := range strings.Split(strings.TrimSpace(files), "\n") {
-		if f := strings.Fields(line); len(f) == 3 {
-			if !a.allowed(f[2]) {
-				return fmt.Errorf("%s is outside what this role may write", f[2])
-			}
-			touched = append(touched, f[2])
+	for _, rec := range strings.Split(files, "\x00") {
+		if rec == "" {
+			continue
 		}
+		f := strings.SplitN(rec, "\t", 3)
+		if len(f) != 3 || f[2] == "" {
+			return fmt.Errorf("unreadable diff: git names no file in %q", rec)
+		}
+		if !a.allowed(f[2]) {
+			return fmt.Errorf("%s is outside what this role may write", f[2])
+		}
+		if link := throughLink(a.repo, f[2]); link != "" {
+			return fmt.Errorf("%s is a link: nothing is written through it", link)
+		}
+		touched = append(touched, f[2])
 	}
 	// --recount: a diff is applied as its lines read. Agents often get the
 	// counts of a hunk header wrong, and git would drop the lines past them.
@@ -2598,6 +2604,36 @@ func (a *applier) patch(v any) error {
 	}
 	a.written = append(a.written, touched...)
 	return nil
+}
+
+// notText says why a diff does more than change text files: a rename or a
+// copy — whose source git's count does not name —, a mode changed, a link,
+// a submodule or an executable made, a binary patch; "" when it does not.
+// Read from git's own extended headers, which a hunk's lines never start.
+func notText(diff string) string {
+	for _, l := range strings.Split(diff, "\n") {
+		if l == "" || strings.ContainsRune(" +-@\\", rune(l[0])) {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(l, "rename ") || strings.HasPrefix(l, "copy ") || strings.HasPrefix(l, "similarity index ") ||
+			strings.HasPrefix(l, "dissimilarity index "):
+			return "the patch renames or copies a file (" + l + "): a role changes text, in place"
+		case strings.HasPrefix(l, "old mode ") || strings.HasPrefix(l, "new mode "):
+			return "the patch changes a file's mode (" + l + "): a role changes text"
+		case strings.HasPrefix(l, "new file mode ") || strings.HasPrefix(l, "deleted file mode "):
+			if mode := l[strings.LastIndex(l, " ")+1:]; mode != "100644" {
+				return "the patch makes or deletes a file of mode " + mode + ": a role writes text files"
+			}
+		case strings.HasPrefix(l, "index "):
+			if f := strings.Fields(l); len(f) > 2 && f[2] != "100644" {
+				return "the patch names a file of mode " + f[2] + ": a role writes text files"
+			}
+		case strings.HasPrefix(l, "GIT binary patch") || strings.HasPrefix(l, "Binary files "):
+			return "the patch is binary: a role writes text files"
+		}
+	}
+	return ""
 }
 
 func strs(v any) []string {

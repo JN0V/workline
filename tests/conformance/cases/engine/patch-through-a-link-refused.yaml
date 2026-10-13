@@ -1,0 +1,34 @@
+case: engine/patch-through-a-link-refused
+about: "A diff to a doc that is a link in the head's files is refused: git would write the link itself, or through it. Read from a merge request's own run (#331): nothing of the run is pushed."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  role: documentalist
+  event: merge-request
+  target: {merge-request: 1}
+  ai: "fake:doc-fixed"
+  push-to-merge-request: true
+  no-apply: true
+  then: resume
+  apply-from:
+    merge-request: 1
+    base: main
+    head: feature
+    # The head, as the merge request's code made it: a doc that is a link.
+    setup: ["git checkout -q feature && ln -s ../../src/auth/token.go docs/tech/link.md && git add docs/tech/link.md && git commit -qm 'docs: link the code' && git push -q origin feature && git checkout -q --detach"]
+    intents:
+      - patch: |
+          --- a/docs/tech/link.md
+          +++ b/docs/tech/link.md
+          @@ -1 +1 @@
+          -../../src/auth/token.go
+          \ No newline at end of file
+          +../../.github/workflows/ci.yml
+          \ No newline at end of file
+expect:
+  status: block
+  findings: [{rule: engine-error, message: "docs/tech/link.md is a link"}]
