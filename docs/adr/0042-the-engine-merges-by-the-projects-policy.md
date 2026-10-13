@@ -350,7 +350,8 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   included**: a pull request's own workflow run can reach the App's key
   today, and with it open and push a `workline/` pull request as the App —
   merged alone, bounded to the documentalist's docs agents are not told
-  to read. `normal` waits for the key to leave the pull request's runs.
+  to read. `normal` waits for the key to leave the pull request's runs —
+  done by [ADR-0044](0044-the-apps-key-stays-with-the-default-branchs-runs.md).
 - **Criteria for offering `normal`** to other projects, as [ADR-0036]
   wrote a role's status — until they hold, the page says it is tried on
   workline's own repository first:
@@ -359,7 +360,9 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
      merges with no yes, each recorded, a revert demoting its kind as
      written;
   3. the maintainer validates [#322]'s Validation on real use.
-- **Limits**: whoever holds the App's key acts as it ([#331], above).
+- **Limits**: whoever holds the App's key acts as it ([#331], above);
+  since [ADR-0044](0044-the-apps-key-stays-with-the-default-branchs-runs.md),
+  only the default branch's runs hold it.
   GitLab: the push events read from a week before the merge request
   opened, the branch's creation among them or it waits; the mark is a
   commit status of the project bot's — on a commit with a pipeline, an
