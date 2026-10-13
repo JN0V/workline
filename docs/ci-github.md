@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: c78bafd7
+checked: a0a1e25d
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -40,7 +40,8 @@ write run the default branch's workflow, never a pull request's own
 
 1. **Copy the workflows** into `.github/workflows/`:
    - [workline.yml](../ci/github/workline.yml): `judge` on each pull
-     request, its own run: no write token.
+     request, its own run: no write token; it warns when no workflow
+     applies what it proposed.
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch: `apply` after each `judge`, the fixes committed to
      the pull request's branch; `follow` on each push to `main`
