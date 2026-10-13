@@ -175,7 +175,7 @@ exit "$status"
   docs' fix goes to a merge request of its own (untried outside a release
   tool's merge request).
 - The [merge policy](merge-policy.md), with `merge:` in the target
-  branch's `.workline/config.yaml`, v0.26.0 or later:
+  branch's `.workline/config.yaml`, workline 0.26 or later:
   - `judge:merge-request` writes the head's verdict (`--verdict`);
   - `apply:merge-request` then runs `workline follow --verdict` from the
     target branch, as the template's `workline:merge` does;
