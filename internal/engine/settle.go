@@ -30,6 +30,11 @@ type FollowOptions struct {
 	// Release says whether a branch is a release tool's: its merge request
 	// is a bot's, rebuilt by the tool.
 	Release func(branch string) bool
+	// Derive says whether the docs' derived blocks, in the tree at dir,
+	// read what the documentalist's `derive` commands give there: a merge
+	// request regenerating them is `derived` at `normal` only then; nil,
+	// never.
+	Derive func(dir string, docs map[string]string) bool
 	// Merge is the project's merge policy, its level (`merge: {autonomy:
 	// cautious}`); "" none: no merge request's auto-merge is touched
 	// (ADR-0042, merge.go).

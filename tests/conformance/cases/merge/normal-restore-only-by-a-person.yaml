@@ -1,0 +1,35 @@
+case: merge/normal-restore-only-by-a-person
+about: "Only a person lifts a demotion (#322): at `normal`, #9, merged with no person's yes, was reverted; workline opened #1 saying records wait for a person's yes. A bot closes #1 — a stale-issue bot, say: the demotion holds, said in the summary — a bot, or someone with no write access, never lifts it — and the next records pull request still waits (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged (#9)' && git revert --no-edit HEAD >/dev/null && git push -q origin main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, bot: true, closed: true, merged: true, labels: [],
+         comments: [{body: "**Merging with no person's yes**\n\n<!-- workline:merge-alone=records -->", author: workline-bot, bot: true}]}
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run:
+  follow: [--base, main]
+  then: again
+  between:
+    issues:
+      - {id: 1, closed: true, closing: {author: "stale[bot]", bot: true, writer: true}}
+expect:
+  status: pass
+  findings:
+    - {rule: merge-demoted, where: "#9", message: "until a person who may push and merge closes #1"}
+    - {rule: restore-ignored, where: "#1", message: "closed by @stale[bot], who may not lift it"}
+    - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#1)"}
+  no-findings: [{rule: merge-restored}, {rule: auto-merge-on}]
+  forge:
+    issues:
+      - {id: 2, absent: true}
+    merge-requests:
+      - {id: 10, auto-merge: false}

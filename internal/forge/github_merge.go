@@ -99,16 +99,20 @@ func (g *github) MergeState(mr MergeRequest) (MergeState, error) {
 	}
 	if mr.Here {
 		out, err := g.api("--paginate", "repos/{owner}/{repo}/activity?per_page=100&ref="+url.QueryEscape("refs/heads/"+mr.Branch),
-			"--jq", `.[] | select(.activity_type == "push" or .activity_type == "force_push" or .activity_type == "branch_creation") | {head: .after, at: .timestamp}`)
+			"--jq", `.[] | select(.activity_type == "push" or .activity_type == "force_push" or .activity_type == "branch_creation") | {head: .after, at: .timestamp, by: (.actor.login // "")}`)
 		if err != nil {
 			return MergeState{}, err
 		}
-		pushes, err := lines[Push](out)
+		pushes, err := lines[struct {
+			Push
+			By string `json:"by"`
+		}](out)
 		if err != nil {
 			return MergeState{}, err
 		}
 		for i := len(pushes) - 1; i >= 0; i-- { // newest first: oldest first
-			st.Pushes = append(st.Pushes, pushes[i])
+			st.Pushes = append(st.Pushes, pushes[i].Push)
+			st.Pushers = append(st.Pushers, pushes[i].By)
 		}
 		if st.Pushes == nil {
 			st.Pushes = []Push{} // the activity says none: not "unknown"

@@ -131,14 +131,26 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
 				"source_project_id": source, "target_project_id": 1, "title": it.Title,
 				"author": map[string]any{"id": 1000 + it.ID, "username": it.Author},
-				"state": map[bool]string{true: "closed", false: "opened"}[it.Closed],
+				"state":  map[bool]string{true: "closed", false: "opened"}[it.Closed],
 				"labels": it.Labels, "draft": it.Draft, "merge_when_pipeline_succeeds": it.AutoMerge})
 		}
 		return out, 200
-	case p == "/api/v4/users/999":
+	case p == "/api/v4/users/999", p == "/api/v4/user":
 		// The token's user, who sets a merge request to merge (merge_user):
 		// a bot, as a project access token's is.
 		return map[string]any{"id": 999, "username": tokenUser, "bot": true}, 200
+	case p == "/events" && method == "GET":
+		// The project's push events, newest first: each merge request's
+		// pushes, by whom the simulated forge says.
+		out := []map[string]any{}
+		for _, it := range s.MergeRequests {
+			for _, push := range it.Pushes {
+				out = append(out, map[string]any{"action_name": "pushed to", "author_username": push.By, "created_at": push.At,
+					"push_data": map[string]any{"ref": it.Branch, "ref_type": "branch"}})
+			}
+		}
+		slices.Reverse(out)
+		return out, 200
 	case userPath.MatchString(p):
 		id, _ := strconv.Atoi(userPath.FindStringSubmatch(p)[1])
 		it := mergeRequest(id - 1000)
@@ -270,6 +282,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		out := []map[string]any{}
 		if it.Closed {
 			e := map[string]any{"state": "closed", "source_commit": nil, "source_merge_request_id": nil}
+			if it.Closing != nil {
+				e["user"] = user(it.Closing.Author)
+			}
 			for _, c := range it.ClosedBy {
 				if n, err := strconv.Atoi(strings.TrimPrefix(c.Ref, "!")); err == nil && c.Kind == "pull-request" {
 					e["source_merge_request_id"] = 5000 + n

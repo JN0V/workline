@@ -447,18 +447,34 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 				Message: fmt.Sprintf("the label %s could not be made in the forge's list, for a person to put: %v", backlog.AcceptedLabel(f), err)})
 		}
 	}
-	// At `normal`, which kinds of workline's own merge requests wait for a
-	// person's yes again since a revert: said where the level is set.
-	var demoted map[string]string
+	// At `normal`: the App workline's own work comes from, the pages agents
+	// read, the kinds waiting for a person's yes again since a revert —
+	// said where the level is set.
+	var n *normal
 	if o.Merge == MergeNormal {
 		tip, err := remoteTip(o.Repo, o.Base)
 		if err != nil {
 			return "", err
 		}
-		if demoted, err = demotions(f, o, tip, res); err != nil {
-			return "", err
+		n = &normal{}
+		if n.app, n.committer, err = forge.App(f); err != nil {
+			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
+				return "", err
+			}
+			n.app = ""
 		}
-		sum = "merge policy (normal; " + alone(demoted) + ")"
+		if n.app == "" {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-app-unknown", Level: "warn",
+				Message: "at `normal`, the token is no App's — a person's, or the forge does not say whose —: nothing is taken for workline's own work, every merge request waits for a person's yes, as at `cautious`"})
+		} else {
+			if n.steers, err = steering(o.Repo, tip); err != nil {
+				return "", err
+			}
+			if n.demoted, err = demotions(f, o, tip, n.app, res); err != nil {
+				return "", err
+			}
+		}
+		sum = "merge policy (normal; " + alone(n) + ")"
 	}
 	open, err := f.ListMergeRequests()
 	if err != nil {
@@ -476,7 +492,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		switch {
 		case mr.Base != o.Base:
 			continue
-		case !slices.ContainsFunc(mr.Labels, accepted) && !mr.AutoMerge && !routineCandidate(f, o, mr):
+		case !slices.ContainsFunc(mr.Labels, accepted) && !mr.AutoMerge && !routineCandidate(o, n, mr):
 			if o.Merge == MergeNormal && o.Release != nil && o.Release(mr.Branch) {
 				res.Findings = append(res.Findings, verdict.Finding{Rule: "waits-for-a-yes", Where: forge.MergeRef(f, mr.ID),
 					Message: "the release tool's: merging it is the decision to release, never made with no person's yes; the label `workline:accepted`"})
@@ -484,7 +500,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 			continue
 		}
 		before := len(res.Findings)
-		e, err := weigh(f, m, o, local, mr, fix, res, hand, demoted)
+		e, err := weigh(f, m, o, local, mr, fix, res, hand, n)
 		if err != nil {
 			return "", err
 		}
@@ -550,7 +566,7 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 // on, does what the policy says of it — auto-merge on or off, the yes held
 // on its head (Accept) or taken back — and says it; it returns it when it
 // is in line.
-func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, fix string, res *Result, hand map[string]kept, demoted map[string]string) (*inLine, error) {
+func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.MergeRequest, fix string, res *Result, hand map[string]kept, n *normal) (*inLine, error) {
 	where := forge.MergeRef(f, mr.ID)
 	say := func(rule, level, msg string) {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: rule, Level: level, Where: where, Message: msg})
@@ -590,7 +606,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 	}
 	// At `normal`, workline's own routine merge request, no person's yes
 	// given: weighed by what it is (routine.go).
-	routine := routineCandidate(f, o, mr)
+	routine := routineCandidate(o, n, mr)
 	w := weighed{mr: mr, st: st, baseTip: baseTip, tip: tip, e: e, say: say, takeBack: takeBack}
 	labelled := slices.ContainsFunc(mr.Labels, accepted)
 	yes, ignored := theYes(st.Labels)
@@ -609,7 +625,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		}
 		if st.AutoMergeBot || st.AutoMergeBy == "" {
 			if routine {
-				return weighRoutine(f, m, o, w, demoted, hand)
+				return weighRoutine(f, m, o, w, n, hand)
 			}
 			return nil, nil
 		}
@@ -621,7 +637,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		}
 		if routine {
 			say("label-ignored", "warn", fmt.Sprintf("labelled `workline:accepted` by %s, who may not push nor merge here: no yes, weighed as workline's own", who))
-			return weighRoutine(f, m, o, w, demoted, hand)
+			return weighRoutine(f, m, o, w, n, hand)
 		}
 		say("label-ignored", "warn", fmt.Sprintf("labelled `workline:accepted` by %s, who may not push nor merge here: no yes, nothing turned on", who))
 		return nil, nil

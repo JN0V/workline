@@ -3,22 +3,26 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
-	"github.com/JN0V/workline/internal/verdict"
 )
 
 // The merge policy's `normal` level (ADR-0042, amended): workline's own
-// routine merge requests merge with no person's yes — every commit
-// workline's own, checked by its tree, the line passed on the head with
-// every agent's review whole. Each such merge is recorded on the merge
-// request; a revert of one sends its kind back to a person's yes
-// (ADR-0026), in an issue a person closes to restore it.
+// routine merge requests merge with no person's yes. Workline's own is told
+// by the forge, never by what a commit says of itself: opened by the App
+// workline's token writes as, every push to its branch the App's, every
+// commit committed under its name and workline's own by its tree, every
+// page it changes a doc of the documentalist's that agents are not told to
+// read. The line passed on the head with every agent's review whole. Each
+// such merge is recorded on the merge request; a revert of one sends its
+// kind back to a person's yes (ADR-0026; demote.go).
 
 // MergeNormal is the merge policy's level where workline's own routine
 // merge requests need no person's yes (role.MergeLevels).
@@ -28,8 +32,9 @@ const MergeNormal = "normal"
 // is, never by their branch's name nor a trailer: the higher wins.
 const (
 	kindRecords = "records" // only the lines recording when docs were read
-	kindDerived = "derived" // derived blocks regenerated, and records
+	kindDerived = "derived" // derived blocks as their commands give them, and records
 	kindDocs    = "docs"    // doc pages a role wrote
+	kindAll     = "all"     // every kind: a revert that names nothing workline can find
 )
 
 // RoutineKinds are the kinds, from the narrowest.
@@ -38,71 +43,174 @@ var RoutineKinds = []string{kindRecords, kindDerived, kindDocs}
 // kindSays says what a kind's change is, for a person.
 var kindSays = map[string]string{
 	kindRecords: "it only records when docs were read",
-	kindDerived: "it regenerates derived blocks",
+	kindDerived: "it regenerates derived blocks, as their commands give them",
 	kindDocs:    "it changes doc pages a role wrote",
 }
 
-// revertWindow is how many commits of the base's history, from its tip,
-// are read for reverts: each is read once, its demotion kept in an issue;
-// mergeWindow, how many for the merge a revert quoting a title undoes.
-const (
-	revertWindow = 100
-	mergeWindow  = 1000
-)
-
-// commits are the last n commits of tip's history, every parent, newest
-// first, with their messages: a commit before its parents, whatever their
-// dates.
-func commits(repo, tip string, n int) ([]logged, error) {
-	out, err := git(repo, nil, "log", "--topo-order", "-n", strconv.Itoa(n), "--format=%H%x1f%B%x1e", tip)
-	if err != nil {
-		return nil, err
-	}
-	var all []logged
-	for _, rec := range strings.Split(out, "\x1e") {
-		if sha, msg, ok := strings.Cut(strings.TrimSpace(rec), "\x1f"); ok {
-			all = append(all, logged{sha, msg})
-		}
-	}
-	return all, nil
+// normal is what `normal` reads once a run: the App workline's token writes
+// as and the name its jobs commit with ("" a person's token: nothing is
+// workline's own), the pages agents are told to read, and the kinds
+// waiting for a person's yes again, each with the issue that keeps it.
+type normal struct {
+	app, committer string
+	steers         func(path string) bool
+	demoted        map[string]string
 }
 
 // routineCandidate says whether a merge request may be workline's own
 // routine one, at `normal`: from a role's branch of this repository
-// (`workline/<role>/<task>`), opened by workline — a bot, or the user
-// `follow`'s token writes as —, not a release tool's. Its commits, its
-// kind and its head's verdict are weighed after (weighRoutine).
-func routineCandidate(f forge.Forge, o FollowOptions, mr forge.MergeRequest) bool {
+// (`workline/<role>/<task>`), opened by workline's App, not a release
+// tool's. Who pushed, its commits, pages, kind and verdict are weighed
+// after (weighRoutine).
+func routineCandidate(o FollowOptions, n *normal, mr forge.MergeRequest) bool {
 	role, task, ok := strings.Cut(strings.TrimPrefix(mr.Branch, "workline/"), "/")
 	switch {
-	case o.Merge != MergeNormal, !mr.Here, !strings.HasPrefix(mr.Branch, "workline/"), !ok, role == "", task == "":
+	case n == nil, n.app == "", !mr.Here, !strings.HasPrefix(mr.Branch, "workline/"), !ok, role == "", task == "":
 		return false
 	case o.Release != nil && o.Release(mr.Branch):
 		return false
 	}
-	return mr.Bot || mr.Author != "" && mr.Author == forge.Self(f)
+	return mr.Author == n.app
 }
 
 // notOwn names the first commit of the branch, past base, that is not
-// workline's own as OwnCommit tells it — by its tree, never its trailer
-// alone —; "" when every one is.
-func notOwn(repo, baseTip, tip string) (string, error) {
-	out, err := git(repo, nil, "rev-list", "--reverse", baseTip+".."+tip)
+// workline's own: not committed under the name workline's jobs commit
+// with, or not workline's own by its tree (OwnCommit); "" when every one
+// is.
+func notOwn(repo, baseTip, tip, committer string) (string, error) {
+	out, err := git(repo, nil, "log", "--reverse", "--format=%H%x1f%cn", baseTip+".."+tip)
 	if err != nil {
 		return "", err
 	}
-	for _, c := range strings.Fields(out) {
-		if OwnCommit(repo, c, baseTip) == "" {
-			return commitSaid(repo, c), nil
+	for _, l := range strings.Split(out, "\n") {
+		c, name, ok := strings.Cut(l, "\x1f")
+		if !ok {
+			continue
+		}
+		if name != committer || OwnCommit(repo, c, baseTip) == "" {
+			return commitSaid(repo, c) + ", committed by " + name, nil
+		}
+	}
+	return "", nil
+}
+
+// agentNames are the files agents read before anything, by name, wherever
+// they are; a page one links to or imports (`@path`) is one agents are
+// told to read.
+var agentNames = []string{"agents.md", "claude.md", "gemini.md", "copilot-instructions.md"}
+
+// steersByName are words in a file's name that make it one agents follow:
+// a prompt, an instruction, a template.
+var steersByName = []string{"prompt", "instruction", "template"}
+
+var (
+	mdLink    = regexp.MustCompile(`\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)`)
+	refLink   = regexp.MustCompile(`(?m)^\s*\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)`)
+	importDoc = regexp.MustCompile(`(?m)(?:^|\s)@([\w./-]+)`)
+)
+
+// steering is, at tip, what says whether a page steers agents: an agent
+// file itself, a page one links to or imports — a folder linked, all of it
+// —, followed through the files they import, or a file named a prompt, an
+// instruction or a template.
+func steering(repo, tip string) (func(path string) bool, error) {
+	out, err := git(repo, nil, "ls-tree", "-r", "--name-only", tip)
+	if err != nil {
+		return nil, err
+	}
+	var queue []string
+	for _, p := range strings.Split(out, "\n") {
+		if slices.Contains(agentNames, strings.ToLower(path.Base(p))) {
+			queue = append(queue, p)
+		}
+	}
+	read := map[string]bool{}
+	linked := map[string]bool{}
+	for len(queue) > 0 && len(read) < 50 {
+		p := queue[0]
+		queue = queue[1:]
+		if read[p] {
+			continue
+		}
+		read[p] = true
+		linked[p] = true
+		text, ok := blob(repo, tip, p)
+		if !ok {
+			continue
+		}
+		dir := path.Dir(p)
+		add := func(target string, imported bool) {
+			if strings.Contains(target, "://") || strings.HasPrefix(target, "#") || strings.HasPrefix(target, "mailto:") {
+				return
+			}
+			target, _, _ = strings.Cut(target, "#")
+			target = strings.TrimPrefix(target, "/")
+			if target == "" {
+				return
+			}
+			at := path.Clean(path.Join(dir, target))
+			if strings.HasPrefix(at, "../") || at == ".." {
+				return
+			}
+			linked[at] = true
+			if imported {
+				queue = append(queue, at)
+			}
+		}
+		for _, m := range mdLink.FindAllStringSubmatch(text, -1) {
+			add(m[1], false)
+		}
+		for _, m := range refLink.FindAllStringSubmatch(text, -1) {
+			add(m[1], false)
+		}
+		for _, m := range importDoc.FindAllStringSubmatch(text, -1) {
+			add(m[1], true)
+		}
+	}
+	return func(p string) bool {
+		name := strings.ToLower(path.Base(p))
+		if slices.Contains(agentNames, name) || slices.ContainsFunc(steersByName, func(w string) bool { return strings.Contains(name, w) }) {
+			return true
+		}
+		for l := range linked {
+			if p == l || l == "." || strings.HasPrefix(p, l+"/") {
+				return true
+			}
+		}
+		return false
+	}, nil
+}
+
+// notAllowed names the first file the branch changes since it left base
+// that workline may not change with no person's yes: one that is no doc of
+// the documentalist's (its `docs` setting), not a doc page, or one agents
+// are told to read; "" when there is none.
+func notAllowed(repo, baseTip, tip string, isDoc, steers func(string) bool) (string, error) {
+	from, err := git(repo, nil, "merge-base", baseTip, tip)
+	if err != nil {
+		return "", err
+	}
+	files, err := git(repo, nil, "diff", "--name-only", "--no-renames", "-z", from, tip)
+	if err != nil {
+		return "", err
+	}
+	for _, p := range strings.Split(strings.TrimSuffix(files, "\x00"), "\x00") {
+		switch {
+		case p == "":
+		case isDoc == nil || !isDoc(p) || !docPage(p):
+			return p + ", no doc of the documentalist's", nil
+		case steers(p):
+			return p + ", which agents are told to read", nil
 		}
 	}
 	return "", nil
 }
 
 // routineKind is the kind of the branch's change since it left base:
-// records when it changes only the lines recording when docs were read,
-// derived when it changes derived blocks besides, docs else.
-func routineKind(repo, baseTip, tip string) (string, error) {
+// records when it changes only the lines recording when docs were read;
+// derived when it changes derived blocks besides, and regenerated says
+// each reads what its command gives on tip; docs else.
+func routineKind(repo, baseTip, tip string, regenerated func(docs []string) bool) (string, error) {
 	from, err := git(repo, nil, "merge-base", baseTip, tip)
 	if err != nil {
 		return "", err
@@ -111,7 +219,7 @@ func routineKind(repo, baseTip, tip string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	kind := kindRecords
+	var blocks []string
 	parts := strings.Split(strings.TrimSuffix(changes, "\x00"), "\x00")
 	for i := 0; i+1 < len(parts); i += 2 {
 		if parts[i] != "M" {
@@ -125,17 +233,61 @@ func routineKind(repo, baseTip, tip string) (string, error) {
 		switch {
 		case unrecorded(was) == unrecorded(now):
 		case underived(unrecorded(was)) == underived(unrecorded(now)):
-			kind = kindDerived
+			blocks = append(blocks, parts[i+1])
 		default:
 			return kindDocs, nil
 		}
 	}
-	return kind, nil
+	switch {
+	case len(blocks) == 0:
+		return kindRecords, nil
+	case regenerated != nil && regenerated(blocks):
+		return kindDerived, nil
+	}
+	return kindDocs, nil // derived blocks not as their commands give them
 }
 
-// underived is a doc with its derived blocks emptied.
+// underived is a doc with its derived blocks emptied, as the documentalist
+// reads them: a marker with no end of its own is no block, and the text
+// after it stays the doc's.
 func underived(doc string) string {
-	return derived.ReplaceAllString(doc, "<!-- workline:derive $1 --><!-- workline:end -->")
+	var b strings.Builder
+	last := 0
+	for _, blk := range derivedBlocks(doc) {
+		b.WriteString(doc[last:blk.start])
+		fmt.Fprintf(&b, "<!-- workline:derive %s --><!-- workline:end -->", blk.name)
+		last = blk.end
+	}
+	b.WriteString(doc[last:])
+	return b.String()
+}
+
+// regenerates says whether docs' derived blocks, at tip, read what their
+// commands give on tip's tree (o.Derive, the documentalist's `derive`
+// settings, run in a worktree of tip); false when it cannot be told.
+func regenerates(o FollowOptions, tip string, docs []string) bool {
+	if o.Derive == nil {
+		return false
+	}
+	tmp, err := os.MkdirTemp("", "workline-derive-")
+	if err != nil {
+		return false
+	}
+	defer os.RemoveAll(tmp)
+	dir := filepath.Join(tmp, "tree")
+	if _, err := git(o.Repo, nil, "worktree", "add", "-q", "--detach", dir, tip); err != nil {
+		return false
+	}
+	defer git(o.Repo, nil, "worktree", "remove", "--force", dir)
+	contents := map[string]string{}
+	for _, d := range docs {
+		text, ok := blob(o.Repo, tip, d)
+		if !ok {
+			return false
+		}
+		contents[d] = text
+	}
+	return o.Derive(dir, contents)
 }
 
 // weighed is a merge request as weigh read it, and how it acts on it.
@@ -152,9 +304,18 @@ type weighed struct {
 // yes to, at `normal`, and does what the policy says of it: auto-merge on
 // and the yes held on its head with no person's yes, the merge recorded on
 // it; or why it waits for a person's. It returns it when it is in line.
-func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, demoted map[string]string, hand map[string]kept) (*inLine, error) {
+func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *normal, hand map[string]kept) (*inLine, error) {
 	mr, st, tip, e := w.mr, w.st, w.tip, w.e
 	ours := st.AutoMerge && st.AutoMergeBot
+	waits := func(level, why string) (*inLine, error) {
+		if ours {
+			if err := w.takeBack(why + ": put the label to accept it"); err != nil {
+				return nil, err
+			}
+		}
+		w.say("waits-for-a-yes", level, why+": it waits for a person's yes, the label `workline:accepted`")
+		return nil, nil
+	}
 	if st.Draft {
 		if ours {
 			if err := w.takeBack("marked a draft"); err != nil {
@@ -166,31 +327,43 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, dem
 		w.say("draft", "", "workline's own, but a draft: nothing turned on")
 		return nil, nil
 	}
-	who, err := notOwn(o.Repo, w.baseTip, tip)
+	// Who pushed, as the forge says: a commit says anything of itself.
+	if st.Pushers == nil {
+		return waits("", "opened by workline, but who pushed to its branch the forge does not say")
+	}
+	for _, p := range st.Pushers {
+		if p != n.app {
+			who := "a hand the forge does not name"
+			if p != "" {
+				who = "@" + p
+			}
+			return waits("", fmt.Sprintf("opened by workline, but %s pushed to its branch", who))
+		}
+	}
+	who, err := notOwn(o.Repo, w.baseTip, tip, n.committer)
 	if err != nil {
 		return nil, err
 	}
 	if who != "" {
-		if ours {
-			if err := w.takeBack(who + " is not workline's own: put the label to accept it"); err != nil {
-				return nil, err
-			}
-		}
-		w.say("waits-for-a-yes", "", fmt.Sprintf("from workline's branch, but %s is not workline's own: it waits for a person's yes, the label `workline:accepted`", who))
-		return nil, nil
+		return waits("", fmt.Sprintf("from workline's branch, but %s is not workline's own", who))
 	}
-	kind, err := routineKind(o.Repo, w.baseTip, tip)
+	page, err := notAllowed(o.Repo, w.baseTip, tip, o.IsDoc, n.steers)
 	if err != nil {
 		return nil, err
 	}
-	if issue, ok := demoted[kind]; ok {
-		if ours {
-			if err := w.takeBack(kind + " waits for a person's yes since a revert: put the label to accept it"); err != nil {
-				return nil, err
-			}
-		}
-		w.say("waits-for-a-yes", "warn", fmt.Sprintf("workline's own %s (%s), but its %s merge requests wait for a person's yes since one was reverted (%s): the label `workline:accepted`", kind, kindSays[kind], kind, issue))
-		return nil, nil
+	if page != "" {
+		return waits("", "workline's own, but it changes "+page)
+	}
+	kind, err := routineKind(o.Repo, w.baseTip, tip, func(docs []string) bool { return regenerates(o, tip, docs) })
+	if err != nil {
+		return nil, err
+	}
+	issue, held := n.demoted[kind]
+	if all, ok := n.demoted[kindAll]; ok && !held {
+		issue, held = all, true
+	}
+	if held {
+		return waits("warn", fmt.Sprintf("workline's own %s (%s), but its %s merge requests wait for a person's yes since a revert (%s)", kind, kindSays[kind], kind, issue))
 	}
 	if !st.AutoMerge && st.AutoMergeAt != "" {
 		// The veto by turning auto-merge off: it stays off until a person's
@@ -231,7 +404,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, dem
 		w.say(rule, "warn", fmt.Sprintf("workline's own %s, but %s: no yes on its head, out of line", kind, v.why))
 		return nil, nil
 	}
-	why := fmt.Sprintf("workline's own %s — %s —, every commit workline's own, checked by its tree; its head's verdict passed, every agent's review whole", kind, kindSays[kind])
+	why := fmt.Sprintf("workline's own %s — %s —, opened and pushed by its App, every commit its own; its head's verdict passed, every agent's review whole", kind, kindSays[kind])
 	if err := m.Accept(tip, true, "with no person's yes: "+why); err != nil {
 		return nil, err
 	}
@@ -242,7 +415,7 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, dem
 	// The record, where a person sees it and the engine finds it again
 	// when a revert names this merge request.
 	t := forge.Target{Kind: "merge-request", ID: mr.ID}
-	body := fmt.Sprintf("**Merging with no person's yes**: the project's merge policy is `normal`, and this is workline's own %s: %s. Every commit is workline's own, checked by its tree, and the line passed on its head (%s), every agent's review whole. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
+	body := fmt.Sprintf("**Merging with no person's yes**: the project's merge policy is `normal`, and this is workline's own %s: %s. Opened and pushed by workline's App, every commit its own, and the line passed on its head (%s), every agent's review whole. To hold it, mark it a draft or turn auto-merge off. Reverted, workline's %s merge requests wait for a person's yes again.",
 		kind, kindSays[kind], short(tip), kind)
 	if err := f.Comment(t, body, forge.Marker("merge-alone="+kind)); err != nil {
 		return nil, err
@@ -263,137 +436,13 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, dem
 	return e, nil
 }
 
-// The ways a revert names what it reverts: git's own message, GitLab's
-// revert of a merge request, GitHub's revert pull request; and how a
-// merge on the base names its merge request: GitHub's squash or merge
-// subject, GitLab's merge commit.
-var (
-	revertsCommit  = regexp.MustCompile(`(?m)^This reverts commit ([0-9a-f]{7,40})\b`)
-	revertsRequest = regexp.MustCompile(`(?m)This reverts merge request !(\d+)\b`)
-	revertsPull    = regexp.MustCompile(`(?m)^Reverts (?:[\w.-]+/[\w.-]+)?#(\d+)\b`)
-	revertSubject  = regexp.MustCompile(`^Revert "(.*)"`)
-	squashSubject  = regexp.MustCompile(`\((?:#|!)(\d+)\)\s*$`)
-	mergeSubject   = regexp.MustCompile(`^Merge pull request #(\d+)\b`)
-	mergeRequestOf = regexp.MustCompile(`(?m)^See merge request \S*!(\d+)\b`)
-)
-
-// logged is a commit of the base's history and its message.
-type logged struct{ sha, msg string }
-
-// revertOf is the merge request commit r reverts, 0 when it names none
-// found, and whether r is a revert at all. Named in its message — git's
-// words naming the commit reverted, GitLab's or GitHub's naming the merge
-// request —, else found by the title it quotes: GitHub's own revert says
-// only `Revert "<title>"`. Among the merges with that title in older, the
-// commits older than r, newest first, the one r undoes exactly — the same
-// change, inverted — is taken, else the newest.
-func revertOf(repo string, r logged, older func() []logged) (int, bool) {
-	subject, _, _ := strings.Cut(r.msg, "\n")
-	if !revertSubject.MatchString(subject) && !strings.Contains(r.msg, "This reverts ") && !revertsPull.MatchString(r.msg) {
-		return 0, false
-	}
-	for _, re := range []*regexp.Regexp{revertsRequest, revertsPull} {
-		if m := re.FindStringSubmatch(r.msg); m != nil {
-			n, _ := strconv.Atoi(m[1])
-			return n, true
-		}
-	}
-	if m := revertsCommit.FindStringSubmatch(r.msg); m != nil {
-		if was, err := git(repo, nil, "log", "-1", "--format=%B", m[1]); err == nil {
-			if n, _ := requestOf(was); n > 0 {
-				return n, true
-			}
-		}
-	}
-	m := revertSubject.FindStringSubmatch(subject)
-	if m == nil {
-		return 0, true
-	}
-	if n, _ := requestOf(m[1]); n > 0 {
-		return n, true // `Revert "<title> (#N)"`
-	}
-	undone, first := "", 0
-	for _, c := range older() {
-		n, title := requestOf(c.msg)
-		if n == 0 || title != m[1] {
-			continue
-		}
-		if undone == "" {
-			undone = patchID(repo, r.sha, r.sha+"^")
-		}
-		if undone != "" && patchID(repo, c.sha+"^1", c.sha) == undone {
-			return n, true
-		}
-		if first == 0 {
-			first = n
-		}
-	}
-	return first, true
-}
-
-// patchID is the id git gives the change from a to b, whatever its
-// context lines; "" when it cannot be told.
-func patchID(repo, a, b string) string {
-	diff, err := git(repo, nil, "diff", a, b)
-	if err != nil || diff == "" {
-		return ""
-	}
-	out, err := gitIn(repo, diff+"\n", "patch-id", "--stable")
-	if err != nil {
-		return ""
-	}
-	id, _, _ := strings.Cut(out, " ")
-	return id
-}
-
-// requestOf is the merge request a merge's message names, 0 none, and its
-// title: GitHub's squash, `<title> (#N)`; GitHub's merge, `Merge pull
-// request #N …` and the title below; GitLab's merge, the title below and
-// `See merge request …!N`.
-func requestOf(msg string) (int, string) {
-	subject, body, _ := strings.Cut(msg, "\n")
-	subject = strings.TrimSpace(subject)
-	below := ""
-	for _, l := range strings.Split(body, "\n") {
-		if below = strings.TrimSpace(l); below != "" {
-			break
-		}
-	}
-	if m := squashSubject.FindStringSubmatchIndex(subject); m != nil {
-		n, _ := strconv.Atoi(subject[m[2]:m[3]])
-		return n, strings.TrimSpace(subject[:m[0]])
-	}
-	for _, m := range [][]string{mergeSubject.FindStringSubmatch(subject), mergeRequestOf.FindStringSubmatch(msg)} {
-		if m != nil {
-			n, _ := strconv.Atoi(m[1])
-			return n, below
-		}
-	}
-	return 0, ""
-}
-
-// remoteTip is base's tip on origin, fetched with its history.
-func remoteTip(repo, base string) (string, error) {
-	if _, err := git(repo, nil, "fetch", "-q", "origin", "refs/heads/"+base); err != nil {
-		return "", fmt.Errorf("%w: %v", forge.ErrUnreachable, err)
-	}
-	return git(repo, nil, "rev-parse", "FETCH_HEAD")
-}
-
-// demotedTitle is the issue that keeps a kind waiting for a person's yes.
-func demotedTitle(kind string) string {
-	return "workline: its " + kind + " merge requests wait for a person's yes again"
-}
-
-// ownNote finds, among a merge request's comments, the engine's one whose
-// marker starts with key — written by a bot, by self, the user the token
-// writes as, or by no one the forge names (the simulated forge's own) —:
-// the marker's value after key, and whether there is one. A person's
-// comment ending with a marker is theirs.
-func ownNote(notes []forge.Note, key, self string) (string, bool) {
+// ownNote finds, among a merge request's comments, the one the App wrote
+// whose marker starts with key: the marker's value after key, and whether
+// there is one. Anyone else's comment ending with a marker is theirs.
+func ownNote(notes []forge.Note, key, app string) (string, bool) {
 	for _, n := range notes {
 		last, engine := backlog.EngineMarker(n.Body)
-		if !engine || !n.Bot && n.Author != "" && n.Author != self {
+		if !engine || app == "" || n.Author != app {
 			continue
 		}
 		if v, ok := strings.CutPrefix(last, "<!-- workline:"+key); ok {
@@ -403,110 +452,19 @@ func ownNote(notes []forge.Note, key, self string) (string, bool) {
 	return "", false
 }
 
-// demotions reads which kinds of workline's routine merge requests wait for
-// a person's yes again. A revert on base of one merged with no person's yes
-// — the base's last revertWindow commits read, each revert once — demotes
-// its kind: an issue opened, kept open until a person closes it, and the
-// merge request told. It returns each kind demoted and the issue that
-// keeps it.
-func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map[string]string, error) {
-	b, ok := f.(forge.Backlog)
-	if !ok {
-		return nil, nil
-	}
-	// Every parent: a revert merged with a merge commit is on its second.
-	history, err := commits(o.Repo, baseTip, revertWindow)
-	if err != nil {
-		return nil, err
-	}
-	var deeper []logged // what a revert may name, read once if needed
-	var deepErr error
-	demoted := map[string]string{}
-	for i, r := range history {
-		older := func() []logged {
-			if deeper == nil && deepErr == nil {
-				deeper, deepErr = commits(o.Repo, baseTip, mergeWindow)
-			}
-			at := slices.IndexFunc(deeper, func(c logged) bool { return c.sha == r.sha })
-			if at < 0 {
-				return history[i+1:]
-			}
-			return deeper[at+1:]
-		}
-		n, revert := revertOf(o.Repo, r, older)
-		if deepErr != nil {
-			return nil, fmt.Errorf("the base's history, for what a revert undoes: %w", deepErr)
-		}
-		sha, msg := r.sha, r.msg
-		if revert && n == 0 {
-			// Said, never taken for a revert of nothing workline merged.
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "revert-unread", Where: short(sha),
-				Message: fmt.Sprintf("`%s` reverts something no merge request in the base's last %d commits is: if it undid one merged with no person's yes, its kind is not sent back to a person's yes", firstSentence(msg), mergeWindow)})
-		}
-		if n == 0 {
-			continue
-		}
-		t := forge.Target{Kind: "merge-request", ID: n}
-		notes, err := b.Notes(t)
-		switch {
-		case errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err):
-			return nil, err
-		case err != nil:
-			continue // no merge request of that number here
-		}
-		self := forge.Self(f)
-		kind, alone := ownNote(notes, "merge-alone=", self)
-		if !alone || !slices.Contains(RoutineKinds, kind) {
-			continue
-		}
-		if _, read := ownNote(notes, "merge-demoted="+sha, self); read {
-			continue // read already: its issue opened, closed since or not
-		}
-		where, subject := forge.MergeRef(f, n), firstSentence(msg)
-		body := fmt.Sprintf("**%s merged with no person's yes, and was reverted** by %s, `%s`. Its kind, %s — %s —, now waits for a person's yes, the label `workline:accepted`, on each merge request, as at `cautious`.\n\n**To let workline merge its %s merge requests alone again, close this issue.** Leave it open while you are not sure.",
-			where, short(sha), subject, kind, kindSays[kind], kind)
-		id, err := f.OpenIssue(demotedTitle(kind), body, forge.Marker("merge-demoted="+sha))
-		if err != nil {
-			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
-				return nil, err
-			}
-			// Held in this run all the same; read again at the next.
-			demoted[kind] = where + " reverted"
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "demotion-unrecorded", Level: "warn", Where: where,
-				Message: fmt.Sprintf("merged with no person's yes, reverted by %s: workline's %s merge requests wait for a person's yes in this run, but the issue that keeps it could not be opened: %s", short(sha), kind, forge.Said(err))})
-			continue
-		}
-		// Held from this run, whether the forge lists the issue yet or not.
-		issue := fmt.Sprintf("#%d", id)
-		demoted[kind] = issue
-		if err := f.Comment(t, fmt.Sprintf("**Reverted** by %s: workline's %s merge requests wait for a person's yes again, until a person closes %s.", short(sha), kind, issue),
-			forge.Marker("merge-demoted="+sha)); err != nil {
-			return nil, err
-		}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-demoted", Level: "warn", Where: where,
-			Message: fmt.Sprintf("merged with no person's yes, reverted by %s, `%s`: workline's %s merge requests wait for a person's yes again, until a person closes %s", short(sha), subject, kind, issue)})
-	}
-	open, err := b.Issues()
-	if err != nil {
-		return nil, err
-	}
-	for _, is := range open {
-		for _, kind := range RoutineKinds {
-			// The engine's: its title, and its marker in the body.
-			if is.Title == demotedTitle(kind) && strings.Contains(is.Body, "<!-- workline:merge-demoted=") && demoted[kind] == "" {
-				demoted[kind] = fmt.Sprintf("#%d", is.ID)
-			}
-		}
-	}
-	return demoted, nil
-}
-
 // alone sums up, for the run's summary, what merges with no person's yes
 // at `normal`, and what waits again since a revert.
-func alone(demoted map[string]string) string {
+func alone(n *normal) string {
+	if n.app == "" {
+		return "with no person's yes: none, the token is no App's"
+	}
 	var free, held []string
 	for _, kind := range RoutineKinds {
-		if issue, ok := demoted[kind]; ok {
+		issue, ok := n.demoted[kind]
+		if all, every := n.demoted[kindAll]; every && !ok {
+			issue, ok = all, true
+		}
+		if ok {
 			held = append(held, kind+" ("+issue+")")
 		} else {
 			free = append(free, kind)

@@ -1,25 +1,27 @@
 case: merge/normal-persons-commit-waits
-about: "Never alone with a commit not workline's own (#322): at `normal`, two of workline's branches. On one a person added a commit to the documentalist's; on the other a commit carries workline's trailer but changes the code — the trailer alone is never taken on trust, the tree must bear it out. Both wait for a person's label; nothing is turned on, no merge is recorded (ADR-0042, amended)."
+about: "Never alone with a commit not workline's own (#322): at `normal`, two pull requests workline's App opened, every push the App's as the forge says. On one, a commit not committed under the App's name sits on the documentalist's; on the other, a commit under the App's name carries workline's trailer but changes the code — the trailer is never taken alone, the tree must bear it out. Both wait for a person's label; nothing is turned on, no merge is recorded (ADR-0042, amended)."
 given:
   repo: documented
   config: {merge: {autonomy: normal}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && echo 'A person adds a line.' >> docs/tech/auth.md && git commit -qam 'docs: a line of my own' && git push -q origin workline/documentalist/suspect && git checkout -q main"
-    - "git checkout -qb workline/documentalist/derived && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'docs: regenerate the derived blocks' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/derived && git checkout -q main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && echo 'A person adds a line.' >> docs/tech/auth.md && git commit -qam 'docs: a line of my own' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "git checkout -qb workline/documentalist/derived && sed -i 's/3600/7200/' src/auth/token.go && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: regenerate the derived blocks' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/derived && git checkout -q main"
   forge:
     statuses:
       - {commit: "workline/documentalist/suspect", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
       - {commit: "workline/documentalist/derived", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
-      - {id: 9, branch: workline/documentalist/suspect, base: main, author: "workline-app[bot]", bot: true, labels: [], comments: []}
-      - {id: 12, branch: workline/documentalist/derived, base: main, author: "workline-app[bot]", bot: true, labels: [], comments: []}
+      - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/suspect, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+      - {id: 12, branch: workline/documentalist/derived, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/derived, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
 run: {follow: [--base, main]}
 expect:
   status: pass
   findings:
-    - {rule: waits-for-a-yes, where: "#9", message: "(\"docs: a line of my own\") is not workline's own: it waits for a person's yes"}
-    - {rule: waits-for-a-yes, where: "#12", message: "(\"docs: regenerate the derived blocks\") is not workline's own"}
+    - {rule: waits-for-a-yes, where: "#9", message: "(\"docs: a line of my own\"), committed by Fixture is not workline's own: it waits for a person's yes"}
+    - {rule: waits-for-a-yes, where: "#12", message: "(\"docs: regenerate the derived blocks\"), committed by workline-bot is not workline's own"}
   no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}]
   forge:
     merge-requests:

@@ -35,33 +35,81 @@ func gitRepo(t *testing.T) (string, func(args ...string) string, func(p, s strin
 
 // A routine merge request's kind is told by what its change is: only the
 // lines recording when docs were read, records; derived blocks besides,
-// derived; any other line of a doc, or a doc added, docs.
+// derived only when they read what their commands give; any other line of
+// a doc — text after a marker with no end of its own too —, or a doc
+// added, docs.
 func TestRoutineKind(t *testing.T) {
 	repo, run, write := gitRepo(t)
 	doc := "---\nsources: [a.go]\nchecked: 111\n---\n# A\n\n<!-- workline:derive cases -->3<!-- workline:end -->\n\nOne hour.\n"
+	unclosed := "---\nchecked: 111\n---\n# B\n\n<!-- workline:derive cases -->3\n\nOne hour.\n\n<!-- workline:derive more -->1<!-- workline:end -->\n"
 	write("doc.md", doc)
-	run("add", "doc.md")
+	write("unclosed.md", unclosed)
+	run("add", "doc.md", "unclosed.md")
 	run("commit", "-q", "-m", "docs: one hour")
 	base := run("rev-parse", "HEAD")
+	asGiven := func([]string) bool { return true }
+	notAsGiven := func([]string) bool { return false }
 	for _, c := range []struct {
-		name, doc, add, want string
+		name, file, doc, add string
+		regenerated          func([]string) bool
+		want                 string
 	}{
-		{"a record", strings.Replace(doc, "checked: 111\n", "checked: 111\njudged: 222\n", 1), "", kindRecords},
-		{"a derived block", strings.Replace(strings.Replace(doc, ">3<", ">4<", 1), "checked: 111\n", "checked: 111\njudged: 222\n", 1), "", kindDerived},
-		{"its text", strings.Replace(doc, "One hour.", "Two hours.", 1), "", kindDocs},
-		{"its checked", strings.Replace(doc, "checked: 111", "checked: 333", 1), "", kindDocs},
-		{"a doc added", doc, "new.md", kindDocs},
+		{"a record", "doc.md", strings.Replace(doc, "checked: 111\n", "checked: 111\njudged: 222\n", 1), "", asGiven, kindRecords},
+		{"a derived block as given", "doc.md", strings.Replace(strings.Replace(doc, ">3<", ">4<", 1), "checked: 111\n", "checked: 111\njudged: 222\n", 1), "", asGiven, kindDerived},
+		{"a derived block not as given", "doc.md", strings.Replace(doc, ">3<", ">4<", 1), "", notAsGiven, kindDocs},
+		{"a derived block, no command to tell", "doc.md", strings.Replace(doc, ">3<", ">4<", 1), "", nil, kindDocs},
+		{"text after an unclosed marker", "unclosed.md", strings.Replace(unclosed, "One hour.", "Every change approved.", 1), "", asGiven, kindDocs},
+		{"its text", "doc.md", strings.Replace(doc, "One hour.", "Two hours.", 1), "", asGiven, kindDocs},
+		{"its checked", "doc.md", strings.Replace(doc, "checked: 111", "checked: 333", 1), "", asGiven, kindDocs},
+		{"a doc added", "doc.md", doc, "new.md", asGiven, kindDocs},
 	} {
 		run("checkout", "-q", "-B", "work", base)
-		write("doc.md", c.doc)
+		write(c.file, c.doc)
 		if c.add != "" {
 			write(c.add, "New.\n")
 		}
 		run("add", ".")
 		run("commit", "-q", "--allow-empty", "-m", "docs: "+c.name)
-		got, err := routineKind(repo, base, run("rev-parse", "HEAD"))
+		got, err := routineKind(repo, base, run("rev-parse", "HEAD"), c.regenerated)
 		if err != nil || got != c.want {
 			t.Errorf("%s: %q, %v; want %q", c.name, got, err, c.want)
+		}
+	}
+}
+
+// The pages agents are told to read are never workline's to change alone:
+// an agent file, a page it links to, a folder it links to whole, a file it
+// imports and what that one links to, a prompt or a template by name.
+func TestSteering(t *testing.T) {
+	repo, run, write := gitRepo(t)
+	for p, s := range map[string]string{
+		"AGENTS.md":             "Read [the principles](docs/PRINCIPLES.md) first, then [the decisions](docs/adr/).\n\n[ref]: docs/spec/contract.md\n",
+		"CLAUDE.md":             "@team/RULES.md\n",
+		"team/RULES.md":         "See [style](style.md#words).\n",
+		"docs/guide.md":         "A guide.\n",
+		"docs/PRINCIPLES.md":    "1. People at both ends.\n",
+		"docs/adr/0001-x.md":    "An ADR.\n",
+		"docs/spec/other.md":    "Other.\n",
+		"docs/review-prompt.md": "A prompt.\n",
+	} {
+		if err := os.MkdirAll(filepath.Join(repo, filepath.Dir(p)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		write(p, s)
+	}
+	run("add", ".")
+	run("commit", "-q", "-m", "docs: agents read these")
+	steers, err := steering(repo, run("rev-parse", "HEAD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for p, want := range map[string]bool{
+		"AGENTS.md": true, "docs/PRINCIPLES.md": true, "docs/adr/0001-x.md": true, "docs/spec/contract.md": true,
+		"team/RULES.md": true, "team/style.md": true, "docs/review-prompt.md": true, "sub/claude.md": true,
+		"docs/guide.md": false, "docs/spec/other.md": false, "docs/adr-notes.md": false,
+	} {
+		if got := steers(p); got != want {
+			t.Errorf("%s steers agents: %v, want %v", p, got, want)
 		}
 	}
 }
@@ -99,7 +147,7 @@ func TestRevertOf(t *testing.T) {
 	if githubs == reverted {
 		t.Fatal("the revert's message was not rewritten")
 	}
-	history, err := commits(repo, "HEAD", 100)
+	history, err := commits(repo, "HEAD", "", 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,22 +179,67 @@ func TestRevertOf(t *testing.T) {
 	}
 }
 
-// The engine's own record on a merge request is a comment ending with its
-// marker, by a bot or by no one the forge names; a person's comment ending
-// with the same marker is theirs, and never read as one.
+// The engine's own record on a merge request is a comment of its App's
+// ending with its marker; anyone else's — a person's, another bot's, no
+// one named — is never read as one, nor a marker inside a sentence.
 func TestOwnNote(t *testing.T) {
 	notes := []forge.Note{
-		{Body: "Merging, I say.\n\n<!-- workline:merge-alone=docs -->", Author: "dana"},
-		{Body: "**Merging with no person's yes**\n\n<!-- workline:merge-alone=records -->", Author: "workline-app[bot]", Bot: true},
-		{Body: "Quoting <!-- workline:merge-demoted=abc --> in a sentence.", Author: ""},
+		{Body: "Merging, I say.\n\n<!-- workline:merge-alone=records -->", Author: "dana"},
+		{Body: "Me too.\n\n<!-- workline:merge-alone=records -->", Author: "claude[bot]", Bot: true},
+		{Body: "Nobody.\n\n<!-- workline:merge-alone=records -->"},
+		{Body: "Quoting <!-- workline:merge-alone=derived --> in a sentence.", Author: "workline-app[bot]", Bot: true},
+		{Body: "**Merging with no person's yes**\n\n<!-- workline:merge-alone=docs -->", Author: "workline-app[bot]", Bot: true},
 	}
-	if kind, ok := ownNote(notes, "merge-alone=", "workline-app[bot]"); !ok || kind != "records" {
-		t.Errorf("merge-alone: %q, %v; want records, the bot's", kind, ok)
+	if kind, ok := ownNote(notes, "merge-alone=", "workline-app[bot]"); !ok || kind != "docs" {
+		t.Errorf("merge-alone: %q, %v; want docs, the App's", kind, ok)
 	}
-	if kind, ok := ownNote(notes, "merge-alone=", "dana"); !ok || kind != "docs" {
-		t.Errorf("merge-alone, the token dana's: %q, %v; want docs, written as the token's user", kind, ok)
+	if _, ok := ownNote(notes, "merge-alone=", ""); ok {
+		t.Errorf("read with no App")
 	}
-	if _, ok := ownNote(notes, "merge-demoted=abc", ""); ok {
-		t.Errorf("a marker inside a sentence read as the engine's")
+}
+
+// Each revert is read once, however far back: the record on the forge says
+// the last base commit read, and the next run reads every commit past it —
+// a revert 120 commits down is found, and once read, never again.
+func TestRevertsPastTheRecordRead(t *testing.T) {
+	repo, run, write := gitRepo(t)
+	origin := filepath.Join(t.TempDir(), "origin.git")
+	if out, err := exec.Command("git", "init", "-q", "--bare", origin).CombinedOutput(); err != nil {
+		t.Fatalf("%s", out)
+	}
+	run("remote", "add", "origin", origin)
+	write("doc.md", "---\nchecked: 111\n---\nOne hour.\n")
+	run("add", "doc.md")
+	run("commit", "-q", "-m", "docs: one hour")
+	run("push", "-q", "origin", "main")
+	if err := writeRecord(repo, record{read: run("rev-parse", "HEAD")}); err != nil {
+		t.Fatal(err)
+	}
+	write("doc.md", "---\nchecked: 111\njudged: 222\n---\nOne hour.\n")
+	run("commit", "-q", "-am", "docs: record the docs judged (#9)")
+	run("revert", "--no-edit", "HEAD")
+	for i := 0; i < 120; i++ {
+		run("commit", "-q", "--allow-empty", "-m", "chore: and then")
+	}
+	run("push", "-q", "origin", "main")
+	state := filepath.Join(t.TempDir(), "forge.json")
+	if err := os.WriteFile(state, []byte(`{"issues": [], "merge-requests": [{"id": 9, "branch": "workline/documentalist/suspect", "base": "main", "closed": true, "labels": [],
+		"comments": [{"body": "Merging.\n\n<!-- workline:merge-alone=records -->", "author": "workline-bot", "bot": true}]}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := &forge.Fake{Path: state, Repo: repo}
+	tip := run("rev-parse", "HEAD")
+	res := &Result{}
+	demoted, err := demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res)
+	if err != nil || demoted[kindRecords] != "#1" {
+		t.Fatalf("120 commits past the record: %v, %v, %+v; want records demoted, #1", demoted, err, res.Findings)
+	}
+	rec, err := readRecord(repo)
+	if err != nil || rec.read != tip || len(rec.demoted) != 1 || rec.demoted[0].issue != 1 || rec.demoted[0].request != 9 {
+		t.Fatalf("the record written back: %+v, %v", rec, err)
+	}
+	res = &Result{}
+	if demoted, err = demotions(f, FollowOptions{Repo: repo}, tip, "workline-bot", res); err != nil || demoted[kindRecords] != "#1" || len(res.Findings) != 0 {
+		t.Errorf("read again: %v, %v, %+v; want #1 still held, nothing said, no second issue", demoted, err, res.Findings)
 	}
 }

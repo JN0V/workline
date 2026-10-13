@@ -35,6 +35,10 @@ type MergeState struct {
 	// Pushes are the heads its branch was pushed to, oldest first; nil when
 	// the forge does not say.
 	Pushes []Push `json:"pushes,omitempty"`
+	// Pushers are who pushed to its branch, each push, as the forge names
+	// them — GitHub's repository activity, GitLab's push events —; nil
+	// when the forge does not say (ADR-0042, `normal`).
+	Pushers []string `json:"pushers,omitempty"`
 }
 
 // Merger is a forge whose own auto-merge the merge policy turns on and
@@ -130,22 +134,135 @@ func (g *github) mergeToken() string {
 	return ""
 }
 
-// Self is who f's token writes as — on GitHub the App's bot, else the
-// token's user —, "" when the forge does not say: a merge request it
-// opened is workline's own, as one a bot opened (ADR-0042, `normal`).
-func Self(f any) string {
-	if s, ok := f.(interface{ self() (string, error) }); ok {
-		if who, err := s.self(); err == nil {
-			return who
-		}
+// App is the bot workline's token writes as — GitHub's App
+// (WORKLINE_APP), GitLab's project bot —, and the name its jobs commit
+// with; "" when the token is a person's, or the forge does not say. Only
+// what it opened, pushed and committed is workline's own work at
+// `normal` (ADR-0042): a person's token is the one agents use too.
+func App(f any) (login, committer string, err error) {
+	if a, ok := f.(interface {
+		app() (string, string, error)
+	}); ok {
+		return a.app()
 	}
-	return ""
+	return "", "", nil
 }
 
-func (g *github) self() (string, error) { return g.me() }
+// app: the App the workflow names (WORKLINE_APP), whose jobs commit as
+// it; none with a person's token.
+func (g *github) app() (string, string, error) {
+	if app := strings.TrimSpace(os.Getenv("WORKLINE_APP")); app != "" {
+		return app + "[bot]", app + "[bot]", nil
+	}
+	return "", "", nil
+}
 
-// self: the simulated forge's token's user.
-func (f *Fake) self() (string, error) { return fakeBot, nil }
+// app: the token's user when GitLab says it is a bot (a project or group
+// access token's); the template's jobs commit as "workline"
+// (ci/gitlab/workline.gitlab-ci.yml).
+func (g *gitlab) app() (string, string, error) {
+	out, err := g.api("user")
+	if err != nil {
+		return "", "", err
+	}
+	var u struct {
+		Username string `json:"username"`
+		Bot      bool   `json:"bot"`
+	}
+	if err := decode(out, &u); err != nil {
+		return "", "", err
+	}
+	if !u.Bot && !botName.MatchString(u.Username) {
+		return "", "", nil
+	}
+	return u.Username, "workline", nil
+}
+
+// app: the simulated forge's token's user, committing under its name.
+func (f *Fake) app() (string, string, error) { return fakeBot, fakeBot, nil }
+
+// closing: the issue's last `closed` event, its actor's write access read
+// as LabelEvents reads it.
+func (g *github) closing(id int) (LabelEvent, bool, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/events?per_page=100", id),
+		"--jq", `.[] | select(.event == "closed") | {author: (.actor.login // ""), bot: (.actor.type == "Bot"), created: .created_at}`)
+	if err != nil {
+		return LabelEvent{}, false, err
+	}
+	closed, err := lines[LabelEvent](out)
+	if err != nil || len(closed) == 0 {
+		return LabelEvent{}, false, err
+	}
+	e := closed[len(closed)-1]
+	if e.Author != "" && !e.Bot {
+		if e.Writer, err = g.writer(e.Author); err != nil {
+			return LabelEvent{}, false, err
+		}
+	}
+	return e, true, nil
+}
+
+// closing: the issue's last state event closing it, by whom, a Developer
+// or above writing.
+func (g *gitlab) closing(id int) (LabelEvent, bool, error) {
+	out, err := g.api("--paginate", path(Target{Kind: "issue", ID: id})+"/resource_state_events?per_page=100")
+	if err != nil {
+		return LabelEvent{}, false, err
+	}
+	found, err := pages[struct {
+		State   string `json:"state"`
+		Created string `json:"created_at"`
+		User    *struct {
+			Username string `json:"username"`
+		} `json:"user"`
+	}](out)
+	if err != nil {
+		return LabelEvent{}, false, err
+	}
+	var e LabelEvent
+	ok := false
+	for _, s := range found {
+		if s.State == "closed" {
+			e, ok = LabelEvent{Note: Note{Created: s.Created}}, true
+			if s.User != nil {
+				e.Author, e.Bot = s.User.Username, botName.MatchString(s.User.Username)
+			}
+		}
+	}
+	if ok && e.Author != "" {
+		if e.Insider, err = g.insider(e.Author); err != nil {
+			return LabelEvent{}, false, err
+		}
+		e.Writer = !e.Bot && g.members[e.Author] >= developer
+	}
+	return e, ok, nil
+}
+
+// closing: as the file says who closed it (`closing`).
+func (f *Fake) closing(id int) (LabelEvent, bool, error) {
+	s, err := f.load()
+	if err != nil {
+		return LabelEvent{}, false, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil || !it.Closed || it.Closing == nil {
+		return LabelEvent{}, false, err
+	}
+	return *it.Closing, true, nil
+}
+
+// Closing is who closed an issue last, as the forge says: a LabelEvent's
+// Author, Bot and Writer; ok false when it is open, or the forge does not
+// say. A demotion is lifted only by a person who may push and merge
+// (ADR-0042, `normal`).
+func Closing(f any, id int) (who LabelEvent, ok bool, err error) {
+	if c, can := f.(interface {
+		closing(id int) (LabelEvent, bool, error)
+	}); can {
+		return c.closing(id)
+	}
+	return LabelEvent{}, false, nil
+}
 
 // Every forge with an auto-merge workline speaks is a Merger; the local
 // forge has none.

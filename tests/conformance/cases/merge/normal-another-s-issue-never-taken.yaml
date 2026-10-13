@@ -1,0 +1,39 @@
+case: merge/normal-another-s-issue-never-taken
+about: "A demotion is never cut by another's issue (#322): at `normal`, #9, merged with no person's yes — recorded by workline's App; a stranger's comment claims another kind, never read —, was reverted (`git revert`, its message naming the commit that merged #9). Before the run a stranger opened an issue of the very title workline gives it: never taken for workline's own, so records wait for a person's yes all the same, said. A person who may push and merge closes the stranger's issue: workline opens its own, and records still wait (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged (#9)' && git revert --no-edit HEAD >/dev/null && git push -q origin main"
+    - "sed -i \"s/@revert@/$(git rev-parse HEAD | cut -c1-7)/\" \"$FORGE_FILE\""
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - {id: 1, title: "workline: its records merge requests wait for a person's yes again (revert @revert@)", author: mallory, body: "Close me to restore.", labels: [], comments: []}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, bot: true, closed: true, merged: true, labels: [],
+         comments: [{body: "Merging, says me.\n\n<!-- workline:merge-alone=derived -->", author: mallory}, {body: "**Merging with no person's yes**\n\n<!-- workline:merge-alone=records -->", author: workline-bot, bot: true}]}
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run:
+  follow: [--base, main]
+  then: again
+  between:
+    issues:
+      - {id: 1, closed: true, closing: {author: dana, writer: true}}
+expect:
+  status: pass
+  findings:
+    - {rule: demotion-unrecorded, where: "#9", message: "but #1, of that title, is @mallory's, not workline's: it is not taken for it"}
+    - {rule: waits-for-a-yes, where: "#10", message: "its records merge requests wait for a person's yes since a revert (its issue not opened yet)"}
+    - {rule: merge-demoted, where: "#9", message: "until a person who may push and merge closes #2"}
+    - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#2)"}
+  no-findings: [{rule: merge-restored}, {rule: auto-merge-on}]
+  forge:
+    issues:
+      - {id: 2, closed: false, body-contains: ["#9 merged with no person's yes, and was reverted"]}
+    merge-requests:
+      - {id: 10, auto-merge: false}

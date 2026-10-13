@@ -1,5 +1,5 @@
 case: merge/cmd-normal-routine-merges-alone
-about: "With `forge: cmd:<command>` (#322): at `normal`, workline's own records merge request, opened by a bot, unlabelled, its head's verdict passed: the policy asks the command to note it (`comment`, the merge recorded), to hold the yes on its head (`accept`) and to turn auto-merge on (`auto-merge`), as on GitHub and GitLab — no operation beyond those `cautious` uses (ADR-0042, amended)."
+about: "With `forge: cmd:<command>` (#322): at `normal`, workline's own records merge request — opened by the App the command names (`app`), every push the App's (`merge-state`'s `pushers`) —, unlabelled, its head's verdict passed: the policy asks the command to note it (`comment`, the merge recorded), to hold the yes on its head (`accept`) and to turn auto-merge on (`auto-merge`), as on GitHub and GitLab (ADR-0042, amended)."
 given:
   repo: documented
   config:
@@ -7,7 +7,7 @@ given:
     merge: {autonomy: normal}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && GIT_COMMITTER_NAME='workline-app[bot]' git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
 run: {follow: [--base, main]}
 expect:
   status: pass

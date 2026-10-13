@@ -1,19 +1,21 @@
 case: merge/normal-release-never-alone
-about: "A release never alone (#322): at `normal`, the documentalist's release docs fix — doc text the role wrote, its commits its own, the line passed — merges with no label, first in line; the release tool's pull request, green, waits for a person's label: merging it is the decision to release, said in the summary (ADR-0017, ADR-0042)."
+about: "A release never alone (#322): at `normal`, the documentalist's release docs fix — doc text the role wrote, opened, pushed and committed by workline's App, the line passed — merges with no label, first in line; the release tool's pull request, green, opened by the same App, waits for a person's label: merging it is the decision to release, said in the summary (ADR-0017, ADR-0042)."
 given:
   repo: documented
   config: {merge: {autonomy: normal}}
   setup:
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
-    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
-    - "git checkout -qb workline/documentalist/release && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
+    - "git checkout -qb release-please--branches--main && echo '1.1.0' > version.txt && git add version.txt && GIT_COMMITTER_NAME=workline-bot git commit -qm 'chore(main): release 1.1.0' && git push -q origin release-please--branches--main && git checkout -q main"
+    - "git checkout -qb workline/documentalist/release && sed -i 's/one hour/one hour, renewed/' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/release && git checkout -q main"
   forge:
     statuses:
       - {commit: "release-please--branches--main", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
       - {commit: "workline/documentalist/release", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
     merge-requests:
-      - {id: 10, branch: release-please--branches--main, base: main, author: "workline-app[bot]", bot: true, labels: [], comments: []}
-      - {id: 11, branch: workline/documentalist/release, base: main, author: "workline-app[bot]", bot: true, labels: [], comments: []}
+      - {id: 10, branch: release-please--branches--main, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: release-please--branches--main, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+      - {id: 11, branch: workline/documentalist/release, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/release, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
 run: {follow: [--base, main], summary: true}
 expect:
   status: pass
