@@ -27,6 +27,38 @@ func TestSection(t *testing.T) {
 	}
 }
 
+// The anchors GitHub gives, as it renders this repository's docs and as
+// github-slugger's own fixtures record them (test/fixtures.json, v2.0.0),
+// given in order to one slugger: a repeated anchor takes -1, -2…, skipping
+// one an earlier heading took.
+func TestAnchorsAsGitHubGivesThem(t *testing.T) {
+	seen := map[string]int{}
+	for _, c := range []struct{ heading, want string }{
+		// As GitHub renders this repository's own docs (#328):
+		{"1–3. The range, the rules, the record", "13-the-range-the-rules-the-record"},
+		{"Reviewer — a run on code", "reviewer--a-run-on-code"},
+		{"[0.26.0](https://github.com/JN0V/workline/compare/v0.25.0...v0.26.0) (2026-10-13)", "0260-2026-10-13"},
+		// github-slugger's fixtures:
+		{"heading with a - dash", "heading-with-a---dash"},
+		{"heading with an _ underscore", "heading-with-an-_-underscore"},
+		{"exchange.bind_headers(exchange, routing [, bindCallback])", "exchangebind_headersexchange-routing--bindcallback"},
+		{"apostrophe’s should be trimmed", "apostrophes-should-be-trimmed"},
+		{"en–dash", "endash"},
+		{"I ♥ unicode", "i--unicode"},
+		{"😄 - an emoji", "---an-emoji"},
+		{"Привет non-latin 你好", "привет-non-latin-你好"},
+		{"echo", "echo"},
+		{"echo", "echo-1"},
+		{"echo 1", "echo-1-1"},
+		{"echo-1", "echo-1-2"},
+		{"echo", "echo-2"},
+	} {
+		if got := uniqueSlug(seen, c.heading); got != c.want {
+			t.Errorf("%q gives #%s, GitHub gives #%s", c.heading, got, c.want)
+		}
+	}
+}
+
 // A source naming a heading gone is not read as an empty section: the weekly
 // sample says which heading, never judging a `checked` against nothing (#239).
 func TestSourcesAtSaysAHeadingGone(t *testing.T) {
