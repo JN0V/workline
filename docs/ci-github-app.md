@@ -50,9 +50,14 @@ gh secret set WORKLINE_APP_PRIVATE_KEY --env workline-app -R OWNER/REPO < app.pe
 gh secret delete WORKLINE_APP_PRIVATE_KEY -R OWNER/REPO    # the repository's own
 ```
 
-Without an App, the jobs use their own token: the checks of a fix wait
-for someone to approve them, and gardening needs Settings → Actions →
-General → "Allow GitHub Actions to create and approve pull requests".
+- **Environments** need a public repository, or GitHub Pro, Team or
+  Enterprise for a private one. Without, the key stays a repository
+  secret, in reach of any branch's workflow, the merge policy's statuses
+  with it.
+- **Without an App**, the jobs use their own token: the checks of a fix
+  wait for someone to approve them, and gardening needs Settings →
+  Actions → General → "Allow GitHub Actions to create and approve pull
+  requests".
 
 ## Why an environment
 
