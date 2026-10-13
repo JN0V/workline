@@ -1,0 +1,24 @@
+case: merge/cautious-routine-waits-for-a-yes
+about: "`cautious` unchanged (#322): the same records pull request of workline's as `normal` merges alone — opened, pushed and committed by its App, its head's verdict passed; with `merge: {autonomy: cautious}`, nobody labelled it, so nothing is turned on and nothing is said of it: every pull request waits for a person's yes (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/suspect && sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs judged' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/suspect && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "workline/documentalist/suspect", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/suspect, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/suspect, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: auto-merge-on}, {rule: merged-at-once}, {rule: waits-for-a-yes}]
+  summary-file: ["merge policy (cautious): none in line into main"]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: false, comments: 0}
+    statuses:
+      - {commit: "workline/documentalist/suspect", name: workline/accepted, absent: true}

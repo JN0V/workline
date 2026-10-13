@@ -165,6 +165,15 @@ func followSettings(o *engine.FollowOptions) error {
 		return err
 	}
 	o.IsDoc, o.Release = s.IsDoc, rs.IsBranch
+	o.Derive = func(dir string, docs map[string]string) bool {
+		findings, stale := documentalist.Derive(dir, docs, s.Derive, false)
+		for _, f := range findings {
+			if f.Level != "" { // a command unknown or failing, a block unclosed
+				return false
+			}
+		}
+		return len(stale) == 0
+	}
 	return nil
 }
 

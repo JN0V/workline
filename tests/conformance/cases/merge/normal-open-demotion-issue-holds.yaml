@@ -1,0 +1,30 @@
+case: merge/normal-open-demotion-issue-holds
+about: "An open demotion issue of the App's holds, whatever a mark says (#322): at `normal`, #1, an issue workline's App opened when a records pull request it merged alone was reverted, is still open. A mark on main says nothing is held — whoever wrote it —: the forge records who opened #1, and that cannot be faked, so records still wait for a person's yes: #10 waits. An issue of the same title opened by someone else holds nothing and lifts nothing (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    issues:
+      - {id: 1, title: "workline: its records merge requests wait for a person's yes again (revert 1a2b3c4)", author: workline-bot, labels: [], comments: [],
+         body: "**#7 merged with no person's yes, and was reverted** by 1a2b3c4.\n\n<!-- workline:merge-demoted=1a2b3c4d -->"}
+      - {id: 2, title: "workline: its docs merge requests wait for a person's yes again (revert 5e6f7a8)", author: mallory, labels: [], comments: [],
+         body: "Held, says me.\n\n<!-- workline:merge-demoted=5e6f7a8b -->"}
+    merge-requests:
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "#10", message: "its records merge requests wait for a person's yes since a revert (#1)"}
+  no-findings: [{rule: auto-merge-on, where: "#10"}, {rule: merge-record-lost}]
+  summary-file: ["with no person's yes: workline's own merge requests, derived, docs; waiting for a person's yes again since a revert: records (#1)"]
+  forge:
+    merge-requests:
+      - {id: 10, auto-merge: false}

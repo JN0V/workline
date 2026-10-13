@@ -79,10 +79,12 @@ its evaluation in
   `task-waits-for-its-merge-request`, `parts-go-while-suspect-waits`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
 - **People's pull requests settled on its own lines**: `persons-branch*`.
-- **The merge policy**, `cautious`
+- **The merge policy**, `cautious`, and `normal` for workline's own
+  routine pull requests
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
   the forge merges what a person accepted, kept up to date, the yes taken
-  back on a later push: the
+  back on a later push; at `normal`, workline's own records, derived
+  blocks and docs with no yes, each recorded, a revert demoting its kind: the
   [merge cases](../../../tests/conformance/cases/merge), routing's
   `forged-merge-is-judged`, `merge-of-another-branch-is-judged`.
 - **A release tool's pull request held as the release**, its fix on a
@@ -151,9 +153,9 @@ its evaluation in
    nightly's two faults, with a second task's tokens. No issue yet.
 9. **The merge policy, what is left**: the GitHub App's key kept out of a
    pull request's own run
-   ([#331](https://github.com/JN0V/workline/issues/331)); routine pull
-   requests merged with no label, at `normal`
-   ([#322](https://github.com/JN0V/workline/issues/322), parked).
+   ([#331](https://github.com/JN0V/workline/issues/331)); at `normal`,
+   agents' pull requests, and its criteria to be offered
+   ([#322](https://github.com/JN0V/workline/issues/322), second part).
 10. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.

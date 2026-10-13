@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: f7514347
+checked: 59210763
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -85,7 +85,11 @@ comment is not posted twice. A target is `{"kind": "issue" | "merge-request",
 | `close-merge-request` | `branch`, `body`, `marker` | closes the merge request open from `branch`, after commenting as `comment` does; none open changes nothing, and the branch stays. Asked by `workline follow --gardening` for a role's own merge request with nothing left to merge (ADR-0034) | `{}` |
 | `merge-request-branch` | `id` | the branch a merge request comes from, the branch it goes into, whether it lives in this repository rather than a fork, its title and its description | `{branch, base, here, title, body}`; without `base`, a fix for a release pull request goes in a comment (ADR-0017); `title` and `body` are what a review reads as the author's testimony (ADR-0020) |
 | `merge-requests` | | lists the open merge requests, each with where it comes from and goes, and who opened it. Asked by `workline follow` when the documentalist's `update-branches` is `conflicts` (ADR-0041): those into the branch that moved are a person's to settle, a head branch another goes into is a long-lived one | `{merge-requests: [{id, branch, base, here, title, author, bot, head, labels, draft, auto-merge}]}` — `here` as for `merge-request-branch`; `bot` true for one an app or a token's user opened, left to its bot; `head` the ref the forge keeps a fork's head under in this repository (`refs/pull/<n>/head`), left out: a fork's is said unread; `labels`, `draft`, `auto-merge` (on) what the merge policy weighs first (ADR-0042); a command that does not know it answers an error, and the run says so |
-| `merge-state` | `id`, `branch` | what the merge policy weighs of an open merge request (ADR-0042) | `{head, draft, auto-merge, auto-merge-at, auto-merge-by, auto-merge-bot, checks, label-events, pushes}` — `auto-merge-at` when auto-merge was last turned on, on now or not; `auto-merge-bot` true when a bot turned it on; `checks` its head's, `success`, `pending` or `failure`, left out when unknown; `label-events` as `label-events` answers them, left out: no one's yes is read; `pushes` `[{head, at}]`, each head pushed and when, oldest first, left out: the commits' own dates are read. An error answered: said, the merge request left as it is |
+| `merge-state` | `id`, `branch` | what the merge policy weighs of an open merge request (ADR-0042) | `{head, draft, auto-merge, auto-merge-at, auto-merge-by, auto-merge-bot, checks, label-events, pushes, pushers}` — `auto-merge-at` when auto-merge was last turned on, on now or not; `auto-merge-bot` true when a bot turned it on; `checks` its head's, `success`, `pending` or `failure`, left out when unknown; `label-events` as `label-events` answers them, left out: no one's yes is read; `pushes` `[{head, at}]`, each head pushed and when, oldest first, left out: the commits' own dates are read; `pushers`, who pushed to its branch, each push, as the forge names them, left out: nothing is workline's own at `normal`. An error answered: said, the merge request left as it is |
+| `app` | | the bot the token writes as, and the name its jobs commit with: only what it opened, pushed and committed is workline's own at `normal` (ADR-0042) | `{login, committer}`; `{}` for a person's token, and nothing merges with no person's yes |
+| `closing` | `id` | who closed the issue last: a demotion at `normal` is lifted only by a person who may push and merge | `{author, bot, writer}`; `{}` when open or not said: the demotion holds |
+| `mark` | `commit`, `text` | keeps on the base commit, where only the App writes, that the merge policy read reverts up to it, with `text` (the issues held) | `{}`; an error answered: said, read again next run |
+| `marked` | `commit` | the mark the App kept on the commit, never one anyone else set | `{text}`; `{}` none; a command that knows neither: nothing merges alone at `normal` |
 | `auto-merge` | `id`, `branch`, `head`, `on` | turns the forge's own auto-merge on for the merge request at `head`, or off; off when off changes nothing | `{merged}` — true when the forge merged it at once, its rules met already; an error answered: said, nothing turned on |
 | `guarded` | `base` | whether a push after a person's yes is held until `follow` takes the yes back (ADR-0042) | `{why}` — empty when held; an error answered: said, nothing turned on |
 | `accept` | `head`, `ok`, `why` | marks the head accepted or not, where the forge needs it to hold a yes on that head (GitHub's required status); one that needs none does nothing | `{}` |
@@ -117,7 +121,8 @@ weekly sample written, a person's pull request merged with its base
 (`merge-requests`), a forge failing (`blocked-external`) and refusing
 (`block`); merge/cmd-accepted-turns-auto-merge-on plugs another
 (fixtures/forges/merging.sh) answering `merge-state`, `auto-merge`,
-`guarded` and `verdict`.
+`guarded` and `verdict`; merge/cmd-normal-routine-merges-alone, a third
+(fixtures/forges/merging-routine.sh), `app`, `pushers`, `mark` and `marked` besides.
 The Forgejo sample, which knows neither yet, was run against a mock of the API only
 (ci/forgejo/workline_forge_test.go: its labels, `all-issues` over two
 pages, a pull request left out, `comments` with their authors,

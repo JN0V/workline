@@ -199,7 +199,8 @@ Run when the default branch moves (CI's `follow` job,
   merged in (`merged`); any other is left, named (`not-merged`)
   ([when the base moves](../roles/documentalist/docs/follow.md)).
 - **The [merge policy](merge-policy.md)**, with `merge:`: auto-merge on
-  for what a person accepted, the first in line brought up to date.
+  for what a person accepted — at `normal`, workline's own routine work
+  too —, the first in line brought up to date.
 - Options: `--base` (default: the branch checked out), `--forge`,
   `--repo`, `--json`, `--summary`; `--verdict <file>`, a head's verdict
   `route --verdict` wrote, kept first (`--verdict-only`: nothing else).

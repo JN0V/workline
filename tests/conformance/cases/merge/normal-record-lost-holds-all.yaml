@@ -1,0 +1,36 @@
+case: merge/normal-record-lost-holds-all
+about: "With no record, nothing merges alone until a person says (#322): at `normal`, no mark of workline's App (`workline/merge-read`) on the base's last commits — the first run at `normal`, a mark lost, `follow` not run for long; a mark someone else set on main is never read. Which reverts were read is not known, so every kind of workline's own merge requests waits for a person's yes, in an issue the App opens: a records pull request, #10, waits. A person who may push and merge closes the issue: the next run, the App's mark on main now, merges #10 alone (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, description: "reverts read; held:", by: mallory}
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run:
+  follow: [--base, main]
+  then: again
+  between:
+    issues:
+      - {id: 1, closed: true, closing: {author: dana, writer: true}}
+expect:
+  status: pass
+  findings:
+    - {rule: merge-record-lost, message: "which reverts were read is not known, so every kind of its own merge requests wait for a person's yes, until a person who may push and merge closes #1"}
+    - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#1)"}
+    - {rule: merge-restored, where: "#1", message: "closed by @dana"}
+    - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own records"}
+  forge:
+    issues:
+      - {id: 1, closed: true, body-contains: ["cannot tell which reverts it read", "close this issue"]}
+      - {id: 2, absent: true}
+    merge-requests:
+      - {id: 10, auto-merge: true}
+    statuses:
+      - {commit: main, name: workline/merge-read, state: success, by: workline-bot, description: "reverts read; held:"}

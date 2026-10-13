@@ -1,0 +1,30 @@
+case: merge/normal-revert-unread-said
+about: "A revert workline cannot tie to a merge request fails closed (#322, principle 12): at `normal`, main holds `Revert \"…\"` of a commit pushed straight to it, which no merge request names — a rebase merge, an edited squash message, an undo by hand look the same. It may have undone one merged with no person's yes, so `workline follow` says it and sends every kind of its own merge requests back to a person's yes, in an issue, until a person says: the next records pull request waits (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "echo note > note.txt && git add note.txt && git commit -qm 'chore: a note pushed straight to main' && git revert --no-edit HEAD >/dev/null && git commit -q --amend -m 'Revert \"chore: a note pushed straight to main\"' && git push -q origin main"
+    - "git checkout -qb workline/documentalist/stale && sed -i '/^checked:/a judged: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: record the docs read again' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/stale && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main~2", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/stale", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 10, branch: workline/documentalist/stale, base: main, author: workline-bot, bot: true, labels: [], comments: [],
+         pushes: [{head: workline/documentalist/stale, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: revert-unread, message: "`Revert \"chore: a note pushed straight to main\"` reverts something workline cannot tie to a merge request: every kind"}
+    - {rule: merge-demoted, message: "every kind of its own merge requests wait for a person's yes again, until a person who may push and merge closes #1"}
+    - {rule: waits-for-a-yes, where: "#10", message: "since a revert (#1)"}
+  no-findings: [{rule: auto-merge-on}]
+  summary-file: ["with no person's yes: workline's own merge requests, none; waiting for a person's yes again since a revert: records (#1), derived (#1), docs (#1)"]
+  forge:
+    issues:
+      - {id: 1, closed: false, body-contains: ["names no merge request workline can find", "close this issue"]}
+    merge-requests:
+      - {id: 10, auto-merge: false}

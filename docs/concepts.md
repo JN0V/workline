@@ -93,8 +93,9 @@ best available, said in the verdict
 
 - People state the need and accept the result; workline never approves.
   With the project's [merge policy](merge-policy.md), it turns the
-  forge's auto-merge on for what a person accepted, a label; else the
-  person merges.
+  forge's auto-merge on for what a person accepted, a label — at
+  `normal`, for workline's own routine work too, each merge recorded;
+  else the person merges.
 - What a role cannot settle is written where a person looks — an issue, a
   comment, a label — with what to do.
 - A **parent** — a need the product owner split into parts, each an issue

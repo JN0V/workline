@@ -271,13 +271,34 @@ func (c *command) ListMergeRequests() ([]MergeRequest, error) {
 }
 
 // MergeState asks merge-state: {head, draft, auto-merge, auto-merge-at,
-// auto-merge-by, auto-merge-bot, checks, label-events, pushes}
+// auto-merge-by, auto-merge-bot, checks, label-events, pushes, pushers}
 // (docs/spec/forge-command.md). A command that does not know it refuses
 // it, and the merge policy says so.
 func (c *command) MergeState(mr MergeRequest) (MergeState, error) {
 	var st MergeState
 	err := c.call("merge-state", map[string]any{"id": mr.ID, "branch": mr.Branch}, &st)
 	return st, err
+}
+
+// app asks app: {}, answered {login, committer} — the bot the token
+// writes as, and the name its jobs commit with; {} for a person's token.
+func (c *command) app() (string, string, error) {
+	var a struct {
+		Login     string `json:"login"`
+		Committer string `json:"committer"`
+	}
+	err := c.call("app", map[string]any{}, &a)
+	return a.Login, a.Committer, err
+}
+
+// closing asks closing: {id}, answered {author, bot, writer} — who closed
+// the issue last —, {} when it is open or the command does not say.
+func (c *command) closing(id int) (LabelEvent, bool, error) {
+	var e LabelEvent
+	if err := c.call("closing", map[string]any{"id": id}, &e); err != nil {
+		return LabelEvent{}, false, err
+	}
+	return e, e.Author != "", nil
 }
 
 // Guarded asks guarded: {base}, answered {why} — "" when the forge holds a
