@@ -68,5 +68,7 @@ routing:
 
 # The forge merges what a person accepted (ADR-0042): `workline:accepted` on
 # a pull request, its head judged, and `main` requiring `workline/accepted`
-# from the App (docs/merge-policy.md).
-merge: {autonomy: cautious}
+# from the App (docs/merge-policy.md). At `normal`, workline's own routine
+# pull requests (records, derived blocks, docs) merge with no label; the
+# App's key is out of a pull request's run (ADR-0044).
+merge: {autonomy: normal}
