@@ -280,37 +280,37 @@ var (
 // logged is a commit of the base's history and its message.
 type logged struct{ sha, msg string }
 
-// revertOf is the merge request commit r reverts, 0 when it is no revert or
-// names none. Named in its message — git's words naming the commit
-// reverted, GitLab's or GitHub's naming the merge request —, else found by
-// the title it quotes: GitHub's own revert says only `Revert "<title>"`.
-// Among the merges with that title in older, the commits older than r,
-// newest first, the one r undoes exactly — the same change, inverted — is
-// taken, else the newest.
-func revertOf(repo string, r logged, older func() []logged) int {
+// revertOf is the merge request commit r reverts, 0 when it names none
+// found, and whether r is a revert at all. Named in its message — git's
+// words naming the commit reverted, GitLab's or GitHub's naming the merge
+// request —, else found by the title it quotes: GitHub's own revert says
+// only `Revert "<title>"`. Among the merges with that title in older, the
+// commits older than r, newest first, the one r undoes exactly — the same
+// change, inverted — is taken, else the newest.
+func revertOf(repo string, r logged, older func() []logged) (int, bool) {
 	subject, _, _ := strings.Cut(r.msg, "\n")
 	if !revertSubject.MatchString(subject) && !strings.Contains(r.msg, "This reverts ") && !revertsPull.MatchString(r.msg) {
-		return 0
+		return 0, false
 	}
 	for _, re := range []*regexp.Regexp{revertsRequest, revertsPull} {
 		if m := re.FindStringSubmatch(r.msg); m != nil {
 			n, _ := strconv.Atoi(m[1])
-			return n
+			return n, true
 		}
 	}
 	if m := revertsCommit.FindStringSubmatch(r.msg); m != nil {
 		if was, err := git(repo, nil, "log", "-1", "--format=%B", m[1]); err == nil {
 			if n, _ := requestOf(was); n > 0 {
-				return n
+				return n, true
 			}
 		}
 	}
 	m := revertSubject.FindStringSubmatch(subject)
 	if m == nil {
-		return 0
+		return 0, true
 	}
 	if n, _ := requestOf(m[1]); n > 0 {
-		return n // `Revert "<title> (#N)"`
+		return n, true // `Revert "<title> (#N)"`
 	}
 	undone, first := "", 0
 	for _, c := range older() {
@@ -322,13 +322,13 @@ func revertOf(repo string, r logged, older func() []logged) int {
 			undone = patchID(repo, r.sha, r.sha+"^")
 		}
 		if undone != "" && patchID(repo, c.sha+"^1", c.sha) == undone {
-			return n
+			return n, true
 		}
 		if first == 0 {
 			first = n
 		}
 	}
-	return first
+	return first, true
 }
 
 // patchID is the id git gives the change from a to b, whatever its
@@ -420,15 +420,12 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 		return nil, err
 	}
 	var deeper []logged // what a revert may name, read once if needed
+	var deepErr error
 	demoted := map[string]string{}
 	for i, r := range history {
 		older := func() []logged {
-			if deeper == nil {
-				d, err := commits(o.Repo, baseTip, mergeWindow)
-				if err != nil {
-					d = []logged{}
-				}
-				deeper = d
+			if deeper == nil && deepErr == nil {
+				deeper, deepErr = commits(o.Repo, baseTip, mergeWindow)
 			}
 			at := slices.IndexFunc(deeper, func(c logged) bool { return c.sha == r.sha })
 			if at < 0 {
@@ -436,11 +433,19 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 			}
 			return deeper[at+1:]
 		}
-		n := revertOf(o.Repo, r, older)
+		n, revert := revertOf(o.Repo, r, older)
+		if deepErr != nil {
+			return nil, fmt.Errorf("the base's history, for what a revert undoes: %w", deepErr)
+		}
+		sha, msg := r.sha, r.msg
+		if revert && n == 0 {
+			// Said, never taken for a revert of nothing workline merged.
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "revert-unread", Where: short(sha),
+				Message: fmt.Sprintf("`%s` reverts something no merge request in the base's last %d commits is: if it undid one merged with no person's yes, its kind is not sent back to a person's yes", firstSentence(msg), mergeWindow)})
+		}
 		if n == 0 {
 			continue
 		}
-		sha, msg := r.sha, r.msg
 		t := forge.Target{Kind: "merge-request", ID: n}
 		notes, err := b.Notes(t)
 		switch {
@@ -487,7 +492,8 @@ func demotions(f forge.Forge, o FollowOptions, baseTip string, res *Result) (map
 	}
 	for _, is := range open {
 		for _, kind := range RoutineKinds {
-			if is.Title == demotedTitle(kind) && demoted[kind] == "" {
+			// The engine's: its title, and its marker in the body.
+			if is.Title == demotedTitle(kind) && strings.Contains(is.Body, "<!-- workline:merge-demoted=") && demoted[kind] == "" {
 				demoted[kind] = fmt.Sprintf("#%d", is.ID)
 			}
 		}

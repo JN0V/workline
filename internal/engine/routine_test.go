@@ -105,23 +105,25 @@ func TestRevertOf(t *testing.T) {
 	}
 	none := func() []logged { return nil }
 	for _, c := range []struct {
-		msg  string
-		want int
+		msg    string
+		want   int
+		revert bool
 	}{
-		{"Revert \"docs: record the docs judged (#9)\"\n\nThis reverts commit " + squash + ".\n", 9},
-		{"Revert \"docs: x\" (#14)\n\n* Revert \"docs: x\"\n\nThis reverts commit " + squash + ".\n", 9},
-		{"Revert \"Merge pull request #12\"\n\nThis reverts commit " + merge + ".\n", 12},
-		{"Revert \"docs: regenerate the derived blocks\"\n\nThis reverts merge request !21\n", 21},
-		{"Revert \"docs: condense a page\" (#30)\n\nReverts acme/workline#27\n", 27},
-		{"Revert \"docs: condense a page (#27)\" (#30)\n\nThis reverts commit 0123456789abcdef.\n", 27},
-		{"docs: the word Revert in a subject (#5)\n", 0},
-		{"feat: a feature (#6)\n", 0},
+		{"Revert \"docs: record the docs judged (#9)\"\n\nThis reverts commit " + squash + ".\n", 9, true},
+		{"Revert \"docs: x\" (#14)\n\n* Revert \"docs: x\"\n\nThis reverts commit " + squash + ".\n", 9, true},
+		{"Revert \"Merge pull request #12\"\n\nThis reverts commit " + merge + ".\n", 12, true},
+		{"Revert \"docs: regenerate the derived blocks\"\n\nThis reverts merge request !21\n", 21, true},
+		{"Revert \"docs: condense a page\" (#30)\n\nReverts acme/workline#27\n", 27, true},
+		{"Revert \"docs: condense a page (#27)\" (#30)\n\nThis reverts commit 0123456789abcdef.\n", 27, true},
+		{"Revert \"feat: a commit pushed straight to main\"\n", 0, true},
+		{"docs: the word Revert in a subject (#5)\n", 0, false},
+		{"feat: a feature (#6)\n", 0, false},
 	} {
-		if got := revertOf(repo, logged{"", c.msg}, none); got != c.want {
-			t.Errorf("%q: %d, want %d", c.msg, got, c.want)
+		if got, revert := revertOf(repo, logged{"", c.msg}, none); got != c.want || revert != c.revert {
+			t.Errorf("%q: %d, %v; want %d, %v", c.msg, got, revert, c.want, c.revert)
 		}
 	}
-	if got := revertOf(repo, history[0], func() []logged { return history[1:] }); got != 20 {
+	if got, _ := revertOf(repo, history[0], func() []logged { return history[1:] }); got != 20 {
 		t.Errorf("GitHub's revert of the older of two merges of one title: %d, want 20, the one it undoes", got)
 	}
 	if n, title := requestOf("Merge branch 'derived' into 'main'\n\ndocs: regenerate the derived blocks\n\nSee merge request acme/workline!21"); n != 21 || title != "docs: regenerate the derived blocks" {

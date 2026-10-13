@@ -1,0 +1,19 @@
+case: merge/normal-revert-unread-said
+about: "A revert workline cannot tie to a merge request is said, never passed silently (#322, principle 12): at `normal`, main holds `Revert \"…\"` of a commit pushed straight to it, which no merge request names. `workline follow` says it in the summary — were it of one merged with no person's yes, its kind would not be sent back to a person's yes — and demotes nothing."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "echo note > note.txt && git add note.txt && git commit -qm 'chore: a note pushed straight to main' && git revert --no-edit HEAD >/dev/null && git commit -q --amend -m 'Revert \"chore: a note pushed straight to main\"' && git push -q origin main"
+  forge:
+    merge-requests: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings:
+    - {rule: revert-unread, message: "`Revert \"chore: a note pushed straight to main\"` reverts something no merge request"}
+  no-findings: [{rule: merge-demoted}]
+  forge:
+    issues:
+      - {id: 1, absent: true}
