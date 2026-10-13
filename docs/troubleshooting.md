@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 252113e
+checked: 59210763
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -147,9 +147,12 @@ The [merge policy](merge-policy.md) acts only with `merge:` in
   merge; one who may puts it again.
 - `verdict-missing`: no verdict of the line on that head yet; it waits
   for the next judge.
-- `waits-for-a-yes`, at `normal`: workline's own pull request with a
-  commit not its own, or of a kind a revert sent back to a person's yes —
-  close the issue it names to restore it —; the release tool's always.
+- `waits-for-a-yes`, at `normal`: workline's pull request with a push, a
+  commit or a page not its own, or of a kind a revert sent back to a
+  person's yes — someone who may push and merge closes the issue it names
+  to restore it —; the release tool's always.
+- `merge-app-unknown`: at `normal`, the token is a person's, or the forge
+  does not say its App (GitHub: `WORKLINE_APP`): nothing merges alone.
 - `merge-unsupported`, `merge-token`, `merge-unguarded`: nothing is
   turned on — the local forge has no auto-merge, a GitHub job's own
   token, a base that does not require `workline/accepted`

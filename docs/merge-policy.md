@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 975ddf7a
+checked: 59210763
 verified: agent:claude-code
 ---
 # The merge policy
@@ -86,12 +86,17 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
 merge: {autonomy: normal}   # a project's choice, never a default
 ```
 
-- **Merged with no label**: workline's own pull requests — from a role's
-  branch (`workline/<role>/…`), opened by workline, every commit its own
-  (checked by its tree, never by its trailer alone) —, their head's
-  verdict passed, every agent's review whole. Three kinds, by what changed:
+- **Merged with no label**: workline's own pull requests, as the forge
+  says it — a commit says anything of itself:
+  - from a role's branch (`workline/<role>/…`), opened by workline's App;
+  - every push to it the App's, every commit committed by it and its own
+    by its tree;
+  - only docs of the documentalist's that agents are not told to read
+    (not AGENTS.md, CLAUDE.md, a page they link to, a prompt…);
+  - their head's verdict passed, every agent's review whole.
+- **Three kinds, by what changed**:
   - `records`: only when docs were read (`judged`);
-  - `derived`: derived blocks regenerated;
+  - `derived`: derived blocks, as their commands give them;
   - `docs`: doc text a role wrote — the release's docs fix, gardening's.
 - **The same path as a yes**: `workline/accepted` set on the head, auto-merge
   on, in line. The veto is the forge's, as above.
@@ -100,11 +105,13 @@ merge: {autonomy: normal}   # a project's choice, never a default
   alone.
 - **A revert demotes its kind**
   ([why](adr/0042-the-engine-merges-by-the-projects-policy.md#each-merge-recorded-a-revert-demotes-its-kind)):
-  `follow` reads the reverts on the base, opens an issue "workline: its
-  `<kind>` merge requests wait for a person's yes again", and that kind
-  needs the label until a person **closes the issue**.
-- **Never alone**: the release tool's, a fork's, a person's, one with a
-  commit not workline's own, a Draft.
+  `follow` reads every revert on the base once, opens an issue "workline:
+  its `<kind>` merge requests wait for a person's yes again (revert …)",
+  and that kind needs the label until a person who may push and merge
+  **closes the issue**. A revert it cannot tie to a pull request holds
+  every kind.
+- **Never alone**: the release tool's, a fork's, a person's, another
+  bot's, a Draft; with a person's token, nothing.
 - **The governance line**: a change an AI wrote and an AI reviewed merges
   with no person's approval — past the two-person rule of SLSA and SOC 2.
 - **Tried on workline's own repository first**; agents' pull requests come
@@ -151,18 +158,22 @@ merge: {autonomy: normal}   # a project's choice, never a default
   waits for that merge request's own next pipeline.
 - **Another forge** (`cmd:`): the operations `merge-state`, `auto-merge`,
   `guarded`, `accept`, `keep-verdict` and `verdict`; at `normal`, also
-  `comments`, `comment`, `issues` and `open-issue`
-  ([forge command](spec/forge-command.md)). The local forge has no
-  auto-merge: said, nothing turned on.
+  `app`, `merge-state`'s `pushers`, `closing`, `comments`, `comment`,
+  `issue` and `open-issue` ([forge command](spec/forge-command.md)). The
+  local forge has no auto-merge: said, nothing turned on.
+- **At `normal`**, `follow` pushes its record, `refs/workline/merge-policy`:
+  its token must write there.
 
 ## What the summary says
 
 | Said | When |
 |---|---|
 | `auto-merge-on`, `merged-at-once` | accepted, its head's verdict passed; at `normal`, "with no person's yes", its kind |
-| `waits-for-a-yes` | at `normal`: the release tool's, a commit not workline's own, a kind demoted |
+| `waits-for-a-yes` | at `normal`: the release tool's; a push, a commit or a page not workline's; a kind demoted |
+| `merge-app-unknown` | at `normal`, the token is no App's: nothing merges alone |
 | `merge-demoted`, `demotion-unrecorded` | a revert of one merged alone read: its kind demoted, its issue opened or not |
-| `revert-unread` | a revert on the base that names no merge request workline can find |
+| `revert-unread` | a revert tied to no merge request: every kind demoted |
+| `merge-restored`, `restore-ignored`, `restore-unread` | a demotion's issue closed by a person who may lift it; by anyone else; unread |
 | `updated` | first in line, brought up to date |
 | `verdict-kept`, `verdict-missing` | the verdict kept; one not judged yet |
 | `verdict-red`, `review-short`, `checks-red` | out of line, why |

@@ -255,21 +255,33 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
 
 ### What merges with no person's yes
 
-- **Workline's own pull request**, all of these:
-  - from a role's branch, `workline/<role>/<task>`, of this repository;
-  - opened by workline — a bot, as the forge says (an App, a project
-    bot), or the user `follow`'s token writes as —, not a release tool's;
-  - every commit workline's own as `follow` already tells it ([#329]): a
-    merge of the base whose tree is exactly workline's merge, or a commit
-    changing doc pages alone; its trailer is never enough;
+- **Workline's own pull request, as the forge says it** — never as a
+  commit says it of itself, which whoever can push writes:
+  - from a role's branch, `workline/<role>/<task>`, of this repository,
+    not a release tool's;
+  - opened by workline's App — on GitHub the App the workflow names
+    (`WORKLINE_APP`), on GitLab the project's bot —; never another bot
+    (an agent's app), never a person's token, which agents use too: with
+    one, nothing merges alone, said;
+  - every push to its branch the App's, as the forge names the pusher:
+    GitHub's repository activity, GitLab's push events; not said, it
+    waits;
+  - every commit committed under the name the App's jobs commit with, and
+    workline's own by its tree as `follow` tells it ([#329]);
+  - every page it changes a doc of the documentalist's (its `docs`
+    setting) and a doc page, never one agents are told to read: an agent
+    file (AGENTS.md, CLAUDE.md…), a page one links to or imports — a
+    folder linked, all of it —, a file named a prompt, an instruction or
+    a template;
   - not a Draft, its auto-merge not turned off since it was turned on.
 - **Its head's verdict passed**, as for a yes: `judge` green, an agent
   really answered where one is set, no lens short.
-- **Three kinds, told by what the change is**, never by the branch's
-  name, which whoever can push chooses:
+- **Three kinds, told by what the change is**, never by the branch's name:
   - `records`: only the lines recording when docs were read (`judged`,
     `judged-in-parts`, `verified`);
-  - `derived`: derived blocks regenerated, besides;
+  - `derived`: derived blocks, read as the documentalist reads them (a
+    marker with no end is no block), each as its command gives it on the
+    head — run in a worktree of it —; else `docs`;
   - `docs`: any other doc text — the release's docs fix, gardening's
     fixes, a page condensed.
 - **The same path as a yes**: `follow` sets `workline/accepted` on the
@@ -280,28 +292,34 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
 
 - **On the pull request**: one comment as auto-merge is turned on — no
   person's yes, its kind, why, how to hold it —, its marker naming the
-  kind. **In the job's summary**: the pull request, "with no person's
-  yes", its kind and why; its first line says which kinds merge alone and
-  which wait again.
-- **A revert is read on the base**, its last 100 commits at each run —
-  every parent: a revert merged by a merge commit is on its second —, in
-  git's words (`This reverts commit …`, the commit reverted
-  naming `#N`), GitLab's (`This reverts merge request !N`) or GitHub's
-  (`Reverts owner/repo#N`). GitHub's own Revert says only `Revert
-  "<title>"`, tried live: the merge of that title it undoes exactly — the
-  same change, inverted (`git patch-id`) —, else the newest. The pull
-  request it names holds the record: its kind waits for a person's yes
-  again ([ADR-0026]).
-- **Kept in an issue**, one per kind, opened by `follow`: which pull
-  request, which revert, and how to restore — **close the issue**. Each
-  run reads the open ones. A comment on the reverted pull request, its
-  marker naming the revert, has it read once: closed, the issue is not
-  opened again by the same revert.
+  kind, read back only from the App. **In the job's summary**: the pull
+  request, "with no person's yes", its kind and why; its first line says
+  which kinds merge alone and which wait again.
+- **Every revert on the base is read, once**: the engine's record on the
+  forge, the ref `refs/workline/merge-policy` — pushed by `follow`, whose
+  token writes, with a lease —, keeps the last base commit read and each
+  demotion; each run reads every commit past it (the last 100 when there
+  is none), every parent.
+- **A revert names what it reverts** in git's words (`This reverts commit
+  …`, the commit reverted naming `#N`), GitLab's (`This reverts merge
+  request !N`) or GitHub's (`Reverts owner/repo#N`). GitHub's own Revert
+  says only `Revert "<title>"`, tried live: the merge of that title it
+  undoes exactly — the same change, inverted (`git patch-id`) —, else the
+  newest.
+- **Its kind waits for a person's yes again** ([ADR-0026]) when the pull
+  request reverted holds the App's record. **A revert tied to none** — a
+  rebase merge, an edited squash message, an undo by hand — **sends every
+  kind back**, said (`revert-unread`): failing closed.
+- **Said in an issue**, one per revert, opened by `follow` — its title
+  names the revert, so nobody opens it before; one of that title by
+  anyone else is never taken for it, and the demotion holds all the same.
+- **Lifted only by a person**: the issue closed by someone who may push
+  and merge, not a bot, as the forge says who closed it. Closed by anyone
+  else, the demotion holds, said (`restore-ignored`).
 - **Why an issue**: written where people look, with what to do
   (principle 14), one notification, one click to restore. Not a label on
-  the reverted pull request: closed, nobody looks there. Not a record of
-  the engine's own (a ref): no person restores it in a click. Not the
-  setting: changing the level never restores trust lost ([ADR-0026]).
+  the reverted pull request: closed, nobody looks there. Not the setting:
+  changing the level never restores trust lost ([ADR-0026]).
 
 ### The veto, what never merges alone, the criteria
 
@@ -311,7 +329,8 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   stands.
 - **Never alone, at any level**: the release tool's pull request (said
   in the summary at `normal`: merging it is the decision to release), a
-  fork's, a person's, one with a commit not workline's own, a Draft.
+  fork's, a person's, another bot's, one with a push or a commit not the
+  App's, one changing what steers agents, a Draft.
 - **Criteria for offering `normal`** to other projects, as [ADR-0036]
   wrote a role's status — until they hold, the page says it is tried on
   workline's own repository first:
@@ -320,22 +339,21 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
      merges with no yes, each recorded, a revert demoting its kind as
      written;
   3. the maintainer validates [#322]'s Validation on real use.
-- **Limits**: a doc-only commit bearing workline's trailer is taken as
-  its own, as the line takes it: whoever can push could write one, as
-  they could put the label, agents acting with the person's account until
-  [#117]. A revert past the base's last 100 commits when `follow` runs is
-  not read; one naming no merge request found in its last 1000 (a GitLab
-  squash, a commit pushed straight) is said, `revert-unread`. The issue
-  closed is a person's restore by rule, as the label is a person's yes;
-  one is the engine's by its title and its marker.
+- **Limits**: whoever holds the App's key could act as it — the key in a
+  pull request's own run, [#331]. GitLab: the push events read from a
+  week before the merge request opened; the ref pushed there not tried
+  live. A forge that does not name who pushed or who closed (a `cmd:`
+  forge without `pushers`, `closing`): nothing merges alone, no demotion
+  is lifted.
 - **Texts changed**: principle 1 — people accept the result, or write in
   advance the narrow class the line accepts for them;
   [concepts.md](../concepts.md#people); [config.md](../config.md), the
   governance line beside the key.
 
-Conformance: merge/normal-* (9), gitlab-normal-routine-merges-alone,
+Conformance: merge/normal-* (12), gitlab-normal-routine-merges-alone,
 cmd-normal-routine-merges-alone, cautious-routine-waits-for-a-yes;
-TestRoutineKind, TestRevertOf, TestOwnNote.
+TestRoutineKind, TestSteering, TestRevertOf, TestOwnNote,
+TestRevertsPastTheRecordRead.
 
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
@@ -354,3 +372,4 @@ TestRoutineKind, TestRevertOf, TestOwnNote.
 [#321]: https://github.com/JN0V/workline/issues/321
 [#322]: https://github.com/JN0V/workline/issues/322
 [#329]: https://github.com/JN0V/workline/pull/329
+[#331]: https://github.com/JN0V/workline/issues/331
