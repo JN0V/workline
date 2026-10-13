@@ -316,6 +316,8 @@ build settled ([page](../merge-policy.md#normal-routine-work-with-no-yes)):
   request reverted holds the App's record. **A revert tied to none** — a
   rebase merge, an edited squash message, an undo by hand — **sends every
   kind back**, said (`revert-unread`): failing closed.
+### What holds a demotion, what lifts it
+
 - **Held by an issue the App opened**, one per revert — its title names
   the revert, so nobody opens it before. The forge records who opened an
   issue, and that cannot be faked: each open demotion issue of the App's
