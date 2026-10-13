@@ -117,8 +117,11 @@ func routineKind(repo, baseTip, tip string) (string, error) {
 		if parts[i] != "M" {
 			return kindDocs, nil
 		}
-		was, _ := blob(repo, from, parts[i+1])
-		now, _ := blob(repo, tip, parts[i+1])
+		was, ok1 := blob(repo, from, parts[i+1])
+		now, ok2 := blob(repo, tip, parts[i+1])
+		if !ok1 || !ok2 {
+			return "", fmt.Errorf("%s, changed on the branch, could not be read at %s and %s", parts[i+1], short(from), short(tip))
+		}
 		switch {
 		case unrecorded(was) == unrecorded(now):
 		case underived(unrecorded(was)) == underived(unrecorded(now)):
