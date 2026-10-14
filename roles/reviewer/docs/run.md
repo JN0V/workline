@@ -30,8 +30,8 @@ flowchart LR
      branch as the documentalist tells it
      ([ADR-0017](../../../docs/adr/0017-the-release-manager.md)): a file
      whose every changed line is a version the tool bumps is not code.
-     - A bump: the same line, one version in place of another, on a line
-       the tool marks — `x-release-please-version` (or `-major`, `-minor`,
+     - A bump: the same line but for its first version, as release-please
+       replaces it, on a line the tool marks — `x-release-please-version` (or `-major`, `-minor`,
        `-patch`), between `x-release-please-start-…` and
        `x-release-please-end`, `x-releaser-pleaser-version` — or in
        `.release-please-manifest.json`.

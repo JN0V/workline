@@ -12,9 +12,11 @@ import (
 // marks: release-please's generic updater and its manifest, and
 // releaser-pleaser's marker (#384).
 
+// What a tool bumps on a line it marks, release-please's patterns: the
+// first match on the line, and no other (its generic updater's replace).
 var (
-	semver = regexp.MustCompile(`v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?`) // a version, as the tools write it
-	number = regexp.MustCompile(`\d+`)                                  // one part of it: a major, a minor, a patch
+	semver = regexp.MustCompile(`\d+\.\d+\.\d+(?:-[\w.]+)?(?:\+[-\w.]+)?`) // a version
+	number = regexp.MustCompile(`\d+`)                                    // one part of it: a major, a minor, a patch
 )
 
 // Markers are what the known tools' generic updaters look for on a line
@@ -71,12 +73,12 @@ func blocks(text string) map[int]*regexp.Regexp {
 
 // OnlyBumps says whether a file's change, its `git diff -U0`, only bumps
 // versions as a release tool does: each hunk puts back as many lines as it
-// takes, each the same line with one version (or one part of one, for a
-// major, minor or patch marker) in place of another, on a line the tool
-// marks — its marker on the line, the line between a block's markers in
-// the file now, or a line of its manifest. now reads the file at the
-// diff's end, only when a block is to be looked for. A file added,
-// removed, moved or changed in its mode is no bump.
+// takes, each the same line but for its first version (or first number,
+// for a major, minor or patch marker), on a line the tool marks — its
+// marker on the line, the line between a block's markers in the file now,
+// or a line of its manifest. now reads the file at the diff's end, only
+// when a block is to be looked for. A file added, removed, moved or
+// changed in its mode is no bump.
 func OnlyBumps(path, diff string, now func() (string, error)) bool {
 	manifest := slices.Contains(Manifests, filepath.Base(path))
 	var inBlock map[int]*regexp.Regexp
@@ -107,8 +109,8 @@ func OnlyBumps(path, diff string, now func() (string, error)) bool {
 			if bumps == nil {
 				return false
 			}
-			was, is := bumps.ReplaceAllString(removed[i], "\x00"), bumps.ReplaceAllString(added[i], "\x00")
-			if was != is || !strings.Contains(is, "\x00") {
+			was, is := bumps.FindStringIndex(removed[i]), bumps.FindStringIndex(added[i])
+			if was == nil || is == nil || removed[i][:was[0]] != added[i][:is[0]] || removed[i][was[1]:] != added[i][is[1]:] {
 				return false
 			}
 		}
