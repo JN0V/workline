@@ -93,6 +93,13 @@ settings:
   # `<!-- workline:derive name -->…<!-- workline:end -->`, the command lives here,
   # where only people change it. e.g. {conformance-cases: "ls tests/*.yaml | wc -l"}
   derive: {}
+  # A code example a fix writes, a fenced block added or changed, is said
+  # unverified, for the person merging to read, unless a command checking
+  # the project's examples is named here: it runs on a checkout of HEAD with
+  # the fixed docs written in, the docs as its arguments ("$@"), in the job
+  # the agent runs in. It fails: the example is withheld, its output shown;
+  # it passes: the example is said checked by it. e.g. {check: "make doc-examples"}
+  examples: {check: ""}
   # The code the project wants described, as globs, e.g. ["src/**"]: a file
   # of it the commits add, under no doc's sources, is reported (undocumented);
   # when gardening, every such file. Empty: nothing is reported.

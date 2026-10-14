@@ -1,0 +1,21 @@
+case: documentalist/example-unverified-said
+about: "A fix that writes a code example, a fenced block, tells it apart from the places it fixed: its finding and the gardening merge request say the example is unverified, to read before merging. A rewritten example once compiled but was wrong at run time, merged as one of \"8 places\" fixed (#121)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '\\n## Terms\\n\\n' >> docs/tech/auth.md && seq 40 | sed 's/^/- Term /' >> docs/tech/auth.md && git commit -qam 'docs(auth): the terms'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/fix-with-an-example.sh", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: example-unverified, where: docs/tech/auth.md, message: "1 code example (lines 10-12, go), unverified: no check ran on it; read it before merging"}
+  no-findings: [{rule: example-checked, where: docs/tech/auth.md}, {rule: example-failed, where: docs/tech/auth.md}]
+  forge:
+    merge-requests:
+      - id: 1
+        body-contains: ["`docs/tech/auth.md` — fixed in 1 place and 1 code example, `checked` moved; the code example unverified (lines 10-12): read it before merging"]
+  pushed: {workline/documentalist/suspect: {docs/tech/auth.md: "```go"}}

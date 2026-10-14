@@ -1,0 +1,3 @@
+#!/bin/sh
+# Nothing to guard: the catalogue and duties.writes bound what is applied.
+echo "status: pass" > "$WORKLINE_RUN_DIR/out/verdict.yaml"
