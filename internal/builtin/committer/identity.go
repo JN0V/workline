@@ -41,16 +41,37 @@ func allowedIdentities(s Settings) ([]*regexp.Regexp, error) {
 	return out, nil
 }
 
+// forgeIdentities checks the project's `forge-identities`: the addresses its
+// forge commits with (its App's bot, GitHub's web merges), each written
+// whole. They are allowed beside the allow list but never turn the check on
+// alone, and no pattern is taken: naming one bot never lets every bot in.
+func forgeIdentities(s Settings) error {
+	for _, f := range s.ForgeIdentities {
+		if !strings.Contains(f, "@") || strings.ContainsAny(f, "^$*?\\|(){} \t") {
+			return fmt.Errorf("forge identity %q: an address written whole (12345+app[bot]@users.noreply.github.com), not a pattern", f)
+		}
+	}
+	return nil
+}
+
 // Identity checks the author and committer addresses git will record (rng
 // empty), or those of every commit of rng. git var gives the effective
 // identity, so an address given for one commit (-c user.email, --author) is
 // caught too: the one that leaks is usually given on purpose.
 func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
+	if err := forgeIdentities(s); err != nil {
+		return nil, err
+	}
 	allowed, err := allowedIdentities(s)
 	if err != nil || len(allowed) == 0 {
 		return nil, err
 	}
 	ok := func(email string) bool {
+		for _, f := range s.ForgeIdentities {
+			if strings.EqualFold(email, f) {
+				return true
+			}
+		}
 		for _, re := range allowed {
 			if re.MatchString(email) {
 				return true
@@ -60,7 +81,7 @@ func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
 	}
 	refuse := func(where, email, commit string) verdict.Finding {
 		return verdict.Finding{Rule: "identity", Where: where,
-			Message: fmt.Sprintf("the %s address <%s>%s is not on the allow list; commit with the identity you meant (git config user.email), or add a pattern to the list", where, email, commit)}
+			Message: fmt.Sprintf("the %s address <%s>%s is not on the allow list; commit with the identity you meant (git config user.email), or add a pattern to the list (an address the forge commits with: the project's forge-identities)", where, email, commit)}
 	}
 	var findings []verdict.Finding
 	if rng == "" {
