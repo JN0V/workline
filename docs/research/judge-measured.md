@@ -93,6 +93,80 @@ reviewer is measured ([#360](https://github.com/JN0V/workline/issues/360)).
   ([#360](https://github.com/JN0V/workline/issues/360)) runs on that
   judge, so the bench is paid once.
 
+## Replayed 2026-10-14
+
+**Question.** Does the judge that reads
+([ADR-0045](../adr/0045-the-judge-asks-for-the-code-it-needs.md))
+drop fewer true findings than today's judge, on the same 40 questions,
+without letting more false ones through?
+
+**Verdict.** It keeps 6 of the 8 true findings today's judge drops, and
+every yes it gives is right. It lets 2 of the 12 false findings through,
+shown not verified, where today's judge drops all 12. ADR-0045's bar
+holds on two of its three points. The maintainer turned it on the same
+day, the third point relaxed
+([ADR-0045, amended](../adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)).
+
+| | Today's judge | The judge that reads |
+|---|---|---|
+| Right, of 40 | 29 | 32 |
+| Of the 20 it said yes to then, right | 17 | 17 |
+| Of the 20 it said no to then, right | 12 | 15 |
+| True findings dropped then, dropped again, of 8 | 8 | 2: #137, #280 |
+| False findings dropped then, let through, of 12 | 0 | 2, not verified: #157, #329 |
+| Every true finding dropped, of 27 | 10 | 4 |
+| Its yes right | 17 of 18 | 22 of 22 |
+| Unsure; a no not found again | — | 3; 1 |
+| Judges that read; reads asked; rounds; lines | — | 20; 66; 31; 1,684 |
+| Calls | 40 | 71 |
+| Tokens a judge, in / out | 16.5k / 0.7k | 34.7k / 1.3k |
+| Tokens, the arm, in / out | 659,890 / 28,252 | 1,386,141 / 51,172 |
+
+**Against ADR-0045's bar** (against today's judge):
+
+- **Fewer of the 8 true findings dropped**: holds, 8 to 2. Of the two
+  worth raising, #238 is now verified; #280 is dropped again: the judge
+  read nothing and quoted the comment above the block, as it did then.
+  #170 is shown not verified (unsure).
+- **Its yes right 19 of 20 or more**: holds as its yes's share right, 22
+  of 22. On the 20 items it said yes to then, 17 right in both arms:
+  today's judge drops #253 and #347 (tests not shown); the one that
+  reads drops #133 and #185, quoting code that is there, both true
+  findings.
+- **No more of the 12 false findings let through**: does not hold, 0 to
+  2, both shown not verified, none verified: #157, unsure after four
+  reads; #329, a no quoting issue #321, which the replay cannot find
+  again: it holds no issue (limits, below).
+- **Unsure**: 3 of 40 (#157, #170, and #219's false finding).
+
+**Method.**
+
+- The same 40 questions as asked ([the judge's replay](../spec/conformance/evaluation.md#the-judges-replay)),
+  of `claude:opus` (claude-opus-5-5, the judge then), with today's
+  `roles/judge`.
+- Today's judge as the engine asks it. The judge that reads as the
+  reviewer asks it at `judge-read-rounds: 2` and
+  `judge-read-lines-max: 400`, its reads served from git at each
+  item's commit.
+- A probe of one item each (#280) first, then each arm once, 40
+  items, 4 at a time, on one machine. A stop at 2.1M tokens in, all
+  runs together: 2,075,540 in and 80,962 out spent, probes included.
+
+**Limits.**
+
+- One run of each arm: a judge's answer varies from one run to the next.
+- Four answers of the judge that reads were a bare note, `"yes: …"`,
+  with no list around it; its reader took them for no answer. They are
+  scored as said, yes, from the run's log; the reader is fixed
+  (`judge.answerReading`), and `results.tsv` keeps them as no answer.
+- The replay holds no issue: a no quoting the issue a change closes is
+  never found again there (#329). What a run, which reads the issue,
+  would do with that quote is not measured.
+- Today's judge is not the judge of 10-04 to 10-13: it drops 2 of the 20
+  it said yes to then.
+- A first call counts about twice the tokens recorded then (#280: 14.3k
+  in, against 6.6k): the agent's own context, counted in.
+
 ## The 40 items
 
 Each place links to the file at the commit reviewed. "Truth" is the

@@ -28,7 +28,7 @@ given:
       GO
       git commit -qam 'feat: the mean of the values'
   env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-from-callee.sh"}
-  config: {roles: {reviewer: {settings: {judge-lines-max: 8}}}}
+  config: {roles: {reviewer: {settings: {judge-lines-max: 8, judge-read-rounds: 0}}}}   # a judge that reads nothing: its no drops
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-mean-callee"}
 expect:
   status: pass

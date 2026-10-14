@@ -192,6 +192,10 @@ func answerReading(a Answer, data []byte) (Answer, error) {
 	}
 	note, said, why := "", "", ""
 	var noteErr error
+	if len(items) == 0 { // a note given bare, as today's judge's is read: "yes: …"
+		note = string(data)
+		said, why, noteErr = verdict(note, true)
+	}
 	for _, it := range items {
 		switch {
 		case it["note"] != nil && note == "":

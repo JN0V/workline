@@ -1,0 +1,14 @@
+case: reviewer/judge-reads-by-default
+about: "With no setting, the judge of the code reads what it needs (judge-read-rounds: 2 by default, ADR-0045 amended): its question says it may read, and a no whose quote is not found again leaves the finding shown, not verified, rather than dropped."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no-misquoted.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "not verified: the judge said no (judge-no-unquoted)"}]
+  no-findings: [{rule: finding-judged-no}]
+  run-files:
+    in/judge/01/question.yaml: {contains: ["You may ask to read the repository", "2 more rounds of reads, 400 more lines"]}

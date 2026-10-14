@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/judge"
 	"go.yaml.in/yaml/v3"
 )
@@ -104,13 +105,18 @@ func readsSaid(reads []judge.Read) []string {
 	return out
 }
 
-// write keeps the reading and asks its question: the question, the
-// material first asked, what the judge read each round, and what it may
-// still read.
+// write keeps the reading and asks its question.
 func (r reading) write(dir string, s Settings, head string) error {
 	if err := writeJSON(filepath.Join(dir, "reads.json"), r); err != nil {
 		return err
 	}
+	data, _ := json.Marshal(map[string]any{"question": r.Question, "material": r.asked(s, head), "reads": true}) // JSON, which YAML reads
+	return os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644)
+}
+
+// asked is the material the judge is asked with this round: the material
+// first asked, what it read each round, and what it may still read.
+func (r reading) asked(s Settings, head string) string {
 	var b strings.Builder
 	b.WriteString(r.Material)
 	for i, rd := range r.Rounds {
@@ -128,8 +134,68 @@ func (r reading) write(dir string, s Settings, head string) error {
 	b.WriteString("\nYour answer: yes; no, with the lines that refute the finding quoted beside the note, as they read, with their path; or unsure, when you still cannot tell. A no whose quote is not found again in what you were shown or read leaves the finding not verified:\n\n" +
 		"- note: \"no: the loop adds every value before the division.\"\n- quote: {path: \"calc/calc.go\", text: \"for _, v := range values {\"}\n\n" +
 		"- note: \"unsure: whether a caller passes an empty list is in no code read.\"\n")
-	data, _ := json.Marshal(map[string]any{"question": r.Question, "material": b.String(), "reads": true}) // JSON, which YAML reads
-	return os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644)
+	return b.String()
+}
+
+// Judged is what a judge of the code that may read came to, as a run
+// would show it (JudgeReading).
+type Judged struct {
+	Said    string       // yes, no, unsure; "" when it gave no answer
+	Why     string       // its reason, or why it gave none
+	Shown   string       // verified, dropped, or not verified: why
+	Quoted  string       // a dropping no's quote, found again: path:line
+	Asked   []string     // the reads it asked, round after round
+	Rounds  int          // rounds of reads served
+	Lines   int          // lines served, all rounds
+	Refused []string     // reads not served, with why
+	Calls   []agent.Call // a call a round
+}
+
+// JudgeReading asks one question of a judge of the code that may read
+// (ADR-0045), in this process, as a run does: each read it asks served
+// from git at head within rounds and linesMax, then it is asked again; a
+// no stands on its quote, found again. cause is the finding's file, where
+// a name is looked for first. The evaluation's replay asks the measured
+// questions so (tests/evaluation).
+func JudgeReading(repo, head, question, material, cause string, rounds, linesMax int, ask func(question, material string) (judge.Answer, error)) Judged {
+	s := Settings{JudgeReadRounds: rounds, JudgeReadMax: linesMax}
+	r := reading{Question: question, Material: material, Cause: cause}
+	var j Judged
+	unsure := "not verified: the judge cannot tell (judge-unsure): "
+	for {
+		a, err := ask(question, r.asked(s, head))
+		j.Calls = append(j.Calls, a.Call)
+		if err != nil {
+			j.Why, j.Shown = err.Error(), "not verified: "+err.Error()
+			return j
+		}
+		if len(a.Reads) > 0 {
+			if left, lines := r.left(s); left > 0 && lines > 0 {
+				rd := serve(repo, head, cause, a.Reads, lines, linesMax)
+				r.Rounds = append(r.Rounds, rd)
+				j.Asked = append(j.Asked, readsSaid(a.Reads)...)
+				j.Rounds, j.Lines, j.Refused = j.Rounds+1, j.Lines+rd.Lines, append(j.Refused, rd.Refused...)
+				continue
+			}
+			j.Said, j.Why, j.Shown = "unsure", a.Why, unsure+"it asked to read again, no read left"
+			return j
+		}
+		j.Why = a.Why
+		switch {
+		case a.Unsure:
+			j.Said, j.Shown = "unsure", unsure+a.Why
+		case a.Yes:
+			j.Said, j.Shown = "yes", "verified"
+		default:
+			j.Said = "no"
+			if where, why := r.quoted(repo, state{Head: head}, a.Quote); why != "" {
+				j.Shown = "not verified: the judge said no (judge-no-unquoted): " + why
+			} else {
+				j.Shown, j.Quoted = "dropped", where
+			}
+		}
+		return j
+	}
 }
 
 // readsAsked serves the reads the judges asked, each within what it may
@@ -370,7 +436,7 @@ func (r reading) quoted(repo string, st state, q *judge.Quote) (where, why strin
 }
 
 var (
-	shownLines = regexp.MustCompile(`^### (.+?), lines (\d+) to (\d+)(?::|$)`)
+	shownLines = regexp.MustCompile(`^###? (.+?), lines (\d+) to (\d+)(?::|$)`) // ## before #127's material
 	shownWhole = regexp.MustCompile(`^### (\S+)$`)
 	diffFile   = regexp.MustCompile(`^\+\+\+ b/(.+)$`)
 	diffHunk   = regexp.MustCompile(`^@@ -\S+ \+(\d+)(?:,(\d+))? @@`)

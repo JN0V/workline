@@ -29,6 +29,7 @@ given:
       GO
       git add shop && git commit -qm 'feat(shipping): free from 50.00'
   env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-tests.sh"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 0}}}}   # a judge that reads nothing: its no drops
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: tests}, ai: "fake:review-shipping-untested"}
 expect:
   status: pass

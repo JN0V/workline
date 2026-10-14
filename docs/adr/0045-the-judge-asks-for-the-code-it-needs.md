@@ -1,9 +1,8 @@
 # ADR-0045: The judge asks for the code it needs; the engine reads it at the reviewed commit
 
-- **Status:** accepted; built in the order below, on by default once
-  measured. Steps 1 and 2 built, off (`judge-read-rounds: 0`); step 0 in
-  [#397](https://github.com/JN0V/workline/pull/397); step 3, the measure,
-  next
+- **Status:** accepted; built, replayed, and on by default
+  (`judge-read-rounds: 2`) since 2026-10-14, the bar's third point
+  relaxed ([amendment](#amendment-2026-10-14-on-by-default))
 - **Date:** 2026-10-14, for [#362](https://github.com/JN0V/workline/issues/362)
 - **Decided by:** the maintainer, 2026-10-14: caps, budget, `unsure`, scope
 - **Builds on:** [ADR-0005](0005-independence-takes-the-best-level-available.md)
@@ -200,3 +199,24 @@
 - A loop other judges may use, each once a measure shows the need.
 - The reviewer's measure ([#360](https://github.com/JN0V/workline/issues/360))
   runs on this judge.
+
+## Amendment (2026-10-14): on by default
+
+- **Decided by** the maintainer, 2026-10-14, from the replay of the 40
+  measured questions, both arms on `claude:opus`
+  ([replayed](../research/judge-measured.md#replayed-2026-10-14)).
+- **The bar held on two of its three points**, against today's judge:
+  - fewer of the 8 true findings dropped: 8, then 2;
+  - its yes right: 22 of 22 (today's judge, 17 of 18).
+- **The third is relaxed**: no more of the 12 false findings let
+  through went from 0 to 2.
+  - Both are shown not verified: a warning, never blocking.
+  - One is a limit of the replay: its refuting quote lived in an issue
+    the replay does not hold.
+- **The numbers**: right 29, then 32, of 40; unsure 3; 20 of the 40
+  judges read, 66 reads, 1,684 lines.
+- **Its cost**: a judge about twice a call's tokens, 16.5k then 34.7k in
+  on the replay. About 3M tokens more a week, at the 81 pull requests of
+  the week to 2026-10-14 (an estimate).
+- **So**: `judge-read-rounds: 2` by default; `0` turns the reads off, a
+  no then dropping the finding as before.
