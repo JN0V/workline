@@ -5,6 +5,9 @@ roles:
       # The role's list, plus this repository's decision records: `ADR-0001`
       # means something to anyone reading docs/adr/.
       internal-codes-allow: [UTF-8, UTF-16, SHA-1, SHA-256, SHA-512, ISO-8601, 'RFC-[0-9]+', 'CVE-[0-9]+', 'ADR-[0-9]+']
+      # The addresses GitHub commits with here: workline's App, and the
+      # merges made on the web. A person's own allow-list lets them through.
+      forge-identities: ['336169029+workline-jn0v[bot]@users.noreply.github.com', noreply@github.com]
   documentalist:
     settings:
       # The role READMEs, and the pages the documentalist's, the product

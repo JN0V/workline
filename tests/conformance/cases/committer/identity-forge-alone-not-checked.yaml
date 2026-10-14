@@ -1,0 +1,11 @@
+case: committer/identity-forge-alone-not-checked
+about: The forge's addresses never turn the check on alone; with no allow list (CI, which has no user list), identities are still not checked.
+given:
+  repo: basic
+  setup: ["echo x >> main.go && git add main.go"]
+  config: {roles: {committer: {settings: {forge-identities: [noreply@github.com]}}}}
+  env: {GIT_AUTHOR_EMAIL: someone@elsewhere.invalid}
+run: {role: committer, event: commit-msg, input: {message: "feat: add x"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: identity, where: author}]

@@ -28,6 +28,7 @@ type Settings struct {
 	InternalCodesAllow []string `json:"internal-codes-allow"`
 	InternalCodesMaybe []string `json:"internal-codes-maybe"`
 	AllowedIdentities  []string `json:"allowed-identities"`
+	ForgeIdentities    []string `json:"forge-identities"`
 }
 
 // Check returns what is wrong with a commit message. An empty result means it passes.

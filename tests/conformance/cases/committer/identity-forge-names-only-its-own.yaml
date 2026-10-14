@@ -1,0 +1,17 @@
+case: committer/identity-forge-names-only-its-own
+about: Naming the forge's addresses allows those alone, written whole; another bot's address and a person off the list are still refused, and the user's own list still allows them.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf '^fixture@example\\\\.invalid$\\n' > \"$XDG_CONFIG_HOME/workline/allowed-identities\""
+    - "git checkout -qb feature && echo x >> main.go && git commit -qam 'feat: add x'"
+    - "echo y >> main.go && GIT_AUTHOR_EMAIL='67890+other-app[bot]@users.noreply.github.com' git commit -qam 'chore: bump'"
+    - "echo z >> main.go && GIT_AUTHOR_EMAIL=someone@elsewhere.invalid git commit -qam 'fix: z'"
+  config: {roles: {committer: {settings: {forge-identities: ['12345+example-app[bot]@users.noreply.github.com']}}}}
+run: {role: committer, event: merge-request, input: {range: "main..feature"}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: identity, where: author, message: "67890+other-app[bot]@users.noreply.github.com"}
+    - {rule: identity, where: author, message: "someone@elsewhere.invalid"}
+  no-findings: [{rule: identity, where: author, message: "fixture@example.invalid"}, {rule: identity, where: committer}]

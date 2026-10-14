@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: 886cdff
+checked: 6d6cf83
 verified: agent:claude-code
 ---
 # Committer
@@ -51,6 +51,7 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 | `internal-codes-maybe` | `\b[A-Za-z]{1,3}[0-9]{2,}\b` | codes with no dash, judged |
 | `internal-codes-allow` | `UTF-8`, `SHA-256`, `RFC-…`, `CVE-…`, `v1`… | standard names that look like codes |
 | `allowed-identities` | `[]` | author addresses allowed, as patterns; empty with no user list: not checked |
+| `forge-identities` | `[]` | addresses the forge commits with, written whole: allowed, never turning the check on alone |
 
 `enforce: {<rule>: warn}` (or `off`) beside `settings` softens one rule.
 
@@ -60,8 +61,8 @@ Under `roles: {committer: {settings: …}}` in `.workline/config.yaml`
 effort low, per refused message, and one more of a stronger model if the
 rewrite is refused (`promote-after: 1`). No cap needed.
 **Status**: [beta](../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md),
-used daily on workline itself since 2026-09, back from built while a bug
-is open;
+used daily on workline itself since 2026-09, back from built for a bug
+fixed since;
 [where it stands](docs/status.md); tried with Claude below.
 
 ## Check (`pre`, no AI)
@@ -125,11 +126,18 @@ An author or committer address outside the allow list blocks (`identity`).
 
 - **Checked**: the one git will record, on `commit-msg` — `git var`, so an
   address given for one commit (`-c user.email`, `--author`) is caught too
-  — and those of every commit of the range.
+  — and those of every commit of the range. An empty address is refused.
 - **The list**: the project's `allowed-identities` setting (patterns;
   noreply addresses, for a public repository) and the user's own, one
   pattern a line, in `workline/allowed-identities` in their config folder.
   Both empty, identities are not checked, and nothing is said.
+- **The forge's own commits**: the project's `forge-identities` names the
+  addresses its forge commits with — on GitHub, its App's bot
+  (`<id>+<app>[bot]@users.noreply.github.com`) and the web's merges
+  (`noreply@github.com`) — so a user's list lets them through
+  ([#107](https://github.com/JN0V/workline/issues/107)). Each is matched
+  exactly, case included, never as a pattern; alone, they never turn the
+  check on.
 
 ## Rewrite (the agent)
 
