@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: none of the tests shown (reviewer_test.go, tests_test.go) reaches `settle`, so nothing exercises `keys[a[:i]] = a[i+1:]` overwriting the key when two findings share one `JudgeKey`; merged-findings-each-judged-by-their-lens.yaml is not shown and by its name covers different lenses, not identical findings.
+"yes": true

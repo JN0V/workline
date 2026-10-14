@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: 'the case `c == ''"'' || (c == ''`'' && !shell)` never starts a quote on `''`, so in C-like and shell files a rune or single-quoted `''{''` reaches the `case ''{'': depth++` in braceEnd and moves the function''s end line.'
+"yes": true

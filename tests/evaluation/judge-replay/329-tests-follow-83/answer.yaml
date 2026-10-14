@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: no test shown reaches the `if o.VerdictOnly` early return or the refusal without `--verdict`, because follow_test.go calls only `follow`, `unrecorded`, `mergeDoc`, `settleDoc` and `asBase`, never `Follow`; the unshown `merge/verdict-kept-then-read.yaml` may run follow with a verdict, but nothing shown says it uses `--verdict-only`.
+"yes": true

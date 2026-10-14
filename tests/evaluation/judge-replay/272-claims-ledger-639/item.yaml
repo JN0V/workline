@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v178
+pull-request: 272
+lens: claims
+title: "\"Every line starting with /\" is not escaped: indented lines are skipped"
+where: internal/backlog/ledger.go:639
+commit: 9fcc416d0d437d1231ecc893b633ab18c6e9d764
+origin: artifact
+from:
+  run: 37782018092
+  path: .workline-runs/20261008T130848.205514004-reviewer/in/judge/01
+  expires: 2027-01-06
+said: no
+said-tokens: {in: 8074, out: 332}
+truth: false
+settled-by: agreement
+evidence: "internal/backlog/ledger.go:638-653: `case indent > 3:` has no `continue`, so the switch falls out and `if fence == 0 { lines[i] = slashLine.ReplaceAllString(l, `$1\\/`) }` runs; slashLine (625) is `(?m)^(\\s*)/`, matching leading blanks; ledger_test.go:14-15 asserts \"  /label ~bug\" -> \"  \\/label ~bug\" — An indented line outside a fence is escaped; only lines inside a fenced block are left, which the PR text ('outside fenced code' in the Inert doc) does not claim to escape. The `indent > 3` case only stops such a line from opening or closing a fence."

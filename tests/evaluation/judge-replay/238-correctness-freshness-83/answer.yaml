@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the code shown has no 48000-token budget, no `taskMaxChars` value and no `TokensRatio`, so the claimed '~57k characters' and '37000 or more' threshold are not supported by anything quoted, and the finding only guesses that `taskMaxChars + max(0, wholeChars(s)-wholeCharsDefault)` ever exceeds the budget `Prompt` checks.
+"yes": false

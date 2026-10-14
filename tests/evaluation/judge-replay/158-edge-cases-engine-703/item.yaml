@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v065
+pull-request: 158
+lens: edge-cases
+title: "Unindented lines of an item silently dropped"
+where: internal/engine/engine.go:703
+commit: b76a7967831569a8ae04630478af5ec4004cfc0f
+origin: artifact
+from:
+  run: 37314162756
+  path: .workline-runs/20261005T130606.626839417-reviewer/in/judge/01
+  expires: 2027-01-03
+said: yes
+said-tokens: {in: 3532, out: 536}
+truth: true
+settled-by: agreement
+evidence: "internal/engine/engine.go:697-707 answerItems: a line is kept only if it starts with \"- \", a space, a tab or is empty; any other column-0 line is dropped with no finding. claimsRead/claimsOneByOne (711, 726) then Mend each item and read it. — Reachable: on the one-by-one path (ErrInvalidOutput), a quote under `quote: |` pasted as in the file with column-0 lines without a tab (`func f() {`, `}`) loses those lines; the tab-indented rest Mends and the claim reads with a truncated quote, silently. untab (agent/mend.go) also stops at such a line (`k <= parent && l[k] != '\\t'`), so the whole answer fails first and reaches this path."

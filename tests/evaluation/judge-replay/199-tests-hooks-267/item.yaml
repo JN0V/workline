@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v115
+pull-request: 199
+lens: tests
+title: "XDG_CONFIG_HOME expansion untested"
+where: internal/hooks/hooks.go:267
+commit: 1ab52cd49c4ee2f5183d5030ece3ec21f7958b50
+origin: artifact
+from:
+  run: 37432291141
+  path: .workline-runs/20261006T075204.937999525-reviewer/in/judge/01
+  expires: 2027-01-04
+said: no
+said-tokens: {in: 3251, out: 205}
+truth: true
+settled-by: panel
+matters: false
+evidence: "internal/hooks/hooks.go:266-268 expands `$XDG_CONFIG_HOME`, added by 77711cd0 which is in PR 199's branch (ancestor of 1ab52cd4); internal/hooks/handsover_test.go:33-34 covers `$HOME/...` and `~/...` only, and the conformance cases that mention XDG_CONFIG_HOME (committer/*, setup/doctor-global-hooks-path-kept.yaml, push_test.go) set it as env for the shell, never write a hook script whose text holds `$XDG_CONFIG_HOME`: deleting that branch fails nothing, and one table row would fix it."

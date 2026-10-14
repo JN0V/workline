@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: ReadState returns '&s', which is never nil, and Persist skips issues with no state through 'if !found || err != nil { continue }'; st is also dereferenced earlier, in 'FormatState(*st)', so 'st.Aside' at line 535 cannot panic.
+"yes": false

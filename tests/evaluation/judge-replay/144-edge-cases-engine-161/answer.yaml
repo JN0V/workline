@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the excerpt never shows where `res.RunDir` is set or reset, so the claim that it is \"\" when `run(o, res)` fails before `newRunDir` is a guess, and on later loop turns it would still hold the earlier run's folder rather than \"\".
+"yes": false

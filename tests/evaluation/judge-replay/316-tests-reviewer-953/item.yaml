@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v205
+pull-request: 316
+lens: tests
+title: "Fallback of the review to the removed-line \"On\" has no test"
+where: internal/builtin/reviewer/reviewer.go:953
+commit: adf03f59e739af216603bdaec7b37d7c55dc1ecb
+origin: artifact
+from:
+  run: 38262867840
+  path: .workline-runs/20261012T142628.936710545-reviewer/in/judge/02
+  expires: 2027-01-10
+said: yes
+said-tokens: {in: 17790, out: 576}
+truth: true
+settled-by: agreement
+evidence: "internal/builtin/reviewer/reviewer.go:947-955 `if f.Where == \"\" { ... locate(removed, f.Cause.Quote) ... f.On = st.Change.Removed[f.Cause.Path][at[0].From-1].At }`, consumed by lines.go:46-47 `if f.On > 0 { n = f.On }`; at adf03f59 no conformance case nor unit test quotes a removed line (reviewer/finding-beside-removed-lines-is-fixed-by-author.yaml quotes a kept line, as its about says; no fixture or test names a removed-line quote) — History confirms: the PR's next commit 40b6b0fc 'test(reviewer): a finding on a removed line is commented where it was' adds reviewer/line-comment-on-a-removed-line.yaml, the first test asserting the line (calc/calc.go:8) a removed-line finding is commented on."

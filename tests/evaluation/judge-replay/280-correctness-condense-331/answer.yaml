@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: '`movedWhole` checks only that the doc is in `created`, that `p.Rule` matches, and that `p.Size <= size` for some vanished size, so an unrelated new over-budget section in a created doc is excused whenever any section of `c.Doc` dropped out of `found`, for instance one condensed in place, and nothing compares content or heading.'
+"yes": true

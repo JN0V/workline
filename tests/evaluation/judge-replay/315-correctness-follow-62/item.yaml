@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v202
+pull-request: 315
+lens: correctness
+title: "--gardening tends every role's workline branch, not only gardening ones"
+where: internal/engine/follow.go:62
+commit: b91b620c3292f2f6ca861f11f528ec4ec5e7931f
+origin: artifact
+from:
+  run: 38254039732
+  path: .workline-runs/20261012T131648.516811859-reviewer/in/judge/01
+  expires: 2027-01-10
+said: no
+said-tokens: {in: 7197, out: 466}
+truth: false
+settled-by: agreement
+evidence: "internal/engine/follow.go:62 `if !ok || task != \"release\" && !gardening { continue }` does tend every `workline/<role>/<task>` branch with --gardening, but the only non-release branches the engine creates are `branchPrefix(role)+slugify(key)` (engine.go:1368) from `--open-merge-request`, i.e. the task merge requests gardening opens; the doc comment (follow.go:25-27) and the PR body ('For each open workline/<role>/<task> that main moved under') state that as the intent. — A naming nit at most: the flag's help says 'gardening merge requests' while the code says 'every task but release'. No branch kind exists at this commit on which the broader match does something wrong; a person's own branch under workline/ is left to them by personsCommit."

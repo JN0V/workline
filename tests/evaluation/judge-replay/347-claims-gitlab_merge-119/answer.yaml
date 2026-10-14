@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: '`pushers` adds `&after=` a week before the merge request opened, and `who := []string{}` returns a non-nil empty slice when no event matches; `weighRoutine` only stops on `st.Pushers == nil` and its `for _, p := range st.Pushers` passes an empty list, so an earlier push by a person, or pushes with no matching event, are never checked against the claim of ''every push to its branch made by the App''.'
+"yes": true

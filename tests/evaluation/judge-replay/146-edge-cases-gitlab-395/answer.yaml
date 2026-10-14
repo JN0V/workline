@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: after a 403 the POST at line 404 is made with this same token, so on the next run the loop at line 390, reading oldest first, finds that new note last and its PUT succeeds; the claim that its author differs from the token's is a guess, and a scope 403 makes that POST fail and 'return err' rather than write a duplicate.
+"yes": false

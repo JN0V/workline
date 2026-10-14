@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v224
+pull-request: 347
+lens: tests
+title: "History read failure path has no test"
+where: internal/engine/routine.go:437
+commit: 9077b5bd7d80640425d675168379eebb680bfd0c
+origin: artifact
+from:
+  run: 38416822321
+  path: .workline-runs/20261013T145051.086316709-reviewer/in/judge/01
+  expires: 2027-01-11
+said: yes
+said-tokens: {in: 16263, out: 364}
+truth: true
+settled-by: agreement
+evidence: "internal/engine/routine.go:437-438 `if deepErr != nil { return nil, fmt.Errorf(\"the base's history, for what a revert undoes: %w\", deepErr) }` — grep at 9077b5bd: `demotions(` is called only from merge.go:458; no test or conformance case mentions deepErr or the message; routine_test.go:102 calls `commits()` directly and only on a healthy repo. — The path is nearly unreachable (the same repo/tip just succeeded for `history` with n=100), which is why nothing exercises it; still, no test reaches it."

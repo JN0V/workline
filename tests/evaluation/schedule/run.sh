@@ -10,6 +10,8 @@
 #                                                    #   reviewer: measured on demand, in steps (#90)
 #
 # The systemd units next to it run it every week (docs/spec/conformance.md).
+# The judge's replay (TestJudgeReplay, #362) is measured on demand too, never
+# here.
 set -eu
 repo=$(cd "${1:-$(dirname "$0")/../../..}" && pwd)
 agent=${WORKLINE_EVAL:-claude}
@@ -48,5 +50,5 @@ fi
 
 echo "workline eval: $commit, $agent (runs so far: $done_runs, model changed: $model_changed)"
 cd "$tree"
-WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m -skip "TestEvaluation/(${skip:-x^})/" ./tests/evaluation/
+WORKLINE_EVAL=$agent WORKLINE_JUDGE=${WORKLINE_JUDGE:-claude:sonnet} WORKLINE_EVAL_RESULTS=$results go test -count=1 -timeout 60m -skip "TestEvaluation/(${skip:-x^})/|^TestJudgeReplay$" ./tests/evaluation/
 touch "$stamp" # after the run: the models it saw answer are not a change

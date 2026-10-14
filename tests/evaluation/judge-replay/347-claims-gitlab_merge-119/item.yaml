@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v226
+pull-request: 347
+lens: claims
+title: "GitLab pushers are read only inside a window and may be empty"
+where: internal/forge/gitlab_merge.go:119
+commit: 05180255a035022c7286be7bc2adca06e7a1d80b
+origin: artifact
+from:
+  run: 38421664723
+  path: .workline-runs/20261013T152418.849027595-reviewer/in/judge/02
+  expires: 2027-01-11
+said: yes
+said-tokens: {in: 6439, out: 664}
+truth: true
+settled-by: agreement
+evidence: "internal/forge/gitlab_merge.go:100-104 pushers: events read with `after=<opened - 7 days>` only; line 118 `who := []string{}` returns an empty, non-nil list when no push event matches. internal/engine/routine.go:331-343 waits only on `st.Pushers == nil`; an empty list passes the \"every push by the App\" check. — PR claims \"every push to its branch made by the App, as the forge names the pusher (…GitLab's push events)\". On GitHub (github_merge.go:115) Pushers stays nil when the activity lists none, so the MR waits; on GitLab a push outside the window, or none listed, reads as \"all by the App\". The commit-level check (notOwn) still runs, which bounds the damage."

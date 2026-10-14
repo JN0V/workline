@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: 'the finding guesses rather than shows a defect. Its title is contradicted by the code: ''if st.Draft'' runs before the quoted lines and takes back or skips a draft. Its claim that ''if st.AutoMerge { e.ready = true }'' skips checking the record ignores that the record is posted with ''f.Comment(... merge-alone=)'' just before auto-merge is turned on, so an auto-merge already on would already have its record, and nothing shown proves otherwise.'
+"yes": false

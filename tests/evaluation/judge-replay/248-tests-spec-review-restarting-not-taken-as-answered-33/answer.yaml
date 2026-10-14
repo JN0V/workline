@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: 'the `in/issues-read: {contains: "9", not-contains: "10"}` check in this case would fail if issue 10 were read again, and the finding admits it covers ''same body, not read again''; a loose substring could only make it fail wrongly, never pass wrongly.'
+"yes": false

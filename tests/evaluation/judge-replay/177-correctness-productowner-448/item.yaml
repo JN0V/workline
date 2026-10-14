@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v078
+pull-request: 177
+lens: correctness
+title: "One failing Closers call aborts the whole run"
+where: internal/builtin/productowner/productowner.go:448
+commit: f695905446e1dee798236fff0b8b99e3c2163251
+origin: artifact
+from:
+  run: 37345419548
+  path: .workline-runs/20261005T170300.253569191-reviewer/in/judge/02
+  expires: 2027-01-03
+said: yes
+said-tokens: {in: 3516, out: 413}
+truth: true
+settled-by: agreement
+evidence: "internal/builtin/productowner/productowner.go:447-451 `closers, err := b.Closers(id); if err != nil { return backlog.Evidence{}, err }` inside the loop over parts; caller 240-247 `if errors.Is(err, forge.ErrUnreachable) { return exitExternal }; if err != nil { return fail(err) }` — the run ends, no comment on any issue read after — GitHub's Closers (github.go:143-146) returns any gh/GraphQL error; one part's failing call stops the whole product-owner run instead of saying that part's closer unread. The PR's next commit 810dd7d8 'one rule for a parent's parts, unread closers said' and the later Part.Unread/TestCloserNotReadIsSaid confirm the gap was real at f695905."

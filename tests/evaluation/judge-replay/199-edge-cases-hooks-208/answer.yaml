@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: '`strings.Fields(line)` drops the indentation, so an ` exit 0` inside `if [ -n "$SKIP" ]; then … fi` makes `f[0] == "exit"` and `return false` fire, so a `workline hook <name>` line after `fi`, which runs when SKIP is empty, is never reached and the hook is reported as not handing over.'
+"yes": true
