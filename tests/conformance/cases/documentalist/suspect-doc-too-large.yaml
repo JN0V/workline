@@ -1,5 +1,5 @@
 case: documentalist/suspect-doc-too-large
-about: "A suspect doc too large to fit in a task alone is left for a person, saying so, and the others are judged: the run never fails on it, and no doc is confirmed unread."
+about: "A suspect doc too large to fit in a task alone, and too long itself to be judged in parts, is left for a person, saying so in this round, and the others are judged: the run never fails on it, and no doc is confirmed unread."
 given:
   repo: documented
   setup:
@@ -10,5 +10,5 @@ run: {role: documentalist, event: merge-request, ai: "cmd:echo '- note: docs/tec
 expect:
   status: pass
   agent-calls: 1
-  findings: [{rule: suspect, where: docs/tech/a-big.md, message: "too large"}]
+  findings: [{rule: suspect, where: docs/tech/a-big.md, message: "too long itself to be judged in parts"}]
   no-findings: [{rule: engine-error}]

@@ -3,9 +3,9 @@
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
 Claude in CI from a release of workline ([CI](../../../docs/ci.md)),
-fixes committed to the branch and reviewed on the forge. Beta: judging a
-large backlog in parts has run once on DomoticsCore, right but for a
-badge's link; a fix in parts once followed a stale code comment.
+fixes committed to the branch and reviewed on the forge. Beta: judging
+docs too large in parts, on by default, ran six nights on DomoticsCore
+and workline; a fix in parts once followed a stale code comment.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive; since, in
 its pull request's `## Tried`
@@ -20,10 +20,8 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. Judging in parts goes on by
-   default once [#356](https://github.com/JN0V/workline/issues/356) is
-   built ([#82](https://github.com/JN0V/workline/issues/82), decided
-   2026-10-14); the docs to split are still to do.
+1. **Nothing buildable in Missing**: open. The docs to split are still
+   to do.
    [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
    simple version (Built: a doc judged on its diff);
    [#121](https://github.com/JN0V/workline/issues/121) too (Built: code
@@ -102,7 +100,11 @@ its evaluation in
 - **Condense, split, merge a card, merge a repeated passage**:
   `condense-*`, `split-*`, `merge-card-*`, `dedupe-*`.
 - **Judging in parts**, a partial claim settled by another part:
-  `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`.
+  `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`. On by default
+  ([#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736),
+  decided 2026-10-14 on six nights; a night capped by `parts-max-per-run`):
+  `judged-in-parts-by-default`; a doc too long itself says so at once:
+  `suspect-doc-too-large`.
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
   `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
@@ -140,36 +142,29 @@ its evaluation in
 2. **Gaps left by step 3** of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)
    ([#106](https://github.com/JN0V/workline/issues/106)).
-3. **Judging in parts on by default**
-   ([#82](https://github.com/JN0V/workline/issues/82), decided
-   2026-10-14), once a doc in parts is no longer judged again each night
-   while it waits ([#356](https://github.com/JN0V/workline/issues/356));
-   the code examples it writes are told apart (Built,
-   [#121](https://github.com/JN0V/workline/issues/121)). On WaterMeter,
-   far behind, 7 of 10 suspect docs were too large to be judged whole.
-4. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
+3. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
    `docs/narrow-wide-sources`, not pushed); four to split
    (`reference/eventbus-architecture.md`,
    `components/core/project-context.md`,
    `architecture/component-configuration-pattern.md`,
    `components/webui/project-context.md`). No issue yet.
-5. **workline's own docs far behind**, gardened nightly in parts since
+4. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-6. **The agent reads**: the pages the reader checks point to
+5. **The agent reads**: the pages the reader checks point to
    ([#256](https://github.com/JN0V/workline/issues/256)); a doc judged on
    its diff against the code as it is now, a read each night (no issue
    yet).
-7. **To watch**: Sonnet citing lines a line off in long docs (now placed
+6. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
-8. **The merge policy, what is left**: at `normal`,
+7. **The merge policy, what is left**: at `normal`,
    agents' pull requests, and its criteria to be offered
    ([#322](https://github.com/JN0V/workline/issues/322), second part).
-9. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
+8. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.
-10. **Tries on real use** (no issue yet):
+9. **Tries on real use** (no issue yet):
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;

@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default)
 - **Date:** 2026-09-29
 
 ## Context
@@ -129,3 +129,21 @@ fix named a wrong path. Before these runs, two of three in parts had failed
 on the format: one brace too many in a part's one-line YAML spoiled its
 whole answer, and the parts found were all thrown away. A part's answer is
 now read claim by claim, and the task asks for block style.
+
+## Amendment (2026-10-14)
+
+Judging in parts is **on by default** (`judge-in-parts: true`), decided by
+the maintainer on [#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736)
+after six nights, 2026-10-01 to 10-13, on DomoticsCore and workline:
+
+- A doc in parts cost 130k to 250k tokens in, against 10k to 40k judged
+  whole; a night is capped by `parts-max-per-run` (16 parts).
+- The two faults those nights found are fixed: a doc judged in parts was
+  judged again each night ([#356](https://github.com/JN0V/workline/issues/356));
+  a fix wrote a wrong code example, now said unverified or checked by the
+  project's command ([#121](https://github.com/JN0V/workline/issues/121)).
+- A project that will not pay for docs too large turns it off; they then
+  go to a person, as before.
+- A doc that cannot be judged in parts whatever its sources hold — too
+  long itself, or sources in another repository — says so in the round
+  that finds it, not "in a later round".

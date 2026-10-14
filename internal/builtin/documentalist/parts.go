@@ -99,8 +99,8 @@ the excerpts do not let you settle stays as it is; say so in a note.
 // nothing changed).
 const partsFixAsked = "what they found wrong goes to the fix in this run"
 
-// partsFor judges in parts the docs too large to be judged whole, when the
-// project turned it on. Asked first (no WORKLINE_PARTS), it writes each
+// partsFor judges in parts the docs too large to be judged whole, unless
+// the project turned it off. Asked first (no WORKLINE_PARTS), it writes each
 // part's question under in/parts; run again with the parts answered, it puts
 // their claims together, and returns the fix task, the docs it judges, the
 // header each doc gains, and the docs judged in parts, by the commit they
@@ -206,29 +206,42 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	return task, judged, fallback, inParts, nil
 }
 
+// partsRoom is the room a part leaves for a doc's sources, or why the doc
+// cannot be judged in parts whatever its sources hold: too long itself, or
+// sources in another repository.
+func partsRoom(d *Doc, repo string) (room int, why string, err error) {
+	content, err := os.ReadFile(filepath.Join(repo, d.Path))
+	if err != nil {
+		return 0, "", err
+	}
+	room = taskMaxChars - len(partsTaskHeader) - len(numberedDoc(d.Path, string(content)))
+	if room < taskMaxChars/4 {
+		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
+	}
+	for _, src := range d.Sources {
+		if name, _, _ := splitSource(src); name != "" {
+			return 0, "(too large to be judged whole; its sources in another repository are not judged in parts yet: a person judges it)", nil
+		}
+	}
+	return room, "", nil
+}
+
 // planParts cuts a doc's sources into parts: the doc whole in each, then
 // source files packed to fill the task; a file larger than a part is cut
 // into consecutive pieces, each read, so no line goes unread. Sources that
 // are docs are left out: a doc following another is propagation, not
 // evidence. why says why the doc cannot be judged in parts.
 func planParts(d *Doc, repo string, share int) (plans []partPlan, why string, err error) {
-	content, err := os.ReadFile(filepath.Join(repo, d.Path))
-	if err != nil {
-		return nil, "", err
-	}
-	room := taskMaxChars - len(partsTaskHeader) - len(numberedDoc(d.Path, string(content)))
-	if room < taskMaxChars/4 {
-		return nil, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
+	room, why, err := partsRoom(d, repo)
+	if err != nil || why != "" {
+		return nil, why, err
 	}
 	if share > 0 && share < room { // measuring: smaller parts than a task holds
 		room = share
 	}
 	var files []string
 	for _, src := range d.Sources {
-		name, p, _ := splitSource(src)
-		if name != "" {
-			return nil, "(too large to be judged whole; its sources in another repository are not judged in parts yet: a person judges it)", nil
-		}
+		_, p, _ := splitSource(src)
 		if strings.HasSuffix(p, ".md") {
 			continue
 		}
