@@ -1,0 +1,4 @@
+# A wrong entry first, refused; once asked again, the right one.
+calls:
+  - - patch: {file: CHANGELOG.md, content: "# Changelog\n\n## Unreleased\n\n- Export your data as XML.\n"}
+  - - patch: {file: CHANGELOG.md, content: "# Changelog\n\n## Unreleased\n\n- Export your data as CSV.\n"}
