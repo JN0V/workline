@@ -84,6 +84,12 @@ type Settings struct {
 	// Sample: who reads the weekly sample of the docs vouched for
 	// (ADR-0014, step 4; workline sample).
 	Sample SampleSettings `json:"sample"`
+	// Examples: the command checking the code examples a fix writes, run
+	// on a checkout with the fixed docs in it (examples.go); unset, they
+	// are said unverified.
+	Examples struct {
+		Check string `json:"check"`
+	} `json:"examples"`
 }
 
 // Doc is a documentation file that declares its sources.
@@ -1622,8 +1628,8 @@ func Post(runDir, repo string) int {
 	for _, f := range findings {
 		if _, ok := inParts[f.Where]; ok && strings.Contains(f.Message, partsFixAsked) {
 			// What the fix call made of what the parts found, now known.
-			if n := judgedFix.placesFixed(f.Where); n > 0 {
-				f.Message = strings.Replace(f.Message, partsFixAsked, "what they found wrong is fixed in this run, in "+nPlaces(n), 1)
+			if n := judgedFix.placesSaid(f.Where); n != "" {
+				f.Message = strings.Replace(f.Message, partsFixAsked, "what they found wrong is fixed in this run, in "+n, 1)
 			} else {
 				f.Message = strings.Replace(f.Message, partsFixAsked, "but the fix changed nothing of what they found wrong: a person reads those places", 1)
 			}
@@ -1632,7 +1638,7 @@ func Post(runDir, repo string) int {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				f.Message += "\n" + notVouched(judgedFix.placesFixed(f.Where), partly[f.Where], readOf(f.Where))
+				f.Message += "\n" + notVouched(judgedFix.placesSaid(f.Where), partly[f.Where], readOf(f.Where))
 			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
@@ -1659,6 +1665,7 @@ func Post(runDir, repo string) int {
 			return string(data)
 		})...)
 	}
+	kept = append(kept, judgedFix.exampleFindings()...)
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
@@ -2176,49 +2183,51 @@ func checklist(findings []verdict.Finding) (intent.Intention, bool) {
 }
 
 // notVouched says, for a doc the agent judged without vouching for it, what
-// this run did: fixed in so many places, or nothing found wrong; applied in
-// part; and why `checked` stays. Never "fixed" for a patch recording only
+// this run did: fixed in so many places, its code examples apart
+// (placesSaid), or nothing found wrong; applied in part; and why `checked`
+// stays. Never "fixed" for a patch recording only
 // `judged` (workline's first nightly, 2026-10-02). read is what the task
 // gave of a doc whose sources did not all go whole, and what it did not
 // ("" when they did): nothing is said found wrong of what was not read
 // (#120).
-func notVouched(n int, partly bool, read string) string {
+func notVouched(fixed string, partly bool, read string) string {
 	given := "" // what was read, and what was not
 	if read != "" {
 		given = "not every source of the doc could be given whole in the task — " + read + ". "
 	}
 	switch {
-	case partly && n > 0:
-		return "(fixed in " + nPlaces(n) + ", applied in part: the places refused are left as they were, each said below; " + given + "`checked` stays — a person fixes them against the sources, then moves `checked`)"
+	case partly && fixed != "":
+		return "(fixed in " + fixed + ", applied in part: the places refused are left as they were, each said below; " + given + "`checked` stays — a person fixes them against the sources, then moves `checked`)"
 	case partly:
 		return "(nothing applied: every place the fix changed was refused, each said below, and left as it was; " + given + "`checked` stays and `judged` records when — a person fixes them against the sources, then moves `checked`)"
-	case read != "" && n > 0:
-		return "(fixed in " + nPlaces(n) + ", not vouched for: what the agent found wrong in what was read is fixed in this run, but " + given + "`checked` stays and `judged` records when — a person reads the doc against what was not read, then moves `checked`)"
+	case read != "" && fixed != "":
+		return "(fixed in " + fixed + ", not vouched for: what the agent found wrong in what was read is fixed in this run, but " + given + "`checked` stays and `judged` records when — a person reads the doc against what was not read, then moves `checked`)"
 	case read != "":
 		return "(nothing found wrong in what was read, not vouched for: the agent changed nothing in the doc, but " + given + "`checked` stays and `judged` records when — a person reads the doc against what was not read, then moves `checked`)"
-	case n > 0:
-		return "(fixed in " + nPlaces(n) + ", not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
+	case fixed != "":
+		return "(fixed in " + fixed + ", not vouched for: what the agent found wrong is fixed in this run, but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
 	}
 	return "(nothing found wrong, not vouched for: the agent changed nothing in the doc, but it could not confirm every sentence against the sources, so `checked` stays and `judged` records when; its note says what — a person reads it, then moves `checked`)"
 }
 
 // outcomes says, for the merge request a gardening task opens, what became
 // of each doc it judged: fixed and in how many places, or nothing found
-// wrong; `checked` moved, or `judged` recorded. readOf says what the task
-// gave of a doc whose sources did not all go whole, and what it did not
-// ("" when they did): nothing is said found wrong of what was not read.
+// wrong; `checked` moved, or `judged` recorded; the code examples it wrote,
+// unverified or checked. readOf says what the task gave of a doc whose
+// sources did not all go whole, and what it did not ("" when they did):
+// nothing is said found wrong of what was not read.
 func outcomes(judged map[string]map[string]string, inParts map[string]string, patched, partly map[string]bool, fix *judgedFixes, readOf func(string) string) map[string]string {
 	out := map[string]string{}
 	fixed := func(p string) string {
-		if n := fix.placesFixed(p); n > 0 {
-			return "fixed in " + nPlaces(n)
+		if s := fix.placesSaid(p); s != "" {
+			return "fixed in " + s
 		}
 		return ""
 	}
 	for p := range inParts {
 		switch f := fixed(p); {
 		case f != "":
-			out[p] = "judged in parts, " + f + "; `checked` not moved"
+			out[p] = "judged in parts, " + f + "; `checked` not moved" + fix.examplesOutcome(p)
 		case judged[p] != nil:
 			out[p] = "judged in parts; the fix changed nothing of what they found wrong, for a person; `checked` not moved"
 		default:
@@ -2236,11 +2245,11 @@ func outcomes(judged map[string]map[string]string, inParts map[string]string, pa
 		case !ok:
 			out[p] = "left as it was"
 		case v && f != "":
-			out[p] = f + ", `checked` moved"
+			out[p] = f + ", `checked` moved" + fix.examplesOutcome(p)
 		case v:
 			out[p] = "still true, `checked` moved"
 		case f != "":
-			out[p] = f + ", `judged` recorded, `checked` not moved"
+			out[p] = f + ", `judged` recorded, `checked` not moved" + fix.examplesOutcome(p)
 		case read != "":
 			out[p] = "nothing found wrong in what was read, `judged` recorded, `checked` not moved"
 		default:
