@@ -1,0 +1,4 @@
+# A judge that may read (ADR-0045) says no, quoting lines the file does not
+# hold.
+- note: "no: an empty list is turned away before the division."
+- quote: {path: calc/calc.go, text: "if len(values) == 0 { return 0 }"}

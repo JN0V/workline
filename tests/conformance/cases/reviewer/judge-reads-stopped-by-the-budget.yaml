@@ -1,0 +1,15 @@
+case: reviewer/judge-reads-stopped-by-the-budget
+about: "Every judge answers once before any read is served; a judge whose read the run's ai-max-tokens stops is taken as unsure: the finding is shown not verified, never left unjudged (ADR-0045)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-reads-costly.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 2, ai-max-tokens: 500}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "not verified: the judge cannot tell (judge-unsure): its reads were stopped, the run having spent its ai-max-tokens"}
+    - {rule: ai-max-tokens}
+  no-findings: [{rule: review-not-whole}, {rule: finding-judged-no}]

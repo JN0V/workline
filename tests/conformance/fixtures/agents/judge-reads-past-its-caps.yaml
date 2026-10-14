@@ -1,0 +1,5 @@
+# A judge that may read (ADR-0045): the whole file, then more, past its
+# rounds and lines.
+calls:
+  - - read: {path: calc/calc.go, lines: "1-18", why: "the whole file"}
+  - - read: {path: calc/calc.go, lines: "14-18", why: "Parse, below"}

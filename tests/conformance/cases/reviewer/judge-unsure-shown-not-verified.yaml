@@ -1,0 +1,13 @@
+case: reviewer/judge-unsure-shown-not-verified
+about: "A judge that may read and still cannot tell answers unsure: the finding is shown not verified, with why, never dropped and never blocking (judge-unsure, ADR-0045)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-unsure.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 2, ai-findings: block}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: correctness, where: "calc/calc.go:11", level: warn, message: "not verified: the judge cannot tell (judge-unsure): whether a caller ever passes a single value"}]
+  no-findings: [{rule: finding-judged-no}, {rule: review-not-whole}]

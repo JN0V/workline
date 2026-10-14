@@ -40,6 +40,8 @@ var Catalogue = map[string]bool{
 	"undepend":       true, // a link the role set taken off: done once its blockers close, proposed while one is open (ADR-0028)
 	"finding":        true, // a lens's answer (in/parts): a defect, its cause quoted; read by pre, never applied (ADR-0020)
 	"claim":          true, // a part's answer (in/parts), read by pre; or why a patch takes words out, read by post; never applied
+	"read":           true, // a judge's ask to read code before it answers, served at the commit judged; never applied (ADR-0045)
+	"quote":          true, // the code a judge's no rests on, found again before a finding is dropped; never applied (ADR-0045)
 }
 
 // Intention is one proposal: its kind and its value.
