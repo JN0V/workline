@@ -189,6 +189,8 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 		{"thousands, spaced", "`Clock.h` is 1 008 lines.", "`Clock.h` is 569 lines.", ""},
 		{"thousands, a no-break space", "`Clock.h` is 1\u00a0008 lines.", "`Clock.h` is 569 lines.", ""},
 		{"thousands, a narrow no-break space", "`Clock.h` is about 1\u202f008 lines.", "`Clock.h` is about 569 lines.", ""},
+		{"thousands, a thin space", "`Clock.h` is 1 008 lines.", "`Clock.h` is 569 lines.", ""},
+		{"thousands, a figure space", "`Clock.h` is 1 008 lines.", "`Clock.h` is 569 lines.", ""},
 		{"thousands, written spaced", "`Big.h` is 1 008 lines.", "`Big.h` is 1 200 lines.", ""},
 		{"another number", "`Clock.h` is 524 lines long.", "`Clock.h` is 600 lines long.", "removal-uncited"},
 		{"the rest said anew", "`Clock.h` is 524 lines long. Watch it.", "`Clock.h` is 569 lines: under the limit.", ""},

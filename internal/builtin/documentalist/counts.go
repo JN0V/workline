@@ -35,7 +35,9 @@ func (c countOff) message() string {
 
 // countNumber is a count as a doc writes it: "524", its thousands apart or not,
 // "1,008", "1 008", the space a no-break, narrow, thin or figure one as well
-// as a keyboard's: the spaces the removal rule makes plain.
+// as a keyboard's: the spaces the removal rule makes plain. Two numbers a
+// lone space apart, "10 100", are one, as the removal rule reads them: the
+// SI way of writing thousands leaves a reader no other reading.
 const countNumber = `\d{1,3}(?:,\d{3})+|\d{1,3}(?:[ \x{00A0}\x{202F}\x{2009}\x{2007}]\d{3})+|\d+`
 
 // whole is a number as digits alone: "1,008" and "1 008" are "1008".
