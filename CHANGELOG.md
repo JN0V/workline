@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.29.0](https://github.com/JN0V/workline/compare/v0.28.0...v0.29.0) (2026-10-14)
+
+
+### Features
+
+* **committer:** mark a rewritten message with workline's trailers ([#401](https://github.com/JN0V/workline/issues/401)) ([189196d](https://github.com/JN0V/workline/commit/189196da93e0e4a43e83c2e4729fb715bf21e175))
+* **reviewer:** replay the judge in two arms, then read by default ([#402](https://github.com/JN0V/workline/issues/402)) ([06118df](https://github.com/JN0V/workline/commit/06118df91d796fed72158d5baf840272e1bf0ed9))
+* **reviewer:** the judge asks for the code it needs (ADR-0045) ([#400](https://github.com/JN0V/workline/issues/400)) ([daf655c](https://github.com/JN0V/workline/commit/daf655cc5ceeab6d4f3d2a063b24aeeb78cb0af9))
+* **sample:** draw every role's acts, one in ten per kind ([#398](https://github.com/JN0V/workline/issues/398)) ([14c69c7](https://github.com/JN0V/workline/commit/14c69c75d1ce6da2953984b3c6d0e4ff0d1a3adc))
+* **sample:** re-check each act drawn, one auditor call an act ([#399](https://github.com/JN0V/workline/issues/399)) ([91f9e8d](https://github.com/JN0V/workline/commit/91f9e8d2ce27d08d33f2054c5460056b7b3f6dea))
+* **sample:** settle disputes by a panel, keep and count every week ([#403](https://github.com/JN0V/workline/issues/403)) ([ffae728](https://github.com/JN0V/workline/commit/ffae728155651320c01b10e1b9f87967c2ce31ac))
+
+
+### Bug Fixes
+
+* **merge:** keep the yes through workline's own record commits ([#386](https://github.com/JN0V/workline/issues/386)) ([9b5e3d3](https://github.com/JN0V/workline/commit/9b5e3d326eb45ab3cfcddf1554e930905d88035a))
+* **reviewer:** leave the versions a release tool bumps unreviewed ([#388](https://github.com/JN0V/workline/issues/388)) ([fc7d3ab](https://github.com/JN0V/workline/commit/fc7d3ab1c80549ae71800cbf0286738d3070ee31))
+
 ## [0.28.0](https://github.com/JN0V/workline/compare/v0.27.0...v0.28.0) (2026-10-14)
 
 
