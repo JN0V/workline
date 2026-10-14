@@ -31,8 +31,10 @@ nothing in its body. The engine comments to the reporter, naming them:
 what the role understood (its `why`), the sections it would add (Need and
 Validation as drafts from their words), what it still needs (`questions`),
 and how to agree; the sections also in a YAML block, under "As the engine
-reads it" — the block read back, the agent's fences turned to `'''` so none ends or replaces it — but in an
-example or steps, not turned yet. The issue gets `workline:to-refine`; the act counts in
+reads it" — the block read back. Its fence is longer than any run of
+backticks it holds, and only that fence at a line's start ends it, so a
+code block in an example or steps is read back whole (#391); elsewhere the
+agent's fences are turned to `'''`. The issue gets `workline:to-refine`; the act counts in
 `refine`'s cap. Agreement is read where only the right people write:
 
 - **`workline:accepted`**, set by a person of the project: the next run

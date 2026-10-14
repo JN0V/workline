@@ -94,8 +94,6 @@ func RecordMarker(role string) string { return forge.Marker("sticky=" + role + "
 // ReportTitle is the title of the role's report issue.
 func ReportTitle(role string) string { return "Backlog — " + strings.ReplaceAll(role, "-", " ") }
 
-var fenced = regexp.MustCompile("(?s)```yaml\n(.*?)```")
-
 // readBlock decodes the fenced YAML block of the comment carrying marker
 // into v: the last, when another user's left behind could not be edited
 // (GitLab: a note is its author's). found is false when no comment carries
@@ -2201,8 +2199,16 @@ func ProposalComment(author string, c Proposal, role string) string {
 		}
 	}
 	data, _ := yaml.Marshal(kept)
-	b.WriteString(engineBlock + "\n\n```yaml\n" + string(data) + "```\n</details>")
+	b.WriteString(engineBlock + "\n\n" + yamlFenced(string(data)) + "\n</details>")
 	return b.String()
+}
+
+// yamlFenced puts YAML in a code block whose fence is longer than any run
+// of backticks it holds: a fence in a bug's steps or an example neither
+// ends it nor is read for it (#391); yamlBlock reads it back.
+func yamlFenced(data string) string {
+	fence := FenceFor(data)
+	return fence + "yaml\n" + data + fence
 }
 
 // engineBlock opens the block of a proposal the engine reads back.
@@ -2237,12 +2243,12 @@ func lastProposal(comments []string, role string) (*Proposal, error) {
 		if at < 0 {
 			return nil, fmt.Errorf("no %q block in it", "As the engine reads it")
 		}
-		m := fenced.FindStringSubmatch(comments[i][at:])
-		if m == nil {
+		text, ok := yamlBlock(comments[i][at:])
+		if !ok {
 			return nil, fmt.Errorf("no YAML in its %q block", "As the engine reads it")
 		}
 		var p Proposal
-		if err := yaml.Unmarshal([]byte(m[1]), &p); err != nil {
+		if err := yaml.Unmarshal([]byte(text), &p); err != nil {
 			return nil, fmt.Errorf("its YAML: %v", err)
 		}
 		return &p, nil

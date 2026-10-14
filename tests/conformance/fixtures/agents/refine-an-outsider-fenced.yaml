@@ -1,0 +1,31 @@
+# The product owner's proposal to an outsider whose example and steps hold
+# a code block (#391): read back whole when it is agreed to.
+- refine:
+    issue: 9
+    scope: |
+      `WriteRows` in src/export/csv.go, and its test.
+    sources: [src/export/csv.go]
+    verification: |
+      A test writes three rows and reads three lines back.
+    need: |
+      Every row exported, so a report counts what was sold.
+    example: |
+      The export of 8 Oct, 3 sales:
+
+      ```csv
+      day,item
+      2026-10-08,tea
+      2026-10-08,cake
+      ```
+    steps: |
+      1. Run:
+
+      ```sh
+      shop export --day 2026-10-08
+      ```
+
+      2. Count the rows: 2, not 3.
+    validation: |
+      - **One day:** Given 3 sales on 8 Oct, When Zed exports 8 Oct, Then the file holds 3 rows.
+    why: |
+      The CSV export drops its last row.
