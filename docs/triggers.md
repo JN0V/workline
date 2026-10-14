@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 27755fce
+checked: 632c236a
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -49,7 +49,7 @@ Each event that writes runs in two jobs
 
 ### Merge request
 
-The committer, the documentalist, the reviewer if routed:
+The committer, the documentalist, the reviewer if routed; one run at a time ([#359](https://github.com/JN0V/workline/issues/359)):
 
 ```sh
 workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \

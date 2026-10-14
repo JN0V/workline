@@ -176,7 +176,10 @@ is marked ready.
   only, and skipping them could leave nothing to read. The commits are
   recorded and one run counted; the next push gets one lens, in turn.
 - **GitHub**: the pull request `opened`, not a draft, or
-  `ready_for_review`, which runs the line.
+  `ready_for_review`, which runs the line. A push while that run goes on
+  cancels it, one run per pull request
+  ([#359](https://github.com/JN0V/workline/issues/359)): the next run
+  reads one lens.
 - **GitLab**: marking a draft ready starts no pipeline
   ([gitlab-org/gitlab#25426](https://gitlab.com/gitlab-org/gitlab/-/issues/25426)).
   The next pipeline, a push or **Run pipeline**, is the one when the

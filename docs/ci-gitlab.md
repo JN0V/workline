@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 27755fce
+checked: 632c236a
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -104,6 +104,21 @@ with the variable `WORKLINE_TASK` set to `sample`.
 ### 5. Protect main
 
 Merge requests only, pipelines must succeed.
+
+### 6. One pipeline per merge request
+
+A push cancels the pipeline still judging the merge request's head before
+([#359](https://github.com/JN0V/workline/issues/359)): `workline:judge` is
+`interruptible`, the jobs that write are not. GitLab does it when:
+
+- **Auto-cancel redundant pipelines** is checked (Settings → CI/CD →
+  General pipelines), `workflow:auto_cancel:on_new_commit` left at its
+  default, `conservative`;
+- your own jobs in that pipeline are `interruptible: true` too: once one
+  that is not has started, GitLab cancels nothing
+  ([GitLab's docs](https://docs.gitlab.com/ci/yaml/#interruptible)).
+
+Not tried on a GitLab yet.
 
 ### When a schedule runs
 
