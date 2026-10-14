@@ -1,4 +1,4 @@
-# Judge — where it stands (2026-10-13)
+# Judge — where it stands (2026-10-14)
 
 **In one line:** asked on real use by the documentalist (a fix it
 vouches for), the reviewer (each important finding) and the product owner
@@ -14,17 +14,24 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: met. A judge of another provider and
-   each defect it let through as an evaluation case are parked
-   ([#80](https://github.com/JN0V/workline/issues/80)): any command can
-   already be the judge, and using one waits on a second provider.
+1. **Nothing buildable in Missing**: open. The judge reads the code it
+   needs before saying no
+   ([#362](https://github.com/JN0V/workline/issues/362)). A judge of
+   another provider and each defect it let through as an evaluation case
+   are parked ([#80](https://github.com/JN0V/workline/issues/80)): any
+   command can already be the judge, and using one waits on a second
+   provider.
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
-3. **AI verdicts measured**: in part. Its verdicts are measured only
+3. **AI verdicts measured**: met on real use, 2026-10-14: 40 of its 229
+   verdicts on workline's pull requests read again in the code, its "yes"
+   right 19 of 20, its "no" 12 of 20
+   ([the judge, measured](../../../docs/research/judge-measured.md)). To
+   measure again once
+   [#362](https://github.com/JN0V/workline/issues/362) is built. Also
    inside the other roles' measures: the documentalist's `drifted` cases
    ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)),
-   the reviewer's bench, where it refused true findings ([reviewer
-   status](../../reviewer/docs/status.md), Missing 3 and 4).
+   the reviewer's bench.
 
 ## Built
 
@@ -42,5 +49,7 @@ No cases folder of its own: it is asked inside the other roles' cases.
 
 ## Missing
 
+- **The judge reads the code it needs** before saying no
+  ([#362](https://github.com/JN0V/workline/issues/362)).
 - **Parked**: a judge of another provider
   ([#80](https://github.com/JN0V/workline/issues/80)).

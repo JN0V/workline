@@ -1,4 +1,4 @@
-# Auditor — where it stands (2026-10-13)
+# Auditor — where it stands (2026-10-14)
 
 **In one line:** reads, each week, one in ten of the docs the
 documentalist vouched for (`workline sample`); tried on a GitLab sandbox,
@@ -16,15 +16,18 @@ Beta until the three criteria of
 hold:
 
 1. **Nothing buildable in Missing**: open. Every role's acts
-   ([#205](https://github.com/JN0V/workline/issues/205)), to build or
-   park. The weekly sample's other gaps are parked
+   ([#205](https://github.com/JN0V/workline/issues/205)) are being built,
+   its verdicts kept and counted
+   ([#276](https://github.com/JN0V/workline/issues/276)) with it, as
+   decided on 2026-10-14. The weekly sample's other gaps are parked
    ([#108](https://github.com/JN0V/workline/issues/108)): a judge of
    another provider, a week not run caught up.
 2. **The main issue validated on real use**: open.
    [#155](https://github.com/JN0V/workline/issues/155) collects the weeks;
    no Validation signed by the maintainer yet.
 3. **AI verdicts measured**: open. Its verdicts are not kept as a measure
-   yet ([#276](https://github.com/JN0V/workline/issues/276)); a `checked`
+   yet ([#276](https://github.com/JN0V/workline/issues/276), built with
+   [#205](https://github.com/JN0V/workline/issues/205)); a `checked`
    found false on a forge is untried
    ([#155](https://github.com/JN0V/workline/issues/155) collects it when
    one turns up).
@@ -40,8 +43,10 @@ hold:
 ## Missing
 
 - **Every role's acts re-checked**
-  ([#205](https://github.com/JN0V/workline/issues/205)).
+  ([#205](https://github.com/JN0V/workline/issues/205)): being built.
 - **Its verdicts kept and counted**
-  ([#276](https://github.com/JN0V/workline/issues/276)).
+  ([#276](https://github.com/JN0V/workline/issues/276)): built with
+  [#205](https://github.com/JN0V/workline/issues/205) (decided
+  2026-10-14).
 - **The weeks, read**
   ([#155](https://github.com/JN0V/workline/issues/155)).
