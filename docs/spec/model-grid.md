@@ -2,7 +2,7 @@
 sources: [internal/agent, internal/engine/engine.go]
 checked: 1d043faa
 verified: agent:claude-code
-judged-in-parts: fef4330
+judged-in-parts: c1f13a0
 ---
 # Model grid — v1 (draft)
 
