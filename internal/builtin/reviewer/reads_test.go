@@ -125,3 +125,54 @@ func TestReadingLeft(t *testing.T) {
 		}
 	}
 }
+
+// JudgeReading asks a question in process as a run does (ADR-0045): a
+// read served at the commit, asked again; a no dropping the finding only
+// on a quote found again in what was shown or read; unsure, a no
+// unquoted, a read past the caps, each shown not verified.
+func TestJudgeReading(t *testing.T) {
+	repo := gitRepo(t, map[string]string{"calc/calc.go": calcGo, "calc/sum.go": sumGo})
+	head := strings.TrimSpace(must(git(repo, "rev-parse", "HEAD")))
+	material := "## The finding\n\nMean leaves out the first value.\n\n## calc/calc.go, lines 3 to 6\n" // as before #127: ##
+	no := func(path, text string) judge.Answer {
+		return judge.Answer{Why: "it adds every value", Quote: &judge.Quote{Path: path, Text: text}}
+	}
+	for _, c := range []struct {
+		name    string
+		answers []judge.Answer
+		said    string
+		shown   string
+		rounds  int
+	}{
+		{"read then no, quoting what it read", []judge.Answer{{Reads: []judge.Read{{Name: "sum"}}}, no("calc/sum.go", "for _, v := range values[1:] {")}, "no", "dropped", 1},
+		{"no, quoting what it was shown", []judge.Answer{no("calc/calc.go", "return sum(values) / len(values)")}, "no", "dropped", 0},
+		{"no, quoting what it never saw", []judge.Answer{no("calc/sum.go", "total := 0")}, "no", "not verified: the judge said no (judge-no-unquoted): its quote, at calc/sum.go:5", 0},
+		{"yes", []judge.Answer{{Yes: true, Why: "it fails"}}, "yes", "verified", 0},
+		{"unsure", []judge.Answer{{Unsure: true, Why: "cannot tell"}}, "unsure", "not verified: the judge cannot tell (judge-unsure): cannot tell", 0},
+		{"reads past its rounds", []judge.Answer{{Reads: []judge.Read{{Name: "sum"}}}, {Reads: []judge.Read{{Name: "Mean"}}}, {Reads: []judge.Read{{Name: "Report"}}}}, "unsure", "not verified: the judge cannot tell (judge-unsure): it asked to read again, no read left", 2},
+	} {
+		var materials []string
+		calls := 0
+		j := JudgeReading(repo, head, "Does it fail?", material, "calc/calc.go", 2, 400, func(q, m string) (judge.Answer, error) {
+			materials = append(materials, m)
+			a := c.answers[calls]
+			a.Call.TokensIn = 100
+			calls++
+			return a, nil
+		})
+		if j.Said != c.said || !strings.HasPrefix(j.Shown, c.shown) || j.Rounds != c.rounds || len(j.Calls) != calls || calls != len(c.answers) {
+			t.Errorf("%s: %+v", c.name, j)
+		}
+		if c.rounds > 0 && (!strings.Contains(materials[1], "## What you read, round 1") || !strings.Contains(materials[1], "func sum(values []int) int {") || j.Asked[0] != "`sum`") {
+			t.Errorf("%s: asked again with what it read: %v\n%s", c.name, j.Asked, materials[1])
+		}
+		if !strings.Contains(materials[0], "You may ask to read the repository as it reads at") {
+			t.Errorf("%s: the first question says it may read:\n%s", c.name, materials[0])
+		}
+	}
+	if j := JudgeReading(repo, head, "q", material, "calc/calc.go", 2, 400, func(q, m string) (judge.Answer, error) {
+		return judge.Answer{}, fmt.Errorf("the agent is gone")
+	}); j.Said != "" || j.Shown != "not verified: the agent is gone" || len(j.Calls) != 1 {
+		t.Errorf("no answer: %+v", j)
+	}
+}
