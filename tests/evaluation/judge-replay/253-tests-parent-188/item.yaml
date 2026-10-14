@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v163
+pull-request: 253
+lens: tests
+title: "ReadEvidence test-proof branches untested"
+where: internal/backlog/parent.go:188
+commit: cd59ce82f6cc36b9aca632a207e6d9f254aa2a18
+origin: artifact
+from:
+  run: 37598821722
+  path: .workline-runs/20261007T091119.146859670-reviewer/in/judge/01
+  expires: 2027-01-05
+said: no
+said-tokens: {in: 14187, out: 339}
+truth: false
+settled-by: agreement
+evidence: "internal/backlog/parent.go:188-221; tests/conformance/cases/product-owner/parent-test-named-read-from-code.yaml:19-21 at cd59ce8 asserts the `in` branch in both forms ('the test `TestWriteRowsKeepsTheLast` in src/export/csv_test.go, read from the code'; 'the test `src/export/csv_test.go`, read from the code') and the `missing` branch ('but the code holds no test `TestQuoteCommas`') — Not wholly untested: two of the three branches would fail that case were they wrong. Only the git-failure branch (parent.go:193-197 and 212-216, 'could not be looked for', ev.TestUnread) has no test at the commit, nor at the PR's end (grep at feba608). No unit test passes a non-nil `tests` func (parent_test.go:65 passes nil)."

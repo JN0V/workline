@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: 'the finding measures the case against the PR''s ''git note'' wording, which is not shown, rather than against issue #321; the issue''s Scope includes ''Each head''s verdicts where `follow` reads them'', so keeping the verdict as a `workline/verdict` status is not left out, and ''it may need a permission'' is only a guess.'
+"yes": false

@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v032
+pull-request: 146
+lens: edge-cases
+title: "Sticky edit swallows a 403 and writes a duplicate note every run"
+where: internal/forge/gitlab.go:395
+commit: 953c6fff702ce82e825e579ecd4bfae3e746e1ef
+origin: artifact
+from:
+  run: 37287700174
+  path: .workline-runs/20261005T090532.907913814-reviewer/in/judge/04
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 4884, out: 427}
+truth: false
+settled-by: agreement
+evidence: "internal/forge/gitlab.go:375 lists notes `sort=asc&order_by=created_at`, and :390 walks them from the last; after a 403 on a person's note the bot POSTs a new one carrying the marker (:398-405). On the next run that newer note is the last with the marker, is the bot's own, and the PUT at :394 succeeds, so `return err` (nil) at :396 — no second note. gitlab_test.go:75-158 covers exactly this (403 then a new note; 'newer' edits it). — The 403 is swallowed on purpose (the comment at :387-389 says why); a duplicate appears only once per foreign note, not every run."

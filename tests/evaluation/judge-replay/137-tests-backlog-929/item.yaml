@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v015
+pull-request: 137
+lens: tests
+title: "Quoted-ask test never covers a quoted proposal or a later round"
+where: internal/backlog/backlog.go:929
+commit: 052290503dce4fe7a9f7f6dcd9f7b6d5e02c4589
+origin: artifact
+from:
+  run: 37275820650
+  path: .workline-runs/20261005T070615.155013737-reviewer/in/judge/04
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 5161, out: 178}
+truth: true
+settled-by: panel
+matters: false
+evidence: "internal/backlog/backlog_test.go:110-113 is the only quoted test and quotes a round-1 AskMarker; no Go test nor conformance case (tests/conformance/cases/product-owner/*, grep for a quoted `proposal=` marker) quotes a proposal or a later round. But Round at backlog.go:927-930 and EngineMarker at :916-922 share one last-line check for asks and proposals, so the test already exercises the mechanism; only a proposal-specific regression would slip by, which is a thin gap."

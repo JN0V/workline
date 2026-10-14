@@ -1,11 +1,11 @@
 ---
 sources: [tests/evaluation]
-checked: 066d097
+checked: 42e5e9c6
 verified: agent:claude-code
 ---
-# Evaluation — two measures
+# Evaluation — three measures
 
-Two measures of [Evaluation](../conformance.md#evaluation), told in full.
+Three measures of [Evaluation](../conformance.md#evaluation), told in full.
 
 ## Real shapes
 
@@ -64,3 +64,37 @@ through the engine with a fake agent (testdata/review-agent.sh). The
 model and independence matrix of ADR-0005 is a run with
 `WORKLINE_EVAL=claude:<model>` and `WORKLINE_JUDGE=claude:<model>`, never
 by default.
+
+## The judge's replay
+
+**The judge's replay**
+([ADR-0045](../../adr/0045-the-judge-asks-for-the-code-it-needs.md),
+[#362](https://github.com/JN0V/workline/issues/362)). The 40 verdicts of
+the reviewer's judge measured on 2026-10-14
+([the judge, measured](../../research/judge-measured.md)), kept in
+`tests/evaluation/judge-replay/`, a folder each:
+
+- `question.yaml`, `answer.yaml`: what the judge was asked and answered,
+  copied byte for byte from the run's `workline-runs` artifact
+  (`in/judge/<key>/`);
+- `item.yaml`: the pull request, lens, finding, `where` and `commit`; the
+  run and folder it came from (`origin: artifact`; `rebuilt` would mark
+  one remade from git, its artifact gone); what the judge said then and
+  its tokens; the truth the measure settled (`truth`, `settled-by`:
+  agreement or panel, `matters` when the panel was asked, `evidence`).
+
+`TestJudgeReplay` asks each question again, in a context of its own, of
+the judge `WORKLINE_EVAL` names, with today's `roles/judge`: a line of
+`results.tsv` an item (case `judge/<item>`), a point for a yes to a true
+finding or a no to a false one; the run's tally is logged (true findings
+kept and dropped, of the 8 dropped then how many kept, false findings let
+through, its yes right, the same as then). Never in the weekly run:
+
+```sh
+WORKLINE_EVAL=claude:opus go test -count=1 -timeout 60m -run '^TestJudgeReplay$' -v ./tests/evaluation/
+```
+
+With no agent, on every `go test`: `TestJudgeReplaySet` reads the set and
+scores what the judge said then — 31 of 40, its yes right 19 of 20, its
+no 12 of 20, as measured; `TestJudgeReplayWithFakeJudge` asks the 40 of a
+`cmd:` judge.

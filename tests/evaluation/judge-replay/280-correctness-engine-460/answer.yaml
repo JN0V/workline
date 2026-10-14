@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the comment above the block says 'nothing of it applied, each refusal said as a warning', so setting an empty `f.Level` to "warn" and `intents = nil` is the intended behavior, and nothing shown proves that an empty Level meant error.
+"yes": false

@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: 'line 307 `p.changedFor[t.Issue] = c` stores one Change per issue, so when two changes found in one run both touch the same issue with Read set (e.g. an import change on #4 and a part touch from its parent), the later assignment replaces the earlier and nothing shown keeps both.'
+"yes": true

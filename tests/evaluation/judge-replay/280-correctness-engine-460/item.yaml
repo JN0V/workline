@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v188
+pull-request: 280
+lens: correctness
+title: "Findings whose level is empty set to warn, hiding errors"
+where: internal/engine/engine.go:460
+commit: 5c4614774293fb5d780999a8fea5f465a5b79083
+origin: artifact
+from:
+  run: 37931930443
+  path: .workline-runs/20261009T124412.239284820-reviewer/in/judge/02
+  expires: 2027-01-07
+said: no
+said-tokens: {in: 6625, out: 192}
+truth: true
+settled-by: panel
+matters: true
+evidence: "internal/engine/engine.go:456 tests `v.Status == Block && failures > 0 && !StopsAtFirst` with no `!v.Final`: the loop at :408 breaks on a Final block without touching failures, so a first proposal refused (failures=1, :410) then a second attempt whose post blocks Final (documentalist.go:1566-1569, its block findings' Level cleared to \"\" at :1537-1538) is rewritten as Pass with warn findings and the summary 'the proposal was refused', which the ADR-0037 amendment in the same commit says must still fail the line."

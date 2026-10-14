@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: Follow's doc comment says that with gardening it 'tends the roles' other merge requests too, one a task (ADR-0006)', so tending every role's `workline/<role>/<task>` branch is the documented design rather than a missing check, and the finding only guesses that an implementer branch would be wrongly closed.
+"yes": false

@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: e42a21a1
+checked: 42e5e9c6
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -138,6 +138,7 @@ be (below).
 ```
 tests/evaluation/
   cases/<role>/<case>.yaml   one real situation each
+  judge-replay/<item>/       the judge's 40 measured questions, as asked then
   results.tsv                every run's score, appended: the history kept
   schedule/                  run.sh and systemd units: a run every week
   testdata/                  fake agents proving the cases grade as they should
@@ -176,8 +177,8 @@ the efforts asked, the tokens in and out, and the cost at list price (on a
 subscription, the tokens are what counts): a score compares only with the same
 models.
 
-Real shapes, both sides graded, and the reviewer's measure are told in full in
-[Evaluation — two measures](conformance/evaluation.md).
+Real shapes, both sides graded, the reviewer's measure and the judge's
+replay are told in full in [Evaluation — three measures](conformance/evaluation.md).
 
 **Pass rates, not the best.** A measure is read over at least five runs per
 model, as the share of runs earning every point, never from the best run.
@@ -210,7 +211,7 @@ runs (`WORKLINE_EVAL_RUNS`) and no model changed since: the same code on the
 same models adds little, and a subscription counts the tokens. The `workline`
 column of `results.tsv` names that commit. The reviewer's cases are left
 out (`WORKLINE_EVAL_SKIP`, `reviewer` by default): they are measured on
-demand, in steps.
+demand, in steps. So is the judge's replay, never run there.
 
 *Tried so far* (2026-09-26): the judge through `cmd:`, and `claude:sonnet` at
 the `model` level on every judged case — it failed rewrites that dropped

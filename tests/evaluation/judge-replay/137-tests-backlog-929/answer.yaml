@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the quoted line 929 (`strings.HasPrefix(last, "<!-- workline:"+role+"/proposal=")`) only requires an engine-ended comment, so it handles quoted proposals the same way it handles asks; the finding is about tests we are not shown and names no failure in this code.
+"yes": false

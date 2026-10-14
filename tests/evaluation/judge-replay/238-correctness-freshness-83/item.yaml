@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v146
+pull-request: 238
+lens: correctness
+title: "whole-chars can push a task past the role's budget"
+where: internal/builtin/documentalist/freshness.go:83
+commit: 4b27dd665275ef5145869b4b66375b1d43059d2f
+origin: artifact
+from:
+  run: 37513016729
+  path: .workline-runs/20261006T184013.774890065-reviewer/in/judge/02
+  expires: 2027-01-04
+said: no
+said-tokens: {in: 5196, out: 432}
+truth: true
+settled-by: panel
+matters: true
+evidence: "internal/builtin/documentalist/freshness.go:83 returns `taskMaxChars + max(0, wholeChars(s)-wholeCharsDefault)` with taskMaxChars=40000 (documentalist.go:560), wholeCharsDefault=20000 (freshness.go:70) and no cap on s.WholeChars; the task is filled up to that at documentalist.go:1333-1337, and prompt.go:98-101 refuses the prompt when 711+chars*82/100 > roles/documentalist/role.yaml:43 `budget: 48000`: the documented `whole-chars: 40000` (docs/config.md:44) gives 60000 chars = 49,911 tokens before the facets, so the task is refused, which tried.md:791 already noted and the PR's later commit fcc8f36d fixed."

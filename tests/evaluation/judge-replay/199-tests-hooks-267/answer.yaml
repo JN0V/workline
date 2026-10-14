@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the finding names no failure in the quoted line `if v == "HOME" || v == "XDG_CONFIG_HOME" {`, which expands the variable as the comment says, and its claim that 'No test sets it' cannot be checked here because no test file is shown, so it only guesses.
+"yes": false

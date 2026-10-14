@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v010
+pull-request: 137
+lens: edge-cases
+title: "Dots in a question make different questions look the same"
+where: internal/backlog/backlog.go:825
+commit: d39c8f43718f7ea7e4374a8e5d8d068912565789
+origin: artifact
+from:
+  run: 37272535027
+  path: .workline-runs/20261005T062816.600624207-reviewer/in/judge/01
+  expires: 2027-01-03
+said: yes
+said-tokens: {in: 5135, out: 326}
+truth: true
+settled-by: agreement
+evidence: "internal/backlog/backlog.go:825-826 `if i := strings.LastIndexAny(part, \".!\\n\"); i >= 0 { part = part[i+1:] }` cuts at the last dot inside the question itself: 'Which rows does src/export/csv.go lose?' and 'Which columns does src/export/csv.go lose?' both become 'go lose?' (then backlog.go:808 reports asked-before); 'Does it fail on v1.2?' becomes '2?' and is dropped by `len(q) > 3` at line 828. — File names and version numbers in questions are the normal case for this role (the conformance fixtures themselves use src/export/csv.go). The intent (strip the sentence before the question) is defeated by any dot inside the question."

@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v091
+pull-request: 185
+lens: edge-cases
+title: "Second change overwrites the first for the same touched issue"
+where: internal/backlog/change.go:307
+commit: b8d0f44c73c0af51e7941904cd72a5d2d4354ae2
+origin: artifact
+from:
+  run: 37376342759
+  path: .workline-runs/20261005T213123.041022571-reviewer/in/judge/01
+  expires: 2027-01-03
+said: yes
+said-tokens: {in: 4428, out: 619}
+truth: true
+settled-by: agreement
+evidence: "internal/backlog/change.go:305-309 `for _, t := range c.Touch { if t.Read { p.changedFor[t.Issue] = c } }` keyed by issue only; change.go:102-104 says one run may find two changes for one issue (`changed/N` and `changed-lines/N`); productowner.go:454-460 marks Read on every touch of an issue read again, whichever change it came with — The overwrite occurs when two found changes touch the same read issue. Its only effect is backlog.go:474-479: the `need-changed` finding names the last change (`ch.said()`); the act is proposed instead of done either way, so the mode is unaffected."

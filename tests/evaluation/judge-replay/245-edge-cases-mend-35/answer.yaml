@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the switch at lines 27-34 runs only one of untab or unquote, picked by the first error, so `if n == 0 || yaml.Unmarshal([]byte(fixed), &probe) != nil { return answer, nil }` returns the answer unmended whenever the other slip is still there, whichever slip comes first.
+"yes": true

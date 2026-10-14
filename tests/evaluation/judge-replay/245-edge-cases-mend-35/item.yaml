@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v153
+pull-request: 245
+lens: edge-cases
+title: "Two slips in one answer are not mended"
+where: internal/agent/mend.go:35
+commit: 3ab81f50964a82ef4849f5f53934fafa231ce413
+origin: artifact
+from:
+  run: 37575295667
+  path: .workline-runs/20261007T051437.112972292-reviewer/in/judge/01
+  expires: 2027-01-05
+said: yes
+said-tokens: {in: 6831, out: 340}
+truth: true
+settled-by: agreement
+evidence: "internal/agent/mend.go:27-37 — one `switch` on the first error's text picks either untab or unquote, then `if n == 0 || yaml.Unmarshal([]byte(fixed), &probe) != nil { return answer, nil }`: an answer with a tab-indented block and a quoted-then-more value is mended for the tab, still fails on the quote, and comes back untouched. — Only the ` #` slip (unhash) composes with the others. The doc comment admits 'an answer that still does not read comes back as it came', so it is a known limit, but the code does fail as the finding says on a plausible answer."

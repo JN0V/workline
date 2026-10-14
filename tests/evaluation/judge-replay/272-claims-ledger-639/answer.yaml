@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the 'case indent > 3' branch only keeps an indented line from being read as a fence; it then falls through to 'if fence == 0 { lines[i] = slashLine.ReplaceAllString(l, `$1\/`) }', so an indented line outside a fenced block such as 'text\n\t/close' is still escaped, not skipped as the finding says.
+"yes": false

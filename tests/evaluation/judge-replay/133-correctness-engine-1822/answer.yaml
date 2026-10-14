@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: line 1822 has no else branch, so when Locate misses the quote, op.Key keeps the TitleKey(title) set on line 1818 and the path is never added to Sources, with nothing appended to a.findings; an exact quote of the same line from another role gets CodeKey(path, line) instead, so the two keys differ and the subject can be opened twice.
+"yes": true
