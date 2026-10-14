@@ -1,0 +1,40 @@
+case: reviewer/judge-reads-a-function-then-answers
+about: "A judge not shown the proof asks to read it, by name: the engine reads that function at the reviewed commit and asks again, the judge answers from it; the finding is verified, what it read said. A cmd: judge, plain text in and out (ADR-0045, #362)."
+given:
+  repo: reviewed
+  setup:
+    - |
+      git checkout -q main
+      cat > calc/sum.go <<'GO'
+      package calc
+
+      // sum adds the values after the first: the first counts the others.
+      func sum(values []int) int {
+      	total := 0
+      	for _, v := range values[1:] {
+      		total += v
+      	}
+      	return total
+      }
+      GO
+      git add calc && git commit -qm 'feat: sum the values'
+      git checkout -q feature && git reset -q --hard main
+      cat >> calc/calc.go <<'GO'
+
+      // Mean is the average of every value.
+      func Mean(values []int) int {
+      	return sum(values) / len(values)
+      }
+      GO
+      git commit -qam 'feat: the mean of the values'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-reads-callee.sh"}
+  config: {roles: {reviewer: {settings: {judge-lines-max: 0, judge-read-rounds: 2}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-mean-callee"}
+expect:
+  status: pass
+  agent-calls: 3
+  findings: [{rule: correctness, where: "calc/calc.go:22", message: "verified, independence: provider"}, {rule: correctness, message: "having read `sum`"}]
+  no-findings: [{rule: finding-judged-no}]
+  run-files:
+    in/judge/01/question.yaml: {contains: ["What you read, round 1", "func sum(values []int) int {", "You may ask to read"]}
+    out/review.json: {contains: ['"reads": [', '"asked": [', '"for": "judge/01"']}

@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: in answerItems a non-empty line at column 0 that does not start with '- ' matches neither `strings.HasPrefix(l, \"- \")` nor the ' '/'\t'/'' case, so the switch drops it without a trace, and neither claimsRead nor claimsOneByOne counts or reports it.
+"yes": true

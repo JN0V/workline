@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v027
+pull-request: 144
+lens: edge-cases
+title: "Run reads files from the working directory when no run folder exists"
+where: internal/engine/engine.go:161
+commit: 4eb33303a753e86f6484cef34fb5ec9ba184bfe5
+origin: artifact
+from:
+  run: 37278828615
+  path: .workline-runs/20261005T073823.687094872-reviewer/in/judge/01
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 3439, out: 408}
+truth: true
+settled-by: panel
+matters: false
+evidence: "internal/engine/engine.go:161 and :164 read `filepath.Join(res.RunDir, \"out\", \"note.md\")` and `\"in\", \"more\"` after run() returns, and run() sets res.RunDir only at :268, after role.Load (:238), Accepts (:242), Requires (:245), LoadProjectConfig (:250), agent.Parse (:260) and newRunDir (:264) can each fail: on round 1 RunDir is \"\" (Result is fresh at :142) and `out/note.md` of the process's cwd is appended as the run's note. An unknown role or a bad config reaches it, but the run is already Block, `in/more` only feeds a deferred set the last round drops, and a repository holding an out/note.md is rare: a one-line guard, negligible in effect."

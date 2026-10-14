@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 048bdfa2
+checked: 8d22e3f4
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -164,8 +164,8 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
   each judge's with its finding's place.
 - The run's `out/review.json` (its path printed, or `--json`) gives them
   to the author's agent: each with its place, its cause quoted, whether
-  it is the change's, and how it was verified; and what each call used
-  (`calls`).
+  it is the change's, and how it was verified; what each call used
+  (`calls`); and what each judge read, a round each (`reads`).
 
 ## On a merge request
 

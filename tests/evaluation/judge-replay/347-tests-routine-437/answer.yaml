@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: no test shown drives `commits(o.Repo, baseTip, mergeWindow)` to fail after the first `commits` call succeeds. engine_test.go, follow_test.go and the two merge conformance cases never reach the `if deepErr != nil { return nil, fmt.Errorf(...) }` branch, so restoring the old silent empty list would pass them all; routine_test.go is not shown and could not be weighed.
+"yes": true

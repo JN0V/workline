@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v183
+pull-request: 279
+lens: correctness
+title: "Label removal for set-aside issues with no state"
+where: internal/backlog/ledger.go:535
+commit: 1ef286da4fb62289a98e2cbdd112b02e149adf8b
+origin: artifact
+from:
+  run: 37902104036
+  path: .workline-runs/20261009T075854.767371821-reviewer/in/judge/05
+  expires: 2027-01-07
+said: no
+said-tokens: {in: 6325, out: 139}
+truth: false
+settled-by: agreement
+evidence: "internal/backlog/ledger.go:241-249: an issue enters `l.Aside` only after `ReadState` found and parsed its state (`if !found || err != nil { continue }` precedes `setAside(f, is, st)`); backlog.go:993-996 builds `p.SetAside` from `l.Aside` alone. So a set-aside issue always has a readable state, and Persist's `continue` at ledger.go:482-485 never skips one; ledger.go:530-538 then runs for it with st.Aside set at line 498 or kept from the state. — The premise 'set-aside with no state' cannot occur: being set aside is derived from the state comment. An issue with the role's labels and no state (e.g. a split child labelled at engine.go:2250) is not set aside and is not what the finding names. The conformance case labels-follow-the-state.yaml covers set-aside this run (#9) and an earlier one (#12)."

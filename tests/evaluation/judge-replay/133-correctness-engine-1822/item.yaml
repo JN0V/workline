@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v004
+pull-request: 133
+lens: correctness
+title: "A quote that is not found changes the key silently"
+where: internal/engine/engine.go:1822
+commit: 03b1805a793df97df64d4bbe5a5c0abd73d94f7e
+origin: artifact
+from:
+  run: 37266381524
+  path: .workline-runs/20261005T050753.840421776-reviewer/in/judge/02
+  expires: 2027-01-03
+said: yes
+said-tokens: {in: 5234, out: 694}
+truth: true
+settled-by: agreement
+evidence: "internal/engine/engine.go:1812-1822 openIssue: `op.Key = TitleKey(title)`, replaced by CodeKey only when backlog.Locate finds the quote at HEAD; a quote not found leaves the title key with no finding. opening.go:69-90 holder matches markers of the key and Also only. — PR says the key is the quoted line \"or from the title when there is no line\"; a line given but misquoted (any change beyond spaces, Locate 896-908) silently keys by title, so the same subject raised on another run with a key of the other kind is not found and is opened again. Severity is a duplicate issue, not data loss."

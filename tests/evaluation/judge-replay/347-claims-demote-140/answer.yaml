@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: when no record exists or it is no ancestor of the tip, `demotions` calls `commits` with `from` empty, so `-n 100` reads only the last `revertWindow` commits, then sets `rec.read = baseTip`; any older revert is never read, which contradicts 'every revert on the base is read once'.
+"yes": true

@@ -1,0 +1,13 @@
+case: reviewer/judge-no-quote-not-found-shown-not-verified
+about: "A judge that may read says no, quoting lines the reviewed commit does not hold: its no is not found again, so the finding is not dropped; it is shown not verified, said, and never blocks (judge-no-unquoted, ADR-0045)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no-misquoted.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 2, ai-findings: block}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: correctness, where: "calc/calc.go:11", level: warn, message: "not verified: the judge said no (judge-no-unquoted): its quote is not found in calc/calc.go"}]
+  no-findings: [{rule: finding-judged-no}]

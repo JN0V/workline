@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v041
+pull-request: 152
+lens: correctness
+title: "Ticks error from command forge is swallowed, treated as no ticks"
+where: internal/forge/command.go:275
+commit: d2051d0a20821c259eb25925511ff9966657f5a3
+origin: artifact
+from:
+  run: 37297604035
+  path: .workline-runs/20261005T103630.118355971-reviewer/in/judge/03
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 1720, out: 471}
+truth: false
+settled-by: agreement
+evidence: "internal/forge/command.go:35-78 call: a non-zero exit, no JSON, timeout, and decode failures (cli.go:38-43) all wrap ErrUnreachable and are propagated by Ticks (275); the only error swallowed is the `{\"error\": …}` refusal. docs/spec/forge-command.md:65 `ticks`: \"an error answered: nobody known, a box ticked there is not taken for a yes\". — The swallow is the documented contract for a refusal, and hand.go:153-166 then marks the tick Known=false (said, not done). No input makes a real failure read as no ticks."

@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v125
+pull-request: 219
+lens: edge-cases
+title: "Reader goroutine never unblocked if f panics, and the pipe leaks"
+where: cmd/workline/cli_test.go:92
+commit: 7112b0ee1e123cf71b107e2c2c387fbd241609b7
+origin: artifact
+from:
+  run: 37446734804
+  path: .workline-runs/20261006T100010.954215293-reviewer/in/judge/01
+  expires: 2027-01-04
+said: no
+said-tokens: {in: 2966, out: 486}
+truth: true
+settled-by: panel
+matters: false
+evidence: "cmd/workline/cli_test.go:85-96: `w.Close()` at :94 is not deferred and `r` is closed on no path, so on the normal path one read end leaks per call until its finalizer, and on a panic in f the goroutine stays on io.ReadAll; but an unrecovered panic ends the test binary, so the blocked goroutine and the open pair have no effect, and a dozen leaked fds in a test process are negligible."

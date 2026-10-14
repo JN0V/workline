@@ -143,3 +143,36 @@ func TestWrittenDiffAppliesWhole(t *testing.T) {
 		}
 	}
 }
+
+// A judge's question pre asks again (ADR-0045) is one answered before pre
+// ran whose answer pre took away; past the rounds, it is answered as not
+// asked, so pre settles it.
+func TestJudgeAskedAgain(t *testing.T) {
+	run := t.TempDir()
+	for key, answered := range map[string]bool{"01": true, "02": true, "03": false} {
+		dir := filepath.Join(run, "in", "judge", key)
+		os.MkdirAll(dir, 0o755)
+		os.WriteFile(filepath.Join(dir, "question.yaml"), []byte("{question: q}"), 0o644)
+		if answered {
+			os.WriteFile(filepath.Join(dir, "answer.yaml"), []byte("yes: true"), 0o644)
+		}
+	}
+	before := judgeAnswered(run)
+	if len(before) != 2 {
+		t.Fatalf("answered: %v", before)
+	}
+	os.Remove(filepath.Join(run, "in", "judge", "02", "answer.yaml")) // pre asks 02 again
+	again := askedAgain(run, before)
+	if len(again) != 1 || !strings.HasSuffix(again[0], filepath.Join("02", "question.yaml")) {
+		t.Errorf("asked again: %v; want 02 alone, never 03, which was never answered", again)
+	}
+	if err := notAsked(again, "not asked: past 10 rounds of the judge"); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(filepath.Join(run, "in", "judge", "02", "answer.yaml")); !strings.Contains(string(data), "error: 'not asked: past 10 rounds of the judge'") {
+		t.Errorf("past the rounds, answered as not asked: %s", data)
+	}
+	if len(askedAgain(run, judgeAnswered(run))) != 0 {
+		t.Error("once answered, nothing is asked again")
+	}
+}

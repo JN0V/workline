@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v211
+pull-request: 329
+lens: tests
+title: "Verdict-only mode has no test"
+where: internal/engine/follow.go:83
+commit: 3e401fb03200f250a827a6cd50e2ff7159913421
+origin: artifact
+from:
+  run: 38315564878
+  path: .workline-runs/20261012T221540.746269959-reviewer/in/judge/01
+  expires: 2027-01-10
+said: yes
+said-tokens: {in: 16814, out: 476}
+truth: true
+settled-by: agreement
+evidence: "internal/engine/follow.go:83-86 `if o.VerdictOnly { res.Summary = ...; return res }`. `git grep -i 'verdict-only|VerdictOnly' 3e401fb` finds no test reaching it: only cmd/workline/main.go:81-103 (flag parsing), settle.go:42 (the field), the two CI templates, and tests/conformance/templates_test.go:572, which only inspects the workflow YAML text for the `--verdict-only` string, never runs Follow. — No conformance case under tests/conformance/cases at this commit uses --verdict-only. The very next commit of the PR (022c0174) adds merge/verdict-only-keeps-it-and-nothing-else.yaml and verdict-only-needs-a-verdict.yaml, confirming the gap."

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 6ff22df7
+checked: 1dd6543c
 judged: eef1944
 status: draft
 ---
@@ -102,6 +102,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | `note` | a message for the human, nothing else | report |
 | `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, claim}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
+| `read` | a judge's ask, when its question lets it read (role contract, "A judge that reads"; ADR-0045): `{path, lines}`, `{name}` or `{grep}`, each with `why`, in place of its verdict | never: served by `pre`, at the commit judged, and the judge asked again |
+| `quote` | the lines a judge's no rests on, `{path, text}`, beside its note | never: found again by `pre` before a finding is dropped |
 
 A role that needs another intention asks for it to be added here; it does not
 invent one. Intentions that reach the forge can be applied by a separate step

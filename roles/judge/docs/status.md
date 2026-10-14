@@ -16,7 +16,8 @@ hold:
 
 1. **Nothing buildable in Missing**: open. The judge reads the code it
    needs before saying no
-   ([#362](https://github.com/JN0V/workline/issues/362)). A judge of
+   ([#362](https://github.com/JN0V/workline/issues/362)): built, off
+   until measured again. A judge of
    another provider and each defect it let through as an evaluation case
    are parked ([#80](https://github.com/JN0V/workline/issues/80)): any
    command can already be the judge, and using one waits on a second
@@ -39,6 +40,10 @@ No cases folder of its own: it is asked inside the other roles' cases.
 
 - **A finding judged, the level said**: reviewer's
   `judged-no-not-reported`, `independence-level-in-verdict`.
+- **A judge of the code asks for what it needs**, its no quoting the code,
+  or unsure ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)):
+  reviewer's `judge-reads-*`, `judge-no-*`,
+  `judge-unsure-shown-not-verified`.
 - **A doc read against its sources, never by the voucher**:
   documentalist's `sample-never-the-voucher`,
   `sample-judge-from-the-environment`.
@@ -50,10 +55,13 @@ No cases folder of its own: it is asked inside the other roles' cases.
 ## Missing
 
 - **The judge reads the code it needs** before saying no
-  ([#362](https://github.com/JN0V/workline/issues/362)): decided in
-  [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md),
-  the judge asking for the code and the engine reading it at the reviewed
-  commit ([research](../../../docs/research/judge-reads-code.md)); first,
-  its 40 measured questions kept before their artifacts expire.
+  ([#362](https://github.com/JN0V/workline/issues/362)): built for the
+  code review's judge, as
+  [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)
+  decided, off (`judge-read-rounds: 0`) until
+  [measured again](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#measured-again-before-it-is-on-by-default)
+  on its 40 measured questions; then on by default. They are kept, as
+  asked, to replay
+  ([the judge's replay](../../../docs/spec/conformance/evaluation.md#the-judges-replay)).
 - **Parked**: a judge of another provider
   ([#80](https://github.com/JN0V/workline/issues/80)).

@@ -1,0 +1,13 @@
+case: reviewer/judge-no-quotes-the-code-finding-dropped
+about: "A judge that may read says no and quotes the lines that refute the finding; the engine finds them again, at the reviewed commit, in what the judge was shown: the finding is dropped, said with the place quoted (ADR-0045)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no-quoted.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 2}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: finding-judged-no, message: "the judge: the loop adds every value before the division, quoting calc/calc.go:8"}]
+  no-findings: [{rule: correctness, where: "calc/calc.go:11"}]

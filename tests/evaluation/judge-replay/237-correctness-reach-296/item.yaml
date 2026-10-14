@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v144
+pull-request: 237
+lens: correctness
+title: "Brace matching counts braces in rune literals and raw regex"
+where: internal/builtin/reviewer/reach.go:296
+commit: 7592b240ab00a03762f8eb273d9baeaf27b24bcb
+origin: artifact
+from:
+  run: 37501013894
+  path: .workline-runs/20261006T170802.913477742-reviewer/in/judge/04
+  expires: 2027-01-04
+said: yes
+said-tokens: {in: 5229, out: 315}
+truth: true
+settled-by: agreement
+evidence: "internal/builtin/reviewer/reach.go:285-306 stripCode strips only \"…\", `…` and // or # comments; a rune/char literal '{' or '}' and a JS regex literal /{/ reach braceEnd (259-281) and change depth. `case c == '\"'` also opens a bogus string to the end of the line. — Applies to the C-like family (C, Java, JS, TS, Rust…), shell, and Go when the file does not parse (goEnclosing's parsed=false). The PR's later commit 2fac5063 \"braces in quotes, a symptom shown once\" touches this; the verdict rests on the code read."

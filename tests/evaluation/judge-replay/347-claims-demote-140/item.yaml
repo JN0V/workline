@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v227
+pull-request: 347
+lens: claims
+title: "Reverts older than 100 commits are never read"
+where: internal/engine/demote.go:140
+commit: 05180255a035022c7286be7bc2adca06e7a1d80b
+origin: artifact
+from:
+  run: 38421664723
+  path: .workline-runs/20261013T152418.849027595-reviewer/in/judge/01
+  expires: 2027-01-11
+said: yes
+said-tokens: {in: 8830, out: 373}
+truth: true
+settled-by: agreement
+evidence: "internal/engine/demote.go:278-283 and :135-141 — with no record (`from == \"\"`, the first run at normal) `commits()` runs `git log -n 100 <tip>` (revertWindow), then :330 `rec.read = baseTip`: a revert more than 100 commits back is never read and the record moves past it silently. The PR body claims 'every revert on the base is read once' and 'if no mark is found (including the first run at normal), every kind waits in an issue until a person closes it'; the code at this commit neither reads them nor fails closed. — The PR body describes the later design (an App mark, fail-closed without it); commits 9e9b88a9/169fbad8 after this one replaced the ref record and added the 'no mark on the base's last 100 commits … every kind waits' issue. The body as read now may post-date the review; against it, the code at 05180255 contradicts the claim."

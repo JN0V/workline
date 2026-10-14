@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: no test shown reaches `whatToDo`'s line `if decide+checks+accept == 0 && !paused` (acts_test, agreement_test, backlog_test and hand_test touch other code), so nothing shown would catch 'Nothing waits on you' beside a 'For you to settle' line that `toDecide` leaves out of `n`; the case it names, `slipped-without-a-milestone-proposed`, is listed but not shown.
+"yes": true

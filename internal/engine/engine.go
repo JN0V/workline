@@ -436,11 +436,24 @@ func run(o Options, res *Result) error {
 	}
 	// Questions only a judge answers, one each (a reviewer's findings,
 	// ADR-0020): each asked apart, at the best independence; pre then
-	// settles what follows from the answers.
-	if questions, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "question.yaml")); len(questions) > 0 {
-		if err := askQuestions(o, ag, runDir, questions, res); err != nil {
+	// settles what follows from the answers. A judge that asked to read
+	// (ADR-0045) is asked again once pre served its reads: every judge
+	// answers once before any is asked again.
+	questions, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "question.yaml"))
+	for round := 1; len(questions) > 0; round++ {
+		var err error
+		switch {
+		case round > maxJudgeRounds+1: // a role that asks again even so
+			return fmt.Errorf("pre asked its judges again past %d rounds", maxJudgeRounds)
+		case round > maxJudgeRounds: // not asked, said: pre settles them
+			err = notAsked(questions, fmt.Sprintf("not asked: past %d rounds of the judge", maxJudgeRounds))
+		default:
+			err = askQuestions(o, ag, runDir, questions, res)
+		}
+		if err != nil {
 			return err
 		}
+		answered := judgeAnswered(runDir)
 		code, err := script(r, "pre", o.Repo, append(env[:len(env):len(env)], "WORKLINE_PARTS=answered", "WORKLINE_JUDGED=answered"))
 		if err != nil {
 			return err
@@ -448,6 +461,7 @@ func run(o Options, res *Result) error {
 		if stop, err := prepared(code, r, cfg, runDir, res); stop || err != nil {
 			return err
 		}
+		questions = askedAgain(runDir, answered)
 	}
 	digest, err := dirDigest(filepath.Join(runDir, "in"))
 	if err != nil {
@@ -3066,11 +3080,52 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 	return nil
 }
 
+// maxJudgeRounds bounds how often pre may ask its judges again: a role
+// bounds its own rounds (the reviewer's judge-read-rounds); past it, a
+// question pre asks again is answered as not asked, and pre settles it.
+const maxJudgeRounds = 10
+
+// notAsked answers questions with why they were not asked.
+func notAsked(questions []string, why string) error {
+	out, _ := yaml.Marshal(map[string]string{"error": why})
+	for _, q := range questions {
+		if err := os.WriteFile(filepath.Join(filepath.Dir(q), "answer.yaml"), out, 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// judgeAnswered are the judge's questions holding an answer.
+func judgeAnswered(runDir string) []string {
+	answers, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "answer.yaml"))
+	for i, a := range answers {
+		answers[i] = filepath.Join(filepath.Dir(a), "question.yaml")
+	}
+	return answers
+}
+
+// askedAgain are the questions pre asks again (ADR-0045): answered before
+// it ran, it took their answer away, and wrote what the judge read.
+func askedAgain(runDir string, answered []string) []string {
+	var again []string
+	for _, q := range answered {
+		if _, err := os.Stat(filepath.Join(filepath.Dir(q), "answer.yaml")); os.IsNotExist(err) {
+			if _, err := os.Stat(q); err == nil {
+				again = append(again, q)
+			}
+		}
+	}
+	return again
+}
+
 // askQuestions puts each question pre wrote (in/judge/<key>/question.yaml:
 // {question, material}) to a judge, in a context of its own, at the best
 // independence available from the agents that answered the run (ADR-0005),
 // and writes its answer beside it (answer.yaml: {yes, why, model, judge,
-// level}, or {error} when it could not answer). Without an agent, or once
+// level}, or {error} when it could not answer). A question saying `reads:
+// true` lets its judge ask to read instead (ADR-0045): its answer then holds
+// its `reads`, or `unsure`, and a no its `quote`. Without an agent, or once
 // the run spent its ai-max-tokens, none is asked; the agent unreachable, the
 // rest are not asked either. Unlike a post's question, a no refuses nothing:
 // pre reads each answer, a finding at a time.
@@ -3100,7 +3155,10 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 	gone := ""
 	for _, file := range questions {
 		answer := map[string]any{}
-		var q struct{ Question, Material, Author string }
+		var q struct {
+			Question, Material, Author string
+			Reads                      bool // its judge may ask to read first (ADR-0045)
+		}
 		data, err := os.ReadFile(file)
 		if err != nil {
 			return err
@@ -3124,7 +3182,11 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 			res.capped = true
 			answer["error"] = "not asked: " + errTokensSpent.Error()
 		default:
-			ans, err := judge.Ask(spec, judgeRole, q.Question, q.Material)
+			ask := judge.Ask
+			if q.Reads {
+				ask = judge.AskReading
+			}
+			ans, err := ask(spec, judgeRole, q.Question, q.Material)
 			ans.Call.For = "judge/" + filepath.Base(filepath.Dir(file))
 			res.Calls = append(res.Calls, ans.Call) // its tokens count too; it is not the role's agent
 			res.AgentCalls++
@@ -3141,8 +3203,19 @@ func askQuestions(o Options, ag agent.Agent, runDir string, questions []string, 
 				}
 				break
 			}
-			answer = map[string]any{"yes": ans.Yes, "why": ans.Why, "model": ans.Model, "judge": spec,
+			answer = map[string]any{"why": ans.Why, "model": ans.Model, "judge": spec,
 				"author": last, "level": judge.Independence(spec, ans.Model, o.AI, authorModels)}
+			switch { // a judge that may read: its reads, or unsure, in place of yes or no
+			case len(ans.Reads) > 0:
+				answer["reads"] = ans.Reads
+			case ans.Unsure:
+				answer["unsure"] = true
+			default:
+				answer["yes"] = ans.Yes
+			}
+			if ans.Quote != nil {
+				answer["quote"] = ans.Quote
+			}
 		}
 		out, err := yaml.Marshal(answer)
 		if err != nil {

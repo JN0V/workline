@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: in questions(), `strings.LastIndexAny(part, ".!\n")` followed by `part = part[i+1:]` cuts 'Does a.go fail?' and 'Does b.go fail?' both to 'go fail?', and 'Is it v1.2?' to '2?', which `len(q) > 3` drops; so conversation() wrongly returns 'asked-before' for a new question, or never checks it.
+"yes": true

@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v064
+pull-request: 157
+lens: tests
+title: "splitDrafts and the drafts-proposed branch have no unit test"
+where: internal/backlog/undo.go:168
+commit: 27b0bf36c52fae8aca2aab4d0ca4d35b3d51a177
+origin: artifact
+from:
+  run: 37319002595
+  path: .workline-runs/20261005T134347.896199988-reviewer/in/judge/04
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 4254, out: 197}
+truth: false
+settled-by: agreement
+evidence: "tests/conformance/cases/product-owner/level-cautious-refines-scope-and-verification.yaml at 27b0bf36 expects `findings: [{rule: drafts-proposed, where: \"#9\"}]`, `body-contains` Verification and Scope, `body-lacks: \"## Need\"`, and the report box `Refine #9: Need (draft), Validation (draft)` — it exercises backlog.go:486-498 and undo.go:166-176 and fails if the split is wrong. — Literally no Go unit test names splitDrafts, but the project's primary test form (conformance) asserts the behaviour. Uncovered sub-branches: the early `return c, c, false` for ToReporter/Agreed/Accepted, and the `len(facts.Added) == 0` whole-proposal case (none of the three cautious cases has an outsider, an agreement or workline:accepted)."

@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: '`strings.Split(list, "\n")` returns an empty last element whenever the Commands section ends the output with a trailing newline and no `\n\n` cuts it off, and `strings.Fields(l)[0]` on that empty line panics with index out of range, because nothing in the loop skips blank lines.'
+"yes": true
