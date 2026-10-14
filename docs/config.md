@@ -114,7 +114,6 @@ A project's `settings` for a role are merged into the role's at every
 depth; a list replaces the default whole, a `null` removes it
 ([role-adapting.md](spec/role-adapting.md#settings)).
 
-
 ## Your own config
 
 `~/.config/workline/config.yaml` (macOS: `~/Library/Application
@@ -128,7 +127,8 @@ Support/workline/config.yaml`), what you want wherever you work:
 
 Beside it, in the same folder: `allowed-identities` (one address pattern a
 line, for the committer), `gitleaks.toml` (your forbidden terms, as gitleaks
-rules) and `roles/<role>/<facet>` (your own facets).
+rules) and `roles/<role>/<facet>` (your own facets; on macOS,
+`~/.config/workline/roles/` is read too, after it).
 
 ## Files
 
@@ -140,15 +140,14 @@ rules) and `roles/<role>/<facet>` (your own facets).
 | `.git/workline/issues/<n>.md` | `forge: local`: an issue, never committed; `workline issues` reads them (below) |
 | `.git/workline/merge-requests/<n>.md` | `forge: local`: a merge request, its local branch and base named in the front matter; merged once its base holds the branch, closed once the branch is gone |
 | `.workline/off` | empty: the global hook skips this repository |
+| `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
+| `~/.config/workline/` (macOS: `~/Library/Application Support/workline/`) | yours: `config.yaml`, `allowed-identities`, `gitleaks.toml`, your facets in `roles/<role>/` ([above](#your-own-config)) |
+| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
 
 A local issue holds its title, state, labels and milestone in its front
 matter, then its body and comments. With no forge (`none`), an issue a role
 opens is refused, as every write that needs a forge; in CI (`CI`,
 `GITHUB_ACTIONS` or `GITLAB_CI` set), the local forge refuses its writes.
-| `~/.config/workline/config.yaml` | yours: `ai:`, your default agent when a project does not say; `approve-push: true` has you approve each push ([ADR-0011](adr/0011-the-review-is-on-the-merge-request-not-the-push.md)); `approve-push-via` lists where you are asked, in order (terminal, editor, dialog) |
-| `~/.cache/workline/models-seen.yaml` | the last model that answered each alias on this machine: when another one answers, a run reports `model-changed` once, without blocking ([ADR-0004](adr/0004-follow-model-aliases-and-measure.md)) |
-| `~/.config/workline/roles/<role>/<facet>` | your own facets, used when the project has none |
-| `.git/workline/reviewer-record` | the commits a review on this machine answered whole, not asked again (roles/reviewer) |
 
 ### Runs
 
