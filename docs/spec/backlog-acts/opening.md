@@ -2,9 +2,9 @@
 type: reference
 sources: [internal/backlog/opening.go, internal/engine/engine.go]
 status: draft
-checked: 5afbb282
+checked: c6af84e6
 judged: 72bb251
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Opening issues
 
