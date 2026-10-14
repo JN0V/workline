@@ -1,13 +1,14 @@
-Read the doc below, whole, against its sources, given whole as they were at
-the commit its `checked` names. List every passage of the doc that those
-sources prove false, each in a `claim`:
+Answer the question of the task about the act it gives, against what the
+act was done on, given below it as it was then.
 
-- `quote`: the doc's words, exactly as they read, enough to find them;
-- `status: contradicted`, with `source`: the `path` of a file given below and
-  a `quote` of its words, exactly as they read, that prove the passage false;
-- or `status: gone`, with `name`: a name the doc gives as the code's, which
-  the code no longer has;
+Give each passage of that material your answer stands on as a `claim`:
+
+- `quote`: the act's own words the claim is about, exactly as they read,
+  when the question is about them;
+- `status: contradicted`, with `source`: the `path` the task names the
+  material by — a file, `#12`, `#12 comment 3`, `message`, `diff` — and a
+  `quote` of its words, exactly as they read;
 - `why`: one sentence.
 
-Then one `note`, whose first word is `true` (nothing false found) or `false`,
-then a colon, then why in one sentence.
+Then one `note`, whose first word is `true` or `false`, as the question
+says, then a colon, then why in one sentence.

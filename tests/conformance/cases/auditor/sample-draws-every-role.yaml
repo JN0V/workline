@@ -1,5 +1,5 @@
 case: auditor/sample-draws-every-role
-about: "The weekly sample draws one in ten of each role's acts of the week, per kind, at least one when a kind has any (ADR-0046), from the records each role keeps, read and never written: the docs the documentalist vouched for; the product owner's acts done alone, from each issue's state, not another week's; the findings the reviewer's judge kept or dropped, from its summary comment on each merge request merged in the week; a commit the committer rewrote, from its trailers, read on the head of the merge request a squash merged it by. With no verdict on them yet, the acts drawn are for a person, listed in the week's comment, with what could not be drawn and why."
+about: "The weekly sample draws one in ten of each role's acts of the week, per kind, at least one when a kind has any (ADR-0046), from the records each role keeps, read and never written: the docs the documentalist vouched for; the product owner's acts done alone, from each issue's state, not another week's; the findings the reviewer's judge kept or dropped, from its summary comment on each merge request merged in the week; a commit the committer rewrote, from its trailers, read on the head of the merge request a squash merged it by. With no judge (`--judge none`), the acts drawn are left for a person, listed in the week's comment, with what could not be drawn and why."
 given:
   repo: vouched
   setup:
@@ -49,7 +49,7 @@ expect:
     - {rule: sample-acts, message: "1 act, finding kept, by the reviewer on the merge requests merged in the commits"}
     - {rule: sample-acts, message: "1 act, finding dropped, by the reviewer"}
     - {rule: sample-acts, message: "1 act, message rewritten, by the committer"}
-    - {rule: sample-not-read, where: "#23", message: "the product owner's `rename` on #23, 2026-01-09, at normal: Did rename on #23; the auditor re-checks only the docs yet"}
+    - {rule: sample-not-read, where: "#23", message: "the product owner's `rename` on #23, 2026-01-09, at normal: Did rename on #23; ADR-0046 asks no question of a `rename`: for a person"}
     - {rule: sample-not-read, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge kept on #30"}
     - {rule: sample-not-read, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge dropped on #30"}
     - {rule: sample-not-read, message: "a commit the committer rewrote"}
