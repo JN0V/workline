@@ -37,9 +37,9 @@ them ([#121](https://github.com/JN0V/workline/issues/121)).
 - **Withheld**: the doc keeps `checked` and records `judged`, as any place
   withheld ([what holds is applied](judge.md#what-holds-is-applied)); the
   last 10 lines of the output are shown.
-- **Commands that check examples**, for instance: `pytest
-  --doctest-glob="*.md" "$@"` (Python), `rustdoc --test "$1"` (Rust), or
-  a project's own script.
+- **A command that checks examples**, for instance `python3 -m doctest
+  "$@"` for Python's `>>>` examples (a blank line before the closing
+  fence, or doctest reads the fence as output), or a project's own script.
 
 No model reads an example; one checking it against the signatures it
 calls is parked ([#353](https://github.com/JN0V/workline/issues/353)).
