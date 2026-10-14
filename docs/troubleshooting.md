@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 27755fce
+checked: 687388a0
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -70,6 +70,11 @@ task is such a doc; `workline doctor` warns too. Fetch the whole history:
 `gardening-paused`: as many of the documentalist's merge requests wait for
 review as `max-open-merge-requests` allows (5). Review or close them;
 gardening proposes again when fewer wait.
+
+`merge-request-unread` (a warning): the branch of one of its merge
+requests could not be fetched from `origin`. The documentalist then knows
+that merge request by its task only, and may ask again for a doc it
+holds. Give the job read access to the repository's branches.
 
 ## The product owner paused, or does nothing
 

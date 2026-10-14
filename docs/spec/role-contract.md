@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 27755fce
+checked: 687388a0
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -330,7 +330,12 @@ open, and `WORKLINE_OPEN_MERGE_REQUEST_TASKS`, their tasks (each branch, the
 role's prefix cut, separated by spaces), when the run opens one (ADR-0006,
 0013). The tasks an earlier round of the same run proposed and did not open
 yet (`--no-apply`) are counted among them, and also given alone in
-`WORKLINE_PROPOSED_TASKS`. On a merge request a release tool opened (its
+`WORKLINE_PROPOSED_TASKS`. `in/waiting.yaml` then names, for each of those
+tasks, the files its change touches: an open one's branch from where it
+left the commit judged, fetched from `origin` (the clone's own branch for
+a forge kept there); an earlier round's, the files its patches name. A
+branch that cannot be read leaves its task out, said
+(`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14). On a merge request a release tool opened (its
 branch one of `release.branches`), a role that runs on `release` is run on
 it: `WORKLINE_EVENT` is `release`, and `WORKLINE_RELEASE_BRANCH` names the
 branch (ADR-0017). A fix judged there is not pushed onto that branch, which
