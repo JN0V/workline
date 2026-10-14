@@ -1,7 +1,7 @@
 # ADR-0046: The auditor re-checks a sample of every role's acts, and its verdicts are counted
 
 - **Status:** accepted (2026-10-14); being built: every role's acts
-  drawn, listed for a person
+  drawn and re-checked; the records, the panel and the count to come
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below

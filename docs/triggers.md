@@ -172,8 +172,8 @@ requests from unprotected branches must apply.
 | 64 | the command was misused | fix the job |
 
 An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
-`workline sample` exits 2 when a doc is left for a person and 3 when the
-judge cannot be reached; `workline doctor`, 1 on an error only. The
+`workline sample` exits 2 when a doc or an act is left for a person and 3
+when the judge or the forge cannot be reached; `workline doctor`, 1 on an error only. The
 templates keep a job's status and still apply what passed, and the
 comment of a reviewer that blocks (`artifacts: when: always`,
 `if: always()`, `when: always`).

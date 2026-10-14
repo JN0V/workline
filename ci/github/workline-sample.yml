@@ -15,13 +15,14 @@
 # or the repository variable WORKLINE_JUDGE — an --ai value, `claude:opus`
 # when the gardening vouches with Sonnet, a `cmd:` running another
 # provider's agent when there is one. With none, the sample is still drawn,
-# and its docs are listed on the issue for a person to read.
+# and what it drew is listed on the issue for a person to read.
 #
 # The other roles' acts are drawn too, one in ten per kind (ADR-0046): the
 # product owner's acts done alone, the findings the reviewer's judge kept
 # or dropped, the commits the committer rewrote — read from the issues and
-# pull requests, never written. The auditor does not re-check them yet:
-# they are listed on the issue for a person to read.
+# pull requests, never written. The same judge re-checks each, one call an
+# act, never on a model that acted, within `sample.ai-max-tokens` (400,000
+# by default).
 #
 # The week sampled is the last whole one; for another, run the workflow by
 # hand (Actions > workline sample > Run workflow) with `week` (2026-W40).

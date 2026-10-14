@@ -186,8 +186,9 @@ roles:
   vouched for", a comment a week; a `checked` found false labels it
   `documentalist-step-0` and opens a merge request putting it back, for
   you to review.
-- **The cost**: one call of about 8k to 12k tokens a doc; one doc on most
-  weeks.
+- **The cost**: one call an act, about 4k to 12k tokens; about 380k on a
+  week as busy as workline's busiest
+  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)).
 - **`after: <tag>`** beside the judge leaves out what was vouched for
   before that commit: before the release whose engine earns `checked`
   (v0.2.1 on workline), a `checked` could be moved unread. A commit is best
@@ -198,8 +199,12 @@ roles:
 - **Every role's acts**: one in ten of each kind, from what each role
   records on the forge — the product owner's acts done alone, the
   findings the reviewer's judge kept or dropped, the committer's rewrites
-  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Listed on the same issue, for you to
-  read: the auditor re-checks the docs only, yet.
+  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Each is re-checked by the same judge,
+  never a model that acted, and goes on the same issue with its verdict;
+  one it says wrong without the material's words found again is for you
+  to read.
+- **The cap**: `sample: {ai-max-tokens: 400000}` by default, about a
+  busy week's reads; the acts left past it are listed unread.
 - **The product owner's own issue**, on a project that turns it on
   (`weekly-sample: true`;
   [ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):

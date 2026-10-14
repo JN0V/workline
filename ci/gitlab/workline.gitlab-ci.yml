@@ -281,8 +281,8 @@ workline:follow:
 # `sample.judge` setting, or the variable WORKLINE_JUDGE (claude:opus when
 # the gardening vouches with Sonnet). The other roles' acts are drawn too,
 # one in ten per kind, read from the issues and merge requests with the
-# project's token, as the gardening reads them: listed for a person, the
-# auditor not re-checking them yet. What it found goes to one tracking
+# project's token, as the gardening reads them, and re-checked by the same
+# judge, within `sample.ai-max-tokens`. What it found goes to one tracking
 # issue, a comment a week; a `checked` found false labels it
 # documentalist-step-0, and a merge request puts it back, for a person.
 # The week sampled is the last whole one; for another, set the variable
