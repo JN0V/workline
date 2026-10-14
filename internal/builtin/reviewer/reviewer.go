@@ -404,15 +404,12 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	return 0
 }
 
-// runOnReady says whether this run is the one on ready (#129): every lens
-// once, on the whole change, its commits each read by one lens only, so
-// skipping them could leave nothing. It is when the run is told
-// `lenses=all`, or, told no lenses, when the record owes them (a rule held
-// the run on ready), or when the merge request is no draft (`draft=false`)
-// and its record, read, does not say every lens read the change since it
-// was last a draft (#359): the run on ready a newer push cancelled wrote
-// nothing. A draft's run forgets that every lens read it: when it is ready
-// again, they read it once more.
+// runOnReady says whether this run is the one on ready, every lens once on
+// the whole change (#129): told `lenses=all`; or, told no lenses, the
+// record owing them, or the merge request no draft (`draft=false`) and its
+// record, read, not saying every lens read it (#359: a run on ready a push
+// cancelled wrote nothing). A draft's run drops that mark (roles/reviewer/
+// docs/ready.md).
 func runOnReady(runDir string, rec *Record, recordRead bool) bool {
 	if os.Getenv("WORKLINE_EVENT") != "merge-request" {
 		return false
