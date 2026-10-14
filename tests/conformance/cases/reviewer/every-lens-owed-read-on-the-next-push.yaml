@@ -1,5 +1,5 @@
 case: reviewer/every-lens-owed-read-on-the-next-push
-about: "The push after a run on ready a rule held, the template passing no `lenses`, reads every lens once on the whole change, commits reviewed before too (#129); then nothing is owed."
+about: "The push after a run on ready a rule held, the template passing no `lenses`, reads every lens once on the whole change, commits reviewed before too (#129); then nothing is owed, and the record says every lens read the change (#359)."
 given:
   repo: reviewed
   setup:
@@ -23,4 +23,4 @@ expect:
     in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: " runs=2 -->", comment-lacks: "owed"}
+      - {id: 5, comments: 1, comment-contains: " runs=2 read=all -->", comment-lacks: "owed"}

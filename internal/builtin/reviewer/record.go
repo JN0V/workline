@@ -19,14 +19,16 @@ import (
 // they made, by git's patch id, so a commit rebased with its change intact
 // is not asked again either (#286); and how many reviews ran, which turns
 // the lens a push gets; and the findings of the last review that block,
-// which stand until a commit answers them (#326). On a merge request it is
-// hidden in the summary comment; on a machine, in the git directory.
+// which stand until a commit answers them (#326); and whether every lens
+// read the change since it was last a draft (#359). On a merge request it
+// is hidden in the summary comment; on a machine, in the git directory.
 type Record struct {
 	Reviewed []string `json:"reviewed"`
 	Patches  []string `json:"patches,omitempty"`
 	Runs     int      `json:"runs"`
-	Owed     bool     `json:"owed,omitempty"`   // every lens owed: the run on ready, a rule holding it, asked none (#129)
-	Blocks   []Block  `json:"blocks,omitempty"` // the findings that block, carried to the next run (#326)
+	Owed     bool     `json:"owed,omitempty"`     // every lens owed: the run on ready, a rule holding it, asked none (#129)
+	ReadAll  bool     `json:"read-all,omitempty"` // every lens asked on the whole change, since the merge request was last a draft (#359)
+	Blocks   []Block  `json:"blocks,omitempty"`   // the findings that block, carried to the next run (#326)
 }
 
 // Block is a lens's finding that blocked a review: it stands, run after
@@ -44,10 +46,10 @@ type Block struct {
 const SummaryKey = "summary"
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
-// `patches=`, and still reads. blocksLine reads its blocks, a line of
-// their own an engine before them leaves.
+// `patches=`, nor `read=all` before #359, and still reads. blocksLine reads
+// its blocks, a line of their own an engine before them leaves.
 var (
-	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)? -->`)
+	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)? -->`)
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
 )
 
@@ -70,6 +72,9 @@ func (r Record) String() string {
 	owed := ""
 	if r.Owed {
 		owed = " owed=all"
+	}
+	if r.ReadAll {
+		owed += " read=all"
 	}
 	s := fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 	if len(r.Blocks) > 0 {
@@ -94,6 +99,7 @@ func parseRecord(text string) (Record, error) {
 	r.Reviewed, r.Patches = ids(m[1]), ids(m[2])
 	r.Runs, _ = strconv.Atoi(m[3])
 	r.Owed = m[4] != ""
+	r.ReadAll = m[5] != ""
 	if b := blocksLine.FindStringSubmatch(text); b != nil {
 		if err := json.Unmarshal([]byte(b[1]), &r.Blocks); err != nil {
 			return Record{}, fmt.Errorf("the findings that blocked do not read: %v", err)
@@ -114,9 +120,10 @@ func ids(list string) []string {
 }
 
 // add records commits as reviewed, and the patch ids of their changes, once
-// each, and one more run; the blocks kept.
+// each, and one more run; the blocks kept, and whether every lens read the
+// change.
 func (r Record) add(commits, patches []string) Record {
-	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks)}
+	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)

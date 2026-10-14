@@ -1,5 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/every-lens-when-the-run-on-ready-was-cancelled
-reviewer/one-lens-a-push-once-every-lens-read
-reviewer/every-lens-again-once-a-draft-again
