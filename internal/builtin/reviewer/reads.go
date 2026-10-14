@@ -1,14 +1,11 @@
 package reviewer
 
-// The judge reads the code it needs (ADR-0045). A judge of the code review
-// may answer with reads instead of a verdict: a file's lines, a definition
-// by its name, the places a word is written. Pre serves them from git at
-// the head reviewed — what the repository tracks there, never the working
-// tree — within judge-read-rounds and judge-read-lines-max, and the engine
-// asks the judge again with what it read. A no quotes the lines that
-// refute the finding: found again at the head, in what the judge was
-// shown or read, the finding is dropped; else, or when the judge says
-// unsure, it is shown not verified.
+// The judge reads the code it needs (ADR-0045): pre serves the reads a
+// judge of the code asks — a file's lines, a definition, a word's places —
+// from git at the head reviewed, within judge-read-rounds and
+// judge-read-lines-max, and the engine asks it again. A no's quote found
+// again in what it was shown or read drops the finding; otherwise, or
+// unsure, the finding is shown not verified (roles/reviewer/docs/judge.md).
 
 import (
 	"encoding/json"

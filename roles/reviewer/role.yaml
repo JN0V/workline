@@ -101,10 +101,11 @@ settings:
   # asked again; a no quotes the lines that refute the finding, found
   # again, else the finding is shown not verified; unsure too. Rounds of
   # reads a judge may ask: 0, today's judge, until the measure (#362)
-  # shows it does better; a project may turn it on (2, as decided).
+  # shows it does better; a project may turn it on (2, as decided); at
+  # most 8, the engine asking a judge ten times a run at most.
   judge-read-rounds: 0
   # Lines read for one judge, all its rounds together; past them, cut, the
-  # rest named. A search past 50 places is not read: narrow it.
+  # rest named; 0: no read. A search past 50 places is not read: narrow it.
   judge-read-lines-max: 400
   # Every lens a run asks, in one call: the change and its files given
   # once, each finding naming its lens (#147). false: a call each, apart.
