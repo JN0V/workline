@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: 1f0bc75
+checked: 59fbc35
 verified: agent:claude-code
 ---
 # Committer
@@ -135,8 +135,9 @@ An author or committer address outside the allow list blocks (`identity`).
   addresses its forge commits with — on GitHub, its App's bot
   (`<id>+<app>[bot]@users.noreply.github.com`) and the web's merges
   (`noreply@github.com`) — so a user's list lets them through
-  ([#107](https://github.com/JN0V/workline/issues/107)). Each is written
-  whole, never a pattern; alone, they never turn the check on.
+  ([#107](https://github.com/JN0V/workline/issues/107)). Each is matched
+  exactly, case included, never as a pattern; alone, they never turn the
+  check on.
 
 ## Rewrite (the agent)
 
