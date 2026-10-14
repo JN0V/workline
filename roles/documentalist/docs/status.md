@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-13)
+# Documentalist — where it stands (2026-10-14)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
@@ -20,9 +20,10 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. The docs to split and the
-   default of judging in parts
-   ([#82](https://github.com/JN0V/workline/issues/82)) are still to do.
+1. **Nothing buildable in Missing**: open. Judging in parts goes on by
+   default once [#356](https://github.com/JN0V/workline/issues/356) is
+   built ([#82](https://github.com/JN0V/workline/issues/82), decided
+   2026-10-14); the docs to split are still to do.
    [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
    simple version (Built: a doc judged on its diff);
    [#121](https://github.com/JN0V/workline/issues/121) too (Built: code
@@ -135,9 +136,13 @@ its evaluation in
 2. **Gaps left by step 3** of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)
    ([#106](https://github.com/JN0V/workline/issues/106)).
-3. **Judging in parts on by default, or not**
-   ([#82](https://github.com/JN0V/workline/issues/82)): on WaterMeter, far
-   behind, 7 of 10 suspect docs too large to be judged whole.
+3. **Judging in parts on by default**
+   ([#82](https://github.com/JN0V/workline/issues/82), decided
+   2026-10-14), once a doc in parts is no longer judged again each night
+   while it waits ([#356](https://github.com/JN0V/workline/issues/356));
+   the code examples it writes are told apart (Built,
+   [#121](https://github.com/JN0V/workline/issues/121)). On WaterMeter,
+   far behind, 7 of 10 suspect docs were too large to be judged whole.
 4. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
    `docs/narrow-wide-sources`, not pushed); four to split
    (`reference/eventbus-architecture.md`,
