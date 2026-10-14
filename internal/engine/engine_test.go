@@ -1,6 +1,9 @@
 package engine
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAskAgain(t *testing.T) {
 	for _, c := range []struct {
@@ -63,5 +66,32 @@ func TestOverBudgetSummary(t *testing.T) {
 	}
 	if got := overBudgetSummary("docs to check"); got != head+" (docs to check)" {
 		t.Errorf("said: got %q", got)
+	}
+}
+
+// A diff in a comment is copied whole and applied: no line of it ends its
+// block, and the block holds it as git wrote it, a last blank line of
+// context too (#145).
+func TestDiffBlock(t *testing.T) {
+	plain := "--- a/doc.md\n+++ b/doc.md\n@@ -1,2 +1,2 @@\n Title\n-old\n+new\n"
+	if got, want := diffBlock(strings.TrimSuffix(plain, "\n")), "```diff\n"+plain+"```"; got != want {
+		t.Errorf("without a backtick, the block changed:\n%s\nwant:\n%s", got, want)
+	}
+	fenced := "--- a/doc.md\n+++ b/doc.md\n@@ -1,4 +1,5 @@\n ```sh\n tool\n ```\n+```\n \n"
+	got := diffBlock(fenced)
+	open, rest, _ := strings.Cut(got, "\n")
+	fence := strings.TrimSuffix(open, "diff")
+	if !strings.HasPrefix(fence, "```") || strings.Trim(fence, "`") != "" {
+		t.Fatalf("opens with %q, not a fence and diff", open)
+	}
+	if inside, ok := strings.CutSuffix(rest, fence); !ok || inside != fenced {
+		t.Errorf("the block holds %q, want the diff %q", inside, fenced)
+	}
+	// CommonMark closes a fence on a line of as many backticks or more,
+	// indented three spaces at most.
+	for _, l := range strings.Split(fenced, "\n") {
+		if bare := strings.TrimLeft(l, " "); len(l)-len(bare) <= 3 && strings.HasPrefix(bare, fence) {
+			t.Errorf("line %q of the diff closes the block's fence %q", l, fence)
+		}
 	}
 }
