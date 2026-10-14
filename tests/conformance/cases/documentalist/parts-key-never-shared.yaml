@@ -1,0 +1,22 @@
+case: documentalist/parts-key-never-shared
+about: "Two docs whose paths make one branch name (docs/tech/auth.md, docs/tech-auth.md) never share a merge request judged in parts: while the other's waits, the doc's takes a short hash of its path, so neither proposal replaces the other (#356)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    - "git checkout -qb workline/documentalist/fix-docs-tech-auth-md && printf '# Auth notes\\n' > docs/tech-auth.md && git add docs/tech-auth.md && git commit -qm 'docs: bring docs/tech-auth.md in line with the code' && git push -q origin workline/documentalist/fix-docs-tech-auth-md && git checkout -q main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+  forge:
+    merge-requests:
+      - {id: 4, branch: "workline/documentalist/fix-docs-tech-auth-md", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found", open-merge-request: true, no-apply: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 2
+  forge:
+    merge-requests:
+      - {id: 4, branch: "workline/documentalist/fix-docs-tech-auth-md"}
+      - {id: 5, branch: "workline/documentalist/fix-docs-tech-auth-md-c7e343", base: main, body-contains: "`docs/tech/auth.md` — judged in parts"}

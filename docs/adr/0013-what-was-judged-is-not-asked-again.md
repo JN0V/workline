@@ -3,7 +3,7 @@
 - **Status:** accepted; amended 2026-10-02 (a task proposed earlier in the
   run waits too); amended 2026-10-12 (the reviewer knows a change rebased,
   and what a merge of the base settled; a doc's `judged` says what was
-  read)
+  read); amended 2026-10-14 (a doc waits while a merge request holds it)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -172,3 +172,44 @@ as it is now, not only the diff, before saying nothing is wrong. It would
 vouch for more, but would cost a read of each such doc against its sources
 every night one changes. Left as a follow-up; the doc still waits for a
 person, as before.
+
+## Amendment (2026-10-14): a doc waits while a merge request holds it
+
+DomoticsCore, 2026-10-05 to 10-08
+([#356](https://github.com/JN0V/workline/issues/356)): two docs judged in
+parts, the fix changing nothing; their `judged-in-parts` record went to the
+`derived` pull request, left open. A doc judged in parts waited only for
+the `fix` task: both were judged again each night, two rounds a night,
+0.98M tokens in, while 27 other docs never got their turn. A copy of
+DomoticsCore on `main`'s engine, with a fake agent, did the same.
+
+On workline, `docs/spec/conformance.md` was condensed 11 times while its
+pull request ([#269](https://github.com/JN0V/workline/pull/269)) waited:
+no rewrite waited for its own merge request, and neither
+[#312](https://github.com/JN0V/workline/pull/312) nor
+[#315](https://github.com/JN0V/workline/pull/315) changed that.
+
+- **The engine says what waits, file by file.** With
+  `--open-merge-request`, `in/waiting.yaml` names, for each task waiting,
+  the files its change touches: an open merge request's branch from where
+  it left the commit judged, fetched as `workline follow` does; an earlier
+  round's patches. A branch that cannot be read is said
+  (`merge-request-unread`), its task known by name only.
+- **A doc judged in parts waits while a merge request changes it**, its
+  fix or only its record, or while an earlier round proposed it; the docs
+  none holds go. A `fix` task whose files are unknown holds them all.
+- **A run judging docs in parts opens a merge request of its own**, keyed
+  by its first doc (`workline/documentalist/fix-<doc>`): never the derived
+  blocks', never one the next run's proposal would replace.
+- **A rewrite waits for its own merge request**: a doc to condense or
+  split, a card to merge, a repeated passage; the next one goes, said.
+- **Docs judged whole wait as before**, for `suspect` or `stale`: one
+  merge request they share, which another doc's judgement would replace.
+
+Not chosen:
+
+- **Reading the record on the branch**, not which files change: exact for
+  a doc whose derived block alone waits, but a round proposed and not
+  applied has no branch. Such a doc waits for `derived` too, said.
+- **One merge request per doc judged in parts**: one fix call per doc,
+  fewer docs a night.
