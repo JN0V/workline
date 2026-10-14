@@ -1,0 +1,19 @@
+case: product-owner/sources-a-folder
+about: A folder named as an issue's code, its quote from a file inside it, is done, as a file named with its anchor is; a quote from a file outside the folder named is dropped, no-quote (#392).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "WriteRows loses rows.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Rows short", body: "WriteRows stops short.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Export", body: "The export.", labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:sources-a-folder}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Named the code #9 is about: src/export."}
+    - {rule: done, where: "#10", message: "Named the code #10 is about: src/export/csv.go#WriteRows."}
+    - {rule: no-quote, where: "#11", message: "from none of the files named"}
+  forge:
+    issues:
+      - {id: 9, comment-contains: "sources: [src/export]\nconfirmed: d8c4dff\n"}
+      - {id: 11, comment-contains: "sources: [README.md]\nconfirmed: d8c4dff\n"}

@@ -164,8 +164,9 @@ the footer left last as it was.
 ```
 
 The files, or folders, must be in the commit the run is on (1 to 5;
-`sources-unknown` otherwise), and a quote found in one of the files named
-(`no-quote` otherwise; a file inside a folder named does not count yet). A
+`sources-unknown` otherwise), and a quote found in one of the files named,
+an anchor after `#` aside, or in a file inside a folder named (`no-quote`
+otherwise). A
 folder is given at the next run as the list of its files. Done, the issue's
 state gets them and loses `judged`: it is read again, with that code, at the
 next run.

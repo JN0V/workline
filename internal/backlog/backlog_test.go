@@ -106,6 +106,31 @@ func TestProposalReadBackFencedSteps(t *testing.T) {
 	}
 }
 
+// The code named for an issue holds the file its quote is from: that file,
+// with an anchor or not, or a folder it is in; never a folder that only
+// starts like it, nor a file whose name only starts like it (#392).
+func TestSourceHoldsQuote(t *testing.T) {
+	for _, c := range []struct {
+		source, file string
+		want         bool
+	}{
+		{"src/export", "src/export/csv.go", true},
+		{"src/export/", "src/export/csv.go", true},
+		{"src", "src/export/csv.go", true},
+		{"src/export/csv.go", "src/export/csv.go", true},
+		{"src/export/csv.go#WriteRows", "src/export/csv.go", true},
+		{"src/export", "README.md", false},
+		{"src/export", "src/exporter/csv.go", false},
+		{"src/export/csv.go", "src/export/csv.go.orig", false},
+		{"src/export/csv.go#WriteRows", "src/export", false},
+		{"#WriteRows", "src/export/csv.go", false},
+	} {
+		if got := holds(c.source, c.file); got != c.want {
+			t.Errorf("holds(%q, %q) = %v, want %v", c.source, c.file, got, c.want)
+		}
+	}
+}
+
 // A text is cut into its questions: a list's items each one, the options
 // of one question kept together, a sentence before it left out.
 func TestQuestions(t *testing.T) {

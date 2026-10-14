@@ -1180,7 +1180,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 				return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about: %s, named for it, is not in the repository; nothing changed", c.Issue, path)
 			}
 		}
-		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return strings.HasPrefix(s, c.Quote.Path) }) {
+		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return holds(s, c.Quote.Path) }) {
 			return "no-quote", "the line quoted to show its code is from none of the files named: nothing changed"
 		}
 	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
@@ -2326,6 +2326,15 @@ func (p *Plan) checkAgreed(f forge.Backlog, role string, c *Proposal) (rule, why
 		return "not-agreed", "no reply agreeing to the text last proposed to its reporter: nothing of it is written in the body"
 	}
 	return "", ""
+}
+
+// holds says whether a source named for an issue's code holds the file a
+// quote is from: that file, with an anchor or not, or a folder it is in
+// (#392).
+func holds(source, file string) bool {
+	s, _, _ := strings.Cut(source, "#")
+	s = strings.TrimSuffix(s, "/")
+	return s != "" && (s == file || strings.HasPrefix(file, s+"/"))
 }
 
 // found says whether a quote is there, as written but for spaces: in a file
