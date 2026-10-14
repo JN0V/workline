@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,9 +22,50 @@ func TestSumChecks(t *testing.T) {
 		{"one failed", []checkContext{{Type: "CheckRun", Status: "IN_PROGRESS"}, {Type: "CheckRun", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
 		{"workline's own left out", []checkContext{{Type: "CheckRun", Status: "COMPLETED", Conclusion: "SUCCESS"},
 			{Type: "StatusContext", Context: VerdictStatus, State: "FAILURE"}, {Type: "StatusContext", Context: Accepted, State: "FAILURE"}}, "success"},
+		{"cancelled beside a pass", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "CANCELLED"},
+			{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "success"},
+		{"cancelled beside a newer run", []checkContext{{Type: "CheckRun", Name: "judge", Status: "COMPLETED", Conclusion: "CANCELLED"},
+			{Type: "CheckRun", Name: "judge", Status: "IN_PROGRESS"}}, "pending"},
+		{"only cancelled", []checkContext{{Type: "CheckRun", Name: "follow", Status: "COMPLETED", Conclusion: "CANCELLED"},
+			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "SUCCESS"}}, "pending"},
+		{"cancelled beside a failure", []checkContext{{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "CANCELLED"},
+			{Type: "CheckRun", Name: "test", Status: "COMPLETED", Conclusion: "FAILURE"}}, "failure"},
 	} {
 		if got := sumChecks(c.all); got != c.want {
 			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// A cancelled run is no result (#377), read on GitHub's own answers of
+// 2026-10-14: #366's head 67195fb, its `follow` only cancelled — the
+// forge cancelled the runs a newer label's replaced —, reads as pending,
+// no longer red; #349's head, `follow` cancelled beside two that passed,
+// reads as green.
+func TestSumChecksLive(t *testing.T) {
+	for _, c := range []struct{ head, nodes, want string }{
+		{"67195fb", `[{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"CANCELLED"},
+			{"__typename":"CheckRun","name":"test","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"CheckRun","name":"judge","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"CheckRun","name":"findings","status":"COMPLETED","conclusion":"SKIPPED"},
+			{"__typename":"CheckRun","name":"workline","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"StatusContext","context":"workline/verdict","state":"SUCCESS"}]`, "pending"},
+		{"5261d7f", `[{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"CANCELLED"},
+			{"__typename":"CheckRun","name":"test","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"CheckRun","name":"judge","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"CheckRun","name":"follow","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"CheckRun","name":"findings","status":"COMPLETED","conclusion":"SKIPPED"},
+			{"__typename":"CheckRun","name":"workline","status":"COMPLETED","conclusion":"SUCCESS"},
+			{"__typename":"StatusContext","context":"workline/accepted","state":"SUCCESS"},
+			{"__typename":"StatusContext","context":"workline/verdict","state":"SUCCESS"}]`, "success"},
+	} {
+		var nodes []checkContext
+		if err := json.Unmarshal([]byte(c.nodes), &nodes); err != nil {
+			t.Fatal(err)
+		}
+		if got := sumChecks(nodes); got != c.want {
+			t.Errorf("%s: %q, want %q", c.head, got, c.want)
 		}
 	}
 }

@@ -21,13 +21,26 @@ type CheckRun struct {
 }
 
 // sumRuns sums up a head's check runs: failure when one failed, else
-// pending when one runs, else success; "" none.
+// pending when one runs, else success; "" none. A cancelled run is no
+// result, neither success nor failure: another run of the same check —
+// the same name, as the forge's required checks match them — counts
+// instead; a check only ever cancelled counts as one still running, the
+// forge's own required checks still guarding the merge.
 func sumRuns(runs []CheckRun) string {
+	other := map[string]bool{} // a check with a run not cancelled
+	for _, r := range runs {
+		if r.State != "cancelled" {
+			other[r.Name] = true
+		}
+	}
 	sum := ""
 	for _, r := range runs {
 		state := r.State
 		if state == "cancelled" {
-			state = "failure"
+			if other[r.Name] {
+				continue
+			}
+			state = "pending"
 		}
 		switch {
 		case state == "failure":
