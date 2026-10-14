@@ -378,8 +378,13 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 			continue
 		}
 		rules := job["rules"]
-		if base, _ := job["extends"].(string); rules == nil && base != "" {
-			rules = top[base].(map[string]any)["rules"]
+		if ext, ok := job["extends"]; rules == nil && ok {
+			base, _ := ext.(string)
+			parent, found := top[base].(map[string]any)
+			if !found {
+				t.Fatalf("job %s extends %v, which the template does not hold as one job: the check reads one", name, ext)
+			}
+			rules = parent["rules"]
 		}
 		if !strings.Contains(fmt.Sprint(rules), "merge_request_event") {
 			continue
