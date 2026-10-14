@@ -37,6 +37,8 @@ var contracts = map[string]string{
 	"note":           `- note: "a message for a person"`,
 	"finding":        `- finding: {lens: correctness, severity: important, title: "what is wrong, in a few words", why: "how it fails, and when", cause: {path: "src/file.go", quote: "the line that causes it, as it reads"}, symptom: {path: "src/other.go", quote: "where it shows, as it reads"}, fix: "what would fix it, in a sentence", seen: "what a person using the project sees when it fails, in plain words"}  # lens: the one that found it; severity: important or nit; symptom only when elsewhere; claim: "the author's words, as they read", only for a lens checking claims; a cause in an issue the change closes: path "#4"; decision: "the question for a person", only for a choice that is not a defect`,
 	"claim":          `- claim: {lines: "12-14", status: contradicted, quote: "the doc's words, as they read", source: {path: "src/file.go", lines: "40-41", quote: "the source's words, as they read"}, why: "why they disagree"}`,
+	"read":           `- read: {path: "src/file.go", lines: "40-80", why: "what you look for there"}  # or name: "Decide", where it is defined; or grep: "a_word", the lines that name it; instead of a note, when the task lets you read`,
+	"quote":          `- quote: {path: "src/file.go", text: "the lines that refute the finding, as they read"}  # beside a note saying no`,
 }
 
 // BlockScalars is how a text holding code is written so that it reads: a

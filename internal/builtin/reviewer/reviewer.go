@@ -40,32 +40,34 @@ const (
 
 // Settings are the role's settings, as merged by the engine.
 type Settings struct {
-	Base            string   `json:"base"`                // where a review on a machine starts from, when no range is given
-	Ignore          []string `json:"ignore"`              // files that are not code: a change touching only these asks nobody
-	Lenses          []string `json:"lenses"`              // the lenses, in the order a merge request takes them in turn
-	LensesPerPush   int      `json:"lenses-per-push"`     // on a merge request: lenses a push gets
-	FindingsMax     int      `json:"findings-max"`        // findings on the change reported a run; the rest counted
-	IssuesMax       int      `json:"issues-max"`          // issues opened a run for what lies outside the change
-	DiffLinesMax    int      `json:"diff-lines-max"`      // lines of the change given to a lens
-	CodeLinesMax    int      `json:"code-lines-max"`      // lines of the files changed given to a lens, all together
-	CommentBlockMax int      `json:"comment-block-max"`   // lines of one comment added
-	StoryWords      []string `json:"story-words"`         // what tells a bug's story in a comment
-	AIFindings      Gate     `json:"ai-findings"`         // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
-	JudgeAtLeast    string   `json:"judge-at-least"`      // the independence a verification needs: context, model, provider
-	ForgeWrites     bool     `json:"forge-writes"`        // on a merge request: the comments on lines, the summary comment and the issues
-	FinderFloor     bool     `json:"finder-floor"`        // ask each lens to look for a number of candidates before it stops
-	Tests           []string `json:"tests"`               // the test files: what a judge reading tests is shown of them
-	TestsLinesMax   int      `json:"tests-lines-max"`     // lines of those tests a judge is shown, all together
-	JudgeLinesMax   int      `json:"judge-lines-max"`     // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
-	LensesTogether  bool     `json:"lenses-together"`     // the lenses of a run asked in one call, the change given once
-	AIMaxTokens     int      `json:"ai-max-tokens"`       // what a run may spend, all calls together; the engine stops asking
-	IssueLinesMax   int      `json:"issue-lines-max"`     // lines of the issues the change closes the lenses are given, all together
-	TestimonyLines  int      `json:"testimony-lines-max"` // lines of what the author says (commit messages, the merge request) the lenses are given
-	QuestionsMax    int      `json:"questions-max"`       // decisions put to a person a run; the rest counted
-	DiffAlone       bool     `json:"diff-alone"`          // ask the diff-alone facet too, apart, given the change only
-	SpecLenses      []string `json:"spec-lenses"`         // the lenses a spec is read through (#128)
-	SpecLinesMax    int      `json:"spec-lines-max"`      // lines of a spec the lenses are given; the rest cut, said
-	SpecRounds      int      `json:"spec-rounds"`         // on the forge: reviews in a row with a finding open, then a person (#128)
+	Base            string   `json:"base"`                 // where a review on a machine starts from, when no range is given
+	Ignore          []string `json:"ignore"`               // files that are not code: a change touching only these asks nobody
+	Lenses          []string `json:"lenses"`               // the lenses, in the order a merge request takes them in turn
+	LensesPerPush   int      `json:"lenses-per-push"`      // on a merge request: lenses a push gets
+	FindingsMax     int      `json:"findings-max"`         // findings on the change reported a run; the rest counted
+	IssuesMax       int      `json:"issues-max"`           // issues opened a run for what lies outside the change
+	DiffLinesMax    int      `json:"diff-lines-max"`       // lines of the change given to a lens
+	CodeLinesMax    int      `json:"code-lines-max"`       // lines of the files changed given to a lens, all together
+	CommentBlockMax int      `json:"comment-block-max"`    // lines of one comment added
+	StoryWords      []string `json:"story-words"`          // what tells a bug's story in a comment
+	AIFindings      Gate     `json:"ai-findings"`          // warn, until measured (#90); block: a verified important finding blocks; or one of the two by lens
+	JudgeAtLeast    string   `json:"judge-at-least"`       // the independence a verification needs: context, model, provider
+	ForgeWrites     bool     `json:"forge-writes"`         // on a merge request: the comments on lines, the summary comment and the issues
+	FinderFloor     bool     `json:"finder-floor"`         // ask each lens to look for a number of candidates before it stops
+	Tests           []string `json:"tests"`                // the test files: what a judge reading tests is shown of them
+	TestsLinesMax   int      `json:"tests-lines-max"`      // lines of those tests a judge is shown, all together
+	JudgeLinesMax   int      `json:"judge-lines-max"`      // lines of code a judge is shown: the cause's function, then those it reaches; 0: 31 lines around the cause
+	JudgeReadRounds int      `json:"judge-read-rounds"`    // rounds of reads a judge of the code may ask before it answers (ADR-0045); 0: it reads none
+	JudgeReadMax    int      `json:"judge-read-lines-max"` // lines read for one judge, all its rounds together
+	LensesTogether  bool     `json:"lenses-together"`      // the lenses of a run asked in one call, the change given once
+	AIMaxTokens     int      `json:"ai-max-tokens"`        // what a run may spend, all calls together; the engine stops asking
+	IssueLinesMax   int      `json:"issue-lines-max"`      // lines of the issues the change closes the lenses are given, all together
+	TestimonyLines  int      `json:"testimony-lines-max"`  // lines of what the author says (commit messages, the merge request) the lenses are given
+	QuestionsMax    int      `json:"questions-max"`        // decisions put to a person a run; the rest counted
+	DiffAlone       bool     `json:"diff-alone"`           // ask the diff-alone facet too, apart, given the change only
+	SpecLenses      []string `json:"spec-lenses"`          // the lenses a spec is read through (#128)
+	SpecLinesMax    int      `json:"spec-lines-max"`       // lines of a spec the lenses are given; the rest cut, said
+	SpecRounds      int      `json:"spec-rounds"`          // on the forge: reviews in a row with a finding open, then a person (#128)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -150,6 +152,20 @@ type Review struct {
 	Record    Record            `json:"record"`
 	Local     bool              `json:"local"`           // the record is kept on this machine
 	Calls     []Spent           `json:"calls,omitempty"` // what each call to an agent used
+	Reads     []JudgeRead       `json:"reads,omitempty"` // what each judge read, a round each (ADR-0045)
+}
+
+// JudgeRead is one round of reads a judge asked (ADR-0045): what it asked,
+// how many lines it was given, what was refused, with why. Its call is in
+// Calls, by the same `for`.
+type JudgeRead struct {
+	For     string   `json:"for"` // the judge's question (judge/03)
+	Where   string   `json:"where"`
+	Lens    string   `json:"lens"`
+	Round   int      `json:"round"`
+	Asked   []string `json:"asked"`
+	Lines   int      `json:"lines"`
+	Refused []string `json:"refused,omitempty"`
 }
 
 // Spent is what one call of the review used: a lens's (or the lenses',
@@ -165,7 +181,9 @@ type Spent struct {
 
 // Pre prepares the review, in up to three passes: the rules and the lenses'
 // questions; the lenses' answers read and the judge's questions written;
-// the judge's answers read and what follows proposed.
+// the judge's answers read and what follows proposed. Before the last, a
+// pass a round serves the reads judges asked, and asks them again
+// (ADR-0045).
 func Pre(runDir, repo string) int {
 	s, err := settings(runDir)
 	if err != nil {
@@ -173,6 +191,14 @@ func Pre(runDir, repo string) int {
 	}
 	switch {
 	case os.Getenv("WORKLINE_JUDGED") == "answered":
+		// A judge that asked to read is served, and asked again, before
+		// anything is settled (ADR-0045).
+		if again, err := readsAsked(runDir, repo, s); err != nil || again {
+			if err != nil {
+				return fail(err)
+			}
+			return 0
+		}
 		return settle(runDir, repo, s)
 	case os.Getenv("WORKLINE_PARTS") == "answered":
 		return readLenses(runDir, repo, s)
@@ -926,10 +952,16 @@ func readLenses(runDir, repo string, s Settings) int {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return fail(err)
 		}
-		q := map[string]string{"question": strings.Join(strings.Fields(question), " "), "material": m}
-		data, _ := json.Marshal(q) // JSON, which YAML reads: code quoted may start a line with a tab
-		if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
-			return fail(err)
+		question = strings.Join(strings.Fields(question), " ")
+		if s.JudgeReadRounds > 0 && st.Spec == nil { // the code's judge may read first (ADR-0045)
+			if err := (reading{Question: question, Material: m, Cause: f.Cause.Path}).write(dir, s, st.Head); err != nil {
+				return fail(err)
+			}
+		} else {
+			data, _ := json.Marshal(map[string]string{"question": question, "material": m}) // JSON, which YAML reads: code quoted may start a line with a tab
+			if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
+				return fail(err)
+			}
 		}
 		c.Asked = append(c.Asked, JudgeKey(f)+"\x00"+key)
 	}
@@ -1238,6 +1270,7 @@ func settle(runDir, repo string, s Settings) int {
 		floor = "context"
 	}
 	unjudged := 0 // findings the judge was not asked of, the run's tokens spent
+	var readsDone []JudgeRead
 	verify := func(l []Finding) []Finding {
 		var kept []Finding
 		for _, f := range l {
@@ -1246,20 +1279,29 @@ func settle(runDir, repo string, s Settings) int {
 				kept = append(kept, f) // a nit: reported as found
 				continue
 			}
-			var a struct {
-				Yes                      *bool
-				Why, Model, Level, Error string
-				Judge, Author            string
-			}
-			data, err := os.ReadFile(filepath.Join(runDir, "in", "judge", key, "answer.yaml"))
-			if err == nil {
-				err = yaml.Unmarshal(data, &a)
+			dir := filepath.Join(runDir, "in", "judge", key)
+			a, err := answerIn(dir)
+			// A judge that may read (ADR-0045): what it read, said beside
+			// its answer; a no stands on its quote, found again.
+			rd, reads := readingOf(dir)
+			read := rd.said()
+			for i, round := range rd.Rounds {
+				readsDone = append(readsDone, JudgeRead{For: "judge/" + key, Where: f.Where, Lens: f.Lens, Round: i + 1,
+					Asked: readsSaid(round.Asked), Lines: round.Lines, Refused: round.Refused})
 			}
 			who := fmt.Sprintf("independence: %s (%s → %s)", a.Level, a.Author, a.Model)
-			if strings.Contains(a.Error, tokensSpent) {
+			stopped := strings.Contains(a.Error, tokensSpent)
+			if stopped && len(rd.Rounds) == 0 {
 				unjudged++
 			}
+			unsure := "not verified: the judge cannot tell (judge-unsure): "
 			switch {
+			case reads && stopped && len(rd.Rounds) > 0: // it answered once: its reads, cut short
+				f.Verified = unsure + "its reads were stopped, the run having spent its ai-max-tokens" + read
+			case reads && err == nil && len(a.Reads) > 0:
+				f.Verified = unsure + "it asked to read again, no read left (judge-read-rounds, judge-read-lines-max)" + read
+			case reads && err == nil && a.Unsure:
+				f.Verified = unsure + a.Why + read
 			case err != nil || a.Yes == nil:
 				why := a.Error
 				if why == "" {
@@ -1267,13 +1309,23 @@ func settle(runDir, repo string, s Settings) int {
 				}
 				f.Verified = "not verified: " + why
 			case !*a.Yes:
+				reason := a.Why
+				if reads {
+					where, notFound := rd.quoted(repo, st, a.Quote)
+					if notFound != "" {
+						f.Verified = fmt.Sprintf("not verified: the judge said no (judge-no-unquoted): %s — %s%s", notFound, a.Why, read)
+						kept = append(kept, f)
+						continue
+					}
+					reason = strings.TrimRight(a.Why, ". ") + ", quoting " + where + read
+				}
 				c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-judged-no", Level: "warn",
-					Message: fmt.Sprintf("dropped, from the %s lens: %q at %s — the judge: %s (%s)", f.Lens, f.Title, f.Where, a.Why, who)})
+					Message: fmt.Sprintf("dropped, from the %s lens: %q at %s — the judge: %s (%s)", f.Lens, f.Title, f.Where, reason, who)})
 				continue
 			case judge.Levels[a.Level] < judge.Levels[floor]:
 				f.Verified, f.Level = fmt.Sprintf("not verified: the judge stood at %s, below %s (%s)", a.Level, floor, a.Why), a.Level
 			default:
-				f.Verified, f.Level = "verified, "+who, a.Level
+				f.Verified, f.Level = "verified, "+who+read, a.Level
 			}
 			kept = append(kept, f)
 		}
@@ -1346,6 +1398,7 @@ func settle(runDir, repo string, s Settings) int {
 	v.Record.Owed = false // the lenses were asked: a rule holds them no more
 	everyLens(st, &v, len(c.Failed) == 0)
 	v.Calls = spent(runDir, st, c)
+	v.Reads = readsDone
 	v.Status = status(v.Findings)
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.still()
 	if len(st.Skipped) > 0 {

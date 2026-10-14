@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: d7ea19ba
+checked: 1dd6543c
 verified: agent:documentalist
 judged: 88db06e
 ---
@@ -203,6 +203,19 @@ token), **apply** (trusted, no AI key).
    `pre` reads the answers one by one (the reviewer drops a finding judged
    no; the product owner keeps an announced issue open). Without an agent, or once `ai-max-tokens` is spent, none is asked;
    the agent unreachable, the rest are not either.
+
+   **A judge that reads** (ADR-0045). A question saying `reads: true`
+   lets its judge answer `read` items instead of a verdict (a file's
+   `path` and `lines`, a definition's `name`, a word to `grep`), `unsure`,
+   or a no with the `quote` it rests on; its answer then holds `reads`,
+   `unsure: true`, or `yes` and `quote`. `pre`, run again, may serve
+   those reads and ask the judge again: it rewrites the question and takes
+   its answer away (`answer-<n>.yaml` keeps it). The engine asks again,
+   apart, every question whose answer `pre` took away, then runs `pre`
+   again: 10 rounds at most, past which such a question is answered
+   `{error: not asked}` for `pre` to settle; every judge answers once
+   before any is asked again. The reviewer's code review is the one role that reads so
+   ([reviewer](../../roles/reviewer/docs/judge.md#when-the-judge-reads)).
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs
    (`model-grid.md`), receives the facets and `in/task.md`. It runs read-only

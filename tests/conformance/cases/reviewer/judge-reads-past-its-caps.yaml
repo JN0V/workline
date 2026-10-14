@@ -1,0 +1,15 @@
+case: reviewer/judge-reads-past-its-caps
+about: "What a judge reads stops at judge-read-lines-max lines, the rest named, and at judge-read-rounds rounds: the last question says no read is left, and a judge still asking to read is taken as unsure, the finding shown not verified (ADR-0045)."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-reads-past-its-caps.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 1, judge-read-lines-max: 4}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 3
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "not verified: the judge cannot tell (judge-unsure): it asked to read again, no read left"}]
+  no-findings: [{rule: finding-judged-no}]
+  run-files:
+    in/judge/01/question.yaml: {contains: ["calc/calc.go, lines 1 to 4", "lines 5 to 18 not read: past judge-read-lines-max (4)", "No read is left"]}

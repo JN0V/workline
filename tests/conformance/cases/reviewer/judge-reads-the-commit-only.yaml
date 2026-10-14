@@ -1,0 +1,19 @@
+case: reviewer/judge-reads-the-commit-only
+about: "A judge reads only files the reviewed commit holds, as it holds them: a file git does not track and a path outside the repository are refused, said to the judge; a line changed in the working tree since is never shown (ADR-0045)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "echo 'UNTRACKED NOTE' > notes.txt && echo 'OUTSIDE NOTE' > ../outside.txt"
+    - "sed -i '1a // WORKING TREE ONLY' calc/calc.go"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-reads-refused.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 2}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 3
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "verified"}]
+  run-files:
+    in/judge/01/question.yaml:
+      contains: ["Not read: notes.txt: not a file the repository tracks at", "Not read: ../outside.txt: outside the repository", "calc/calc.go, lines 1 to 3"]
+      not-contains: ["UNTRACKED NOTE", "OUTSIDE NOTE", "WORKING TREE ONLY"]
