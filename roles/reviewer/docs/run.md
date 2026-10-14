@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: f78d077
+checked: 98de6b44
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -168,35 +168,6 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 
 ### Every lens once when it becomes ready
 
-[#129](https://github.com/JN0V/workline/issues/129): the templates pass
-`--input lenses=all` when the merge request is opened ready, or a draft
-is marked ready.
-
-- **The whole change**, `base..head`: each commit was read by one lens
-  only, and skipping them could leave nothing to read. The commits are
-  recorded and one run counted; the next push gets one lens, in turn.
-- **GitHub**: the pull request `opened`, not a draft, or
-  `ready_for_review`, which runs the line. A push while that run goes on
-  cancels it, one run per pull request
-  ([#359](https://github.com/JN0V/workline/issues/359)): the next run
-  reads one lens.
-- **GitLab**: marking a draft ready starts no pipeline
-  ([gitlab-org/gitlab#25426](https://gitlab.com/gitlab-org/gitlab/-/issues/25426)).
-  The next pipeline, a push or **Run pipeline**, is the one when the
-  merge request is no draft (`CI_MERGE_REQUEST_DRAFT`, else the API)
-  and GitLab's note "marked this merge request as **ready**" is newer
-  than the reviewer's comment, or there is no comment yet.
-  - Read with `GITLAB_TOKEN` when the job has one, else the job's own
-    token; unread, one lens, said in the log.
-- **Cost**: a review of the whole change by every lens, as on a machine,
-  within the same `ai-max-tokens`
-  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
-- **Held by a rule**: the run on ready asks no lens, and its record owes
-  every lens (`owed=all`); the next run, the fix pushed, reads every lens
-  on the whole change, whatever the template passed.
-- **Once the lenses were asked**, nothing is owed: a budget spent or a
-  lens failing leaves the next push one lens. With no agent, nothing is
-  written: on GitLab the next pipeline is the run on ready again; on
-  GitHub, one lens.
-- **GitLab's notes** are read page by page, the newest first, until the
-  ready note or the reviewer's comment.
+The run when a merge request becomes ready reads every lens once, on
+the whole change: what tells it on each forge, a run on ready cancelled,
+a draft again, the cost: [the run on ready](ready.md).

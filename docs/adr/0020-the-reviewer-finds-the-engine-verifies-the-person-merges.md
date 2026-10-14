@@ -530,3 +530,36 @@ merge-request line; on in workline's own repository.
   not answered or the tokens spent (not reviewed whole) leaves auto-merge
   off, said in the job's summary. A block stands as before.
 - **The reviewer still never approves, never patches, never merges.**
+
+## Amendment (2026-10-14, #359: the run on ready told by the state too)
+
+- **What broke**: one judging run per merge request now, a push
+  cancelling the one before
+  ([#359](https://github.com/JN0V/workline/issues/359)). On GitHub the
+  run on ready was told by the event alone (`opened` ready,
+  `ready_for_review`): a push during that run cancelled it, it wrote
+  nothing, and the next push got one lens. Every lens was lost.
+- **Told by the state and the record too**: the templates pass the merge
+  request's draft state on every run (`--input draft=true|false`). On a
+  merge request no draft whose record does not say every lens read it,
+  the run reads every lens once, on the whole change, as with
+  `lenses=all`. The record then says so (`read=all`), and the next push
+  gets one lens. `lenses=all` on the event stays: the first run, and a
+  merge request marked ready again with no push between.
+- **A draft forgets it**: a run on a draft drops `read=all`, so a merge
+  request turned back into a draft, then ready, is read by every lens
+  once more, as on GitHub's second `ready_for_review`.
+- **Only a record that reads counts**: a record that does not read says
+  nothing of it, so that run reviews every commit with one lens. Every
+  lens on each push of a merge request whose notes the job cannot read
+  would be the cost [#147](https://github.com/JN0V/workline/issues/147)
+  cut.
+- **Both forges, one rule**: GitLab's template already reads the state
+  (its ready note against the reviewer's comment). It passes `draft` too,
+  so a pipeline on ready a push cancelled is caught the same way.
+- **Cost, once**: a merge request no draft whose record predates
+  `read=all` gets every lens on its next push.
+- **Rejected**: keeping the run on ready from being cancelled (GitHub's
+  concurrency cannot spare one kind of run); asking the forge's timeline
+  for a ready event newer than the reviewer's comment (a second reading
+  of the forge, where the record is already read).

@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 632c236a
+checked: 98de6b44
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -174,7 +174,7 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   ([more](../roles/reviewer/docs/lines.md)).
   Marking a draft ready starts no pipeline: the next one, a push or
   **Run pipeline**, has every lens read the whole change once
-  ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready); not tried on
+  ([how](../roles/reviewer/docs/ready.md); not tried on
   a GitLab yet).
 
 ## The product owner

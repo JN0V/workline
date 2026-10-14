@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 632c236a
+checked: 98de6b44
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -58,10 +58,10 @@ workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
 workline apply --line line.json          # second job: commits the doc fixes to the branch
 ```
 
-`--input lenses=all` has the reviewer read every lens instead of one, on
-the whole change: pass it once, when the merge request becomes ready
-(opened ready, or a draft marked ready), as the templates do
-([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
+`--input draft=<true|false>`, on each run, has the reviewer read every lens
+once, on the whole change, on a merge request no draft its record does not
+say every lens read; `--input lenses=all` asks it outright, when it becomes
+ready, as the templates do ([how](../roles/reviewer/docs/ready.md)).
 
 ### Gardening
 
