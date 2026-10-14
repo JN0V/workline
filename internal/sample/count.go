@@ -149,11 +149,17 @@ func weeks(f forge.Forge, issue int) ([]week, error) {
 		}
 		if len(w.Down) > 0 {
 			w.Unnamed = true
+			later := false // past the next week's comment: a reply naming no week is that one's
 			for _, reply := range notes[i+1:] {
+				if weekMark.MatchString(reply.Body) {
+					later = true
+					continue
+				}
 				if !slices.Contains(w.Down, reply.Author) {
 					continue
 				}
-				if named := weekName.FindAllString(reply.Body, -1); len(named) > 0 && !slices.Contains(named, w.Name) {
+				named := weekName.FindAllString(reply.Body, -1)
+				if len(named) > 0 && !slices.Contains(named, w.Name) || len(named) == 0 && later {
 					continue // about another week
 				}
 				r := notRows.FindStringSubmatch(reply.Body)

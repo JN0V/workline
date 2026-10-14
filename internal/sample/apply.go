@@ -124,15 +124,18 @@ func Apply(file, repo string, f forge.Forge) *Result {
 		}
 		res.Applied = append(res.Applied, "label")
 	}
-	// The count, written again from every week, this one's included.
-	ws, err := weeks(f, id)
-	if err != nil {
-		return failed(res, fmt.Errorf("the weeks, read back: %w", err))
+	// The count, written again from every week, this one's included; a
+	// forge that cannot read the weeks back leaves the one there.
+	if _, ok := f.(forge.Backlog); ok {
+		ws, err := weeks(f, id)
+		if err != nil {
+			return failed(res, fmt.Errorf("the weeks, read back: %w", err))
+		}
+		if err := f.Sticky(issue, countComment(ws), forge.Marker(countKey), true); err != nil {
+			return failed(res, err)
+		}
+		res.Applied = append(res.Applied, "count")
 	}
-	if err := f.Sticky(issue, countComment(ws), forge.Marker(countKey), true); err != nil {
-		return failed(res, err)
-	}
-	res.Applied = append(res.Applied, "count")
 	for _, a := range res.Drawn {
 		if d := a.Defect; d != nil && strings.HasPrefix(d.Said, "opened") {
 			res.Applied = append(res.Applied, "issue")
