@@ -173,7 +173,10 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "src", "Clock.h"), []byte(strings.Repeat("x\n", 569)), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	cc := &citeContext{repo: dir, files: map[string]bool{"src/Clock.h": true}, shown: map[string]string{}}
+	if err := os.WriteFile(filepath.Join(dir, "src", "Big.h"), []byte(strings.Repeat("x\n", 1200)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cc := &citeContext{repo: dir, files: map[string]bool{"src/Clock.h": true, "src/Big.h": true}, shown: map[string]string{}}
 	for _, c := range []struct {
 		name, old, new, rule string
 	}{
@@ -183,6 +186,10 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 		{"approx word kept", "`Clock.h` is about 283 lines.", "`Clock.h` is about 569 lines.", ""},
 		{"listing", "    Clock.h           (524 lines)   # the clock", "    Clock.h           (569 lines)   # the clock", ""},
 		{"thousands", "`Clock.h` is 1,008 lines.", "`Clock.h` is 569 lines.", ""},
+		{"thousands, spaced", "`Clock.h` is 1 008 lines.", "`Clock.h` is 569 lines.", ""},
+		{"thousands, a no-break space", "`Clock.h` is 1\u00a0008 lines.", "`Clock.h` is 569 lines.", ""},
+		{"thousands, a narrow no-break space", "`Clock.h` is about 1\u202f008 lines.", "`Clock.h` is about 569 lines.", ""},
+		{"thousands, written spaced", "`Big.h` is 1 008 lines.", "`Big.h` is 1 200 lines.", ""},
 		{"another number", "`Clock.h` is 524 lines long.", "`Clock.h` is 600 lines long.", "removal-uncited"},
 		{"the rest said anew", "`Clock.h` is 524 lines long. Watch it.", "`Clock.h` is 569 lines: under the limit.", ""},
 		{"watch, said anew", "`Clock.h` is currently ~630 lines (includes full `String` class stub). Watch the 800-line limit.", "`Clock.h` is currently ~569 lines (includes full `String` class stub). Over the 800-line hard limit.", ""},
@@ -196,7 +203,7 @@ func TestCountFixNeedsNoClaim(t *testing.T) {
 		{"glue only", "The clock keeps the time, per board.", "The clock keeps time, a board.", ""},
 		{"a negation", "The clock is not synced.", "The clock is synced.", "removal-uncited"},
 	} {
-		old := "---\nsources: [src/Clock.h]\nchecked: abc1234\n---\n# Clock\n\n" + c.old + "\n"
+		old := "---\nsources: [src/Clock.h, src/Big.h]\nchecked: abc1234\n---\n# Clock\n\n" + c.old + "\n"
 		diff := "--- a/d.md\n+++ b/d.md\n@@ -7 +7 @@\n-" + c.old + "\n+" + c.new + "\n"
 		files, err := parseDiff(diff)
 		if err != nil {
