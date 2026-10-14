@@ -590,6 +590,59 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		}
 		return fileVerdict{now: now, vouched: true}
 	}
+	// withExamples runs the project's command on the code examples a doc's
+	// fix writes, once a content: when it fails, the runs writing them are
+	// refused in their places, the command's output said (#121).
+	ran := map[string]exampleRun{}
+	withExamples := func(f fileDiff, old string, v fileVerdict) fileVerdict {
+		if v.rule != "" || s.Examples.Check == "" {
+			return v
+		}
+		written := examplesWritten(repo, tree.Files, f.path, old, v.now)
+		if len(written) == 0 {
+			return v
+		}
+		key := f.path + "\x00" + v.now
+		r, seen := ran[key]
+		if !seen {
+			docs := map[string]string{}
+			for p, c := range after {
+				if c != tree.Docs[p] {
+					docs[p] = c
+				}
+			}
+			docs[f.path] = v.now
+			r = checkExamples(repo, s.Examples.Check, docs, []string{f.path})
+			ran[key] = r
+		}
+		if r.ok {
+			return v
+		}
+		at := newLineOf(old, f)
+		var places []placeRefusal
+		for _, b := range exampleRuns(old, f, written) {
+			var in []fence
+			for _, w := range written {
+				for _, li := range b.at {
+					if n := at[[2]int{b.hunk, li}]; n >= w.from && n <= w.to {
+						in = append(in, w)
+						break
+					}
+				}
+			}
+			what := "the code example the fix writes"
+			if len(in) > 1 {
+				what = "the code examples the fix writes"
+			}
+			place := lineRange{from: b.from, to: max(b.from, b.to)}.String()
+			places = append(places, placeRefusal{block: b, place: place, rule: "example-failed",
+				why: fmt.Sprintf("%s at %s (lines %s of the doc as fixed) fails `%s`: %s", what, place, linesOf(in, false), s.Examples.Check, r.out)})
+		}
+		if len(places) == 0 {
+			return v
+		}
+		return fileVerdict{rule: "example-failed", why: places[0].why, places: places}
+	}
 	narrowedAny := false
 	for ii, in := range intents {
 		if in.Kind != "patch" || isFallback(in, fallback) {
@@ -655,7 +708,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			fdiff := diff
 			partly := len(misquotes[f.path]) > 0
 			for tries := 0; ; tries++ {
-				v := judgeFile(f, old, want, fdiff)
+				v := withExamples(f, old, judgeFile(f, old, want, fdiff))
 				if v.rule == "" && !(partly && v.vouched) {
 					after[f.path] = v.now
 					accept(f)
@@ -741,7 +794,17 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			refuse("patch-introduces", p.Where, p.Rule+": "+p.Message)
 		}
 	}
-	j.fix = &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes}
+	j.fix = &judgedFixes{repo: repo, files: tree.Files, before: tree.Docs, after: after, fixes: fixes,
+		examples: map[string][]fence{}, checked: map[string]bool{}, command: s.Examples.Check}
+	for p, now := range after {
+		if now == tree.Docs[p] {
+			continue
+		}
+		if w := examplesWritten(repo, tree.Files, p, tree.Docs[p], now); len(w) > 0 {
+			j.fix.examples[p] = w
+			j.fix.checked[p] = ran[p+"\x00"+now].ok
+		}
+	}
 	return j, nil
 }
 
@@ -893,17 +956,22 @@ func sortedKeys2(m map[string][]verdict.Finding) []string {
 }
 
 // judgedFixes is what the accepted patches do: every doc before and after
-// them, and the lines each changed.
+// them, the lines each changed, and the code examples they wrote, each
+// doc's checked or not by the project's command (examples.go).
 type judgedFixes struct {
 	repo          string
 	files         map[string]bool
 	before, after map[string]string
 	fixes         []fixedDoc
+	examples      map[string][]fence
+	checked       map[string]bool
+	command       string // examples.check
 }
 
 // placesFixed counts the places the accepted patches changed in a doc's
 // body — each run of lines changed together — the header left out: a patch
-// recording only `judged` or `checked` fixed nothing.
+// recording only `judged` or `checked` fixed nothing. A run changing only
+// a code example it wrote is no place fixed: the example is said apart.
 func (j *judgedFixes) placesFixed(path string) int {
 	if j == nil {
 		return 0
@@ -918,11 +986,41 @@ func (j *judgedFixes) placesFixed(path string) int {
 	}
 	n := 0
 	for _, l := range strings.Split(d, "\n") {
-		if strings.HasPrefix(l, "@@ ") {
+		m := hunkHeader.FindStringSubmatch(l)
+		if m == nil {
+			continue
+		}
+		from, _ := strconv.Atoi(m[3])
+		count := 1
+		if m[4] != "" {
+			count, _ = strconv.Atoi(m[4])
+		}
+		if !j.inExample(path, from, count) {
 			n++
 		}
 	}
-	return max(n, 1)
+	if n == 0 && len(j.examples[path]) == 0 {
+		return 1
+	}
+	return n
+}
+
+// placesSaid says what the accepted patches changed in a doc's body: "2
+// places", "1 place and 1 code example", "1 code example"; "" for nothing.
+func (j *judgedFixes) placesSaid(path string) string {
+	if j == nil {
+		return ""
+	}
+	n, k := j.placesFixed(path), len(j.examples[path])
+	switch {
+	case n > 0 && k > 0:
+		return nPlaces(n) + " and " + nExamples(k)
+	case k > 0:
+		return nExamples(k)
+	case n > 0:
+		return nPlaces(n)
+	}
+	return ""
 }
 
 // nPlaces says n places, in words.

@@ -31,18 +31,18 @@ func TestReadScopeSaysWhatWasNotRead(t *testing.T) {
 func TestNotVouchedSaysWhatWasRead(t *testing.T) {
 	read := "read: what changed in src/a.go since abc1234; not read: the rest of src/a.go"
 	for _, c := range []struct {
-		n      int
+		fixed  string
 		partly bool
-	}{{0, false}, {2, false}, {0, true}, {2, true}} {
-		got := notVouched(c.n, c.partly, read)
+	}{{"", false}, {"2 places", false}, {"", true}, {"2 places", true}} {
+		got := notVouched(c.fixed, c.partly, read)
 		if !strings.Contains(got, read) || strings.Contains(got, "nothing found wrong,") {
-			t.Errorf("notVouched(%d, %v) = %q: it must say what was read, never nothing found wrong of the rest", c.n, c.partly, got)
+			t.Errorf("notVouched(%q, %v) = %q: it must say what was read, never nothing found wrong of the rest", c.fixed, c.partly, got)
 		}
-		if whole := notVouched(c.n, c.partly, ""); strings.Contains(whole, "not read") {
-			t.Errorf("notVouched(%d, %v) of a doc read whole = %q", c.n, c.partly, whole)
+		if whole := notVouched(c.fixed, c.partly, ""); strings.Contains(whole, "not read") {
+			t.Errorf("notVouched(%q, %v) of a doc read whole = %q", c.fixed, c.partly, whole)
 		}
 	}
-	if got := notVouched(0, false, read); !strings.HasPrefix(got, "(nothing found wrong in what was read,") {
+	if got := notVouched("", false, read); !strings.HasPrefix(got, "(nothing found wrong in what was read,") {
 		t.Errorf("notVouched = %q", got)
 	}
 }

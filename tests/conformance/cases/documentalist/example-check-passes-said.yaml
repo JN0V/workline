@@ -1,0 +1,22 @@
+case: documentalist/example-check-passes-said
+about: "When the command the project names for its code examples (`examples.check`) passes on the fixed doc, the finding and the gardening merge request say the example was checked by that command (#121)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '\\n## Terms\\n\\n' >> docs/tech/auth.md && seq 40 | sed 's/^/- Term /' >> docs/tech/auth.md && git commit -qam 'docs(auth): the terms'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {examples: {check: "grep -q 'auth.TokenTTL' \"$@\""}}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/fix-with-an-example.sh", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: example-checked, where: docs/tech/auth.md, message: "1 code example (lines 10-12, go), checked by `grep -q 'auth.TokenTTL' \"$@\"`"}
+  no-findings: [{rule: example-unverified, where: docs/tech/auth.md}, {rule: example-failed, where: docs/tech/auth.md}]
+  forge:
+    merge-requests:
+      - id: 1
+        body-contains: ["`docs/tech/auth.md` — fixed in 1 place and 1 code example, `checked` moved; the code example checked by `grep -q 'auth.TokenTTL' \"$@\"` (lines 10-12)"]
+  pushed: {workline/documentalist/suspect: {docs/tech/auth.md: "```go"}}
