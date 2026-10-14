@@ -1,0 +1,24 @@
+case: auditor/verdict-past-the-cap
+about: "The week's calls stop at the sample's ai-max-tokens (ADR-0046, 400,000 by default): each role's first act is read before any second one, and once the tokens are spent the acts left are not read, said, for a person."
+given:
+  repo: vouched
+  env: {AUDIT: agree, AUDIT_TOKENS: "1000"}
+  config:
+    roles:
+      documentalist:
+        settings:
+          sample: {ai-max-tokens: 2000}
+  forge:
+    issues:
+      - {"id": 20, "title": "Export rows", "body": "Export the rows as CSV.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Moved #20 to ready'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 23, "title": "Rows lost", "body": "Customers lose rows every night.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: order, level: normal, day: '2026-01-09', line: 'Set #23 priority to 1'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"']}
+expect:
+  status: human
+  agent-calls: 2
+  findings:
+    - {rule: vouched-true, where: docs/notes/n02.md}
+    - {rule: sample-not-read, where: docs/notes/n07.md, message: "the sample spent 2200 tokens, past its ai-max-tokens (2000): not read this week; for a person"}
+    - {rule: act-stands, where: "#23", message: "the product owner's `order` on #23"}
+    - {rule: sample-not-read, where: "#20", message: "past its ai-max-tokens (2000)"}

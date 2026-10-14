@@ -25,6 +25,22 @@ type SampleSettings struct {
 	// After: a commit (a tag) before which nothing is sampled — the
 	// release whose engine earns `checked` (ADR-0014, step 0).
 	After Ref `json:"after"`
+	// AIMaxTokens: the tokens a week's sample may spend, every call
+	// together (in, cache included, and out); past it, the acts left are
+	// not read, said. 0: SampleTokens (ADR-0046).
+	AIMaxTokens int `json:"ai-max-tokens"`
+}
+
+// SampleTokens is the weekly sample's cap on tokens when the setting
+// names none (ADR-0046).
+const SampleTokens = 400000
+
+// TokensCap is the weekly sample's cap on tokens.
+func (s SampleSettings) TokensCap() int {
+	if s.AIMaxTokens > 0 {
+		return s.AIMaxTokens
+	}
+	return SampleTokens
 }
 
 // Ref is a setting naming a commit or a tag. Written unquoted, a commit of

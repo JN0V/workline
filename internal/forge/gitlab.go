@@ -1020,6 +1020,55 @@ func (g *gitlab) ListMergeRequests() ([]MergeRequest, error) {
 	return all, nil
 }
 
+// MergedSince reads the merge requests merged, updated since (a merge
+// updates one), each merged at since or after kept with the commit it
+// became: its merge commit, else its squash commit, else its head, a
+// fast-forward. GitLab keeps every head under refs/merge-requests/<iid>/head.
+func (g *gitlab) MergedSince(since time.Time) ([]MergeRequest, error) {
+	out, err := g.api("--paginate", "projects/:id/merge_requests?state=merged&updated_after="+url.QueryEscape(since.UTC().Format(time.RFC3339))+"&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	type mr struct {
+		IID           int    `json:"iid"`
+		Source        string `json:"source_branch"`
+		Target        string `json:"target_branch"`
+		SourceProject int    `json:"source_project_id"`
+		TargetProject int    `json:"target_project_id"`
+		Title         string `json:"title"`
+		Author        struct {
+			Username string `json:"username"`
+		} `json:"author"`
+		MergedAt string `json:"merged_at"`
+		Merge    string `json:"merge_commit_sha"`
+		Squash   string `json:"squash_commit_sha"`
+		SHA      string `json:"sha"`
+	}
+	var all []MergeRequest
+	for dec := json.NewDecoder(bytes.NewReader(out)); dec.More(); { // one array a page
+		var page []mr
+		if err := dec.Decode(&page); err != nil {
+			return nil, fmt.Errorf("%w: unexpected answer: %v", ErrUnreachable, err)
+		}
+		for _, m := range page {
+			at, err := time.Parse(time.RFC3339, m.MergedAt)
+			if err != nil || at.Before(since) {
+				continue
+			}
+			as := m.Merge
+			for _, c := range []string{m.Squash, m.SHA} {
+				if as == "" {
+					as = c
+				}
+			}
+			all = append(all, MergeRequest{ID: m.IID, Branch: m.Source, Base: m.Target, Here: m.SourceProject == m.TargetProject,
+				Title: m.Title, Author: m.Author.Username, Head: fmt.Sprintf("refs/merge-requests/%d/head", m.IID), MergedAs: as, MergedAt: m.MergedAt})
+		}
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, nil
+}
+
 // isBot says whether a user is a bot, as the users API says (`bot`); a
 // user gone (404) is none.
 func (g *gitlab) isBot(id int) (bool, error) {

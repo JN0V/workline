@@ -3,6 +3,7 @@ package forge
 import (
 	"fmt"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 )
@@ -17,6 +18,41 @@ func (f *Fake) mergeToken() string {
 		return "the job's own token: a merge it makes starts no pipeline on the base"
 	}
 	return ""
+}
+
+// MergedSince lists the merge requests the file says merged at since or
+// after (`merged-at`), each with the commit it became (`merged-as`, a
+// revision of the repository) and its head under refs/pull/<id>/head, as
+// GitHub keeps them.
+func (f *Fake) MergedSince(since time.Time) ([]MergeRequest, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	var out []MergeRequest
+	for _, m := range s.MergeRequests {
+		at, err := time.Parse(time.RFC3339, m.MergedAt)
+		if err != nil {
+			if at, err = time.Parse(time.DateOnly, m.MergedAt); err != nil {
+				continue
+			}
+		}
+		if at.Before(since) {
+			continue
+		}
+		as := ""
+		if m.MergedAs != "" {
+			sha, err := exec.Command("git", "-C", f.Repo, "rev-parse", "--verify", "-q", m.MergedAs+"^{commit}").Output()
+			if err != nil {
+				return nil, fmt.Errorf("the simulated forge's merged-as %q is no revision of the repository", m.MergedAs)
+			}
+			as = strings.TrimSpace(string(sha))
+		}
+		out = append(out, MergeRequest{ID: m.ID, Branch: m.Branch, Base: m.Base, Here: !m.Fork, Title: m.Title, Author: m.Author, Bot: m.Bot,
+			Head: fmt.Sprintf("refs/pull/%d/head", m.ID), MergedAs: as, MergedAt: at.UTC().Format(time.RFC3339)})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
 }
 
 // MergeState reads a merge request's state as the file holds it, its head

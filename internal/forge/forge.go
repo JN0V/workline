@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/pathglob"
 )
@@ -277,6 +278,22 @@ type MergeRequest struct {
 	Labels    []string
 	Draft     bool
 	AutoMerge bool
+	// MergedAs and MergedAt are what MergedSince reads of one merged: the
+	// commit it became on its base — the squash, the merge commit, the last
+	// rebased — and when, RFC 3339.
+	MergedAs string
+	MergedAt string
+}
+
+// Merged is a forge that lists the merge requests merged: the weekly
+// sample reads each one's head, which a squash leaves off the base, and
+// the reviewer's summary on it (ADR-0046). GitHub, GitLab and the
+// simulated forge list them.
+type Merged interface {
+	// MergedSince lists the merge requests merged at since or after, by
+	// number, each with the commit it became and the ref its head is kept
+	// under.
+	MergedSince(since time.Time) ([]MergeRequest, error)
 }
 
 // botBranches are the branches of the merge requests the dependency bots
@@ -333,8 +350,10 @@ func KeepsBranches(f Forge) bool {
 func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
 // Every forge workline speaks keeps a backlog; GitHub, GitLab and the
-// simulated forge take comments on a merge request's lines.
+// simulated forge take comments on a merge request's lines, and list the
+// merge requests merged.
 var (
 	_ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
 	_ = []LineReviewer{&github{}, &gitlab{}, &Fake{}}
+	_ = []Merged{&github{}, &gitlab{}, &Fake{}}
 )

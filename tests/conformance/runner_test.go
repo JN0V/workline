@@ -484,13 +484,17 @@ func runCase(t *testing.T, c *caseFile) []string {
 	case c.Run.Import != nil:
 		args = append(append([]string{"issues", "import"}, c.Run.Import...), "--repo", repo, "--json")
 	case c.Run.Sample != nil:
-		// The read writes nothing to the forge: it is not given one.
+		// The read reads the forge, the acts it draws (ADR-0046), and
+		// writes nothing to it.
 		args = append(append([]string{"sample"}, c.Run.Sample...), "--repo", repo, "--out", filepath.Join(work, "sample.json"), "--json")
 		for i, a := range args {
 			if strings.HasPrefix(a, "fake:") {
 				p, _ := filepath.Abs(filepath.Join("fixtures", "agents", strings.TrimPrefix(a, "fake:")+".yaml"))
 				args[i] = "fake:" + p
 			}
+		}
+		if forgeSpec != "" {
+			args = append(args, "--forge", forgeSpec)
 		}
 	case c.Run.Route == "ready" && c.Run.Item != 0:
 		args = []string{"item", "ready", fmt.Sprint(c.Run.Item), "--repo", repo, "--json"}

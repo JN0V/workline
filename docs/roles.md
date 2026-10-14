@@ -1,6 +1,6 @@
 ---
 sources: [routing.default.yaml, roles/committer/role.yaml, roles/documentalist/role.yaml, roles/reviewer/role.yaml, roles/product-owner/role.yaml, roles/judge/role.yaml, roles/auditor/role.yaml]
-checked: 1dd6543c
+checked: 0ddcc079
 judged: b326f81
 verified: agent:claude-code
 ---
@@ -19,7 +19,7 @@ and where it stands: planned, beta or built, by
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
-| Auditor | re-checks a weekly sample of the docs the documentalist confirmed | `workline sample` | [auditor](../roles/auditor/role.yaml) |
+| Auditor | re-checks a weekly sample of every role's acts | `workline sample` | [auditor](../roles/auditor/role.yaml) |
 
 ## Which role runs when
 
@@ -41,10 +41,10 @@ Two roles never run on an event of their own:
 - the **judge** answers one yes-or-no question a role's check cannot (a
   reviewer's finding, a closing as obsolete), from another context or
   model than the one judged;
-- the **auditor** reads the weekly sample of the docs the documentalist
-  confirmed — those whose `checked` it moved (`workline sample`). The same
-  sample draws the product owner's acts of the week, for a person, with
-  no agent.
+- the **auditor** re-checks, each week, one in ten of every role's acts
+  (`workline sample`, [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): the docs the
+  documentalist confirmed, the product owner's acts, the reviewer's judged
+  findings, the committer's rewrites, each against what it was done on.
 
 How to run each role from a hook, a script or a CI job:
 [triggers.md](triggers.md). What a role is, for those who write one:

@@ -1,6 +1,6 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
-checked: 7705a9b7
+checked: 5cb449a5
 judged: 7a26b30
 verified: agent:claude-code
 -->
@@ -55,7 +55,7 @@ pull requests and nightly gardening of workline and of another project;
 | [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | [beta](roles/reviewer/docs/status.md) |
 | [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | [beta](roles/product-owner/docs/status.md) |
 | [Judge](roles/judge/role.yaml) | answers one yes-or-no question for the other roles, from another context or model | [beta](roles/judge/docs/status.md) |
-| [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts (the docs' today) | [beta](roles/auditor/docs/status.md) |
+| [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts | [beta](roles/auditor/docs/status.md) |
 | [Inspector](https://github.com/JN0V/workline/issues/202) | will post the static-analysis findings a merge request adds | planned |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
 | [Developer](https://github.com/JN0V/workline/issues/117) | will take a ready issue and open the pull request | planned |
@@ -129,7 +129,7 @@ Each role, from a hook, a script or a CI job: [triggers](docs/triggers.md).
 | When | Roles | Writes |
 |---|---|---|
 | gardening, nightly or weekly (`workline route schedule`) | documentalist; product owner, opt-in | one merge request per task, kept on main or closed; the issues |
-| the weekly sample (`workline sample`) | auditor: a second look at one doc in ten the documentalist confirmed; the product owner's acts, drawn for a person | one issue, a comment a week; a merge request undoing a wrong confirmation |
+| the weekly sample (`workline sample`) | auditor: one in ten of every role's acts, each re-checked | one issue, a comment a week; a merge request undoing a wrong confirmation |
 | each push to main (`workline follow`) | the engine, no agent: rebuilds the documentalist's release fix on main's new tip; when set, merges main into pull requests in conflict only on workline's lines, and turns auto-merge on for what a person accepted, at `normal` for workline's own routine work too ([merge policy](docs/merge-policy.md)) | its merge request, force-pushed; a merge commit on theirs; the forge's auto-merge |
 | before your release tool tags (`workline route release`) | documentalist, on the docs due at the release | a non-zero exit holds the release |
 

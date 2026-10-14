@@ -1,0 +1,71 @@
+case: auditor/sample-draws-every-role
+about: "The weekly sample draws one in ten of each role's acts of the week, per kind, at least one when a kind has any (ADR-0046), from the records each role keeps, read and never written: the docs the documentalist vouched for; the product owner's acts done alone, from each issue's state, not another week's; the findings the reviewer's judge kept or dropped, from its summary comment on each merge request merged in the week; a commit the committer rewrote, from its trailers, read on the head of the merge request a squash merged it by. With no judge (`--judge none`), the acts drawn are left for a person, listed in the week's comment, with what could not be drawn and why."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && printf 'package notes\\n\\nconst Extra = 12\\n' > src/notes/extra.go && git add src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -m 'feat(notes): add an extra note' -m 'Workline-Role: committer\nWorkline-Model: claude:claude-haiku-4-5'"
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(notes): add an extra note (#30)' && git push -q origin main"
+    - "git branch -q -D feat && git reflog expire --expire=now --all && git gc -q --prune=now"
+  forge:
+    issues:
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 21, "title": "Issue 21", "body": "Issue 21.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-07', line: 'Did ready on #21'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 22, "title": "Issue 22", "body": "Issue 22.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-08', line: 'Did ready on #22'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 23, "title": "Issue 23", "body": "Issue 23.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: normal, day: '2026-01-09', line: 'Did rename on #23'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 24, "title": "Issue 24", "body": "Issue 24.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: normal, day: '2026-01-14', line: 'Did rename on #24'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests:
+      - id: 30
+        title: Add an extra note
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness, edge-cases; the author fixes what blocks.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | **blocks** | correctness | `src/notes/extra.go:3` | Important: Extra is not a note's number |
+            | warns | edge-cases | `src/notes/extra.go:1` | Nit: the package says nothing of itself |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "Extra shadows N12" at src/notes/extra.go:3 — the judge: no N12 is declared in the code shown (independence: model (claude-sonnet-5 → claude-opus-5)) |
+
+            The reviewer never approves and never changes the code: the author fixes, a person merges.
+
+            <!-- workline:record reviewed=0123456789abcdef0123456789abcdef01234567 runs=1 -->
+            <!-- workline:blocks [{"lens":"correctness","at":"0123456789abcdef0123456789abcdef01234567","where":"src/notes/extra.go:3","title":"Important: Extra is not a note's number","cause":{"path":"src/notes/extra.go","quote":"const Extra = 12"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: sample-window, message: "11 docs vouched for"}
+    - {rule: sample-acts, message: "3 acts, `ready`, by the product owner from 2026-01-05 to 2026-01-11; 1 drawn, one in ten"}
+    - {rule: sample-acts, message: "1 act, `rename`, by the product owner from 2026-01-05 to 2026-01-11; 1 drawn"}
+    - {rule: sample-acts, message: "1 act, finding kept, by the reviewer on the merge requests merged in the commits"}
+    - {rule: sample-acts, message: "1 act, finding dropped, by the reviewer"}
+    - {rule: sample-acts, message: "1 act, message rewritten, by the committer"}
+    - {rule: sample-not-read, where: "#23", message: "the product owner's `rename` on #23, 2026-01-09, at normal: Did rename on #23; ADR-0046 asks no question of a `rename`: for a person"}
+    - {rule: sample-not-read, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge kept on #30"}
+    - {rule: sample-not-read, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge dropped on #30"}
+    - {rule: sample-not-read, message: "a commit the committer rewrote"}
+    - {rule: sample-not-read, message: "on the head of #30: feat(notes): add an extra note;"}
+    - {rule: sample-not-drawn, message: "the reviewer's findings of a run before the last on a merge request"}
+  no-findings:
+    - {rule: sample-not-read, where: "#24"}
+    - {rule: sample-not-read, where: "#30 src/notes/extra.go:1"}
+  forge:
+    issues:
+      - {id: 25, title: "workline: the weekly sample of the docs vouched for", comments: 1, comment-contains: "#### Every role's acts"}
+      - {id: 25, comment-contains: "| product owner | `ready` | 3 | 1 |\n| product owner | `rename` | 1 | 1 |\n| reviewer | finding dropped | 1 | 1 |\n| reviewer | finding kept | 1 | 1 |\n| committer | message rewritten | 1 | 1 |"}
+      - {id: 25, comment-contains: "| documentalist | `checked` moved | 11 | 2 |"}
+      - {id: 25, comment-contains: "| #23 | product owner, `rename` | 2026-01-09, at normal | Did rename on #23 |"}
+      - {id: 25, comment-contains: "| #30 `src/notes/extra.go:3` | reviewer, finding kept | at 0123456 | the correctness lens: Important: Extra is not a note's number |"}
+      - {id: 25, comment-contains: "(claude-sonnet-5 → claude-opus-5)"}
+      - {id: 25, comment-contains: "(#30) | committer, message rewritten | 2026-01-07 | feat(notes): add an extra note (claude:claude-haiku-4-5) |"}
+      - {id: 25, comment-contains: "Not drawn:\n\n- the reviewer's findings of a run before the last on a merge request"}
+      - {id: 25, comment-lacks: "#24"}

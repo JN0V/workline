@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 1dd6543c
+checked: 07a772ed
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -135,20 +135,27 @@ then you keep or drop each change, doc by doc (`v` shows it).
 
 ### workline sample
 
-The weekly sample of the docs the documentalist confirmed (moved their
-`checked`)
+The weekly sample of every role's acts
 ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4;
-[ADR-0015](adr/0015-the-weekly-sample-is-written-on-the-forge.md)).
+[ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): one in
+ten of the acts of the last whole ISO week (`--week 2026-W40`; `--since
+<rev>` for the commits after one) per role and kind, at least one when a
+kind has any, drawn the same on a rerun.
 
-- **Which docs**: those whose `checked` its commits moved
+- **The acts**: the docs whose `checked` the documentalist moved
   (`Workline-Role: documentalist`, or `verified: agent:documentalist`
-  newly set) in the commits reaching the branch in the last whole ISO week
-  (`--week 2026-W40`; `--since <rev>` for the commits after one). One in
-  ten, rounded up, drawn the same on a rerun of the week.
-- **Read** whole against its sources at the commit its `checked` names, by
-  the judge (`--judge`, else `WORKLINE_JUDGE`, else the documentalist's
-  `sample.judge`), never the model the commit's `Workline-Model` names.
-  Every quote the judge gives is checked; a comment is no evidence.
+  newly set); from the forge (`--forge`, else the project's), the product
+  owner's acts done alone, the findings the reviewer's judge kept or
+  dropped, the committer's rewrites. What cannot be drawn is said.
+- **Each re-checked**, one call an act, by the judge (`--judge`, else
+  `WORKLINE_JUDGE`, else `sample.judge`), never a model that acted;
+  a finding blind. False only with a quote the engine finds again, a
+  comment of the code no evidence; else for a person. Without a judge,
+  each is listed for a person.
+- **A cap**: `sample.ai-max-tokens`, 400,000 by default; each role's first
+  act read before any second, the rest listed unread.
+- **A squash**: each merge request's head is fetched from the forge's ref
+  for it; a `checked` naming one of its commits is read there.
 - **Writes nothing**; `--out <file>` keeps the result.
 - **`workline sample --apply <file> --forge <forge>`** (default: the
   project's `forge`), with no agent:
@@ -156,13 +163,12 @@ The weekly sample of the docs the documentalist confirmed (moved their
     `documentalist-step-0`;
   - opens a merge request putting back a `checked` found false;
   - with no forge, writes nothing and says so.
-- **The product owner's acts**: on a project that turns them on
-  (`weekly-sample: true`), `--apply` also draws one in ten of the acts it
-  did alone that week, from each issue's state, onto the issue "workline:
-  the weekly sample of the product owner's acts", each with its day, level and whether a person undid it,
-  and the level they suggest
+- **The product owner's own issue**, when turned on (`weekly-sample:
+  true`): its acts of the week, each with whether a person undid it, and
+  the level they suggest
   ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
-- Exits 2 when a doc is left for a person; `--summary` as for `route`.
+- Exits 2 when a doc or an act is left for a person; `--summary` as for
+  `route`.
 
 ### workline follow
 
