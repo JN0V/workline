@@ -522,7 +522,9 @@ func run(o Options, res *Result) error {
 	}
 	// Asked as often as the role allows and still refused: the docs the
 	// refusals name are left out, and the rest judged again, without them.
-	if v.Status == verdict.Block && failures > 0 {
+	// A final block met after a refusal is no refusal: not the answer's,
+	// nothing left out of the answer would lift it.
+	if v.Status == verdict.Block && failures > 0 && !v.Final {
 		fallback, _ := intent.Read(filepath.Join(runDir, "in", "fallback.yaml"))
 		if kept, left := leaveOut(intents, fallback, v.Findings); len(left) > 0 {
 			nv, err := judgeAgain(r, o, runDir, env, cfg, kept, res)
@@ -542,8 +544,9 @@ func run(o Options, res *Result) error {
 	// still refused once asked again is upkeep left for later: nothing of
 	// it applied, each refusal said as a warning, the next run asks again.
 	// The check did its job: the line is not failed for it (ADR-0037,
-	// amended). Anything else that does not pass still fails it.
-	if v.Status == verdict.Block && failures > 0 && line != nil && !line.StopsAtFirst(o.Event) {
+	// amended). Anything else that does not pass still fails it, a final
+	// block met once asked again too: a person must repair it (#361).
+	if v.Status == verdict.Block && failures > 0 && !v.Final && line != nil && !line.StopsAtFirst(o.Event) {
 		said := make([]verdict.Finding, len(v.Findings))
 		for i, f := range v.Findings {
 			if f.Level == "" {
