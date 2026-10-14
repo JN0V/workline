@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v009
+pull-request: 136
+lens: edge-cases
+title: "Verdict step interpolates status into shell, empty status passes"
+where: ci/github/workline-gardening.yml:85
+commit: 9ad8c5859d4633f8ae12ec2b3ed4f1fafbc0675b
+origin: artifact
+from:
+  run: 37269392025
+  path: .workline-runs/20261005T054851.047784902-reviewer/in/judge/01
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 1573, out: 476}
+truth: false
+settled-by: agreement
+evidence: "ci/github/workline-gardening.yml:67-68 `workline route ... > line.json || status=$?` then `echo \"status=$status\" >> \"$GITHUB_OUTPUT\"` — the output is written before anything in the step can fail; line 85-90 `status=${{ steps.line.outputs.status }} ... exit \"$status\"`: with an empty value bash's `exit \"\"` says 'numeric argument required' and exits 2 (checked) — An empty status is not reachable (the only command that can fail before the echo is guarded by `|| status=$?`; a cancelled step skips Verdict, which has no `if: always()`), and even then the step would fail, not pass. The interpolation is of a self-produced `$?` integer."

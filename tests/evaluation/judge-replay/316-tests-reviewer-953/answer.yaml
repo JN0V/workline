@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: no test shown reaches the removed-line branch `f.On = st.Change.Removed[f.Cause.Path][at[0].From-1].At` in `found`, because intent_test.go, lines_test.go and reach_test.go only test `closes`, `saidByAuthor`, `lineKeyOf`, `summaryComment` and `reach`, none of which pass a removed-line cause through `found` and check where it lands.
+"yes": true

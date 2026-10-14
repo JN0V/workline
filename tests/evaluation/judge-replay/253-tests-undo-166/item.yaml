@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v164
+pull-request: 253
+lens: tests
+title: "Unread state in the open-parent split branch untested"
+where: internal/backlog/undo.go:166
+commit: cd59ce82f6cc36b9aca632a207e6d9f254aa2a18
+origin: artifact
+from:
+  run: 37598821722
+  path: .workline-runs/20261007T091119.146859670-reviewer/in/judge/04
+  expires: 2027-01-05
+said: yes
+said-tokens: {in: 12117, out: 432}
+truth: true
+settled-by: agreement
+evidence: "internal/backlog/undo.go:162-167: for an open split parent, `st == nil` (splitState returns nil,nil when the state does not read, undo.go:216-217) breaks out and keeps the record standing. internal/backlog/undo_test.go at this commit has TestSplitWatchedWhileAPartIsOpen (open parents, readable states) and TestClosedParentKeepsItsLinks (a broken state only on a *closed* parent, which takes the branch at undo.go:100-103, not line 166). No conformance case gives an open parent a broken state together with a split record. — The later commit 6de6c6ba of the same PR adds TestOpenParentUnreadStateWatched for exactly this branch. broken-state-writes-nothing.yaml has a broken state on #12 but no Done split record, so findUndone's split case never runs on it."

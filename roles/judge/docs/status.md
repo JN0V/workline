@@ -60,6 +60,8 @@ No cases folder of its own: it is asked inside the other roles' cases.
   [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)
   decided, off (`judge-read-rounds: 0`) until
   [measured again](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#measured-again-before-it-is-on-by-default)
-  on its 40 measured questions; then on by default.
+  on its 40 measured questions; then on by default. They are kept, as
+  asked, to replay
+  ([the judge's replay](../../../docs/spec/conformance/evaluation.md#the-judges-replay)).
 - **Parked**: a judge of another provider
   ([#80](https://github.com/JN0V/workline/issues/80)).

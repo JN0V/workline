@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the quoted line 'if c.ToReporter || c.Agreed != "" || Accepted(is) {' correctly returns ok=false and is not itself a defect, and nothing given shows the test files, so the claim that splitDrafts has no unit test is a guess.
+"yes": false

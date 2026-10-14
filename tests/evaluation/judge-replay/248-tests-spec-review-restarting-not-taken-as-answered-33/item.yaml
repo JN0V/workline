@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v156
+pull-request: 248
+lens: tests
+title: "Unchanged-body half of the case asserts nothing"
+where: tests/conformance/cases/product-owner/spec-review-restarting-not-taken-as-answered.yaml:33
+commit: b1f5dd3da151c8212517601c65d330d84375d325
+origin: artifact
+from:
+  run: 37589163932
+  path: .workline-runs/20261007T074623.907725216-reviewer/in/judge/01
+  expires: 2027-01-05
+said: no
+said-tokens: {in: 18242, out: 431}
+truth: false
+settled-by: agreement
+evidence: "spec-review-restarting-not-taken-as-answered.yaml:33 `comment-contains: \"answered: 7d6b5529bb37\"` is already in the given state (line 27), so it asserts nothing; but line 36 `in/issues-read: {not-contains: \"10\"}` does: productowner.go:456 writes the ids given to the agent there, and runner_test.go:615-621 fails the case if the file holds \"10\". — The forge line of the unchanged-body half is inert, but the run-files line would fail were #10 read again, so the behaviour is tested."

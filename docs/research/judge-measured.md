@@ -79,10 +79,11 @@ reviewer is measured ([#360](https://github.com/JN0V/workline/issues/360)).
   of each.
 - **The judge changed** over those ten days; the sample mixes its
   versions.
-- The extracted verdicts and the agents' answers are not in the
-  repository; the 40 are listed below, and
-  [#362](https://github.com/JN0V/workline/issues/362) keeps them as an
-  evaluation set.
+- The 229 verdicts extracted and the agents' full answers are not in the
+  repository; the 40 are listed below, and kept as an evaluation set:
+  each question and answer as the run kept them, its truth and evidence
+  ([the judge's replay](../spec/conformance/evaluation.md#the-judges-replay),
+  [#362](https://github.com/JN0V/workline/issues/362)).
 
 ## Decision that followed (2026-10-14)
 

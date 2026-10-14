@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v139
+pull-request: 234
+lens: tests
+title: "Duplicate findings share one judge key, untested"
+where: internal/builtin/reviewer/reviewer.go:707
+commit: 9484f74faa61cdd6ef2acee13d298e758172b0e2
+origin: artifact
+from:
+  run: 37477529618
+  path: .workline-runs/20261006T141641.562540330-reviewer/in/judge/02
+  expires: 2027-01-04
+said: yes
+said-tokens: {in: 31785, out: 424}
+truth: true
+settled-by: agreement
+evidence: "internal/builtin/reviewer/reviewer.go:704-708 `keys[a[:i]] = a[i+1:]` keyed by JudgeKey (924-926: Where, Lens, Severity, Title, Cause.Quote), while 497-530 asks the judge once per important finding (`n++; key := fmt.Sprintf(\"%02d\", n)`) so two alike findings get two dirs and both read the last answer; no fixture under tests/conformance/fixtures/agents/ repeats a title, no case or unit test mentions a repeated/twin finding at 9484f74 — The PR's own commits feadc54 (keep a repeated finding, keyed by cause and severity) and the doc line 'two findings alike in all read one answer' describe the behaviour; nothing exercises it. tests/evaluation uses JudgeKey but is a real-agent evaluation, not a test that would fail."

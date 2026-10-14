@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v113
+pull-request: 199
+lens: edge-cases
+title: "Guard line with exit hides later hand-over"
+where: internal/hooks/hooks.go:208
+commit: dc42fb2929d70ec86fe9256ec7c45f5ac1c4a093
+origin: artifact
+from:
+  run: 37431808010
+  path: .workline-runs/20261006T074724.171926384-reviewer/in/judge/01
+  expires: 2027-01-04
+said: yes
+said-tokens: {in: 2822, out: 287}
+truth: true
+settled-by: agreement
+evidence: "internal/hooks/hooks.go:208-209 at dc42fb29 — `if f[0] == \"exit\" { return false // what follows never runs }` fires on any line whose first word is `exit`, including `  exit 0` inside `if …; then … fi`, so `if [ -n \"$SKIP\" ]; then\\n  exit 0\\nfi\\nworkline hook commit-msg \"$1\"` is reported as not handing over. handsover_test.go at that commit only covers `[ -n \"$CI\" ] && exit 0` (f[0] is `[`). — History: the PR's next commit 77711cd0 changed the check to `f[0] == \"exit\" && line[0] == 'e'` with the comment 'one indented in a block may not run' and added the test case 'exit indented in a block' => true — the author fixed exactly this."

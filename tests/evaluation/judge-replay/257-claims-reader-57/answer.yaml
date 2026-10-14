@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: line 57 only appends a `setting-missing` Problem and decides no level; the block comes from `Pre` (not shown), and the case's 'setting-missing blocks, as for a budget' treats it as a configuration error rather than one of the page checks 'Reported, never blocking' lists, so the contradiction is not certain.
+"yes": false

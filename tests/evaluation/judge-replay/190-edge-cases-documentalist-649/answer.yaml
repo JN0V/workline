@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the finding only guesses; emitting one 'source-gone' per gone 'src' under 'if gone' is the intended per-source report, and nothing in the quoted lines shows a source listed twice or the loop re-run producing duplicates.
+"yes": false

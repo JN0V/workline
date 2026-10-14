@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v200
+pull-request: 307
+lens: edge-cases
+title: "Only the first 100 notes are read"
+where: ci/gitlab/workline.gitlab-ci.yml:71
+commit: c01886f42dab8bb611d8b15d720a5439b8f239f3
+origin: artifact
+from:
+  run: 38212267551
+  path: .workline-runs/20261012T062339.306294430-reviewer/in/judge/02
+  expires: 2027-01-10
+said: yes
+said-tokens: {in: 4717, out: 486}
+truth: true
+settled-by: agreement
+evidence: "ci/gitlab/workline.gitlab-ci.yml:71 one curl `/notes?order_by=updated_at&sort=desc&per_page=100`, no pagination; `[0]` of the filtered list is null → \"none\" → `lenses=all`. — With more than 100 notes updated after both the ready note and the reviewer's sticky comment, a reviewed merge request reads as \"none\" and gets every lens again (an extra full review, not a wrong block). The PR description says \"page by page (at most 50)\", which the commit under review does not do; the later commit 03b27194 adds paging."
