@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v170
+pull-request: 262
+lens: tests
+title: "A page with only items to settle claims nothing waits on the person"
+where: internal/backlog/report.go:68
+commit: c950651796cd2523a14b5b1156f8de981de462a1
+origin: artifact
+from:
+  run: 37639672887
+  path: .workline-runs/20261007T144804.429451461-reviewer/in/judge/01
+  expires: 2027-01-05
+said: yes
+said-tokens: {in: 18306, out: 414}
+truth: true
+settled-by: agreement
+evidence: "internal/backlog/report.go:119-127: a 'For you to settle' item is not counted in n (`n++` only in the else branch), and report.go:68 `if decide+checks+accept == 0 && !paused` writes '**Nothing waits on you.**'. Tests at this commit: tests/conformance/cases/product-owner/slipped-without-a-milestone-proposed.yaml asserts only body-contains 'For you to settle: Move #9 ...'; rounds-capped-then-person.yaml asserts only 'Settle #9 with its reporter'; neither asserts the top of the page, so both pass whether or not the top claims nothing waits. — The next commit of the PR (c24603b6, 'what to settle is counted at the report's top') adds a `settle` count to whatToDo, confirming the behaviour was wrong and untested."

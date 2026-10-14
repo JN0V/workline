@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: 'the finding itself calls the ''return nil, nil'' branch ''Acceptable as intended'', which matches the comment ''a forge that refuses the operation does not say who ticked: nil'', and its claim that ''return a.Ticks, err'' passes partial data on ErrUnreachable is a guess, since nothing shown says c.call fills a before failing.'
+"yes": false

@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v192
+pull-request: 280
+lens: correctness
+title: "movedWhole accepts any new problem fitting a vanished size"
+where: internal/builtin/documentalist/condense.go:331
+commit: 5c4614774293fb5d780999a8fea5f465a5b79083
+origin: artifact
+from:
+  run: 37931930443
+  path: .workline-runs/20261009T124412.239284820-reviewer/in/judge/03
+  expires: 2027-01-07
+said: yes
+said-tokens: {in: 6983, out: 627}
+truth: true
+settled-by: agreement
+evidence: "internal/builtin/documentalist/condense.go:321-333 movedWhole: a found problem in a created doc is accepted whenever `p.Size <= size` for any vanished problem of the same rule; nothing compares its text to the part that left. — Reachable: a long section moved and split under budget in the new doc leaves its vanished size unconsumed; a new over-budget section of fresh text no bigger than it then passes `patch-introduces`. The PR description itself says it was then \"matched by text, not by size\"; commit c8102940 in the PR does that."

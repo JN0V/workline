@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the Verdict step at line 83 has no 'if:', so by default it does not run after the 'line' step fails or the job aborts; the empty-status path is therefore a guess, and even then 'exit ""' still fails the step.
+"yes": false

@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v103
+pull-request: 190
+lens: edge-cases
+title: "source-gone emitted once per source and duplicated for cut docs"
+where: internal/builtin/documentalist/documentalist.go:649
+commit: d5cfb70efc232e65197d0a3d53df48c5ab71d19e
+origin: artifact
+from:
+  run: 37421148590
+  path: .workline-runs/20261006T055800.688108886-reviewer/in/judge/03
+  expires: 2027-01-04
+said: no
+said-tokens: {in: 4483, out: 210}
+truth: false
+settled-by: agreement
+evidence: "internal/builtin/documentalist/documentalist.go:644-653 — in `case a.cut:` the source-gone finding is appended (line 650) and the branch ends with `continue` (653), so the second emission at :666-668 is never reached for the same (doc, source); each gone source yields exactly one finding, cut or not. The case shallow-clone-source-gone-said.yaml expects one `source-gone` for the one gone source. — 'Once per source' is true but by design (each finding names its own src, and :662 `!gone` keeps gone sources from being skipped as 'left for gardening'); 'duplicated for cut docs' is refuted by the `continue`. Only a doc naming the same gone file twice under different anchors would get two findings, and they name different source strings."

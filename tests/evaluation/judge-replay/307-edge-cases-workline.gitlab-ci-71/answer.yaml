@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the only read is `get "/notes?order_by=updated_at&sort=desc&per_page=100"` with no further pages, so if 100 newer notes push out both the ready note and the sticky comment, `[0]` is null, `last` becomes "none", and `false:none` sets `lenses="--input lenses=all"`, as the finding says.
+"yes": true

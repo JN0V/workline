@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: line 94 'w.Close()' closes the write end on the normal path, so the finding's claim that 'r and w are never closed on any path', leaking 'one pair per call', is false; only r leaks there, and only the panic case leaks the pair and blocks the reader.
+"yes": false

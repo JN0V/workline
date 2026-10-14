@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v076
+pull-request: 170
+lens: edge-cases
+title: "Depend check misses a close decided later in the run, and a closing target"
+where: internal/backlog/depend.go:219
+commit: 3ba025139120a2e5bf645c6e8cdfe947c0535d0b
+origin: artifact
+from:
+  run: 37332366916
+  path: .workline-runs/20261005T152327.744446583-reviewer/in/judge/02
+  expires: 2027-01-03
+said: no
+said-tokens: {in: 4478, out: 596}
+truth: true
+settled-by: panel
+matters: false
+evidence: "internal/backlog/depend.go:205-207 looks up `p.issues[c.Issue]` (open at the run's start) and never `closing[c.Issue]`; `closing` at :213 comes from closedInRun (:305-313) over `p.Decisions`, which backlog.go:382-520 appends only after each proposal's check, in index order, so a close at a later index is unseen. The effect is a 'Blocked by' line written on an issue closed in the same run, or naming a blocker closed in it; Waiting at depend.go:90-98 ignores closed blockers, so the order is unchanged and nothing else breaks."

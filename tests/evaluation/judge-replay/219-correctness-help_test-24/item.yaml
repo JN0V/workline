@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v124
+pull-request: 219
+lens: correctness
+title: "Conformance test crashes on blank line in help listing"
+where: tests/conformance/help_test.go:24
+commit: e2add4fe2acf42f3459d715a69993bf893ad6ded
+origin: artifact
+from:
+  run: 37446305761
+  path: .workline-runs/20261006T095603.540462625-reviewer/in/judge/03
+  expires: 2027-01-04
+said: yes
+said-tokens: {in: 2169, out: 502}
+truth: false
+settled-by: panel
+matters: false
+evidence: "tests/conformance/help_test.go:21 cuts the list at the first \"\\n\\n\" (the blank before 'Internal,' at cli.go:88) so the slice ends on the last `  %-9s %s` row with no trailing newline, and no `about` in cli.go:25-42 holds a newline: strings.Fields(l)[0] at :24 never sees an empty line with the binary as built; a latent fragility, and a test panic would be loud, not silent."

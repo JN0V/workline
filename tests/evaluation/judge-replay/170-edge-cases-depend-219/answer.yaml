@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the claimed harm does not follow from the code; `Waiting` keeps only blockers where `open[n]` is true, and the line-220 message says 'a closed one holds nothing back', so a blocker closed later in the run holds nothing; adding a blocker to an issue closed this run (lines 205-206 never test `closing[c.Issue]`) is likewise harmless, and the claim that decisions are appended after `check` rests on code not shown.
+"yes": false
