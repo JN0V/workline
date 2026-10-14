@@ -458,7 +458,7 @@ func TestJudgeReplayWithFakeJudge(t *testing.T) {
 	for i := range 3 {
 		now[i] = askReplay(no, judgeRole, items[i], stop)
 	}
-	if !stop.stopped || stop.spent() != 2500 || now[2].Said != "" || !strings.Contains(now[2].Shown, "not asked: the replay spent 2500 tokens in, its stop at 2500") {
+	if !stop.stopped || stop.spent() != 2500 || now[2].Said != "" || len(now[2].Calls) != 0 || !strings.Contains(now[2].Shown, "not asked: the replay spent 2500 tokens in, its stop at 2500") {
 		t.Errorf("past the stop, nothing asked: %d spent, %+v", stop.spent(), now[2])
 	}
 }

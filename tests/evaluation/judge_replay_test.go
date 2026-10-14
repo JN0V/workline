@@ -159,7 +159,7 @@ func (s *tokenStop) ask(call func() (wjudge.Answer, error)) (wjudge.Answer, erro
 	if s.max > 0 && s.inTo >= s.max {
 		s.stopped = true
 		s.mu.Unlock()
-		return wjudge.Answer{}, fmt.Errorf("not asked: the replay spent %d tokens in, its stop at %d", s.inTo, s.max)
+		return wjudge.Answer{}, fmt.Errorf("%s %d tokens in, its stop at %d", stopSaid, s.inTo, s.max)
 	}
 	s.mu.Unlock()
 	a, err := call()
@@ -168,6 +168,11 @@ func (s *tokenStop) ask(call func() (wjudge.Answer, error)) (wjudge.Answer, erro
 	s.mu.Unlock()
 	return a, err
 }
+
+// stopSaid opens what a call refused at the stop says.
+const stopSaid = "not asked: the replay spent"
+
+func stopped(err error) bool { return err != nil && strings.HasPrefix(err.Error(), stopSaid) }
 
 func (s *tokenStop) spent() int {
 	s.mu.Lock()
@@ -180,7 +185,10 @@ func (s *tokenStop) spent() int {
 // facets of today; a no drops the finding.
 func askReplay(spec string, judgeRole *role.Role, it replayItem, stop *tokenStop) replayAnswer {
 	ans, err := stop.ask(func() (wjudge.Answer, error) { return wjudge.Ask(spec, judgeRole, it.Question, it.Material) })
-	a := replayAnswer{Asked: true, Why: ans.Why, Err: err, Calls: []agent.Call{ans.Call}}
+	a := replayAnswer{Asked: true, Why: ans.Why, Err: err}
+	if !stopped(err) { // a call refused at the stop was never made
+		a.Calls = []agent.Call{ans.Call}
+	}
 	switch {
 	case err != nil:
 		a.Shown = "not verified: " + err.Error()
@@ -203,6 +211,9 @@ func askReading(spec string, judgeRole *role.Role, it replayItem, repo string, r
 	a := replayAnswer{Asked: true, Said: j.Said, Shown: j.Shown, Why: j.Why, Calls: j.Calls, Reads: j.Asked, Served: j.Rounds, Lines: j.Lines, Quoted: j.Quoted}
 	if j.Said == "" {
 		a.Err = fmt.Errorf("%s", j.Why)
+		if stopped(a.Err) && len(a.Calls) > 0 {
+			a.Calls = a.Calls[:len(a.Calls)-1] // the call refused at the stop, never made
+		}
 	}
 	return a
 }
@@ -334,17 +345,13 @@ func envInt(t *testing.T, name string, def int) int {
 	return n
 }
 
-// TestJudgeReplay asks the 40 questions again, each in a context of its
-// own, of the judge WORKLINE_EVAL names (`claude:opus` was the judge
-// then). Two arms (ADR-0045): today's judge; with
-// WORKLINE_EVAL_REPLAY_ROUNDS (2), the judge that reads, served from this
-// repository's git objects at each item's commit, within
-// WORKLINE_EVAL_REPLAY_LINES (400). A line of results.tsv an item, case
-// judge/<item> or judge-reads/<item>: a point when a true finding is
-// verified, a false one dropped; the tally of the run is logged. The
-// replay stops asking once it spent WORKLINE_EVAL_TOKENS_MAX tokens in
-// (2100000), counting WORKLINE_EVAL_TOKENS_BEFORE, what earlier runs of
-// it spent; it then fails, said.
+// TestJudgeReplay asks the 40 questions again of the judge WORKLINE_EVAL
+// names, today's judge, or with WORKLINE_EVAL_REPLAY_ROUNDS the judge that
+// reads, served from git at each item's commit. A line of results.tsv an
+// item, its tally logged. Past WORKLINE_EVAL_TOKENS_MAX tokens in, earlier
+// runs counted (WORKLINE_EVAL_TOKENS_BEFORE), no call starts; those in
+// flight finish, -parallel at most; the test fails, said
+// (docs/spec/conformance/evaluation.md).
 func TestJudgeReplay(t *testing.T) {
 	spec := os.Getenv("WORKLINE_EVAL")
 	if spec == "" {
