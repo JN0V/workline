@@ -1,0 +1,29 @@
+case: merge/check-only-cancelled-waits
+about: "A check only ever cancelled on its head (#377): no run of it concluded, so it counts as one still running, never as red. `workline follow` keeps the pull request in line and turns auto-merge on; the forge's own required checks still guard the merge (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: follow, state: cancelled}, {name: test, state: success}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}]
+  no-findings: [{rule: checks-red}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}

@@ -39,6 +39,9 @@ func (f *Fake) MergeState(mr MergeRequest) (MergeState, error) {
 	head, _, _ := strings.Cut(string(out), "\t")
 	st := MergeState{Head: strings.TrimSpace(head), Draft: it.Draft, AutoMerge: it.AutoMerge, AutoMergeAt: it.AutoMergeAt,
 		Checks: it.Checks, Labels: it.LabelEvents}
+	if it.CheckRuns != nil {
+		st.Checks = sumRuns(it.CheckRuns)
+	}
 	if it.AutoMerge {
 		st.AutoMergeBy = it.AutoMergeBy // an app's is named <app>[bot], as on GitHub
 		st.AutoMergeBot = it.AutoMergeBy == fakeBot || strings.HasSuffix(it.AutoMergeBy, "[bot]")

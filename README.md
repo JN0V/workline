@@ -2,7 +2,7 @@
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
 checked: 98de6b44
 judged: 7a26b30
-verified: agent:documentalist
+verified: agent:claude-code
 -->
 <h1>
   <picture>
