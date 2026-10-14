@@ -43,8 +43,9 @@ func allowedIdentities(s Settings) ([]*regexp.Regexp, error) {
 
 // forgeIdentities checks the project's `forge-identities`: the addresses its
 // forge commits with (its App's bot, GitHub's web merges), each written
-// whole. They are allowed beside the allow list but never turn the check on
-// alone, and no pattern is taken: naming one bot never lets every bot in.
+// whole and matched exactly, case included. They are allowed beside the
+// allow list but never turn the check on alone; naming one bot never lets
+// every bot in. An entry that reads as a pattern is a mistake, said.
 func forgeIdentities(s Settings) error {
 	for _, f := range s.ForgeIdentities {
 		if !strings.Contains(f, "@") || strings.ContainsAny(f, "^$*?\\|(){} \t") {
@@ -68,7 +69,7 @@ func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
 	}
 	ok := func(email string) bool {
 		for _, f := range s.ForgeIdentities {
-			if strings.EqualFold(email, f) {
+			if email == f {
 				return true
 			}
 		}

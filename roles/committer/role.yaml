@@ -52,7 +52,7 @@ settings:
   # Author and committer addresses allowed, as patterns; with the user's own
   # list (README, "Identity"). Both empty: identities are not checked.
   allowed-identities: []
-  # Addresses the project's forge commits with, each written whole, no
+  # Addresses the project's forge commits with, each matched exactly, no
   # pattern: its App's bot (12345+app[bot]@users.noreply.github.com),
   # GitHub's web merges (noreply@github.com). Allowed beside the lists above;
   # alone, they never turn the check on.
