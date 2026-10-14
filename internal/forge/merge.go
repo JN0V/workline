@@ -13,6 +13,47 @@ type Push struct {
 	At   string `json:"at"` // RFC 3339
 }
 
+// CheckRun is one run of a check on a head, as the forge shows it: its
+// name, and its state — success, failure, pending, or cancelled.
+type CheckRun struct {
+	Name  string `json:"name"`
+	State string `json:"state"`
+}
+
+// sumRuns sums up a head's check runs: failure when one failed, else
+// pending when one runs, else success; "" none. A cancelled run is no
+// result, neither success nor failure: another run of the same check —
+// the same name, as the forge's required checks match them — counts
+// instead; a check only ever cancelled counts as one still running, the
+// forge's own required checks still guarding the merge.
+func sumRuns(runs []CheckRun) string {
+	other := map[string]bool{} // a check with a run not cancelled
+	for _, r := range runs {
+		if r.State != "cancelled" {
+			other[r.Name] = true
+		}
+	}
+	sum := ""
+	for _, r := range runs {
+		state := r.State
+		if state == "cancelled" {
+			if other[r.Name] {
+				continue
+			}
+			state = "pending"
+		}
+		switch {
+		case state == "failure":
+			return "failure"
+		case state == "pending" || sum == "pending":
+			sum = "pending"
+		case state == "success":
+			sum = "success"
+		}
+	}
+	return sum
+}
+
 // MergeState is what the merge policy weighs of an open merge request
 // (ADR-0042), as its forge says it.
 type MergeState struct {

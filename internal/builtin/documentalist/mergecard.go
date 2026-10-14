@@ -23,13 +23,17 @@ type mergeCardTask struct {
 const mergeCardChars = 30000
 
 // pickMergeCard chooses the one card a gardening run merges: the first too
-// short, when another card exists to take it — those of its folder first.
-func pickMergeCard(problems []Problem, t Tree) *mergeCardTask {
+// short, when another card exists to take it — those of its folder first —
+// and its merge request does not wait.
+func pickMergeCard(problems []Problem, t Tree, waits func(key string, resolves func(verdict.Finding) bool) bool) *mergeCardTask {
 	for _, p := range problems {
 		if p.Rule != "card-too-short" {
 			continue
 		}
 		m := &mergeCardTask{Card: p.Where}
+		if waits(m.key(), m.resolves) {
+			continue
+		}
 		var near, far []string
 		for d, content := range t.Docs {
 			switch {

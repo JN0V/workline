@@ -1,0 +1,20 @@
+case: documentalist/parts-judged-once-a-run
+about: "A gardening run judged in CI (no-apply, one merge request per task) judges a doc in parts once: its second round leaves it, proposed by the first, and judges the next doc waiting past parts-max-per-run. Each goes to a merge request of its own, so neither proposal replaces the other (#356)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed 's/^# Authentication/# The token table/' docs/tech/auth.md > docs/tech/table.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md docs/tech/table.md && git commit -qam 'docs: confirm the auth docs'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-max-per-run: 2}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found", open-merge-request: true, no-apply: true, then: resume}
+expect:
+  status: pass
+  agent-calls: 4   # two parts a doc, each doc once
+  forge:
+    merge-requests:
+      - {id: 1, branch: "workline/documentalist/fix-docs-tech-auth-md", base: main, body-contains: "`docs/tech/auth.md` — judged in parts"}
+      - {id: 2, branch: "workline/documentalist/fix-docs-tech-table-md", base: main, body-contains: "`docs/tech/table.md` — judged in parts"}
+      - {id: 3, absent: true}

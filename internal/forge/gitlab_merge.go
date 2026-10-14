@@ -3,6 +3,7 @@ package forge
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"time"
 )
 
@@ -14,7 +15,8 @@ import (
 var autoMergeOn = regexp.MustCompile(`(?i)^(enabled an automatic merge\b|set to auto-merge\b)`)
 
 // MergeState reads a merge request — draft, head, auto-merge and who set
-// it, its head pipeline's status —, its label events, its versions (one a
+// it, its head pipeline's status, or, that one canceled, an older one's on
+// the same head —, its label events, its versions (one a
 // push, with when) and its system notes, for when auto-merge was last
 // turned on.
 func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
@@ -50,6 +52,11 @@ func (g *gitlab) MergeState(mr MergeRequest) (MergeState, error) {
 	}
 	if v.Pipeline != nil {
 		st.Checks = pipelineStatus(v.Pipeline.Status)
+	}
+	if st.Checks == "cancelled" {
+		if st.Checks, err = g.pipelineBefore(t, v.SHA); err != nil {
+			st.Checks, st.ChecksUnread = "", err.Error()
+		}
 	}
 	if st.Labels, err = g.labelEvents(t); err != nil {
 		return MergeState{}, err
@@ -134,14 +141,45 @@ func (g *gitlab) pushers(branch, opened string) ([]string, error) {
 	return who, nil
 }
 
+// pipelineBefore reads a head whose pipeline was canceled: a canceled
+// pipeline is no result, so the newest of the merge request's other
+// pipelines on that head that was not counts; none, pending, as a check
+// only ever cancelled on GitHub — GitLab's merge still waits for a
+// pipeline that succeeds.
+func (g *gitlab) pipelineBefore(t Target, head string) (string, error) {
+	out, err := g.api("--paginate", path(t)+"/pipelines?per_page=100")
+	if err != nil {
+		return "", err
+	}
+	type pipeline struct {
+		ID     int    `json:"id"`
+		SHA    string `json:"sha"`
+		Status string `json:"status"`
+	}
+	all, err := pages[pipeline](out)
+	if err != nil {
+		return "", err
+	}
+	slices.SortFunc(all, func(a, b pipeline) int { return b.ID - a.ID }) // newest first
+	for _, p := range all {
+		if s := pipelineStatus(p.Status); p.SHA == head && s != "cancelled" && s != "" {
+			return s, nil
+		}
+	}
+	return "pending", nil
+}
+
 // pipelineStatus reads a GitLab pipeline's status as the merge policy sums
-// checks up: success, pending, failure; "" for one manual or skipped.
+// checks up: success, pending, failure, cancelled; "" for one manual or
+// skipped.
 func pipelineStatus(status string) string {
 	switch status {
 	case "success":
 		return "success"
-	case "failed", "canceled":
+	case "failed":
 		return "failure"
+	case "canceled", "canceling":
+		return "cancelled"
 	case "created", "waiting_for_resource", "preparing", "pending", "running", "scheduled":
 		return "pending"
 	}

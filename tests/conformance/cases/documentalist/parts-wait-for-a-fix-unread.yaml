@@ -1,0 +1,20 @@
+case: documentalist/parts-wait-for-a-fix-unread
+about: "When gardening, a merge request judging docs in parts whose branch cannot be read is said, and holds every doc to be judged in parts until it is merged or closed: nothing is judged again that it may hold (#356)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+  forge:
+    merge-requests:   # its branch is not on origin
+      - {id: 4, branch: "workline/documentalist/fix", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found", open-merge-request: true, no-apply: true}
+expect:
+  status: pass
+  agent-calls: 0
+  findings:
+    - {rule: merge-request-unread, where: workline/documentalist/fix, level: warn}
+    - {rule: suspect, where: docs/tech/auth.md, message: "workline/documentalist/fix, judging docs in parts, waits for review, and what it changes could not be read"}

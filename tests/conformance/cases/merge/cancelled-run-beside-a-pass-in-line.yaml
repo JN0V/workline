@@ -1,0 +1,29 @@
+case: merge/cancelled-run-beside-a-pass-in-line
+about: "Accepted in a batch (#377): a person labelled many pull requests within a minute, and the forge cancelled the `follow` runs a newer one replaced, leaving on the head a `follow` check cancelled beside one that passed. A cancelled run is no result: the one that passed counts, and `workline follow` turns auto-merge on (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: follow, state: cancelled}, {name: test, state: success}, {name: follow, state: success}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: auto-merge-on, where: "#7", message: "accepted by @dana, its head's verdict passed: auto-merge turned on"}]
+  no-findings: [{rule: checks-red}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}

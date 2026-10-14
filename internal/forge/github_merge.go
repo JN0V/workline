@@ -139,34 +139,28 @@ type checkContext struct {
 	State      string `json:"state"`
 }
 
-// sumChecks sums up a head's checks — failure when one failed, else
-// pending when one runs, else success —, workline's own statuses left
-// out: a verdict kept, a yes held, are no check of the change.
+// sumChecks sums up a head's checks as sumRuns does, check runs and
+// commit statuses both, workline's own statuses left out: a verdict kept,
+// a yes held, are no check of the change.
 func sumChecks(all []checkContext) string {
-	sum := ""
+	var runs []CheckRun
 	for _, c := range all {
-		state := ""
+		r := CheckRun{Name: c.Name}
 		switch {
 		case c.Type == "StatusContext" && strings.HasPrefix(c.Context, "workline/"):
 			continue
 		case c.Type == "StatusContext":
-			state = map[string]string{"SUCCESS": "success", "PENDING": "pending", "EXPECTED": "pending", "FAILURE": "failure", "ERROR": "failure"}[c.State]
+			r.Name = c.Context
+			r.State = map[string]string{"SUCCESS": "success", "PENDING": "pending", "EXPECTED": "pending", "FAILURE": "failure", "ERROR": "failure"}[c.State]
 		case c.Status != "COMPLETED":
-			state = "pending"
+			r.State = "pending"
 		default:
-			state = map[string]string{"SUCCESS": "success", "NEUTRAL": "success", "SKIPPED": "success",
-				"FAILURE": "failure", "TIMED_OUT": "failure", "CANCELLED": "failure", "ACTION_REQUIRED": "failure", "STARTUP_FAILURE": "failure"}[c.Conclusion]
+			r.State = map[string]string{"SUCCESS": "success", "NEUTRAL": "success", "SKIPPED": "success", "CANCELLED": "cancelled",
+				"FAILURE": "failure", "TIMED_OUT": "failure", "ACTION_REQUIRED": "failure", "STARTUP_FAILURE": "failure"}[c.Conclusion]
 		}
-		switch {
-		case state == "failure":
-			return "failure"
-		case state == "pending" || sum == "pending":
-			sum = "pending"
-		case state == "success":
-			sum = "success"
-		}
+		runs = append(runs, r)
 	}
-	return sum
+	return sumRuns(runs)
 }
 
 // me is who this token writes as: the GitHub App's bot when the workflow
