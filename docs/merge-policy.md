@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/engine/routine.go, internal/engine/settle.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, internal/role/role.go, ci/github/workline.yml, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 27755fce
+checked: 15e33c24
 verified: agent:claude-code
 ---
 # The merge policy
@@ -47,8 +47,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
   were put. Auto-merge a person turned on by hand is their yes, weighed as
   the label's.
 - **Out of line, said in the job's summary**: a verdict or a check red,
-  a review short, a conflict on a person's line, a push refused. One not
-  judged yet waits, named, and never holds the line: the next comes up.
+  a review short, a conflict on a person's line, a push refused. A run
+  the forge cancelled is no result: another run of that check counts,
+  else it waits. One not judged yet waits, named; the next comes up.
 - **The label** is made in the forge's list when missing: put it in bulk,
   from a saved filter.
 
