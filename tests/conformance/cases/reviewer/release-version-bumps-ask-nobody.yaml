@@ -1,0 +1,15 @@
+case: reviewer/release-version-bumps-ask-nobody
+about: "A release tool's pull request (release-please's branch, as the documentalist reads it) that only bumps the versions the tool marks — a line holding `x-release-please-version`, lines between `x-release-please-start-version` and `x-release-please-end`, its manifest — and writes its changelog asks no lens, and passes (#384); an agent that fails if asked is never asked."
+given:
+  repo: reviewed
+  setup:
+    - "git checkout -q main"
+    - "printf '{\\n  \".\": \"1.2.0\"\\n}\\n' > .release-please-manifest.json && printf 'package calc\\n\\n// Version is the release.\\nconst Version = \"v1.2.0\" // x-release-please-version\\n' > calc/version.go && printf '#!/bin/sh\\n# x-release-please-start-version\\nVERSION=1.2.0\\nIMAGE=tool:1.2.0\\n# x-release-please-end\\necho \"$VERSION\"\\n' > install.sh && git add .release-please-manifest.json calc/version.go install.sh && git commit -qm 'feat: say the version'"
+    - "git checkout -qb release-please--branches--main && sed -i 's/1\\.2\\.0/1.3.0/g' .release-please-manifest.json calc/version.go install.sh && printf '# Changelog\\n\\n## 1.3.0\\n' > CHANGELOG.md && git add CHANGELOG.md && git commit -qam 'chore(main): release 1.3.0'"
+  # The branch as CI gives it (--branch), the forge not asked.
+  forge: {merge-requests: [{id: 1, base: main, labels: [], comments: []}]}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 1}, branch: release-please--branches--main, ai: "unavailable:quota"}
+expect:
+  status: pass
+  agent-calls: 0
+  run-files: {out/review.json: {contains: "the versions a release tool bumps"}}

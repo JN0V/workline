@@ -1,0 +1,12 @@
+case: reviewer/version-bump-elsewhere-reviewed
+about: "The same version bump on a branch no release tool opened is code like any (#384): a lens is asked; here the agent fails, and the run says so."
+given:
+  repo: reviewed
+  setup:
+    - "git checkout -q main"
+    - "printf 'package calc\\n\\n// Version is the release.\\nconst Version = \"v1.2.0\" // x-release-please-version\\n' > calc/version.go && git add calc/version.go && git commit -qm 'feat: say the version'"
+    - "git checkout -qb bump && sed -i 's/1\\.2\\.0/1.3.0/' calc/version.go && git commit -qam 'chore: bump the version'"
+  forge: {merge-requests: [{id: 1, branch: bump, base: main, labels: [], comments: []}]}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 1}, ai: "unavailable:quota"}
+expect:
+  status: blocked-external
