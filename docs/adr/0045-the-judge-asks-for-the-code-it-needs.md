@@ -1,10 +1,8 @@
 # ADR-0045: The judge asks for the code it needs; the engine reads it at the reviewed commit
 
-- **Status:** accepted; built in the order below, on by default once
-  measured again
+- **Status:** accepted; built in the order below, on by default once measured
 - **Date:** 2026-10-14, for [#362](https://github.com/JN0V/workline/issues/362)
-- **Decided by:** the maintainer, 2026-10-14: the caps, a larger budget,
-  `unsure` kept, the code review first (below)
+- **Decided by:** the maintainer, 2026-10-14: caps, budget, `unsure`, scope
 - **Builds on:** [ADR-0005](0005-independence-takes-the-best-level-available.md)
   (independence), [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)
   (the judge's material, `ai-max-tokens`); principles 5, 6, 7, 10, 11, 12
