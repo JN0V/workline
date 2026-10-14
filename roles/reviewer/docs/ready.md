@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 629993a7
+checked: 24e2cb24
 verified: agent:claude-code
 ---
 # Reviewer — every lens once when it becomes ready
@@ -18,12 +18,18 @@ every run.
 
 - **The whole change**, `base..head`: each commit was read by one lens
   only, and skipping them could leave nothing to read. The commits are
-  recorded, one run counted, and the record says every lens read the
-  change (`read=all`); the next push gets one lens, in turn.
+  recorded, one run counted, and, once every lens answered, the record
+  says every lens read the change (`read=all`); the next push gets one
+  lens, in turn.
+- **A run on ready where a lens did not answer** (unreadable after its
+  retry, its budget spent): `retried=once`, and the next push asks every
+  lens again, once (`every-lens-again`). Failing again, `read=all` is
+  written all the same, and the comment says the change was not
+  reviewed whole by every lens (`every-lens-not-whole`).
 - **A run on ready cancelled**: a push while it goes on cancels it, one
   run per merge request. It wrote nothing, so the next run reads every
   lens.
-- **A draft again**: a run on a draft (`draft=true`) drops `read=all`;
+- **A draft again**: a run on a draft (`draft=true`) drops `read=all` and `retried=once`;
   ready again, every lens reads it once more.
 - **A record that does not read** says nothing of it: one lens, every
   commit reviewed again. A record written before `read=all` existed: the
@@ -44,8 +50,7 @@ every run.
 - **Held by a rule**: the run on ready asks no lens, and its record owes
   every lens (`owed=all`); the next run, the fix pushed, reads every lens
   on the whole change, whatever the template passed.
-- **Once the lenses were asked**, nothing is owed: a budget spent or a
-  lens failing leaves the next push one lens. With no agent, nothing is
-  written: the next run is the run on ready again.
+- **With no agent, or one out of reach**, nothing is written: the next
+  run is the run on ready again.
 - **GitLab's notes** are read page by page, the newest first, until the
   ready note or the reviewer's comment.
