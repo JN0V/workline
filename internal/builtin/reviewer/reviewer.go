@@ -913,8 +913,9 @@ func readLenses(runDir, repo string, s Settings) int {
 // found reads one finding a lens answered, and finds its quotes again: its
 // cause in the file at the head of the range, or among the lines the change
 // removed; its symptom, when it gives one, in its file. Related: its cause
-// lies on a line the change added or removed, or on a kept line beside a
-// removal. why says why it is dropped.
+// lies on a line the change added or removed, on a kept line beside a
+// removal, or on one using what a removed line of its function tested or
+// assigned. why says why it is dropped.
 func found(repo string, st state, lens string, cites bool, v any) (Finding, string) {
 	var raw struct {
 		Severity string `json:"severity"`
@@ -1000,6 +1001,17 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		if at := locate(removed, f.Cause.Quote); len(at) > 0 {
 			f.On = st.Change.Removed[f.Cause.Path][at[0].From-1].At
 			f.Where, f.Related = fmt.Sprintf("%s:%d", f.Cause.Path, f.On), true
+		}
+	}
+	// Then a kept line further down using a name a removed line tested or
+	// assigned, in the same function (#357): its comment goes where the
+	// removal shows.
+	for _, p := range places {
+		if f.Where != "" {
+			break
+		}
+		if at := st.Change.reaches(repo, st.Head, f.Cause.Path, p); at > 0 {
+			f.Where, f.Related, f.On = fmt.Sprintf("%s:%d", f.Cause.Path, p.From), true, at
 		}
 	}
 	if f.Where == "" && len(places) > 0 {
