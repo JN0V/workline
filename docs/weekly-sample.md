@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: df02b827
+checked: 4c2c4d07
 verified: agent:claude-code
 ---
 # The weekly sample
@@ -11,7 +11,9 @@ kind of act
 docs the documentalist vouched for, read whole against their sources
 ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4), the
 product owner's acts done alone, the findings the reviewer's judge kept
-or dropped, the committer's rewrites. How to schedule it: on
+or dropped on every run
+([a line each in its summary comment](../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
+the committer's rewrites. How to schedule it: on
 [GitHub](ci-github.md), [GitLab](ci-gitlab.md#4-the-weekly-sample),
 [another forge or none](ci-other-forges.md).
 
@@ -45,6 +47,9 @@ roles:
   merge request putting it back, for you to review.
 - **A true finding the judge dropped**, still in the code, is opened as an
   issue, `needs-triage`, three a week at most.
+- **What could not be drawn** is listed, with why: the findings judged
+  whose lines a merge request's summary comment no longer holds, past its
+  size; a comment written before the lines, its last run's alone.
 - **Your answer**: 👍 on the week's comment agrees with all of it; 👎 and a
   reply naming rows (`not 3, 7`) contests those, the rest agreed. A reply
   answers the week it follows, or the week it names (`2026-W41: not 3`).
