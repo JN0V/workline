@@ -77,7 +77,7 @@ func TestAnswerReading(t *testing.T) {
 			t.Errorf("%s:\n got %+v %v\nwant %+v", answer, got, err, want)
 		}
 	}
-	for _, answer := range []string{`- note: "maybe"`, `- read: {why: nothing named}`, `[]`} {
+	for _, answer := range []string{`- note: "maybe"`, `- read: {why: nothing named}`, `[]`, ``, "maybe, the code is unclear\n"} {
 		if _, err := answerReading(Answer{}, []byte(answer)); err == nil {
 			t.Errorf("%s: no verdict, no read: an error", answer)
 		}
