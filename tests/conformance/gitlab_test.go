@@ -122,18 +122,30 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 	case p == "/merge_requests" && method == "GET":
 		out := []map[string]any{}
 		for _, it := range s.MergeRequests {
-			if q.Get("state") == "opened" && it.Closed || q.Has("target_branch") && q.Get("target_branch") != it.Base {
+			if q.Get("state") == "opened" && it.Closed || q.Get("state") == "merged" && it.MergedAt == "" ||
+				q.Has("target_branch") && q.Get("target_branch") != it.Base {
 				continue
 			}
 			source := 1 // a fork's is another project's
 			if it.Fork {
 				source = 2
 			}
-			out = append(out, map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
+			mr := map[string]any{"iid": it.ID, "source_branch": it.Branch, "target_branch": it.Base,
 				"source_project_id": source, "target_project_id": 1, "title": it.Title,
 				"author": map[string]any{"id": 1000 + it.ID, "username": it.Author},
 				"state":  map[bool]string{true: "closed", false: "opened"}[it.Closed],
-				"labels": it.Labels, "draft": it.Draft, "merge_when_pipeline_succeeds": it.AutoMerge})
+				"labels": it.Labels, "draft": it.Draft, "merge_when_pipeline_succeeds": it.AutoMerge}
+			if it.MergedAt != "" {
+				// Merged (`merged-at`, `merged-as`): when, and the commit it
+				// became, a revision of the repository, as its squash.
+				at := it.MergedAt
+				if len(at) == len(time.DateOnly) {
+					at += "T00:00:00Z"
+				}
+				sha, _ := exec.Command("git", "-C", m.repo, "rev-parse", "--verify", "-q", it.MergedAs+"^{commit}").Output()
+				mr["state"], mr["merged_at"], mr["squash_commit_sha"] = "merged", at, strings.TrimSpace(string(sha))
+			}
+			out = append(out, mr)
 		}
 		return out, 200
 	case p == "/api/v4/users/999", p == "/api/v4/user":
