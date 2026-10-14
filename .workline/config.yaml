@@ -29,9 +29,8 @@ roles:
         skip: ["docs/spec/**", "roles/*/docs/status.md", docs/BACKLOG.md, docs/backlog-parked.md]
         flow: ["roles/*/README.md"]
       # Catching up its own docs, far behind: those whose sources do not fit
-      # one call are judged in parts (ADR-0009), one doc a night (8 parts),
-      # and a night spends at most 400k tokens.
-      judge-in-parts: true
+      # one call are judged in parts (ADR-0009, on by default), one doc a
+      # night (8 parts), and a night spends at most 400k tokens.
       parts-max-per-run: 8
       ai-max-tokens: 400000
       # When main moves, a pull request in conflict with it only on lines
