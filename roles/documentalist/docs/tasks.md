@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: 566fbaa7
+checked: d9922bf7
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -83,9 +83,11 @@ the parts — says that every word a patch takes out of a body is cited
 ## Judged in parts
 
 [ADR-0009](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md),
-when the project sets `judge-in-parts: true` (off by default, until the
-evaluation has measured it): a suspect or stale doc whose sources, as they
-are now, do not fit a task is judged in parts instead of going to a person.
+on by default since
+[#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736):
+a suspect or stale doc whose sources, as they are now, do not fit a task
+is judged in parts instead of going to a person. `judge-in-parts: false`
+sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
 
 ### The parts
 

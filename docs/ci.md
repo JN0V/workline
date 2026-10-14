@@ -65,13 +65,14 @@ In the repository:
    them, you review and commit
    ([adopting a repository](../roles/documentalist/docs/push.md#adopting-a-repository)).
 2. `.workline/config.yaml`, if the defaults do not suit — for a backlog of
-   docs far behind, judging in parts and its caps:
+   docs far behind, the caps on judging in parts, on by default
+   ([ADR-0009](adr/0009-docs-far-behind-are-judged-in-parts.md)):
 
    ```yaml
    roles:
      documentalist:
        settings:
-         judge-in-parts: true       # docs too large for one call (ADR-0009)
+         # judge-in-parts: false    # docs too large for one call go to a person
          parts-max-per-run: 8       # one such doc a night
          ai-max-tokens: 400000      # what a run may spend, all calls together
          max-open-merge-requests: 3 # gardening waits while this many wait
