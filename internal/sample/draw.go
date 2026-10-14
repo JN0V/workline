@@ -57,6 +57,8 @@ type Act struct {
 	Independence string  `json:"independence,omitempty"`
 	Proofs       []Proof `json:"proofs,omitempty"`
 	Unproven     []Proof `json:"unproven,omitempty"`
+	Panel        *Panel  `json:"panel,omitempty"`  // how a false verdict was settled
+	Defect       *Defect `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
 	key          string  // what it is ranked by, with the week
 }
 

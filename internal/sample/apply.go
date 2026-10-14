@@ -15,8 +15,13 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// IssueTitle is the tracking issue's: one, kept open, a comment a week.
-const IssueTitle = "workline: the weekly sample of the docs vouched for"
+// IssueTitle is the tracking issue's: one, kept open, a comment a week,
+// and the count (ADR-0046).
+const IssueTitle = "workline: the weekly sample of every role's acts"
+
+// formerTitle is the tracking issue's before every role's acts were
+// sampled: renamed, never opened again.
+const formerTitle = "workline: the weekly sample of the docs vouched for"
 
 // StepZeroLabel marks the tracking issue once a `checked` is found false:
 // the documentalist is set back to step 0 (ADR-0014), until a person takes
@@ -39,8 +44,12 @@ the product owner's acts done alone, the findings the reviewer's judge
 kept or dropped, the commits the committer rewrote. The auditor re-checks
 each against what it was done on, on another model than those that
 acted; one said wrong is false only with the material's words, found
-again. Each week's comment says each verdict, what is for a person, and
-what could not be drawn, and why.
+again, and three judges settle the dispute. A true finding the judge
+dropped, still in the code, is opened as an issue (three a week at most).
+
+Each week's comment numbers its acts. Agree with the week: 👍 on it.
+Contest rows: 👎, and a reply naming them (` + "`not 3, 7`" + `). One comment, the count,
+is written again each week from every week.
 
 Written by ` + "`workline sample --apply`" + `, with no AI.`
 
@@ -94,6 +103,12 @@ func Apply(file, repo string, f forge.Forge) *Result {
 		}
 		res.Applied = append(res.Applied, "merge-request")
 	}
+	if err := renameFormer(f); err != nil {
+		return failed(res, err)
+	}
+	if err := openDefects(res, repo, f); err != nil {
+		return failed(res, fmt.Errorf("the true findings dropped: %w", err))
+	}
 	id, err := f.KeepIssue(IssueTitle, issueIntro, true)
 	if err != nil {
 		return failed(res, err)
@@ -108,6 +123,25 @@ func Apply(file, repo string, f forge.Forge) *Result {
 			return failed(res, err)
 		}
 		res.Applied = append(res.Applied, "label")
+	}
+	// The count, written again from every week, this one's included; a
+	// forge that cannot read the weeks back leaves the one there.
+	if _, ok := f.(forge.Backlog); ok {
+		ws, err := weeks(f, id)
+		if err != nil {
+			return failed(res, fmt.Errorf("the weeks, read back: %w", err))
+		}
+		if err := f.Sticky(issue, countComment(ws), forge.Marker(countKey), true); err != nil {
+			return failed(res, err)
+		}
+		res.Applied = append(res.Applied, "count")
+	}
+	for _, a := range res.Drawn {
+		if d := a.Defect; d != nil && strings.HasPrefix(d.Said, "opened") {
+			res.Applied = append(res.Applied, "issue")
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "defect-opened", Level: "info", Where: fmt.Sprintf("#%d", d.Issue),
+				Message: fmt.Sprintf("a true finding the reviewer's judge dropped on %s, still at %s: %s", a.Ref, d.Path, d.Said)})
+		}
 	}
 	res.Summary = fmt.Sprintf("%s written to issue #%d", res.Week, id)
 	if mr > 0 {
@@ -196,18 +230,21 @@ func resetBody(res *Result, docs []Read) string {
 func report(res *Result, falseOnes, moved []Read, mr int) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "### %s\n\n", res.Week)
+	rs := rows(res)
+	b.WriteString(synthesis(res, rs))
+	hidden := "\n" + hiddenRows(rs) + "\n"
 	if res.Vouched == 0 {
 		fmt.Fprintf(&b, "No doc vouched for by the documentalist in the commits %s: nothing read.\n", res.Window)
-		return b.String() + actsSection(res)
+		return b.String() + actsSection(res) + hidden
 	}
 	fmt.Fprintf(&b, "%s vouched for by the documentalist in the commits %s (`%.7s..%.7s`); %d read, one in ten.\n\n", plural(res.Vouched, "doc"), res.Window, res.From, res.To, len(res.Reads))
-	b.WriteString("| Doc | Vouched for in | `checked` | Verdict | Judge, independence |\n|---|---|---|---|---|\n")
-	for _, r := range res.Reads {
+	b.WriteString("| # | Doc | Vouched for in | `checked` | Verdict | Judge, independence | Panel |\n|---|---|---|---|---|---|---|\n")
+	for i, r := range res.Reads {
 		judgeWords := "—"
 		if r.Judge != "" {
 			judgeWords = fmt.Sprintf("`%s`, %s", r.Judge, r.Independence)
 		}
-		fmt.Fprintf(&b, "| %s | %s | %s | **%s** | %s |\n", r.Doc, r.Commit, checkedWords(r.Checked), r.Verdict, judgeWords)
+		fmt.Fprintf(&b, "| %d | %s | %s | %s | **%s** | %s | %s |\n", i+1, r.Doc, r.Commit, checkedWords(r.Checked), r.Verdict, judgeWords, cell(r.Panel.Words()))
 	}
 	b.WriteString("\n")
 	for _, r := range res.Reads {
@@ -224,7 +261,104 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 			fmt.Fprintf(&b, "%s no longer carries that `checked`, or names another repository's: for a person to put back.\n", r.Doc)
 		}
 	}
-	return b.String() + actsSection(res)
+	return b.String() + actsSection(res) + hidden
+}
+
+// synthesis opens the week's comment, for the maintainer: the acts read
+// per role, how many stand, each false one in a line with the panel's
+// vote, and how to answer.
+func synthesis(res *Result, rs []Row) string {
+	if len(rs) == 0 {
+		return "Nothing drawn this week.\n\n"
+	}
+	var b strings.Builder
+	read, stand := 0, 0
+	type tally struct{ read, stand, falseOnes, other int }
+	per := map[string]*tally{}
+	for _, r := range rs {
+		t := per[r.Role]
+		if t == nil {
+			t = &tally{}
+			per[r.Role] = t
+		}
+		if r.Verdict == "not-read" {
+			t.other++
+			continue
+		}
+		read++
+		t.read++
+		switch r.Verdict {
+		case "true":
+			stand++
+			t.stand++
+		case "false":
+			t.falseOnes++
+		default:
+			t.other++
+		}
+	}
+	fmt.Fprintf(&b, "**%s read of %d drawn: %d stand.**\n\n", plural(read, "act"), len(rs), stand)
+	for _, role := range roleOrder {
+		if t := per[role]; t != nil {
+			fmt.Fprintf(&b, "- %s: %d read, %d stand, %d false, %d for a person\n", roleWords(role), t.read, t.stand, t.falseOnes, t.other)
+		}
+	}
+	var falseLines []string
+	for i, r := range res.Reads {
+		if r.Verdict == "false" {
+			falseLines = append(falseLines, fmt.Sprintf("- %d. %s, its `checked` false — %s", i+1, r.Doc, panelLine(r.Panel)))
+		}
+	}
+	for i, a := range res.Drawn {
+		if a.Verdict == "false" {
+			l := fmt.Sprintf("- %d. %s — %s", len(res.Reads)+i+1, oneLine(actWords(Act{Role: a.Role, Kind: a.Kind, Ref: a.Ref, Where: a.Where, Day: a.Day, By: a.By, In: a.In}), 160), panelLine(a.Panel))
+			if a.Defect != nil && a.Defect.Said != "" {
+				l += "; " + a.Defect.Said
+			}
+			falseLines = append(falseLines, l)
+		}
+	}
+	if len(falseLines) > 0 {
+		b.WriteString("\nFalse, each with the panel's vote:\n\n" + strings.Join(falseLines, "\n") + "\n")
+	}
+	b.WriteString("\nAgree with the week: 👍 on this comment. Contest rows: 👎, and a reply naming them (`not 3, 7`).\n\n")
+	return b.String()
+}
+
+// panelLine says how a false verdict was settled.
+func panelLine(p *Panel) string {
+	if p == nil {
+		return "no panel: the auditor's reading, for a person"
+	}
+	return "the panel " + p.Words()
+}
+
+// renameFormer gives the tracking issue its title widened to every role's
+// acts, when it still has its former one: one issue, never a second.
+func renameFormer(f forge.Forge) error {
+	b, ok := f.(forge.Backlog)
+	if !ok {
+		return nil
+	}
+	open, err := b.Issues()
+	if err != nil {
+		return err
+	}
+	former := 0
+	for _, is := range open {
+		switch is.Title {
+		case IssueTitle:
+			return nil
+		case formerTitle:
+			if former == 0 {
+				former = is.ID
+			}
+		}
+	}
+	if former == 0 {
+		return nil
+	}
+	return b.SetTitle(former, IssueTitle)
 }
 
 // actsSection is what the week's comment says of every role's acts: how
@@ -243,8 +377,8 @@ func actsSection(res *Result) string {
 		}
 	}
 	if len(res.Drawn) > 0 {
-		b.WriteString("\n| Act | Role, kind | Done | What its record says | Verdict | Judge, independence |\n|---|---|---|---|---|---|\n")
-		for _, a := range res.Drawn {
+		b.WriteString("\n| # | Act | Role, kind | Done | What its record says | Verdict | Judge, independence | Panel |\n|---|---|---|---|---|---|---|---|\n")
+		for i, a := range res.Drawn {
 			act := a.Ref
 			if a.In != "" {
 				act += " (" + a.In + ")"
@@ -269,7 +403,7 @@ func actsSection(res *Result) string {
 			if a.Judge != "" {
 				judgeWords = fmt.Sprintf("`%s`, %s", a.Judge, a.Independence)
 			}
-			fmt.Fprintf(&b, "| %s | %s, %s | %s | %s | **%s** | %s |\n", cell(act), strings.TrimPrefix(roleWords(a.Role), "the "), cell(kindWords(Count{Role: a.Role, Kind: a.Kind})), cell(done), cell(line), a.Verdict, cell(judgeWords))
+			fmt.Fprintf(&b, "| %d | %s | %s, %s | %s | %s | **%s** | %s | %s |\n", len(res.Reads)+i+1, cell(act), strings.TrimPrefix(roleWords(a.Role), "the "), cell(kindWords(Count{Role: a.Role, Kind: a.Kind})), cell(done), cell(line), a.Verdict, cell(judgeWords), cell(a.Panel.Words()))
 		}
 		b.WriteString("\n")
 		for _, a := range res.Drawn {
@@ -297,6 +431,10 @@ func actLines(a Act) string {
 		fmt.Fprintf(&b, "- **%s**, false:\n", name)
 		for _, p := range a.Proofs {
 			fmt.Fprintf(&b, "  - %s\n", p.String())
+		}
+		fmt.Fprintf(&b, "  - %s\n", panelLine(a.Panel))
+		if a.Defect != nil && a.Defect.Said != "" {
+			fmt.Fprintf(&b, "  - the defect: %s\n", a.Defect.Said)
 		}
 	case "unproven":
 		fmt.Fprintf(&b, "- **%s**: said wrong, not proven, for a person:\n", name)

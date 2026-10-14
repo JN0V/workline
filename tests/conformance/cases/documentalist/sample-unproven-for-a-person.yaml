@@ -15,6 +15,6 @@ expect:
     - {rule: vouched-false, where: docs/tech/auth.md}
   forge:
     issues:
-      - {id: 1, labels: [], comments: 1, comment-contains: "for a person"}
+      - {id: 1, labels: [], comments: 2, comment-contains: "for a person"}
     merge-requests:
       - {id: 1, absent: true}

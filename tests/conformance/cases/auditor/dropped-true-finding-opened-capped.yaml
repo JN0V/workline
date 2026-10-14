@@ -1,0 +1,77 @@
+case: auditor/dropped-true-finding-opened-capped
+about: "A finding the reviewer's judge dropped that the auditor finds true, its cause still in the code, is opened as an issue, `needs-triage`, through the one way every role opens one, at most three a week (ADR-0046); the rest are said, not opened."
+given:
+  repo: vouched
+  env: {AUDIT: defects}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && printf 'package notes\\n\\n' > src/notes/extra.go && for i in $(seq 1 31); do printf 'const E%02d = %d\\n' $i $i >> src/notes/extra.go; done && git add src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -m 'feat(notes): add the extra notes'"
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(notes): add the extra notes (#30)' && git push -q origin main"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 30
+        title: Add the extra notes
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: correctness.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E01 overflows" at src/notes/extra.go:3 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E02 overflows" at src/notes/extra.go:4 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E03 overflows" at src/notes/extra.go:5 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E04 overflows" at src/notes/extra.go:6 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E05 overflows" at src/notes/extra.go:7 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E06 overflows" at src/notes/extra.go:8 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E07 overflows" at src/notes/extra.go:9 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E08 overflows" at src/notes/extra.go:10 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E09 overflows" at src/notes/extra.go:11 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E10 overflows" at src/notes/extra.go:12 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E11 overflows" at src/notes/extra.go:13 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E12 overflows" at src/notes/extra.go:14 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E13 overflows" at src/notes/extra.go:15 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E14 overflows" at src/notes/extra.go:16 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E15 overflows" at src/notes/extra.go:17 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E16 overflows" at src/notes/extra.go:18 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E17 overflows" at src/notes/extra.go:19 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E18 overflows" at src/notes/extra.go:20 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E19 overflows" at src/notes/extra.go:21 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E20 overflows" at src/notes/extra.go:22 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E21 overflows" at src/notes/extra.go:23 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E22 overflows" at src/notes/extra.go:24 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E23 overflows" at src/notes/extra.go:25 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E24 overflows" at src/notes/extra.go:26 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E25 overflows" at src/notes/extra.go:27 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E26 overflows" at src/notes/extra.go:28 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E27 overflows" at src/notes/extra.go:29 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E28 overflows" at src/notes/extra.go:30 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E29 overflows" at src/notes/extra.go:31 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E30 overflows" at src/notes/extra.go:32 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "E31 overflows" at src/notes/extra.go:33 — the judge: it does not (independence: model (claude-sonnet-5 → claude-opus-5)) |
+
+            <!-- workline:record reviewed=0123456789abcdef0123456789abcdef01234567 runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"'], then: apply}
+expect:
+  status: pass
+  findings:
+    - {rule: sample-acts, message: "31 acts, finding dropped, by the reviewer"}
+    - {rule: defect-opened, where: "#1"}
+    - {rule: defect-opened, where: "#2"}
+    - {rule: defect-opened, where: "#3"}
+  no-findings:
+    - {rule: defect-opened, where: "#4"}
+  forge:
+    issues:
+      - {id: 1, labels: [needs-triage], body-contains: ["its judge dropped it", "Found by the auditor role"]}
+      - {id: 2, labels: [needs-triage]}
+      - {id: 3, labels: [needs-triage]}
+      - {id: 4, title: "workline: the weekly sample of every role's acts", comment-contains: "not opened: at most 3 a week"}
+      - {id: 5, absent: true}

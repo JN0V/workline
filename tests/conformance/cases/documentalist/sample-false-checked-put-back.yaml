@@ -18,7 +18,7 @@ expect:
     - {rule: vouched-false, where: docs/tech/auth.md, message: "const TokenTTL = 7200"}
   forge:
     issues:
-      - {id: 1, title: "workline: the weekly sample of the docs vouched for", labels: [documentalist-step-0], comments: 1, comment-contains: "set back to step 0"}
+      - {id: 1, title: "workline: the weekly sample of every role's acts", labels: [documentalist-step-0], comments: 2, comment-contains: "set back to step 0"}
     merge-requests:
       - {id: 1, branch: workline/documentalist/sample-2026-w01, base: main}
   pushed:

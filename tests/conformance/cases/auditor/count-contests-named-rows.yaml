@@ -1,0 +1,28 @@
+case: auditor/count-contests-named-rows
+about: "A 👎 on a week's comment and a reply naming rows (`not 2, 3`) contest those rows only, the others agreed (ADR-0046). The count is one comment, written again each week from every week, never added to: the one there is rewritten whole, and a week written before rows were kept is said, not counted."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - id: 1
+        title: "workline: the weekly sample of the docs vouched for"
+        body: "Each week…"
+        labels: []
+        comments:
+          - "### 2025-W52\n\nOne doc, read before rows were kept.\n\n<!-- workline:sample:2025-W52 -->"
+          - "### 2026-W01\n\nThree acts.\n\n<!-- workline:rows [{\"n\":1,\"role\":\"documentalist\",\"kind\":\"checked\",\"ref\":\"docs/a.md\",\"verdict\":\"true\"},{\"n\":2,\"role\":\"reviewer\",\"kind\":\"dropped\",\"ref\":\"#30\",\"verdict\":\"false\"},{\"n\":3,\"role\":\"reviewer\",\"kind\":\"kept\",\"ref\":\"#30\",\"verdict\":\"true\"}] -->\n\n<!-- workline:sample:2026-W01 -->"
+          - {"body": "2026-W01: not 2, 3. The code handles both.", "author": "lead", "insider": true}
+          - "### The count, every week\n\nstale\n\n<!-- workline:sample:count -->"
+        reactions-by:
+          "2": [{emoji: "-1", author: lead, writer: true}]
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  status: pass
+  forge:
+    issues:
+      - {id: 1, title: "workline: the weekly sample of every role's acts", comments: 5, comment-lacks: "stale"}
+      - {id: 1, comment-contains: "| reviewer | finding dropped | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 0 |\n| reviewer | finding kept | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 0 |"}
+      - {id: 1, comment-contains: "| documentalist | `checked` moved | 3 | 1 | 0 | 0 | 2 | 1 | 0 | 2 |"}
+      - {id: 1, comment-contains: "| 2026-W01 | 3 of 3 | 1 | 👎 by lead: not 2, 3 |"}
+      - {id: 1, comment-contains: "Weeks written before their rows were kept, not counted: 2025-W52."}

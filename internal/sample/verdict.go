@@ -30,13 +30,14 @@ import (
 
 // reader reads the week's sample: the judge it asks, and what it spent.
 type reader struct {
-	o        Options
-	settings documentalist.Settings
-	auditor  *role.Role
-	spec     string
-	res      *Result
-	cap      int
-	spent    int
+	o         Options
+	settings  documentalist.Settings
+	auditor   *role.Role
+	judgeRole *role.Role // the panel's judges
+	spec      string
+	res       *Result
+	cap       int
+	spent     int
 }
 
 // over says why no more call is made: the week's tokens spent.
@@ -173,6 +174,32 @@ func (rd *reader) readAct(a *Act) {
 	}
 	a.Why = moved
 	settle(a, m, answer)
+	if a.Verdict != "false" {
+		return
+	}
+	a.Panel = rd.settleByPanel(a.key, kind, m.holds == "true", a.Proofs, m.panelText(), &a.Verdict, &a.Why)
+	// A true finding its judge dropped: for an issue, its defect found
+	// again on the branch when it is written (Apply).
+	if a.Role == reviewRole && a.Kind == "dropped" && a.Verdict == "false" && (a.Panel == nil || a.Panel.For == "auditor") {
+		path, _, _ := cutLine(a.Where)
+		for _, p := range a.Proofs {
+			if p.Path == path {
+				a.Defect = &Defect{Path: path, Quote: p.Quote, Lens: a.Lens, Title: a.Title}
+				break
+			}
+		}
+	}
+}
+
+// Defect is a true finding the reviewer's judge dropped: opened as an
+// issue while its cause is still on the branch (ADR-0046).
+type Defect struct {
+	Path  string `json:"path"`
+	Quote string `json:"quote"` // the code that fails, as the auditor quoted it
+	Lens  string `json:"lens"`
+	Title string `json:"title"`
+	Issue int    `json:"issue,omitempty"` // the issue it is opened as, or held by
+	Said  string `json:"said,omitempty"`  // what became of it
 }
 
 // apart is the judge to ask: of Claude, a model none of those that acted
@@ -297,6 +324,16 @@ func (m *material) names() string {
 		n = append(n, it.name)
 	}
 	return strings.Join(n, ", ")
+}
+
+// panelText is what a dispute's judges are given: the act and what it was
+// done on, the auditor's question left out.
+func (m *material) panelText() string {
+	t := m.task()
+	if i := strings.Index(t, "## The act"); i >= 0 {
+		return t[i:]
+	}
+	return t
 }
 
 // task is what the judge is given: the question, the act, and what it was

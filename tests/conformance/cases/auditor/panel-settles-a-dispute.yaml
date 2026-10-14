@@ -1,0 +1,27 @@
+case: auditor/panel-settles-a-dispute
+about: "A false verdict is two models disagreeing: three judges settle it (ADR-0046), each given the material and both readings as \"a\" and \"b\", never whose, and the majority stands. Here two of three choose the act's reading: the act stands, the 2–1 vote flagged, the week's row saying so."
+given:
+  repo: vouched
+  config:
+    roles:
+      documentalist:
+        settings:
+          sample:
+            panel: ['cmd:sh "$FIXTURES/agents/panel.sh" act', 'cmd:sh "$FIXTURES/agents/panel.sh" act', 'cmd:sh "$FIXTURES/agents/panel.sh" auditor']
+  forge:
+    issues:
+      - {"id": 20, "title": "Export rows", "body": "### Need\nExport the rows as CSV.\n\n### Verification\nA test exports two rows.\n\n### Validation\nTBD", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Moved #20 to ready'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"'], then: apply}
+expect:
+  status: pass
+  agent-calls: 6
+  findings:
+    - {rule: act-stands, where: "#20", message: "the product owner's `ready` on #20"}
+  no-findings:
+    - {rule: act-false, where: "#20"}
+  forge:
+    issues:
+      - {id: 21, title: "workline: the weekly sample of every role's acts", comments: 2, comment-contains: "| **true** | `cmd:sh \"$FIXTURES/agents/audit-acts.sh\"`, unknown (its record does not say the model that acted) | 2–1 for the act (flagged) |"}
+      - {id: 21, comment-contains: "**3 acts read of 3 drawn: 3 stand.**"}
+      - {id: 21, comment-contains: "<!-- workline:rows [{\"n\":1,\"role\":\"documentalist\""}

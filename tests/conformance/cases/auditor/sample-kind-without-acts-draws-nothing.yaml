@@ -21,7 +21,7 @@ expect:
     - {rule: sample-not-read, where: "#24"}
   forge:
     issues:
-      - {id: 25, title: "workline: the weekly sample of the docs vouched for", comments: 1, comment-contains: "| documentalist | `checked` moved | 11 | 2 |\n| product owner | `ready` | 1 | 1 |\n\n"}
+      - {id: 25, title: "workline: the weekly sample of every role's acts", comments: 2, comment-contains: "| documentalist | `checked` moved | 11 | 2 |\n| product owner | `ready` | 1 | 1 |\n\n"}
       - {id: 25, comment-contains: "- the committer's rewrites: no commit of the window carries `Workline-Role: committer`"}
       - {id: 25, comment-lacks: "`rename`"}
       - {id: 25, comment-lacks: "| reviewer |"}

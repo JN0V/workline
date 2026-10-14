@@ -29,6 +29,9 @@ type SampleSettings struct {
 	// together (in, cache included, and out); past it, the acts left are
 	// not read, said. 0: SampleTokens (ADR-0046).
 	AIMaxTokens int `json:"ai-max-tokens"`
+	// Panel: the three judges that settle a dispute (ADR-0046), as --ai
+	// values; unset, Claude's three models when the judge is Claude's.
+	Panel []string `json:"panel"`
 }
 
 // SampleTokens is the weekly sample's cap on tokens when the setting

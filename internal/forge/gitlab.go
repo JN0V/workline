@@ -717,6 +717,37 @@ func (g *gitlab) labelEvents(t Target) ([]LabelEvent, error) {
 	return events, nil
 }
 
+// Reactions reads the emoji awarded to an issue's note: thumbsup and
+// thumbsdown read as +1 and -1, as GitHub names them.
+func (g *gitlab) Reactions(issue int, note string) ([]Reaction, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("%s/notes/%s/award_emoji?per_page=100", path(Target{Kind: "issue", ID: issue}), note))
+	if err != nil {
+		return nil, err
+	}
+	found, err := pages[struct {
+		Name string `json:"name"`
+		User struct {
+			Username string `json:"username"`
+		} `json:"user"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	var all []Reaction
+	for _, a := range found {
+		r := Reaction{Emoji: map[string]string{"thumbsup": "+1", "thumbsdown": "-1"}[a.Name], Author: a.User.Username, Bot: botName.MatchString(a.User.Username)}
+		if r.Emoji == "" {
+			r.Emoji = a.Name
+		}
+		if _, err := g.insider(r.Author); err != nil {
+			return nil, err
+		}
+		r.Writer = g.members[r.Author] >= developer
+		all = append(all, r)
+	}
+	return all, nil
+}
+
 // React awards an emoji to an issue's note; GitLab answers 404 "Award
 // Emoji Name has already been taken" for one there already: done.
 func (g *gitlab) React(id int, note, emoji string) error {

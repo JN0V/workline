@@ -39,5 +39,5 @@ expect:
     - {rule: act-false, where: "#30 src/notes/extra.go:4"}
   forge:
     issues:
-      - {id: 21, title: "workline: the weekly sample of the docs vouched for", comment-contains: "| **unproven** |"}
+      - {id: 21, title: "workline: the weekly sample of every role's acts", comment-contains: "| **unproven** |"}
       - {id: 21, comment-contains: "- **#20**: said wrong, not proven, for a person:\n  - \"the reporter withdrew it\" is not in #20\n"}
