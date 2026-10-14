@@ -2,9 +2,11 @@ package documentalist
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // A fenced block a fix adds or changes is an example it writes; one moved
@@ -81,5 +83,37 @@ func TestNewLineOf(t *testing.T) {
 	at := newLineOf(old, placed(old, files[0]))
 	if at[[2]int{0, 1}] != 2 || at[[2]int{0, 2}] != 3 || at[[2]int{0, 3}] != 4 {
 		t.Errorf("new lines %v, want x at 2, y at 3, b's place at 4", at)
+	}
+}
+
+// The project's command runs on the fixed docs, the doc as its argument;
+// one that does not end in time has failed, and the run goes on.
+func TestCheckExamples(t *testing.T) {
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	repo := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repo, "a.md"), []byte("# A\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-qm", "docs: a"}} {
+		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	docs := map[string]string{"a.md": "# A\n\n```sh\nmake\n```\n"}
+	if r := checkExamples(repo, `grep -q make "$1"`, docs, []string{"a.md"}); !r.ok {
+		t.Errorf("a command passing on the fixed doc: %+v", r)
+	}
+	if r := checkExamples(repo, `echo "$1: no rule make"; exit 2`, docs, []string{"a.md"}); r.ok || r.out != "a.md: no rule make" {
+		t.Errorf("a command failing: %+v, want its output", r)
+	}
+	was := exampleTimeout
+	exampleTimeout = 500 * time.Millisecond
+	defer func() { exampleTimeout = was }()
+	if r := checkExamples(repo, "exec sleep 30", docs, nil); r.ok || !strings.Contains(r.out, "did not end within") {
+		t.Errorf("a command that does not end: %+v", r)
+	}
+	if out, _ := git(repo, "worktree", "list"); strings.Count(out, "\n") > 0 {
+		t.Errorf("checkouts left behind: %s", out)
 	}
 }

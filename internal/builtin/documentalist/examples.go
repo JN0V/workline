@@ -1,6 +1,7 @@
 package documentalist
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,20 +9,16 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// Code examples a fix writes (#121). The removal rule reads the words a
-// fix takes out; whether a fenced block it adds or changes compiles, or
-// runs right, no word says: an example rewritten on DomoticsCore compiled
-// and was wrong at run time, merged as one of "8 places" fixed. So a block
-// a fix writes is told apart from the places it fixes: said unverified, for
-// the person merging to read; or, where the project names the command
-// checking its examples (`examples.check`, as `derive` names its commands),
-// run on a checkout with the fixed docs written in: a failure withholds the
-// example, its output shown; a pass says the example was checked by it. No
-// model reads an example.
+// Code examples a fix writes, fenced blocks it adds or changes, are told
+// apart from the places it fixes (#121, roles/documentalist/docs/examples.md):
+// said unverified, or run through the command the project names
+// (`examples.check`) on a checkout with the fixed docs written in, a
+// failure withholding them. No model reads an example.
 
 // fence is a fenced code block of a doc: its lines, fences included, by the
 // doc's own numbering; its language, the info string's first word; its code.
@@ -255,14 +252,23 @@ func checkExamples(repo, command string, docs map[string]string, named []string)
 			return exampleRun{out: err.Error()}
 		}
 	}
-	cmd := exec.Command("sh", append([]string{"-c", command, "sh"}, named...)...)
-	cmd.Dir = dir
+	ctx, cancel := context.WithTimeout(context.Background(), exampleTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "sh", append([]string{"-c", command, "sh"}, named...)...)
+	cmd.Dir, cmd.WaitDelay = dir, 10*time.Second // a child left holding the output ends the wait
 	out, err := cmd.CombinedOutput()
 	if err == nil {
 		return exampleRun{ok: true}
 	}
+	if ctx.Err() != nil {
+		err = fmt.Errorf("did not end within %s", exampleTimeout)
+	}
 	return exampleRun{out: outputSaid(string(out), err)}
 }
+
+// exampleTimeout is how long the project's command may check a doc's
+// examples: past it, it failed, and the run goes on.
+var exampleTimeout = 10 * time.Minute
 
 // outputSaid is a command's output on one line, its last lines kept: what
 // a finding and a merge request's list can show.
@@ -359,8 +365,13 @@ func (j *judgedFixes) inExample(path string, from, count int) bool {
 		return false
 	}
 	_, head := header(j.after[path])
-	if count == 0 { // lines taken out after line from
-		return inFences(w, from+head) && inFences(w, from+head+1)
+	if count == 0 { // lines taken out after line from, inside one example
+		for _, f := range w {
+			if from+head >= f.from && from+head+1 <= f.to {
+				return true
+			}
+		}
+		return false
 	}
 	lines := strings.Split(body(j.after[path]), "\n")
 	for n := from; n < from+count; n++ {

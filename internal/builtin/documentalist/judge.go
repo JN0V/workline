@@ -602,7 +602,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		if len(written) == 0 {
 			return v
 		}
-		key := f.path + "\x00" + v.now
+		key := f.path + "\x00" + body(v.now) // the header, `checked` put back or not, changes no example
 		r, seen := ran[key]
 		if !seen {
 			docs := map[string]string{}
@@ -802,7 +802,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 		}
 		if w := examplesWritten(repo, tree.Files, p, tree.Docs[p], now); len(w) > 0 {
 			j.fix.examples[p] = w
-			j.fix.checked[p] = ran[p+"\x00"+now].ok
+			j.fix.checked[p] = ran[p+"\x00"+body(now)].ok
 		}
 	}
 	return j, nil
