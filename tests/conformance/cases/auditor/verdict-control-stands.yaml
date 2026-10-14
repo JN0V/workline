@@ -1,0 +1,46 @@
+case: auditor/verdict-control-stands
+about: "A right act stands: the judge's answer agrees with it. A finding is asked blind, and the engine compares: one its judge dropped stands when the auditor finds the code does not fail; one it kept, when the auditor finds the code fails. With every act standing, the sample passes (ADR-0046)."
+given:
+  repo: vouched
+  env: {AUDIT: agree}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && printf 'package notes\\n\\nconst Extra = 12\\n' > src/notes/extra.go && git add src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -m 'feat(notes): add an extra note' -m 'Workline-Role: committer\nWorkline-Model: claude:claude-haiku-4-5'"
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(notes): add an extra note (#30)' && git push -q origin main"
+    - "git branch -q -D feat && git reflog expire --expire=now --all && git gc -q --prune=now"
+  forge:
+    issues:
+      - {"id": 20, "title": "Export rows", "body": "### Need\nExport the rows as CSV.\n\n### Verification\nA test exports two rows.\n\n### Validation\nI export my rows and open them in a spreadsheet.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Moved #20 to ready'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests:
+      - id: 30
+        title: Add an extra note
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | correctness | `src/notes/extra.go:3` | Important: Extra is not a note's number |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "Extra shadows N12" at src/notes/extra.go:3 — the judge: no N12 is declared in the code shown (independence: model (claude-sonnet-5 → claude-opus-5)) |
+
+            <!-- workline:record reviewed=0123456789abcdef0123456789abcdef01234567 runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"']}
+expect:
+  status: pass
+  agent-calls: 6
+  findings:
+    - {rule: vouched-true, where: docs/notes/n02.md}
+    - {rule: act-stands, where: "#20", message: "the product owner's `ready` on #20, 2026-01-06, at normal: Moved #20 to ready — stands"}
+    - {rule: act-stands, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge kept on #30"}
+    - {rule: act-stands, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge dropped on #30"}
+    - {rule: act-stands, message: "a commit the committer rewrote"}
+  no-findings:
+    - {rule: act-false, where: "#20"}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3"}

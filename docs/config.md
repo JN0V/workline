@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 1dd6543c
+checked: 07a772ed
 verified: agent:claude-code
 ---
 # Configuration
@@ -48,7 +48,7 @@ roles:
       whole-chars: 25000                           # sources judged whole up to this (25000 at most); more docs vouched, more tokens
       versions: {pattern: '\d{2}\.\d+', files: [pyproject.toml]}   # calendar versions, and where the version is said
       language: fr                                 # the docs' language, for the removal rule; unset, read from each doc
-      sample: {judge: "claude:opus", at-least: model, after: v1.4.0}   # who reads the weekly sample, the least independence, and nothing vouched for before your tag
+      sample: {judge: "claude:opus", at-least: model, after: v1.4.0, ai-max-tokens: 400000}   # who reads the weekly sample, the least independence, nothing vouched for before your tag, the week's tokens
   reviewer:
     settings:
       ai-findings: {correctness: block}   # a verified important finding blocks for these lenses; the others warn (one value, warn or block, sets every lens)

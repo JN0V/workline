@@ -1,10 +1,11 @@
 # Auditor — where it stands (2026-10-14)
 
-**In one line:** reads, each week, one in ten of the docs the
-documentalist vouched for (`workline sample`); tried on a GitLab sandbox,
-its first scheduled run on workline on 2026-10-05. It audits the docs
-only; the product owner's acts are drawn for a person, with no agent.
-Beta.
+**In one line:** re-checks, each week, one in ten of every role's acts,
+per kind (`workline sample`): the docs the documentalist vouched for, the
+product owner's acts, the reviewer's judged findings, the committer's
+rewrites. The docs' sample tried on a GitLab sandbox, its first scheduled
+run on workline on 2026-10-05; the other acts' verdicts tried with no
+real agent yet. Beta.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
@@ -42,14 +43,28 @@ hold:
   `job-summary-of-a-sample`.
 - **The product owner's acts drawn for a person**: product owner's
   `sample-*`.
+- **Every role's acts drawn**, one in ten per role and kind, from the
+  records each keeps, listed for a person
+  ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
+  `sample-*`; a `checked` naming a commit a squash left off the branch,
+  read from its merge request's head: documentalist's `sample-checked-*`.
+- **Each act re-checked**, one call an act, its kind's question
+  (`kinds/*.md`), a finding blind, never on a model that acted, false
+  only with a quote found again, within the week's tokens
+  ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
+  `verdict-*`.
 
 ## Missing
 
-- **Every role's acts re-checked**
-  ([#205](https://github.com/JN0V/workline/issues/205)): being built,
-  as [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md).
+- **The records ADR-0046 completes**
+  ([#205](https://github.com/JN0V/workline/issues/205)): the product
+  owner's `at`, `model` and `body`, so its act is read on the text and
+  the code it read; the reviewer's line per finding judged, every run's;
+  the committer's trailers, so a rewrite is drawn at all
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
 - **Its verdicts kept and counted**
-  ([#276](https://github.com/JN0V/workline/issues/276)): built with
+  ([#276](https://github.com/JN0V/workline/issues/276)): the panel on a
+  dispute, the maintainer's agreement, the count; built with
   [#205](https://github.com/JN0V/workline/issues/205) (decided
   2026-10-14).
 - **The weeks, read**

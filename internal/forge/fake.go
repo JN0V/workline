@@ -99,6 +99,11 @@ type FakeItem struct {
 	Pushes      []FakePush `json:"pushes,omitempty"`
 	Clean       bool       `json:"clean,omitempty"`
 	Merged      bool       `json:"merged,omitempty"`
+	// MergedAt: when a merge request was merged, RFC 3339 or YYYY-MM-DD;
+	// MergedAs, the commit it became, a revision of the repository (main,
+	// main~1) — what MergedSince lists.
+	MergedAt string `json:"merged-at,omitempty"`
+	MergedAs string `json:"merged-as,omitempty"`
 	// Closing: who closed an issue, as Closing reads it.
 	Closing *LabelEvent `json:"closing,omitempty"`
 }

@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 98de6b44
+checked: 5cb449a5
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -112,10 +112,11 @@ Before your release tool tags; a non-zero exit holds it.
 
 ### Weekly sample
 
-`workline sample --out sample.json` (agent, writes nothing; `--week
-2026-W40`), then `workline sample --apply sample.json --forge gitlab`
-(token, no agent), which also draws the product owner's acts of the week
-from the issues, when turned on
+`workline sample --forge gitlab --out sample.json` (agent, reads the
+forge, writes nothing; `--week 2026-W40`): every role's acts drawn
+([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Then `workline sample --apply
+sample.json --forge gitlab` (token, no agent), which also draws the
+product owner's acts onto their own issue, when turned on
 ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
 
 ### Import
@@ -138,7 +139,7 @@ code scanning. The `gate:<name>` steps of a line, or `workline gate
 | Job | Clone | Variables | Tools |
 |---|---|---|---|
 | judging (`--no-apply`, `sample --out`) | the whole history (`GIT_DEPTH: 0`, `fetch-depth: 0`), the base commit fetched | the agent's credentials, whichever agent you chose (Claude Code: `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, or `ANTHROPIC_API_KEY`); none is fine: `--ai none` | the engine, gitleaks, your agent's CLI (Claude Code: `claude`, from npm) |
-| judging gardening, the product owner, or a merge request with the reviewer | as above | a token that reads issues, merge requests and their notes: `GITLAB_TOKEN` with `read_api` (`CI_JOB_TOKEN` reads no issue); on GitHub `GH_TOKEN`, `issues: read`, `pull-requests: read` | as above |
+| judging gardening, the product owner, a merge request with the reviewer, or the sample | as above | a token that reads issues, merge requests and their notes: `GITLAB_TOKEN` with `read_api` (`CI_JOB_TOKEN` reads no issue); on GitHub `GH_TOKEN`, `issues: read`, `pull-requests: read` | as above |
 | applying (`apply`, `sample --apply`) | a branch, not a detached HEAD, for gardening | `GITLAB_TOKEN` (below); a git identity (`user.name`, `user.email`); `origin` with the token, to push | the engine |
 
 The image `ghcr.io/jn0v/workline:<version>` holds the engine, gitleaks,
@@ -171,8 +172,8 @@ requests from unprotected branches must apply.
 | 64 | the command was misused | fix the job |
 
 An unknown option exits 64 too, never 2. `workline gate` exits 0 or 1;
-`workline sample` exits 2 when a doc is left for a person and 3 when the
-judge cannot be reached; `workline doctor`, 1 on an error only. The
+`workline sample` exits 2 when a doc or an act is left for a person and 3
+when the judge or the forge cannot be reached; `workline doctor`, 1 on an error only. The
 templates keep a job's status and still apply what passed, and the
 comment of a reviewer that blocks (`artifacts: when: always`,
 `if: always()`, `when: always`).

@@ -1,0 +1,27 @@
+case: auditor/sample-draws-the-same-on-a-rerun
+about: "Each act is ranked by a digest of the week and the act (ADR-0046): run again, the sample of a week draws the same acts, though the records gained acts of another week since."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 21, "title": "Issue 21", "body": "Issue 21.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-07', line: 'Did ready on #21'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 22, "title": "Issue 22", "body": "Issue 22.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-08', line: 'Did ready on #22'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 24, "title": "Issue 24", "body": "Issue 24.", "labels": [], "comments": []}
+run:
+  sample: [--week, 2026-W02, --judge, none]
+  then: again
+  between:
+    issues:
+      - {"id": 24, "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-13', line: 'Did ready on #24'}\n- {act: ready, level: normal, day: '2026-01-14', line: 'Did ready on #24 again'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+expect:
+  status: human
+  agent-calls: 0
+  findings:
+    - {rule: sample-acts, message: "3 acts, `ready`, by the product owner from 2026-01-05 to 2026-01-11; 1 drawn"}
+    - {rule: sample-not-read, where: "#21", message: "the product owner's `ready` on #21, 2026-01-07"}
+  no-findings:
+    - {rule: sample-not-read, where: "#20"}
+    - {rule: sample-not-read, where: "#22"}
+    - {rule: sample-not-read, where: "#24"}
+    - {rule: sample-acts, message: "5 acts"}
