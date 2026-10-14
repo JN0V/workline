@@ -2,7 +2,7 @@
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
 checked: aacddb36
 verified: agent:claude-code
-judged: 71c5f05
+judged: 83cecff
 ---
 # The commands, in detail
 
