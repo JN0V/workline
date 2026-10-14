@@ -1,8 +1,8 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: d9922bf7
+checked: 5cb449a5
 judged: f70db89
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Documentalist
 
@@ -87,7 +87,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
 | `judge-in-parts` | `true` | judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)); `false` for a project that will not pay for large docs: they go to a person |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: what bounds a night's tokens in parts |
-| `sample` | unset | `{judge, at-least, after}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
+| `sample` | unset | `{judge, at-least, after, ai-max-tokens}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
 ## Outputs
 
@@ -120,7 +120,8 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   `parts-max-per-run` (a night's parts), `max-open-merge-requests`;
   `judge-in-parts: false` spends nothing on docs too large.
 - The weekly sample reads one doc in ten vouched for, about 8k to 12k
-  tokens a doc. A push costs nothing.
+  tokens a doc, within its cap (`sample.ai-max-tokens`). A push costs
+  nothing.
 
 ## Without AI
 
