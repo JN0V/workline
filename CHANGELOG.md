@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.28.0](https://github.com/JN0V/workline/compare/v0.27.0...v0.28.0) (2026-10-14)
+
+
+### Features
+
+* **documentalist:** judge docs too large in parts by default ([#381](https://github.com/JN0V/workline/issues/381)) ([7705a9b](https://github.com/JN0V/workline/commit/7705a9b767f3ec454266c3e118a1dde3c3c0951b))
+* **documentalist:** say the code examples a fix writes unverified ([#373](https://github.com/JN0V/workline/issues/373)) ([02bdf67](https://github.com/JN0V/workline/commit/02bdf67087934ca356de3b8b4b33761c33e76e66))
+
+
+### Bug Fixes
+
+* **committer:** allow the addresses a project's forge commits with ([#366](https://github.com/JN0V/workline/issues/366)) ([e640201](https://github.com/JN0V/workline/commit/e640201d8532519008ae415d3eba9de5f7f702e6))
+* **documentalist:** ask nothing again while its merge request waits ([#374](https://github.com/JN0V/workline/issues/374)) ([7f62608](https://github.com/JN0V/workline/commit/7f6260822e983b049e0fb24e6989593db8cbdc25))
+* **documentalist:** read a count whose thousands are spaced ([#363](https://github.com/JN0V/workline/issues/363)) ([ece0a9d](https://github.com/JN0V/workline/commit/ece0a9d7b814a6a5ead8b2315e4ea6ff49f434fe))
+* **engine:** fence a diff in a comment past the backticks it holds ([#369](https://github.com/JN0V/workline/issues/369)) ([9e9a713](https://github.com/JN0V/workline/commit/9e9a713e0508a130c0771541d0db3104b9ec1222))
+* **engine:** keep a final block after a refusal red on schedule ([#365](https://github.com/JN0V/workline/issues/365)) ([ee20ad4](https://github.com/JN0V/workline/commit/ee20ad45f41a5c0cf3fddc2b4379f6742b227265))
+* **merge:** read a cancelled check run as no result ([#378](https://github.com/JN0V/workline/issues/378)) ([bffd69e](https://github.com/JN0V/workline/commit/bffd69ed0683648d122f78e4ee2642249c71bfcd))
+* read a person's facets from the folder config.yaml is read from ([#372](https://github.com/JN0V/workline/issues/372)) ([f107cd8](https://github.com/JN0V/workline/commit/f107cd8fadbcab701626b2a58e5607066b125615))
+* **reviewer:** a removed guard's defect further down is the change's ([#371](https://github.com/JN0V/workline/issues/371)) ([df3b653](https://github.com/JN0V/workline/commit/df3b653ba075fb40157f1f3eec69c19a40515220))
+* **reviewer:** read a moved file as moved, its kept lines as context ([#367](https://github.com/JN0V/workline/issues/367)) ([9809790](https://github.com/JN0V/workline/commit/980979047088fbaee6389c7acae10c3be066c9dc))
+
 ## [0.27.0](https://github.com/JN0V/workline/compare/v0.26.1...v0.27.0) (2026-10-13)
 
 
