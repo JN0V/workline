@@ -1,0 +1,6 @@
+# docs/usage.md of the case gains a second code block beside its first:
+# the diff holds lines of three backticks, added and as context, and ends
+# on a blank line of context.
+- patch:
+    file: docs/usage.md
+    content: "# Usage\n\nRun the tool:\n\n```sh\ntool --run\n```\n\nOr quietly:\n\n```sh\ntool --run --quiet\n```\n\nIt prints a line.\nIt stops.\n\n## Options\n\nNone yet.\n"

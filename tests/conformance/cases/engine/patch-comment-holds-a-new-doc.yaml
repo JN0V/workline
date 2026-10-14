@@ -1,0 +1,21 @@
+case: engine/patch-comment-holds-a-new-doc
+about: 'A patch that cannot be pushed goes in a comment, to be applied whole with `git apply` (#145). A doc it creates, as a split or a condense does, is in the diff too, as a new file, beside the doc it changes.'
+given:
+  repo: basic
+  setup:
+    - "mkdir docs && printf '# Usage\\n\\nRun the tool.\\nIt prints a line.\\nIt stops.\\n' > docs/usage.md && git add docs && git commit -qm 'docs: say how to run the tool'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && echo 'func quiet() {}' >> main.go && git commit -qam 'feat: run quietly' && git checkout -q --detach"
+  forge: {merge-requests: [{id: 1, branch: feature, fork: true, labels: [], comments: []}]}
+run: {role: fixes-a-doc, event: merge-request, target: {merge-request: 1}, ai: "fake:doc-split-off-a-new-doc", push-to-merge-request: true}
+expect:
+  status: pass
+  findings: [{rule: patch-as-comment, message: "fork"}]
+  forge:
+    merge-requests:
+      - id: 1
+        comments: 1
+        comment-contains:
+          - "+See [running quietly](quiet.md).\n"
+          - "diff --git a/docs/quiet.md b/docs/quiet.md\nnew file mode 100644\n"
+          - "--- /dev/null\n+++ b/docs/quiet.md\n@@ -0,0 +1,3 @@\n+# Running quietly\n+\n+Add --quiet: it prints nothing.\n```"
