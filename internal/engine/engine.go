@@ -214,6 +214,91 @@ func proposedTask(runDir string) string {
 	return slugify(mr.Key)
 }
 
+// writeWaiting writes in/waiting.yaml: for each of the role's tasks
+// waiting for review, the files its change touches — an open merge
+// request's, from where its branch left this commit to its tip; one an
+// earlier round of this run proposed, the files its patches name. A role
+// holds back what they change (ADR-0013, amended). A branch that cannot
+// be read leaves its task out, said: the role knows it by name only.
+func writeWaiting(repo, runDir, prefix string, open []string, local bool, res *Result) error {
+	waiting := map[string][]string{}
+	for _, b := range open {
+		files, err := branchFiles(repo, b, local)
+		if err != nil {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "merge-request-unread", Level: "warn", Where: b,
+				Message: "what this merge request changes could not be read (" + err.Error() + "): the role knows it by its task only, and may judge again a doc it holds"})
+			continue
+		}
+		waiting[strings.TrimPrefix(b, prefix)] = files
+	}
+	for _, dir := range res.Pending {
+		task := proposedTask(dir)
+		if task == "" {
+			continue
+		}
+		intents, err := intent.Read(filepath.Join(dir, "out", "intentions.yaml"))
+		if err != nil {
+			return err
+		}
+		files := waiting[task]
+		if files == nil {
+			files = []string{}
+		}
+		for _, in := range intents {
+			if in.Kind != "patch" {
+				continue
+			}
+			for _, p := range intent.PatchFiles(in.Value) {
+				if !slices.Contains(files, p) {
+					files = append(files, p)
+				}
+			}
+		}
+		sort.Strings(files)
+		waiting[task] = files
+	}
+	if len(waiting) == 0 {
+		return nil
+	}
+	data, err := yaml.Marshal(waiting)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(runDir, "in", "waiting.yaml"), data, 0o644)
+}
+
+// branchFiles lists the files a branch changes from where it left the
+// checked-out commit: its tip fetched from origin, or the clone's own
+// branch for a forge kept there. None changed is an empty list, never nil.
+func branchFiles(repo, branch string, local bool) ([]string, error) {
+	tip := "refs/heads/" + branch
+	if !local {
+		if _, err := git(repo, nil, "fetch", "-q", "origin", "refs/heads/"+branch); err != nil {
+			return nil, err
+		}
+		tip = "FETCH_HEAD"
+	}
+	tip, err := git(repo, nil, "rev-parse", "--verify", tip+"^{commit}")
+	if err != nil {
+		return nil, err
+	}
+	from, err := git(repo, nil, "merge-base", "HEAD", tip)
+	if err != nil {
+		return nil, err
+	}
+	out, err := git(repo, nil, "diff", "--name-only", "--no-renames", "-z", from, tip)
+	if err != nil {
+		return nil, err
+	}
+	files := []string{}
+	for _, p := range strings.Split(out, "\x00") {
+		if p != "" {
+			files = append(files, p)
+		}
+	}
+	return files, nil
+}
+
 // changedSomething says whether a round applied what the next one would
 // see: a note changes nothing, and going round again would ask the same.
 func changedSomething(applied []string) bool {
@@ -314,6 +399,9 @@ func run(o Options, res *Result) error {
 			if !slices.Contains(tasks, t) {
 				tasks, n = append(tasks, t), n+1
 			}
+		}
+		if err := writeWaiting(o.Repo, runDir, branchPrefix(r.Name), open, forge.KeepsBranches(f), res); err != nil {
+			return err
 		}
 		env = append(env, fmt.Sprintf("WORKLINE_OPEN_MERGE_REQUESTS=%d", n),
 			"WORKLINE_OPEN_MERGE_REQUEST_TASKS="+strings.Join(tasks, " "),
@@ -1408,18 +1496,7 @@ func ProposeBranch(f forge.Forge, repo, roleName, key, title, body, trailers str
 }
 
 // slugify keeps a branch name to lowercase letters, digits and dashes.
-func slugify(s string) string {
-	var b strings.Builder
-	for _, r := range strings.ToLower(s) {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
-			b.WriteRune(r)
-		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
-			b.WriteRune('-')
-		}
-	}
-	return strings.Trim(b.String(), "-")
-}
+func slugify(s string) string { return intent.Slug(s) }
 
 // Resume applies what an interrupted run had not applied yet, from what that
 // run recorded. The agent is not called again, and nothing is applied if the
