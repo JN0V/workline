@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 048bdfa2
+checked: 670fd314
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -55,6 +55,34 @@ else whether the quoted code fails:
   ([#229](https://github.com/JN0V/workline/issues/229)); a refused one is
   dropped alone, the rest still shown.
 
+## When the judge reads
+
+[ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md),
+[#362](https://github.com/JN0V/workline/issues/362): off until measured
+(`judge-read-rounds: 0`); a project may turn it on (`2`).
+
+- **It may ask, instead of a verdict**: a file's lines, a definition by
+  its name (found as its material's functions are), or the lines naming
+  a word (`grep`).
+- **The engine reads them** from git at the head reviewed: files the
+  repository tracks, never the working tree nor a path outside. A read
+  refused is said to the judge.
+- **Caps**: `judge-read-rounds` rounds, `judge-read-lines-max` lines a
+  judge, all rounds together; past them, cut, the rest named. A search
+  past 50 places is not read. Then the judge is asked again; with no read
+  left, it must answer.
+- **A no quotes** the lines that refute the finding. Found again at the
+  head, in what the judge was shown or read, the finding is dropped, the
+  place said. Otherwise it is shown not verified (`judge-no-unquoted`).
+- **Unsure**: shown not verified, never dropped, never blocking
+  (`judge-unsure`). So is a judge still asking to read past its caps, or
+  one whose reads `ai-max-tokens` stopped.
+- **First rounds first**: every judge answers once before any read is
+  served.
+- **Said**: what it read, beside its answer; each round in
+  `out/review.json` (`reads`), its calls in `calls`.
+- **The code's judges only**: a spec's judge reads nothing more.
+
 ## 8. The verdict, and what goes wrong
 
 - The rules block (the long comment warns).
@@ -105,8 +133,11 @@ each finding that blocked, its cause quoted, beside the commits reviewed
 
 ## The budget
 
-- **`ai-max-tokens`**, 200000 a run: once spent, nothing more is asked,
-  said (`ai-max-tokens`); the call that crosses it is paid.
+- **`ai-max-tokens`**, 300000 a run: once spent, nothing more is asked,
+  said (`ai-max-tokens`); the call that crosses it is paid. Raised from
+  200000 so a large review is judged whole when its judges read
+  ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#the-token-budget));
+  a run spends what it uses.
 - **Not whole**: a lens not asked, or a finding not judged
   (`review-not-whole`), leaves the commits unrecorded, reviewed again next
   run.

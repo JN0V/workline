@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 048bdfa2
+checked: 670fd314
 verified: agent:claude-code
 ---
 # Configuration
@@ -53,6 +53,7 @@ roles:
     settings:
       ai-findings: {correctness: block}   # a verified important finding blocks for these lenses; the others warn (one value, warn or block, sets every lens)
       judge-lines-max: 300                # lines of code a judge reads: the cause's function, then those it reaches, the rest named (200; 0: 31 lines around the cause)
+      judge-read-rounds: 2                # a judge may ask for more code, read at the commit, twice before it answers (0, off until measured)
       diff-alone: true                    # one call more a run, given the change only, not the files nor the messages (off by default, measured)
       spec-rounds: 3                      # on the forge: reviews of a spec in a row with a finding open, then a question to a person (5)
 routing:                    # replaces the shipped line, event by event

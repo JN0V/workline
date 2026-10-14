@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 048bdfa2
+checked: 670fd314
 verified: agent:claude-code
 ---
 # Reviewer
@@ -64,7 +64,7 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   (`needs-triage`) for each verified finding outside the change.
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request), one judge call for each important
-  finding; a spec, one call. Capped at 200000 tokens a run
+  finding; a spec, one call. Capped at 300000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:
   [research](../../docs/research/code-review.md#the-reviewers-cost-measured).
 - **The run when a merge request becomes ready** costs more: every lens
@@ -162,9 +162,11 @@ What a run may read and write, and spend:
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
 | `code-lines-max` | `600` | lines of changed files a lens is given whole; the others by their hunks |
 | `judge-lines-max` | `200` | lines of code a judge is shown, the rest named; `0`: the 31 lines around the cause |
+| `judge-read-rounds` | `0` | rounds of reads a judge may ask before it answers ([when the judge reads](docs/judge.md#when-the-judge-reads)); `0`: none, until measured |
+| `judge-read-lines-max` | `400` | lines read for one judge, all its rounds; the rest named |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown |
 | `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) |
 | `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) |
-| `ai-max-tokens` | `200000` | tokens a run may spend, all calls; the call crossing it is paid; `0`: no cap |
+| `ai-max-tokens` | `300000` | tokens a run may spend, all calls; the call crossing it is paid; `0`: no cap |
 | `spec-lines-max` | `300` | lines of a spec given; the rest cut, said |
 
