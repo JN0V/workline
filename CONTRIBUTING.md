@@ -1,7 +1,7 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
 checked: f324ac6
-judged: f20756e
+judged: b326f81
 verified: agent:documentalist
 -->
 # Contributing
