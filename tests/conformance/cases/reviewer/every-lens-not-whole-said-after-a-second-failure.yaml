@@ -1,0 +1,20 @@
+case: reviewer/every-lens-not-whole-said-after-a-second-failure
+about: "Every lens asked again after a failed run on ready (`retried=once`), and failing again (#359): the record says every lens read the change, so the next pushes get one lens each, and the comment says plainly that the change was not reviewed whole by every lens."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Not every lens answered.\n\n<!-- workline:record reviewed= runs=0 retried=once -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-unreadable"}
+expect:
+  status: pass
+  findings:
+    - {rule: lens-failed}
+    - {rule: every-lens-not-whole, level: warn, message: "the change was not reviewed whole by every lens"}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| warns | every-lens-not-whole |", " runs=0 read=all -->"], comment-lacks: "retried"}
