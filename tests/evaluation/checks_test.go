@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/role"
 )
 
 func TestChecks(t *testing.T) {
@@ -360,5 +362,88 @@ func TestReviewerWithFakeAgent(t *testing.T) {
 	}
 	if r.judgedBy != "fake-judge (provider)" {
 		t.Errorf("judged by %q", r.judgedBy)
+	}
+}
+
+// TestJudgeReplaySet reads the judge's replay set with no agent: each of
+// the 40 verdicts measured holds its question, its answer then and its
+// truth, and scoring what the judge said then gives back the measure's
+// numbers (docs/research/judge-measured.md).
+func TestJudgeReplaySet(t *testing.T) {
+	items, err := readReplay(replayDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 40 {
+		t.Fatalf("%d items; the measure drew 40", len(items))
+	}
+	lenses := []string{"correctness", "edge-cases", "tests", "intent", "claims"}
+	then := make([]replayAnswer, len(items))
+	var matters []int
+	for i, it := range items {
+		switch {
+		case it.Question == "" || it.Material == "":
+			t.Errorf("%s: a question and its material are needed", it.Name)
+		case !strings.Contains(it.Material, it.Title):
+			t.Errorf("%s: the material does not hold the finding %q", it.Name, it.Title)
+		case it.Said != "yes" && it.Said != "no", it.Then.Yes == nil, *it.Then.Yes != (it.Said == "yes"), it.Then.Why == "":
+			t.Errorf("%s: said %q, its answer.yaml %+v", it.Name, it.Said, it.Then)
+		case it.Origin != "artifact" && it.Origin != "rebuilt":
+			t.Errorf("%s: origin %q, artifact or rebuilt", it.Name, it.Origin)
+		case !slices.Contains(lenses, it.Lens), len(it.Commit) != 40, !strings.Contains(it.Where, ":"):
+			t.Errorf("%s: lens %q, commit %q, where %q", it.Name, it.Lens, it.Commit, it.Where)
+		case (it.SettledBy == "panel") != (it.Matters != nil), it.SettledBy != "panel" && it.SettledBy != "agreement", it.Evidence == "":
+			t.Errorf("%s: settled by %q, matters %v, evidence %q", it.Name, it.SettledBy, it.Matters, it.Evidence)
+		}
+		then[i] = replayAnswer{Said: it.Said, Why: it.Then.Why}
+		if it.Matters != nil && *it.Matters && it.Truth {
+			matters = append(matters, it.PR)
+		}
+	}
+	want := replayTally{Items: 40, Right: 31, TrueKept: 19, TrueDropped: 8, True: 27, FalseDropped: 12, FalseKept: 1, False: 13,
+		DroppedThen: 8, Yes: 20, YesRight: 19, SameAsThen: 40}
+	if got := tallyReplay(items, then); got != want {
+		t.Errorf("what the judge said then, against the truth:\n got %s\nwant %s", got, want)
+	}
+	if !slices.Equal(matters, []int{238, 280}) {
+		t.Errorf("true findings dropped that matter: %v, the measure's are #238 and #280", matters)
+	}
+}
+
+// TestJudgeReplayWithFakeJudge asks the 40 questions as TestJudgeReplay
+// does, of a fake judge (a cmd:) saying no to all: each false finding a
+// point, every true one dropped, its tokens counted. No real agent.
+func TestJudgeReplayWithFakeJudge(t *testing.T) {
+	items, err := readReplay(replayDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	judgeRole, err := role.Load("../../roles", "judge")
+	if err != nil {
+		t.Fatal(err)
+	}
+	no := `cmd:cat > /dev/null; printf 'model: fake-judge\ntokens-in: 1000\ntokens-out: 10\n' > "$WORKLINE_CALL"; echo '- note: "no: the code handles it"'`
+	now := make([]replayAnswer, len(items))
+	for i, it := range items {
+		now[i] = askReplay(no, judgeRole, it)
+	}
+	want := replayTally{Items: 40, Right: 13, TrueDropped: 27, True: 27, FalseDropped: 13, False: 13, DroppedThen: 8,
+		SameAsThen: 20, TokensIn: 40000, TokensOut: 400}
+	if got := tallyReplay(items, now); got != want {
+		t.Errorf("a judge saying no to all:\n got %s\nwant %s", got, want)
+	}
+	var truth replayItem
+	for _, it := range items {
+		if it.Truth {
+			truth = it
+			break
+		}
+	}
+	if a := askReplay(no, judgeRole, truth); a.right(truth) || replayFailed(truth, a) != "said no ("+truth.Said+" then) to a true finding: the code handles it" {
+		t.Errorf("a no to a true finding loses its point, said: %q", replayFailed(truth, a))
+	}
+	a := askReplay(`cmd:cat > /dev/null; echo '- note: "maybe"'`, judgeRole, truth)
+	if a.Said != "" || a.right(truth) || !strings.HasPrefix(replayFailed(truth, a), "no answer: ") {
+		t.Errorf("neither yes nor no is no answer, and no point: %+v", a)
 	}
 }

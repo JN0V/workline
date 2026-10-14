@@ -12,7 +12,9 @@
 // WORKLINE_JUDGE_AT_LEAST (provider, model or context) sets a floor.
 // For the reviewer's cases, WORKLINE_EVAL_LENSES names the lenses asked
 // (`diff-alone`, the facet alone) and WORKLINE_EVAL_REVIEWER sets its
-// settings, a YAML map (`{ai-max-tokens: 12000}`).
+// settings, a YAML map (`{ai-max-tokens: 12000}`). TestJudgeReplay asks
+// the reviewer's judge its 40 measured questions again
+// (judge_replay_test.go), WORKLINE_EVAL naming the judge.
 package evaluation
 
 import (
@@ -184,20 +186,28 @@ func TestEvaluation(t *testing.T) {
 			line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, os.Getenv("WORKLINE_EVAL"), models, efforts,
 				c.Case, score, fmt.Sprint(r.res.AgentCalls), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()),
 				strings.Join(append(failed, skipped...), "; "), r.judgedBy, r.measure}, "\t")
-			record.Lock()
-			defer record.Unlock()
-			results := "results.tsv"
-			if f := os.Getenv("WORKLINE_EVAL_RESULTS"); f != "" {
-				results = f // a scheduled run, from another checkout, keeps the same history
-			}
-			out, err := os.OpenFile(results, os.O_APPEND|os.O_WRONLY, 0o644)
-			if err != nil {
+			if err := appendResult(line); err != nil {
 				t.Fatal(err)
 			}
-			defer out.Close()
-			fmt.Fprintln(out, line)
 		})
 	}
+}
+
+// appendResult appends a run's line to results.tsv, one writer at a time.
+func appendResult(line string) error {
+	record.Lock()
+	defer record.Unlock()
+	results := "results.tsv"
+	if f := os.Getenv("WORKLINE_EVAL_RESULTS"); f != "" {
+		results = f // a scheduled run, from another checkout, keeps the same history
+	}
+	out, err := os.OpenFile(results, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = fmt.Fprintln(out, line)
+	return err
 }
 
 // readCase reads a case file strictly, as the conformance suite does: a key
