@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/forge/forge.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # Splitting and renaming
@@ -70,6 +70,6 @@ shows it as a person's. No quote; the state must read.
 
 Split and rename on an issue opened by someone without write access are
 proposed, not done (`reporter-outside`), as moving it to ready — to the
-project, in the report: the text of a need is the reporter's to agree to
+project, on the issue: the text of a need is the reporter's to agree to
 ([The conversation with the reporter](conversation.md)), how the backlog cuts and names it
 the project's. The label `workline:accepted` lifts all three.

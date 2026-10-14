@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -33,7 +33,9 @@ what it can and asks for the rest:
   which stays as it is; one there but empty — an issue form's field left
   `_No response_` — is filled in place (an issue form writes its fields as
   `### ` headings, read as `## ` ones). A section with text — a person's,
-  or one the role wrote before — is never rewritten (`section-kept`).
+  or one the role wrote before — is never rewritten (`section-kept`), but
+  the role's own to answer the reviewer or a person's comment
+  ([A spec read before ready](spec-review.md), [A person's answers](answers.md)).
   **In the reader's order** (the table's, `work.Headings`): the person's part — Need,
   an `example` (`## Example`) or a bug's `steps` (`## Steps to
   reproduce`), Validation — above a thematic break `---`; the builder's —
@@ -44,8 +46,7 @@ what it can and asks for the rest:
   builder's and none is between them; a break alone after the person's
   part, as a footer, is that break. The example and the steps are never
   required. Need, Validation, the example and the steps are drafts: each
-  follows a line saying so, holding a
-  hidden marker (`<!-- workline:draft -->`), and the issue gets the label
+  follows a hidden marker alone (`<!-- workline:draft -->`), and the issue gets the label
   `workline:draft`. **A person accepts them with one label,
   `workline:accepted`** — on the issue, or on many at once from the list of
   issues; the engine creates that label with the first draft, so it is
@@ -58,8 +59,7 @@ what it can and asks for the rest:
   digest per section), the mark left in it or not (`backlog.IsDraft`). A
   draft an earlier engine wrote — a visible line, "*Draft by the product
   owner: …*", around the marker — with no digest kept is told by its
-  marker alone; rewriting its own draft, the role writes the marker
-  alone. Scope names its files or folders (`sources`, 1 to 5, in
+  marker alone; the role now writes the marker alone. Scope names its files or folders (`sources`, 1 to 5, in
   the commit, as for naming its sources), which the issue's state gets when
   it has none; given none, the engine takes the paths the Scope's text
   names that the commit holds (`backlog.PathsIn`). A Scope naming none, or
@@ -81,8 +81,8 @@ what it can and asks for the rest:
   person's comment on its proposal; edited since, it is theirs. The
   engine's lines there — where it comes from ("Opened from …", "Found by
   …"), its hidden markers — are kept after the new text, in their order;
-  the text before is in the forge's edit history. Over 100 words before
-  its first fold, given on an issue a person opened or edited, or in a
+  the text before is in the forge's edit history. Over 100 words outside
+  its folds and fenced code, given on an issue a person opened or edited, or in a
   text proposed to an outsider, it is left out, the rest of the refine
   kept (`description-kept`, said). It follows the refine's mode and
   level as the drafts do: at `cautious`, proposed. The issue's one line
@@ -106,7 +106,7 @@ what it can and asks for the rest:
   `workline:ready` and loses `workline:to-refine`, as `workline item ready`
   does, and loses `workline:draft` and `workline:accepted`. An issue opened
   by someone without write access to the project is theirs: moving it to
-  ready is proposed in the report, never done (`reporter-outside`) —
+  ready is proposed on the issue, never done (`reporter-outside`) —
   unless a person of the project accepted it with the label. Who is of the
   project: on GitHub, the issue's author association (owner, member,
   collaborator); on GitLab, a member with the Planner role or above, read
@@ -164,7 +164,8 @@ the footer left last as it was.
 ```
 
 The files, or folders, must be in the commit the run is on (1 to 5;
-`sources-unknown` otherwise), a quote from a file found in one of them. A
+`sources-unknown` otherwise), and a quote found in one of the files named
+(`no-quote` otherwise; a file inside a folder named does not count yet). A
 folder is given at the next run as the list of its files. Done, the issue's
 state gets them and loses `judged`: it is read again, with that code, at the
 next run.

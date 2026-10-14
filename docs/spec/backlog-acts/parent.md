@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/parent.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go, internal/forge/github.go, internal/forge/gitlab.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # A parent and its parts
@@ -57,7 +57,7 @@ person unlinked is no longer one. An issue whose state lists a split
   by closing the parent, or to reopen a part or open one for what is
   missing, naming first the parts not delivered and the items not proved;
   a finding `parent-to-accept` (info) says it in the job's summary. The
-  role never closes a parent nor labels it: a `close` on one, a duplicate
+  role never closes a parent nor announces it obsolete: a `close` on one, a duplicate
   or an announcement as obsolete, is dropped
   (`parent-accepted-by-a-person`) unless a person accepted it. The agent's
   task marks a parent's parts, open or closed.

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/scale/scale.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # Milestones and ordering
@@ -42,7 +42,7 @@ the other three taken off. A level outside 1 to 4 is dropped
 The issue's state records the priority set. A priority label other than
 the one recorded — set by a person, or by a person over the role's, or
 taken off by one — is a person's: the act is dropped and the label kept
-(`priority-kept`); the task shows it as a person's. No quote; the state
+(`priority-kept`); the task shows such a label as a person's. No quote; the state
 must read, as for any act.
 
 The levels are read by name through one table (`internal/scale`,

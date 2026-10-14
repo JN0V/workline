@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # The issue's state
@@ -16,7 +16,7 @@ issue, marked `<!-- workline:sticky=product-owner/state -->`:
 sources: [src/export/csv.go#WriteRows]   # what the issue is about, in the code
 confirmed: 1a8e5a4                       # the commit it was last found true at
 judged: 1a8e5a4                          # the commit the role last read it at
-heard: 2                                 # the comments that count it read (A person's answers); `comments`, an older engine's count
+comments: 2                              # an older engine's count of the comments it read; `heard` now (A person's answers)
 body: 3f9a1c0e2b7d                       # a digest of its body, when last read or written
 priority: 2                              # the priority the role last set (Ordering)
 title: The CSV export drops the last row  # the title the role last set (Renaming)
@@ -66,5 +66,6 @@ state, `confirmed` at the commit it read, with no sources until an act
 names them. An issue another role opens for what it found outside its task
 (the reviewer's, ADR-0020) gets its state from the engine as it is opened —
 its sources, and the commit it was seen at — and `needs-triage`; it is
-never read yet, so the next run reads it first, and its agent is told it
+never read yet, so a later run reads it, in its catch-up after a person's
+issues, and its agent is told it
 is that role's draft to refine ([Opening issues](opening.md)).

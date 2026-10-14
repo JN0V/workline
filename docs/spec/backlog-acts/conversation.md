@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # The conversation with the reporter
@@ -21,7 +21,7 @@ issue's comments are the record; the state does not copy them.
 | No question the act holds — each from the sentence before it (". " or "! " then a capital; "e.g. Which" cuts too) or its list item's line (one starting with a capital) to its `?`, the bullet, spaces and case aside — is one an earlier round asked, its lead ("to refine this issue:", "What it still needs:") aside | That question left out, from its sentence or its list item to its `?`, the rest of the act written — a refine's drafts, its other questions (`question-left-out`, info, said "The question "…" was asked before, so it was left out; the rest was kept." once the act is done or proposed, never of one dropped later); an `ask` with no question left is dropped: `asked-before` |
 | Rounds before it under `acts.ask.rounds` (three) | Proposed on the issue: "Settle #N with its reporter, written to 3 times already", the questions or the text it would write (`asks-spent`) |
 
-A later round thanks the reporter ("thank you; to refine this issue,
+A later ask thanks the reporter ("thank you; to refine this issue,
 still: …"). The agent is given the conversation in order — the engine's
 rounds among the people's comments — and the rounds spent.
 
@@ -31,14 +31,15 @@ nothing in its body. The engine comments to the reporter, naming them:
 what the role understood (its `why`), the sections it would add (Need and
 Validation as drafts from their words), what it still needs (`questions`),
 and how to agree; the sections also in a YAML block, under "As the engine
-reads it" — the block read back, the agent's fences turned to `'''` so none ends or replaces it. The issue gets `workline:to-refine`; the act counts in
+reads it" — the block read back, the agent's fences turned to `'''` so none ends or replaces it — but in an
+example or steps, not turned yet. The issue gets `workline:to-refine`; the act counts in
 `refine`'s cap. Agreement is read where only the right people write:
 
 - **`workline:accepted`**, set by a person of the project: the next run
   writes the sections of the last proposal the body still lacks, with no
   agent, then moves the issue to ready in the same run, the drafts
-  accepted with it — unless the reporter answered it since: the agent
-  reads the answer first, and refines it itself, the issue accepted;
+  accepted with it — unless anyone but the engine commented since: then
+  nothing of it is written, and the issue waits on a person;
 - **the reporter's own edit** of the body (only its author or a writer
   can edit it): read again as any body changed; moving it to ready stays
   proposed (`reporter-outside`) until a person accepts;
@@ -57,7 +58,8 @@ reads it" — the block read back, the agent's fences turned to `'''` so none en
 The engine's block of the last proposal that does not read (#302) writes
 nothing, whoever agrees: `pre` says it each run while the body lacks a
 section, a warning (`proposal-unread`), for a person to copy the sections
-in. The ask, draft and reply marks hold nothing but their name, nothing
+in. The ask, draft and reply marks hold nothing but their name, a round or
+a comment's id, nothing
 that can fail to read: a comment ending in one is the engine's, any other
 a person's.
 

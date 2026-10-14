@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/backlog.go, internal/forge/forge.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # What an issue waits on
@@ -29,8 +29,8 @@ An issue that cannot start before another is done names it (ADR-0028):
   errors has none), and every line of a body starting with "Blocked by"
   (case aside, a colon allowed) followed by issue references, a person's
   own line included (`backlog.Blockers`).
-- **Checked**: the issue and each blocker open, not an old report, not the
-  issue itself, 1 to 5 (`depend-issue`); only the blockers not there
+- **Checked**: the issue open (`no-state`); each blocker open, not an old
+  report, not the issue itself, 1 to 5 (`depend-issue`); only the blockers not there
   already are written, none left drops it (`depend-same`); one that would
   close a cycle with the relations there and those this run set is
   dropped (`depend-cycle`); its state must read; no quote. It does not
@@ -46,7 +46,8 @@ An issue that cannot start before another is done names it (ADR-0028):
   of each `depend` in the issue's state (`done`), those a split set among its
   children in the parent's state (`after: {12: [11]}`), and the engine's
   marked line in a body (`Ledger.OwnBlockers`) — a closed parent's state
-  still read while a child that waits is open, kept watched when it does
+  is not read yet, unless an old report recorded its split: then still
+  read while a child that waits is open, kept watched when it does
   not read, let go once the forge no longer gives the parent. The task
   marks them "set by the role".
 

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/builtin/productowner/productowner.go, internal/backlog/ledger.go, internal/backlog/opening.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # Reading
@@ -28,8 +28,9 @@ way of reading (`backlog.LeftBehind`: its `rules` below
 nothing waiting on anyone), read again once, newest first — one past
 `issues-per-run` at a later run —, so a fix of the engine reaches the
 issues it failed on; last, the catch-up of an
-import's or a bot's issues never read, oldest first. Past
-`proposals-max` issues waiting on a person, only the first are read. One
+import's, a finding's or a bot's issues never read, oldest first. From
+`proposals-max` issues waiting on a person, only those a person
+commented on are read. One
 set aside by a person is not read until its body changes or a person who
 counts comments — or, once, when such a comment brought it back under an
 older way of reading and it stayed aside (`backlog.BroughtBack`: a

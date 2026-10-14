@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/order.go, internal/backlog/board.go, internal/builtin/productowner/productowner.go, internal/forge/forge.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # The order, and what is next
@@ -18,15 +18,15 @@ before `v1.10.0`; an issue in none after every one in one), then the
 priority (an issue with none after 4), then the lowest
 number (`backlog.Less`) — and an issue that waits on an open issue after
 it, whatever its labels ([What an issue waits on](depend.md);
-`backlog.Order`). The task lists the issues not read in that order, each
-marked with the open issues it waits on.
+`backlog.Order`). The task lists the issues not read in that order, those
+given by title marked with the open issues they wait on.
 
 `backlog.Order` is Kahn's: the next issue is the first,
 by `Less`, whose blockers among those ordered are all placed; a blocker
 closed, or not an open issue, holds nothing back, so a blocker closed
 puts the issue back where its labels say. When none can be placed, those
 left hold a cycle: it is reported, the cycle's first issue by `Less` placed — never one that only waits on it —, and
-the order ends — never followed. `ready` is allowed on a blocked issue,
+the order goes on — the cycle never followed. `ready` is allowed on a blocked issue,
 its sections say it is understood, not that it can start; but **the
 first ready issue offered** is the first in the order bearing
 `workline:ready` that waits on no open issue and has no parts

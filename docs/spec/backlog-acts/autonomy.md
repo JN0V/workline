@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # Autonomy and caps
@@ -39,7 +39,8 @@ acts:
 
 - `act`: done, up to `max` a run; past it, proposed.
 - `propose`: proposed on its issue for a person to accept, not done.
-- `off`: dropped.
+- `off`: dropped; a closing off is said on its issue for a person to close
+  ([Closing](closing.md)).
 
 With `milestone` or `order` on, a run moves at most a share of the open
 issues: `moved-percent-max` (20, a fifth, by default; rounded up, one at

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # On the issue
@@ -16,7 +16,7 @@ state folded under it (`backlog.FormatState`):
 - what the role did there on the last day it acted, a line an act — "Accepted by @x"
   when it was a person's yes; a refine says what it wrote in one line,
   "Added: Verification, Scope. Changed: —. See the issue's edit history."
-  (`backlog.refined`): Changed, the role's own drafts it rewrote — it never
+  (`backlog.refined`): Changed, the role's own sections it rewrote — a draft, or a text as it wrote it — it never
   changes a person's sentence, so nothing of theirs is quoted, on GitLab's
   Free plan either, which keeps no text of a description's versions; the
   text before is in the forge's edit history, which no forge links to;
@@ -45,7 +45,8 @@ its body and not ready. Taken off when it no longer waits, when it is
 closed, and when a person accepts. A label a bot took off, as the forge's
 label events say, is put back.
 
-**Its labels follow its state**, at every run, with no agent: an open
+**Its labels follow its state**, at every run that writes the issues'
+states (`Plan.Persist`), with no agent: an open
 issue left with no draft of the role's (`backlog.HasDraft`) loses
 `workline:draft`; one set aside — this run or an earlier one — and left
 with no draft, its body a person's, loses `workline:to-refine` too. One

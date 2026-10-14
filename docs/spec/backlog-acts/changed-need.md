@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/change.go, internal/builtin/productowner/changes.go, internal/builtin/productowner/productowner.go, internal/backlog/autonomy.go, internal/backlog/parent.go, internal/backlog/depend.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # A changed need
@@ -45,11 +45,13 @@ What a change touches (`backlog.Touched`), none twice, in this order:
 | its Scope rewritten: an open issue whose sources share a file with its own | listed in the job's summary, not read |
 
 Every act the agent proposes on an issue read for a change is proposed,
-not done (`need-changed`, info), `keep` aside: what the change asks of it
+not done (`need-changed`, info), `keep` and an `undepend` of closed blockers aside: what the change asks of it
 is a person's to decide. A part past `issues-per-run`, or every part
 without an agent, is listed instead of read. Nothing is
 written to an issue touched. The changed issue's state keeps its new
-sections at that run — after the agent's answer when a part was given
-to it —, an issue imported its new `judged`: the same change flags once.
+sections at that run — after the agent's answer when an issue a change
+touches was given to it —, an issue imported its new `judged` once read:
+the same change flags once; an issue imported and not read flags again
+at the next run.
 A change that touches no open issue is kept in the state and flags
 nothing. Only these direct consequences are followed (principle 9).

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/spec.go, internal/backlog/backlog.go, internal/routing/routing.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 7705a9b7
+checked: 5afbb282
 verified: agent:claude-code
 ---
 # A spec read before ready
@@ -31,9 +31,9 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   held, said (`spec-record-unread`) until a person deletes the comment or
   accepts the issue.
 - **`ready` is held** by the engine's check (`backlog.SpecHold`), after
-  the four sections, whoever proposed it — the agent, an accepted draft,
-  a proposal accepted — and at every level: `spec-not-reviewed` (no record, or
-  one for another body: a refine in the same run changes it),
+  the four sections, whoever proposed it — the agent, or the engine
+  itself — and at every level: `spec-not-reviewed` (no record, or
+  one for another body, its rounds not spent: a refine in the same run changes it),
   `spec-findings-open`, `spec-rounds-spent`. A person's
   `workline:accepted` lifts it; `workline:ready` set by hand is theirs.
 - **Read again**: an issue with findings open on its body as it is, a
@@ -47,7 +47,8 @@ comment on it, `<!-- workline:sticky=reviewer/spec -->`, hiding a record
   `wrote` holds — recorded by every refine for what it wrote, and by a
   split for its children's four sections. A person's is kept
   (`section-kept`): the agent asks its reporter. Issues refined before
-  #128 have no `wrote`: their sections read as a person's.
+  #128 have no `wrote`: their sections read as a person's, but a Need or
+  Validation still marked a draft, the role's.
 - **Released**: once the record holds the body as it is, nothing open,
   not stopped, and the four sections pass, `pre` proposes `ready` itself
   (`own`), with no agent, under `acts.ready`'s mode and cap.
