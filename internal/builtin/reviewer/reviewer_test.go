@@ -104,6 +104,34 @@ func TestParseDiffInsideAHunk(t *testing.T) {
 	}
 }
 
+// A file moved is read as moved (#358): one moved and changed is one file,
+// only its changed line added, and a quote of a line it removed, on its
+// old path, is found on the new; one moved whole is said to be.
+func TestChangeFindsRenames(t *testing.T) {
+	repo := gitRepo(t, map[string]string{"calc/calc.go": sumGo, "calc/mean.go": calcGo})
+	run, _ := gitSteps(t, repo)
+	base := run("rev-parse", "HEAD")
+	run("mv", "calc/calc.go", "calc/sum.go")
+	run("mv", "calc/mean.go", "calc/avg.go")
+	os.WriteFile(filepath.Join(repo, "calc/sum.go"), []byte(strings.Replace(sumGo, "values[1:]", "values", 1)), 0o644)
+	run("commit", "-qam", "move")
+	files, err := changedFiles(repo, base, "HEAD")
+	want := []File{{Path: "calc/avg.go", Was: "calc/mean.go", Same: true}, {Path: "calc/sum.go", Was: "calc/calc.go"}}
+	if err != nil || !slices.Equal(files, want) {
+		t.Fatalf("files: %+v, %v; want %+v", files, err, want)
+	}
+	c, err := readChange(repo, base, "HEAD", files[1:])
+	if err != nil || len(c.Added["calc/sum.go"]) != 1 || c.Added["calc/sum.go"][0].At != 6 || c.Moved["calc/calc.go"] != "calc/sum.go" {
+		t.Fatalf("change: %+v, %v", c, err)
+	}
+	head := run("rev-parse", "HEAD")
+	f, why := found(repo, state{Head: head, Change: c}, "correctness", false, map[string]any{"severity": "important", "title": "t",
+		"cause": map[string]string{"path": "calc/calc.go", "quote": "for _, v := range values[1:] {"}})
+	if why != "" || !f.Related || f.Where != "calc/sum.go:6" {
+		t.Errorf("a removed line quoted on the old path: %+v, %s", f, why)
+	}
+}
+
 // A removal — a hunk removing more lines than it adds — is placed in the
 // new file, and the kept lines within three of it count as the change;
 // those further do not, nor those beside a replacement or an addition.

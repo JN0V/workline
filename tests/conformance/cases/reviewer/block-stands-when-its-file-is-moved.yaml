@@ -1,0 +1,33 @@
+case: reviewer/block-stands-when-its-file-is-moved
+about: "The reviewer blocked a merge request on a verified finding; then a commit moves its file, unchanged (#358). The move brings nothing to read: no agent asked, the commit recorded. The block stands, its cause found again on the new path, where the record now keeps it."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # The review of that commit blocked on its finding: recorded with it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "git mv calc/calc.go calc/mean.go && git commit -qm 'refactor: move the mean to its own file'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {ai-findings: block}}}}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness; the author fixes what blocks.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:blocks [{"lens":"correctness","at":"@reviewed@","where":"calc/calc.go:11","title":"Important: Average divides by one less than the count","cause":{"path":"calc/calc.go","quote":"return total / (len(values) - 1)"}}] -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: block
+  agent-calls: 0
+  findings: [{rule: correctness, level: block, where: "calc/mean.go:11", message: "Important: Average divides by one less than the count (found reviewing"}]
+  summary: "no code changed since the last review"
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: ["| **blocks** | correctness | `calc/mean.go:11` |", "nobody asked, the 1 new commits recorded; 1 finding of a review before still blocks", "\"where\":\"calc/mean.go:11\"", "\"path\":\"calc/mean.go\""], comment-lacks: "calc/calc.go"}

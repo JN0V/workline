@@ -58,6 +58,30 @@ func TestSinceKnowsAChangeNotItsIndent(t *testing.T) {
 	}
 }
 
+// A commit moving a file whole has a patch id, read without renames: on a
+// new base, it is known again (#358).
+func TestSinceKnowsAMove(t *testing.T) {
+	repo := gitRepo(t, map[string]string{"README.md": "Start.\n", "a.go": "package a\n"})
+	run, commit := gitSteps(t, repo)
+	base := run("rev-parse", "HEAD")
+	run("checkout", "-qb", "feature")
+	run("mv", "a.go", "b.go")
+	run("commit", "-qm", "move")
+	first, err := Record{}.since(repo, base, "HEAD")
+	if err != nil || first.Unread != nil || len(first.Patches) != 1 {
+		t.Fatalf("the first review: %+v, %v", first, err)
+	}
+	rec := Record{}.add(first.Commits, first.Patches)
+	run("checkout", "-q", base)
+	moved := commit("README.md", "Start, and more.\n")
+	run("mv", "a.go", "b.go")
+	run("commit", "-qm", "move")
+	head := run("rev-parse", "HEAD")
+	if sp, _ := rec.since(repo, moved, head); sp.From != head {
+		t.Errorf("rebased, the same move: reviewed from %s, want all of it reviewed (%s)", sp.From, head)
+	}
+}
+
 // Two commits reviewed, then a branch of one commit merged in: the merge and
 // that commit are new, whatever order git lists them in.
 func TestSinceCountsTheCommitsNotReviewed(t *testing.T) {

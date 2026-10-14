@@ -1,0 +1,14 @@
+case: reviewer/moved-file-unchanged-not-given-to-the-lens
+about: "A change moving one file unchanged and adding another: the lens is given the file added, not the one moved, which has no line to read as the change (#358)."
+given:
+  repo: reviewed
+  setup:
+    - "git mv calc/calc.go calc/mean.go && git commit -qm 'refactor: move the mean to its own file'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  no-findings: [{rule: internal-code}]
+  run-files:
+    in/parts/1-correctness/task.md: {contains: "### calc/half.go", not-contains: ["calc/mean.go", "calc/calc.go"]}
