@@ -1,0 +1,47 @@
+case: reviewer/finding-on-a-name-the-removal-never-tested-becomes-issue
+about: "A change removes the guard on p from Page; a lens finds a defect from before it in the same function, on a line far from the removal that uses nothing the removed lines tested or assigned (#357). It is not the author's: it still becomes an issue."
+given:
+  repo: shop
+  setup:
+    - |
+      cat > shop/page.go <<'GO'
+      package shop
+
+      // Page returns page p of the items, counted from 1, size items a page;
+      // nil past the last page, or for a page below 1. A size below 1 is 10.
+      func Page(items []Item, p, size int) []Item {
+      	if p < 1 {
+      		return nil
+      	}
+      	if size < 1 {
+      		size = 10
+      	}
+      	count := len(items)
+      	last := (count + size - 1) / size
+      	if p > last {
+      		return nil
+      	}
+      	from := (p - 1) * size
+      	to := min(from+size, count)
+      	return items[from:to]
+      }
+      GO
+      git commit -qam 'feat(page): a size below 1 is 10'
+      git checkout -q -b feature
+      sed -i '6,8d' shop/page.go
+      git commit -qam 'refactor(page): the last page check is enough'
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-guard-removed-unrelated"}
+expect:
+  status: pass
+  applied: [comment, issue]
+  no-findings:
+    - {rule: correctness, where: "shop/page.go:15"}
+  forge:
+    issues:
+      - {id: 1, title: "Page's end overflows for a huge size", labels: [needs-triage]}
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: "not the author's to fix here"}

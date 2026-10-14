@@ -1,0 +1,9 @@
+# A lens of the reviewer, on the `shop` fixture once the guard on p is
+# removed from Page: a defect from before it, in the same function, on a
+# line far from the removal that uses nothing the guard tested.
+- finding:
+    severity: important
+    title: Page's end overflows for a huge size
+    why: from+size overflows for a size near the largest int, and to comes out negative
+    cause: {path: shop/page.go, quote: "to := min(from+size, count)"}
+    fix: compare size with count - from first

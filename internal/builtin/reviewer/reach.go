@@ -639,3 +639,113 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 	}
 	return b.String()
 }
+
+// reaches is the line of a removal that a kept line's quote, lines p of
+// path at head, depends on (#357): a line the change removed above it, in
+// the same function, that tested or assigned a name the quote uses. A
+// guard removed exposes its uses further down, past the lines beside it;
+// a name, not the whole function, so a defect from before the change on
+// other names, or above, stays outside it. 0: none. No agent decides it.
+func (c Change) reaches(repo, head, path string, p Place) int {
+	removed := c.Removed[path]
+	if len(removed) == 0 {
+		return 0
+	}
+	r := &reacher{repo: repo, head: head, files: map[string][]string{}}
+	in, ok := r.enclosing(path, p.From)
+	lines := r.lines(path)
+	if !ok || p.To > in.to || p.To > len(lines) {
+		return 0
+	}
+	l := languageOf(path)
+	hash := l.name == "shell" || l.name == "Python" || l.name == "Ruby" // a `#` opens a comment
+	used := map[string]bool{}
+	for _, line := range lines[p.From-1 : p.To] {
+		for _, n := range names(stripCode(line, hash)) {
+			used[n] = true
+		}
+	}
+	for _, rm := range removed {
+		if rm.At < in.from || rm.At > in.to || p.From <= rm.At { // a removal of its function, above the quote
+			continue
+		}
+		for _, n := range guarded(stripCode(rm.Text, hash)) {
+			if used[n] {
+				return rm.At
+			}
+		}
+	}
+	return 0
+}
+
+var (
+	nameRe = regexp.MustCompile(`[A-Za-z_$][\w$]*`)
+	// testRe opens a condition: the names after it are tested.
+	testRe = regexp.MustCompile(`\b(?:if|elif|elsif|while|until|unless|for|foreach|switch|case|when|guard|assert)\b`)
+	// setRe is an assignment: `:=`, `=` alone or after an operator, `++`,
+	// `--`; `==`, `!=`, `<=` and `>=` are told apart by the character
+	// before (setAt), `=>` by the one after.
+	setRe = regexp.MustCompile(`:=|\+\+|--|(?:[-+*/%&|^]|<<|>>|&&|\|\||\?\?)?=(?:[^=>]|$)`)
+	// indexRe is an index or a key, `[i]`: what it names is read, not set.
+	indexRe = regexp.MustCompile(`\[[^\]]*\]`)
+)
+
+// setAt is where a line's first assignment starts; -1: none.
+func setAt(code string) int {
+	for _, m := range setRe.FindAllStringIndex(code, -1) {
+		if code[m[0]] == '=' && m[0] > 0 && strings.ContainsRune("<>!=", rune(code[m[0]-1])) {
+			continue // a comparison
+		}
+		return m[0]
+	}
+	return -1
+}
+
+// notNames are the words of code that name nothing a line tests or sets:
+// keywords, constants, the types a declaration opens with.
+var notNames = map[string]bool{}
+
+func init() {
+	for _, w := range strings.Fields(`if else elif elsif while until unless for foreach in of switch case when
+		guard assert default return break continue goto do then fi esac and or not is
+		nil null None true false True False undefined var let const val mut auto func function def fn fun
+		lambda go defer select range new delete typeof instanceof sizeof await async yield this self super
+		throw raise try catch except finally int string bool float double char long short byte void local my`) {
+		notNames[w] = true
+	}
+	for w := range notCalls {
+		notNames[w] = true
+	}
+}
+
+// names are the names a line of code uses, in order, once each: a word
+// neither a keyword, nor after a dot (a field), nor before a parenthesis
+// (a call).
+func names(code string) []string {
+	var out []string
+	for _, m := range nameRe.FindAllStringIndex(code, -1) {
+		w := code[m[0]:m[1]]
+		after := strings.TrimLeft(code[m[1]:], " \t")
+		if notNames[w] || w == "_" || m[0] > 0 && code[m[0]-1] == '.' || strings.HasPrefix(after, "(") || slices.Contains(out, w) {
+			continue
+		}
+		out = append(out, w)
+	}
+	return out
+}
+
+// guarded are the names a removed line tested or assigned (#357): those
+// after the keyword opening a condition (`if p < 1`), and those an
+// assignment sets (`total += v`, `a, b := f()`, `items[i] = x`); a
+// declaration's type among them, which cannot be told from its name
+// without a parser.
+func guarded(code string) []string {
+	var out []string
+	if m := testRe.FindStringIndex(code); m != nil {
+		out = append(out, names(code[m[1]:])...)
+	}
+	if at := setAt(code); at >= 0 {
+		out = append(out, names(indexRe.ReplaceAllString(code[:at], ""))...)
+	}
+	return out
+}
