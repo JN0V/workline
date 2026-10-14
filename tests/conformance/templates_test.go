@@ -450,6 +450,11 @@ func TestGitHubTemplatesAskEveryLensWhenReady(t *testing.T) {
 				if !strings.Contains(st.Run, "${ready:+--input lenses=all}") {
 					t.Errorf("%s, job %s: the line is not given lenses=all when ready", filepath.Base(f), name)
 				}
+				// The draft state on every run: a run on ready a push cancelled
+				// leaves the next one every lens (#359).
+				if !strings.Contains(st.Run, `--input draft="$DRAFT"`) {
+					t.Errorf("%s, job %s: the line is not given the pull request's draft state", filepath.Base(f), name)
+				}
 				var decide string
 				for _, l := range strings.Split(st.Run, "\n") {
 					if strings.HasPrefix(strings.TrimSpace(l), "ready=;") {
@@ -498,9 +503,9 @@ func TestGitLabTemplateAsksEveryLensWhenReady(t *testing.T) {
 		t.Fatalf(".workline:ready: %v, want one script", top[".workline:ready"])
 	}
 	judge, _ := top["workline:judge"].(map[string]any)
-	if script := fmt.Sprint(judge["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses") ||
+	if script := fmt.Sprint(judge["script"]); !strings.Contains(script, "--input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}") ||
 		!strings.Contains(script, "lenses=;") {
-		t.Errorf("workline:judge does not run .workline:ready and pass $lenses: %s", script)
+		t.Errorf("workline:judge does not run .workline:ready and pass $lenses and the draft state (#359): %s", script)
 	}
 	// The API as GitLab answers it: the merge request, then its notes, the
 	// most recently updated first, a hundred a page (NOTES_<page>, the
@@ -562,7 +567,7 @@ printf '%s' "$f"
 		if c.draft != "" {
 			env = append(env, "CI_MERGE_REQUEST_DRAFT="+c.draft)
 		}
-		cmd := exec.Command("sh", "-ec", fmt.Sprint(ready[0])+"\necho \"lenses[$lenses] page[$page]\"")
+		cmd := exec.Command("sh", "-ec", fmt.Sprint(ready[0])+"\necho \"lenses[$lenses] page[$page] draft[$draft]\"")
 		cmd.Env = env
 		out, err := cmd.CombinedOutput()
 		if got := strings.Contains(string(out), "lenses[--input lenses=all]"); err != nil || got != c.all {
@@ -573,6 +578,14 @@ printf '%s' "$f"
 		}
 		if c.rest != "" && !strings.Contains(string(out), "page[50]") {
 			t.Errorf("%s: not stopped at page 50:\n%s", c.name, out)
+		}
+		// The draft state the judge passes on (#359), as the job or the API says it.
+		want := c.draft
+		if c.mr != "" {
+			want = map[bool]string{true: "true", false: "false"}[strings.Contains(c.mr, "true")]
+		}
+		if !strings.Contains(string(out), "draft["+want+"]") {
+			t.Errorf("%s: draft not %q for the judge:\n%s", c.name, want, out)
 		}
 	}
 }

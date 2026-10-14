@@ -58,7 +58,9 @@ variables:
 # the run on ready when the merge request is no draft and its note
 # "marked this merge request as **ready**" is newer than the reviewer's
 # comment, or there is no comment yet. Read with GITLAB_TOKEN, else the
-# job's token; unread, one lens, said (roles/reviewer/docs/run.md).
+# job's token; unread, one lens, said (roles/reviewer/docs/run.md). The
+# draft state goes on every run (`draft`): a merge request no draft whose
+# record does not say every lens read it gets them (#359).
 .workline:ready: &ready
   - |
     lenses=; last=; auth="JOB-TOKEN: $CI_JOB_TOKEN"
@@ -103,7 +105,7 @@ workline:judge:
     - >
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
       --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - exit $status
