@@ -14,24 +14,24 @@ auditor widened to every role's acts
   seen; tracing tools draw by a hash of the item's id, so every reader
   draws the same.
 - **A second reader who does not see the first answer, then a third
-  on disagreement.** Clinical trials read images so; corpus annotation
-  calls it double annotation and adjudication. The adjudicator picks one of the
-  two readings.
+  on disagreement.** Clinical trials read their images that way; corpus
+  annotation calls it double annotation and adjudication. The adjudicator
+  picks one of the two readings.
 - **A panel of different models beats one large judge** and is cheaper;
   a model favours its own outputs.
 - **An error rate is reported with its uncertainty**, per kind, and its
   sample size says how far it can be trusted: about 30 items with no
   error bound a rate under 10%, at 95%.
 - **What workline adds**: the proof, a quote the engine finds again at the
-  act's commit; nobody else checks the second reader's evidence
-  mechanically.
+  act's commit; none of the practices below checks the second reader's
+  evidence mechanically.
 
 ## Drawing the sample
 
 | Practice | What it does | To borrow |
 |---|---|---|
 | Audit sampling, tests of controls ([a public audit guide's table](https://hudoig.gov/sites/default/files/2024-02/appendix.pdf)) | Attribute sampling: the size follows the confidence wanted, the tolerable deviation rate and the rate expected. At 95% and none expected: 65 items for a 5% tolerable rate, 35 for 10% | A sample size that says which rate it can bound; few items bound little |
-| Stratified sampling ([Wei, Zufall, Jia, AIES 2024](https://arxiv.org/abs/2305.09601)) | Recall of automated moderation estimated far cheaper by sampling per stratum | One draw per role and kind, rounded up |
+| Stratified sampling ([Wei, Zufall, Jia, AIES 2024](https://arxiv.org/abs/2305.09601)) | Recall of automated moderation estimated efficiently by stratified sampling; accuracy is unsuited to rare errors | One draw per role and kind, rounded up |
 | Deterministic sampling ([OpenTelemetry's `TraceIdRatioBased`](https://opentelemetry.io/docs/specs/otel/trace/sdk/)) | "The sampling algorithm MUST be deterministic": a hash of the trace's id decides, so every participant draws the same | Already done: a digest of the week and the act ([ADR-0015](../adr/0015-the-weekly-sample-is-written-on-the-forge.md)) |
 
 - **The rule of three**: no error in *n* items bounds the rate under about
@@ -56,9 +56,9 @@ auditor widened to every role's acts
   automated moderation; most reports give a bare number
   ([DSA Observatory](https://dsa-observatory.eu/?p=2400)). A rate without
   its sample and its method is read as noise.
-- **Precision and recall, not accuracy**, when errors are rare: the
-  population is lopsided (the judge's 173 refusals to 56 shows,
-  [the judge, measured](judge-measured.md)).
+- **Precision and recall, not accuracy**, when errors are rare (Wei et
+  al., above): the population is lopsided (the judge's 173 refusals to 56
+  shows, [the judge, measured](judge-measured.md)).
 - **An interval for a small sample**: Wilson's, as the judge's measure
   gave (8 of 20: a fifth to three fifths).
 
