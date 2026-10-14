@@ -58,12 +58,12 @@ pull requests and nightly gardening of workline and of another project;
 | [Auditor](roles/auditor/role.yaml) | re-checks a weekly sample of the roles' acts (the docs' today) | [beta](roles/auditor/docs/status.md) |
 | [Inspector](https://github.com/JN0V/workline/issues/202) | will post the static-analysis findings a merge request adds | planned |
 | [Security](https://github.com/JN0V/workline/issues/204) | will add security scanners as gates and a security lens | planned |
+| [Developer](https://github.com/JN0V/workline/issues/117) | will take a ready issue and open the pull request | planned |
 | [Process engineer](https://github.com/JN0V/workline/issues/89) | will read the line's measures and propose fixes | planned |
-| [Tester](https://github.com/JN0V/workline/issues/206) | will write an issue's tests first, kept from the developer | planned |
+| [Tester](https://github.com/JN0V/workline/issues/264) | will write an issue's tests first, kept from the developer | planned |
 | [Architect](https://github.com/JN0V/workline/issues/207) | will read specs for structure and keep architecture rules | planned |
 | [UX](https://github.com/JN0V/workline/issues/208) | will check accessibility and flows, for projects with a user interface | planned |
 | [PM](https://github.com/JN0V/workline/issues/209) | will map the product and suggest functions | planned |
-| [Developer](https://github.com/JN0V/workline/issues/117) | will take a ready issue and open the pull request, last | planned |
 
 - What each role does and does not, its settings and costs: its page, or
   [all the roles](docs/roles.md).
