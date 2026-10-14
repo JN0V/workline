@@ -1,0 +1,29 @@
+case: merge/check-failed-out-of-line
+about: "A check that failed is red (#377): `test` failed on the head of an accepted pull request, beside a cancelled `follow` run. `workline follow` takes it out of line, turns nothing on, and says why (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "feat/sessions", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: feat/sessions, at: "2026-01-04T09:00:00Z"}]
+        check-runs: [{name: follow, state: cancelled}, {name: test, state: failure}]
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: checks-red, where: "#7", level: warn, message: "accepted by @dana, but a check failed on its head"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [workline:accepted], comments: 0}

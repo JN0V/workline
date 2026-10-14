@@ -222,6 +222,59 @@ func TestGitLabAnswers(t *testing.T) {
 	}
 }
 
+// A canceled pipeline is no result (#377): the newest other pipeline on
+// the merge request's head counts, a pipeline on an older head never;
+// none, the head waits, pending, never red.
+func TestGitLabCanceledPipeline(t *testing.T) {
+	var head string
+	var pipelines []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		switch {
+		case p == "/merge_requests/7":
+			json.NewEncoder(w).Encode(map[string]any{"sha": "b2", "head_pipeline": map[string]any{"status": head}})
+		case p == "/merge_requests/7/pipelines" && pipelines == nil:
+			http.Error(w, `{"message":"500 Internal Server Error"}`, http.StatusInternalServerError)
+		case p == "/merge_requests/7/pipelines":
+			json.NewEncoder(w).Encode(pipelines)
+		case p == "/merge_requests/7/resource_label_events", p == "/merge_requests/7/versions", p == "/merge_requests/7/notes":
+			w.Write([]byte(`[]`))
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "secret")
+	pipe := func(id int, sha, status string) map[string]any {
+		return map[string]any{"id": id, "sha": sha, "status": status}
+	}
+	for _, c := range []struct {
+		name, head string
+		pipelines  []map[string]any
+		want       string
+	}{
+		{"failed", "failed", nil, "failure"},
+		{"an older one passed on this head", "canceled", []map[string]any{pipe(2, "b2", "success"), pipe(3, "b2", "canceled"), pipe(1, "b1", "failed")}, "success"},
+		{"an older one failed on this head", "canceling", []map[string]any{pipe(3, "b2", "canceled"), pipe(2, "b2", "failed")}, "failure"},
+		{"only canceled on this head", "canceled", []map[string]any{pipe(3, "b2", "canceled"), pipe(2, "b1", "success")}, "pending"},
+	} {
+		head, pipelines = c.head, c.pipelines
+		st, err := (&gitlab{repo: t.TempDir()}).MergeState(MergeRequest{ID: 7})
+		if err != nil || st.Checks != c.want || st.ChecksUnread != "" {
+			t.Errorf("%s: %q (unread %q), %v; want %q", c.name, st.Checks, st.ChecksUnread, err, c.want)
+		}
+	}
+	// The pipelines unread: said, never red.
+	head, pipelines = "canceled", nil
+	st, err := (&gitlab{repo: t.TempDir()}).MergeState(MergeRequest{ID: 7})
+	if err != nil || st.Checks != "" || st.ChecksUnread == "" {
+		t.Errorf("unread: %+v, %v", st, err)
+	}
+}
+
 // Outside CI, the instance and the project come from the repository's remote.
 func TestGitLabFromRemote(t *testing.T) {
 	for _, c := range []struct{ remote, api, project string }{

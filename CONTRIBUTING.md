@@ -1,7 +1,7 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
 checked: fadfa7f
-judged: b326f81
+judged: c36d922
 verified: agent:claude-code
 -->
 # Contributing
