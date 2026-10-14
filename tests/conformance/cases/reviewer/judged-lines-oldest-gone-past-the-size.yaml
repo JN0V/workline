@@ -1,0 +1,40 @@
+case: reviewer/judged-lines-oldest-gone-past-the-size
+about: "The lines of every run's findings judged would grow the summary comment past what a forge takes (GitHub: 65,536 characters). The comment is kept under 60,000: this run's line is added, the oldest lines go first, and how many went is kept, for the weekly sample to say (ADR-0046)."
+given:
+  repo: reviewed
+  setup:
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    # 250 findings judged on earlier runs: about 70,000 characters of lines.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\" && sh \"$FIXTURES/forges/judged-lines.sh\" 250 \"$(git rev-parse HEAD)\""
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: edge-cases.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:judged-lines gone=2 -->
+            @judged@
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - " runs=2 -->"
+          - "<!-- workline:judged-lines gone="
+          - "\"where\":\"old/0250.go:1\""
+          - "<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"calc/calc.go:11\",\"at\":\""
+        comment-lacks:
+          - "gone=0 -->"
+          - "gone=2 -->"
+          - "\"where\":\"old/0001.go:1\""

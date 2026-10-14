@@ -1,0 +1,41 @@
+case: reviewer/judged-line-for-each-finding-judged
+about: "On a merge request, the summary comment hides a line for each finding the judge answered (ADR-0046): its lens, its place, the head the review read, yes (kept) or no (dropped), the finder's model and the judge's (none said by a `cmd:` judge here), and its title. The weekly sample draws the reviewer's acts from these lines."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat > shop/shipping.go <<'GO'
+      package shop
+
+      // Shipping is what delivery costs, in cents: free from 50.00, else 4.90.
+      func Shipping(items []Item) int {
+      	if Total(items) >= 5000 {
+      		return 0
+      	}
+      	return 490
+      }
+      GO
+      git add shop && git commit -qm 'feat(shipping): free from 50.00'
+  env: {WORKLINE_JUDGE: "cmd:sh $FIXTURES/agents/judge-tests.sh"}
+  config: {roles: {reviewer: {settings: {lenses-together: false, judge-read-rounds: 0}}}}   # a judge that reads nothing: its no drops
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: "correctness,tests"}, target: {merge-request: 5}, ai: "fake:review-shipping-untested"}
+expect:
+  status: pass
+  applied: [comment]
+  findings:
+    - {rule: tests, where: "shop/shipping.go:4", message: "Important: Shipping has no test"}
+    - {rule: finding-judged-no, message: "dropped, from the correctness lens"}
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "<!-- workline:judged-lines gone=0 -->"
+          - "<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"shop/shipping.go:4\",\"at\":\""
+          - "\",\"yes\":false,\"finder\":\"review\\u002dshipping\\u002duntested\",\"judge\":\"\",\"title\":\"Shipping has no test\"} -->"
+          - "<!-- workline:judged {\"lens\":\"tests\",\"where\":\"shop/shipping.go:4\",\"at\":\""
+          - "\",\"yes\":true,\"finder\":\"review\\u002dshipping\\u002duntested\",\"judge\":\"\",\"title\":\"Shipping has no test\"} -->"
