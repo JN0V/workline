@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,11 +45,19 @@ type Act struct {
 	Day    string `json:"day,omitempty"`    // the day it was done, YYYY-MM-DD, when its record says
 	By     string `json:"by,omitempty"`     // the level it was done at, or the models that acted, when its record says
 	Line   string `json:"line,omitempty"`   // what its record says of it
-	// Verdict: not-read, for a person — the auditor does not re-check
-	// these yet.
-	Verdict string `json:"verdict"`
-	Why     string `json:"why,omitempty"`
-	key     string // what it is ranked by, with the week
+	Lens   string `json:"lens,omitempty"`   // a finding's lens
+	Title  string `json:"title,omitempty"`  // a finding's title, all its judge's answer left out
+	// Verdict: true (it stands), false (proven wrong, with the
+	// material's words), unproven (said wrong, not proven: for a person),
+	// or not-read (for a person, Why says why).
+	Verdict      string  `json:"verdict"`
+	Why          string  `json:"why,omitempty"`
+	Judge        string  `json:"judge,omitempty"`
+	Model        string  `json:"model,omitempty"`
+	Independence string  `json:"independence,omitempty"`
+	Proofs       []Proof `json:"proofs,omitempty"`
+	Unproven     []Proof `json:"unproven,omitempty"`
+	key          string  // what it is ranked by, with the week
 }
 
 // Count is how many acts of a role's kind the window held, and how many
@@ -59,9 +68,6 @@ type Count struct {
 	Acts  int    `json:"acts"`
 	Drawn int    `json:"drawn"`
 }
-
-// notReadYet is why an act drawn is left for a person.
-const notReadYet = "the auditor re-checks only the docs yet (ADR-0046): for a person"
 
 // drawEach draws one in OneIn of the acts of each role and kind, rounded
 // up, and counts them.
@@ -104,7 +110,7 @@ func drawEach(week string, acts []Act) ([]Act, []Count) {
 		counts = append(counts, Count{Role: role, Kind: kind, Acts: len(idx), Drawn: len(picked)})
 		for _, p := range picked {
 			a := acts[idx[p]]
-			a.Verdict, a.Why = "not-read", notReadYet
+			a.Verdict = "not-read"
 			drawn = append(drawn, a)
 		}
 	}
@@ -143,8 +149,9 @@ var (
 // reviewerActs are the important findings the reviewer's judge kept or
 // dropped, as the summary comment on each merge request holds them: the
 // last run's, which the comment keeps alone. A block's row says the head
-// it was found at.
-func reviewerActs(f forge.Forge, b forge.Backlog, mrs []forge.MergeRequest) ([]Act, int, error) {
+// it was found at; another's is read at the merge request's head, its
+// last review's.
+func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.MergeRequest) ([]Act, int, error) {
 	var out []Act
 	read := 0
 	for _, m := range mrs {
@@ -157,7 +164,13 @@ func reviewerActs(f forge.Forge, b forge.Backlog, mrs []forge.MergeRequest) ([]A
 				continue
 			}
 			read++
-			out = append(out, summaryActs(forge.MergeRef(f, m.ID), c)...)
+			head, _ := git(repo, "rev-parse", "-q", "--verify", fmt.Sprintf("refs/workline/sample/%d^{commit}", m.ID))
+			for _, a := range summaryActs(forge.MergeRef(f, m.ID), c) {
+				if a.Commit == "" {
+					a.Commit = head
+				}
+				out = append(out, a)
+			}
 			break
 		}
 	}
@@ -201,18 +214,25 @@ func summaryActs(ref, comment string) []Act {
 		switch {
 		case rule == "finding-judged-no":
 			head, _, ok := strings.Cut(message, " — the judge: ")
-			_, rest, found := strings.Cut(strings.TrimPrefix(head, "dropped, from the "), " lens: ")
+			lens, rest, found := strings.Cut(strings.TrimPrefix(head, "dropped, from the "), " lens: ")
 			if !ok || !found {
 				continue
 			}
+			title := rest
 			if i := strings.LastIndex(rest, " at "); i >= 0 {
-				where = rest[i+len(" at "):]
+				title, where = rest[:i], rest[i+len(" at "):]
 			}
-			out = append(out, Act{Role: reviewRole, Kind: "dropped", Ref: ref, Where: where, By: models(message), Line: message,
+			if t, err := strconv.Unquote(title); err == nil {
+				title = t
+			}
+			out = append(out, Act{Role: reviewRole, Kind: "dropped", Ref: ref, Where: where, By: models(message), Line: message, Lens: lens, Title: title,
 				key: ref + "\x00dropped\x00" + where + "\x00" + message})
 		case strings.HasPrefix(message, "Important: ") && !strings.Contains(message, "(not verified"):
+			title, _, _ := strings.Cut(strings.TrimPrefix(message, "Important: "), " — ")
+			title, _, _ = strings.Cut(title, " (verified")
 			out = append(out, Act{Role: reviewRole, Kind: "kept", Ref: ref, Where: where, Commit: at(rule, where), By: models(message),
-				Line: fmt.Sprintf("the %s lens: %s", rule, message), key: ref + "\x00kept\x00" + where + "\x00" + rule + "\x00" + message})
+				Line: fmt.Sprintf("the %s lens: %s", rule, message), Lens: rule, Title: title,
+				key: ref + "\x00kept\x00" + where + "\x00" + rule + "\x00" + message})
 		}
 	}
 	return out
@@ -402,7 +422,7 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 		}
 		if _, ok := o.Forge.(forge.Merged); !ok {
 			notDrawn("the reviewer's findings, and the commits of a merge request squashed: this forge does not list the merge requests merged")
-		} else if rv, read, err := reviewerActs(o.Forge, b, h.merged); err != nil {
+		} else if rv, read, err := reviewerActs(o.Repo, o.Forge, b, h.merged); err != nil {
 			unreachable("the reviewer's findings", err)
 		} else {
 			acts = append(acts, rv...)

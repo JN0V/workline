@@ -198,57 +198,75 @@ func draw(o Options, res *Result) error {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-window", Level: "warn",
 			Message: fmt.Sprintf("%s vouched for by the documentalist in the commits %s; %d read, one in ten", plural(len(cands), "doc"), res.Window, len(picked))})
 	}
-	if len(picked) > 0 {
-		auditor, err := role.Load(o.RolesDir, "auditor")
-		if err != nil {
-			return err
-		}
-		spec := o.Judge
-		if spec == "" {
-			spec = os.Getenv("WORKLINE_JUDGE")
-		}
-		if spec == "" {
-			spec = settings.Sample.Judge
-		}
-		for _, c := range picked {
-			r := readOne(o.Repo, settings, auditor, spec, c, res)
-			res.Reads = append(res.Reads, r)
-			res.Findings = append(res.Findings, findings(r)...)
-		}
-	}
-	// The other roles' acts, drawn for a person (ADR-0046).
+	// The other roles' acts (ADR-0046).
 	acts := actsOfTheWindow(o, res, h, commits, first, end)
 	drawn, counts := drawEach(week, acts)
 	res.Drawn, res.Counts = drawn, append(res.Counts, counts...)
+	// Each read, each role's first before any second, until the week's
+	// tokens are spent.
+	spec := o.Judge
+	if spec == "" {
+		spec = os.Getenv("WORKLINE_JUDGE")
+	}
+	if spec == "" {
+		spec = settings.Sample.Judge
+	}
+	rd := &reader{o: o, settings: settings, spec: spec, res: res, cap: settings.Sample.TokensCap()}
+	if len(picked) > 0 || len(drawn) > 0 {
+		if rd.auditor, err = role.Load(o.RolesDir, "auditor"); err != nil {
+			return err
+		}
+	}
+	res.Reads = make([]Read, len(picked))
+	queue := map[string][]func(){}
+	for i := range picked {
+		queue[docsRole] = append(queue[docsRole], func() { res.Reads[i] = rd.readOne(picked[i]) })
+	}
+	for i := range res.Drawn {
+		a := &res.Drawn[i]
+		queue[a.Role] = append(queue[a.Role], func() { rd.readAct(a) })
+	}
+	for round, more := 0, true; more; round++ {
+		more = false
+		for _, r := range roleOrder {
+			if round < len(queue[r]) {
+				queue[r][round]()
+				more = true
+			}
+		}
+	}
+	for _, r := range res.Reads {
+		res.Findings = append(res.Findings, findings(r)...)
+	}
 	for _, c := range counts {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-acts", Level: "warn",
 			Message: fmt.Sprintf("%s, %s, by %s %s; %d drawn, one in ten", plural(c.Acts, "act"), kindWords(c), roleWords(c.Role), actsWindow(c.Role, res.Window, first, end), c.Drawn)})
 	}
-	for _, a := range drawn {
-		where := a.Ref
-		if a.Where != "" {
-			where += " " + a.Where
-		}
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-not-read", Where: where, Message: actWords(a) + "; " + a.Why})
+	for _, a := range res.Drawn {
+		res.Findings = append(res.Findings, actFinding(a))
 	}
 	for _, why := range res.NotDrawn {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-not-drawn", Level: "warn", Message: "not drawn: " + why})
 	}
 	res.Status = verdict.Pass
-	tally := map[string]int{}
-	for _, r := range res.Reads {
-		tally[r.Verdict]++
+	tally, acted := map[string]int{}, map[string]int{}
+	weigh := func(v, why string) {
 		switch {
-		case r.Verdict == "not-read" && strings.Contains(r.Why, "could not answer"):
+		case v == "not-read" && strings.Contains(why, "could not answer"):
 			if res.Status == verdict.Pass {
 				res.Status = verdict.BlockedExternal
 			}
-		case r.Verdict != "true":
+		case v != "true":
 			res.Status = verdict.Human
 		}
 	}
-	if len(drawn) > 0 {
-		res.Status = verdict.Human
+	for _, r := range res.Reads {
+		tally[r.Verdict]++
+		weigh(r.Verdict, r.Why)
+	}
+	for _, a := range res.Drawn {
+		acted[a.Verdict]++
+		weigh(a.Verdict, a.Why)
 	}
 	if res.unreachable && res.Status == verdict.Pass {
 		res.Status = verdict.BlockedExternal
@@ -268,7 +286,13 @@ func draw(o Options, res *Result) error {
 		for _, a := range drawn {
 			roles[a.Role] = true
 		}
-		res.Summary += fmt.Sprintf("; %s of %s drawn, for a person", plural(len(drawn), "act"), plural(len(roles), "other role"))
+		var parts []string
+		for _, v := range []string{"true", "false", "unproven", "not-read"} {
+			if acted[v] > 0 {
+				parts = append(parts, fmt.Sprintf("%d %s", acted[v], v))
+			}
+		}
+		res.Summary += fmt.Sprintf("; %s of %s read: %s", plural(len(drawn), "act"), plural(len(roles), "other role"), strings.Join(parts, ", "))
 	}
 	return nil
 }
@@ -472,7 +496,8 @@ func pick(week string, keys []string) []int {
 
 // readOne has a doc read, whole, against its sources at the commit its
 // `checked` names, and checks every quote of the answer.
-func readOne(repo string, s documentalist.Settings, auditor *role.Role, spec string, c candidate, res *Result) Read {
+func (rd *reader) readOne(c candidate) Read {
+	repo, s, auditor, spec := rd.o.Repo, rd.settings, rd.auditor, rd.spec
 	r := Read{Doc: c.doc, Commit: short(repo, c.commit), Checked: c.checked, Previous: c.previous, By: c.by}
 	content, err := git(repo, "show", c.commit+":"+c.doc)
 	d, _ := documentalist.ParseDoc(c.doc, []byte(content))
@@ -494,6 +519,11 @@ func readOne(repo string, s documentalist.Settings, auditor *role.Role, spec str
 		r.Verdict, r.Why = "not-read", "no judge is set (--judge, WORKLINE_JUDGE, or the `sample.judge` setting): for a person to read against its sources"
 		return r
 	}
+	question, err := rd.facet("checked")
+	if err != nil {
+		r.Verdict, r.Why = "not-read", err.Error()+"; for a person"
+		return r
+	}
 	voucher, models := "", []string(nil)
 	for _, b := range c.by {
 		if voucher == "" {
@@ -513,12 +543,13 @@ func readOne(repo string, s documentalist.Settings, auditor *role.Role, spec str
 			}
 		}
 	}
-	r.Judge = spec
-	answer, call, err := ask(spec, auditor, task(c, d, content, evidence))
-	if call.Agent != "" {
-		res.AgentCalls++
-		res.Calls = append(res.Calls, call)
+	if why := rd.over(); why != "" {
+		r.Verdict, r.Why = "not-read", why
+		return r
 	}
+	r.Judge = spec
+	answer, call, err := ask(spec, auditor, "## The question\n\n"+question+"\n\n"+task(c, d, content, evidence))
+	rd.called(call)
 	r.Model = call.Model
 	r.Independence = "unknown (no Workline-Model on the commit that vouched)"
 	level := ""
@@ -715,7 +746,14 @@ func (p Proof) String() string {
 	if p.Name != "" {
 		return fmt.Sprintf("%q: `%s` is not in the code", p.Passage, p.Name)
 	}
-	return fmt.Sprintf("%q: %s:%d says %q", p.Passage, p.Path, p.Line, p.Quote)
+	at := p.Path
+	if p.Line > 0 {
+		at += fmt.Sprintf(":%d", p.Line)
+	}
+	if p.Passage == "" {
+		return fmt.Sprintf("%s says %q", at, p.Quote)
+	}
+	return fmt.Sprintf("%q: %s says %q", p.Passage, at, p.Quote)
 }
 
 func checkedWords(c map[string]string) string {

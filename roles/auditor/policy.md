@@ -1,10 +1,9 @@
-- A passage is false only when the sources given show it is: quote the words
-  that show it. The engine looks for every quote, in the doc and in the
-  file named; one it cannot find proves nothing.
+- An answer against the act stands only on the material's words: quote
+  them. The engine looks for every quote in the item it names; one it
+  cannot find proves nothing, and the act goes to a person.
 - A comment in the code is not evidence: quote the code itself. A comment
-  disagreeing with the code is not the doc's fault.
-- What the sources do not show either way is not false: leave it.
-- A passage that only says less than the code does, or says it in other
-  words, is not false.
-- Judge what the doc says of the code, not its style, its length or its
-  links.
+  disagreeing with the code is not the act's fault.
+- What the material does not show either way does not make the act wrong:
+  answer that it holds.
+- Words that only say less, or say it in other words, are not wrong.
+- Judge what the act says or did, not its style, its length or its links.
