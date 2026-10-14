@@ -1,0 +1,6 @@
+# A judge that may read (ADR-0045), each call costing 1000 tokens in: it
+# asks to read Average, then would say yes.
+tokens-in: 1000
+calls:
+  - - read: {name: Average, why: "the function the cause lies in"}
+  - - note: "yes: the division takes one less than the count."

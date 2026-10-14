@@ -1,0 +1,2 @@
+# A judge that may read (ADR-0045) and still cannot tell.
+- note: "unsure: whether a caller ever passes a single value is not in the code read."

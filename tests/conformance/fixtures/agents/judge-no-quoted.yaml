@@ -1,0 +1,4 @@
+# A judge that may read (ADR-0045) says no, quoting the lines that refute
+# the finding, as they read in what it was shown.
+- note: "no: the loop adds every value before the division."
+- quote: {path: calc/calc.go, text: "for _, v := range values {"}

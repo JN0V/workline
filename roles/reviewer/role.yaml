@@ -95,6 +95,17 @@ settings:
   # calls and those calling it, each whole while they fit; the rest named
   # (#127). 0: the 31 lines around the cause only.
   judge-lines-max: 200
+  # The judge of the code reads what it needs (ADR-0045): instead of a
+  # verdict, it may ask a file's lines, a definition by its name, or the
+  # places a word is written, read from git at the commit reviewed, and is
+  # asked again; a no quotes the lines that refute the finding, found
+  # again, else the finding is shown not verified; unsure too. Rounds of
+  # reads a judge may ask: 0, today's judge, until the measure (#362)
+  # shows it does better; a project may turn it on (2, as decided).
+  judge-read-rounds: 0
+  # Lines read for one judge, all its rounds together; past them, cut, the
+  # rest named. A search past 50 places is not read: narrow it.
+  judge-read-lines-max: 400
   # Every lens a run asks, in one call: the change and its files given
   # once, each finding naming its lens (#147). false: a call each, apart.
   lenses-together: true
@@ -115,7 +126,9 @@ settings:
   # What a run may spend, all calls together, tokens in and out as the agent
   # reports them; once spent, nothing more is asked, said, and the commits
   # are not recorded as reviewed. The call that crosses it is paid. 0: no cap.
-  ai-max-tokens: 200000
+  # 300000, so a large review is judged whole when its judges read
+  # (ADR-0045): a run spends what it uses.
+  ai-max-tokens: 300000
   # The lenses a spec is read through (#128), lenses/<lens>.md holding
   # `subject: spec`: every one each run, together when lenses-together.
   spec-lenses: [ambiguous, unverifiable, out-of-scope, contradicted]
