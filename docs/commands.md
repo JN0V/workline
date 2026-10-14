@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 566fbaa7
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # The commands, in detail
@@ -92,7 +92,7 @@ writes nothing.
 
 `workline issues import <file> [--apply]` moves a roadmap or backlog file,
 whatever its form, to the forge's issues
-([backlog acts](spec/backlog-acts.md#importing-a-file)).
+([backlog acts](spec/backlog-acts/import.md)).
 
 - The product owner reads it a share at a time; each item still to do is
   opened once, its text quoted from the file.

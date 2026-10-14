@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 0f9d25d3
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # Reviewer
@@ -41,7 +41,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 
 - approve, change the code or merge: the author fixes, the person merges
   ([ADR-0020](../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md));
-- review docs and other files that are not code (`ignore`);
+- review docs and other files that are not code (`ignore`), nor the
+  versions a release tool bumps on its own pull request
+  ([more](docs/run.md#13-the-range-the-rules-the-record));
 - comment on the merge request for a finding outside the change: that
   becomes an issue.
 

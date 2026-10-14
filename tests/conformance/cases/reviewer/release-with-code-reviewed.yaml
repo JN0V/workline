@@ -1,0 +1,15 @@
+case: reviewer/release-with-code-reviewed
+about: "A release tool's pull request that also changes a line of code is reviewed as any (#384): the lens reads the code; the versions the tool bumps on the lines it marks are left out."
+given:
+  repo: reviewed
+  setup:
+    - "git checkout -q main"
+    - "printf 'package calc\\n\\n// Version is the release.\\nconst Version = \"v1.2.0\" // x-release-please-version\\n' > calc/version.go && git add calc/version.go && git commit -qm 'feat: say the version'"
+    - "git checkout -qb release-please--branches--main && sed -i 's/1\\.2\\.0/1.3.0/' calc/version.go && sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'chore(main): release 1.3.0'"
+  forge: {issues: [], merge-requests: [{id: 1, branch: release-please--branches--main, base: main, labels: [], comments: []}]}
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 1}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-correctness}]
+  run-files:
+    in/parts/1-correctness/task.md: {contains: "### calc/calc.go", not-contains: "calc/version.go"}

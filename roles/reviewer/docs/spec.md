@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 0f9d25d3
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -67,7 +67,7 @@ routing:
 - **The hold** is the product owner's: its `ready` waits until the
   reviewer read the body as it is and no important finding is open, then
   the engine moves it, with no agent
-  ([backlog acts](../../../docs/spec/backlog-acts.md#refining-to-ready)).
+  ([backlog acts](../../../docs/spec/backlog-acts/refine.md)).
 - **The answer**: the product owner's next refine rewrites the sections
   the findings lie in that are its own; a person's, it asks the reporter.
   The body changed, the reviewer reads it again: one round more.

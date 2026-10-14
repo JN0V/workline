@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 566fbaa7
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # Using workline
@@ -111,7 +111,9 @@ Each in detail: [the commands](commands.md), and
 - **`--branch`**: for a job that does not ask the forge (CI's judging
   job, which holds no token); default: the forge says. A release tool's
   branch (`release.branches`) has the merge request held as the release
-  ([ADR-0017](adr/0017-the-release-manager.md)).
+  ([ADR-0017](adr/0017-the-release-manager.md)), and the versions the
+  tool bumps left out of the review
+  ([more](../roles/reviewer/docs/run.md#13-the-range-the-rules-the-record)).
 
 ### The job's summary
 

@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 566fbaa7
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # Configuration
@@ -195,7 +195,9 @@ A role's `pre` and `post` receive:
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
   `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
   `in/waiting.yaml`, the files each waiting task changes;
-- on a release tool's merge request, for a role that runs on `release`:
-  `WORKLINE_EVENT=release` and `WORKLINE_RELEASE_BRANCH`, the branch
-  ([ADR-0017](adr/0017-the-release-manager.md));
+- on a release tool's merge request: `WORKLINE_RELEASE_BRANCH`, the
+  branch, to every role; `WORKLINE_EVENT=release` for a role that runs on
+  `release` ([ADR-0017](adr/0017-the-release-manager.md)); the reviewer
+  leaves the versions the tool bumps
+  ([#384](https://github.com/JN0V/workline/issues/384));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.

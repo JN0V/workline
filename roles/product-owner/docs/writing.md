@@ -19,7 +19,7 @@ first, the cause folded.
 | The builder's, below | Verification, Scope | who builds it |
 
 - **Four sections are required**: Need, Verification, Validation, Scope
-  ([what ready means](../../../docs/spec/backlog-acts.md#refining-to-ready)).
+  ([what ready means](../../../docs/spec/backlog-acts/refine.md)).
 - **Example and Steps to reproduce are not**, nor any other heading you
   add: kept as they are.
 - The product owner adds a missing section where this layout puts it,
@@ -129,8 +129,8 @@ is the role's until a person edits it:
 
 - **One line on the issue**, in its comment: "Added: Verification, Scope.
   Changed: —. See the issue's edit history."
-- **Changed** lists only its own drafts it rewrote; it never changes a
-  sentence of yours.
+- **Changed** lists only its own sections it rewrote — a draft, or a text
+  as it wrote it; it never changes a sentence of yours.
 - **Rewrote: the description, in plain words** when it rewrote a role's
   text on top.
 - **The text before** is in the forge's edit history: "edited" above the
