@@ -1,5 +1,5 @@
 ---
-sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
+sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
 checked: 17d6abde
 judged: a8574a5
 verified: agent:claude-code
@@ -164,62 +164,7 @@ are ([ADR-0030](adr/0030-an-import-maps-every-item-to-its-issue-or-why-not.md)):
 
 ## The weekly sample
 
-Every week, one in ten of the docs the documentalist vouched for — whose
-`checked` it moved — is read whole against its sources, at the commit
-`checked` names, by a judge apart from the model that vouched
-([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4;
-[ADR-0015](adr/0015-the-weekly-sample-is-written-on-the-forge.md)).
-
-```yaml
-roles:
-  documentalist:
-    settings:
-      sample: {judge: "claude:opus"}   # Sonnet vouches by default: Opus reads
-```
-
-- **The judge**: an `--ai` value, here or as the CI variable
-  `WORKLINE_JUDGE`; a `cmd:` running another provider's agent stands
-  further apart. On workline itself, Opus reads what Sonnet vouched for:
-  another model of the same provider, the best independence there.
-  Without a judge, the docs drawn are listed for a person.
-- **The result**: one issue, "workline: the weekly sample of every role's
-  acts" (its former title, "… of the docs vouched for", renamed), a
-  comment a week, its acts numbered; a `checked` found false labels it
-  `documentalist-step-0` and opens a merge request putting it back, for
-  you to review.
-- **A dispute**: a verdict against the act goes to three judges, Claude's
-  three models by default (`sample: {panel: […]}`), each choosing between
-  the two readings, not told whose; the majority settles it.
-- **Your answer**: 👍 on the week's comment agrees with all of it; 👎 and a
-  reply naming rows (`not 3, 7`) contests those. The count, one comment
-  on the same issue, is written again each week from every week
-  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#kept-and-counted-with-the-maintainers-agreement)).
-- **A true finding the judge dropped**, still in the code, is opened as an
-  issue, `needs-triage`, three a week at most.
-- **The cost**: one call an act, about 4k to 12k tokens; about 380k on a
-  week as busy as workline's busiest
-  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)).
-- **`after: <tag>`** beside the judge leaves out what was vouched for
-  before that commit: before the release whose engine earns `checked`
-  (v0.2.1 on workline), a `checked` could be moved unread. A commit is best
-  quoted (`after: "7515148"`): unquoted, one with a leading zero is
-  refused, YAML reading it as another number.
-- **The week** is the last whole one; for another (`--week 2026-W40`),
-  each forge page says how.
-- **Every role's acts**: one in ten of each kind, from what each role
-  records on the forge — the product owner's acts done alone, the
-  findings the reviewer's judge kept or dropped, the committer's rewrites
-  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Each is re-checked by the same judge,
-  never a model that acted, and goes on the same issue with its verdict;
-  one it says wrong without the material's words found again is for you
-  to read.
-- **The cap**: `sample: {ai-max-tokens: 400000}` by default, about a
-  busy week's reads; the acts left past it are listed unread.
-- **The product owner's own issue**, on a project that turns it on
-  (`weekly-sample: true`;
-  [ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):
-  one in ten of those it did alone in the week, onto the issue "workline:
-  the weekly sample of the product owner's acts" — each with its day, its
-  level, and whether a person undid it — for you to judge; undo one you
-  find wrong. It may suggest another `autonomy` level; nothing to set up,
-  no agent asked.
+Once a week, after the gardening, the auditor re-checks one in ten of
+every role's acts: what it reads, writes and costs, in
+[the weekly sample](weekly-sample.md). Each forge's page says how to
+schedule it.

@@ -136,7 +136,7 @@ then you keep or drop each change, doc by doc (`v` shows it).
 
 ### workline sample
 
-The weekly sample of every role's acts
+[The weekly sample](weekly-sample.md) of every role's acts
 ([ADR-0014](adr/0014-checked-is-earned-by-what-was-read.md), step 4;
 [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)): one in
 ten of the acts of the last whole ISO week (`--week 2026-W40`; `--since
