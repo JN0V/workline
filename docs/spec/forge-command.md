@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 59210763
+checked: 4880c477
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -102,7 +102,10 @@ branches under the prefix, sorted; of `issues`, only the open ones, by
 number. There is no `release` operation:
 releases are the project's release tool's, not workline's (ADR-0017). Nor
 one for comments on a merge request's lines: a reviewer's findings go, in
-full, into its summary comment, `sticky` (role-outcome.md, `comment`).
+full, into its summary comment, `sticky` (role-outcome.md, `comment`). Nor
+one listing the merge requests merged: through a command, the weekly
+sample draws none of the reviewer's findings, nor reads the head of a
+merge request squashed, and says so (ADR-0046).
 
 ## What stays with the engine
 

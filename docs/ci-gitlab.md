@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 98de6b44
+checked: 4880c477
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -100,6 +100,8 @@ with the variable `WORKLINE_TASK` set to `sample`.
 - The judge: the variable `WORKLINE_JUDGE`, or the `sample.judge` setting.
   Another week than the last whole one: set `WORKLINE_SAMPLE_WEEK`
   (`2026-W40`) on the schedule, then play it.
+- Its reading job holds `WORKLINE_GITLAB_TOKEN`, as gardening's does: it
+  reads every role's acts on the issues and merge requests.
 
 ### 5. Protect main
 
