@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/examples.go, internal/builtin/documentalist/judge.go, roles/documentalist/role.yaml]
-checked: 25365ce
+checked: c073d23
 verified: agent:claude-code
 ---
 # Documentalist — the code examples a fix writes
@@ -33,7 +33,8 @@ them ([#121](https://github.com/JN0V/workline/issues/121)).
   config, as `derive`'s do, never in a doc.
 - **How it runs**: on a checkout of `HEAD` with the fixed docs written in,
   the doc whose examples changed as its argument (`"$@"`), in the job the
-  agent runs in: give it nothing the agent may not have.
+  agent runs in: give it nothing the agent may not have. Past 10 minutes,
+  it has failed.
 - **Withheld**: the doc keeps `checked` and records `judged`, as any place
   withheld ([what holds is applied](judge.md#what-holds-is-applied)); the
   last 10 lines of the output are shown.
