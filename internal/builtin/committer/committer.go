@@ -299,7 +299,7 @@ func Post(runDir, repo string) int {
 			// workline's own trailers say who made or rewrote a commit:
 			// the engine writes them, never the agent (ADR-0046).
 			for _, t := range Trailers(msg) {
-				if strings.HasPrefix(t, "Workline-") && !had[t] {
+				if strings.HasPrefix(strings.ToLower(t), "workline-") && !had[t] {
 					findings = append(findings, verdict.Finding{Rule: "trailer-added", Where: "trailers",
 						Message: fmt.Sprintf("the rewrite added %q; workline's own trailers are the engine's to write", t)})
 				}

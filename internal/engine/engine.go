@@ -1486,7 +1486,7 @@ const Rewriter = "committer"
 func madeBy(roles string) string {
 	var out []string
 	for _, r := range strings.Split(roles, ",") {
-		if r = strings.TrimSpace(r); r != "" && r != Rewriter {
+		if r = strings.TrimSpace(r); r != "" && !strings.EqualFold(r, Rewriter) {
 			out = append(out, r)
 		}
 	}
