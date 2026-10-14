@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 1d043faa
+checked: 566fbaa7
 verified: agent:claude-code
 ---
 # Configuration
@@ -193,7 +193,8 @@ A role's `pre` and `post` receive:
 - `WORKLINE_FORGE` when a forge is given, `WORKLINE_TARGET`
   (`merge-request:12`) with a target too;
 - `WORKLINE_OPEN_MERGE_REQUESTS`, `WORKLINE_OPEN_MERGE_REQUEST_TASKS` and
-  `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`;
+  `WORKLINE_PROPOSED_TASKS` with `--open-merge-request`, and
+  `in/waiting.yaml`, the files each waiting task changes;
 - on a release tool's merge request, for a role that runs on `release`:
   `WORKLINE_EVENT=release` and `WORKLINE_RELEASE_BRANCH`, the branch
   ([ADR-0017](adr/0017-the-release-manager.md));

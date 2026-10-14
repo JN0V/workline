@@ -16,4 +16,4 @@ expect:
   forge:
     merge-requests:
       - {id: 1, branch: "workline/documentalist/suspect", base: main, body-contains: "`docs/tech/ttl.md`"}
-      - {id: 2, branch: "workline/documentalist/fix", base: main, body-contains: "`docs/tech/auth.md` — judged in parts"}
+      - {id: 2, branch: "workline/documentalist/fix-docs-tech-auth-md", base: main, body-contains: "`docs/tech/auth.md` — judged in parts"}

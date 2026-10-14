@@ -16,11 +16,15 @@ type dedupeTask struct {
 }
 
 // pickDedupe chooses the one repeated passage a gardening run merges: the
-// first found. Two copies drift apart; one kept, and linked, cannot.
-func pickDedupe(problems []Problem) *dedupeTask {
+// first found whose merge request does not wait (waits, by its key). Two
+// copies drift apart; one kept, and linked, cannot.
+func pickDedupe(problems []Problem, waits func(key string, resolves func(verdict.Finding) bool) bool) *dedupeTask {
 	for _, p := range problems {
 		if p.Rule == "duplicate" && p.Other != "" {
-			return &dedupeTask{Docs: []string{p.Where, p.Other}, Key: p.Key}
+			d := &dedupeTask{Docs: []string{p.Where, p.Other}, Key: p.Key}
+			if !waits(d.key(), d.resolves) {
+				return d
+			}
 		}
 	}
 	return nil
