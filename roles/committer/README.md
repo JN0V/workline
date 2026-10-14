@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: 59fbc35
+checked: 6d6cf83
 verified: agent:claude-code
 ---
 # Committer
@@ -126,7 +126,7 @@ An author or committer address outside the allow list blocks (`identity`).
 
 - **Checked**: the one git will record, on `commit-msg` — `git var`, so an
   address given for one commit (`-c user.email`, `--author`) is caught too
-  — and those of every commit of the range.
+  — and those of every commit of the range. An empty address is refused.
 - **The list**: the project's `allowed-identities` setting (patterns;
   noreply addresses, for a public repository) and the user's own, one
   pattern a line, in `workline/allowed-identities` in their config folder.

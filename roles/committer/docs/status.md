@@ -22,6 +22,8 @@ hold:
    - [#107](https://github.com/JN0V/workline/issues/107), the user's
      allow-list refusing the forge's own commits, is fixed: a project
      names them in `forge-identities`.
+   - [#370](https://github.com/JN0V/workline/issues/370), a commit with
+     an empty address skipping the check, is fixed: it is refused.
    - One commit, one change is parked as
      [#192](https://github.com/JN0V/workline/issues/192) (closed, not
      planned).
