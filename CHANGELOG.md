@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.27.0](https://github.com/JN0V/workline/compare/v0.26.1...v0.27.0) (2026-10-13)
+
+
+### Features
+
+* **follow:** merge workline's routine pull requests alone at normal ([#347](https://github.com/JN0V/workline/issues/347)) ([0b780d8](https://github.com/JN0V/workline/commit/0b780d8beaa1374be78cfbe105db28d22617bdb0))
+
+
+### Bug Fixes
+
+* **ci:** keep the GitHub App's key out of a pull request's own run ([#348](https://github.com/JN0V/workline/issues/348)) ([81ce44f](https://github.com/JN0V/workline/commit/81ce44f3733d59e373a3d224ff35a85961c4b55b))
+
 ## [0.26.1](https://github.com/JN0V/workline/compare/v0.26.0...v0.26.1) (2026-10-13)
 
 
