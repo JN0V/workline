@@ -205,13 +205,13 @@ func TestGuarded(t *testing.T) {
 }
 
 // A kept line further down is the change's when it uses a name a removed
-// line of its function tested; not one using other names, nor one in
-// another function (#357).
+// line of its function tested; not one using other names, nor one above
+// the removal, nor one in another function (#357).
 func TestReachesFromARemovedGuard(t *testing.T) {
-	const page = "package shop\n\nfunc Page(items []int, p, size int) []int {\n\tcount := len(items)\n\tfrom := (p - 1) * size\n\tto := min(from+size, count)\n\treturn items[from:to]\n}\n\nfunc Other(p int) int {\n\treturn p\n}\n"
+	const page = "package shop\n\nfunc Page(items []int, p, size int) []int {\n\thalf := p / 2\n\tcount := len(items)\n\tfrom := (p - 1) * size\n\tto := min(from+size, count)\n\treturn items[from+half-half:to]\n}\n\nfunc Other(p int) int {\n\treturn p\n}\n"
 	repo := gitRepo(t, map[string]string{"shop/page.go": page})
-	c := Change{Removed: map[string][]Line{"shop/page.go": {{"shop/page.go", 3, "\tif p < 1 {"}, {"shop/page.go", 3, "\t\treturn nil"}, {"shop/page.go", 3, "\t}"}}}}
-	for line, want := range map[int]int{5: 3, 6: 0, 4: 0, 11: 0} {
+	c := Change{Removed: map[string][]Line{"shop/page.go": {{"shop/page.go", 4, "\tif p < 1 {"}, {"shop/page.go", 4, "\t\treturn nil"}, {"shop/page.go", 4, "\t}"}}}}
+	for line, want := range map[int]int{6: 4, 7: 0, 5: 0, 4: 0, 12: 0} {
 		if got := c.reaches(repo, "HEAD", "shop/page.go", Place{line, line}); got != want {
 			t.Errorf("line %d reaches %d, want %d", line, got, want)
 		}

@@ -641,11 +641,11 @@ func reach(repo, head string, tests []string, f Finding, at int, symptomAt int, 
 }
 
 // reaches is the line of a removal that a kept line's quote, lines p of
-// path at head, depends on (#357): a line the change removed, in the same
-// function, that tested or assigned a name the quote uses. A guard
-// removed exposes its uses further down, past the lines beside it; a
-// name, not the whole function, so a defect from before the change on
-// other names stays outside it. 0: none. No agent decides it.
+// path at head, depends on (#357): a line the change removed above it, in
+// the same function, that tested or assigned a name the quote uses. A
+// guard removed exposes its uses further down, past the lines beside it;
+// a name, not the whole function, so a defect from before the change on
+// other names, or above, stays outside it. 0: none. No agent decides it.
 func (c Change) reaches(repo, head, path string, p Place) int {
 	removed := c.Removed[path]
 	if len(removed) == 0 {
@@ -666,7 +666,7 @@ func (c Change) reaches(repo, head, path string, p Place) int {
 		}
 	}
 	for _, rm := range removed {
-		if rm.At < in.from || rm.At > in.to {
+		if rm.At < in.from || rm.At > in.to || p.From <= rm.At { // a removal of its function, above the quote
 			continue
 		}
 		for _, n := range guarded(stripCode(rm.Text, hash)) {
