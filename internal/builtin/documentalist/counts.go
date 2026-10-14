@@ -33,19 +33,29 @@ func (c countOff) message() string {
 	return fmt.Sprintf("`%s` has %d lines, not %s (line %d, %s)", c.named, c.real, c.stated, c.line, file)
 }
 
+// countNumber is a count as a doc writes it: "524", its thousands apart or not,
+// "1,008", "1 008", the space a no-break, narrow, thin or figure one as well
+// as a keyboard's: the spaces the removal rule makes plain. Two numbers a
+// lone space apart, "10 100", are one, as the removal rule reads them: the
+// SI way of writing thousands leaves a reader no other reading.
+const countNumber = `\d{1,3}(?:,\d{3})+|\d{1,3}(?:[ \x{00A0}\x{202F}\x{2009}\x{2007}]\d{3})+|\d+`
+
+// whole is a number as digits alone: "1,008" and "1 008" are "1008".
+func whole(n string) string { return strings.ReplaceAll(plain(n), ",", "") }
+
 var (
 	// countIn is a count of lines in prose or a listing: "524 lines",
-	// "(~283 lines)", "about 1,008 LOC". The singular ("an 800-line limit")
-	// is an adjective, never a count.
-	countIn = regexp.MustCompile(`(?i)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(\d{1,3}(?:,\d{3})+|\d+)\s+(?:lines|LOC)\b`)
+	// "(~283 lines)", "about 1,008 LOC", "1 200 lines". The singular ("an
+	// 800-line limit") is an adjective, never a count.
+	countIn = regexp.MustCompile(`(?i)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(` + countNumber + `)\s+(?:lines|LOC)\b`)
 	// countSaid is a count of lines written without "lines", after the
 	// file it counts: "`OTA.cpp` line count (607)", "line count: 607"
 	// (DomoticsCore, ADR-0014 step 4).
-	countSaid = regexp.MustCompile(`(?i)\bline count\s*(?:\(\s*|:\s*|\s(?:is|of)\s+)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(\d{1,3}(?:,\d{3})+|\d+)\b`)
+	countSaid = regexp.MustCompile(`(?i)\bline count\s*(?:\(\s*|:\s*|\s(?:is|of)\s+)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(` + countNumber + `)\b`)
 	// countBefore is a count of lines as an adjective, right before the
 	// file it counts: "a 216-line `JsonStreamWriter.h`". Before anything
 	// else ("the 800-line limit") it is no count.
-	countBefore = regexp.MustCompile(`(?i)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(\d{1,3}(?:,\d{3})+|\d+)-line\s+[` + "`" + `*_]*`)
+	countBefore = regexp.MustCompile(`(?i)(~\s*|\b(?:about|approximately|approx\.|around|roughly|nearly)\s+)?\b(` + countNumber + `)-line\s+[` + "`" + `*_]*`)
 	// fileNamed is a file name as a doc writes it: `Clock.h`, include/Clock.h.
 	fileNamed = regexp.MustCompile(`[A-Za-z0-9_][A-Za-z0-9_./-]*\.[A-Za-z][A-Za-z0-9]{0,7}\b`)
 	// limitWord makes a number a limit or a bound, not a count.
@@ -56,8 +66,9 @@ var (
 	sentenceEnd = regexp.MustCompile(`[.!?;]\s+[A-Z(]`)
 	// totalCell names a table's row of totals: "Total", "**Total**".
 	totalCell = regexp.MustCompile(`(?i)^total$`)
-	// countCell is a table cell holding a count alone: "524", "~283", "1,008".
-	countCell = regexp.MustCompile(`^(~\s*)?(\d{1,3}(?:,\d{3})+|\d+)$`)
+	// countCell is a table cell holding a count alone: "524", "~283",
+	// "1,008", "1 008".
+	countCell = regexp.MustCompile(`^(~\s*)?(` + countNumber + `)$`)
 	// linesHeader is the heading of a table's column of line counts.
 	linesHeader = regexp.MustCompile(`(?i)^(?:lines|loc|line count|lines of code|# ?lines)$`)
 )
@@ -154,7 +165,7 @@ func countsOff(repo string, files map[string]bool, d *Doc, content string) []cou
 		checkAgainst(n, named, file, approx, number, got)
 	}
 	checkAgainst = func(n int, named, file, approx, number string, got int) {
-		stated, err := strconv.Atoi(strings.ReplaceAll(number, ",", ""))
+		stated, err := strconv.Atoi(whole(number))
 		if err != nil {
 			return
 		}

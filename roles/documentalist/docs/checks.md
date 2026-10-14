@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: 252113e
+checked: f39bb93
 judged: f70db89
 verified: agent:documentalist
 ---
@@ -144,6 +144,8 @@ step 2): a count of lines next to a file the doc names among its sources
   lines)") or a table whose column is headed `Lines`.
 - **A table's row of totals** (`Total`) is a count too, the sum of its
   rows, when each row counts one source file.
+- **Thousands** apart with a comma or a space ("1,008", "1 200"), a
+  no-break or narrow no-break one too, are read whole.
 - **Right** within one line, or within a tenth when it says it is about
   (`~`, about, approximately).
 - **Not a count**: a number beside a limit word (`<`, under, over, limit,
