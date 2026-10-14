@@ -1,0 +1,16 @@
+# A lens of the reviewer, on the `reviewed` fixture once calc/calc.go is
+# moved to calc/mean.go, Average dividing by one less than the count: a
+# defect on the line the move changed, and one from before it, on a line
+# it kept, both quoted on the new path.
+- finding:
+    severity: important
+    title: Average divides by one less than the count
+    why: the mean of [2, 4] comes out 6, and one value divides by zero
+    cause: {path: calc/mean.go, quote: "return total / (len(values) - 1)"}
+    fix: divide by len(values)
+- finding:
+    severity: important
+    title: Parse drops the conversion error
+    why: "\"x\" reads as 0, and the caller cannot tell it from a real 0"
+    cause: {path: calc/mean.go, quote: "n, _ := strconv.Atoi(s)"}
+    fix: return the error

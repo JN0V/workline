@@ -14,6 +14,10 @@
   move its `checked`: the engine refuses it (`checked-unread`). Fix what you
   found wrong and set `judged`.
 - A clarification you are unsure of is a `note`, never a `patch`.
+- A code example you add or change, a fenced block, is told to the person
+  merging as unverified, or run through the project's own check, which
+  withholds it when it fails: write one only from signatures the sources
+  show.
 - Only documentation paths. Never code, never generated blocks between
   `workline:derive` markers.
 - Keep every rule written as MUST or SHOULD; condensing never drops a rule.

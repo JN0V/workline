@@ -1,0 +1,24 @@
+case: reviewer/record-unread-asks-one-lens-on-a-ready-merge-request
+about: "A record that does not read says nothing of whether every lens read the change (#359): on a merge request no draft (`draft=false`), the run reviews every commit again, as it does when the record does not read, but with one lens, never every lens on each push."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed.\n\n<!-- workline:record reviewed=@reviewed@ runs=one -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  findings: [{rule: record-unread, level: warn}]
+  calls: [{task: part, for: 1-correctness}]
+  run-files:
+    in/parts/1-correctness/task.md: {contains: ["### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 -->\n", comment-lacks: "read=all"}

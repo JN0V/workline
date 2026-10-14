@@ -1,0 +1,12 @@
+case: reviewer/moved-and-rewritten-file-read-as-new
+about: "A file moved and rewritten past git's similarity (half its content, git's default) is no rename: the file it moved to is new, every line of it the change's, and the one it left is removed (#358)."
+given:
+  repo: reviewed
+  setup:
+    - "git mv calc/calc.go calc/mean.go && printf 'package calc\\n\\nimport \"strconv\"\\n\\n// Median returns the middle of sorted values.\\nfunc Median(values []int) int {\\n\\tif len(values) == 0 {\\n\\t\\treturn 0\\n\\t}\\n\\tmid := len(values) / 2\\n\\tif len(values)%%2 == 0 {\\n\\t\\treturn (values[mid-1] + values[mid]) / 2\\n\\t}\\n\\treturn values[mid]\\n}\\n\\n// Parse reads a count.\\nfunc Parse(s string) int {\\n\\tn, _ := strconv.Atoi(s)\\n\\treturn n\\n}\\n' > calc/mean.go && git commit -qam 'refactor: a median in place of the mean'"
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-correctness/task.md: {contains: ["### calc/mean.go", "\n+package calc\n", "\n+func Parse(s string) int {\n", "-\treturn total / len(values)"]}

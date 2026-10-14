@@ -554,3 +554,44 @@ merge-request line; on in workline's own repository.
 - **Rejected**: following what the names flow into (a name assigned from
   a guarded one), which needs a parser of each language and reaches
   most of a function.
+
+## Amendment (2026-10-14, #359: the run on ready told by the state too)
+
+- **What broke**: a push now cancels the judging run still going
+  ([#359](https://github.com/JN0V/workline/issues/359)). GitHub told the
+  run on ready by the event alone: cancelled, it wrote nothing, and the
+  next push got one lens.
+- **Told by the state and the record too**: the templates pass the merge
+  request's draft state on every run (`--input draft=true|false`). On a
+  merge request no draft whose record does not say every lens read it,
+  the run reads every lens once, on the whole change, as with
+  `lenses=all`. The record then says so (`read=all`), and the next push
+  gets one lens. `lenses=all` on the event stays: the first run, and a
+  merge request marked ready again with no push between.
+- **Written once every lens answered**, so a merge request never ends
+  unreviewed whole in silence. A run on ready where one did not (its
+  answer unreadable after its one retry, its budget spent) writes
+  `retried=once`: the next push asks every lens again, once, said in the
+  comment (`every-lens-again`). Failing again, `read=all` is written all
+  the same, and the comment says the change was not reviewed whole by
+  every lens (`every-lens-not-whole`): no full review on every push of a
+  change too large for the budget. This replaces "a lens failing owes
+  nothing" above.
+- **An agent out of reach** writes no comment, so no mark: the next push
+  asks every lens again, nothing spent in between.
+- **A draft forgets it**: a run on a draft drops `read=all`, so a merge
+  request turned back into a draft, then ready, is read by every lens
+  once more, as on GitHub's second `ready_for_review`.
+- **Only a record that reads counts**: a record that does not read says
+  nothing of it, so that run reviews every commit with one lens. Every
+  lens on each push of a merge request whose notes the job cannot read
+  would be the cost [#147](https://github.com/JN0V/workline/issues/147)
+  cut.
+- **Both forges, one rule**: GitLab's template already reads the state
+  (its ready note against the reviewer's comment). It passes `draft` too,
+  so a pipeline on ready a push cancelled is caught the same way.
+- **Cost, once**: a merge request no draft whose record predates
+  `read=all` gets every lens on its next push.
+- **Rejected**: sparing the run on ready from the cancel (GitHub's
+  concurrency cannot); the forge's timeline, a ready event newer than the
+  reviewer's comment (a second reading, the record already read).

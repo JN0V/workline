@@ -53,10 +53,21 @@ its measure in
 - **A merge of the base read for what it settled**:
   `merge-of-main-asks-no-lens`,
   `merge-resolution-alone-given-to-the-lens`.
-- **Every lens once when a merge request becomes ready**:
+- **Every lens once when a merge request becomes ready**, told by its
+  draft state and the record too, so a run on ready a push cancelled is
+  not lost ([#359](https://github.com/JN0V/workline/issues/359)):
   `every-lens-once-when-*`, `one-lens-on-the-push-after-ready`,
   `run-on-ready-held-by-a-rule-owes-every-lens`,
-  `every-lens-owed-read-on-the-next-push`.
+  `every-lens-owed-read-on-the-next-push`,
+  `every-lens-when-the-run-on-ready-was-cancelled`,
+  `one-lens-a-push-once-every-lens-read`, `one-lens-a-push-on-a-draft`,
+  `every-lens-again-once-a-draft-again`,
+  `record-unread-asks-one-lens-on-a-ready-merge-request`; a failed run
+  on ready asks every lens again once, then says it:
+  `every-lens-owed-once-after-a-failed-run-on-ready`,
+  `every-lens-on-the-push-after-a-failed-run-on-ready`,
+  `every-lens-not-whole-said-after-a-second-failure`,
+  `every-lens-run-on-ready-unreachable-writes-nothing`.
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
@@ -71,6 +82,10 @@ its measure in
   ([#357](https://github.com/JN0V/workline/issues/357)):
   `finding-on-a-removed-guards-name-is-fixed-by-author`,
   `finding-on-a-name-the-removal-never-tested-becomes-issue`.
+- **A file moved read as moved**, its kept lines not the change
+  ([#358](https://github.com/JN0V/workline/issues/358)): `moved-file-*`,
+  `moved-and-rewritten-file-read-as-new`,
+  `block-stands-when-its-file-is-moved`.
 - **A judge for each important finding**, asking the lens's question:
   `judged-no-not-reported`, `independence-level-in-verdict`,
   `tests-judge-*`, `correctness-judge-keeps-its-question`,
@@ -120,21 +135,19 @@ its measure in
    ([#243](https://github.com/JN0V/workline/issues/243)); then the
    maintainer's choice for correctness
    ([#360](https://github.com/JN0V/workline/issues/360)).
-3. **A file moved**, read as all new lines
-   ([#358](https://github.com/JN0V/workline/issues/358)).
-4. **Reviews of one pull request at once** overwrite each other
+3. **Reviews of one pull request at once** overwrite each other
    ([#359](https://github.com/JN0V/workline/issues/359)).
-5. **Spec review on workline**, turned on after the product owner's trial
+4. **Spec review on workline**, turned on after the product owner's trial
    (2026-10-16); then more specs measured, the product owner's real answer
    read again, on GitLab and in CI. Several specs a night parked until a
    queue shows. No issue yet.
-6. **The tests lens outside the change**: untested code the change did not
+5. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
-7. **The developer's loop**: a handoff to the developer, five rounds, then
+6. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-8. **Tries on real use**: a draft marked ready, a run on ready a rule
+7. **Tries on real use**: a draft marked ready, a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
    real agent; every lens on ready tried on

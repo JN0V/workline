@@ -10,6 +10,8 @@
 # which only the default branch may use (docs/ci-github.md). What a pull
 # request's run left is read as data: its head is the event's, its runs are
 # found by name, and only what that pull request's line may do is applied.
+# A run a newer push cancelled (workline.yml's concurrency, #359) gets
+# nothing applied, kept or followed: the newer run's own does.
 #
 #   apply  after workline.yml's judge, holds the write token and no AI key:
 #          it applies what judge proposed (`apply --from-merge-request`). A
@@ -51,7 +53,8 @@ jobs:
   apply:
     # A pull request of this repository, judged, whatever judge's verdict:
     # steps that passed before one blocked still get their proposals applied.
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository
+    # Never a cancelled run: a newer push stopped it, and its run applies.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: workline-app
     # actions: read, the artifacts of the pull request's run.
@@ -117,7 +120,7 @@ jobs:
           exit "$status"
 
   verdict:
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: workline-app
     permissions: {actions: read, contents: read}
@@ -175,7 +178,7 @@ jobs:
     # A push to main; with the merge policy, a pull request's run too, once
     # its verdict is kept: never a fork's, whose run gets no secret.
     needs: verdict
-    if: always() && (github.event_name == 'push' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository))
+    if: always() && (github.event_name == 'push' || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository))
     # One at a time on a branch, with workline-merge.yml's: the first in
     # line is brought up once.
     concurrency: {group: "workline-follow-${{ github.event.workflow_run.pull_requests[0].base.ref || github.ref_name }}", cancel-in-progress: false}

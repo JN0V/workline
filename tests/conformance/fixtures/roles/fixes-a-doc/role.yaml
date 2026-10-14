@@ -1,0 +1,12 @@
+contract: 1
+name: fixes-a-doc
+mission: A role of the tests only — it fixes a doc on a merge request — so a fix that cannot be pushed, and goes in a comment, is tried with any agent.
+
+events: [merge-request]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium}
+duties:
+  reads: ["**"]
+  writes: ["docs/**"]
+intentions: [patch, note]
+without-ai: pass

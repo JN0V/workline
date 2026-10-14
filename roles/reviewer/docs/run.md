@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 8fedb9bb
+checked: 24e2cb24
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -21,6 +21,10 @@ flowchart LR
 1. **The range.** `workline review`: `base..HEAD` (`base`, `--base`); on a
    merge request, the range CI gives. A change touching only what is not
    code (`ignore`) asks nobody.
+   - **A file moved** is read as moved, as git finds a rename
+     ([#358](https://github.com/JN0V/workline/issues/358)): only its
+     changed lines are the change. Moved whole, it asks nobody; rewritten
+     past half its lines, git's similarity, it is a new file.
 2. **The rules**, on the comments the change adds, no agent:
    - a story of the code (`bug-story`, `story-words`: "used to", "the bug
      was");
@@ -105,6 +109,7 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
    breaks aside: in the file at the head of the range, among the lines the
    change removed, or in the issue it names (`#4`, the change's); a
    symptom, in its file; a claim, in what the author said.
+   - A file moved, quoted on its old path, is found on its new one.
    - Not found: dropped, said (`finding-unfounded`).
    - Two on one line are grouped, never one dropped
      ([#229](https://github.com/JN0V/workline/issues/229)).
@@ -173,32 +178,6 @@ reviewed: on GitHub it needs a read token (`GH_TOKEN`,
 
 ### Every lens once when it becomes ready
 
-[#129](https://github.com/JN0V/workline/issues/129): the templates pass
-`--input lenses=all` when the merge request is opened ready, or a draft
-is marked ready.
-
-- **The whole change**, `base..head`: each commit was read by one lens
-  only, and skipping them could leave nothing to read. The commits are
-  recorded and one run counted; the next push gets one lens, in turn.
-- **GitHub**: the pull request `opened`, not a draft, or
-  `ready_for_review`, which runs the line.
-- **GitLab**: marking a draft ready starts no pipeline
-  ([gitlab-org/gitlab#25426](https://gitlab.com/gitlab-org/gitlab/-/issues/25426)).
-  The next pipeline, a push or **Run pipeline**, is the one when the
-  merge request is no draft (`CI_MERGE_REQUEST_DRAFT`, else the API)
-  and GitLab's note "marked this merge request as **ready**" is newer
-  than the reviewer's comment, or there is no comment yet.
-  - Read with `GITLAB_TOKEN` when the job has one, else the job's own
-    token; unread, one lens, said in the log.
-- **Cost**: a review of the whole change by every lens, as on a machine,
-  within the same `ai-max-tokens`
-  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
-- **Held by a rule**: the run on ready asks no lens, and its record owes
-  every lens (`owed=all`); the next run, the fix pushed, reads every lens
-  on the whole change, whatever the template passed.
-- **Once the lenses were asked**, nothing is owed: a budget spent or a
-  lens failing leaves the next push one lens. With no agent, nothing is
-  written: on GitLab the next pipeline is the run on ready again; on
-  GitHub, one lens.
-- **GitLab's notes** are read page by page, the newest first, until the
-  ready note or the reviewer's comment.
+The run when a merge request becomes ready reads every lens once, on
+the whole change: what tells it on each forge, a run on ready cancelled,
+a draft again, the cost: [the run on ready](ready.md).

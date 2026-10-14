@@ -115,6 +115,7 @@ type state struct {
 	Together   bool              `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
 	Alone      bool              `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
 	Record     Record            `json:"record"`
+	Every      bool              `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
 	Advisories []verdict.Finding `json:"advisories,omitempty"`
 	Issues     []ClosedIssue     `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
 	Testimony  string            `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
@@ -198,13 +199,12 @@ func prepare(runDir, repo string, s Settings) int {
 		}
 		base = strings.TrimSpace(mb)
 	}
-	names, err := git(repo, "diff", "--name-only", "--no-renames", base, head)
+	files, err := codeFiles(repo, s, base, head)
 	if err != nil {
 		return fail(err)
 	}
-	files := code(s, names)
 	if len(files) == 0 {
-		return final(runDir, Review{Status: verdict.Pass, Summary: "no code changed (only files the reviewer leaves, by its `ignore`): nobody asked"})
+		return final(runDir, Review{Status: verdict.Pass, Summary: "no code changed (only files moved unchanged, or files the reviewer leaves by its `ignore`): nobody asked"})
 	}
 	change, err := readChange(repo, base, head, files)
 	if err != nil {
@@ -219,6 +219,7 @@ func prepare(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	rec, where, err := loadRecord(repo, s)
+	recordRead := err == nil
 	var advisories []verdict.Finding
 	if err != nil {
 		// Never read as none in silence (#302): the range is reviewed whole,
@@ -236,15 +237,11 @@ func prepare(runDir, repo string, s Settings) int {
 			Message: "the patch ids of the commits' changes could not be read (" + sp.Unread.Error() + "): a commit rebased is reviewed again"})
 	}
 	start := sp.From
-	// The run on ready (#129), every lens once, reads the whole change: its
-	// commits each read by one lens only, skipping them could leave nothing.
-	// One a rule held owes it to the next run (Owed).
-	asked := input(runDir, "lenses")
-	ready := os.Getenv("WORKLINE_EVENT") == "merge-request" && (asked == "all" || asked == "" && rec.Owed)
+	ready := runOnReady(runDir, &rec, recordRead)
 	if ready {
 		start = base
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Advisories: advisories}
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories}
 	// What blocked the last review stands until a commit answers it (#326):
 	// a run with nothing new to read never turns it green.
 	st.Standing = standing(repo, s, st, rec.Blocks)
@@ -312,7 +309,7 @@ func prepare(runDir, repo string, s Settings) int {
 			st.Skipped = append(st.Skipped, fmt.Sprintf("%s (%s)", l, why))
 		}
 	}
-	st.Lenses, st.Alone, err = lenses(runDir, s, rec, skip)
+	st.Lenses, st.Alone, err = lenses(runDir, s, rec, skip, ready)
 	if err != nil {
 		return fail(err)
 	}
@@ -329,25 +326,21 @@ func prepare(runDir, repo string, s Settings) int {
 	return 0
 }
 
-// code is the files of a `git diff --name-only` the reviewer reviews: those
-// its `ignore` does not leave.
-func code(s Settings, names string) []string {
-	var files []string
-	for _, f := range strings.Split(strings.TrimSpace(names), "\n") { // a name may hold a space
-		if f != "" && !pathglob.Any(s.Ignore, f) {
-			files = append(files, f)
-		}
-	}
-	return files
-}
-
-// codeFiles is the code the commits from..head change.
-func codeFiles(repo string, s Settings, from, head string) ([]string, error) {
-	names, err := git(repo, "diff", "--name-only", "--no-renames", from, head)
+// codeFiles is the code the commits from..head change: the files its
+// `ignore` does not leave, by their path at head. A file moved whole has
+// no line to read, and is left too (#358).
+func codeFiles(repo string, s Settings, from, head string) ([]File, error) {
+	all, err := changedFiles(repo, from, head)
 	if err != nil {
 		return nil, err
 	}
-	return code(s, names), nil
+	var files []File
+	for _, f := range all {
+		if !f.Same && !pathglob.Any(s.Ignore, f.Path) {
+			files = append(files, f)
+		}
+	}
+	return files, nil
 }
 
 // mergedIn is where a lens's diff starts when the commits after from, the
@@ -385,9 +378,9 @@ func (st state) lensFrom() string {
 // the commits recorded as reviewed, and the turn of the lenses left where
 // it was, for the next push that changes code.
 func recordOnly(runDir string, s Settings, st state, fresh int) int {
-	why := "only files the reviewer leaves, by its `ignore`"
+	why := "only files moved unchanged, or files the reviewer leaves by its `ignore`"
 	if st.Before != "" {
-		why = "only the base's code, merged in and reviewed there, or files the reviewer leaves"
+		why = "only the base's code, merged in and reviewed there, files moved unchanged, or files the reviewer leaves"
 	}
 	v := review(st, nil, fmt.Sprintf("no code changed since the last review (%s): nobody asked, the %d new commits recorded", why, fresh))
 	v.Complete = true
@@ -406,13 +399,57 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	return 0
 }
 
-// lenses are the lenses this run asks: every one on a machine, or when the
-// run is told `lenses=all`, or the record owes them; on a merge request,
-// the next in turn. A lens
+// runOnReady says whether this run is the one on ready, every lens once on
+// the whole change (#129): told `lenses=all`; or, told no lenses, the
+// record owing them, or the merge request no draft (`draft=false`) and its
+// record, read, not saying every lens read it (#359: a run on ready a push
+// cancelled wrote nothing). A draft's run drops those marks (roles/reviewer/
+// docs/ready.md).
+func runOnReady(runDir string, rec *Record, recordRead bool) bool {
+	if os.Getenv("WORKLINE_EVENT") != "merge-request" {
+		return false
+	}
+	draft := input(runDir, "draft")
+	if draft == "true" {
+		rec.ReadAll, rec.Retried = false, false
+	}
+	switch asked := input(runDir, "lenses"); asked {
+	case "all":
+		return true
+	case "":
+		return rec.Owed || rec.Retried || draft == "false" && recordRead && !rec.ReadAll
+	}
+	return false
+}
+
+// everyLens marks the record of the run on ready (#359): every lens read
+// the change once each answered; one that did not leaves every lens owed
+// to the next push, once, then the mark written all the same, said.
+func everyLens(st state, v *Review, answered bool) {
+	switch {
+	case !st.Every:
+		return
+	case answered:
+		v.Record.ReadAll, v.Record.Retried = true, false
+		return
+	case !st.Record.Retried:
+		v.Record.Retried = true
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "every-lens-again", Level: "warn",
+			Message: "not every lens answered on the run on ready: the next push asks every lens again, on the whole change, once"})
+		return
+	}
+	v.Record.ReadAll, v.Record.Retried = true, false
+	v.Findings = append(v.Findings, verdict.Finding{Rule: "every-lens-not-whole", Level: "warn",
+		Message: "not every lens answered, the run on ready asked twice: the change was not reviewed whole by every lens; the next pushes get one lens each"})
+}
+
+// lenses are the lenses this run asks: every one on a machine, or on the
+// run on ready (every, runOnReady); on a merge request, the next in turn,
+// or those the run is told (`lenses=`). A lens
 // in skip, which has nothing to read in this change, is never asked. With
 // them, the diff-alone facet, when its setting is on; a run told which
 // lenses to ask asks it only when it names it, whatever its setting.
-func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]string, bool, error) {
+func lenses(runDir string, s Settings, rec Record, skip map[string]string, every bool) ([]string, bool, error) {
 	if len(s.Lenses) == 0 {
 		return nil, false, fmt.Errorf("settings: no lenses")
 	}
@@ -443,7 +480,7 @@ func lenses(runDir string, s Settings, rec Record, skip map[string]string) ([]st
 			}
 		}
 		return out, named, nil
-	case os.Getenv("WORKLINE_EVENT") != "merge-request", rec.Owed: // every lens owed by a run on ready a rule held (#129)
+	case os.Getenv("WORKLINE_EVENT") != "merge-request", every: // the run on ready (#129, #359)
 		return usable, s.DiffAlone, nil
 	case len(usable) == 0:
 		return nil, s.DiffAlone, nil
@@ -486,12 +523,12 @@ func unasked(repo string, names []string, issues []ClosedIssue, ids []int) (map[
 
 // ask writes one part a lens: the lens, the commits not reviewed yet, and
 // the files they change.
-func ask(runDir, repo string, s Settings, st state, files []string) error {
+func ask(runDir, repo string, s Settings, st state, files []File) error {
 	// Each file once (#147): whole, the change marked in it, while the
 	// files fit in code-lines-max; the others by the change's hunks. A file
 	// given whole and again in the diff was a third of a lens's call.
 	var code strings.Builder
-	var hunked []string
+	var hunked []File
 	left := s.CodeLinesMax
 	for _, f := range files {
 		body, ok := marked(repo, st.lensFrom(), st.Head, f)
@@ -501,12 +538,12 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 			continue
 		}
 		left -= n
-		fmt.Fprintf(&code, "### %s\n\n```diff\n%s```\n\n", f, body)
+		fmt.Fprintf(&code, "### %s\n\n```diff\n%s```\n\n", f.Path, body)
 	}
 	diff := "(none: every file it changes is given whole below)\n"
 	if len(hunked) > 0 {
 		var err error
-		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", st.lensFrom(), st.Head, "--"}, hunked...)...); err != nil {
+		if diff, err = git(repo, append([]string{"diff", "-U5", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.Head, "--"}, pathspec(hunked)...)...); err != nil {
 			return err
 		}
 		diff = capLines(diff, s.DiffLinesMax, "the change is cut here: review what is above")
@@ -579,12 +616,12 @@ func ask(runDir, repo string, s Settings, st state, files []string) error {
 // diff-lines-max; nothing else, not the files it changes whole, not what
 // the author says, not the issue it closes. Its own call: the lenses'
 // shared material is what it must not hold.
-func aloneTask(repo string, s Settings, st state, files []string) (string, error) {
+func aloneTask(repo string, s Settings, st state, files []File) (string, error) {
 	l, err := readLens(repo, alone)
 	if err != nil {
 		return "", err
 	}
-	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", st.lensFrom(), st.Head, "--"}, files...)...)
+	diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", "--find-renames", st.lensFrom(), st.Head, "--"}, pathspec(files)...)...)
 	if err != nil {
 		return "", err
 	}
@@ -935,6 +972,11 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 		f.Where, f.Related, f.Symptom = f.Cause.Path, true, nil
 		return f, ""
 	}
+	// A file the change moved is found on its new path, quoted on its old
+	// one (#358): its lines, kept or removed, are there.
+	if to, ok := st.Change.Moved[f.Cause.Path]; ok {
+		f.Cause.Path = to
+	}
 	text, ok := fileAt(repo, st.Head, f.Cause.Path)
 	var places []Place
 	if ok {
@@ -985,6 +1027,9 @@ func found(repo string, st state, lens string, cites bool, v any) (Finding, stri
 	}
 	if f.Symptom != nil {
 		f.Symptom.Path = clean(f.Symptom.Path)
+		if to, ok := st.Change.Moved[f.Symptom.Path]; ok {
+			f.Symptom.Path = to
+		}
 		text, ok := fileAt(repo, st.Head, f.Symptom.Path)
 		if !ok || len(locate(strings.Split(text, "\n"), f.Symptom.Quote)) == 0 {
 			return f, fmt.Sprintf("its symptom is not found in %s as it reads", f.Symptom.Path)
@@ -1010,7 +1055,7 @@ func material(repo string, st state, s Settings, f Finding) string {
 	// included, so a part one of them did is not missing; up to code-lines-max.
 	if is := issueOf(st, f.Cause.Path); is != nil {
 		b.WriteString("\n" + whatFor([]ClosedIssue{*is}))
-		if diff, err := git(repo, "diff", "-U1", "--no-color", "--no-ext-diff", st.Base, st.Head, "--"); err == nil {
+		if diff, err := git(repo, "diff", "-U1", "--no-color", "--no-ext-diff", "--find-renames", st.Base, st.Head, "--"); err == nil {
 			fmt.Fprintf(&b, "\n## The whole change: every commit of the merge request, those reviewed before too\n\n```diff\n%s```\n", capLines(diff, s.CodeLinesMax, "the change is cut here, past code-lines-max"))
 		}
 		return b.String()
@@ -1023,7 +1068,7 @@ func material(repo string, st state, s Settings, f Finding) string {
 		}
 	}
 	b.WriteString(reach(repo, st.Head, s.Tests, f, at, symptomAt, s.JudgeLinesMax))
-	if diff, err := git(repo, "diff", "-U3", "--no-color", "--no-ext-diff", st.Base, st.Head, "--", f.Cause.Path); err == nil && diff != "" {
+	if diff, err := git(repo, append([]string{"diff", "-U3", "--no-color", "--no-ext-diff", "--find-renames", st.Base, st.Head, "--"}, pathspec([]File{st.Change.file(f.Cause.Path)})...)...); err == nil && diff != "" {
 		near, far := hunksNear(diff, at, nearCause)
 		fmt.Fprintf(&b, "\n## What the change did to %s, near the cause\n\n", f.Cause.Path)
 		if near != "" {
@@ -1266,7 +1311,8 @@ func settle(runDir, repo string, s Settings) int {
 		}
 		v.Record.Blocks = blocks
 	}
-	v.Record.Owed = false // the lenses were asked: no lens is owed any more, whatever they answered
+	v.Record.Owed = false // the lenses were asked: a rule holds them no more
+	everyLens(st, &v, len(c.Failed) == 0)
 	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.still()

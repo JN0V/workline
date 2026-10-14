@@ -1,0 +1,28 @@
+case: reviewer/one-lens-a-push-once-every-lens-read
+about: "Once a record says every lens read the change (`read=all`), a push to the merge request, no draft (`draft=false`), gets one lens again, in turn, on its new commit only (#359), and the record still says so."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    # Two pushes on the draft, then the run on ready, every lens: both commits reviewed, three runs.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD~1),$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Double doubles a count.\\nfunc Double(n int) int { return n * 2 }\\n' > calc/double.go && git add calc/double.go && git commit -qm 'feat: double a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by every lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=3 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  no-findings: [{rule: record-unread}]
+  # The fourth lens, intent, has no issue to read: the turn passes to claims.
+  calls: [{task: part, for: 1-claims}]
+  run-files:
+    in/parts/1-claims/task.md: {contains: "### calc/double.go", not-contains: "### calc/half.go"}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=4 read=all -->"}

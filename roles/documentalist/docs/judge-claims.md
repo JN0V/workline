@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: fcc8f36
+checked: a62cbbd
 verified: agent:claude-code
 ---
 # Documentalist — the judge's claims
@@ -48,7 +48,8 @@ not see backed (workline d43b3f2).
 - Words only added; lines rewrapped.
 - A line count the engine found off, brought to the engine's number: the
   stated number and the word making it rough ("~", "about",
-  "approximately"), in prose, a table's cell or a fenced listing. Another
+  "approximately"), in prose, a table's cell or a fenced listing, its
+  thousands apart or not ("1,008", "1 008"). Another
   number in its place needs a claim like any word. A table's total is a
   count the engine gives too.
 - Where the run replaces line for line, the words said around a count it

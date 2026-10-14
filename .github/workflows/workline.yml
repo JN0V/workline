@@ -47,6 +47,11 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
+    # One run per pull request (#359): a push cancels the run still on the
+    # head before, whose commits this run reviews with its own. Nothing
+    # of a cancelled run is uploaded after (`!cancelled()`), nor applied
+    # (workline-apply.yml).
+    concurrency: {group: "workline-judge-${{ github.event.pull_request.number }}", cancel-in-progress: true}
     # pull-requests read: the reviewer, when the line runs it, reads its
     # summary comment, to review only the commits it has not reviewed yet.
     permissions: {contents: read, security-events: write, pull-requests: read}
@@ -87,7 +92,8 @@ jobs:
         # (ADR-0017); from a fork it is anyone's text: a variable, never
         # written into the script. Opened ready, or marked ready, the
         # reviewer reads every lens once, on the whole change; one a push
-        # after (ADR-0020).
+        # after (ADR-0020). The draft state goes on every run: a push that
+        # cancelled the run on ready leaves the next one every lens (#359).
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
@@ -100,7 +106,7 @@ jobs:
           status=0
           workline route merge-request --ai "$ai" --no-apply --push-to-merge-request \
             --forge github --target merge-request:${{ github.event.pull_request.number }} --branch "$HEAD_REF" \
-            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} \
+            --input range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} ${ready:+--input lenses=all} --input draft="$DRAFT" \
             --sarif workline.sarif --summary workline-summary.md --verdict workline-verdict.json --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
@@ -120,13 +126,13 @@ jobs:
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.
       - uses: actions/upload-artifact@v4
-        if: always() && github.event.pull_request.head.repo.full_name != github.repository
+        if: '!cancelled() && github.event.pull_request.head.repo.full_name != github.repository'
         with: {name: workline-report, path: report/}
 
       # The line's verdict on the head, for workline-apply.yml to keep (the
       # merge policy). Not a fork's: its run is the fork's to write.
       - uses: actions/upload-artifact@v4
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
         with: {name: workline-verdict, path: "workline-verdict.json\nreport/number", if-no-files-found: ignore, retention-days: 1}
 
       # What the line proposed, for workline-apply.yml to apply.
@@ -135,7 +141,7 @@ jobs:
         with: {name: workline-runs, path: "line.json\n.workline-runs\nreport/number", include-hidden-files: true}
 
       - uses: github/codeql-action/upload-sarif@v4
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository
+        if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
         with: {sarif_file: workline.sarif, category: workline}
 
       # An agent missing or out of quota (3) is said, not taken for the

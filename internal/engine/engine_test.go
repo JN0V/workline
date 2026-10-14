@@ -1,6 +1,11 @@
 package engine
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestAskAgain(t *testing.T) {
 	for _, c := range []struct {
@@ -63,5 +68,78 @@ func TestOverBudgetSummary(t *testing.T) {
 	}
 	if got := overBudgetSummary("docs to check"); got != head+" (docs to check)" {
 		t.Errorf("said: got %q", got)
+	}
+}
+
+// A diff in a comment is copied whole and applied: no line of it ends its
+// block, and the block holds it as git wrote it, a last blank line of
+// context too (#145).
+func TestDiffBlock(t *testing.T) {
+	plain := "--- a/doc.md\n+++ b/doc.md\n@@ -1,2 +1,2 @@\n Title\n-old\n+new\n"
+	if got, want := diffBlock(strings.TrimSuffix(plain, "\n")), "```diff\n"+plain+"```"; got != want {
+		t.Errorf("without a backtick, the block changed:\n%s\nwant:\n%s", got, want)
+	}
+	fenced := "--- a/doc.md\n+++ b/doc.md\n@@ -1,4 +1,5 @@\n ```sh\n tool\n ```\n+```\n \n"
+	got := diffBlock(fenced)
+	open, rest, _ := strings.Cut(got, "\n")
+	fence := strings.TrimSuffix(open, "diff")
+	if !strings.HasPrefix(fence, "```") || strings.Trim(fence, "`") != "" {
+		t.Fatalf("opens with %q, not a fence and diff", open)
+	}
+	if inside, ok := strings.CutSuffix(rest, fence); !ok || inside != fenced {
+		t.Errorf("the block holds %q, want the diff %q", inside, fenced)
+	}
+	// CommonMark closes a fence on a line of as many backticks or more,
+	// indented three spaces at most.
+	for _, l := range strings.Split(fenced, "\n") {
+		if bare := strings.TrimLeft(l, " "); len(l)-len(bare) <= 3 && strings.HasPrefix(bare, fence) {
+			t.Errorf("line %q of the diff closes the block's fence %q", l, fence)
+		}
+	}
+}
+
+// The diff a comment shows applies whole with `git apply`: a doc changed,
+// its hunk ending on a blank line of context, and docs the run created, in
+// a folder of their own too; the index is left as it was (#145).
+func TestWrittenDiffAppliesWhole(t *testing.T) {
+	repo, run, write := gitRepo(t)
+	write("doc.md", "# Doc\n\nOne.\nTwo.\nThree.\n\nFour.\n")
+	run("add", "doc.md")
+	run("commit", "-qm", "docs: start")
+	want := map[string]string{
+		"doc.md":     "# Doc\n\nOne, changed.\nTwo.\nThree.\n\nFour.\n",
+		"new.md":     "# New\n\nSplit off.\n",
+		"cards/c.md": "# Card\n",
+		"empty.md":   "",
+	}
+	if err := os.Mkdir(filepath.Join(repo, "cards"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for p, s := range want {
+		write(p, s)
+	}
+	status := run("status", "--porcelain")
+	if diff, err := writtenDiff(runState{Repo: repo}); err != nil || diff != "" {
+		t.Errorf("nothing written: diff %q, %v; want none, not the whole tree's", diff, err)
+	}
+	diff, err := writtenDiff(runState{Repo: repo, Written: []string{"doc.md", "new.md", "cards/c.md", "empty.md"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if now := run("status", "--porcelain"); now != status {
+		t.Errorf("the index changed: %q, was %q", now, status)
+	}
+	run("checkout", "--", "doc.md")
+	for _, p := range []string{"new.md", "cards", "empty.md"} {
+		if err := os.RemoveAll(filepath.Join(repo, p)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("comment.patch", diff)
+	run("apply", "comment.patch")
+	for p, s := range want {
+		if got, err := os.ReadFile(filepath.Join(repo, p)); err != nil || string(got) != s {
+			t.Errorf("%s after git apply: %q (%v), want %q", p, got, err, s)
+		}
 	}
 }
