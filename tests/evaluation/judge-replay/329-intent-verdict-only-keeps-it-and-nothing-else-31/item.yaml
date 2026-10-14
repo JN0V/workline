@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v215
+pull-request: 329
+lens: intent
+title: "The verdict is kept as a commit status, not the git note the PR describes"
+where: tests/conformance/cases/merge/verdict-only-keeps-it-and-nothing-else.yaml:31
+commit: 022c017427d5fe9d5844bc7e610dfdfd9743f372
+origin: artifact
+from:
+  run: 38315878139
+  path: .workline-runs/20261012T221850.442289136-reviewer/in/judge/01
+  expires: 2027-01-10
+said: no
+said-tokens: {in: 4015, out: 351}
+truth: false
+settled-by: agreement
+evidence: "gh issue 321 Need/Validation/Verification name no git note (Scope only: 'today only out/verdict.yaml, a job's artifact'); at 022c017 docs/adr/0042:193-198 'keeps it on GitHub as the status `workline/verdict` ... a writer's status, as a git note anyone could push, never counts'; the case's line 31 expects that status; the PR body as read describes the status, not a note — Earlier commits of the PR (2f8d33e, merge.go:23-27 `verdictNotes = \"refs/notes/workline/verdicts\"`) did keep verdicts as git notes; by the rated commit (after 1bb0616, f751434) that is gone and the ADR says why. Whether the PR body still said 'git note' at review time cannot be checked (bodies have no history), but the issue, which the intent lens asks about, asks nothing of the kind."

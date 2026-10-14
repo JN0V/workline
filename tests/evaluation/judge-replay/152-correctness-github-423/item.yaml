@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v043
+pull-request: 152
+lens: correctness
+title: "Ticks array indexed wrongly when oldest edit truncated"
+where: internal/forge/github.go:423
+commit: d2051d0a20821c259eb25925511ff9966657f5a3
+origin: artifact
+from:
+  run: 37297604035
+  path: .workline-runs/20261005T103630.118355971-reviewer/in/judge/01
+  expires: 2027-01-03
+said: yes
+said-tokens: {in: 3393, out: 420}
+truth: true
+settled-by: agreement
+evidence: "internal/forge/github.go:420-428 — `if n.Diff == nil { continue }` runs before `if i == 0 && edits.Total > len(nodes) { before = *n.Diff; continue }`: when the history is truncated (Total > 100) and the oldest fetched version was deleted (Diff nil), the baseline branch is keyed on index 0 and never fires; nodes[1] is then diffed against \"\" (TicksBetween, forge.go:190) and every box ticked in it is credited to its editor. — The index check is the wrong key: it should be 'first version with a diff after a gap'. A later commit of the same PR (ee7e4a89, 'credit no tick across a gap in GitHub's edit history') replaces `i == 0` with a `gap` flag set by both truncation and a nil diff, and adds a test. Needs >100 body edits (the report is rewritten each run) plus a deleted oldest version; rare but possible. Only the title was available, so the exact mechanism the reviewer meant is inferred."

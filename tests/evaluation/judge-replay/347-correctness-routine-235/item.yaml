@@ -1,0 +1,20 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v218
+pull-request: 347
+lens: correctness
+title: "Draft with own auto-merge on is skipped at start"
+where: internal/engine/routine.go:235
+commit: 0a3a5d3ba67843f7dadbc12c2df2cb5ca2eefee5
+origin: artifact
+from:
+  run: 38415272923
+  path: .workline-runs/20261013T144022.566484718-reviewer/in/judge/03
+  expires: 2027-01-11
+said: no
+said-tokens: {in: 9053, out: 280}
+truth: false
+settled-by: agreement
+evidence: "internal/engine/routine.go:155-162 `if st.Draft { if ours { takeBack(\"marked a draft\") ... } }` at the start of weighRoutine; internal/engine/merge.go:479 skips only `!accepted && !mr.AutoMerge && !routineCandidate`, so one with auto-merge on is weighed; merge.go:610-612 `if st.AutoMergeBot || st.AutoMergeBy == \"\" { if routine { return weighRoutine(...) } }` — A draft of workline's own with its own auto-merge on reaches weighRoutine and is taken back there (auto-merge off, yes withdrawn), not skipped. Line 235 (`if st.AutoMerge { e.ready = true }`) is only reached past the draft check. The conformance case merge/normal-veto-holds covers the draft without auto-merge; the with-auto-merge path is handled by the same first branch."

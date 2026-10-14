@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: no test shown reaches the open-parent split branch's `if st == nil || len(st.Split) == 0 {`. The shown tests (acts_test, agreement_test, backlog_test, hand_test, the documentalist case) never call findUndone with an open split parent, let alone one whose state does not read; undo_test.go and the split conformance cases are not shown.
+"yes": true

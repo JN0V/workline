@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: in `evidence`, `if err != nil { return backlog.Evidence{}, err }` after `b.Closers(id)` passes any error up, and `Pre` then either does `return exitExternal` or `return fail(err)`, both of which leave the loop over `open` before `writeFindings`, unlike the state-comment error just above, which only does `continue`.
+"yes": true

@@ -59,6 +59,11 @@ roles:
       # The backlog file the issues were imported from, archived since: the
       # issues are the source, an edit to it flags none of them (ADR-0032).
       archived: [docs/BACKLOG.md]
+  reviewer:
+    settings:
+      # The role's list, plus the judge's replay set: questions and answers
+      # copied from past runs, kept as they were, with no code to review.
+      ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*", "tests/evaluation/judge-replay/**"]
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull

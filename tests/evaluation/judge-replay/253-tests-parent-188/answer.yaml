@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: the finding admits 'the conformance cases and the live run cover it', and parent-test-named-read-from-code.yaml with the backlog-tested.sh fixture likely exercises the `if where != "" && tests != nil` branch, while parent_test.go is not shown, so its claim that 'every test calls ReadEvidence with tests=nil' is a guess.
+"yes": false

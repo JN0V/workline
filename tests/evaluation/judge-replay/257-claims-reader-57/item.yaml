@@ -1,0 +1,21 @@
+# One of the 40 verdicts of the reviewer's judge measured on 2026-10-14
+# (docs/research/judge-measured.md). question.yaml is what it was asked,
+# answer.yaml what it answered, both copied from the run's workline-runs
+# artifact (from); its facets were roles/judge at commit.
+measure-id: v166
+pull-request: 257
+lens: claims
+title: "\"Never blocking\" contradicted by setting-missing"
+where: internal/builtin/documentalist/reader.go:57
+commit: 159cbebbeee00cf6c74c4ddeed5e3ad0244c6673
+origin: artifact
+from:
+  run: 37630661177
+  path: .workline-runs/20261007T134305.521938176-reviewer/in/judge/01
+  expires: 2027-01-05
+said: no
+said-tokens: {in: 8593, out: 697}
+truth: true
+settled-by: panel
+matters: false
+evidence: "PR 257's description says the reader checks are 'Reported, never blocking', yet ReaderChecks at internal/builtin/documentalist/reader.go:51-58 emits `setting-missing` for a threshold <= 0 and documentalist.go:850-852 gives every setting-missing Level block, as tests/conformance/cases/documentalist/reader-threshold-unset.yaml expects (status: block). The contradiction is narrow and deliberate: a project must set a threshold to 0 and the block follows the role's existing rule for budgets (roles/documentalist/docs/checks.md:221), so the five checks named never block; a line in the description, not a code change."

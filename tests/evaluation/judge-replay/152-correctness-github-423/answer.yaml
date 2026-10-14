@@ -1,0 +1,6 @@
+author: claude-sonnet-5-5
+judge: claude:opus
+level: model
+model: claude-opus-5-5
+why: with `edits.Total > len(nodes)`, a nil-Diff node at i == 0 hits the `continue` on line 423 before the baseline branch on line 426, so the next node (i == 1) is read against `before` still "", and `TicksBetween` credits every box already ticked in it to that editor.
+"yes": true
