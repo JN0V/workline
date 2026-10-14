@@ -1,5 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-
-# The yes kept through workline's own record commits (#380).
-merge/record-commit-keeps-the-yes
