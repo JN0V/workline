@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 5cb449a5
+checked: 17d6abde
 judged: a8574a5
 verified: agent:claude-code
 ---
