@@ -1,8 +1,8 @@
 <!-- workline
 sources: [cmd/workline, ci, routing.default.yaml, internal/forge, internal/agent/agent.go, internal/gate]
 checked: 27755fce
-judged: cd97f28
-verified: agent:claude-code
+judged: eb7fc7c
+verified: agent:documentalist
 -->
 <h1>
   <picture>
@@ -23,7 +23,7 @@ A software factory for AI-assisted development:
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
 pull requests and nightly gardening of workline and of another project;
-<!-- workline:derive conformance-cases -->632<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->736<!-- workline:end --> conformance cases green in CI.
 
 ## Get started
 
