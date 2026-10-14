@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // github talks to GitHub through the gh CLI and its REST API. Issues and pull
@@ -588,6 +589,52 @@ func (g *github) ListMergeRequests() ([]MergeRequest, error) {
 	for _, p := range found {
 		all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title,
 			Author: p.Author, Bot: p.Bot, Head: fmt.Sprintf("refs/pull/%d/head", p.ID), Labels: p.Labels, Draft: p.Draft, AutoMerge: p.Auto})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
+	return all, nil
+}
+
+// MergedSince reads the closed pull requests, the last updated first, page
+// by page until one was last updated before since: one merged since was
+// updated since. Each merged one is kept with merge_commit_sha, the commit
+// it became on its base, and its head under refs/pull/<n>/head, which
+// GitHub keeps after a squash.
+func (g *github) MergedSince(since time.Time) ([]MergeRequest, error) {
+	type pull struct {
+		ID      int    `json:"id"`
+		Merged  string `json:"merged"`
+		As      string `json:"as"`
+		Updated string `json:"updated"`
+		Branch  string `json:"branch"`
+		Base    string `json:"base"`
+		Here    bool   `json:"here"`
+		Title   string `json:"title"`
+		Author  string `json:"author"`
+		Bot     bool   `json:"bot"`
+	}
+	var all []MergeRequest
+	for page := 1; page <= 100; page++ {
+		out, err := g.api(fmt.Sprintf("repos/{owner}/{repo}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=%d", page), "--jq",
+			`.[] | {id: .number, merged: (.merged_at // ""), as: (.merge_commit_sha // ""), updated: .updated_at, branch: .head.ref, base: .base.ref, here: ((.head.repo.full_name // "") == .base.repo.full_name), title: .title, author: .user.login, bot: (.user.type == "Bot")}`)
+		if err != nil {
+			return nil, err
+		}
+		found, err := lines[pull](out)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range found {
+			if at, err := time.Parse(time.RFC3339, p.Merged); err == nil && !at.Before(since) {
+				all = append(all, MergeRequest{ID: p.ID, Branch: p.Branch, Base: p.Base, Here: p.Here, Title: p.Title, Author: p.Author, Bot: p.Bot,
+					Head: fmt.Sprintf("refs/pull/%d/head", p.ID), MergedAs: p.As, MergedAt: p.Merged})
+			}
+		}
+		if len(found) < 100 {
+			break
+		}
+		if at, err := time.Parse(time.RFC3339, found[len(found)-1].Updated); err == nil && at.Before(since) {
+			break
+		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
 	return all, nil
