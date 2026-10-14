@@ -285,6 +285,25 @@ type MergeRequest struct {
 	MergedAt string
 }
 
+// Reaction is a reaction a person put on a comment: its emoji, as GitHub
+// names it (+1, -1; GitLab's thumbsup and thumbsdown read so), and who.
+type Reaction struct {
+	Emoji  string `json:"emoji"`
+	Author string `json:"author"`
+	// Writer: who gave it may push and merge — GitHub's write, maintain
+	// or admin; GitLab's Developer or above.
+	Writer bool `json:"writer,omitempty"`
+	Bot    bool `json:"bot,omitempty"`
+}
+
+// Reacted is a forge that says the reactions on an issue's comment: the
+// maintainer's agreement with a week of the sample is one (ADR-0046).
+type Reacted interface {
+	// Reactions lists the reactions on an issue's comment, by the
+	// comment's id (Note.ID).
+	Reactions(issue int, note string) ([]Reaction, error)
+}
+
 // Merged is a forge that lists the merge requests merged: the weekly
 // sample reads each one's head, which a squash leaves off the base, and
 // the reviewer's summary on it (ADR-0046). GitHub, GitLab and the
@@ -356,4 +375,5 @@ var (
 	_ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
 	_ = []LineReviewer{&github{}, &gitlab{}, &Fake{}}
 	_ = []Merged{&github{}, &gitlab{}, &Fake{}}
+	_ = []Reacted{&github{}, &gitlab{}, &Fake{}}
 )

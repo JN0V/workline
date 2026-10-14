@@ -751,6 +751,27 @@ func (g *github) React(id int, note, emoji string) error {
 	return err
 }
 
+// Reactions reads a comment's reactions, each person's rights asked once.
+func (g *github) Reactions(issue int, note string) ([]Reaction, error) {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%s/reactions?per_page=100", note),
+		"--jq", `.[] | {emoji: .content, author: (.user.login // ""), bot: (.user.type == "Bot")}`)
+	if err != nil {
+		return nil, err
+	}
+	found, err := lines[Reaction](out)
+	if err != nil {
+		return nil, err
+	}
+	for i := range found {
+		if r := &found[i]; r.Author != "" && !r.Bot {
+			if r.Writer, err = g.writer(r.Author); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return found, nil
+}
+
 // labelFilter is the repository's issue list filtered on the label.
 func (g *github) labelFilter(label string) string {
 	out, err := g.api("repos/{owner}/{repo}", "--jq", ".html_url")

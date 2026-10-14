@@ -81,6 +81,9 @@ type FakeItem struct {
 	// the reactions on its comments, by the comment's id (ADR-0038).
 	LabelEvents []LabelEvent        `json:"label-events,omitempty"`
 	Reactions   map[string][]string `json:"reactions,omitempty"`
+	// ReactionsBy are the reactions people put on its comments, by the
+	// comment's id, with who: what Reactions reads, the role's own besides.
+	ReactionsBy map[string][]Reaction `json:"reactions-by,omitempty"`
 	// Threads are a merge request's comments on lines, as a review leaves
 	// them (LineReviewer).
 	Threads []FakeThread `json:"threads,omitempty"`
@@ -271,6 +274,24 @@ func (f *Fake) LabelEvents(id int) ([]LabelEvent, error) {
 		return nil, err
 	}
 	return it.LabelEvents, nil
+}
+
+// Reactions are the people's reactions on a comment, and the role's own,
+// its token's user's.
+func (f *Fake) Reactions(issue int, note string) ([]Reaction, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: issue})
+	if err != nil {
+		return nil, err
+	}
+	out := slices.Clone(it.ReactionsBy[note])
+	for _, e := range it.Reactions[note] {
+		out = append(out, Reaction{Emoji: e, Author: fakeBot, Bot: true})
+	}
+	return out, nil
 }
 
 func (f *Fake) React(id int, note, emoji string) error {
