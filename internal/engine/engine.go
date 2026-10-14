@@ -441,10 +441,16 @@ func run(o Options, res *Result) error {
 	// answers once before any is asked again.
 	questions, _ := filepath.Glob(filepath.Join(runDir, "in", "judge", "*", "question.yaml"))
 	for round := 1; len(questions) > 0; round++ {
-		if round > maxJudgeRounds {
+		var err error
+		switch {
+		case round > maxJudgeRounds+1: // a role that asks again even so
 			return fmt.Errorf("pre asked its judges again past %d rounds", maxJudgeRounds)
+		case round > maxJudgeRounds: // not asked, said: pre settles them
+			err = notAsked(questions, fmt.Sprintf("not asked: past %d rounds of the judge", maxJudgeRounds))
+		default:
+			err = askQuestions(o, ag, runDir, questions, res)
 		}
-		if err := askQuestions(o, ag, runDir, questions, res); err != nil {
+		if err != nil {
 			return err
 		}
 		answered := judgeAnswered(runDir)
@@ -3042,9 +3048,20 @@ func askJudge(o Options, res *Result, runDir string, v *verdict.Verdict, a *atte
 }
 
 // maxJudgeRounds bounds how often pre may ask its judges again: a role
-// bounds its own rounds (the reviewer's judge-read-rounds); this stops a
-// role that would never.
+// bounds its own rounds (the reviewer's judge-read-rounds); past it, a
+// question pre asks again is answered as not asked, and pre settles it.
 const maxJudgeRounds = 10
+
+// notAsked answers questions with why they were not asked.
+func notAsked(questions []string, why string) error {
+	out, _ := yaml.Marshal(map[string]string{"error": why})
+	for _, q := range questions {
+		if err := os.WriteFile(filepath.Join(filepath.Dir(q), "answer.yaml"), out, 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // judgeAnswered are the judge's questions holding an answer.
 func judgeAnswered(runDir string) []string {
