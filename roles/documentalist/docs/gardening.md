@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go]
-checked: 25365ce
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
+checked: 566fbaa7
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -86,12 +86,18 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   reported;
 - while a task's own merge request waits, the docs it would judge wait too
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)):
-  a doc judged in parts, whose task is `fix`, is then asked before the docs
-  judged whole;
+  the docs judged whole, while `suspect` or `stale` waits;
+- a doc judged in parts waits while any of these merge requests changes
+  it — its fix, or only the record of when it was judged —; the next doc
+  goes, each run's on a merge request of its own, `fix-<its first doc>`
+  (a short hash added when another doc's has that name)
+  ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
+- a doc to condense or split, a card to merge, a repeated passage wait
+  while their own merge request does; the next one goes;
 - a task proposed by an earlier round of the same run counts as waiting: a
   CI night judged with `--no-apply` that proposes the docs judged whole
   goes round again, and the docs put off to parts are judged the same
-  night, on the `fix` merge request
+  night
   ([ADR-0013, amended](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-02)).
   Workline's first nightly had put thirteen off "to a later round" a CI
   run never had;

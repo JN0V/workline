@@ -79,8 +79,12 @@ its evaluation in
 - **The push counts suspect docs**, asks nothing: routing's
   `pre-push-line`.
 - **Gardening at night**, one merge request a task, at most 3 waiting; not
-  asked again while it is open: `gardening-*`, `judged-not-asked-again`,
-  `task-waits-for-its-merge-request`, `parts-go-while-suspect-waits`.
+  asked again while it is open, a doc judged in parts while any merge
+  request changes it, the next doc going
+  ([#356](https://github.com/JN0V/workline/issues/356)): `gardening-*`,
+  `judged-not-asked-again`, `task-waits-for-its-merge-request`,
+  `parts-go-while-suspect-waits`, `parts-record-waiting-not-judged-again`,
+  `parts-judged-once-a-run`, `condense-waits-for-its-merge-request`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
 - **People's pull requests settled on its own lines**: `persons-branch*`.
 - **The merge policy**, `cautious`, and `normal` for workline's own

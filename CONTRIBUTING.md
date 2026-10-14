@@ -1,6 +1,6 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
-checked: f324ac6
+checked: 566fbaa7
 judged: b326f81
 verified: agent:documentalist
 -->

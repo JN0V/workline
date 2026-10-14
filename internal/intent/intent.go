@@ -148,6 +148,22 @@ func PatchFiles(v any) []string {
 	return files
 }
 
+// Slug is the task a merge request's key names (out/merge-request.yaml), as
+// the role's branch carries it, workline/<role>/<task>: lowercase letters,
+// digits and dashes. A role tells by it whether a task of its own waits.
+func Slug(key string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(key) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case b.Len() > 0 && !strings.HasSuffix(b.String(), "-"):
+			b.WriteRune('-')
+		}
+	}
+	return strings.Trim(b.String(), "-")
+}
+
 // Write saves proposals in the same shape Read expects. No proposals, no file.
 func Write(path string, in []Intention) error {
 	if len(in) == 0 {

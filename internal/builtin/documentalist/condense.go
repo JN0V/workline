@@ -28,11 +28,14 @@ type condenseTask struct {
 }
 
 // pickSplit chooses the one card a gardening run splits: the first too long,
-// which covers more than one concept.
-func pickSplit(problems []Problem) *condenseTask {
+// which covers more than one concept, whose merge request does not wait.
+func pickSplit(problems []Problem, waits func(key string, resolves func(verdict.Finding) bool) bool) *condenseTask {
 	for _, p := range problems {
 		if p.Rule == "card-too-long" {
-			return &condenseTask{Doc: p.Where, Keys: []string{p.Key}, Split: true}
+			c := &condenseTask{Doc: p.Where, Keys: []string{p.Key}, Split: true}
+			if !waits(c.key(), c.resolves) {
+				return c
+			}
 		}
 	}
 	return nil

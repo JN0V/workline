@@ -1,0 +1,24 @@
+case: documentalist/parts-record-waiting-not-judged-again
+about: "When gardening, a doc judged in parts whose record waits in an open merge request of the documentalist, whatever its task, is not judged again: the next doc waiting to be judged in parts gets its turn. DomoticsCore's nights judged the same two docs again and again while their record waited in the `derived` pull request (#356)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed 's/^# Authentication/# The token table/' docs/tech/auth.md > docs/tech/table.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md docs/tech/table.md && git commit -qam 'docs: confirm the auth docs'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+    # the night before: auth.md judged in parts, nothing fixed, its record proposed with the derived blocks
+    - "C=$(git rev-parse --short HEAD) && git checkout -qb workline/documentalist/derived && sed -i \"s/^checked: .*/&\\njudged-in-parts: $C/\" docs/tech/auth.md && git commit -qam 'docs: regenerate the derived blocks' && git push -q origin workline/documentalist/derived && git checkout -q main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+  forge:
+    merge-requests:
+      - {id: 4, branch: "workline/documentalist/derived", base: main, labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found", open-merge-request: true, no-apply: true}
+expect:
+  status: pass
+  agent-calls: 2   # the two parts of docs/tech/table.md, once
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "workline/documentalist/derived changes it and waits for review"}
+    - {rule: suspect, where: docs/tech/table.md, message: "judged in parts at"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "judged in parts at"}

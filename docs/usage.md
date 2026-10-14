@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 1d043faa
+checked: 566fbaa7
 verified: agent:claude-code
 ---
 # Using workline
@@ -101,7 +101,9 @@ Each in detail: [the commands](commands.md), and
 - **`--open-merge-request`**, with a forge: what the patches write goes on
   a branch `workline/<role>/<task>`, pushed, with a merge request opened or
   updated for it; the role is told how many of its merge requests are
-  open ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)).
+  open ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)),
+  and what each changes, so it asks nothing they hold again
+  ([ADR-0013, amended](adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it)).
   With `local`, the branch stays in the clone. A branch a person committed
   to is never pushed over (`not-proposed`); `workline follow --gardening`
   keeps the others on the base, or closes them
