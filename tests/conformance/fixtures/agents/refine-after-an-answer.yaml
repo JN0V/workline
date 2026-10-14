@@ -1,0 +1,10 @@
+# The product owner's refine of an outsider's issue a maintainer accepted,
+# written after reading the reporter's answer to its proposal (#390).
+- refine:
+    issue: 9
+    scope: "WriteRows in src/export/csv.go, and its test."
+    sources: [src/export/csv.go]
+    verification: "A test writes three sales, the last at 18:59, and reads three lines back."
+    need: "Every sale of the day exported, the last at 18:59 too."
+    validation: "- **Last sale:** Given 3 sales on 8 Oct, the last at 18:59, When Zed exports 8 Oct, Then the file holds 3 rows."
+    why: "The reporter says only the day's last sale is lost."

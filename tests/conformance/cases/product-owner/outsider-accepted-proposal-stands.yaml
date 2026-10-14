@@ -1,0 +1,18 @@
+case: product-owner/outsider-accepted-proposal-stands
+about: A text proposed to an outsider stands when nobody who counts answered it unread — a bot's comment after it, a stranger's, or the reporter's answer the role read already and left the text as it was; labelled workline:accepted, it is written and moves to ready in the same run, with no agent (#390).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [workline:to-refine, workline:accepted], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: stale-bot, bot: true, body: "This issue has had no activity for 30 days."}]}
+      - {id: 10, title: "Rows lost too", body: "Some rows are lost too.", author: zed, insider: false, labels: [workline:to-refine, workline:accepted], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: yan, insider: false, body: "Same here."}]}
+      - {id: 11, title: "Rows lost again", body: "Some rows are lost again.", author: zed, insider: false, labels: [workline:to-refine, workline:accepted], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 1\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: zed, body: "Is it the one I meant?"}]}
+run: {role: product-owner, event: schedule, ai: none}
+expect:
+  agent-calls: 0
+  no-findings: [{rule: not-ready, where: "#9"}, {rule: not-ready, where: "#10"}, {rule: not-ready, where: "#11"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:ready], body-contains: "Some rows are lost.\n\n## Need\n\nEvery row exported.", body-lacks: "workline:draft"}
+      - {id: 10, labels: [workline:ready], body-contains: "Some rows are lost too.\n\n## Need\n\nEvery row exported.", body-lacks: "workline:draft"}
+      - {id: 11, labels: [workline:ready], body-contains: "Some rows are lost again.\n\n## Need\n\nEvery row exported.", body-lacks: "workline:draft"}

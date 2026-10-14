@@ -40,8 +40,13 @@ agent's fences are turned to `'''`. The issue gets `workline:to-refine`; the act
 - **`workline:accepted`**, set by a person of the project: the next run
   writes the sections of the last proposal the body still lacks, with no
   agent, then moves the issue to ready in the same run, the drafts
-  accepted with it — unless anyone but the engine commented since: then
-  nothing of it is written, and the issue waits on a person;
+  accepted with it — unless its reporter or a person of the project
+  commented since, a comment the role has not read: the agent reads the
+  answer first, its `refine` is written in the body, and the label moves
+  the issue to ready at the next run (#390). A bot's or a stranger's
+  comment changes nothing, nor one the role read leaving its text as it
+  was. With no agent, nothing of it is written while the answer is
+  unread: the issue waits on a person;
 - **the reporter's own edit** of the body (only its author or a writer
   can edit it): read again as any body changed; moving it to ready stays
   proposed (`reporter-outside`) until a person accepts;

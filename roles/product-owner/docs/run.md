@@ -112,7 +112,9 @@ On an issue waiting on you, it is "revise":
   a question asked before is left out, the rest of the proposal kept.
 - **An outsider's issue** gets no section in its body: the engine comments
   to its reporter what it understood and the sections it would write. A
-  reply `agreed`, or `workline:accepted`, has them written. If that
+  reply `agreed`, or `workline:accepted`, has them written; with the
+  label, an answer since from the reporter or the project is read by the
+  agent first, and its `refine` is written instead. If that
   comment's hidden block does not read, nothing is written, said each run
   (`proposal-unread`): copy the sections in by hand.
 

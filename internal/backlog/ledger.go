@@ -121,6 +121,24 @@ func Unheard(st *State, notes []forge.Note, is forge.Issue) []forge.Note {
 	return nil
 }
 
+// AnswerUnheard says whether someone who counts — the reporter, a person
+// of the project — wrote after the last round to an issue's reporter, and
+// the role has not read it yet: an answer may change the text last
+// proposed, and the agent reads it first (#390). A bot's comment or a
+// stranger's is no answer; one the role read, leaving its text as it was,
+// no longer holds it back.
+func AnswerUnheard(st *State, notes []forge.Note, is forge.Issue, role string) bool {
+	last := -1
+	for i, n := range notes {
+		if Round(n.Body, role) {
+			last = i
+		}
+	}
+	// The comments not read are the last ones counted: one is after the
+	// round when any counted comment is.
+	return last >= 0 && len(Counted(notes[last+1:], is)) > 0 && len(Unheard(st, notes, is)) > 0
+}
+
 // StillAside says whether an issue a person set aside stays so: its body
 // as it was then, and no comment of a person since the role last read it.
 // Either brings it back (ADR-0038).
