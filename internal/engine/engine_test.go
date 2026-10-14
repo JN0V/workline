@@ -110,6 +110,7 @@ func TestWrittenDiffAppliesWhole(t *testing.T) {
 		"doc.md":     "# Doc\n\nOne, changed.\nTwo.\nThree.\n\nFour.\n",
 		"new.md":     "# New\n\nSplit off.\n",
 		"cards/c.md": "# Card\n",
+		"empty.md":   "",
 	}
 	if err := os.Mkdir(filepath.Join(repo, "cards"), 0o755); err != nil {
 		t.Fatal(err)
@@ -118,7 +119,10 @@ func TestWrittenDiffAppliesWhole(t *testing.T) {
 		write(p, s)
 	}
 	status := run("status", "--porcelain")
-	diff, err := writtenDiff(runState{Repo: repo, Written: []string{"doc.md", "new.md", "cards/c.md"}})
+	if diff, err := writtenDiff(runState{Repo: repo}); err != nil || diff != "" {
+		t.Errorf("nothing written: diff %q, %v; want none, not the whole tree's", diff, err)
+	}
+	diff, err := writtenDiff(runState{Repo: repo, Written: []string{"doc.md", "new.md", "cards/c.md", "empty.md"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +130,7 @@ func TestWrittenDiffAppliesWhole(t *testing.T) {
 		t.Errorf("the index changed: %q, was %q", now, status)
 	}
 	run("checkout", "--", "doc.md")
-	for _, p := range []string{"new.md", "cards"} {
+	for _, p := range []string{"new.md", "cards", "empty.md"} {
 		if err := os.RemoveAll(filepath.Join(repo, p)); err != nil {
 			t.Fatal(err)
 		}
@@ -134,8 +138,8 @@ func TestWrittenDiffAppliesWhole(t *testing.T) {
 	write("comment.patch", diff)
 	run("apply", "comment.patch")
 	for p, s := range want {
-		if got, _ := os.ReadFile(filepath.Join(repo, p)); string(got) != s {
-			t.Errorf("%s after git apply: %q, want %q", p, got, s)
+		if got, err := os.ReadFile(filepath.Join(repo, p)); err != nil || string(got) != s {
+			t.Errorf("%s after git apply: %q (%v), want %q", p, got, err, s)
 		}
 	}
 }

@@ -1259,6 +1259,9 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 // leaves it out: it is diffed against nothing, a new file, the index left
 // as it was.
 func writtenDiff(st runState) (string, error) {
+	if len(st.Written) == 0 {
+		return "", nil // no path: git would diff, and list, the whole tree
+	}
 	diff, err := gitRaw(st.Repo, append([]string{"diff", "--"}, st.Written...)...)
 	if err != nil {
 		return "", err
