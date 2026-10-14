@@ -983,14 +983,28 @@ func Pre(runDir, repo string) int {
 	} else if task, judged, err = suspectTask(suspects, s, pl, repo); err != nil {
 		return fail(err)
 	}
-	// Docs too large to be judged whole are judged in parts, when the
-	// project says so (ADR-0009): the parts first, then one call to fix. A
+	// Docs too large to be judged whole are judged in parts, unless the
+	// project turns it off (ADR-0009): the parts first, then one call to fix. A
 	// run asking parts asks nothing else: the rest waits for the next.
 	inParts := map[string]string{}
 	partsAsked := 0
 	var partsFallback []intent.Intention
 	inPartsTask := func(docs map[string]*suspectDoc) error {
-		if task != "" || adopting || !s.JudgeInParts {
+		if adopting || !s.JudgeInParts {
+			return nil
+		}
+		// A doc no part could judge, whatever its sources hold, says so in
+		// this round too, rather than wait for a round that would not judge it.
+		for _, p := range sortedDocs(docs) {
+			if sd := docs[p]; sd.tooLarge && sd.note == "" {
+				_, why, err := partsRoom(sd.doc, repo)
+				if err != nil {
+					return err
+				}
+				sd.note = why
+			}
+		}
+		if task != "" {
 			return nil
 		}
 		var cands []*suspectDoc
