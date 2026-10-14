@@ -1,7 +1,7 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
 checked: 07a772ed
-judged: dbb1f1f
+judged: 219536d
 verified: agent:documentalist
 ---
 # Using workline
