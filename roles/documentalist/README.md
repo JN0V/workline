@@ -75,6 +75,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30 | which pages a reader uses, and how much they read at once ([checks](docs/checks.md)) |
 | `duplicates` | `{min-words: 40, similarity: 0.85}` | repeated passages |
 | `derive` | `{}` | named commands filling `<!-- workline:derive name -->` blocks |
+| `examples` | `{check: ""}` | a command checking the code examples a fix writes; unset, they are said unverified ([code examples](docs/examples.md)) |
 | `documented` | `[]` | code globs every file of which a doc must describe |
 | `history`, `decisions` | `[]` | records and decision records beyond those known by name |
 | `versions` | `{pattern: "", files: []}` | how the project writes a version, and where |
@@ -131,7 +132,9 @@ comment. Gardening only regenerates derived blocks.
 - [The agent's tasks](docs/tasks.md): suspect docs judged whole or in parts;
   [gardening](docs/gardening.md): its tasks, one merge request per task.
 - [The judge](docs/judge.md): what `post` refuses of the agent's patches;
-  [its claims](docs/judge-claims.md): what backs a word taken out.
+  [its claims](docs/judge-claims.md): what backs a word taken out;
+  [code examples](docs/examples.md): said unverified, or checked by your
+  command.
 - [At the push, the release and the adoption](docs/push.md);
   [a pull request in conflict on its lines](docs/follow.md): main merged
   in, when set.
