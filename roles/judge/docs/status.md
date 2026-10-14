@@ -16,8 +16,9 @@ hold:
 
 1. **Nothing buildable in Missing**: open. The judge reads the code it
    needs before saying no
-   ([#362](https://github.com/JN0V/workline/issues/362)): built, off
-   until measured again. A judge of
+   ([#362](https://github.com/JN0V/workline/issues/362)): built, off;
+   [replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14),
+   on by default is the maintainer's call. A judge of
    another provider and each defect it let through as an evaluation case
    are parked ([#80](https://github.com/JN0V/workline/issues/80)): any
    command can already be the judge, and using one waits on a second
@@ -27,9 +28,11 @@ hold:
 3. **AI verdicts measured**: met on real use, 2026-10-14: 40 of its 229
    verdicts on workline's pull requests read again in the code, its "yes"
    right 19 of 20, its "no" 12 of 20
-   ([the judge, measured](../../../docs/research/judge-measured.md)). To
-   measure again once
-   [#362](https://github.com/JN0V/workline/issues/362) is built. Also
+   ([the judge, measured](../../../docs/research/judge-measured.md)).
+   Replayed on the same 40, 2026-10-14: the judge that reads keeps 6 of
+   the 8 true findings dropped, lets 2 of 12 false ones through, not
+   verified ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14));
+   on by default is the maintainer's call. Also
    inside the other roles' measures: the documentalist's `drifted` cases
    ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)),
    the reviewer's bench.

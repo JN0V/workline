@@ -1,9 +1,9 @@
 # ADR-0045: The judge asks for the code it needs; the engine reads it at the reviewed commit
 
 - **Status:** accepted; built in the order below, on by default once
-  measured. Steps 1 and 2 built, off (`judge-read-rounds: 0`); step 0 in
-  [#397](https://github.com/JN0V/workline/pull/397); step 3, the measure,
-  next
+  measured. Steps 0 to 2 built, off (`judge-read-rounds: 0`); step 3
+  [replayed 2026-10-14](../research/judge-measured.md#replayed-2026-10-14),
+  the default left to the maintainer
 - **Date:** 2026-10-14, for [#362](https://github.com/JN0V/workline/issues/362)
 - **Decided by:** the maintainer, 2026-10-14: caps, budget, `unsure`, scope
 - **Builds on:** [ADR-0005](0005-independence-takes-the-best-level-available.md)

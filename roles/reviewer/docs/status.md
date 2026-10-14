@@ -137,8 +137,9 @@ its measure in
    findings dropped for want of the proof
    ([#362](https://github.com/JN0V/workline/issues/362)). Built, off
    (`judge-read-rounds: 0`);
-   [measured again](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#measured-again-before-it-is-on-by-default)
-   before it is on by default.
+   [replayed 2026-10-14](../../../docs/research/judge-measured.md#replayed-2026-10-14):
+   6 of the 8 true findings kept, 2 of 12 false ones shown not verified;
+   on by default is the maintainer's call.
 2. **Measured before the developer**, on that judge: five runs a case, the
    finder floor's worth, the lenses together against apart; intent, claims
    and decisions; the diff alone as a cheap pass

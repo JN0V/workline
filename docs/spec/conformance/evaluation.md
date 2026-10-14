@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: 42e5e9c6
+checked: c6f73161
 verified: agent:claude-code
 ---
 # Evaluation — three measures
@@ -84,17 +84,34 @@ the reviewer's judge measured on 2026-10-14
   agreement or panel, `matters` when the panel was asked, `evidence`).
 
 `TestJudgeReplay` asks each question again, in a context of its own, of
-the judge `WORKLINE_EVAL` names, with today's `roles/judge`: a line of
-`results.tsv` an item (case `judge/<item>`), a point for a yes to a true
-finding or a no to a false one; the run's tally is logged (true findings
-kept and dropped, of the 8 dropped then how many kept, false findings let
-through, its yes right, the same as then). Never in the weekly run:
+the judge `WORKLINE_EVAL` names, with today's `roles/judge`, in one of
+two arms
+([ADR-0045](../../adr/0045-the-judge-asks-for-the-code-it-needs.md#measured-again-before-it-is-on-by-default)):
+
+- **today's judge**: a no drops the finding; case `judge/<item>`;
+- **the judge that reads** (`WORKLINE_EVAL_REPLAY_ROUNDS`, 2;
+  `WORKLINE_EVAL_REPLAY_LINES`, 400): asked as the reviewer asks it,
+  its reads served from this repository's git objects at the item's
+  commit (`reviewer.JudgeReading`); a no drops the finding only on its
+  quote, found again; case `judge-reads/<item>`.
+
+A line of `results.tsv` an item, a point for a true finding verified or
+a false one dropped; the run's tally is logged: right of the 20 it said
+yes to then and of the 20 it said no to, the true findings dropped then
+and again, the false ones let through, its yes right, unsure, the reads
+and the tokens a judge. It stops asking past `WORKLINE_EVAL_TOKENS_MAX`
+tokens in (2100000), counting `WORKLINE_EVAL_TOKENS_BEFORE` (what earlier
+runs of the same replay spent), and fails, said. Never in the weekly run:
 
 ```sh
-WORKLINE_EVAL=claude:opus go test -count=1 -timeout 60m -run '^TestJudgeReplay$' -v ./tests/evaluation/
+WORKLINE_EVAL=claude:opus go test -count=1 -timeout 60m -parallel 4 -run 'TestJudgeReplay$' -v ./tests/evaluation/
+WORKLINE_EVAL=claude:opus WORKLINE_EVAL_REPLAY_ROUNDS=2 WORKLINE_EVAL_TOKENS_BEFORE=<spent> go test -count=1 -timeout 90m -parallel 4 -run 'TestJudgeReplay$' -v ./tests/evaluation/
 ```
 
 With no agent, on every `go test`: `TestJudgeReplaySet` reads the set and
 scores what the judge said then — 31 of 40, its yes right 19 of 20, its
 no 12 of 20, as measured; `TestJudgeReplayWithFakeJudge` asks the 40 of a
-`cmd:` judge.
+`cmd:` judge, and stops at its tokens;
+`TestJudgeReplayReadingWithFakeJudge` asks one as the judge that reads.
+Replayed on 2026-10-14:
+[results](../../research/judge-measured.md#replayed-2026-10-14).
