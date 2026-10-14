@@ -115,9 +115,23 @@ func Ask(spec string, judgeRole *role.Role, question, material string) (Answer, 
 // (ADR-0045): it answers a note — yes, no or unsure — or asks to read, and
 // quotes the lines a no rests on. The question says what it may still read.
 func AskReading(spec string, judgeRole *role.Role, question, material string) (Answer, error) {
+	return ask(spec, readingRole(judgeRole), question, material, true)
+}
+
+// readingRole is the judge as a question that lets it read asks it: its
+// facets as they are, its output contract showing reads and a quote too.
+// How to answer so is the question's to say, never the facets': every
+// other judge's prompt stays as it was.
+func readingRole(judgeRole *role.Role) *role.Role {
 	reading := *judgeRole
 	reading.Intentions = append(slices.Clone(judgeRole.Intentions), readingIntentions...)
-	return ask(spec, &reading, question, material, true)
+	return &reading
+}
+
+// writeTask writes what a judge is asked: the question, then its material.
+func writeTask(dir, question, material string) error {
+	task := fmt.Sprintf("## Question\n\n%s\n\n%s\n", question, material)
+	return os.WriteFile(filepath.Join(dir, "in", "task.md"), []byte(task), 0o644)
 }
 
 func ask(spec string, judgeRole *role.Role, question, material string, reading bool) (Answer, error) {
@@ -135,8 +149,7 @@ func ask(spec string, judgeRole *role.Role, question, material string, reading b
 	defer os.RemoveAll(dir)
 	os.MkdirAll(filepath.Join(dir, "in"), 0o755)
 	os.MkdirAll(filepath.Join(dir, "out"), 0o755)
-	task := fmt.Sprintf("## Question\n\n%s\n\n%s\n", question, material)
-	if err := os.WriteFile(filepath.Join(dir, "in", "task.md"), []byte(task), 0o644); err != nil {
+	if err := writeTask(dir, question, material); err != nil {
 		return Answer{}, err
 	}
 	call, err := ag.Propose(agent.Request{RunDir: dir, Repo: dir, Role: judgeRole})

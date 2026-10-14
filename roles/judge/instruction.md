@@ -8,11 +8,3 @@ yes or no, then a colon, then why in one sentence, naming the words or lines
 that decided it:
 
 - note: "no: the rewrite drops 'judged', so the subject no longer says the patches are checked."
-
-When the task lets you read before you answer, you may first ask for the
-code you lack, as the task says, and answer once you have read it: yes; no,
-with the lines that refute the finding quoted beside the note, as they read;
-or unsure, when you still cannot tell:
-
-- note: "no: the loop adds every value before the division."
-- quote: {path: "calc/calc.go", text: "for _, v := range values {"}

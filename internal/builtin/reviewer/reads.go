@@ -116,13 +116,18 @@ func (r reading) write(dir string, s Settings, head string) error {
 	for i, rd := range r.Rounds {
 		fmt.Fprintf(&b, "\n## What you read, round %d\n\nAs the repository reads at %s.\n%s", i+1, short(head), rd.Served)
 	}
+	// How to answer a question that lets the judge read is said here, in
+	// its question alone: the judge's facets, which every judge shares,
+	// ask one note.
 	rounds, lines := r.left(s)
 	if rounds > 0 && lines > 0 {
-		fmt.Fprintf(&b, "\n## Reading more\n\nYou may ask to read the repository as it reads at %s before you answer: %d more %s of reads, %d more lines. To read, answer with reads instead of a note, each saying why: a file's lines (`path`, `lines`), where a name is defined (`name`), or the lines naming a word (`grep`, at most %d places). You are then asked again, with what you read.\n", short(head), rounds, plural(rounds, "round", "rounds"), lines, grepMax)
+		fmt.Fprintf(&b, "\n## Reading more\n\nThis question lets you read before you answer, in place of the one note asked otherwise. You may ask to read the repository as it reads at %s: %d more %s of reads, %d more lines. To read, answer with reads instead of a note, each saying why: a file's lines (`path`, `lines`), where a name is defined (`name`), or the lines naming a word (`grep`, at most %d places). You are then asked again, with what you read.\n", short(head), rounds, plural(rounds, "round", "rounds"), lines, grepMax)
 	} else {
 		b.WriteString("\n## No read is left\n\nYou read what you could (judge-read-rounds, judge-read-lines-max): answer now.\n")
 	}
-	b.WriteString("\nA no quotes the lines that refute the finding, as they read, with their path (`quote`): a no whose quote is not found again in what you were shown or read leaves the finding not verified. When you still cannot tell, answer `unsure: why`.\n")
+	b.WriteString("\nYour answer: yes; no, with the lines that refute the finding quoted beside the note, as they read, with their path; or unsure, when you still cannot tell. A no whose quote is not found again in what you were shown or read leaves the finding not verified:\n\n" +
+		"- note: \"no: the loop adds every value before the division.\"\n- quote: {path: \"calc/calc.go\", text: \"for _, v := range values {\"}\n\n" +
+		"- note: \"unsure: whether a caller passes an empty list is in no code read.\"\n")
 	data, _ := json.Marshal(map[string]any{"question": r.Question, "material": b.String(), "reads": true}) // JSON, which YAML reads
 	return os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644)
 }

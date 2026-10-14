@@ -1,8 +1,14 @@
 package judge
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/role"
 )
 
 func TestIndependence(t *testing.T) {
@@ -74,5 +80,45 @@ func TestAnswerReading(t *testing.T) {
 	}
 	if s := (Read{Path: "a.go", Lines: "1-9"}).String() + ", " + (Read{Name: "sum"}).String() + ", " + (Read{Grep: "total"}).String(); s != "a.go:1-9, `sum`, grep `total`" {
 		t.Errorf("reads said as %q", s)
+	}
+}
+
+// A judge whose question does not let it read — the spec review's, the
+// documentalist's, the product owner's, the evaluation's — is asked
+// exactly as before ADR-0045: its whole prompt is kept in
+// testdata/prompt.txt, as main built it before the reading judge. Only a
+// question that lets the judge read says how to answer so, and its output
+// contract alone shows reads and a quote.
+func TestPromptOfAJudgeThatDoesNotRead(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // the person's own facets stay out
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	judgeRole, err := role.Load("../../roles", "judge")
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt := func(r *role.Role) string {
+		dir := t.TempDir()
+		os.MkdirAll(filepath.Join(dir, "in"), 0o755)
+		if err := writeTask(dir, "Does the rewritten subject keep the author's meaning?", "## The case\n\nA rewrite.\n"); err != nil {
+			t.Fatal(err)
+		}
+		system, user, err := agent.Prompt(agent.Request{RunDir: dir, Repo: dir, Role: r})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return system + "\n\n" + user
+	}
+	got := prompt(judgeRole)
+	if os.Getenv("WORKLINE_GOLDEN") == "update" {
+		os.WriteFile(filepath.Join("testdata", "prompt.txt"), []byte(got), 0o644)
+	}
+	if want, err := os.ReadFile(filepath.Join("testdata", "prompt.txt")); err != nil || got != string(want) {
+		t.Errorf("a judge that does not read is asked otherwise than before (testdata/prompt.txt): %v\n%s", err, got)
+	}
+	reading := prompt(readingRole(judgeRole))
+	for _, w := range []string{"- read: {path:", "- quote: {path:"} {
+		if strings.Contains(got, w) || !strings.Contains(reading, w) {
+			t.Errorf("%q: in the output contract of a judge that may read only", w)
+		}
 	}
 }
