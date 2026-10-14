@@ -19,7 +19,7 @@ and where it stands: planned, beta or built, by
 | Reviewer | says what a change, or a spec, breaks or leaves out; never approves | `review`, `spec`, `merge-request` and `schedule` (opt-in) | [reviewer](../roles/reviewer/README.md) |
 | Product owner | keeps the open issues true to the code and ready to build, proposing on each issue | `schedule` (opt-in), `import` | [product owner](../roles/product-owner/README.md) |
 | Judge | answers one yes-or-no question a role's check cannot | asked by the other roles | [judge](../roles/judge/role.yaml) |
-| Auditor | re-checks a weekly sample of the docs the documentalist confirmed | `workline sample` | [auditor](../roles/auditor/role.yaml) |
+| Auditor | draws a weekly sample of every role's acts and re-checks the docs of it | `workline sample` | [auditor](../roles/auditor/role.yaml) |
 
 ## Which role runs when
 
@@ -41,10 +41,11 @@ Two roles never run on an event of their own:
 - the **judge** answers one yes-or-no question a role's check cannot (a
   reviewer's finding, a closing as obsolete), from another context or
   model than the one judged;
-- the **auditor** reads the weekly sample of the docs the documentalist
-  confirmed — those whose `checked` it moved (`workline sample`). The same
-  sample draws the product owner's acts of the week, for a person, with
-  no agent.
+- the **auditor** draws, each week, one in ten of every role's acts
+  (`workline sample`, [ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). It reads the docs
+  the documentalist confirmed against their code; the product owner's
+  acts, the reviewer's judged findings and the committer's rewrites are
+  listed for a person, until it re-checks them too.
 
 How to run each role from a hook, a script or a CI job:
 [triggers.md](triggers.md). What a role is, for those who write one:

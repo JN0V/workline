@@ -112,10 +112,11 @@ Before your release tool tags; a non-zero exit holds it.
 
 ### Weekly sample
 
-`workline sample --out sample.json` (agent, writes nothing; `--week
-2026-W40`), then `workline sample --apply sample.json --forge gitlab`
-(token, no agent), which also draws the product owner's acts of the week
-from the issues, when turned on
+`workline sample --forge gitlab --out sample.json` (agent, reads the
+forge, writes nothing; `--week 2026-W40`): every role's acts drawn
+([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Then `workline sample --apply
+sample.json --forge gitlab` (token, no agent), which also draws the
+product owner's acts onto their own issue, when turned on
 ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
 
 ### Import

@@ -118,9 +118,10 @@ and `apply`, with the App, commits the fix to its branch,
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
 - **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,
-  or the `sample.judge` setting; for another week than the last whole one,
-  run the workflow by hand (Actions → workline sample → Run workflow) with
-  its `week` input (`2026-W40`).
+  or the `sample.judge` setting; its reading job reads the issues and pull
+  requests, for every role's acts. For another week than the last whole
+  one, run the workflow by hand (Actions → workline sample → Run workflow)
+  with its `week` input (`2026-W40`).
 - **The summary**: each job's summary page (`$GITHUB_STEP_SUMMARY`), the
   applying job's saying what it did and what failed; a fork's pull request
   gets the judge's as a comment

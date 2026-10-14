@@ -48,8 +48,9 @@ saying so.
 - `review: [<option>...]` instead of `role` — `workline review` on the
   repository, with these options;
 - `sample: [<option>...]` instead of `role` — draw and read the weekly
-  sample (`workline sample`), with no forge; `then: apply` then writes what
-  it found with `workline sample --apply`, on the simulated forge;
+  sample (`workline sample`), reading the simulated forge, when the case
+  gives one, and never writing to it; `then: apply` then writes what it
+  found with `workline sample --apply`, on the simulated forge;
 - `follow: [<option>...]` instead of `role` — `workline follow` on the
   repository (`[--base, main]`), on the simulated forge, or GitLab's with
   `forge: gitlab`; with `then-line: {event, branch, range, ai}`, the line

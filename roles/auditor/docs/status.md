@@ -2,9 +2,9 @@
 
 **In one line:** reads, each week, one in ten of the docs the
 documentalist vouched for (`workline sample`); tried on a GitLab sandbox,
-its first scheduled run on workline on 2026-10-05. It audits the docs
-only; the product owner's acts are drawn for a person, with no agent.
-Beta.
+its first scheduled run on workline on 2026-10-05. The same sample draws
+one in ten of every other role's acts, per kind, and lists them for a
+person: it re-checks only the docs yet. Beta.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
@@ -42,12 +42,21 @@ hold:
   `job-summary-of-a-sample`.
 - **The product owner's acts drawn for a person**: product owner's
   `sample-*`.
+- **Every role's acts drawn**, one in ten per role and kind, from the
+  records each keeps, listed for a person
+  ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
+  `sample-*`; a `checked` naming a commit a squash left off the branch,
+  read from its merge request's head: documentalist's `sample-checked-*`.
 
 ## Missing
 
 - **Every role's acts re-checked**
-  ([#205](https://github.com/JN0V/workline/issues/205)): being built,
-  as [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md).
+  ([#205](https://github.com/JN0V/workline/issues/205)): drawn, not read
+  yet. Left, as
+  [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md):
+  a verdict per act; the records it completes — the product owner's
+  `at`, `model` and `body`, the reviewer's line per finding judged, the
+  committer's trailers.
 - **Its verdicts kept and counted**
   ([#276](https://github.com/JN0V/workline/issues/276)): built with
   [#205](https://github.com/JN0V/workline/issues/205) (decided
