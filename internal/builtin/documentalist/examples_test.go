@@ -110,7 +110,7 @@ func TestCheckExamples(t *testing.T) {
 	was := exampleTimeout
 	exampleTimeout = 500 * time.Millisecond
 	defer func() { exampleTimeout = was }()
-	if r := checkExamples(repo, "exec sleep 30", docs, nil); r.ok || !strings.Contains(r.out, "did not end within") {
+	if r := checkExamples(repo, "echo checking; exec sleep 30", docs, nil); r.ok || r.out != "checking / did not end within 500ms" {
 		t.Errorf("a command that does not end: %+v", r)
 	}
 	if out, _ := git(repo, "worktree", "list"); strings.Count(out, "\n") > 0 {

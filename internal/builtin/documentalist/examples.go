@@ -260,8 +260,9 @@ func checkExamples(repo, command string, docs map[string]string, named []string)
 	if err == nil {
 		return exampleRun{ok: true}
 	}
-	if ctx.Err() != nil {
-		err = fmt.Errorf("did not end within %s", exampleTimeout)
+	if ctx.Err() != nil { // said after what it printed, never lost under it
+		late := fmt.Sprintf("did not end within %s", exampleTimeout)
+		return exampleRun{out: outputSaid(string(out)+"\n"+late, err)}
 	}
 	return exampleRun{out: outputSaid(string(out), err)}
 }
