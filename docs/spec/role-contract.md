@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 566fbaa7
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # Role contract — v1 (draft)
@@ -339,8 +339,9 @@ a forge kept there); an earlier round's, the files its patches name. A
 branch that cannot be read leaves its task out, said
 (`merge-request-unread`, a warning; ADR-0013, amended 2026-10-14). On a merge request a release tool opened (its
 branch one of `release.branches`), a role that runs on `release` is run on
-it: `WORKLINE_EVENT` is `release`, and `WORKLINE_RELEASE_BRANCH` names the
-branch (ADR-0017). A fix judged there is not pushed onto that branch, which
+it: `WORKLINE_EVENT` is `release` (ADR-0017). Every role run there is told
+the branch, `WORKLINE_RELEASE_BRANCH`: the reviewer leaves the versions the
+tool bumps (#384). A fix judged there is not pushed onto that branch, which
 the release tool rewrites: it goes to a merge request of its own into the
 release's base, and the release waits until it is merged (`fixed-elsewhere`);
 never over a person's commit on that branch, where it goes in a comment

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 0f9d25d3
+checked: 048bdfa2
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -25,6 +25,18 @@ flowchart LR
      ([#358](https://github.com/JN0V/workline/issues/358)): only its
      changed lines are the change. Moved whole, it asks nobody; rewritten
      past half its lines, git's similarity, it is a new file.
+   - **A release tool's pull request**
+     ([#384](https://github.com/JN0V/workline/issues/384)), told by its
+     branch as the documentalist tells it
+     ([ADR-0017](../../../docs/adr/0017-the-release-manager.md)): a file
+     whose every changed line is a version the tool bumps is not code.
+     - A bump: the same line, one version in place of another, on a line
+       the tool marks — `x-release-please-version` (or `-major`, `-minor`,
+       `-patch`), between `x-release-please-start-…` and
+       `x-release-please-end`, `x-releaser-pleaser-version` — or in
+       `.release-please-manifest.json`.
+     - Only bumps and a changelog: nobody asked, the verdict passes.
+     - Any other line in a file: that file is reviewed as on any branch.
 2. **The rules**, on the comments the change adds, no agent:
    - a story of the code (`bug-story`, `story-words`: "used to", "the bug
      was");
