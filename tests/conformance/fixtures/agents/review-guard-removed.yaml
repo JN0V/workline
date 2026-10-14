@@ -1,0 +1,9 @@
+# A lens of the reviewer, on the `shop` fixture once the guard on p is
+# removed from Page: the defect it opens, quoted on a later use of p, a
+# line the change kept more than three lines below.
+- finding:
+    severity: important
+    title: Page panics on page 0
+    why: the guard on p is gone, so page 0 makes from negative and the slice panics
+    cause: {path: shop/page.go, quote: "from := (p - 1) * size"}
+    fix: put back the guard on p
