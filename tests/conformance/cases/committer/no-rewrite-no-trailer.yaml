@@ -1,0 +1,8 @@
+case: committer/no-rewrite-no-trailer
+about: "A message the committer passes as written is the author's alone: no agent asked, nothing applied, no trailer of workline's added."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: stop crashing on an empty input file\n\nRefs: AC-3"}, ai: "fake:good-commit-message"}
+expect:
+  status: pass
+  agent-calls: 0
+  applied: []

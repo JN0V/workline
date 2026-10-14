@@ -52,7 +52,12 @@ its evaluation in
   `code-without-dash-in-subject`, `standard-*`, `one-message-per-commit`.
 - **The agent's rewrite**, keeping the type, the scope, the trailers and
   the author's words: `agent-rewrites-message`, `rewrite-*`,
-  `public-name-kept-by-the-agent`.
+  `public-name-kept-by-the-agent`; marked by workline's two trailers,
+  never the old message's words, still the person's commit:
+  `rewrite-carries-its-trailers`, `no-rewrite-no-trailer`,
+  `rewritten-commits-pass-their-checks`, routing's
+  `rewritten-commit-is-judged`
+  ([#205](https://github.com/JN0V/workline/issues/205)).
 - **Secrets and forbidden terms**, gitleaks: `secret-*`,
   `secrets-not-checked`, `forbidden-terms-common-and-repo`, `term-*`.
 - **The author's identity**: `identity-*`; the forge's own addresses a

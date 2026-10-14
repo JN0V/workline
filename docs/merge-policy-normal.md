@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/routine.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
-checked: d7ea19ba
+checked: c6af84e6
 verified: agent:claude-code
 ---
 # The merge policy at `normal`

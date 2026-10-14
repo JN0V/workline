@@ -1,8 +1,8 @@
 ---
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
-verified: agent:documentalist
-checked: 1dd6543c
+verified: agent:claude-code
+checked: aacddb36
 judged: eef1944
 status: draft
 ---
@@ -78,7 +78,7 @@ refuses. The catalogue is closed and belongs to the engine:
 
 | Intention | Effect | Applied |
 |---|---|---|
-| `commit-message` | replace the message being written | locally |
+| `commit-message` | replace the message being written; the engine adds the role's `Workline-Role` and each `Workline-Model` to its trailers, which the agent may not write (ADR-0046) | locally |
 | `patch` | a unified diff, applied as its lines read (agents get hunk counts wrong), which may create a file (`--- /dev/null`) or delete one (`+++ /dev/null`), or `{file, content}` to replace one file; limited to `duties.writes`, every path whole; never a rename, a copy, a mode, a link — written or written through — nor a binary patch | locally, as a merge request of its own (`--open-merge-request`), or as a commit on the merge request run on (`--push-to-merge-request`) |
 | `comment` | a comment on the issue or merge request; `{body, sticky: key}` keeps one comment, edited on each run (with `update-only: true`, never opened); `issue: n` puts it on that issue instead; a line starting with `/` is escaped, never a GitLab quick action (ADR-0038); beside a sticky comment on a merge request, `review: {head, body, comments: [{path, line, key, body}]}` posts each comment on its line first, in the forge's own review — GitHub's pull request review, event `COMMENT`; GitLab's discussions —, never approving nor asking for changes; a comment whose `key` a thread not resolved holds is not posted again; one on a line the merge request's diff does not show, or the forge refuses (`line-comment-refused`, a warning), goes in full into the sticky comment's review region, from `<!-- workline:review -->` to `<!-- workline:review-end -->`, with why, the region also linking to the review; what the role wrote in the region, each comment in full, is for an engine that posts none, which leaves it; never a failed run (#277) | forge; `local` and `cmd:` take no comment on a line |
 | `label` | add or remove labels | forge |
