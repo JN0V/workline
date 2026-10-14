@@ -540,9 +540,10 @@ merge-request line; on in workline's own repository.
   evaluation's `Page` lost its guard on `p`, and the lenses quoted a use
   of `p` further down: the engine sent the change's defect to an issue.
 - **The rule, after the removed lines**: a kept line is the change's
-  when, in the same function, it uses a name a removed line tested
-  (after `if`, `while`, `for`, `case`…) or assigned. Its comment goes on
-  the line where the removal shows, which the merge request's diff holds.
+  when, below a removal in the same function, it uses a name a removed
+  line tested (after `if`, `while`, `for`, `case`…) or assigned. Its
+  comment goes on the line where the removal shows, which the merge
+  request's diff holds.
 - **Mechanical**: the function is found as the judge's reach finds it,
   Go by its parser, other languages by their definitions; names are words
   that are not keywords, fields after a dot, nor calls. No agent decides.
