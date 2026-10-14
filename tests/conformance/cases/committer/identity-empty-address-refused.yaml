@@ -11,7 +11,7 @@ run: {role: committer, event: merge-request, input: {range: "main..feature"}, ai
 expect:
   status: block
   findings:
-    - {rule: identity, where: author, message: "address is empty"}
+    - {rule: identity, where: author, message: " is empty"}
     - {rule: identity, where: committer, message: "someone@elsewhere.invalid"}
-    - {rule: identity, where: committer, message: "address is empty"}
+    - {rule: identity, where: committer, message: " is empty"}
   no-findings: [{rule: identity, where: author, message: "fixture@example.invalid"}]

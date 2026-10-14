@@ -80,11 +80,18 @@ func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
 		}
 		return false
 	}
-	refuse := func(where, email, commit string) verdict.Finding {
-		return verdict.Finding{Rule: "identity", Where: where,
-			Message: fmt.Sprintf("the %s address <%s>%s is not on the allow list; commit with the identity you meant (git config user.email), or add a pattern to the list (an address the forge commits with: the project's forge-identities)", where, email, commit)}
-	}
 	var findings []verdict.Finding
+	// check refuses an address off the list, and an empty one whatever the
+	// list holds: it names no one, so no pattern is meant to let it in.
+	check := func(where, email, commit string) {
+		if email == "" {
+			findings = append(findings, verdict.Finding{Rule: "identity", Where: where,
+				Message: fmt.Sprintf("the %s address%s is empty; commit with the identity you meant (git config user.email)", where, commit)})
+		} else if !ok(email) {
+			findings = append(findings, verdict.Finding{Rule: "identity", Where: where,
+				Message: fmt.Sprintf("the %s address <%s>%s is not on the allow list; commit with the identity you meant (git config user.email), or add a pattern to the list (an address the forge commits with: the project's forge-identities)", where, email, commit)})
+		}
+	}
 	if rng == "" {
 		for _, who := range []string{"author", "committer"} {
 			out, err := exec.Command("git", "-C", repo, "var", "GIT_"+strings.ToUpper(who)+"_IDENT").Output()
@@ -92,28 +99,27 @@ func Identity(repo, rng string, s Settings) ([]verdict.Finding, error) {
 				return nil, fmt.Errorf("git var: %v", err)
 			}
 			if _, rest, found := strings.Cut(string(out), "<"); found {
-				if email, _, _ := strings.Cut(rest, ">"); !ok(email) {
-					findings = append(findings, refuse(who, email, ""))
-				}
+				email, _, _ := strings.Cut(rest, ">")
+				check(who, email, "")
 			}
 		}
 		return findings, nil
 	}
-	out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%h %ae %ce"}, gitrange.Args(rng)...)...).Output()
+	// A tab apart, an empty address stays a field of its own.
+	out, err := exec.Command("git", append([]string{"-C", repo, "log", "--format=%h%x09%ae%x09%ce"}, gitrange.Args(rng)...)...).Output()
 	if err != nil {
 		return nil, fmt.Errorf("cannot read the commits of %s: %v", rng, err)
 	}
-	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		f := strings.Fields(l)
-		if len(f) != 3 {
+	for _, l := range strings.Split(strings.TrimRight(string(out), "\n"), "\n") {
+		if l == "" {
 			continue
 		}
-		if !ok(f[1]) {
-			findings = append(findings, refuse("author", f[1], " of commit "+f[0]))
+		f := strings.Split(l, "\t")
+		if len(f) != 3 {
+			return nil, fmt.Errorf("cannot read the author and committer of %q", l)
 		}
-		if !ok(f[2]) {
-			findings = append(findings, refuse("committer", f[2], " of commit "+f[0]))
-		}
+		check("author", f[1], " of commit "+f[0])
+		check("committer", f[2], " of commit "+f[0])
 	}
 	return findings, nil
 }

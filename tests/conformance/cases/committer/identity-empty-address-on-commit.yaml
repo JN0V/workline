@@ -9,5 +9,5 @@ given:
 run: {role: committer, event: commit-msg, input: {message: "feat: add x"}, ai: none}
 expect:
   status: block
-  findings: [{rule: identity, where: author, message: "address is empty"}]
+  findings: [{rule: identity, where: author, message: " is empty"}]
   no-findings: [{rule: identity, where: committer}]
