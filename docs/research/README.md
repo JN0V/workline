@@ -29,6 +29,7 @@ stars and dates were checked against the GitHub API that day.
 | [code-navigation.md](code-navigation.md) | Focused: how tools find a function's bounds, its callers and callees with no build, in any language, for what a judge reads |
 | [judge-measured.md](judge-measured.md) | Measured: whether the reviewer's judge is right when it drops or shows a finding |
 | [judge-reads-code.md](judge-reads-code.md) | Focused: how judges and reviewers get the code beyond a fixed context — the model reading, its caps, its cost |
+| [auditing-agent-acts.md](auditing-agent-acts.md) | Focused: how a sample of automated decisions is drawn, read again by another reader, disputes settled and an error rate reported |
 | [roles-panorama.md](roles-panorama.md) | Which roles a line needs for any project, which are gates, SonarQube read not rerun, and the order to build them |
 | [merge-conflicts.md](merge-conflicts.md) | Focused: why open pull requests conflict with `main`, what forges and git offer, what workline adds |
 | [merging.md](merging.md) | Focused: what a person does at merge, who merges elsewhere and how autonomy is graded, whether merging is a role |

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 566fbaa7
+checked: d7ea19ba
 status: draft
 ---
 # Role outcome — verdict and intentions
