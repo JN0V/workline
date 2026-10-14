@@ -402,6 +402,14 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 	if l.Standing, l.Undone, l.Own, err = findUndone(f, role, byID, l.Record.Done); err != nil {
 		return nil, err
 	}
+	// A split's parent closed before its parts (#393): its state is not
+	// among the open issues', yet the links it set among them are still
+	// the role's own, read from it through a part that names it.
+	for _, id := range closedParents(byID, l.Record.Done) {
+		if _, err := closedSplit(f, role, byID, id, l.Own); err != nil {
+			return nil, err
+		}
+	}
 	for _, u := range l.Undone {
 		l.Signs = append(l.Signs, fmt.Sprintf("#%d: %s undone", u.Issue, u.Act))
 	}

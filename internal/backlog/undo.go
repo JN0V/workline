@@ -3,6 +3,7 @@ package backlog
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -87,28 +88,11 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 			if d.Act != "split" {
 				continue
 			}
-			// A parent closed while its children still wait on siblings:
-			// those links are still the role's own, read from its state
-			// until no child that waits is open (ADR-0028). A parent the
-			// forge no longer gives is let go; one whose state does not
-			// read is kept, read again at the next run.
-			st, err := splitState(f, role, d.Issue)
-			switch {
-			case errors.Is(err, forge.ErrUnreachable):
+			kept, err := closedSplit(f, role, open, d.Issue, own)
+			if err != nil {
 				return nil, nil, nil, err
-			case err != nil:
-				continue
-			case st == nil:
-				standing = append(standing, d)
-				continue
 			}
-			waiting := false
-			for child, blockers := range st.After {
-				if _, ok := open[child]; ok {
-					own[child], waiting = append(own[child], blockers...), true
-				}
-			}
-			if waiting {
+			if kept {
 				standing = append(standing, d)
 			}
 			continue
@@ -204,6 +188,69 @@ func findUndone(f forge.Backlog, role string, open map[int]forge.Issue, done []D
 	}
 	return standing, undone, own, nil
 }
+
+// closedSplit reads a split parent closed while its parts still wait on
+// one another: those links are still the role's own, read from its state
+// into own until no part that waits is open (ADR-0028). kept says it is
+// still watched: a part waits, or its state does not read — read again at
+// the next run. A parent the forge no longer gives is let go.
+func closedSplit(f forge.Backlog, role string, open map[int]forge.Issue, parent int, own map[int][]int) (kept bool, err error) {
+	st, err := splitState(f, role, parent)
+	switch {
+	case errors.Is(err, forge.ErrUnreachable):
+		return false, err
+	case err != nil:
+		return false, nil
+	case st == nil:
+		return true, nil
+	}
+	for child, blockers := range st.After {
+		if _, ok := open[child]; ok {
+			own[child], kept = append(own[child], blockers...), true
+		}
+	}
+	return kept, nil
+}
+
+// closedParents are the split parents, closed, that a part still open and
+// waiting on an issue names, each once and in order (#393): the parent's
+// state holds the links the split set among its parts, and the issues
+// read are the open ones only. Those the record holds already are left
+// out (done: an old report's split).
+func closedParents(open map[int]forge.Issue, done []Done) []int {
+	var out []int
+	for _, is := range open {
+		id := partOf(is.Body)
+		if _, isOpen := open[id]; id == 0 || isOpen || len(Blockers(is)) == 0 {
+			continue
+		}
+		if !slices.ContainsFunc(done, func(d Done) bool { return d.Issue == id && d.Act == "split" }) {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return slices.Compact(out)
+}
+
+// partOf is the parent a split's part names: the marker it was opened
+// with (SplitKey), else the line the engine writes first (ChildBody); 0
+// for none.
+func partOf(body string) int {
+	m := splitMarker.FindStringSubmatch(body)
+	if m == nil {
+		m = partOfLine.FindStringSubmatch(body)
+	}
+	if m == nil {
+		return 0
+	}
+	id, _ := strconv.Atoi(m[1])
+	return id
+}
+
+var (
+	splitMarker = regexp.MustCompile(`<!-- workline:split=(\d+)/`)
+	partOfLine  = regexp.MustCompile(`^\s*Part of #(\d+)\.`)
+)
 
 // splitState is a split parent's state as its comment holds it: empty
 // when it has none; nil when it does not read — never taken for none.

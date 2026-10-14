@@ -3,6 +3,7 @@ package backlog
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/JN0V/workline/internal/forge"
@@ -101,4 +102,26 @@ func quote(s string) string {
 		}
 	}
 	return string(append(b, '"'))
+}
+
+// A closed split parent is found through a part still open that waits on
+// an issue and names it — the marker it was opened with, or its first
+// line —, once; never an open parent, nor one an old report's split holds
+// already, nor through a part that waits on nothing (#393).
+func TestClosedParents(t *testing.T) {
+	waits := []int{40}
+	open := map[int]forge.Issue{
+		11: {ID: 11, Body: "Part of #9.\n\n<!-- workline:split=9/keep-the-last-row -->", BlockedBy: waits},
+		12: {ID: 12, Body: "Part of #9.", BlockedBy: waits},
+		13: {ID: 13, Body: "Edited by a person.\n\n<!-- workline:split=7/quote-commas -->", BlockedBy: waits},
+		14: {ID: 14, Body: "Part of #8.", BlockedBy: waits},
+		15: {ID: 15, Body: "Part of #6."},
+		21: {ID: 21, Body: "Part of #20.", BlockedBy: waits},
+		20: {ID: 20},
+		31: {ID: 31, Body: "Not a part of #30.", BlockedBy: waits},
+	}
+	got := closedParents(open, []Done{{Issue: 8, Act: "split"}})
+	if want := []int{7, 9}; !slices.Equal(got, want) {
+		t.Errorf("closedParents = %v, want %v", got, want)
+	}
 }
