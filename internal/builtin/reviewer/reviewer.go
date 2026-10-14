@@ -26,6 +26,7 @@ import (
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/pathglob"
+	"github.com/JN0V/workline/internal/release"
 	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
@@ -204,7 +205,7 @@ func prepare(runDir, repo string, s Settings) int {
 		return fail(err)
 	}
 	if len(files) == 0 {
-		return final(runDir, Review{Status: verdict.Pass, Summary: "no code changed (only files moved unchanged, or files the reviewer leaves by its `ignore`): nobody asked"})
+		return final(runDir, Review{Status: verdict.Pass, Summary: "no code changed (" + notCode() + "): nobody asked"})
 	}
 	change, err := readChange(repo, base, head, files)
 	if err != nil {
@@ -328,7 +329,9 @@ func prepare(runDir, repo string, s Settings) int {
 
 // codeFiles is the code the commits from..head change: the files its
 // `ignore` does not leave, by their path at head. A file moved whole has
-// no line to read, and is left too (#358).
+// no line to read, and is left too (#358); on a release tool's merge
+// request, a file whose every line changed is a version the tool bumps,
+// on a line it marks (#384).
 func codeFiles(repo string, s Settings, from, head string) ([]File, error) {
 	all, err := changedFiles(repo, from, head)
 	if err != nil {
@@ -336,11 +339,40 @@ func codeFiles(repo string, s Settings, from, head string) ([]File, error) {
 	}
 	var files []File
 	for _, f := range all {
-		if !f.Same && !pathglob.Any(s.Ignore, f.Path) {
+		if f.Same || pathglob.Any(s.Ignore, f.Path) {
+			continue
+		}
+		bump, err := releaseBump(repo, from, head, f)
+		if err != nil {
+			return nil, err
+		}
+		if !bump {
 			files = append(files, f)
 		}
 	}
 	return files, nil
+}
+
+// releaseBump says whether, on a release tool's merge request (the
+// engine's WORKLINE_RELEASE_BRANCH, ADR-0017), from..head only bumps
+// versions in f as the tool does, by its own marks (release.OnlyBumps).
+func releaseBump(repo, from, head string, f File) (bool, error) {
+	if os.Getenv("WORKLINE_RELEASE_BRANCH") == "" || f.Was != "" {
+		return false, nil
+	}
+	diff, err := git(repo, "diff", "-U0", "--no-color", "--no-ext-diff", from, head, "--", f.Path)
+	if err != nil {
+		return false, err
+	}
+	return release.OnlyBumps(f.Path, diff, func() (string, error) { return git(repo, "show", head+":"+f.Path) }), nil
+}
+
+// notCode is what a change that asks nobody holds.
+func notCode() string {
+	if os.Getenv("WORKLINE_RELEASE_BRANCH") != "" {
+		return "only files moved unchanged, files the reviewer leaves by its `ignore`, or the versions a release tool bumps"
+	}
+	return "only files moved unchanged, or files the reviewer leaves by its `ignore`"
 }
 
 // mergedIn is where a lens's diff starts when the commits after from, the
@@ -378,7 +410,7 @@ func (st state) lensFrom() string {
 // the commits recorded as reviewed, and the turn of the lenses left where
 // it was, for the next push that changes code.
 func recordOnly(runDir string, s Settings, st state, fresh int) int {
-	why := "only files moved unchanged, or files the reviewer leaves by its `ignore`"
+	why := notCode()
 	if st.Before != "" {
 		why = "only the base's code, merged in and reviewed there, files moved unchanged, or files the reviewer leaves"
 	}

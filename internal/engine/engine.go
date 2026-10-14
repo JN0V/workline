@@ -370,10 +370,14 @@ func run(o Options, res *Result) error {
 			links(f, res) // its summary names issues: each linked to its page
 		}
 	}
-	releaseFrom := releaseRequest(r, &o, res)
+	branch := releaseRequest(r, &o, res)
 	env := scriptEnv(runDir, r.Name, o)
-	if releaseFrom != "" {
-		env = append(env, "WORKLINE_RELEASE_BRANCH="+releaseFrom)
+	if branch != "" {
+		env = append(env, "WORKLINE_RELEASE_BRANCH="+branch)
+	}
+	releaseFrom := "" // the release, held by a role run on it
+	if o.Event == "release" {
+		releaseFrom = branch
 	}
 	if o.OpenMergeRequest {
 		// The role decides what it proposes when enough of its merge requests wait.
@@ -2864,18 +2868,24 @@ func writeInputs(runDir string, inputs map[string]string, settings map[string]an
 	return os.WriteFile(filepath.Join(runDir, "in", "settings.json"), data, 0o644)
 }
 
-// releaseRequest runs a role that has release duties on `release` when the
-// merge request a run targets is a release tool's, told by its branch
-// (ADR-0017): that pull request is the release, merged before anything is
-// tagged. It returns the branch, "" when it is not a release's. When the
-// branch cannot be learnt, it says so and the run stays a merge request's.
+// releaseRequest tells whether the merge request a run targets is a release
+// tool's, by its branch (ADR-0017): that pull request is the release,
+// merged before anything is tagged. A role that has release duties is run
+// on `release`; any other is only told the branch, which the reviewer reads
+// to leave the versions the tool bumps (#384). It returns the branch, ""
+// when it is not a release's. When the branch cannot be learnt, a role
+// holding the release says so and its run stays a merge request's; another
+// reads the change as any.
 func releaseRequest(r *role.Role, o *Options, res *Result) string {
-	if o.Event != "merge-request" || !r.Accepts("release") {
+	if o.Event != "merge-request" {
 		return ""
 	}
+	holds := r.Accepts("release")
 	rs, err := release.Load(o.Repo)
 	if err != nil {
-		res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
+		if holds {
+			res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn", Message: err.Error()})
+		}
 		return ""
 	}
 	branch := o.Branch
@@ -2887,15 +2897,19 @@ func releaseRequest(r *role.Role, o *Options, res *Result) string {
 			branch = mr.Branch
 		}
 		if err != nil {
-			res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn",
-				Message: fmt.Sprintf("whether %s comes from a release tool's branch is unknown, so it is not held as the release: %v; give its branch with --branch", o.Target, err)})
+			if holds {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "release-unknown", Level: "warn",
+					Message: fmt.Sprintf("whether %s comes from a release tool's branch is unknown, so it is not held as the release: %v; give its branch with --branch", o.Target, err)})
+			}
 			return ""
 		}
 	}
 	if !rs.IsBranch(branch) {
 		return ""
 	}
-	o.Event = "release"
+	if holds {
+		o.Event = "release"
+	}
 	return branch
 }
 
