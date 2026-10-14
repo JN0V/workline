@@ -1,5 +1,5 @@
 case: documentalist/gardening-keeps-a-person-commit
-about: "Gardening proposing a task again never force-pushes over a commit a person added to that task's branch: the change is not pushed, the run says so, and the branch and its merge request stay the person's (#303)."
+about: "Gardening proposing a task again never force-pushes over a commit a person added to that task's branch, its merge request closed, the branch kept: the change is not pushed, the run says so, and the branch stays the person's (#303). While the merge request is open, the task waits for it instead (#356)."
 given:
   repo: untidy
   setup:
@@ -7,7 +7,7 @@ given:
     - "git checkout -qb workline/documentalist/duplicates-docs-faq-md-docs-sessions-md && echo 'Notes.' > docs/notes.md && git add docs/notes.md && git commit -qm 'docs: a word more' && git push -q origin workline/documentalist/duplicates-docs-faq-md-docs-sessions-md && git checkout -q main"
   forge:
     merge-requests:
-      - {id: 7, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place", labels: [], comments: []}
+      - {id: 7, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "docs: keep a repeated passage in one place", closed: true, labels: [], comments: []}
 run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
 expect:
   status: pass
@@ -15,5 +15,5 @@ expect:
   not-pushed: ["workline/documentalist/duplicates-docs-faq-md-docs-sessions-md"]
   forge:
     merge-requests:
-      - {id: 7, closed: false}
+      - {id: 7, closed: true}
       - {id: 8, absent: true}

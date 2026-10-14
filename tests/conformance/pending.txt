@@ -1,7 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-
-# A doc judged in parts, or a rewrite, waits for its merge request (#356).
-documentalist/parts-record-waiting-not-judged-again
-documentalist/parts-judged-once-a-run
-documentalist/condense-waits-for-its-merge-request

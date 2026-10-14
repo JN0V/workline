@@ -961,7 +961,11 @@ func Pre(runDir, repo string) int {
 	// task; the suspect ones wait for the next run, once the person has
 	// reviewed what this one proposes.
 	adopting := os.Getenv("WORKLINE_EVENT") == "init"
-	holdWaitingTasks(suspects, stale)
+	wait, err := readWaiting(runDir)
+	if err != nil {
+		return fail(err)
+	}
+	holdWaitingTasks(wait, suspects, stale)
 	var task string
 	var judged map[string]map[string]string
 	if adopting {
@@ -1071,8 +1075,21 @@ doc when its reader really gained something to know.
 			return fail(err)
 		}
 	}
+	// A rewrite whose merge request waits for review is not asked again:
+	// the next one goes (#356). Said beside the findings it would resolve,
+	// unless an earlier round of this run proposed it.
+	rewriteWaits := func(key string, resolves func(verdict.Finding) bool) bool {
+		task, waits, earlier := wait.holds(key)
+		note := "\n(its merge request, workline/documentalist/" + task + ", waits for review: not asked again until it is merged or closed)"
+		for i := range findings {
+			if waits && !earlier && resolves(findings[i]) && !strings.HasSuffix(findings[i].Message, note) {
+				findings[i].Message += note
+			}
+		}
+		return waits
+	}
 	if task == "" && partsAsked == 0 && gardening {
-		if d := pickDedupe(problems); d != nil {
+		if d := pickDedupe(problems, rewriteWaits); d != nil {
 			task = writeDedupeTask(d, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "dedupe.yaml"), d); err != nil {
 				return fail(err)
@@ -1084,6 +1101,9 @@ doc when its reader really gained something to know.
 	}
 	if task == "" && partsAsked == 0 && gardening {
 		for _, c := range condenseCandidates(problems) {
+			if rewriteWaits(c.key(), c.resolves) {
+				continue
+			}
 			t := writeCondenseTask(c, problems, tree)
 			if len(t) > taskChars(s) {
 				findings = append(findings, tooLargeToRewrite("condense", c.Doc, len(t), taskChars(s)))
@@ -1101,7 +1121,7 @@ doc when its reader really gained something to know.
 	}
 	// A card too long holds more than one concept: split into cards.
 	if task == "" && partsAsked == 0 && gardening {
-		if c := pickSplit(problems); c != nil {
+		if c := pickSplit(problems, rewriteWaits); c != nil {
 			if t := writeSplitTask(c, problems, tree); len(t) > taskChars(s) {
 				findings = append(findings, tooLargeToRewrite("split", c.Doc, len(t), taskChars(s)))
 			} else {
@@ -1117,7 +1137,7 @@ doc when its reader really gained something to know.
 	}
 	// Last, a card too short to stand alone goes into the one it belongs with.
 	if task == "" && partsAsked == 0 && gardening {
-		if m := pickMergeCard(problems, tree); m != nil {
+		if m := pickMergeCard(problems, tree, rewriteWaits); m != nil {
 			task = writeMergeCardTask(m, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "merge-card.yaml"), m); err != nil {
 				return fail(err)
@@ -1292,39 +1312,6 @@ func changedSince(repo string, d *Doc, commit string) bool {
 		}
 	}
 	return false
-}
-
-// holdWaitingTasks keeps from the agent, when gardening, the docs a task
-// would judge while that task's merge request waits for review: judged
-// again, they would only propose what is already proposed. A doc judged
-// whole goes to its kind's task; one judged in parts, to `fix`.
-func holdWaitingTasks(maps ...map[string]*suspectDoc) {
-	if os.Getenv("WORKLINE_EVENT") != "schedule" {
-		return
-	}
-	open, proposed := map[string]bool{}, map[string]bool{}
-	for _, t := range strings.Fields(os.Getenv("WORKLINE_OPEN_MERGE_REQUEST_TASKS")) {
-		open[t] = true
-	}
-	for _, t := range strings.Fields(os.Getenv("WORKLINE_PROPOSED_TASKS")) {
-		proposed[t] = true
-	}
-	for i, docs := range maps {
-		kind := []string{"suspect", "stale"}[i]
-		for _, sd := range docs {
-			task := kind
-			if sd.tooLarge {
-				task = "fix"
-			}
-			switch {
-			case sd.note != "":
-			case proposed[task]: // an earlier round of this run judged it
-				sd.note, sd.earlier = "(judged in an earlier round of this run)", true
-			case open[task]:
-				sd.note = "(its task's merge request, workline/documentalist/" + task + ", waits for review: not put before an agent again until it is merged or closed)"
-			}
-		}
-	}
 }
 
 // suspectTask writes the question for the agent: each suspect doc, with line
@@ -1663,7 +1650,7 @@ func Post(runDir, repo string) int {
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		outcome := outcomes(judged, inParts, patched, partly, judgedFix, readOf)
-		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, proposedPatch(intents, fallback), withheld, outcome)); err != nil {
+		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)); err != nil {
 			return fail(err)
 		}
 	}
@@ -2266,13 +2253,20 @@ func otherOf(pair []string, p string) string {
 
 // mergeRequest describes, for a run that opens one (ADR-0006), the merge
 // request its patches go to: a key per task, so running the task again
-// updates it, and a title a commit can carry.
-func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bool, withheld []verdict.Finding, outcome map[string]string) map[string]string {
+// updates it, and a title a commit can carry. A run judging docs in parts
+// proposes their fix, or only the record of when they were judged: a merge
+// request of its own either way, keyed by its first doc, never the derived
+// blocks' — the docs it holds wait for it, and the next run's docs judged
+// in parts go to another (#356).
+func mergeRequest(runDir string, judged map[string]map[string]string, inParts map[string]string, byAgent bool, withheld []verdict.Finding, outcome map[string]string) map[string]string {
 	kind := "suspect"
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "task-kind")); err == nil {
 		kind = strings.TrimSpace(string(data))
 	}
-	if !byAgent { // only what the role regenerates itself
+	if len(inParts) > 0 {
+		kind = "fix"
+	}
+	if !byAgent && len(inParts) == 0 { // only what the role regenerates itself
 		return map[string]string{"key": "derived", "title": "docs: regenerate the derived blocks",
 			"body": "Regenerated by workline's documentalist from the commands the project names in `settings.derive`.\n"}
 	}
@@ -2292,10 +2286,19 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 		title = "docs: read again the docs not confirmed for too long"
 	case "propagate":
 		title = "docs: bring the product docs up to date for the release"
+	case "fix":
+		in := sortedKeys(inParts)
+		key, title = partsKey(in), "docs: bring "+in[0]+" in line with the code"
+		if len(in) > 1 {
+			title = fmt.Sprintf("docs: bring %s and %d more in line with the code", in[0], len(in)-1)
+		}
+		if len([]rune(title)) > 72 {
+			title = "docs: bring the docs judged in parts in line with the code"
+		}
 	case "condense", "split":
 		var c condenseTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "condense.yaml")); err == nil && yaml.Unmarshal(data, &c) == nil {
-			docs, key, title = []string{c.Doc}, kind+" "+c.Doc, "docs: condense "+c.Doc
+			docs, key, title = []string{c.Doc}, c.key(), "docs: condense "+c.Doc
 			if c.Split {
 				title = "docs: split " + c.Doc + " into cards"
 			}
@@ -2303,12 +2306,12 @@ func mergeRequest(runDir string, judged map[string]map[string]string, byAgent bo
 	case "duplicates":
 		var d dedupeTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "dedupe.yaml")); err == nil && yaml.Unmarshal(data, &d) == nil {
-			docs, key, title = d.Docs, "duplicates "+strings.Join(d.Docs, " "), "docs: keep a repeated passage in one place"
+			docs, key, title = d.Docs, d.key(), "docs: keep a repeated passage in one place"
 		}
 	case "merge-card":
 		var m mergeCardTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "merge-card.yaml")); err == nil && yaml.Unmarshal(data, &m) == nil {
-			docs, key, title = []string{m.Card}, "merge-card "+m.Card, "docs: merge "+m.Card+" into the card it belongs with"
+			docs, key, title = []string{m.Card}, m.key(), "docs: merge "+m.Card+" into the card it belongs with"
 		}
 	}
 	if len([]rune(title)) > 72 {
