@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: 6ff22df7
+checked: 98ca21f8
 verified: agent:claude-code
 ---
 # Committer
@@ -154,8 +154,8 @@ commits are already made: the verdict lists them, to fix with `git rebase -i`.
 - A rewrite keeps the author's type, scope and breaking mark, when the header
   was not what was refused; adding a scope the author left out is allowed
   (`header-changed`).
-- It adds no `Workline-` trailer, in any letter case: those are the
-  engine's (`trailer-added`).
+- It adds no line git could read as a `Workline-` trailer, however its
+  key is cased or spaced: those are the engine's (`trailer-added`).
 - One commit, one message: several proposals are refused (`several-messages`).
 - A `note` ends the run as `human`: a person splits the commit.
 
