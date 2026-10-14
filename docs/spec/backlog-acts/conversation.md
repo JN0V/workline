@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 5afbb282
+checked: 9054d164
 verified: agent:claude-code
 ---
 # The conversation with the reporter
