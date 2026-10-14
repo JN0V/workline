@@ -50,7 +50,7 @@ pull requests and nightly gardening of workline and of another project;
 
 | Role | What it does for you | [Status](docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md) |
 |---|---|---|
-| [**Committer**](roles/committer/README.md) | checks each commit's message, the secrets it adds and its author | [beta](roles/committer/docs/status.md) |
+| [**Committer**](roles/committer/README.md) | checks each commit's message, the secrets it adds and its author | [built](roles/committer/docs/status.md) |
 | [**Documentalist**](roles/documentalist/README.md) | keeps the docs true to the code they name | [beta](roles/documentalist/docs/status.md) |
 | [**Reviewer**](roles/reviewer/README.md) | reads a change before a person does and says what it breaks; never approves | [beta](roles/reviewer/docs/status.md) |
 | [**Product owner**](roles/product-owner/README.md) | keeps the open issues true to the code, refined and in order | [beta](roles/product-owner/docs/status.md) |
