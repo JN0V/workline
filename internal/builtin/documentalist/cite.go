@@ -643,7 +643,7 @@ func uncited(b citedBlock, counted map[int][]countOff, lang string) []string {
 func countFixedOn(counted map[int][]countOff, line citedBlock) bool {
 	for _, c := range counted[line.from] {
 		for _, a := range numberIn.FindAllString(line.added[0], -1) {
-			if strings.ReplaceAll(a, ",", "") == strconv.Itoa(c.real) {
+			if whole(a) == strconv.Itoa(c.real) {
 				return true
 			}
 		}
@@ -741,8 +741,8 @@ func sentenceStart(before string) bool {
 	return strings.ContainsRune(".!?:;|", last)
 }
 
-// numberIn is a number as a doc writes a count: "569", "1,008".
-var numberIn = regexp.MustCompile(`\d{1,3}(?:,\d{3})+|\d+`)
+// numberIn is a number as a doc writes a count: "569", "1,008", "1 008".
+var numberIn = regexp.MustCompile(countNumber)
 
 // countedOn says whether a word a block takes out is a line count the
 // engine found off on one of the lines it removes, or the word making it a
@@ -752,7 +752,7 @@ func countedOn(counted map[int][]countOff, b citedBlock, w string) bool {
 	added := map[string]bool{}
 	for _, l := range b.added {
 		for _, a := range numberIn.FindAllString(l, -1) {
-			added[strings.ReplaceAll(a, ",", "")] = true
+			added[whole(a)] = true
 		}
 	}
 	for n := b.from; n <= b.to; n++ {
@@ -760,7 +760,7 @@ func countedOn(counted map[int][]countOff, b citedBlock, w string) bool {
 			if !added[strconv.Itoa(c.real)] {
 				continue
 			}
-			for _, x := range wordOf.FindAllString(c.stated+" "+c.approx, -1) {
+			for _, x := range wordOf.FindAllString(plain(c.stated+" "+c.approx), -1) {
 				if x == w {
 					return true
 				}

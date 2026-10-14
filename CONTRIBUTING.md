@@ -1,8 +1,8 @@
 <!-- workline
 sources: [cmd/workline, tests/conformance/pending.txt]
 checked: f324ac6
-judged: 8d2b4af
-verified: agent:claude-code
+judged: df1818c
+verified: agent:documentalist
 -->
 # Contributing
 
