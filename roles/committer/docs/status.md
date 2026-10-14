@@ -1,11 +1,12 @@
-# Committer — where it stands (2026-10-13)
+# Committer — where it stands (2026-10-14)
 
 **In one line:** runs on every commit and push of workline's author, and
 on each merge request in CI; its rewrites tried with Claude on refused
 messages of this repository; its hooks tried on a copy of DomoticsCore
 (its [page](../README.md#tried-for-real)). Beta: built on 2026-10-09,
-back to beta on 2026-10-13 while a bug of its own,
-[#107](https://github.com/JN0V/workline/issues/107), is open.
+back to beta on 2026-10-13 for a bug of its own,
+[#107](https://github.com/JN0V/workline/issues/107), fixed since; moving
+it back to built is the maintainer's.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
@@ -16,14 +17,14 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open.
-   [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
-   asks "Nothing buildable is left in its status.md's "Missing": only
-   tries on real use, or items deferred and parked as issues", and makes
-   no exception for a bug. [#107](https://github.com/JN0V/workline/issues/107) is
-   buildable, open and not parked: fix it, or park it. One commit, one
-   change is parked as [#192](https://github.com/JN0V/workline/issues/192)
-   (closed, not planned).
+1. **Nothing buildable in Missing**: met. Missing holds only tries on
+   real use.
+   - [#107](https://github.com/JN0V/workline/issues/107), the user's
+     allow-list refusing the forge's own commits, is fixed: a project
+     names them in `forge-identities`.
+   - One commit, one change is parked as
+     [#192](https://github.com/JN0V/workline/issues/192) (closed, not
+     planned).
 2. **The main issue validated on real use**: met. The maintainer
    validated the role on 2026-10-09 from its real use on all their
    commits.
@@ -52,14 +53,13 @@ its evaluation in
   `public-name-kept-by-the-agent`.
 - **Secrets and forbidden terms**, gitleaks: `secret-*`,
   `secrets-not-checked`, `forbidden-terms-common-and-repo`, `term-*`.
-- **The author's identity**: `identity-*`.
+- **The author's identity**: `identity-*`; the forge's own addresses a
+  project names: `identity-forge-*`.
 - **On a merge request**, every commit checked:
   `merge-request-checks-every-commit`,
   `possible-code-in-pushed-commits-warns`.
 
 ## Missing
 
-- **A user's allow-list blocks the bot's commits**, outside CI
-  ([#107](https://github.com/JN0V/workline/issues/107)).
 - **Tries on real use**: a hook that reads `pre-push`'s input after
   workline's line; husky or lefthook. No issue yet.
