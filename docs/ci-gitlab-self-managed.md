@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, Dockerfile]
-checked: a6228bb0
+checked: 98de6b44
 judged: eb7fc7c
 verified: agent:documentalist
 ---
@@ -27,7 +27,10 @@ own changes. **Not tried yet on one**: tell us what differs.
   17.10, no `CI_MERGE_REQUEST_DRAFT`, so the merge request is read from
   the API; a job token that reads no notes leaves one lens, said in the
   log, unless the job has `GITLAB_TOKEN`
-  ([how](../roles/reviewer/docs/run.md#every-lens-once-when-it-becomes-ready)).
+  ([how](../roles/reviewer/docs/ready.md)).
+- **One pipeline per merge request at a time**: the same project setting
+  as on gitlab.com, **Auto-cancel redundant pipelines**
+  ([how](ci-gitlab.md#6-one-pipeline-per-merge-request)).
 - **The [merge policy](merge-policy.md)**: a merge request is set to merge
   when its pipeline succeeds by the merge API, both its names sent —
   `auto_merge`, and the older `merge_when_pipeline_succeeds` an instance

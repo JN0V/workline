@@ -1,0 +1,24 @@
+case: reviewer/every-lens-again-once-a-draft-again
+about: "A merge request every lens read, turned back into a draft, then pushed to (`draft=true`): one lens, and the record no longer says every lens read the change (#359), so the run when it is ready again reads every lens once more, as ADR-0020 has it."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by every lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 read=all -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-edge-cases}]
+  run-files:
+    in/parts/1-edge-cases/task.md: {contains: "### calc/half.go", not-contains: "### calc/calc.go"}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=2 -->", comment-lacks: "read=all"}
