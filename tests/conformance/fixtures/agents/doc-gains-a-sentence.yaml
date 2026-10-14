@@ -1,0 +1,4 @@
+# docs/usage.md of the case gains a sentence: no backtick in the diff.
+- patch:
+    file: docs/usage.md
+    content: "# Usage\n\nRun the tool.\nIt prints a line.\nIt stops when done.\n"

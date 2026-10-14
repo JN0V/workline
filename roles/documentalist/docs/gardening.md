@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go]
-checked: 252113e
+checked: 25365ce
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -97,8 +97,9 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
   run never had;
 - the merge request lists each doc it judged with what became of it: fixed
   and in how many places, still true, or nothing found wrong; `checked`
-  moved or `judged` recorded; for a doc whose sources did not all go
-  whole, what was read and what was not
+  moved or `judged` recorded; the code examples a fix wrote, unverified
+  or checked ([code examples](examples.md)); for a doc whose sources did
+  not all go whole, what was read and what was not
   ([the judge](judge.md#what-the-finding-says)).
 
 ## When the base moves
