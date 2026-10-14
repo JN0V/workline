@@ -105,6 +105,8 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 			case !waits:
 			case earlier: // an earlier round of this run judged it
 				sd.note, sd.earlier = "(judged in an earlier round of this run)", true
+			case sd.tooLarge && w.files[task] == nil: // a task in parts whose change could not be read
+				sd.note = "(workline/documentalist/" + task + ", judging docs in parts, waits for review, and what it changes could not be read: not put before an agent again until it is merged or closed)"
 			case sd.tooLarge:
 				sd.note = "(workline/documentalist/" + task + " changes it and waits for review: not put before an agent again until it is merged or closed)"
 			default:
