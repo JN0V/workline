@@ -24,8 +24,10 @@ stars and dates were checked against the GitHub API that day.
 | [priority-and-weight.md](priority-and-weight.md) | Focused: where forges keep an issue's priority and effort, the scales in use, who estimates |
 | [self-evaluation.md](self-evaluation.md) | Focused: how automation and agents are judged in production, and how systems that improve their own agents keep people in control |
 | [documentalist-genericity.md](documentalist-genericity.md) | Whether ADR-0014's checks hold beyond our three repositories: six public ones, no agent |
+| [documentalist-fixes-reviewed.md](documentalist-fixes-reviewed.md) | Measured: whether the documentalist's fixes were right, read against the code, and replayed with a real agent |
 | [code-review.md](code-review.md) | Focused: how AI code reviewers find, verify and post findings, and what a reviewer role takes from them; what reviews a spec before it is built |
 | [code-navigation.md](code-navigation.md) | Focused: how tools find a function's bounds, its callers and callees with no build, in any language, for what a judge reads |
+| [judge-measured.md](judge-measured.md) | Measured: whether the reviewer's judge is right when it drops or shows a finding, on workline's own pull requests |
 | [roles-panorama.md](roles-panorama.md) | Which roles a line needs for any project, which are gates, SonarQube read not rerun, and the order to build them |
 | [merge-conflicts.md](merge-conflicts.md) | Focused: why open pull requests conflict with `main`, what forges and git offer, what workline adds |
 | [merging.md](merging.md) | Focused: what a person does at merge, who merges elsewhere and how autonomy is graded, whether merging is a role |
