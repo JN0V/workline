@@ -53,7 +53,8 @@ No cases folder of its own: it is asked inside the other roles' cases.
   ([#362](https://github.com/JN0V/workline/issues/362)): decided in
   [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md),
   the judge asking for the code and the engine reading it at the reviewed
-  commit ([research](../../../docs/research/judge-reads-code.md)); first,
-  its 40 measured questions kept before their artifacts expire.
+  commit ([research](../../../docs/research/judge-reads-code.md)). Its
+  40 measured questions are kept, as asked, to replay
+  ([the judge's replay](../../../docs/spec/conformance/evaluation.md#the-judges-replay)).
 - **Parked**: a judge of another provider
   ([#80](https://github.com/JN0V/workline/issues/80)).
