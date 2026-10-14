@@ -1,0 +1,35 @@
+case: merge/persons-record-commit-takes-it-back
+about: "A person's push is a person's, whatever it changes (#380): after the yes, auto-merge on, a person pushes a commit changing only a doc's `judged` line, with no workline trailer. Only workline's own commit, its tree bearing it out, keeps the yes: this one is a push after the yes, the yes and auto-merge taken off, said in one comment (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag before"
+    - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && git commit -qam 'docs: record the auth doc as judged' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "(\"docs: record the auth doc as judged\") was pushed after @dana accepted it: the yes and auto-merge taken off"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [], comments: 1, comment-contains: ["workline took `workline:accepted` off", "Put the label again"]}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: failure, by: workline-bot, description: "after the yes: put the label again"}

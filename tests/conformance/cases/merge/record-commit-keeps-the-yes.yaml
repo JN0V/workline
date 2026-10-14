@@ -1,0 +1,38 @@
+case: merge/record-commit-keeps-the-yes
+about: "workline's own record lines are no push of the person's (#380): after the yes, auto-merge on, `main` moves; workline's bot merges it in, then pushes a commit changing only lines workline writes — a doc's `judged` and `verified`, another's `judged-in-parts`. Told by its tree against its parent, as `follow`'s own update is: the yes still covers the head, auto-merge stays on, the new head held accepted (ADR-0041, ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag before && git checkout -q main"
+    - "echo moved > moved.txt && git add moved.txt && git commit -qm 'feat: main moves' && git push -q origin main"
+    - "git checkout -q feat/sessions && git merge -q --no-ff main -m \"Merge branch 'main' into feat/sessions\" -m 'Workline-Role: documentalist'"
+    - "sed -i '/^checked:/a judged: 1a2b3c4' docs/tech/auth.md && sed -i '/^judged:/a verified: agent:documentalist' docs/tech/auth.md && sed -i '/^checked:/a judged-in-parts: 5d6e7f8' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: "feat/sessions~1", at: "2026-01-04T10:20:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        comments: []
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: accepted-reset}, {rule: update-left}]
+  not-pushed: [feat/sessions]
+  summary-file: ["first in line #7, up to date: it merges once its checks pass"]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: true, labels: [workline:accepted], comments: 0}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: success, by: workline-bot, description: "accepted by @dana, its head's verdict passed"}

@@ -4,7 +4,8 @@
   [#321] ([page](../merge-policy.md), [below](#built-2026-10-12-321));
   `normal` built for workline's own routine pull requests by [#322]
   ([amendment](#amendment-2026-10-13-322-normal-routine-pull-requests-first)),
-  agents' pull requests next
+  agents' pull requests next; workline's own record commits keep the yes
+  ([#380], [amendment](#amendment-2026-10-14-380-worklines-own-record-commits-keep-the-yes))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -380,6 +381,32 @@ cmd-normal-routine-merges-alone, cautious-routine-waits-for-a-yes;
 TestRoutineKind, TestSteering, TestRevertOf, TestOwnNote,
 TestMarkAndIssuesHoldDemotions.
 
+## Amendment (2026-10-14, #380): workline's own record commits keep the yes
+
+Seen 2026-10-14 ([#380]): `main` moved; workline's bot merged it into
+accepted pull requests, then pushed commits changing only record lines
+(`judged` and `verified`; `judged-in-parts`). Each took the yes back; the
+batch of 11 was merged by hand. "For the person", point 1, now reads: any
+commit but workline's own.
+
+- **A record commit is no push**, as `follow`'s own update: one parent,
+  its tree changing against it only the lines [ADR-0041] says workline
+  writes in the docs — a header's `checked`, `judged`, `judged-in-parts`
+  or `verified`; a derived block only as its command gives it at that
+  commit, as `normal`'s `derived` kind. The yes and auto-merge stay.
+- **The tree tells it; the trailer is needed, never enough**: a commit
+  with no workline trailer is a person's, whatever it changes.
+- **Still a push**: a doc's text or another header key changed, a file
+  added, removed, no doc of the documentalist's or its mode changed, an
+  empty commit.
+- **The limit**: whoever may push can write the trailer on such a commit.
+  It changes no line a person accepted; a `checked` moved only stops a
+  doc being suspect, as a merge of the base settling it does.
+
+Conformance: merge/record-commit-keeps-the-yes,
+docs-fix-after-the-yes-takes-it-back, persons-record-commit-takes-it-back;
+TestOwnRecord.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -398,3 +425,4 @@ TestMarkAndIssuesHoldDemotions.
 [#322]: https://github.com/JN0V/workline/issues/322
 [#329]: https://github.com/JN0V/workline/pull/329
 [#331]: https://github.com/JN0V/workline/issues/331
+[#380]: https://github.com/JN0V/workline/issues/380

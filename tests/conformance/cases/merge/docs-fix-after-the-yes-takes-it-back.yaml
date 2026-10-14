@@ -1,0 +1,35 @@
+case: merge/docs-fix-after-the-yes-takes-it-back
+about: "A docs fix is no record (#380): after the yes, auto-merge on, workline's bot pushes a commit carrying `Workline-Role: documentalist` that moves a doc's `checked` and changes its text. Its tree changes a line that is the person's, beside workline's own: a push after the yes, the yes and auto-merge taken off, said in one comment, as for any push (ADR-0042)."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feat/sessions && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git tag before"
+    - "sed -i 's/^checked: .*/checked: 9f8e7d6/' docs/tech/auth.md && sed -i 's/last one hour/last two hours/' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist' && git push -q origin feat/sessions && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: before, name: workline/accepted, state: success, description: "accepted by @dana, its head's verdict passed", by: workline-bot}
+      - {commit: feat/sessions, name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - id: 7
+        branch: feat/sessions
+        base: main
+        author: dana
+        labels: [workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: dana, insider: true, writer: true, created: "2026-01-04T10:00:00Z"}]
+        pushes: [{head: before, at: "2026-01-04T09:00:00Z"}, {head: feat/sessions, at: "2026-01-04T10:30:00Z"}]
+        auto-merge: true
+        auto-merge-at: "2026-01-04T10:01:00Z"
+        auto-merge-by: workline-bot
+        comments: []
+run: {follow: [--base, main]}
+expect:
+  status: pass
+  findings: [{rule: accepted-reset, where: "#7", level: warn, message: "(\"docs: bring the docs in line with the code\") was pushed after @dana accepted it: the yes and auto-merge taken off"}]
+  no-findings: [{rule: auto-merge-on}]
+  forge:
+    merge-requests:
+      - {id: 7, auto-merge: false, labels: [], comments: 1, comment-contains: ["workline took `workline:accepted` off", "Put the label again"]}
+    statuses:
+      - {commit: feat/sessions, name: workline/accepted, state: failure, by: workline-bot, description: "after the yes: put the label again"}

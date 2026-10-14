@@ -302,6 +302,44 @@ func OwnMerge(repo, commit, base string) bool {
 	return err == nil && own == tree
 }
 
+// ownRecord says whether a commit changes, against its one parent, only
+// lines workline writes in the docs (ADR-0041): a header's checked,
+// judged, judged-in-parts or verified, and derived blocks reading what
+// their commands give at the commit (regenerated). A doc's text, another
+// header key, a file added, removed, made executable or no doc's: not.
+func ownRecord(repo, commit string, isDoc func(string) bool, regenerated func(commit string, docs []string) bool) bool {
+	out, err := git(repo, nil, "rev-list", "--parents", "-n", "1", commit)
+	parent := strings.Fields(out)
+	if err != nil || len(parent) != 2 || isDoc == nil {
+		return false
+	}
+	// Each change, `:mode mode id id status` then its path.
+	raw, err := git(repo, nil, "diff", "--raw", "--no-renames", "--no-abbrev", "-z", parent[1], commit)
+	parts := strings.Split(strings.TrimSuffix(raw, "\x00"), "\x00")
+	if err != nil || raw == "" || len(parts)%2 != 0 {
+		return false
+	}
+	var blocks []string
+	for i := 0; i < len(parts); i += 2 {
+		f, file := strings.Fields(parts[i]), parts[i+1]
+		if len(f) != 5 || f[4] != "M" || f[0] != ":"+f[1] || !regular(f[1]) || !isDoc(file) {
+			return false
+		}
+		was, ok1 := blob(repo, parent[1], file)
+		now, ok2 := blob(repo, commit, file)
+		switch {
+		case !ok1 || !ok2:
+			return false
+		case unworked(was) == unworked(now):
+		case underived(unworked(was)) == underived(unworked(now)):
+			blocks = append(blocks, file)
+		default:
+			return false
+		}
+	}
+	return len(blocks) == 0 || regenerated != nil && regenerated(commit, blocks)
+}
+
 // ownRebuild says whether tip is covered rebuilt on the base by `follow`
 // (ADR-0034): one commit on a commit of base's history, its tree exactly
 // the change of covered redone on it.
@@ -320,12 +358,21 @@ func ownRebuild(repo, covered, tip, base string) bool {
 }
 
 // pushedAfter says what was pushed to a merge request after the yes given
-// at yes, "" nothing but `follow`'s own updates: the yes covers the head
-// it was given on, as approvals reset on a push (ADR-0042). The head it
-// was given on is the last pushed before it, as the forge says; a forge
-// that does not say leaves the commits' own dates, past base. `follow`'s
-// own update is checked, never taken on its trailer (OwnMerge, ownRebuild).
-func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
+// at yes, "" nothing but workline's own: the yes covers the head it was
+// given on, as approvals reset on a push (ADR-0042). The head it was given
+// on is the last pushed before it, as the forge says; a forge that does
+// not say leaves the commits' own dates, past base. workline's own is
+// checked by its tree, never taken on its trailer: `follow`'s update
+// (OwnMerge, ownRebuild), or a commit changing only the lines workline
+// writes in the docs (ownRecord), as a merge of the base settles them.
+func pushedAfter(o FollowOptions, branch string, st forge.MergeState, yes, baseTip, tip string) (string, error) {
+	repo := o.Repo
+	own := func(c string) bool {
+		if ownTrailer(repo, c) == "" {
+			return false // a person's commit is a person's
+		}
+		return OwnMerge(repo, c, baseTip) || ownRecord(repo, c, o.IsDoc, func(at string, docs []string) bool { return regenerates(o, at, docs) })
+	}
 	covered := ""
 	for _, p := range st.Pushes {
 		if !later(p.At, yes) {
@@ -356,7 +403,7 @@ func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip str
 			return "", err
 		}
 		for _, c := range strings.Fields(out) {
-			if !OwnMerge(repo, c, baseTip) || ownTrailer(repo, c) == "" {
+			if !own(c) {
 				return commitSaid(repo, c) + " was pushed", nil
 			}
 		}
@@ -368,7 +415,7 @@ func pushedAfter(repo, branch string, st forge.MergeState, yes, baseTip, tip str
 	}
 	for _, l := range strings.Split(out, "\n") {
 		c, at, ok := strings.Cut(l, "\x1f")
-		if ok && later(at, yes) && (!OwnMerge(repo, c, baseTip) || ownTrailer(repo, c) == "") {
+		if ok && later(at, yes) && !own(c) {
 			return commitSaid(repo, c) + " was committed", nil
 		}
 	}
@@ -656,7 +703,7 @@ func weigh(f forge.Forge, m forge.Merger, o FollowOptions, local bool, mr forge.
 		say("draft", "", fmt.Sprintf("accepted by %s, but a draft: nothing turned on until it is marked ready", by))
 		return nil, nil
 	}
-	pushed, err := pushedAfter(o.Repo, mr.Branch, st, yes.Created, baseTip, tip)
+	pushed, err := pushedAfter(o, mr.Branch, st, yes.Created, baseTip, tip)
 	if err != nil {
 		return nil, err
 	}
