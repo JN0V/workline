@@ -94,6 +94,13 @@ its measure in
 - **A judge reads the code the finding stands on**:
   `judge-reads-the-function-the-cause-calls`,
   `judge-reach-capped-rest-named`.
+- **A judge asks for the code it needs**, off until measured
+  ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)):
+  `judge-reads-a-function-then-answers`, `judge-reads-past-its-caps`,
+  `judge-reads-the-commit-only`, `judge-reads-stopped-by-the-budget`,
+  `judge-no-quotes-the-code-finding-dropped`,
+  `judge-no-quote-not-found-shown-not-verified`,
+  `judge-unsure-shown-not-verified`.
 - **Warn until measured, `ai-findings` by lens, caps**:
   `new-ai-rules-warn`, `ai-findings-*`, `findings-capped-rest-counted`,
   `agent-unreachable-is-blocked-external`.
@@ -128,7 +135,10 @@ its measure in
 
 1. **The judge reads the code it needs** before saying no: its true
    findings dropped for want of the proof
-   ([#362](https://github.com/JN0V/workline/issues/362)).
+   ([#362](https://github.com/JN0V/workline/issues/362)). Built, off
+   (`judge-read-rounds: 0`);
+   [measured again](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#measured-again-before-it-is-on-by-default)
+   before it is on by default.
 2. **Measured before the developer**, on that judge: five runs a case, the
    finder floor's worth, the lenses together against apart; intent, claims
    and decisions; the diff alone as a cheap pass
