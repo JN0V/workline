@@ -86,7 +86,8 @@ type FakeItem struct {
 	Threads []FakeThread `json:"threads,omitempty"`
 	// A merge request's state for the merge policy (MergeState, ADR-0042):
 	// a draft; its auto-merge on, when it was last turned on and by whom;
-	// its head's checks; its branch's pushes, each head a revision of the
+	// its head's checks, summed up, or each run of them, summed up as
+	// GitHub's are; its branch's pushes, each head a revision of the
 	// repository. Clean: the forge would merge it at once, its rules met,
 	// so turning auto-merge on merges it (Merged).
 	Draft       bool       `json:"draft,omitempty"`
@@ -94,6 +95,7 @@ type FakeItem struct {
 	AutoMergeAt string     `json:"auto-merge-at,omitempty"`
 	AutoMergeBy string     `json:"auto-merge-by,omitempty"`
 	Checks      string     `json:"checks,omitempty"`
+	CheckRuns   []CheckRun `json:"check-runs,omitempty"`
 	Pushes      []FakePush `json:"pushes,omitempty"`
 	Clean       bool       `json:"clean,omitempty"`
 	Merged      bool       `json:"merged,omitempty"`
