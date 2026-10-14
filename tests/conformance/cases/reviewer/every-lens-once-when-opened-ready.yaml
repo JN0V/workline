@@ -1,5 +1,5 @@
 case: reviewer/every-lens-once-when-opened-ready
-about: "A merge request opened ready is read by every lens once (#129): the template passes `lenses=all` on that event, and the reviewer asks every lens with something to read, in one call, then records the commits and one run."
+about: "A merge request opened ready is read by every lens once (#129): the template passes `lenses=all` on that event, and the reviewer asks every lens with something to read, in one call, then records the commits, one run, and that every lens read the change (`read=all`, #359)."
 given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
@@ -15,4 +15,4 @@ expect:
     in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go"]}
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: " runs=1 -->", comment-lacks: "reviewed= runs"}
+      - {id: 5, comments: 1, comment-contains: " runs=1 read=all -->", comment-lacks: "reviewed= runs"}

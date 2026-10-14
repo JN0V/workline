@@ -1,0 +1,14 @@
+case: reviewer/every-lens-run-on-ready-unreachable-writes-nothing
+about: "The run on ready whose agent cannot be reached ends blocked-external and writes no comment, so no record either (#359): the next push, the merge request no draft, finds no mark and asks every lens again, at no cost spent here."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: all, draft: "false"}, target: {merge-request: 5}, ai: "unavailable:quota"}
+expect:
+  status: blocked-external
+  forge:
+    merge-requests:
+      - {id: 5, comments: 0}

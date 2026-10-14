@@ -1,0 +1,16 @@
+case: reviewer/one-lens-a-push-on-a-draft
+about: "A push to a draft (`draft=true`) gets one lens, in turn, even with no record saying every lens read the change (#359): every lens waits for the merge request to be ready."
+given:
+  repo: reviewed
+  setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "true"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-correctness}]
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 -->", comment-lacks: "read=all"}

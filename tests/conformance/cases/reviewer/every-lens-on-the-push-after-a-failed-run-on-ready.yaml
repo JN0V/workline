@@ -1,0 +1,24 @@
+case: reviewer/every-lens-on-the-push-after-a-failed-run-on-ready
+about: "The push after a run on ready whose lenses did not all answer (`retried=once`) asks every lens again on the whole change (#359); every one answering, the record says every lens read it, and no retry is left owed."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Not every lens answered.\n\n<!-- workline:record reviewed= runs=0 retried=once -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  no-findings: [{rule: record-unread}, {rule: every-lens-again}, {rule: every-lens-not-whole}]
+  calls: [{task: part, for: 1-lenses}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=1 read=all -->", comment-lacks: "retried"}
