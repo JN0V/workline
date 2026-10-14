@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -171,6 +172,48 @@ func TestStripCode(t *testing.T) {
 	} {
 		if got := stripCode(c.line, c.shell); got != c.want {
 			t.Errorf("stripCode(%q) = %q, want %q", c.line, got, c.want)
+		}
+	}
+}
+
+// The names a removed line tested or assigned (#357): a condition's, an
+// assignment's targets; never a call, a field, a keyword, a comparison
+// read as an assignment, nor what a string or a comment holds.
+func TestGuarded(t *testing.T) {
+	for _, c := range []struct {
+		line string
+		want []string
+	}{
+		{"if p < 1 || size < 1 {", []string{"p", "size"}},
+		{"\treturn nil", nil},
+		{"total += v", []string{"total"}},
+		{"for _, v := range values {", []string{"v", "values", "v"}},
+		{"a, b := f(x)", []string{"a", "b"}},
+		{"items[i] = x", []string{"items"}},
+		{"if req.Body == nil && ok(req) {", []string{"req"}},
+		{"if a <= b && c != d {", []string{"a", "b", "c", "d"}},
+		{"x == y", nil},
+		{"return f(x) => g", nil},
+		{`if name == "p" { // p again`, []string{"name"}},
+		{"n++", []string{"n"}},
+		{"elif not done:", []string{"done"}},
+	} {
+		if got := guarded(stripCode(c.line, false)); !slices.Equal(got, c.want) {
+			t.Errorf("guarded(%q) = %q, want %q", c.line, got, c.want)
+		}
+	}
+}
+
+// A kept line further down is the change's when it uses a name a removed
+// line of its function tested; not one using other names, nor one in
+// another function (#357).
+func TestReachesFromARemovedGuard(t *testing.T) {
+	const page = "package shop\n\nfunc Page(items []int, p, size int) []int {\n\tcount := len(items)\n\tfrom := (p - 1) * size\n\tto := min(from+size, count)\n\treturn items[from:to]\n}\n\nfunc Other(p int) int {\n\treturn p\n}\n"
+	repo := gitRepo(t, map[string]string{"shop/page.go": page})
+	c := Change{Removed: map[string][]Line{"shop/page.go": {{"shop/page.go", 3, "\tif p < 1 {"}, {"shop/page.go", 3, "\t\treturn nil"}, {"shop/page.go", 3, "\t}"}}}}
+	for line, want := range map[int]int{5: 3, 6: 0, 4: 0, 11: 0} {
+		if got := c.reaches(repo, "HEAD", "shop/page.go", Place{line, line}); got != want {
+			t.Errorf("line %d reaches %d, want %d", line, got, want)
 		}
 	}
 }
