@@ -19,7 +19,8 @@ hold:
    ([#205](https://github.com/JN0V/workline/issues/205)) are being built,
    its verdicts kept and counted
    ([#276](https://github.com/JN0V/workline/issues/276)) with it, as
-   decided on 2026-10-14. The weekly sample's other gaps are parked
+   decided on 2026-10-14; how, proposed in
+   [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md). The weekly sample's other gaps are parked
    ([#108](https://github.com/JN0V/workline/issues/108)): a judge of
    another provider, a week not run caught up.
 2. **The main issue validated on real use**: open.
@@ -30,7 +31,8 @@ hold:
    [#205](https://github.com/JN0V/workline/issues/205)); a `checked`
    found false on a forge is untried
    ([#155](https://github.com/JN0V/workline/issues/155) collects it when
-   one turns up).
+   one turns up). The bar proposed:
+   [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#leaving-beta).
 
 ## Built
 
@@ -43,7 +45,9 @@ hold:
 ## Missing
 
 - **Every role's acts re-checked**
-  ([#205](https://github.com/JN0V/workline/issues/205)): being built.
+  ([#205](https://github.com/JN0V/workline/issues/205)): being built,
+  proposed in
+  [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md).
 - **Its verdicts kept and counted**
   ([#276](https://github.com/JN0V/workline/issues/276)): built with
   [#205](https://github.com/JN0V/workline/issues/205) (decided
