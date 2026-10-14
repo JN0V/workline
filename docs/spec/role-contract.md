@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 1dd6543c
+checked: 0ddcc079
 verified: agent:claude-code
 judged: 88db06e
 ---
@@ -24,6 +24,7 @@ roles/<name>/
   pre               deterministic: gathers input, decides whether a decision is needed
   post              deterministic: validates, decides the verdict
   lenses/*.md       the reviewer's: one facet per lens
+  kinds/*.md        the auditor's: one facet per kind of act
   skills/           optional, Agent Skills format (SKILL.md); not read yet
   docs/             about the role, never loaded: reference pages, status.md, tried.md (archived)
 ```

@@ -1,0 +1,66 @@
+case: auditor/verdict-finds-each-wrong-act
+about: "Each act drawn is re-checked by the auditor, one call an act, asked its kind's question with what the act was done on (ADR-0046): an act planted wrong of each kind — the product owner's ready, refine, sources, order, ask, closing and split, a finding the reviewer's judge kept and one it dropped, asked blind, a message the committer rewrote — is found false, each with the material's words the engine finds again; the docs vouched for, right, stand. The judge's independence from the models that acted is said."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && printf 'package notes\\n\\nconst Extra = 12\\n' > src/notes/extra.go && git add src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -q -m 'feat(notes): add an extra note and drop N01' -m 'Workline-Role: committer\nWorkline-Model: claude:claude-haiku-4-5'"
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(notes): add an extra note (#30)' && git push -q origin main"
+    - "git branch -q -D feat && git reflog expire --expire=now --all && git gc -q --prune=now"
+  forge:
+    issues:
+      - {"id": 20, "title": "Export rows", "body": "### Need\nExport the rows as CSV.\n\n### Verification\nA test exports two rows.\n\n### Validation\nTBD", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Moved #20 to ready'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 21, "title": "Export format", "body": "### Need\nExport the rows.\n\n### Scope\nThe export writes the rows as CSV and as JSON.", "labels": [], "comments": [{"body": "CSV only, never JSON.", "author": "mia", "insider": true, "created": "2026-01-06T09:00:00Z"}, "```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: refine, level: normal, day: '2026-01-07', line: 'Added: Scope'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 22, "title": "CSV export", "body": "The CSV export drops the last row.", "labels": [], "comments": ["```yaml\nsources: [src/notes/n01.go]\nconfirmed: d8c4dff\ndid:\n- {act: sources, level: normal, day: '2026-01-08', line: 'Named the code #22 is about: src/notes/n01.go'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 23, "title": "Rows lost", "body": "Customers lose rows every night.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: order, level: normal, day: '2026-01-09', line: 'Set #23 priority to 4: nothing urgent'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 24, "title": "Which format", "body": "Export the notes.", "labels": [], "comments": [{"body": "The format is CSV.", "author": "zed", "created": "2026-01-05T08:00:00Z"}, "```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ask, level: normal, day: '2026-01-09', line: 'Asked the reporter: which format?'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 25, "title": "XML export", "body": "Export the notes as XML.", "labels": [], "closed": true, "comments": ["```yaml\nsources: [src/notes/n02.go]\nconfirmed: d8c4dff\ndid:\n- {act: close-obsolete, level: normal, day: '2026-01-10', line: 'Closed #25 as obsolete: the code does it'}\nclosed: close-obsolete\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 26, "title": "CSV by mail", "body": "Export the notes as CSV, and send the CSV by mail.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\nsplit: [27, 28]\ndid:\n- {act: split, level: normal, day: '2026-01-10', line: 'Split #26 into #27 and #28'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 27, "title": "CSV export", "body": "Export the notes as CSV.", "labels": [], "comments": []}
+      - {"id": 28, "title": "Print", "body": "Print the notes.", "labels": [], "comments": []}
+    merge-requests:
+      - id: 30
+        title: Add an extra note
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 1 findings on the change; lenses: correctness.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | correctness | `src/notes/extra.go:3` | Important: Extra is not a note's number |
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "Extra shadows N12" at src/notes/extra.go:3 — the judge: no N12 is declared in the code shown (independence: model (claude-sonnet-5 → claude-opus-5)) |
+
+            <!-- workline:record reviewed=0123456789abcdef0123456789abcdef01234567 runs=1 -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"'], then: apply}
+expect:
+  status: pass
+  agent-calls: 12
+  findings:
+    - {rule: vouched-true, where: docs/notes/n02.md}
+    - {rule: vouched-true, where: docs/notes/n07.md}
+    - {rule: act-false, where: "#20", message: "— false: #20 says \"### Validation TBD\""}
+    - {rule: act-false, where: "#21", message: "#21 comment 1 says \"CSV only, never JSON.\""}
+    - {rule: act-false, where: "#22", message: "src/notes/n01.go:3 says \"const N01 = 01\""}
+    - {rule: act-false, where: "#23", message: "#23 says \"Customers lose rows every night\""}
+    - {rule: act-false, where: "#24", message: "#24 comment 1 says \"The format is CSV.\""}
+    - {rule: act-false, where: "#25", message: "src/notes/n02.go:3 says \"const N02 = 02\""}
+    - {rule: act-false, where: "#26", message: "#26 says \"send the CSV by mail\""}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge kept on #30"}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge dropped on #30"}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "independence: provider (claude-sonnet-5, claude-opus-5 → cmd)"}
+    - {rule: act-false, message: "a commit the committer rewrote"}
+    - {rule: act-false, message: "\"and drop N01\": diff says \"+const Extra = 12\"; read by cmd:"}
+  no-findings:
+    - {rule: sample-not-read, where: "#20"}
+  forge:
+    issues:
+      - {id: 29, title: "workline: the weekly sample of the docs vouched for", comment-contains: "| #20 | product owner, `ready` | 2026-01-06, at normal | Moved #20 to ready | **false** |"}
+      - {id: 29, comment-contains: "- **#26**, false:\n  - #26 says \"send the CSV by mail\"\n"}
+      - {id: 29, comment-contains: "| **false** | `cmd:sh \"$FIXTURES/agents/audit-acts.sh\"`, provider (claude-sonnet-5, claude-opus-5 → cmd) |"}

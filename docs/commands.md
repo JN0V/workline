@@ -143,16 +143,18 @@ ten of the acts of the last whole ISO week (`--week 2026-W40`; `--since
 <rev>` for the commits after one) per role and kind, at least one when a
 kind has any, drawn the same on a rerun.
 
-- **The docs** whose `checked` the documentalist moved
+- **The acts**: the docs whose `checked` the documentalist moved
   (`Workline-Role: documentalist`, or `verified: agent:documentalist`
-  newly set), read whole against their sources at the commit `checked`
-  names, by the judge (`--judge`, else `WORKLINE_JUDGE`, else
-  `sample.judge`), never the model of the commit's `Workline-Model`.
-  Every quote it gives is checked; a comment is no evidence.
-- **The other roles' acts**, read from the forge (`--forge`, else the
-  project's): the product owner's done alone, the findings the reviewer's
-  judge kept or dropped, the committer's rewrites. Listed for a person;
-  what cannot be drawn is said, with why.
+  newly set); from the forge (`--forge`, else the project's), the product
+  owner's acts done alone, the findings the reviewer's judge kept or
+  dropped, the committer's rewrites. What cannot be drawn is said.
+- **Each re-checked**, one call an act, by the judge (`--judge`, else
+  `WORKLINE_JUDGE`, else `sample.judge`), never a model that acted;
+  a finding blind. False only with a quote the engine finds again, a
+  comment of the code no evidence; else for a person. Without a judge,
+  each is listed for a person.
+- **A cap**: `sample.ai-max-tokens`, 400,000 by default; each role's first
+  act read before any second, the rest listed unread.
 - **A squash**: each merge request's head is fetched from the forge's ref
   for it; a `checked` naming one of its commits is read there.
 - **Writes nothing**; `--out <file>` keeps the result.

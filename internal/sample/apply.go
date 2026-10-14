@@ -36,9 +36,11 @@ judge says false and cannot prove is for a person.
 
 The other roles' acts are drawn too, one in ten per kind of act (ADR-0046):
 the product owner's acts done alone, the findings the reviewer's judge
-kept or dropped, the commits the committer rewrote. The auditor does not
-re-check them yet: each week's comment lists those drawn, for a person to
-read, and says what could not be drawn, and why.
+kept or dropped, the commits the committer rewrote. The auditor re-checks
+each against what it was done on, on another model than those that
+acted; one said wrong is false only with the material's words, found
+again. Each week's comment says each verdict, what is for a person, and
+what could not be drawn, and why.
 
 Written by ` + "`workline sample --apply`" + `, with no AI.`
 
@@ -231,7 +233,7 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 func actsSection(res *Result) string {
 	var b strings.Builder
 	b.WriteString("\n#### Every role's acts\n\n")
-	b.WriteString("One in ten of a role's acts of each kind, at least one when the kind has any (ADR-0046). The auditor re-checks only the docs yet: the other roles' acts drawn are for a person to read.\n\n")
+	b.WriteString("One in ten of a role's acts of each kind, at least one when the kind has any, each re-checked by the auditor against what it was done on (ADR-0046). False only with the material's words, found again; the rest that does not stand is for a person.\n\n")
 	if len(res.Counts) == 0 {
 		b.WriteString("No act of any role in the window.\n")
 	} else {
@@ -241,7 +243,7 @@ func actsSection(res *Result) string {
 		}
 	}
 	if len(res.Drawn) > 0 {
-		b.WriteString("\n| Act | Role, kind | Done | What its record says |\n|---|---|---|---|\n")
+		b.WriteString("\n| Act | Role, kind | Done | What its record says | Verdict | Judge, independence |\n|---|---|---|---|---|---|\n")
 		for _, a := range res.Drawn {
 			act := a.Ref
 			if a.In != "" {
@@ -263,7 +265,15 @@ func actsSection(res *Result) string {
 			if a.Role != productOwner && a.By != "" && !strings.Contains(line, a.By) {
 				line += " (" + a.By + ")"
 			}
-			fmt.Fprintf(&b, "| %s | %s, %s | %s | %s |\n", cell(act), strings.TrimPrefix(roleWords(a.Role), "the "), cell(kindWords(Count{Role: a.Role, Kind: a.Kind})), cell(done), cell(line))
+			judgeWords := "—"
+			if a.Judge != "" {
+				judgeWords = fmt.Sprintf("`%s`, %s", a.Judge, a.Independence)
+			}
+			fmt.Fprintf(&b, "| %s | %s, %s | %s | %s | **%s** | %s |\n", cell(act), strings.TrimPrefix(roleWords(a.Role), "the "), cell(kindWords(Count{Role: a.Role, Kind: a.Kind})), cell(done), cell(line), a.Verdict, cell(judgeWords))
+		}
+		b.WriteString("\n")
+		for _, a := range res.Drawn {
+			b.WriteString(actLines(a))
 		}
 	}
 	if len(res.NotDrawn) > 0 {
@@ -271,6 +281,30 @@ func actsSection(res *Result) string {
 		for _, why := range res.NotDrawn {
 			fmt.Fprintf(&b, "- %s\n", why)
 		}
+	}
+	return b.String()
+}
+
+// actLines say what was found of an act that does not stand, for a person.
+func actLines(a Act) string {
+	var b strings.Builder
+	name := a.Ref
+	if a.Where != "" {
+		name += " `" + a.Where + "`"
+	}
+	switch a.Verdict {
+	case "false":
+		fmt.Fprintf(&b, "- **%s**, false:\n", name)
+		for _, p := range a.Proofs {
+			fmt.Fprintf(&b, "  - %s\n", p.String())
+		}
+	case "unproven":
+		fmt.Fprintf(&b, "- **%s**: said wrong, not proven, for a person:\n", name)
+		for _, p := range a.Unproven {
+			fmt.Fprintf(&b, "  - %s\n", p.Why)
+		}
+	case "not-read":
+		fmt.Fprintf(&b, "- **%s**, not read: %s\n", name, a.Why)
 	}
 	return b.String()
 }
