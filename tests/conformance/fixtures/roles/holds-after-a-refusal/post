@@ -1,0 +1,25 @@
+#!/bin/sh
+# A wrong entry is the answer's: refused, the agent asked again. A right one
+# meets a check that needs the `format` setting: without it no answer can
+# pass, so the block is final, never asked again.
+out="$WORKLINE_RUN_DIR/out"
+if grep -q "XML" "$out/intentions.yaml" 2>/dev/null; then
+  cat > "$out/verdict.yaml" <<'YAML'
+status: block
+summary: the changelog entry names the wrong format
+findings:
+  - {rule: wrong-entry, where: CHANGELOG.md, message: "the change exports CSV, not XML"}
+YAML
+  exit 1
+fi
+if ! grep -q '"format"' "$WORKLINE_RUN_DIR/in/settings.json" 2>/dev/null; then
+  cat > "$out/verdict.yaml" <<'YAML'
+status: block
+summary: the changelog's format setting is missing; no answer can pass without it
+final: true
+findings:
+  - {rule: setting-missing, message: "set `format` in the role's settings"}
+YAML
+  exit 1
+fi
+echo "status: pass" > "$out/verdict.yaml"
