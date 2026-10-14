@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 17d6abde
+checked: df02b827
 verified: agent:claude-code
 ---
 # The weekly sample
@@ -46,8 +46,10 @@ roles:
 - **A true finding the judge dropped**, still in the code, is opened as an
   issue, `needs-triage`, three a week at most.
 - **Your answer**: 👍 on the week's comment agrees with all of it; 👎 and a
-  reply naming rows (`not 3, 7`) contests those. The count, one comment
-  on the same issue, is written again each week from every week
+  reply naming rows (`not 3, 7`) contests those, the rest agreed. A reply
+  answers the week it follows, or the week it names (`2026-W41: not 3`).
+  The count, one comment on the same issue, is written again each week
+  from every week
   ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#kept-and-counted-with-the-maintainers-agreement)).
 
 ## What it costs
