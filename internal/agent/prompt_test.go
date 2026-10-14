@@ -66,3 +66,50 @@ func TestPromptBudgetCountsCodeAtTheMeasuredRatio(t *testing.T) {
 		t.Errorf("a lens's call of 117k characters (96.6k tokens reported, #147) is estimated at %d", got)
 	}
 }
+
+// A person's facets are read from the folder their config.yaml is read
+// from, then from ~/.config/workline, where they were read before (#104):
+// on macOS, Go's config folder is ~/Library/Application Support.
+func TestFacetDirs(t *testing.T) {
+	defer func(c, h func() (string, error)) { userConfigDir, userHomeDir = c, h }(userConfigDir, userHomeDir)
+	req := Request{Repo: "/work/repo", Role: &role.Role{Name: "committer", Dir: "/roles/committer"}}
+	for _, c := range []struct {
+		name, cfg, home string
+		want            []string
+	}{
+		{"macOS", "/Users/me/Library/Application Support", "/Users/me", []string{"/work/repo/.workline/roles/committer",
+			"/Users/me/Library/Application Support/workline/roles/committer", "/Users/me/.config/workline/roles/committer", "/roles/committer"}},
+		{"Linux, searched once", "/home/me/.config", "/home/me", []string{"/work/repo/.workline/roles/committer",
+			"/home/me/.config/workline/roles/committer", "/roles/committer"}},
+	} {
+		userConfigDir = func() (string, error) { return c.cfg, nil }
+		userHomeDir = func() (string, error) { return c.home, nil }
+		if got := facetDirs(req); strings.Join(got, "\n") != strings.Join(c.want, "\n") {
+			t.Errorf("%s: facets looked for in\n%s\nwant\n%s", c.name, strings.Join(got, "\n"), strings.Join(c.want, "\n"))
+		}
+	}
+}
+
+// The config folder's facet is used before the one in ~/.config, and one
+// only in ~/.config is still found.
+func TestFacetFromTheConfigFolderFirst(t *testing.T) {
+	defer func(c, h func() (string, error)) { userConfigDir, userHomeDir = c, h }(userConfigDir, userHomeDir)
+	cfg, home, own := t.TempDir(), t.TempDir(), t.TempDir()
+	userConfigDir = func() (string, error) { return cfg, nil }
+	userHomeDir = func() (string, error) { return home, nil }
+	write := func(dir, name, text string) {
+		os.MkdirAll(dir, 0o755)
+		os.WriteFile(filepath.Join(dir, name), []byte(text), 0o644)
+	}
+	write(filepath.Join(cfg, "workline", "roles", "committer"), "policy.md", "from the config folder")
+	write(filepath.Join(home, ".config", "workline", "roles", "committer"), "policy.md", "from ~/.config")
+	write(filepath.Join(home, ".config", "workline", "roles", "committer"), "persona.md", "only in ~/.config")
+	write(own, "policy.md", "the role's own")
+	req := Request{Repo: t.TempDir(), Role: &role.Role{Name: "committer", Dir: own}}
+	if got, _ := facet(req, "policy.md"); got != "from the config folder" {
+		t.Errorf("policy.md read %q, want the config folder's", got)
+	}
+	if got, _ := facet(req, "persona.md"); got != "only in ~/.config" {
+		t.Errorf("persona.md read %q, want the one in ~/.config", got)
+	}
+}
