@@ -1,9 +1,10 @@
 # ADR-0046: The auditor re-checks a sample of every role's acts, and its verdicts are counted
 
-- **Status:** proposed
+- **Status:** accepted (2026-10-14); not built yet
 - **Date:** 2026-10-14
-- **Issues:** [#205] and [#276], built together, the share one in ten
-  (decided by the maintainer on 2026-10-14)
+- **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
+  together, the share one in ten; the open points settled as below
+  ("Decided by the maintainer")
 - **Amends:** [ADR-0015] (the weekly sample), [ADR-0033] (the product
   owner's acts, drawn for a person)
 - **Builds on:** [ADR-0005], [ADR-0014] (step 4), [ADR-0019], [ADR-0036];
@@ -79,7 +80,7 @@ completed:
 | Documentalist | the doc at the commit that moved `checked`, as now | nothing |
 | Product owner | `did` in the issue's state | `at`, the commit read at; `model`; `body`, a digest of the text read |
 | Reviewer | its summary comment | a hidden line per finding judged — lens, place, commit, yes or no, both models — kept for the merge request's life, on every forge |
-| Committer | the commit | trailers `Workline-Role: committer`, `Workline-Model`, and `Workline-Was`, the author's subject |
+| Committer | the commit and its diff | trailers `Workline-Role: committer` and `Workline-Model`; never the author's words |
 
 - **A commit gone from `main`**, as in W41: fetched from the forge's ref
   of its merge request (`refs/pull/<n>/head`; on GitLab
@@ -108,7 +109,7 @@ finding was kept: it answers blind, and the engine compares.
 | Closing | Does the code do what the issue asks? A duplicate: the same need? | the issue's words, and the code's or a name gone |
 | Split | Does each part hold one need, together the parent's? | the parent's words in no part |
 | A finding | Does the code fail as the finding says? The lens's question | the code's words |
-| A rewrite | Does the message say what the author's subject said and what the commit does, nothing more? | the message's words, and the subject's or the diff's |
+| A rewrite | Does the message say what the commit does, nothing more? Against the diff alone | the message's words, and the diff's |
 
 - **Another model than every model that acted**: for a finding, neither
   the lens's nor the judge's. Workline has one provider and several
@@ -117,6 +118,9 @@ finding was kept: it answers blind, and the engine compares.
 - **The proof, found again**: each quote is looked for in the act's
   material at that commit, code outside comments, as now. One not found
   is `unproven`, for a person, never counted false.
+- **The author's words kept by a rewrite** are not re-checked here: the
+  author's message never reaches history, its internal codes included.
+  The weekly evaluation keeps measuring them (its rewrite cases).
 - **Without an agent**, the acts drawn are listed for a person, as the
   product owner's are today (principle 5).
 
@@ -132,6 +136,11 @@ finding was kept: it answers blind, and the engine compares.
   merge request or commit. A person who agrees with one on a product
   owner's act undoes the act there, which demotes its kind as today
   ([ADR-0033]). The auditor never undoes anything.
+- **A true finding the judge dropped, its defect still on `main`**: its
+  cause found again there, it is opened as an issue, `needs-triage`,
+  through the one way every role opens issues ([ADR-0018]). At most 3 a
+  week, the rest counted. A defect of the project's code, not a change
+  to the line: the product owner takes it from there.
 
 ### Kept and counted, with the maintainer's agreement
 
@@ -173,6 +182,8 @@ finding was kept: it answers blind, and the engine compares.
 | Panels | about 6 disputes | 3 × about 9k | 160k |
 | **Total** | 26 reads | | **about 380k** |
 
+- **Decided as proposed**: one in ten per role and kind, about 380k
+  tokens a week, under the cap below.
 - **Volumes**: W41, workline's busiest week so far. The reviewer's come
   from the judge's measure (229 verdicts in 10 days); the committer's
   are a floor.
@@ -200,8 +211,8 @@ measured:
 3. **AI verdicts measured:**
    - **Planted**: an evaluation case per kind with a wrong act — a
      closing whose code lacks what the issue asks, a dropped true finding,
-     a rewrite changing a message's meaning, a false doc — and a right
-     act as control. In five runs, each wrong act is found false with
+     a rewrite saying what its diff does not do, a false doc — and a
+     right act as control. In five runs, each wrong act is found false with
      its proof, and each control stands. An auditor answering "stands"
      to everything fails here; the real-use count cannot show that.
    - **Real use**: at least 60 verdicts answered by the maintainer, over
@@ -215,25 +226,29 @@ measured:
 
 - Each week reads the acts of every role that acted. W41 would have read
   26 acts instead of one doc it could not read.
-- Each rewritten commit carries three trailers more. The reviewer's
-  summary carries a hidden line per finding judged, and the product
-  owner's `did` three fields more.
+- Each rewritten commit carries two trailers more, never the author's
+  words. The reviewer's summary carries a hidden line per finding judged,
+  and the product owner's `did` three fields more.
 - The auditor gets a facet per kind of act: its question, and its answer
   as `claim`s with quotes. Its `sample` settings move to its own role;
   the documentalist's are still read.
 - The maintainer spends one click a week, more only to contest.
+- Up to 3 issues a week, from findings the judge dropped wrongly.
 - The process engineer gets counts per role and kind, each verdict
   backed by a panel or the maintainer.
 
-## Open — for the maintainer
+## Decided by the maintainer (2026-10-14)
 
-1. **Your agreement**: a 👍 on the week's comment, or a tick on each
-   false verdict?
-2. **A rewritten commit keeps your subject** in a `Workline-Was` trailer.
-   Is that acceptable in your history, or should a rewrite be checked
-   against its diff alone?
-3. **A true finding the judge dropped, still on `main`**: only listed,
-   or opened as an issue through the one way in ([ADR-0018])?
+1. **The volume**: one in ten per role and kind, about 380k tokens a
+   week, under a 400k cap.
+2. **Their agreement**: one 👍 a week on the weekly comment; a 👎 and a
+   reply naming the rows contested.
+3. **A rewrite is re-checked against its diff alone**: no trailer holds
+   the author's subject, whose internal codes must not reach history.
+   The author's words kept stay measured by the weekly evaluation.
+4. **A true finding the judge dropped, its defect still on `main`**, is
+   opened as an issue, `needs-triage`, through the one way roles open
+   issues, at most 3 a week.
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108
