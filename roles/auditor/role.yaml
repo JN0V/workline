@@ -5,7 +5,9 @@ mission: Read a doc the documentalist vouched for against its sources at the com
 # Not a role of the line: no event runs it. `workline sample` asks it, every
 # week, of one doc in ten the documentalist vouched for (ADR-0014, step 4),
 # at the best independence available from the model that vouched (ADR-0005).
-# The engine checks every quote it gives; it applies nothing.
+# The engine checks every quote it gives; it applies nothing. The same sample
+# draws one in ten of the other roles' acts, per kind, and lists them for a
+# person: the auditor does not re-check them yet (ADR-0046).
 model:
   capability: reasoning
   tier: frontier

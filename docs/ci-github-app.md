@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline-apply.yml, .github/workflows/workline.yml]
-checked: 98de6b44
+checked: 4880c477
 judged: 7a26b30
 verified: agent:claude-code
 ---
