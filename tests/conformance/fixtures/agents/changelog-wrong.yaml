@@ -1,0 +1,2 @@
+# The same wrong entry on every call: refused each time.
+- patch: {file: CHANGELOG.md, content: "# Changelog\n\n## Unreleased\n\n- Export your data as XML.\n"}

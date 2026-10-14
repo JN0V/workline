@@ -1,0 +1,14 @@
+case: routing/schedule-refused-twice-still-passes
+about: 'On schedule (fail-fast false), the role of routing/schedule-final-block-after-a-refusal-fails, its answer refused on both tries: upkeep left for later (ADR-0037, amended). Nothing applied, the refusal said as a warning, the step passes.'
+given:
+  repo: basic
+run: {role: holds-after-a-refusal, event: schedule, ai: "fake:changelog-wrong"}
+expect:
+  status: pass
+  agent-calls: 2
+  applied: []
+  summary: "nothing of it applied"
+  findings: [{rule: wrong-entry, where: CHANGELOG.md, level: warn}]
+  no-findings: [{rule: setting-missing}]
+  files:
+    CHANGELOG.md: {exists: false}
