@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
-checked: 52b6d728
+checked: d551e165
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -90,6 +90,7 @@ Run with `--open-merge-request` (the CI templates' scheduled jobs):
 - a doc judged in parts waits while any of these merge requests changes
   it — its fix, or only the record of when it was judged —; the next doc
   goes, each run's on a merge request of its own, `fix-<its first doc>`
+  (a short hash added when another doc's has that name)
   ([ADR-0013, amended 2026-10-14](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-14-a-doc-waits-while-a-merge-request-holds-it));
 - a doc to condense or split, a card to merge, a repeated passage wait
   while their own merge request does; the next one goes;
