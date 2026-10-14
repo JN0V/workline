@@ -23,21 +23,21 @@ changed need are off by default, their code kept.
 
 | Page | What it holds |
 |---|---|
-| [The issue's state](backlog-acts/state.md) | The comment the engine keeps on each issue, and what it holds. |
+| [The issue's state](backlog-acts/state.md) | The comment the engine keeps on each issue. |
 | [Opening issues](backlog-acts/opening.md) | The one way every role opens an issue. |
-| [Reading](backlog-acts/reading.md) | Which issues a run reads, in what order, with what code. |
+| [Reading](backlog-acts/reading.md) | Which issues a run reads, and in what order. |
 | [A changed need](backlog-acts/changed-need.md) | The issues flagged when what they were built on changes. |
-| [Importing a file](backlog-acts/import.md) | A roadmap or backlog file moved to issues once, and [the map](backlog-acts/import.md#the-map-every-item-to-its-issue-or-why-not) of every item. |
+| [Importing a file](backlog-acts/import.md) | A file moved to issues once, and [the map](backlog-acts/import.md#the-map-every-item-to-its-issue-or-why-not) of its items. |
 | [Closing](backlog-acts/closing.md) | A duplicate closed, and an issue [obsolete: announced, then closed](backlog-acts/closing.md#obsolete-announced-then-closed). |
 | [Milestones and ordering](backlog-acts/order.md) | [Milestones](backlog-acts/order.md#milestones), and [Ordering](backlog-acts/order.md#ordering): an issue's priority. |
 | [Refining to ready](backlog-acts/refine.md) | `refine`, `ready`, `unready`, `ask`; [a body's footer](backlog-acts/refine.md#a-bodys-footer); [naming its sources](backlog-acts/refine.md#naming-its-sources). |
 | [A spec read before ready](backlog-acts/spec-review.md) | The reviewer's findings on a refined issue, holding its `ready`. |
 | [Splitting and renaming](backlog-acts/split.md) | [Splitting](backlog-acts/split.md#splitting) an issue into its parts, and [Renaming](backlog-acts/split.md#renaming) it. |
-| [A parent and its parts](backlog-acts/parent.md) | A parent reported on as its parts close, accepted by a person. |
+| [A parent and its parts](backlog-acts/parent.md) | A parent reported on as its parts close. |
 | [What an issue waits on](backlog-acts/depend.md) | `depend` and `undepend`: the issues an issue waits on. |
 | [The order, and what is next](backlog-acts/next.md) | [The order, and what waits](backlog-acts/next.md#the-order-and-what-waits); [what is next, what is stuck](backlog-acts/next.md#what-is-next-what-is-stuck). |
 | [The conversation with the reporter](backlog-acts/conversation.md) | The rounds written to a reporter, and their agreement. |
 | [Autonomy and caps](backlog-acts/autonomy.md) | Each kind's mode and cap, and [the levels](backlog-acts/autonomy.md#the-levels). |
-| [On the issue](backlog-acts/on-the-issue.md) | What the role shows on each issue, and in the job's summary. |
-| [A person's answers](backlog-acts/answers.md) | What a person does on an issue, and what the engine reads of it. |
+| [On the issue](backlog-acts/on-the-issue.md) | What each issue and the job's summary show. |
+| [A person's answers](backlog-acts/answers.md) | A person's gestures on an issue, and what the engine does. |
 | [Trust](backlog-acts/trust.md) | The acts a person undoes, and [the weekly sample](backlog-acts/trust.md#the-weekly-sample-of-its-acts) of those done alone. |
