@@ -1,0 +1,27 @@
+case: auditor/sample-kind-without-acts-draws-nothing
+about: "A kind of act a role did not do in the week draws nothing and is not counted, though the role did it another week; a role with no act in the week draws nothing, and what cannot be told from the records is said: a commit the committer rewrote carries `Workline-Role: committer`, and none of the week does."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-06', line: 'Did ready on #20'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 24, "title": "Issue 24", "body": "Issue 24.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: normal, day: '2026-01-14', line: 'Did rename on #24'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    merge-requests: []
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  status: pass
+  findings:
+    - {rule: sample-acts, message: "1 act, `ready`, by the product owner from 2026-01-05 to 2026-01-11; 1 drawn"}
+    - {rule: sample-not-read, where: "#20"}
+    - {rule: sample-not-drawn, message: "the committer's rewrites: no commit of the window carries `Workline-Role: committer`"}
+  no-findings:
+    - {rule: sample-acts, message: "`rename`"}
+    - {rule: sample-acts, message: "by the reviewer"}
+    - {rule: sample-acts, message: "by the committer"}
+    - {rule: sample-not-read, where: "#24"}
+  forge:
+    issues:
+      - {id: 25, title: "workline: the weekly sample of the docs vouched for", comments: 1, comment-contains: "| documentalist | `checked` moved | 11 | 2 |\n| product owner | `ready` | 1 | 1 |\n\n"}
+      - {id: 25, comment-contains: "- the committer's rewrites: no commit of the window carries `Workline-Role: committer`"}
+      - {id: 25, comment-lacks: "`rename`"}
+      - {id: 25, comment-lacks: "| reviewer |"}

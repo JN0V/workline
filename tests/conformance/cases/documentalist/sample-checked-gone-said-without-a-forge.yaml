@@ -1,0 +1,17 @@
+case: documentalist/sample-checked-gone-said-without-a-forge
+about: "With no forge to read, a doc vouched for at a commit a squash left off the branch cannot be read: it is left for a person, saying why, and the sample says what it could not draw without a forge — the product owner's acts, the reviewer's findings, the commits of a merge request squashed (ADR-0046)."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -q -b fee && mkdir -p src/fee && printf 'package fee\\n\\nconst Rate = 1\\n' > src/fee/fee.go && printf -- '---\\nsources: [src/fee/fee.go]\\nchecked: HEAD\\n---\\n# Fees\\n\\nThe rate is 1.\\n' > docs/tech/fee.md && git add src/fee docs/tech/fee.md && GIT_AUTHOR_DATE=2026-01-20T09:00:00Z GIT_COMMITTER_DATE=2026-01-20T09:00:00Z git commit -q -m 'feat(fee): charge a fee'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/fee.md && sed -i '3a verified: agent:documentalist' docs/tech/fee.md && GIT_AUTHOR_DATE=2026-01-20T10:00:00Z GIT_COMMITTER_DATE=2026-01-20T10:00:00Z git commit -qam 'docs: bring the docs in line with the code' -m 'Workline-Role: documentalist'"
+    - "git push -q origin fee:refs/pull/7/head && git checkout -q main && git merge -q --squash fee && GIT_AUTHOR_DATE=2026-01-20T12:00:00Z GIT_COMMITTER_DATE=2026-01-20T12:00:00Z git commit -q -m 'feat(fee): charge a fee (#7)' && git push -q origin main"
+    - "git branch -q -D fee && git reflog expire --expire=now --all && git gc -q --prune=now"
+run: {sample: [--week, 2026-W04, --judge, "fake:sample-nothing-false"]}
+expect:
+  status: human
+  agent-calls: 0
+  findings:
+    - {rule: sample-not-read, where: docs/tech/fee.md, message: "a commit this clone does not have"}
+    - {rule: sample-not-drawn, message: "not drawn: the product owner's acts and the reviewer's findings: no forge to read them from"}
