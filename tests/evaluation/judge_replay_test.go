@@ -6,23 +6,29 @@ package evaluation
 // as the run asked it (question.yaml) and as the judge answered it then
 // (answer.yaml), both copied from the run's workline-runs artifact, with
 // the truth the measure settled (item.yaml). TestJudgeReplay asks them
-// again, of the judge WORKLINE_EVAL names; the set is read, and its
-// scoring proved, with no agent (checks_test.go).
+// again, of the judge WORKLINE_EVAL names, in one of two arms: today's
+// judge, or the judge that reads (WORKLINE_EVAL_REPLAY_ROUNDS); the set is
+// read, and its scoring proved, with no agent (checks_test.go).
 
 import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/agent"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	wjudge "github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/role"
 )
@@ -106,28 +112,108 @@ func readReplay(dir string) ([]replayItem, error) {
 	return items, nil
 }
 
-// replayAnswer is what a judge said to an item: yes, no, or "" when it
-// could not answer (Err).
+// replayAnswer is what a judge came to on an item, as a run would show
+// the finding: verified (yes), dropped (no; for a judge that reads, its
+// quote found again), or not verified (unsure, a no unquoted, no answer).
 type replayAnswer struct {
-	Said string
-	Why  string
-	Err  error
-	Call agent.Call
+	Asked  bool   // the item was asked in this run
+	Said   string // yes, no, unsure; "" when it gave no answer
+	Shown  string // verified, dropped, or not verified: why
+	Why    string
+	Err    error
+	Calls  []agent.Call
+	Reads  []string // the reads it asked
+	Served int      // rounds of reads served
+	Lines  int      // lines served
+	Quoted string   // a dropping no's quote: path:line
 }
 
-// right: yes to a true finding, no to a false one.
+func (a replayAnswer) dropped() bool  { return a.Shown == "dropped" }
+func (a replayAnswer) verified() bool { return a.Shown == "verified" }
+
+// right: a true finding verified, a false one dropped.
 func (a replayAnswer) right(it replayItem) bool {
-	return a.Said == map[bool]string{true: "yes", false: "no"}[it.Truth]
+	return it.Truth && a.verified() || !it.Truth && a.dropped()
+}
+
+// asJudgedThen is what the judge said then, as a run showed it.
+func asJudgedThen(it replayItem) replayAnswer {
+	a := replayAnswer{Asked: true, Said: it.Said, Why: it.Then.Why, Shown: "verified"}
+	if it.Said == "no" {
+		a.Shown = "dropped"
+	}
+	return a
+}
+
+// tokenStop stops a replay once it has spent its tokens in, all calls
+// together, past what earlier runs of the same replay spent.
+type tokenStop struct {
+	mu        sync.Mutex
+	max, inTo int
+	stopped   bool
+}
+
+// ask is a judge's call, unless the replay spent its tokens.
+func (s *tokenStop) ask(call func() (wjudge.Answer, error)) (wjudge.Answer, error) {
+	s.mu.Lock()
+	if s.max > 0 && s.inTo >= s.max {
+		s.stopped = true
+		s.mu.Unlock()
+		return wjudge.Answer{}, fmt.Errorf("%s %d tokens in, its stop at %d", stopSaid, s.inTo, s.max)
+	}
+	s.mu.Unlock()
+	a, err := call()
+	s.mu.Lock()
+	s.inTo += a.Call.TokensIn
+	s.mu.Unlock()
+	return a, err
+}
+
+// stopSaid opens what a call refused at the stop says.
+const stopSaid = "not asked: the replay spent"
+
+func stopped(err error) bool { return err != nil && strings.HasPrefix(err.Error(), stopSaid) }
+
+func (s *tokenStop) spent() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.inTo
 }
 
 // askReplay puts an item's question to the judge spec names, as the
 // engine asks it (askQuestions): the question, the material, the judge's
-// facets of today.
-func askReplay(spec string, judgeRole *role.Role, it replayItem) replayAnswer {
-	ans, err := wjudge.Ask(spec, judgeRole, it.Question, it.Material)
-	a := replayAnswer{Why: ans.Why, Err: err, Call: ans.Call}
-	if err == nil {
-		a.Said = map[bool]string{true: "yes", false: "no"}[ans.Yes]
+// facets of today; a no drops the finding.
+func askReplay(spec string, judgeRole *role.Role, it replayItem, stop *tokenStop) replayAnswer {
+	ans, err := stop.ask(func() (wjudge.Answer, error) { return wjudge.Ask(spec, judgeRole, it.Question, it.Material) })
+	a := replayAnswer{Asked: true, Why: ans.Why, Err: err}
+	if !stopped(err) { // a call refused at the stop was never made
+		a.Calls = []agent.Call{ans.Call}
+	}
+	switch {
+	case err != nil:
+		a.Shown = "not verified: " + err.Error()
+	case ans.Yes:
+		a.Said, a.Shown = "yes", "verified"
+	default:
+		a.Said, a.Shown = "no", "dropped"
+	}
+	return a
+}
+
+// askReading puts it to the judge that reads (ADR-0045), as the reviewer
+// does when judge-read-rounds is on: reads served from git at the item's
+// commit, in repo, within rounds and lines.
+func askReading(spec string, judgeRole *role.Role, it replayItem, repo string, rounds, lines int, stop *tokenStop) replayAnswer {
+	cause, _, _ := strings.Cut(it.Where, ":")
+	j := reviewer.JudgeReading(repo, it.Commit, it.Question, it.Material, cause, rounds, lines, func(q, m string) (wjudge.Answer, error) {
+		return stop.ask(func() (wjudge.Answer, error) { return wjudge.AskReading(spec, judgeRole, q, m) })
+	})
+	a := replayAnswer{Asked: true, Said: j.Said, Shown: j.Shown, Why: j.Why, Calls: j.Calls, Reads: j.Asked, Served: j.Rounds, Lines: j.Lines, Quoted: j.Quoted}
+	if j.Said == "" {
+		a.Err = fmt.Errorf("%s", j.Why)
+		if stopped(a.Err) && len(a.Calls) > 0 {
+			a.Calls = a.Calls[:len(a.Calls)-1] // the call refused at the stop, never made
+		}
 	}
 	return a
 }
@@ -135,73 +221,137 @@ func askReplay(spec string, judgeRole *role.Role, it replayItem) replayAnswer {
 // replayTally is a replay against the measure's truth, and against what
 // the judge said then (docs/research/judge-measured.md).
 type replayTally struct {
-	Items, Right                   int
-	TrueKept, TrueDropped, True    int // true findings: answered yes, no
-	FalseDropped, FalseKept, False int // false findings: answered no, yes
-	DroppedThen, DroppedThenKept   int // true findings the judge dropped then; of them, kept now
-	Yes, YesRight                  int // answered yes; of them, true findings
-	SameAsThen, Unanswered         int
-	TokensIn, TokensOut            int
+	Items, Right               int
+	YesThen, YesThenRight      int      // the items it said yes to then; right now
+	NoThen, NoThenRight        int      // the items it said no to then; right now
+	DroppedThen                int      // true findings it dropped then
+	StillDropped               []string // of them, dropped now
+	FalseThen                  int      // false findings it dropped then
+	LetThrough, LetUnchecked   int      // of them, not dropped now; shown not verified among those
+	True, TrueDropped          int      // every true finding; dropped now
+	False, FalseKept           int      // every false finding; not dropped now
+	Verified, VerifiedTrue     int      // its yes; of them, true findings
+	Unsure, Unquoted, NoAnswer int
+	SameAsThen                 int // yes or no as then
+	Reads, Rounds, Lines       int // reads asked; rounds and lines served
+	Calls, TokensIn, TokensOut int
 }
 
 func tallyReplay(items []replayItem, now []replayAnswer) replayTally {
 	var t replayTally
 	for i, it := range items {
 		a := now[i]
+		if !a.Asked {
+			continue
+		}
 		t.Items++
-		t.TokensIn += a.Call.TokensIn
-		t.TokensOut += a.Call.TokensOut
-		if a.right(it) {
+		for _, c := range a.Calls {
+			t.Calls++
+			t.TokensIn += c.TokensIn
+			t.TokensOut += c.TokensOut
+		}
+		t.Reads, t.Rounds, t.Lines = t.Reads+len(a.Reads), t.Rounds+a.Served, t.Lines+a.Lines
+		right := a.right(it)
+		if right {
 			t.Right++
 		}
 		if a.Said == it.Said {
 			t.SameAsThen++
 		}
-		if it.Truth && it.Said == "no" {
-			t.DroppedThen++
-			if a.Said == "yes" {
-				t.DroppedThenKept++
+		if it.Said == "yes" {
+			t.YesThen++
+			if right {
+				t.YesThenRight++
+			}
+		} else {
+			t.NoThen++
+			if right {
+				t.NoThenRight++
 			}
 		}
 		switch {
-		case a.Said == "":
-			t.Unanswered++
-		case it.Truth && a.Said == "yes":
-			t.TrueKept++
-		case it.Truth:
-			t.TrueDropped++
-		case a.Said == "no":
-			t.FalseDropped++
-		default:
-			t.FalseKept++
+		case it.Truth && it.Said == "no":
+			t.DroppedThen++
+			if a.dropped() {
+				t.StillDropped = append(t.StillDropped, it.Name)
+			}
+		case !it.Truth && it.Said == "no":
+			t.FalseThen++
+			if !a.dropped() {
+				t.LetThrough++
+				if !a.verified() {
+					t.LetUnchecked++
+				}
+			}
 		}
 		if it.Truth {
 			t.True++
+			if a.dropped() {
+				t.TrueDropped++
+			}
 		} else {
 			t.False++
-		}
-		if a.Said == "yes" {
-			t.Yes++
-			if it.Truth {
-				t.YesRight++
+			if !a.dropped() {
+				t.FalseKept++
 			}
+		}
+		if a.verified() {
+			t.Verified++
+			if it.Truth {
+				t.VerifiedTrue++
+			}
+		}
+		switch {
+		case a.Said == "unsure":
+			t.Unsure++
+		case a.Said == "":
+			t.NoAnswer++
+		case strings.Contains(a.Shown, "judge-no-unquoted"):
+			t.Unquoted++
 		}
 	}
 	return t
 }
 
 func (t replayTally) String() string {
-	return fmt.Sprintf("%d/%d right; true findings kept %d of %d, dropped %d (of the %d dropped then, %d kept now); "+
-		"false findings dropped %d of %d, kept %d; its yes right %d of %d; same as then %d of %d; unanswered %d; tokens in %d, out %d",
-		t.Right, t.Items, t.TrueKept, t.True, t.TrueDropped, t.DroppedThen, t.DroppedThenKept,
-		t.FalseDropped, t.False, t.FalseKept, t.YesRight, t.Yes, t.SameAsThen, t.Items, t.Unanswered, t.TokensIn, t.TokensOut)
+	perJudge := func(n int) int {
+		if t.Items == 0 {
+			return 0
+		}
+		return n / t.Items
+	}
+	return fmt.Sprintf("%d/%d right; said yes then: %d/%d right; said no then: %d/%d right; "+
+		"true findings dropped then, dropped now: %d of %d %v; false findings dropped then, let through now: %d of %d (%d not verified); "+
+		"every true finding dropped: %d of %d; every false one let through: %d of %d; its yes right: %d of %d; "+
+		"unsure %d, no unquoted %d, no answer %d; same as then %d of %d; "+
+		"reads asked %d, rounds served %d, lines %d; calls %d; tokens in %d, out %d (a judge: %d in, %d out)",
+		t.Right, t.Items, t.YesThenRight, t.YesThen, t.NoThenRight, t.NoThen,
+		len(t.StillDropped), t.DroppedThen, t.StillDropped, t.LetThrough, t.FalseThen, t.LetUnchecked,
+		t.TrueDropped, t.True, t.FalseKept, t.False, t.VerifiedTrue, t.Verified,
+		t.Unsure, t.Unquoted, t.NoAnswer, t.SameAsThen, t.Items,
+		t.Reads, t.Rounds, t.Lines, t.Calls, t.TokensIn, t.TokensOut, perJudge(t.TokensIn), perJudge(t.TokensOut))
 }
 
-// TestJudgeReplay asks the 40 questions again, each in a context of its
-// own, of the judge WORKLINE_EVAL names (`claude:opus` was the judge
-// then). A line of results.tsv an item, case judge/<item>: a point when
-// it says yes to a true finding, no to a false one; the tally of the run
-// is logged.
+// envInt reads a number from the environment, def when unset.
+func envInt(t *testing.T, name string, def int) int {
+	v := os.Getenv(name)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		t.Fatalf("%s=%q: a number", name, v)
+	}
+	return n
+}
+
+// TestJudgeReplay asks the 40 questions again of the judge WORKLINE_EVAL
+// names, today's judge, or with WORKLINE_EVAL_REPLAY_ROUNDS the judge that
+// reads, served from git at each item's commit. A line of results.tsv an
+// item, its tally logged. Past WORKLINE_EVAL_TOKENS_MAX tokens in, earlier
+// runs counted (WORKLINE_EVAL_TOKENS_BEFORE), no call starts; those in
+// flight finish, -parallel at most; the test fails, said
+// (docs/spec/conformance/evaluation.md).
 func TestJudgeReplay(t *testing.T) {
 	spec := os.Getenv("WORKLINE_EVAL")
 	if spec == "" {
@@ -215,6 +365,18 @@ func TestJudgeReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	rounds, lines := envInt(t, "WORKLINE_EVAL_REPLAY_ROUNDS", 0), envInt(t, "WORKLINE_EVAL_REPLAY_LINES", 400)
+	stop := &tokenStop{max: envInt(t, "WORKLINE_EVAL_TOKENS_MAX", 2100000), inTo: envInt(t, "WORKLINE_EVAL_TOKENS_BEFORE", 0)}
+	repo, _ := filepath.Abs("../..")
+	arm := "judge"
+	if rounds > 0 {
+		arm = "judge-reads"
+		for _, it := range items { // each item's commit, to read at
+			if err := exec.Command("git", "-C", repo, "cat-file", "-e", it.Commit+"^{commit}").Run(); err != nil {
+				t.Fatalf("%s: commit %s is not here: git fetch origin pull/%d/head", it.Name, it.Commit, it.PR)
+			}
+		}
+	}
 	version := worklineVersion()
 	now := make([]replayAnswer, len(items))
 	t.Run("items", func(t *testing.T) {
@@ -222,16 +384,26 @@ func TestJudgeReplay(t *testing.T) {
 			t.Run(it.Name, func(t *testing.T) {
 				t.Parallel()
 				start := time.Now()
-				a := askReplay(spec, judgeRole, it)
+				var a replayAnswer
+				if rounds > 0 {
+					a = askReading(spec, judgeRole, it, repo, rounds, lines, stop)
+				} else {
+					a = askReplay(spec, judgeRole, it, stop)
+				}
 				now[i] = a
 				score, failed := "1/1", ""
 				if !a.right(it) {
 					score, failed = "0/1", replayFailed(it, a)
 				}
-				t.Logf("%s — %s; then %s, now %s: %.300s", it.Name, score, it.Said, orDash(a.Said), a.Why)
-				models, efforts, tokensIn, tokensOut, cost := answeredBy([]call{{a.Call.Effort, a.Call.Model, a.Call.TokensIn, a.Call.TokensOut, a.Call.CostUSD, "judge"}})
+				t.Logf("%s — %s; then %s, now %s (%s%s): %.300s; tokens in so far: %d (stop at %d)", it.Name, score, it.Said, orDash(a.Said),
+					a.Shown, readsLine(a), a.Why, stop.spent(), stop.max)
+				var calls []call
+				for _, c := range a.Calls {
+					calls = append(calls, call{c.Effort, c.Model, c.TokensIn, c.TokensOut, c.CostUSD, "judge"})
+				}
+				models, efforts, tokensIn, tokensOut, cost := answeredBy(calls)
 				line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, spec, models, efforts,
-					"judge/" + it.Name, score, "1", tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()),
+					arm + "/" + it.Name, score, fmt.Sprint(len(a.Calls)), tokensIn, tokensOut, cost, fmt.Sprintf("%.0f", time.Since(start).Seconds()),
 					failed, "", ""}, "\t")
 				if err := appendResult(line); err != nil {
 					t.Fatal(err)
@@ -239,7 +411,18 @@ func TestJudgeReplay(t *testing.T) {
 			})
 		}
 	})
-	t.Logf("judge replay, %s: %s", spec, tallyReplay(items, now))
+	t.Logf("judge replay, %s, %s: %s; the replay's tokens in, earlier runs counted: %d", spec, arm, tallyReplay(items, now), stop.spent())
+	if stop.stopped {
+		t.Errorf("the replay stopped at %d tokens in (WORKLINE_EVAL_TOKENS_MAX %d): the items after it were not asked", stop.spent(), stop.max)
+	}
+}
+
+// readsLine says what a judge read, when it read.
+func readsLine(a replayAnswer) string {
+	if len(a.Reads) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("; read %s, %d rounds, %d lines", strings.Join(slices.Compact(a.Reads), ", "), a.Served, a.Lines)
 }
 
 // replayFailed says what an item's answer lost its point on, one line.
@@ -248,7 +431,7 @@ func replayFailed(it replayItem, a replayAnswer) string {
 		return fmt.Sprintf("no answer: %.300s", oneLine(fmt.Sprint(a.Err)))
 	}
 	kind := map[bool]string{true: "true", false: "false"}[it.Truth]
-	return fmt.Sprintf("said %s (%s then) to a %s finding: %.300s", a.Said, it.Said, kind, oneLine(a.Why))
+	return fmt.Sprintf("said %s (%s then) to a %s finding, %s: %.300s", a.Said, it.Said, kind, oneLine(a.Shown), oneLine(a.Why))
 }
 
 var spaces = regexp.MustCompile(`\s+`)

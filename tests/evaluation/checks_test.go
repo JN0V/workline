@@ -2,7 +2,9 @@ package evaluation
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -398,14 +400,15 @@ func TestJudgeReplaySet(t *testing.T) {
 		case (it.SettledBy == "panel") != (it.Matters != nil), it.SettledBy != "panel" && it.SettledBy != "agreement", it.Evidence == "":
 			t.Errorf("%s: settled by %q, matters %v, evidence %q", it.Name, it.SettledBy, it.Matters, it.Evidence)
 		}
-		then[i] = replayAnswer{Said: it.Said, Why: it.Then.Why}
+		then[i] = asJudgedThen(it)
 		if it.Matters != nil && *it.Matters && it.Truth {
 			matters = append(matters, it.PR)
 		}
 	}
-	want := replayTally{Items: 40, Right: 31, TrueKept: 19, TrueDropped: 8, True: 27, FalseDropped: 12, FalseKept: 1, False: 13,
-		DroppedThen: 8, Yes: 20, YesRight: 19, SameAsThen: 40}
-	if got := tallyReplay(items, then); got != want {
+	got := tallyReplay(items, then)
+	want := replayTally{Items: 40, Right: 31, YesThen: 20, YesThenRight: 19, NoThen: 20, NoThenRight: 12, DroppedThen: 8, StillDropped: got.StillDropped,
+		FalseThen: 12, True: 27, TrueDropped: 8, False: 13, FalseKept: 1, Verified: 20, VerifiedTrue: 19, SameAsThen: 40}
+	if !reflect.DeepEqual(got, want) || len(got.StillDropped) != 8 {
 		t.Errorf("what the judge said then, against the truth:\n got %s\nwant %s", got, want)
 	}
 	if !slices.Equal(matters, []int{238, 280}) {
@@ -428,11 +431,12 @@ func TestJudgeReplayWithFakeJudge(t *testing.T) {
 	no := `cmd:cat > /dev/null; printf 'model: fake-judge\ntokens-in: 1000\ntokens-out: 10\n' > "$WORKLINE_CALL"; echo '- note: "no: the code handles it"'`
 	now := make([]replayAnswer, len(items))
 	for i, it := range items {
-		now[i] = askReplay(no, judgeRole, it)
+		now[i] = askReplay(no, judgeRole, it, &tokenStop{})
 	}
-	want := replayTally{Items: 40, Right: 13, TrueDropped: 27, True: 27, FalseDropped: 13, False: 13, DroppedThen: 8,
-		SameAsThen: 20, TokensIn: 40000, TokensOut: 400}
-	if got := tallyReplay(items, now); got != want {
+	got := tallyReplay(items, now)
+	want := replayTally{Items: 40, Right: 13, YesThen: 20, YesThenRight: 1, NoThen: 20, NoThenRight: 12, DroppedThen: 8, StillDropped: got.StillDropped,
+		FalseThen: 12, True: 27, TrueDropped: 27, False: 13, SameAsThen: 20, Calls: 40, TokensIn: 40000, TokensOut: 400}
+	if !reflect.DeepEqual(got, want) || len(got.StillDropped) != 8 {
 		t.Errorf("a judge saying no to all:\n got %s\nwant %s", got, want)
 	}
 	var truth replayItem
@@ -442,11 +446,53 @@ func TestJudgeReplayWithFakeJudge(t *testing.T) {
 			break
 		}
 	}
-	if a := askReplay(no, judgeRole, truth); a.right(truth) || replayFailed(truth, a) != "said no ("+truth.Said+" then) to a true finding: the code handles it" {
+	if a := askReplay(no, judgeRole, truth, &tokenStop{}); a.right(truth) || replayFailed(truth, a) != "said no ("+truth.Said+" then) to a true finding, dropped: the code handles it" {
 		t.Errorf("a no to a true finding loses its point, said: %q", replayFailed(truth, a))
 	}
-	a := askReplay(`cmd:cat > /dev/null; echo '- note: "maybe"'`, judgeRole, truth)
+	a := askReplay(`cmd:cat > /dev/null; echo '- note: "maybe"'`, judgeRole, truth, &tokenStop{})
 	if a.Said != "" || a.right(truth) || !strings.HasPrefix(replayFailed(truth, a), "no answer: ") {
 		t.Errorf("neither yes nor no is no answer, and no point: %+v", a)
+	}
+	// The replay stops asking past its tokens, earlier runs counted.
+	stop := &tokenStop{max: 2500, inTo: 500}
+	for i := range 3 {
+		now[i] = askReplay(no, judgeRole, items[i], stop)
+	}
+	if !stop.stopped || stop.spent() != 2500 || now[2].Said != "" || len(now[2].Calls) != 0 || !strings.Contains(now[2].Shown, "not asked: the replay spent 2500 tokens in, its stop at 2500") {
+		t.Errorf("past the stop, nothing asked: %d spent, %+v", stop.spent(), now[2])
+	}
+}
+
+// TestJudgeReplayReadingWithFakeJudge asks as the judge that reads does
+// (WORKLINE_EVAL_REPLAY_ROUNDS), of a fake judge (a cmd:): it reads a
+// file at the item's commit, then says no, quoting a line it read: the
+// finding dropped, the read counted. No real agent.
+func TestJudgeReplayReadingWithFakeJudge(t *testing.T) {
+	items, err := readReplay(replayDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	judgeRole, err := role.Load("../../roles", "judge")
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := t.TempDir()
+	if err := sh(repo, hermetic(), "git init -q && printf 'one\\ntwo\\nthree\\n' > notes.txt && git add . && git commit -qm start"); err != nil {
+		t.Fatal(err)
+	}
+	head, _ := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+	fake := `cmd:p=$(cat); printf 'model: fake-judge\ntokens-in: 1000\ntokens-out: 10\n' > "$WORKLINE_CALL"; case $p in
+*'What you read, round 1'*) printf '%s\n' '- note: "no: the file says two"' '- quote: {path: notes.txt, text: "two"}' ;;
+*) echo '- read: {path: notes.txt, lines: 1-2, why: the notes}' ;;
+esac`
+	it := items[0]
+	it.Commit = strings.TrimSpace(string(head))
+	a := askReading(fake, judgeRole, it, repo, 2, 400, &tokenStop{})
+	if a.Shown != "dropped" || a.Quoted != "notes.txt:2" || a.Served != 1 || a.Lines != 2 || len(a.Calls) != 2 || !slices.Equal(a.Reads, []string{"notes.txt:1-2"}) {
+		t.Errorf("read, then a no quoting what it read: %+v", a)
+	}
+	got := tallyReplay([]replayItem{it}, []replayAnswer{a})
+	if got.Reads != 1 || got.Rounds != 1 || got.Lines != 2 || got.Calls != 2 || got.TokensIn != 2000 {
+		t.Errorf("the reads and calls counted: %s", got)
 	}
 }

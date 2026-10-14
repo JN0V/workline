@@ -7,6 +7,7 @@ given:
     - "mkdir -p .git/workline && echo \"<!-- workline:record reviewed=$(git rev-parse HEAD) runs=1 -->\" > .git/workline/reviewer-record"
     - "sed -i 's|^\\t\\ttotal += v|\\t\\tif v == 0 {\\n\\t\\t\\tcontinue\\n\\t\\t}\\n\\t\\ttotal += v|' calc/calc.go && git commit -qam 'feat: skip the zeros in the mean' -m 'Closes #4.'"
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 0}}}}   # a judge that reads nothing: its no drops
   forge:
     issues:
       - id: 4
