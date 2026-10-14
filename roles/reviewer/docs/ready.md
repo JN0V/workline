@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/reviewer.go, internal/builtin/reviewer/record.go, ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 98de6b44
+checked: 629993a7
 verified: agent:claude-code
 ---
 # Reviewer — every lens once when it becomes ready
