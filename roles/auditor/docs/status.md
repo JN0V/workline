@@ -61,14 +61,18 @@ hold:
   dropped opened as an issue, three a week at most,
   `dropped-true-finding-opened-capped`. The count:
   [a comment kept on #155](https://github.com/JN0V/workline/issues/155).
+- **The reviewer's findings judged, every run's**, from the line its
+  summary comment hides for each, read at the head that run read, on
+  GitHub and GitLab; the lines past the comment's size said, not drawn
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):
+  auditor's `sample-reads-every-run-judged*`, reviewer's `judged-line*`.
 
 ## Missing
 
 - **The records ADR-0046 completes**
   ([#205](https://github.com/JN0V/workline/issues/205)): the product
   owner's `at`, `model` and `body`, so its act is read on the text and
-  the code it read; the reviewer's line per finding judged, every run's;
-  the committer's trailers, so a rewrite is drawn at all
+  the code it read; the committer's trailers, so a rewrite is drawn at all
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
 - **The product owner's issue folded in**
   ([ADR-0033](../../../docs/adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)'s,

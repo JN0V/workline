@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 59713a7e
+checked: efe5ad2d
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -100,6 +100,9 @@ else whether the quoted code fails:
   (`forge-writes`), a blocked run's too ([on a merge request](run.md#on-a-merge-request)).
 - A finding that blocks stands until a commit answers it
   ([below](#a-block-stands-until-a-commit-answers-it)).
+- Each finding judged leaves a hidden line in the summary comment, every
+  run's, for the weekly sample
+  ([below](#every-finding-judged-kept-for-the-weekly-sample)).
 
 When something fails:
 
@@ -133,6 +136,27 @@ each finding that blocked, its cause quoted, beside the commits reviewed
 - **Its lens set back to `warn`** (`ai-findings`): it goes.
 - **Resolving its comment on the line does not lift it**: a person who
   disagrees merges where the forge lets them, or sets its lens to `warn`.
+
+### Every finding judged, kept for the weekly sample
+
+[ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md):
+the auditor re-checks a share of the findings the judge kept or dropped
+([the weekly sample](../../../docs/weekly-sample.md)). The summary
+comment hides a line for each.
+
+- **A line**: the lens, the place, the head the review read, yes (kept)
+  or no (dropped), the lens's model and the judge's, the title.
+- **No line**: a finding shown not verified, a nit, a question for a
+  person, a spec's finding.
+- **Every run's**, for the merge request's life, on GitHub and GitLab:
+  each run writes the comment again, the lines before kept, its own
+  added. A run that asks no lens keeps them too. GitLab keeps no earlier
+  version of a comment: the lines do.
+- **Within 60,000 characters**, under GitHub's 65,536: past it, the
+  oldest lines go first, and the comment counts them
+  (`<!-- workline:judged-lines gone=N -->`). The sample says them not
+  drawn. A line takes about 300 characters: about 200 fit.
+- **On a machine**: no line; the local record keeps none.
 
 ## The budget
 
