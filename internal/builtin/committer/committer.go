@@ -288,9 +288,7 @@ func Post(runDir, repo string) int {
 			for _, t := range Trailers(msg) {
 				kept[t] = true
 			}
-			had := map[string]bool{}
 			for _, t := range Trailers(original) {
-				had[t] = true
 				if !kept[t] {
 					findings = append(findings, verdict.Finding{Rule: "trailer-dropped", Where: "trailers",
 						Message: fmt.Sprintf("the rewrite dropped %q, or did not keep it on its own line in the last paragraph; trailers are kept as written", t)})
@@ -298,10 +296,14 @@ func Post(runDir, repo string) int {
 			}
 			// workline's own trailers say who made or rewrote a commit:
 			// the engine writes them, never the agent (ADR-0046).
-			for _, t := range Trailers(msg) {
-				if strings.HasPrefix(strings.ToLower(t), "workline-") && !had[t] {
+			had := map[string]bool{}
+			for _, l := range ownLines(original) {
+				had[l] = true
+			}
+			for _, l := range ownLines(msg) {
+				if !had[l] {
 					findings = append(findings, verdict.Finding{Rule: "trailer-added", Where: "trailers",
-						Message: fmt.Sprintf("the rewrite added %q; workline's own trailers are the engine's to write", t)})
+						Message: fmt.Sprintf("the rewrite added %q; workline's own trailers are the engine's to write", l)})
 				}
 			}
 			if len(findings) > 0 {
@@ -396,6 +398,23 @@ func all(in []string, f func(string) bool) bool {
 		}
 	}
 	return true
+}
+
+// ownLine is a line git could read as one of workline's own trailers,
+// whatever its letter case or spaces, anywhere in a message.
+var ownLine = regexp.MustCompile(`(?i)^\s*workline-[a-z0-9-]*\s*:`)
+
+// ownLines are a message's lines that could be read as workline's own
+// trailers, their key in lower case, no space about its colon.
+func ownLines(message string) []string {
+	var out []string
+	for _, l := range strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n") {
+		if ownLine.MatchString(l) {
+			key, value, _ := strings.Cut(l, ":")
+			out = append(out, strings.ToLower(strings.TrimSpace(key))+": "+strings.TrimSpace(value))
+		}
+	}
+	return out
 }
 
 // Trailers returns the trailer lines of a message (Refs:, Co-Authored-By:...).
