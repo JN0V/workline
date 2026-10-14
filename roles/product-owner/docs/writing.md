@@ -129,8 +129,8 @@ is the role's until a person edits it:
 
 - **One line on the issue**, in its comment: "Added: Verification, Scope.
   Changed: —. See the issue's edit history."
-- **Changed** lists only its own drafts it rewrote; it never changes a
-  sentence of yours.
+- **Changed** lists only its own sections it rewrote — a draft, or a text
+  as it wrote it; it never changes a sentence of yours.
 - **Rewrote: the description, in plain words** when it rewrote a role's
   text on top.
 - **The text before** is in the forge's edit history: "edited" above the
