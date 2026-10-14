@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: c6f73161
+checked: f28701f9
 verified: agent:claude-code
 ---
 # Evaluation — three measures
@@ -99,9 +99,10 @@ A line of `results.tsv` an item, a point for a true finding verified or
 a false one dropped; the run's tally is logged: right of the 20 it said
 yes to then and of the 20 it said no to, the true findings dropped then
 and again, the false ones let through, its yes right, unsure, the reads
-and the tokens a judge. It stops asking past `WORKLINE_EVAL_TOKENS_MAX`
-tokens in (2100000), counting `WORKLINE_EVAL_TOKENS_BEFORE` (what earlier
-runs of the same replay spent), and fails, said. Never in the weekly run:
+and the tokens a judge. Past `WORKLINE_EVAL_TOKENS_MAX` tokens in
+(2100000), counting `WORKLINE_EVAL_TOKENS_BEFORE` (what earlier runs of
+the same replay spent), no call starts, those in flight finish (`-parallel`
+at most), and it fails, said. Never in the weekly run:
 
 ```sh
 WORKLINE_EVAL=claude:opus go test -count=1 -timeout 60m -parallel 4 -run 'TestJudgeReplay$' -v ./tests/evaluation/

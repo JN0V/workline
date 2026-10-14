@@ -135,8 +135,7 @@ maintainer decides.
 - **No more of the 12 false findings let through**: does not hold, 0 to
   2, both shown not verified, none verified: #157, unsure after four
   reads; #329, a no quoting issue #321, which the replay cannot find
-  again (it holds no issue). A run reading the issue would find the
-  quote and drop it, leaving 1.
+  again: it holds no issue (limits, below).
 - **Unsure**: 3 of 40 (#157, #170, and #219's false finding).
 
 **Method.**
@@ -159,6 +158,9 @@ maintainer decides.
   with no list around it; its reader took them for no answer. They are
   scored as said, yes, from the run's log; the reader is fixed
   (`judge.answerReading`), and `results.tsv` keeps them as no answer.
+- The replay holds no issue: a no quoting the issue a change closes is
+  never found again there (#329). What a run, which reads the issue,
+  would do with that quote is not measured.
 - Today's judge is not the judge of 10-04 to 10-13: it drops 2 of the 20
   it said yes to then.
 - A first call counts about twice the tokens recorded then (#280: 14.3k
