@@ -45,15 +45,30 @@ var contracts = map[string]string{
 // the prompt, and again when an answer did not read.
 const BlockScalars = "An item may be written over several lines, one key a line. A text holding code, a quote, a backtick, `: ` or ` #`, or several lines is written as a block scalar: the key, then `|`, then the text on the lines below, indented under the key with spaces (its first line never starting with a tab)."
 
-// facet finds a facet file: the project's copy first, then the user's, then
-// the role's own (docs/spec/role-contract.md, "Facets").
+// userConfigDir and userHomeDir are the person's folders; a test sets its own.
+var userConfigDir, userHomeDir = os.UserConfigDir, os.UserHomeDir
+
+// facetDirs are the folders a facet is looked for in, in order: the
+// project's copy; the person's, in the folder their config.yaml is read
+// from (~/Library/Application Support/workline on macOS), then in
+// ~/.config/workline, where they were read from before; the role's own
+// (docs/spec/role-contract.md, "Facets").
+func facetDirs(req Request) []string {
+	dirs := []string{filepath.Join(req.Repo, ".workline", "roles", req.Role.Name)}
+	if cfg, err := userConfigDir(); err == nil {
+		dirs = append(dirs, filepath.Join(cfg, "workline", "roles", req.Role.Name))
+	}
+	if home, err := userHomeDir(); err == nil {
+		if d := filepath.Join(home, ".config", "workline", "roles", req.Role.Name); d != dirs[len(dirs)-1] {
+			dirs = append(dirs, d)
+		}
+	}
+	return append(dirs, req.Role.Dir)
+}
+
+// facet finds a facet file in the first of facetDirs that holds it.
 func facet(req Request, name string) (string, bool) {
-	home, _ := os.UserHomeDir()
-	for _, dir := range []string{
-		filepath.Join(req.Repo, ".workline", "roles", req.Role.Name),
-		filepath.Join(home, ".config", "workline", "roles", req.Role.Name),
-		req.Role.Dir,
-	} {
+	for _, dir := range facetDirs(req) {
 		if data, err := os.ReadFile(filepath.Join(dir, name)); err == nil {
 			return string(data), true
 		}
