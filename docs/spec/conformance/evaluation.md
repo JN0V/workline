@@ -1,6 +1,7 @@
 ---
 sources: [tests/evaluation]
 checked: f28701f9
+judged: 62abc22
 verified: agent:claude-code
 ---
 # Evaluation — three measures
