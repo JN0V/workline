@@ -27,7 +27,8 @@ type Record struct {
 	Patches  []string `json:"patches,omitempty"`
 	Runs     int      `json:"runs"`
 	Owed     bool     `json:"owed,omitempty"`     // every lens owed: the run on ready, a rule holding it, asked none (#129)
-	ReadAll  bool     `json:"read-all,omitempty"` // every lens asked on the whole change, since the merge request was last a draft (#359)
+	ReadAll  bool     `json:"read-all,omitempty"` // every lens answered on the whole change, since the merge request was last a draft (#359)
+	Retried  bool     `json:"retried,omitempty"`  // the run on ready failed once: every lens owed again, once (#359)
 	Blocks   []Block  `json:"blocks,omitempty"`   // the findings that block, carried to the next run (#326)
 }
 
@@ -46,10 +47,10 @@ type Block struct {
 const SummaryKey = "summary"
 
 // recordLine reads a record; one an engine wrote before patch ids holds no
-// `patches=`, nor `read=all` before #359, and still reads. blocksLine reads
+// `patches=`, nor `read=all` and `retried=once` before #359, and still reads. blocksLine reads
 // its blocks, a line of their own an engine before them leaves.
 var (
-	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)? -->`)
+	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)? -->`)
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
 )
 
@@ -76,6 +77,9 @@ func (r Record) String() string {
 	if r.ReadAll {
 		owed += " read=all"
 	}
+	if r.Retried {
+		owed += " retried=once"
+	}
 	s := fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 	if len(r.Blocks) > 0 {
 		data, _ := json.Marshal(r.Blocks)
@@ -100,6 +104,7 @@ func parseRecord(text string) (Record, error) {
 	r.Runs, _ = strconv.Atoi(m[3])
 	r.Owed = m[4] != ""
 	r.ReadAll = m[5] != ""
+	r.Retried = m[6] != ""
 	if b := blocksLine.FindStringSubmatch(text); b != nil {
 		if err := json.Unmarshal([]byte(b[1]), &r.Blocks); err != nil {
 			return Record{}, fmt.Errorf("the findings that blocked do not read: %v", err)
@@ -123,7 +128,7 @@ func ids(list string) []string {
 // each, and one more run; the blocks kept, and whether every lens read the
 // change.
 func (r Record) add(commits, patches []string) Record {
-	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll}
+	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)

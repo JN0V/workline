@@ -408,7 +408,7 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 // the whole change (#129): told `lenses=all`; or, told no lenses, the
 // record owing them, or the merge request no draft (`draft=false`) and its
 // record, read, not saying every lens read it (#359: a run on ready a push
-// cancelled wrote nothing). A draft's run drops that mark (roles/reviewer/
+// cancelled wrote nothing). A draft's run drops those marks (roles/reviewer/
 // docs/ready.md).
 func runOnReady(runDir string, rec *Record, recordRead bool) bool {
 	if os.Getenv("WORKLINE_EVENT") != "merge-request" {
@@ -416,15 +416,36 @@ func runOnReady(runDir string, rec *Record, recordRead bool) bool {
 	}
 	draft := input(runDir, "draft")
 	if draft == "true" {
-		rec.ReadAll = false
+		rec.ReadAll, rec.Retried = false, false
 	}
 	switch asked := input(runDir, "lenses"); asked {
 	case "all":
 		return true
 	case "":
-		return rec.Owed || draft == "false" && recordRead && !rec.ReadAll
+		return rec.Owed || rec.Retried || draft == "false" && recordRead && !rec.ReadAll
 	}
 	return false
+}
+
+// everyLens marks the record of the run on ready (#359): every lens read
+// the change once each answered; one that did not leaves every lens owed
+// to the next push, once, then the mark written all the same, said.
+func everyLens(st state, v *Review, answered bool) {
+	switch {
+	case !st.Every:
+		return
+	case answered:
+		v.Record.ReadAll, v.Record.Retried = true, false
+		return
+	case !st.Record.Retried:
+		v.Record.Retried = true
+		v.Findings = append(v.Findings, verdict.Finding{Rule: "every-lens-again", Level: "warn",
+			Message: "not every lens answered on the run on ready: the next push asks every lens again, on the whole change, once"})
+		return
+	}
+	v.Record.ReadAll, v.Record.Retried = true, false
+	v.Findings = append(v.Findings, verdict.Finding{Rule: "every-lens-not-whole", Level: "warn",
+		Message: "not every lens answered, the run on ready asked twice: the change was not reviewed whole by every lens; the next pushes get one lens each"})
 }
 
 // lenses are the lenses this run asks: every one on a machine, or on the
@@ -1275,10 +1296,8 @@ func settle(runDir, repo string, s Settings) int {
 		}
 		v.Record.Blocks = blocks
 	}
-	v.Record.Owed = false // the lenses were asked: no lens is owed any more, whatever they answered
-	if st.Every {
-		v.Record.ReadAll = true // and every lens read the change, said to the next runs (#359)
-	}
+	v.Record.Owed = false // the lenses were asked: a rule holds them no more
+	everyLens(st, &v, len(c.Failed) == 0)
 	v.Calls = spent(runDir, st, c)
 	v.Status = status(v.Findings)
 	v.Summary = summary(v, len(fallback), len(c.Failed), unjudged) + st.still()
