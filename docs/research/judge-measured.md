@@ -103,8 +103,9 @@ without letting more false ones through?
 **Verdict.** It keeps 6 of the 8 true findings today's judge drops, and
 every yes it gives is right. It lets 2 of the 12 false findings through,
 shown not verified, where today's judge drops all 12. ADR-0045's bar
-holds on two of its three points. `judge-read-rounds` stays 0: the
-maintainer decides.
+holds on two of its three points. The maintainer turned it on the same
+day, the third point relaxed
+([ADR-0045, amended](../adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)).
 
 | | Today's judge | The judge that reads |
 |---|---|---|

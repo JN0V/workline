@@ -14,11 +14,9 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. The judge reads the code it
-   needs before saying no
-   ([#362](https://github.com/JN0V/workline/issues/362)): built, off;
-   [replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14),
-   on by default is the maintainer's call. A judge of
+1. **Nothing buildable in Missing**: met, 2026-10-14. The judge reads
+   the code it needs before saying no, on by default
+   ([#362](https://github.com/JN0V/workline/issues/362)). A judge of
    another provider and each defect it let through as an evaluation case
    are parked ([#80](https://github.com/JN0V/workline/issues/80)): any
    command can already be the judge, and using one waits on a second
@@ -29,10 +27,12 @@ hold:
    verdicts on workline's pull requests read again in the code, its "yes"
    right 19 of 20, its "no" 12 of 20
    ([the judge, measured](../../../docs/research/judge-measured.md)).
-   Replayed on the same 40, 2026-10-14: the judge that reads keeps 6 of
-   the 8 true findings dropped, lets 2 of 12 false ones through, not
-   verified ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14));
-   on by default is the maintainer's call. Also
+   Measured again on the same 40, 2026-10-14, the judge that reads
+   against today's: it keeps 6 of the 8 true findings dropped and lets 2
+   of 12 false ones through, shown not verified
+   ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14));
+   on by default since
+   ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)). Also
    inside the other roles' measures: the documentalist's `drifted` cases
    ([ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)),
    the reviewer's bench.
@@ -44,9 +44,11 @@ No cases folder of its own: it is asked inside the other roles' cases.
 - **A finding judged, the level said**: reviewer's
   `judged-no-not-reported`, `independence-level-in-verdict`.
 - **A judge of the code asks for what it needs**, its no quoting the code,
-  or unsure ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)):
+  or unsure, on by default
+  ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)):
   reviewer's `judge-reads-*`, `judge-no-*`,
-  `judge-unsure-shown-not-verified`.
+  `judge-unsure-shown-not-verified`; its 40 measured questions kept to
+  replay ([the judge's replay](../../../docs/spec/conformance/evaluation.md#the-judges-replay)).
 - **A doc read against its sources, never by the voucher**:
   documentalist's `sample-never-the-voucher`,
   `sample-judge-from-the-environment`.
@@ -57,14 +59,5 @@ No cases folder of its own: it is asked inside the other roles' cases.
 
 ## Missing
 
-- **The judge reads the code it needs** before saying no
-  ([#362](https://github.com/JN0V/workline/issues/362)): built for the
-  code review's judge, as
-  [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)
-  decided, off (`judge-read-rounds: 0`) until
-  [measured again](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#measured-again-before-it-is-on-by-default)
-  on its 40 measured questions; then on by default. They are kept, as
-  asked, to replay
-  ([the judge's replay](../../../docs/spec/conformance/evaluation.md#the-judges-replay)).
 - **Parked**: a judge of another provider
   ([#80](https://github.com/JN0V/workline/issues/80)).

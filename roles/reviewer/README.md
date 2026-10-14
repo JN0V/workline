@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: c6f73161
+checked: 59713a7e
 verified: agent:claude-code
 ---
 # Reviewer
@@ -64,7 +64,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   (`needs-triage`) for each verified finding outside the change.
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request), one judge call for each important
-  finding; a spec, one call. Capped at 300000 tokens a run
+  finding, up to three when it reads the code it needs; a spec, one
+  call. Capped at 300000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:
   [research](../../docs/research/code-review.md#the-reviewers-cost-measured).
 - **The run when a merge request becomes ready** costs more: every lens
@@ -93,7 +94,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
 6. **Whose finding**: a cause in the change goes to its author; elsewhere,
    to an issue; a choice for a person is asked as a question.
 7. **The judge**: each important finding checked apart, reading the code
-   it stands on; a no drops it ([more](docs/judge.md)).
+   it stands on, and more if it asks; a no quoting the code drops it
+   ([more](docs/judge.md)).
 8. **The verdict**: rules block; findings warn until measured
    (`ai-findings`); one that blocks stands until a commit answers it
    ([more](docs/judge.md#a-block-stands-until-a-commit-answers-it)); on a
@@ -162,7 +164,7 @@ What a run may read and write, and spend:
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
 | `code-lines-max` | `600` | lines of changed files a lens is given whole; the others by their hunks |
 | `judge-lines-max` | `200` | lines of code a judge is shown, the rest named; `0`: the 31 lines around the cause |
-| `judge-read-rounds` | `0` | rounds of reads a judge may ask before it answers, 8 at most ([when the judge reads](docs/judge.md#when-the-judge-reads)); `0`: none, until measured |
+| `judge-read-rounds` | `2` | rounds of reads a judge may ask before it answers, 8 at most ([when the judge reads](docs/judge.md#when-the-judge-reads)); `0`: none, a no drops the finding |
 | `judge-read-lines-max` | `400` | lines read for one judge, all its rounds; the rest named; `0`: no read |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown |
 | `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) |

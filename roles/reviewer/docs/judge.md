@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: c6f73161
+checked: 59713a7e
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -12,7 +12,8 @@ and what a run may spend.
 
 Apart, for each important finding, at the best independence
 (`judge-at-least`); its level and both models said. A no drops it, said
-(`finding-judged-no`).
+(`finding-judged-no`), when the lines it quotes are found again
+([below](#when-the-judge-reads)).
 
 **What it reads**: the finding, the code it stands on, and what the change
 did within 40 lines of the cause
@@ -58,8 +59,10 @@ else whether the quoted code fails:
 ## When the judge reads
 
 [ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md),
-[#362](https://github.com/JN0V/workline/issues/362): off until measured
-(`judge-read-rounds: 0`); a project may turn it on (`2`).
+[#362](https://github.com/JN0V/workline/issues/362): on since 2026-10-14
+(`judge-read-rounds: 2`), after
+[its replay](../../../docs/research/judge-measured.md#replayed-2026-10-14);
+`0` turns it off, a no then dropping the finding.
 
 - **It may ask, instead of a verdict**: a file's lines, a definition by
   its name (found as its material's functions are), or the lines naming

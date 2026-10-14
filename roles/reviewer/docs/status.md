@@ -17,8 +17,9 @@ Beta until the three criteria of
 hold:
 
 1. **Nothing buildable in Missing**: open. The judge reads the code it
-   needs ([#362](https://github.com/JN0V/workline/issues/362)), then the
-   reviewer is measured before the developer role
+   needs, on since 2026-10-14
+   ([#362](https://github.com/JN0V/workline/issues/362)); the reviewer
+   is measured next, before the developer role
    ([#360](https://github.com/JN0V/workline/issues/360)); the developer's
    loop waits for that role
    ([#117](https://github.com/JN0V/workline/issues/117)).
@@ -94,8 +95,9 @@ its measure in
 - **A judge reads the code the finding stands on**:
   `judge-reads-the-function-the-cause-calls`,
   `judge-reach-capped-rest-named`.
-- **A judge asks for the code it needs**, off until measured
-  ([ADR-0045](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md)):
+- **A judge asks for the code it needs**, on since its
+  [replay](../../../docs/research/judge-measured.md#replayed-2026-10-14)
+  ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)):
   `judge-reads-a-function-then-answers`, `judge-reads-past-its-caps`,
   `judge-reads-the-commit-only`, `judge-reads-stopped-by-the-budget`,
   `judge-no-quotes-the-code-finding-dropped`,
@@ -133,32 +135,25 @@ its measure in
 
 ## Missing, in the order to build it
 
-1. **The judge reads the code it needs** before saying no: its true
-   findings dropped for want of the proof
-   ([#362](https://github.com/JN0V/workline/issues/362)). Built, off
-   (`judge-read-rounds: 0`);
-   [replayed 2026-10-14](../../../docs/research/judge-measured.md#replayed-2026-10-14):
-   6 of the 8 true findings kept, 2 of 12 false ones shown not verified;
-   on by default is the maintainer's call.
-2. **Measured before the developer**, on that judge: five runs a case, the
+1. **Measured before the developer**, on the judge that reads: five runs a case, the
    finder floor's worth, the lenses together against apart; intent, claims
    and decisions; the diff alone as a cheap pass
    ([#243](https://github.com/JN0V/workline/issues/243)); then the
    maintainer's choice for correctness
    ([#360](https://github.com/JN0V/workline/issues/360)).
-3. **Reviews of one pull request at once** overwrite each other
+2. **Reviews of one pull request at once** overwrite each other
    ([#359](https://github.com/JN0V/workline/issues/359)).
-4. **Spec review on workline**, turned on after the product owner's trial
+3. **Spec review on workline**, turned on after the product owner's trial
    (2026-10-16); then more specs measured, the product owner's real answer
    read again, on GitLab and in CI. Several specs a night parked until a
    queue shows. No issue yet.
-5. **The tests lens outside the change**: untested code the change did not
+4. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
-6. **The developer's loop**: a handoff to the developer, five rounds, then
+5. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-7. **Tries on real use**: a draft marked ready, a run on ready a rule
+6. **Tries on real use**: a draft marked ready, a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
    real agent; every lens on ready tried on
