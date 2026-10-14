@@ -98,6 +98,7 @@ its measure in
 - **A judge asks for the code it needs**, on since its
   [replay](../../../docs/research/judge-measured.md#replayed-2026-10-14)
   ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)):
+  `judge-reads-by-default`,
   `judge-reads-a-function-then-answers`, `judge-reads-past-its-caps`,
   `judge-reads-the-commit-only`, `judge-reads-stopped-by-the-budget`,
   `judge-no-quotes-the-code-finding-dropped`,
