@@ -1,6 +1,8 @@
 package documentalist
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"slices"
@@ -51,6 +53,12 @@ func (w waiting) holds(key string) (task string, waits, earlier bool) {
 	return task, w.open[task] || w.proposed[task], w.proposed[task]
 }
 
+// read says whether the engine could tell what the task changes.
+func (w waiting) read(task string) bool {
+	_, ok := w.files[task]
+	return ok
+}
+
 // changing names a waiting task whose change touches the doc, those an
 // earlier round proposed first; failing one, a task judging docs in parts
 // (`fix`, `fix-…`) whose files are not known, which may hold it.
@@ -76,7 +84,7 @@ func (w waiting) changing(doc string) (task string, waits, earlier bool) {
 		}
 	}
 	for _, t := range tasks {
-		if _, known := w.files[t]; !known && (t == "fix" || strings.HasPrefix(t, "fix-")) {
+		if !w.read(t) && (t == "fix" || strings.HasPrefix(t, "fix-")) {
 			return t, true, w.proposed[t]
 		}
 	}
@@ -105,7 +113,7 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 			case !waits:
 			case earlier: // an earlier round of this run judged it
 				sd.note, sd.earlier = "(judged in an earlier round of this run)", true
-			case sd.tooLarge && w.files[task] == nil: // a task in parts whose change could not be read
+			case sd.tooLarge && !w.read(task): // a task in parts whose change could not be read
 				sd.note = "(workline/documentalist/" + task + ", judging docs in parts, waits for review, and what it changes could not be read: not put before an agent again until it is merged or closed)"
 			case sd.tooLarge:
 				sd.note = "(workline/documentalist/" + task + " changes it and waits for review: not put before an agent again until it is merged or closed)"
@@ -120,8 +128,18 @@ func holdWaitingTasks(w waiting, maps ...map[string]*suspectDoc) {
 // rewrites name it, so that the task waits for it while another goes; and
 // the findings a rewrite resolves, which say so.
 
-// partsKey is a run's judging in parts, by the first doc it judged.
-func partsKey(docs []string) string { return "fix " + docs[0] }
+// partsKey is a run's judging in parts, by the first doc it judged. When
+// the branch that names already waits — another doc's, two paths making one
+// name, since the run's own docs wait with theirs —, a short hash of the
+// doc's path tells them apart: never one proposal replacing the other.
+func partsKey(docs []string, w waiting) string {
+	key := "fix " + docs[0]
+	if _, waits, _ := w.holds(key); waits {
+		sum := sha256.Sum256([]byte(docs[0]))
+		key += " " + hex.EncodeToString(sum[:3])
+	}
+	return key
+}
 
 func (c *condenseTask) key() string {
 	if c.Split {

@@ -2288,7 +2288,8 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 		title = "docs: bring the product docs up to date for the release"
 	case "fix":
 		in := sortedKeys(inParts)
-		key, title = partsKey(in), "docs: bring "+in[0]+" in line with the code"
+		wait, _ := readWaiting(runDir) // pre read it first, and failed on an error
+		key, title = partsKey(in, wait), "docs: bring "+in[0]+" in line with the code"
 		if len(in) > 1 {
 			title = fmt.Sprintf("docs: bring %s and %d more in line with the code", in[0], len(in)-1)
 		}
