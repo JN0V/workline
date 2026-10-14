@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: 79b85354
+checked: fb15ba73
 verified: agent:claude-code
 ---
 # Using workline
@@ -91,9 +91,9 @@ Each in detail: [the commands](commands.md), and
   merge-request:<n>`: what the patches write is committed to that merge
   request's branch and pushed, without force.
   - From a fork, or when the branch moved on, the diff goes in one comment
-    instead, whole, to copy and apply with `git apply`: a code block of a
-    doc it changes does not end it. With `local`, committed on the local
-    branch, nothing pushed.
+    instead, whole, to copy and apply with `git apply`: the docs it
+    creates too, and a code block of a doc it changes does not end it.
+    With `local`, committed on the local branch, nothing pushed.
   - On a release tool's merge request, which the tool rewrites, it goes to
     a merge request of its own, `workline/<role>/release`, into the
     release's base; the release waits until it is merged
