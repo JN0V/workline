@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
@@ -21,16 +22,11 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// How an act drawn is re-checked (ADR-0046): one auditor call an act,
-// asked its kind's question — a facet of the role, kinds/<kind>.md —
-// given what the act was done on, as it was then, and never the role's
-// reasoning; a finding blind, not told whether its judge kept it. The
-// judge stands apart from every model that acted, at the best
-// independence available (ADR-0005). The engine finds each quote again in
-// the item of the material it names, code outside its comments: an answer
-// against the act is false only with one found, else it goes to a person.
-// The week's calls stop at the sample's ai-max-tokens; the acts left are
-// listed unread. Each role's first act is read before any second one.
+// Each act drawn is re-checked by one auditor call, asked its kind's
+// question (kinds/<kind>.md) on what the act was done on, a finding blind,
+// never on a model that acted. An answer against the act is false only
+// with a quote the engine finds again; the calls stop at the sample's
+// ai-max-tokens (ADR-0046, docs/commands.md#workline-sample).
 
 // reader reads the week's sample: the judge it asks, and what it spent.
 type reader struct {
@@ -384,7 +380,11 @@ func (rd *reader) rewrite(a *Act, m *material) string {
 		return fmt.Sprintf("the diff of %s cannot be read", a.Ref)
 	}
 	if len(diff) > diffChars {
-		diff = diff[:diffChars] + fmt.Sprintf("\n… (cut: the diff takes more than %d characters)", diffChars)
+		cut := diffChars
+		for cut > 0 && !utf8.RuneStart(diff[cut]) {
+			cut-- // never inside a character
+		}
+		diff = diff[:cut] + fmt.Sprintf("\n… (cut: the diff takes more than %d characters)", diffChars)
 	}
 	text := strings.TrimSpace(strings.Join(keep, "\n"))
 	m.items = append(m.items, item{name: "message", text: text, full: text}, item{name: "diff", text: diff, full: diff})

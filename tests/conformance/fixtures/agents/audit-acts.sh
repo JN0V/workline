@@ -1,15 +1,9 @@
 #!/bin/sh
-# The weekly sample's auditor, as a judge reading each act's material would
-# answer it (ADR-0046): every act planted wrong is found false, quoting the
-# material; a doc vouched for stands. A finding is asked blind: should the
-# judge's answer, or whether it kept the finding, reach the prompt, the
-# answer is refused (`leaked`), and the case fails.
-#
-# AUDIT=agree answers each act as standing, a blind finding as its own
-# reading of the code says: the dropped one does not fail, the kept one
-# does. AUDIT=misquote answers each act wrong with quotes found nowhere, or
-# only in a comment of the code. AUDIT_TOKENS says the tokens each call
-# used, as an agent reports them.
+# The weekly sample's auditor, planted (ADR-0046): each wrong act found
+# false with the material's words, a doc standing; `leaked` if a finding's
+# judge reached the prompt. AUDIT=agree: each act stands. AUDIT=misquote:
+# each said wrong with quotes found nowhere, or in a comment only.
+# AUDIT_TOKENS: the tokens each call says it used.
 p=$(cat)
 [ -z "${AUDIT_TOKENS:-}" ] || printf 'tokens-in: %s\ntokens-out: 100\n' "$AUDIT_TOKENS" > "$WORKLINE_CALL"
 case "$p" in
