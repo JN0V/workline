@@ -76,7 +76,7 @@
 - **Other judges** (the spec review's, the documentalist's, the product
   owner's) read only once a measure shows they lack the code the same
   way; the widened auditor
-  ([ADR-0046](https://github.com/JN0V/workline/pull/385)) supplies those
+  ([ADR-0046](0046-the-auditor-re-checks-every-roles-acts.md)) supplies those
   measures.
 - **Its answer** is a note, or a list of reads, each saying why:
   - a file's lines: `read: {path: internal/engine/engine.go, lines: 242-330}`;
