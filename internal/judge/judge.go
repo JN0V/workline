@@ -2,7 +2,8 @@
 // produced, at the best independence available from the agent that produced
 // it (ADR-0005): another provider, another model of it, or the same model in
 // a context of its own. The engine asks it when a role's judge step has a
-// question no check can answer; the evaluation, to grade.
+// question no check can answer; the evaluation, to grade. A judge asked so
+// (AskReading) may first ask to read code, and answer unsure (ADR-0045).
 package judge
 
 import (
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/agent"
@@ -59,11 +61,66 @@ type Answer struct {
 	Why   string     // the reason, one line
 	Model string     // the model that answered
 	Call  agent.Call // the call, with its tokens
+	// A judge that may read (AskReading, ADR-0045): instead of a verdict,
+	// what it asks to read; a no's quote; or unsure, when it cannot tell.
+	Reads  []Read
+	Quote  *Quote
+	Unsure bool
 }
+
+// Read is what a judge asks to read before it answers (ADR-0045): a
+// file's lines, a definition by its name, or the places a word is
+// written. The engine serves it from git, at the commit judged.
+type Read struct {
+	Path  string `yaml:"path,omitempty" json:"path,omitempty"`
+	Lines string `yaml:"lines,omitempty" json:"lines,omitempty"` // "40-80", or one line; none: the whole file
+	Name  string `yaml:"name,omitempty" json:"name,omitempty"`
+	Grep  string `yaml:"grep,omitempty" json:"grep,omitempty"`
+	Why   string `yaml:"why,omitempty" json:"why,omitempty"`
+}
+
+// String is how a read is said: calc/sum.go:1-10, `sum`, grep `total`.
+func (r Read) String() string {
+	switch {
+	case r.Path != "" && r.Lines != "":
+		return r.Path + ":" + r.Lines
+	case r.Path != "":
+		return r.Path
+	case r.Name != "":
+		return "`" + r.Name + "`"
+	case r.Grep != "":
+		return "grep `" + r.Grep + "`"
+	}
+	return "nothing named"
+}
+
+// Quote is the code a no rests on, as it reads, with its path: the engine
+// finds it again before it drops a finding (ADR-0045).
+type Quote struct {
+	Path string `yaml:"path" json:"path"`
+	Text string `yaml:"text" json:"text"`
+}
+
+// readingIntentions are what a judge that may read answers with, besides
+// its note: its reads, and the quote a no rests on.
+var readingIntentions = []string{"read", "quote"}
 
 // Ask puts question and material to the agent spec names, in a run folder of
 // its own, as the judge role.
 func Ask(spec string, judgeRole *role.Role, question, material string) (Answer, error) {
+	return ask(spec, judgeRole, question, material, false)
+}
+
+// AskReading puts a question whose judge may read before it answers
+// (ADR-0045): it answers a note — yes, no or unsure — or asks to read, and
+// quotes the lines a no rests on. The question says what it may still read.
+func AskReading(spec string, judgeRole *role.Role, question, material string) (Answer, error) {
+	reading := *judgeRole
+	reading.Intentions = append(slices.Clone(judgeRole.Intentions), readingIntentions...)
+	return ask(spec, &reading, question, material, true)
+}
+
+func ask(spec string, judgeRole *role.Role, question, material string, reading bool) (Answer, error) {
 	ag, err := agent.Parse(spec)
 	if err != nil {
 		return Answer{}, err
@@ -88,7 +145,9 @@ func Ask(spec string, judgeRole *role.Role, question, material string) (Answer, 
 	if errors.Is(err, agent.ErrInvalidOutput) {
 		// A note left unquoted is no YAML ("- note: no: …"), yet it says its verdict.
 		raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-		a.Yes, a.Why, err = Verdict(string(raw))
+		var said string
+		said, a.Why, err = verdict(string(raw), reading)
+		a.Yes, a.Unsure = said == "yes", said == "unsure"
 		return a, err
 	}
 	if err != nil {
@@ -98,6 +157,9 @@ func Ask(spec string, judgeRole *role.Role, question, material string) (Answer, 
 	if err != nil {
 		return a, err
 	}
+	if reading {
+		return answerReading(a, data)
+	}
 	var notes []map[string]string
 	if err := yaml.Unmarshal(data, &notes); err != nil || len(notes) == 0 || notes[0]["note"] == "" {
 		return a, fmt.Errorf("the judge answered no note: %.200s", data)
@@ -106,9 +168,73 @@ func Ask(spec string, judgeRole *role.Role, question, material string) (Answer, 
 	return a, err
 }
 
+// answerReading reads the answer of a judge that may read: a yes or a no
+// is its verdict, a no with the quote it rests on; else its reads, if it
+// asks any; else unsure.
+func answerReading(a Answer, data []byte) (Answer, error) {
+	var items []map[string]any
+	if err := yaml.Unmarshal(data, &items); err != nil {
+		return a, fmt.Errorf("the judge's answer does not read: %v", err)
+	}
+	note, said, why := "", "", ""
+	var noteErr error
+	for _, it := range items {
+		switch {
+		case it["note"] != nil && note == "":
+			note = fmt.Sprint(it["note"])
+			said, why, noteErr = verdict(note, true)
+		case it["read"] != nil:
+			if r, ok := readOf(it["read"]); ok {
+				a.Reads = append(a.Reads, r)
+			}
+		case it["quote"] != nil && a.Quote == nil:
+			if m, ok := it["quote"].(map[string]any); ok {
+				a.Quote = &Quote{Path: strings.TrimSpace(fmt.Sprint(m["path"])), Text: text(m["text"])}
+			}
+		}
+	}
+	switch {
+	case said == "yes" || said == "no":
+		a.Yes, a.Why, a.Reads = said == "yes", why, nil
+	case len(a.Reads) > 0:
+		a.Why, a.Quote = why, nil
+	case said == "unsure":
+		a.Unsure, a.Why = true, why
+	case note == "":
+		return a, fmt.Errorf("the judge answered no note and asked no read: %.200s", data)
+	default:
+		return a, noteErr
+	}
+	return a, nil
+}
+
+// readOf is one read a judge asked, from its YAML: false when it names
+// nothing to read.
+func readOf(v any) (Read, bool) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return Read{}, false
+	}
+	r := Read{Path: text(m["path"]), Lines: strings.ReplaceAll(text(m["lines"]), " ", ""), Name: text(m["name"]), Grep: text(m["grep"]), Why: text(m["why"])}
+	return r, r.Path != "" || r.Name != "" || r.Grep != ""
+}
+
+func text(v any) string {
+	if v == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(v))
+}
+
 // Verdict reads the judge's note: "yes: why" or "no: why". The note may come
 // raw, with its YAML around it.
 func Verdict(note string) (yes bool, why string, err error) {
+	said, why, err := verdict(note, false)
+	return said == "yes", why, err
+}
+
+// verdict reads a note: yes, no, or, for a judge that may read, unsure.
+func verdict(note string, reading bool) (said, why string, err error) {
 	s := strings.TrimSpace(note)
 	s = strings.TrimSpace(strings.TrimPrefix(s, "-"))
 	s = strings.TrimSpace(strings.TrimPrefix(s, "note:")) // a note, as a list's item or not
@@ -117,11 +243,12 @@ func Verdict(note string) (yes bool, why string, err error) {
 	}
 	v, reason, _ := strings.Cut(s, ":")
 	reason = strings.Join(strings.Fields(reason), " ")
-	switch strings.ToLower(strings.TrimSpace(v)) {
-	case "yes":
-		return true, reason, nil
-	case "no":
-		return false, reason, nil
+	switch v := strings.ToLower(strings.TrimSpace(v)); {
+	case v == "yes", v == "no", v == "unsure" && reading:
+		return v, reason, nil
 	}
-	return false, "", fmt.Errorf("the judge said neither yes nor no: %.200s", strings.Join(strings.Fields(note), " "))
+	if reading {
+		return "", "", fmt.Errorf("the judge said neither yes, no nor unsure: %.200s", strings.Join(strings.Fields(note), " "))
+	}
+	return "", "", fmt.Errorf("the judge said neither yes nor no: %.200s", strings.Join(strings.Fields(note), " "))
 }

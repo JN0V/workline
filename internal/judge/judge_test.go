@@ -1,6 +1,9 @@
 package judge
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestIndependence(t *testing.T) {
 	author := []string{"claude-haiku-4-5"}
@@ -38,5 +41,35 @@ func TestVerdict(t *testing.T) {
 	}
 	if _, _, err := Verdict("The rewrite drops a word"); err == nil {
 		t.Error("a note without yes or no is no verdict")
+	}
+	if _, _, err := Verdict("unsure: cannot tell"); err == nil {
+		t.Error("unsure is only a reading judge's answer")
+	}
+}
+
+// A judge that may read (ADR-0045) answers a verdict, its reads, or
+// unsure; a no keeps its quote; a verdict wins over reads asked beside it.
+func TestAnswerReading(t *testing.T) {
+	for answer, want := range map[string]Answer{
+		`- note: "yes: it fails"`: {Yes: true, Why: "it fails"},
+		"- note: \"no: the guard returns first\"\n- quote: {path: a.go, text: \"if x == nil { return }\"}": {Why: "the guard returns first", Quote: &Quote{Path: "a.go", Text: "if x == nil { return }"}},
+		`- note: "unsure: no caller shown"`: {Unsure: true, Why: "no caller shown"},
+		"- read: {path: a.go, lines: 10-40, why: the caller}\n- read: {name: Decide}\n- read: {grep: total}": {Reads: []Read{{Path: "a.go", Lines: "10-40", Why: "the caller"}, {Name: "Decide"}, {Grep: "total"}}},
+		"- note: \"unsure: I need the caller\"\n- read: {path: a.go, lines: 12}":                             {Reads: []Read{{Path: "a.go", Lines: "12"}}, Why: "I need the caller"},
+		"- read: {name: Decide}\n- note: \"yes: it fails\"":                                                  {Yes: true, Why: "it fails"},
+	} {
+		got, err := answerReading(Answer{}, []byte(answer))
+		if err != nil || got.Yes != want.Yes || got.Unsure != want.Unsure || got.Why != want.Why ||
+			!reflect.DeepEqual(got.Reads, want.Reads) || !reflect.DeepEqual(got.Quote, want.Quote) {
+			t.Errorf("%s:\n got %+v %v\nwant %+v", answer, got, err, want)
+		}
+	}
+	for _, answer := range []string{`- note: "maybe"`, `- read: {why: nothing named}`, `[]`} {
+		if _, err := answerReading(Answer{}, []byte(answer)); err == nil {
+			t.Errorf("%s: no verdict, no read: an error", answer)
+		}
+	}
+	if s := (Read{Path: "a.go", Lines: "1-9"}).String() + ", " + (Read{Name: "sum"}).String() + ", " + (Read{Grep: "total"}).String(); s != "a.go:1-9, `sum`, grep `total`" {
+		t.Errorf("reads said as %q", s)
 	}
 }
