@@ -1,0 +1,19 @@
+case: engine/user-facet-in-the-config-folder
+about: A person's own facet is read from the folder their config.yaml is read from (Go's config folder, ~/Library/Application Support/workline on macOS), one folder for both.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline/roles/committer\" && printf 'Keep the word MARK-104.\\n' > \"$XDG_CONFIG_HOME/workline/roles/committer/policy.md\""
+run:
+  role: committer
+  event: commit-msg
+  input: {message: "fix: AC-3"}
+  # It rewrites the message only when the person's policy reached its prompt.
+  ai: |-
+    cmd:prompt=$(cat)
+    case "$prompt" in *MARK-104*) ;; *) exit 0 ;; esac
+    echo '- commit-message: "fix(parser): stop crashing on an empty input file"'
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [commit-message]
