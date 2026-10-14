@@ -1,16 +1,18 @@
 case: documentalist/gardening-updates-its-merge-request
-about: Running a gardening task again updates the merge request already open for its branch, rather than opening another.
+about: "Running a gardening task again updates the merge request already open for its branch, rather than opening another: the derived blocks, regenerated with no agent. A task that asks an agent waits for its merge request instead (#356)."
 given:
-  repo: untidy
+  repo: documented
   setup:
+    - "printf '\\nThe code holds <!-- workline:derive auth-files -->3<!-- workline:end --> files.\\n' >> docs/tech/auth.md && git commit -qam 'docs(auth): count the files of the auth package'"
     - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+  config: {roles: {documentalist: {settings: {derive: {auth-files: "ls src/auth | wc -l"}}}}}
   forge:
     merge-requests:
-      - {id: 7, branch: "workline/documentalist/duplicates-docs-faq-md-docs-sessions-md", base: main, title: "an older title", labels: [], comments: []}
-run: {role: documentalist, event: schedule, ai: "fake:dedupe-links", open-merge-request: true}
+      - {id: 7, branch: "workline/documentalist/derived", base: main, title: "an older title", labels: [], comments: []}
+run: {role: documentalist, event: schedule, ai: none, open-merge-request: true}
 expect:
   status: pass
   forge:
     merge-requests:
-      - {id: 7, title: "docs: keep a repeated passage in one place"}
+      - {id: 7, title: "docs: regenerate the derived blocks"}
       - {id: 8, absent: true}

@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go]
-checked: f39bb93
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
+checked: 566fbaa7
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -127,6 +127,9 @@ are now, do not fit a task is judged in parts instead of going to a person.
 - It is not put before an agent again until one of its sources changes
   after that commit; a person clears it by reading it whole and moving
   `checked`.
+- When gardening, the fix, or only the record, goes on a merge request of
+  its own, `workline/documentalist/fix-<first doc>`; the doc waits while
+  it is open ([gardening](gardening.md#one-merge-request-per-task)).
 
 ### Not judged in parts
 
