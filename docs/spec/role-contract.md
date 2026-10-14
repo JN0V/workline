@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 670fd314
+checked: 1dd6543c
 verified: agent:documentalist
 judged: 88db06e
 ---
@@ -212,8 +212,9 @@ token), **apply** (trusted, no AI key).
    those reads and ask the judge again: it rewrites the question and takes
    its answer away (`answer-<n>.yaml` keeps it). The engine asks again,
    apart, every question whose answer `pre` took away, then runs `pre`
-   again, at most 10 times; every judge answers once before any is asked
-   again. The reviewer's code review is the one role that reads so
+   again: 10 rounds at most, past which such a question is answered
+   `{error: not asked}` for `pre` to settle; every judge answers once
+   before any is asked again. The reviewer's code review is the one role that reads so
    ([reviewer](../../roles/reviewer/docs/judge.md#when-the-judge-reads)).
 3. **Propose — agent.** Only if `in/task.md` exists and `--ai` is not `none`.
    The agent runs on the model the grid resolves for the role's `model` needs

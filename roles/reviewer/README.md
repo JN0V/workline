@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 670fd314
+checked: 1dd6543c
 verified: agent:claude-code
 ---
 # Reviewer
@@ -162,8 +162,8 @@ What a run may read and write, and spend:
 | `diff-lines-max` | `1500` | lines of the change a lens is given |
 | `code-lines-max` | `600` | lines of changed files a lens is given whole; the others by their hunks |
 | `judge-lines-max` | `200` | lines of code a judge is shown, the rest named; `0`: the 31 lines around the cause |
-| `judge-read-rounds` | `0` | rounds of reads a judge may ask before it answers ([when the judge reads](docs/judge.md#when-the-judge-reads)); `0`: none, until measured |
-| `judge-read-lines-max` | `400` | lines read for one judge, all its rounds; the rest named |
+| `judge-read-rounds` | `0` | rounds of reads a judge may ask before it answers, 8 at most ([when the judge reads](docs/judge.md#when-the-judge-reads)); `0`: none, until measured |
+| `judge-read-lines-max` | `400` | lines read for one judge, all its rounds; the rest named; `0`: no read |
 | `tests-lines-max` | `300` | lines of tests a tests-lens judge is shown |
 | `testimony-lines-max` | `80` | lines of what the author says (commit messages, the merge request) |
 | `issue-lines-max` | `80` | lines of the issues the change closes (Need, Verification, Scope) |
