@@ -181,27 +181,7 @@ run by hand (Build → Pipelines → Run pipeline, the variable
 `WORKLINE_GITLAB_READ_TOKEN`, `read_api`, Reporter
 ([its variables](gitlab-trigger.md#tokens-and-variables)):
 
-```yaml
-workline:import:judge:                     # the agent, a read token
-  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
-  stage: test
-  rules: [{if: $WORKLINE_IMPORT}]
-  variables: {AGENT: claude}               # one choice: claude, claude:<model>, cmd:<command>
-  script:
-    - export GITLAB_TOKEN=$WORKLINE_GITLAB_READ_TOKEN
-    - npm install -g --silent @anthropic-ai/claude-code   # Claude's CLI; another agent, its own
-    - workline issues import "$WORKLINE_IMPORT" --ai "$AGENT" --forge gitlab --summary workline-summary.md --json > line.json
-  artifacts: {when: always, paths: [line.json, .workline-runs/, workline-summary.md], expire_in: 1 day}
-workline:import:apply:                     # the write token, no agent
-  image: $WORKLINE_IMAGE:$WORKLINE_VERSION
-  stage: deploy
-  needs: [workline:import:judge]
-  rules: [{if: $WORKLINE_IMPORT, when: always}]
-  script:
-    - unset CLAUDE_CODE_OAUTH_TOKEN; export GITLAB_TOKEN=$WORKLINE_GITLAB_TOKEN
-    - workline apply --line line.json --summary workline-summary.md
-  artifacts: {when: always, paths: [workline-summary.md]}
-```
+the two jobs to add are in [gitlab/import-jobs.md](gitlab/import-jobs.md).
 
 ## A self-managed GitLab
 
