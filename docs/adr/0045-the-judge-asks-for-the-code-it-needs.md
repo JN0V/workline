@@ -1,8 +1,10 @@
 # ADR-0045: The judge asks for the code it needs; the engine reads it at the reviewed commit
 
-- **Status:** proposed — three questions at the end wait on the
-  maintainer; on by default only once measured again (below)
+- **Status:** accepted; built in the order below, on by default once
+  measured again
 - **Date:** 2026-10-14, for [#362](https://github.com/JN0V/workline/issues/362)
+- **Decided by:** the maintainer, 2026-10-14: the caps, a larger budget,
+  `unsure` kept, the code review first (below)
 - **Builds on:** [ADR-0005](0005-independence-takes-the-best-level-available.md)
   (independence), [ADR-0020](0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)
   (the judge's material, `ai-max-tokens`); principles 5, 6, 7, 10, 11, 12
@@ -58,7 +60,7 @@
   - Against: "not shown" or "guesses" is in 140 of 173 refusals and in 9
     of the 12 right ones: about four refusals in five would come back to
     a person (estimate from that word match).
-- **D. The judge asks, the engine reads** (recommended): the judge may
+- **D. The judge asks, the engine reads** (chosen): the judge may
   answer with reads; the engine serves them from git at the reviewed
   commit, within caps, and asks again.
   - For: any agent that answers text — `claude` as today, a `cmd:`, the
@@ -71,8 +73,13 @@
 
 ### What the judge may ask
 
-- **Where**: the judges of the reviewer's code review; the task says it
-  may read, and what is left.
+- **Where**: the judges of the reviewer's code review first; the task
+  says it may read, and what is left.
+- **Other judges** (the spec review's, the documentalist's, the product
+  owner's) read only once a measure shows they lack the code the same
+  way; the widened auditor
+  ([ADR-0046](https://github.com/JN0V/workline/pull/385)) supplies those
+  measures.
 - **Its answer** is a note, or a list of reads, each saying why:
   - a file's lines: `read: {path: internal/engine/engine.go, lines: 242-330}`;
   - a definition by name: `read: {name: Decide}`, found as the material's
@@ -85,7 +92,7 @@
 - **At the reviewed commit, from git's objects** (`git show`, `git grep
   -w` on the commit): read-only by construction; only what the repository
   tracks, never the working tree, an ignored file, nor a path outside it.
-- **Caps**, estimates until measured:
+- **Caps**, decided:
   - `judge-read-rounds`, 2: the rounds of reads a judge may ask;
   - `judge-read-lines-max`, 400: lines served to one judge, all rounds
     together; past it, cut, the rest named;
@@ -103,8 +110,10 @@
   their tokens, in `out/review.json`.
 - **A no not found again, or with no quote**, does not drop the finding:
   shown not verified, said (`judge-no-unquoted`).
-- **`unsure`**: a judge that still cannot tell says so; shown not verified,
-  never blocking, with why (`judge-unsure`). A yes stands as today.
+- **`unsure`**, a third answer after reading: a judge that still cannot
+  tell says so. The finding is shown not verified, never dropped, never
+  blocking, with why (`judge-unsure`); its rate is measured on the
+  replay. A yes stands as today.
 
 ### Each agent
 
@@ -128,31 +137,31 @@
 
 ### The token budget
 
-- **Each round is a call**, counted in `ai-max-tokens` (200000).
-- **First rounds first**: every judge answers once before any read is
-  served; reads go on while the run's tokens last. One stopped there is
-  taken as `unsure`: no finding is left unjudged by a read.
+- **Each round is a call**, counted in `ai-max-tokens`.
+- **The reviewer's budget rises from 200000 to 300000**, so a large
+  review is judged whole. A run spends what it uses: one under 200k costs
+  the same; the most one run may spend grows by half.
 - **Estimates**: a judge that does not read, as today plus about 0.2k
   tokens; one reading 150 lines once, about 18k against 6.5k on the run
-  in Context; under 50k at the caps. That run (one lens, five judges, 64k):
-  about 110k if four read once. A review like
+  in Context; under 50k at the caps. That run (one lens, five judges,
+  64k): about 110k if four read once. A review like
   [#146](https://github.com/JN0V/workline/issues/146)'s (every lens, seven
-  judges, about 160k) would reach the budget, its last findings shown not
-  verified.
+  judges, about 160k): about 250k if five read once, under 300000.
+- **First rounds first**, past that: every judge answers once before any
+  read is served. One whose reads the budget stops is taken as `unsure`:
+  no finding is left unjudged by a read.
 
 ## Measured again before it is on by default
 
 - **The set**: the 40 verdicts of the measure, each question and material
-  as asked, from each run's `workline-runs` artifact, kept with the
-  commit, lens and truth in `tests/evaluation/`. The artifacts last 90
-  days: the first expire about 2027-01-02.
+  as asked, kept from the run's artifacts (step 0 below).
 - **Two arms**, the same questions and judge model as then: today's judge,
   and the judge that reads, the repository at each commit. Today's arm
   tells the reads' effect from the judge's changes since.
 - **It holds when**, against today's arm: fewer of the 8 true findings
   dropped; the yes right 19 of 20 or more; no more of the 12 false
-  findings let through. `unsure`, reads and tokens a judge are said; the
-  maintainer reads them before the default changes.
+  findings let through. The `unsure` rate, reads and tokens a judge are
+  said; the maintainer reads them before the default changes.
 - **Its cost**: about 0.8 million tokens in, 2.1 million if every judge
   read to its caps (estimates: 80 first calls near 6.5k, then the reads).
 - **Until then** `judge-read-rounds: 0`: today's judge; a project may
@@ -160,13 +169,17 @@
 
 ## Built in small pull requests, conformance first
 
+0. **First, before they expire** (about 2027-01-02): the 40 questions
+   copied from the `workline-runs` artifacts into `tests/evaluation/`,
+   with their commit, lens and truth.
 1. **Cases with a fake judge**: it reads a function outside its material
    and answers from it (the issue's first scenario); a read past the cap;
    a path untracked or outside; the commit read, not the working tree; a
    no not found again, and `unsure`, shown not verified; a short budget.
 2. **The protocol** (`read`, a no's quote, `unsure`) and its rounds; the
-   reads served by the reviewer, as its material finds code.
-3. **The evaluation set and the measure**; then the default.
+   reads served by the reviewer, as its material finds code; the
+   reviewer's `ai-max-tokens` at 300000.
+3. **The measure** on the set; then the default.
 
 ## Not chosen
 
@@ -183,18 +196,6 @@
 
 - More tokens where the judge would refuse; fewer true findings dropped,
   if the measure says so. A no rests on quoted code, or says it cannot tell.
-- A loop other judges may use; the documentalist's and the product
-  owner's keep theirs until a need shows.
+- A loop other judges may use, each once a measure shows the need.
 - The reviewer's measure ([#360](https://github.com/JN0V/workline/issues/360))
   runs on this judge.
-
-## Open questions for the maintainer
-
-1. **The caps**: 2 rounds and 400 lines a judge, estimates; and a review
-   judging many findings: reads stop at `ai-max-tokens` as proposed, or
-   the budget grows.
-2. **`unsure`**: a third answer shown not verified, or the judge held to
-   yes or no after its reads.
-3. **Other judges**: the reviewer's code review only, as proposed; or its
-   spec review's, the documentalist's and the product owner's too, each
-   once measured.
