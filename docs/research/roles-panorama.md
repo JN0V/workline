@@ -5,15 +5,14 @@ owner, which roles does a software line need — for every kind of project,
 not workline's own — which of them are tools run as gates, and in what
 order to build them?
 
-**Verdict.** Most specialist roles of a real team are **tools first**:
-static analysis, security, accessibility, performance, licences,
-infrastructure and migration linters exist as pinned binaries with an exit
-code or SARIF, and belong in gates (docs/spec/gates.md). A role is needed
-only where judgement sits between the tools and a person: inspector,
-security, auditor, process engineer, tester, architect, UX, PM, and the
-developer last. The auditor and the process engineer stay two roles (a
-quality audit is not industrial engineering); a team's SonarQube verdict
-is read, never rerun.
+**Verdict.** Most specialist roles of a real team are **tools first**: static
+analysis, security, accessibility, performance, licences, infrastructure and
+migration linters exist as pinned binaries with an exit code or SARIF, and
+belong in gates (docs/spec/gates.md). A role is needed only where judgement
+sits between the tools and a person: inspector, security, developer, process
+engineer, tester, architect, UX, PM, the auditor widened. The auditor and the
+process engineer stay two roles (a quality audit is not industrial
+engineering); a team's SonarQube verdict is read, never rerun.
 
 Already covered elsewhere, not repeated here: the tools per kind of check
 (gates.md), how AI reviewers find and verify (code-review.md), how
@@ -49,7 +48,7 @@ Real teams add the roles below. "Here" is what workline does with each.
 | Analyst | research, product brief | part of the PM; research before building is already a rule (principle 13) |
 | Architect | structure, dependencies, decisions | **architect**: spec review (#128) plus architecture rules as gates |
 | UX designer | flows, screens, accessibility | **UX**, for projects with a user interface: accessibility tools as gates, a role for what tools cannot judge |
-| Developer | builds | **developer**, last (#117) |
+| Developer | builds | **developer**, after inspector and security (#117) |
 | QA, test architect | tests from the need, test strategy | **tester**: tests written from an issue's Verification, red first, hidden from the developer |
 | Code reviewer | reads the change | **reviewer**, beta (ADR-0020) |
 | Static analysis owner | linters, quality gate | **inspector** |
@@ -187,13 +186,15 @@ between screens, wording.
 
 ## Roadmap, decided by the maintainer
 
-1. Reviewer to block-ready ([#90](https://github.com/JN0V/workline/issues/90), [#126](https://github.com/JN0V/workline/issues/126)).
-2. Inspector ([#202](https://github.com/JN0V/workline/issues/202)); SonarQube read as a gate ([#203](https://github.com/JN0V/workline/issues/203)).
-3. Security ([#204](https://github.com/JN0V/workline/issues/204)).
-4. Auditor widened to every role ([#205](https://github.com/JN0V/workline/issues/205)).
-5. Process engineer ([#89](https://github.com/JN0V/workline/issues/89)).
-6. Tester ([#206](https://github.com/JN0V/workline/issues/206)).
-7. Architect ([#207](https://github.com/JN0V/workline/issues/207)).
-8. UX ([#208](https://github.com/JN0V/workline/issues/208)).
-9. PM ([#209](https://github.com/JN0V/workline/issues/209)), a draft to design with the maintainer.
-10. Developer ([#117](https://github.com/JN0V/workline/issues/117)), **last**: its pull requests need every check above.
+**Amended 2026-10-14**: the six current roles are finished first. The
+developer, last on 2026-10-06, moves up: the guards on code come before it,
+and coding is not among the roles hardest to hand to an AI (PM, UX, architect).
+
+1. Inspector ([#202](https://github.com/JN0V/workline/issues/202)); SonarQube read as a gate ([#203](https://github.com/JN0V/workline/issues/203)).
+2. Security ([#204](https://github.com/JN0V/workline/issues/204)).
+3. Developer ([#117](https://github.com/JN0V/workline/issues/117)), moved up: its pull requests pass the guards above.
+4. Process engineer ([#89](https://github.com/JN0V/workline/issues/89)).
+5. Tester ([#264](https://github.com/JN0V/workline/issues/264), which replaced [#206](https://github.com/JN0V/workline/issues/206)).
+6. Architect ([#207](https://github.com/JN0V/workline/issues/207)).
+7. UX ([#208](https://github.com/JN0V/workline/issues/208)).
+8. PM ([#209](https://github.com/JN0V/workline/issues/209)), a draft to design with the maintainer.

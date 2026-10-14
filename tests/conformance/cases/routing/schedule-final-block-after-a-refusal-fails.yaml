@@ -1,0 +1,14 @@
+case: routing/schedule-final-block-after-a-refusal-fails
+about: 'On schedule (fail-fast false), only a proposal still refused once asked again is said as a warning (ADR-0037, amended). The first answer refused, the second met a block no answer can fix — a setting missing, marked final: the run fails and says that block, nothing applied.'
+given:
+  repo: basic
+run: {role: holds-after-a-refusal, event: schedule, ai: "fake:changelog-wrong-then-right"}
+expect:
+  status: block
+  agent-calls: 2
+  applied: []
+  summary: "format setting is missing"
+  findings: [{rule: setting-missing, level: block}]
+  no-findings: [{rule: wrong-entry}]
+  files:
+    CHANGELOG.md: {exists: false}
