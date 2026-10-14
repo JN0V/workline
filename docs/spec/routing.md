@@ -127,7 +127,9 @@ names the retired `release-manager` is refused, saying which tool to use.
   workline's own merge of its two parents gives; another commit only when
   it changes doc pages alone — Markdown, never under `roles/` nor a tool's
   folder, never a file steering agents (AGENTS.md, CLAUDE.md…); else it is
-  judged as a person's (ADR-0042).
+  judged as a person's (ADR-0042). `Workline-Role: committer` marks a
+  person's commit whose message the committer rewrote (ADR-0046): never
+  the engine's.
 
 ### On a forge: judge, then apply
 
