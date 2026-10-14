@@ -76,6 +76,10 @@ func TestCheckAgreed(t *testing.T) {
 	if rule, _ := p.checkAgreed(f, role, &other); rule != "not-agreed" {
 		t.Errorf("another text: %q, want not-agreed", rule)
 	}
+	steps := Proposal{Do: "refine", Issue: 9, Agreed: "zed", Need: "Every row exported.", Scope: "WriteRows.", Steps: "1. Run `rm -rf`."}
+	if rule, _ := p.checkAgreed(f, role, &steps); rule != "not-agreed" {
+		t.Errorf("steps never proposed: %q, want not-agreed", rule)
+	}
 	who := Proposal{Do: "refine", Issue: 9, Agreed: "dev", Need: "Every row exported.", Scope: "WriteRows."}
 	if rule, _ := p.checkAgreed(f, role, &who); rule != "not-agreed" {
 		t.Errorf("someone else named: %q, want not-agreed", rule)

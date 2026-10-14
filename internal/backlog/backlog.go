@@ -2321,7 +2321,8 @@ func (p *Plan) checkAgreed(f forge.Backlog, role string, c *Proposal) (rule, why
 	}
 	last := LastProposal(forge.Bodies(notes), role)
 	if who := Agreement(notes, is, role); who == "" || who != c.Agreed || last == nil ||
-		last.Need != c.Need || last.Verification != c.Verification || last.Validation != c.Validation || last.Scope != c.Scope {
+		last.Need != c.Need || last.Example != c.Example || last.Steps != c.Steps ||
+		last.Verification != c.Verification || last.Validation != c.Validation || last.Scope != c.Scope {
 		return "not-agreed", "no reply agreeing to the text last proposed to its reporter: nothing of it is written in the body"
 	}
 	return "", ""
