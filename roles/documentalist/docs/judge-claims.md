@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: fcc8f36
+checked: 25365ce
 verified: agent:claude-code
 ---
 # Documentalist — the judge's claims
