@@ -289,7 +289,21 @@ func recordOnly(repo, baseTip, tree string) ([]string, error) {
 // unrecorded is a doc without the lines of its header that record when it
 // was read: a front matter between `---` lines, or a header between
 // `<!-- workline` and `-->` where a front matter would show.
-func unrecorded(doc string) string {
+func unrecorded(doc string) string { return unheaded(doc, recordKey.MatchString) }
+
+// unworked is a doc without the lines of its header workline writes
+// (workKeys, ADR-0041): those recording when it was read, and `checked`.
+func unworked(doc string) string {
+	return unheaded(doc, func(line string) bool {
+		k := frontKey.FindStringSubmatch(line)
+		return k != nil && workKeys[k[1]]
+	})
+}
+
+// unheaded is a doc without the lines of its header drop names, the header
+// read as unrecorded says; a doc with no header, or one never closed, as
+// it is.
+func unheaded(doc string, drop func(line string) bool) string {
 	lines := strings.Split(doc, "\n")
 	end := ""
 	switch {
@@ -305,7 +319,7 @@ func unrecorded(doc string) string {
 		if strings.TrimSpace(lines[i]) == end {
 			return strings.Join(append(out, lines[i:]...), "\n")
 		}
-		if !recordKey.MatchString(lines[i]) {
+		if !drop(lines[i]) {
 			out = append(out, lines[i])
 		}
 	}
