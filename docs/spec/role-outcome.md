@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: 356d7649
+checked: 1d043faa
 status: draft
 ---
 # Role outcome — verdict and intentions
@@ -34,6 +34,8 @@ again would change nothing, but grow the question with every finding.
 Still refused once asked again, on an event whose steps all run
 (`schedule`), the step passes, nothing of the proposal applied, each
 refusal a warning ([ADR-0037, amended](../adr/0037-the-schedule-runs-every-step.md#amendment-2026-10-09-a-refused-proposal-is-said-not-failed)).
+A `final` block met once asked again is no refusal: it still blocks, and
+the summary says it.
 
 Findings map to SARIF, so the same verdict can be posted on GitHub or GitLab:
 `--sarif` writes them for code scanning, `--code-quality` as GitLab's Code

@@ -71,7 +71,13 @@ broken.
   said, never read as done. Red stays for what a person must repair: a
   check that did not run, a setting missing, a service down, a block
   that is not a refused proposal.
+- **A `final` block stays red**, even met once the agent was asked
+  again: `post` says no answer can lift it, so it is not a refused
+  proposal, whatever was refused before it
+  ([#361](https://github.com/JN0V/workline/issues/361)).
 - **On a gate's event**, or a schedule set `fail-fast: true`, a refusal
   still blocks.
 - Cases: `routing/schedule-refused-proposal-said`,
+  `routing/schedule-refused-twice-still-passes`,
+  `routing/schedule-final-block-after-a-refusal-fails`,
   `routing/schedule-failing-fast-blocks-on-a-refusal`.

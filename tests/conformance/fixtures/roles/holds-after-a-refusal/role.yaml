@@ -1,0 +1,12 @@
+contract: 1
+name: holds-after-a-refusal
+mission: A role of the tests only — its check refuses a wrong changelog entry, and holds a right one on a setting it misses — so a block no answer can fix, met after a refusal, is tried with any agent.
+
+events: [schedule]
+requires: [git]
+model: {capability: writing, tier: standard, effort: medium, promote-after: 1}
+duties:
+  reads: ["**"]
+  writes: [CHANGELOG.md]
+intentions: [patch, note]
+without-ai: pass
