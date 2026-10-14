@@ -2,7 +2,7 @@
 type: reference
 sources: [roles/product-owner/role.yaml]
 status: draft
-checked: 5afbb282
+checked: d7ea19ba
 verified: agent:claude-code
 ---
 # Acts on the backlog
