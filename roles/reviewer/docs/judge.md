@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: f78d077
+checked: a7e4f058
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -88,6 +88,8 @@ each finding that blocked, its cause quoted, beside the commits reviewed
   of the base that settled nothing, new commits changing no code, a rule
   holding the run, no agent: the block stands. No agent is asked; the
   summary comment names the finding again, marked `**blocks**`.
+- **Its file moved**: it stands, found and kept on the new path
+  ([#358](https://github.com/JN0V/workline/issues/358)).
 - **It goes** when a commit answers it:
   - its cause is no longer found on the change (the line changed, or
     removed);
