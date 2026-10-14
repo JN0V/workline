@@ -22,4 +22,4 @@ expect:
     in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
   forge:
     merge-requests:
-      - {id: 5, comments: 1, comment-contains: " runs=3 -->"}
+      - {id: 5, comments: 1, comment-contains: " runs=3 read=all -->"}

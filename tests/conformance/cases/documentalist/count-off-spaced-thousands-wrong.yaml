@@ -1,0 +1,17 @@
+case: documentalist/count-off-spaced-thousands-wrong
+about: "A count whose thousands are spaced, the SI way (\"1 200 lines\"), with a space, a no-break or a narrow no-break one, off from the file, is reported with the real count and the count as written, in every shape a doc gives a count (#111)."
+given:
+  repo: drifted
+  setup:
+    - "mkdir -p src && seq 900 > src/big.py && git add src && git commit -qm 'feat: a big file'"
+    - "printf '%s\\n' --- 'sources: [src/big.py]' \"checked: $(git rev-parse --short HEAD)\" --- '# Big' '' '`src/big.py` has 1 200 lines.' '' '`src/big.py` holds 1 200 lines.' '' 'The `src/big.py` line count: 1 200.' '' 'A 1 200-line `src/big.py`.' '' '| File | Lines |' '|---|---|' '| `src/big.py` | 1 200 |' > docs/big.md && git add docs/big.md && git commit -qm 'docs: the big file'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  findings:
+    - {rule: count-off, where: docs/big.md, message: "`src/big.py` has 900 lines, not 1 200 (line 7,"}
+    - {rule: count-off, where: docs/big.md, message: "`src/big.py` has 900 lines, not 1 200 (line 9,"}
+    - {rule: count-off, where: docs/big.md, message: "`src/big.py` has 900 lines, not 1 200 (line 11,"}
+    - {rule: count-off, where: docs/big.md, message: "`src/big.py` has 900 lines, not 1 200 (line 13,"}
+    - {rule: count-off, where: docs/big.md, message: "`src/big.py` has 900 lines, not 1 200 (line 17,"}
+  no-findings: [{rule: count-off, where: docs/big.md, message: "not 200"}]
