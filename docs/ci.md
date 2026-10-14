@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 27755fce
+checked: 98de6b44
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -41,6 +41,10 @@ then one that applies, with the write token and no AI key
   what the steps that passed proposed, and what a blocked role says why
   it blocks (`on-block`: the reviewer's comment, [#226](https://github.com/JN0V/workline/issues/226)). An agent out of
   reach (3) warns on both forges.
+- **One judge per merge request at a time**: a push cancels the run still
+  judging the head before, and nothing of it is applied; the newer run
+  reviews its commits too ([#359](https://github.com/JN0V/workline/issues/359)).
+  GitLab needs a project setting ([how](ci-gitlab.md#6-one-pipeline-per-merge-request)).
 - **The write token stays with the base**: on GitHub, a pull request's
   own run can be changed by its branch, so the applying jobs run the
   default branch's workflow and read that run as data

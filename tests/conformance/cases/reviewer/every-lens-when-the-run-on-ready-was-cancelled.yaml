@@ -1,0 +1,25 @@
+case: reviewer/every-lens-when-the-run-on-ready-was-cancelled
+about: "A push cancelled the run on ready before it wrote anything (#359): the next run, told the merge request is no draft (`draft=false`) and given no `lenses`, finds a record that does not say every lens read the change, and reads every lens once on the whole change; its record then says so (`read=all`)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+    # A push on the draft reviewed it, one lens; then marked ready, its run cancelled by the push below.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/\" \"$FORGE_FILE\""
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments: ["Reviewed by the correctness lens.\n\n<!-- workline:record reviewed=@reviewed@ runs=1 -->\n\n<!-- workline:sticky=reviewer/summary -->"]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, draft: "false"}, target: {merge-request: 5}, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  applied: [comment]
+  calls: [{task: part, for: 1-lenses}]
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["## Lens: correctness", "## Lens: edge-cases", "## Lens: tests", "## Lens: claims", "### calc/calc.go", "### calc/half.go"]}
+  forge:
+    merge-requests:
+      - {id: 5, comments: 1, comment-contains: " runs=2 read=all -->"}

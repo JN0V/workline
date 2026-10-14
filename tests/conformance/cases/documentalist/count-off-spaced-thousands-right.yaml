@@ -1,0 +1,11 @@
+case: documentalist/count-off-spaced-thousands-right
+about: "A count whose thousands are spaced, the SI way (\"1 200 lines\"), with a space, a no-break or a narrow no-break one, is read whole, in every shape a doc gives a count: right, nothing is reported. It was read as 200 (#111)."
+given:
+  repo: drifted
+  setup:
+    - "mkdir -p src && seq 1200 > src/big.py && git add src && git commit -qm 'feat: a big file'"
+    - "printf '%s\\n' --- 'sources: [src/big.py]' \"checked: $(git rev-parse --short HEAD)\" --- '# Big' '' '`src/big.py` has 1 200 lines.' '' '`src/big.py` holds 1 200 lines.' '' 'The `src/big.py` line count: 1 200.' '' 'A 1 200-line `src/big.py`.' '' '| File | Lines |' '|---|---|' '| `src/big.py` | 1 200 |' > docs/big.md && git add docs/big.md && git commit -qm 'docs: the big file'"
+run: {role: documentalist, event: schedule, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: count-off, where: docs/big.md}]

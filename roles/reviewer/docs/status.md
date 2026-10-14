@@ -53,10 +53,21 @@ its measure in
 - **A merge of the base read for what it settled**:
   `merge-of-main-asks-no-lens`,
   `merge-resolution-alone-given-to-the-lens`.
-- **Every lens once when a merge request becomes ready**:
+- **Every lens once when a merge request becomes ready**, told by its
+  draft state and the record too, so a run on ready a push cancelled is
+  not lost ([#359](https://github.com/JN0V/workline/issues/359)):
   `every-lens-once-when-*`, `one-lens-on-the-push-after-ready`,
   `run-on-ready-held-by-a-rule-owes-every-lens`,
-  `every-lens-owed-read-on-the-next-push`.
+  `every-lens-owed-read-on-the-next-push`,
+  `every-lens-when-the-run-on-ready-was-cancelled`,
+  `one-lens-a-push-once-every-lens-read`, `one-lens-a-push-on-a-draft`,
+  `every-lens-again-once-a-draft-again`,
+  `record-unread-asks-one-lens-on-a-ready-merge-request`; a failed run
+  on ready asks every lens again once, then says it:
+  `every-lens-owed-once-after-a-failed-run-on-ready`,
+  `every-lens-on-the-push-after-a-failed-run-on-ready`,
+  `every-lens-not-whole-said-after-a-second-failure`,
+  `every-lens-run-on-ready-unreachable-writes-nothing`.
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
