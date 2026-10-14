@@ -34,6 +34,12 @@ step 0 (label ` + "`" + StepZeroLabel + "`" + `, which a person takes off), and 
 request puts that doc's ` + "`checked`" + ` back, for a person to review. What the
 judge says false and cannot prove is for a person.
 
+The other roles' acts are drawn too, one in ten per kind of act (ADR-0046):
+the product owner's acts done alone, the findings the reviewer's judge
+kept or dropped, the commits the committer rewrote. The auditor does not
+re-check them yet: each week's comment lists those drawn, for a person to
+read, and says what could not be drawn, and why.
+
 Written by ` + "`workline sample --apply`" + `, with no AI.`
 
 // Apply writes what a sample found to the forge: the week's comment on the
@@ -190,7 +196,7 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 	fmt.Fprintf(&b, "### %s\n\n", res.Week)
 	if res.Vouched == 0 {
 		fmt.Fprintf(&b, "No doc vouched for by the documentalist in the commits %s: nothing read.\n", res.Window)
-		return b.String()
+		return b.String() + actsSection(res)
 	}
 	fmt.Fprintf(&b, "%s vouched for by the documentalist in the commits %s (`%.7s..%.7s`); %d read, one in ten.\n\n", plural(res.Vouched, "doc"), res.Window, res.From, res.To, len(res.Reads))
 	b.WriteString("| Doc | Vouched for in | `checked` | Verdict | Judge, independence |\n|---|---|---|---|---|\n")
@@ -216,8 +222,61 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 			fmt.Fprintf(&b, "%s no longer carries that `checked`, or names another repository's: for a person to put back.\n", r.Doc)
 		}
 	}
+	return b.String() + actsSection(res)
+}
+
+// actsSection is what the week's comment says of every role's acts: how
+// many of each kind the window held and how many were drawn, the other
+// roles' acts drawn, for a person, and what could not be drawn (ADR-0046).
+func actsSection(res *Result) string {
+	var b strings.Builder
+	b.WriteString("\n#### Every role's acts\n\n")
+	b.WriteString("One in ten of a role's acts of each kind, at least one when the kind has any (ADR-0046). The auditor re-checks only the docs yet: the other roles' acts drawn are for a person to read.\n\n")
+	if len(res.Counts) == 0 {
+		b.WriteString("No act of any role in the window.\n")
+	} else {
+		b.WriteString("| Role | Kind of act | In the window | Drawn |\n|---|---|---|---|\n")
+		for _, c := range res.Counts {
+			fmt.Fprintf(&b, "| %s | %s | %d | %d |\n", strings.TrimPrefix(roleWords(c.Role), "the "), kindWords(c), c.Acts, c.Drawn)
+		}
+	}
+	if len(res.Drawn) > 0 {
+		b.WriteString("\n| Act | Role, kind | Done | What its record says |\n|---|---|---|---|\n")
+		for _, a := range res.Drawn {
+			act := a.Ref
+			if a.In != "" {
+				act += " (" + a.In + ")"
+			}
+			if a.Where != "" {
+				act += " `" + a.Where + "`"
+			}
+			done := a.Day
+			switch {
+			case a.Role == productOwner && a.By != "":
+				done += ", at " + a.By
+			case a.Role == reviewRole && a.Commit != "":
+				done = fmt.Sprintf("at %.7s", a.Commit)
+			case a.Role == reviewRole:
+				done = "its last review"
+			}
+			line := oneLine(a.Line, 300)
+			if a.Role != productOwner && a.By != "" && !strings.Contains(line, a.By) {
+				line += " (" + a.By + ")"
+			}
+			fmt.Fprintf(&b, "| %s | %s, %s | %s | %s |\n", cell(act), strings.TrimPrefix(roleWords(a.Role), "the "), cell(kindWords(Count{Role: a.Role, Kind: a.Kind})), cell(done), cell(line))
+		}
+	}
+	if len(res.NotDrawn) > 0 {
+		b.WriteString("\nNot drawn:\n\n")
+		for _, why := range res.NotDrawn {
+			fmt.Fprintf(&b, "- %s\n", why)
+		}
+	}
 	return b.String()
 }
+
+// cell is a text as a table's cell holds it: `|` escaped.
+func cell(t string) string { return strings.ReplaceAll(t, "|", `\|`) }
 
 // docLines say what was found in one doc, for a person.
 func docLines(r Read) string {

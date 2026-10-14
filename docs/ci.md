@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, internal/builtin/documentalist/sample.go, internal/sample/apply.go, internal/sample/acts.go, cmd/workline]
-checked: 98de6b44
+checked: 4880c477
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -195,7 +195,12 @@ roles:
   refused, YAML reading it as another number.
 - **The week** is the last whole one; for another (`--week 2026-W40`),
   each forge page says how.
-- **The product owner's acts**, on a project that turns them on
+- **Every role's acts**: one in ten of each kind, from what each role
+  records on the forge — the product owner's acts done alone, the
+  findings the reviewer's judge kept or dropped, the committer's rewrites
+  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Listed on the same issue, for you to
+  read: the auditor re-checks the docs only, yet.
+- **The product owner's own issue**, on a project that turns it on
   (`weekly-sample: true`;
   [ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):
   one in ten of those it did alone in the week, onto the issue "workline:

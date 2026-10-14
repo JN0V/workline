@@ -785,9 +785,10 @@ func docsCmd(args []string) int {
 	return 0
 }
 
-// sampleCmd draws the week's sample of the docs the documentalist vouched
-// for and has it read (ADR-0014, step 4), writing nothing; with --apply, it
-// writes what a sample found to the forge, with no agent.
+// sampleCmd draws the week's sample of every role's acts (ADR-0046) and
+// has the docs of it read (ADR-0014, step 4), reading the forge and
+// writing nothing; with --apply, it writes what a sample found to the
+// forge, with no agent.
 func sampleCmd(args []string) int {
 	fs := newFlags("sample")
 	repo := fs.String("repo", ".", "repository")
@@ -797,7 +798,7 @@ func sampleCmd(args []string) int {
 	judgeSpec := fs.String("judge", "", "the agent reading the sample: claude:opus, cmd:… (default: WORKLINE_JUDGE, then the documentalist's `sample.judge` setting)")
 	out := fs.String("out", "", "also write the result to this file, for --apply")
 	apply := fs.String("apply", "", "write the result in this file to the forge: the tracking issue, and a merge request putting back a false `checked`")
-	forgeSpec := fs.String("forge", "", "with --apply: github, gitlab, fake:<file> (default: the project's `forge` setting)")
+	forgeSpec := fs.String("forge", "", "the forge the acts are drawn from, and --apply writes to: github, gitlab, local, cmd:…, fake:<file>, none (default: the project's `forge` setting)")
 	asJSON := fs.Bool("json", false, "print the result as JSON")
 	var summaryFiles multi
 	fs.Var(&summaryFiles, "summary", "also add a Markdown summary of the sample to this file, for a CI job's page (repeatable; a file named .html gets HTML)")
@@ -810,18 +811,18 @@ func sampleCmd(args []string) int {
 		return 64
 	}
 	var res *sample.Result
+	spec := *forgeSpec
+	if spec == "" {
+		if cfg, err := role.LoadProjectConfig(root); err == nil {
+			spec = cfg.Forge
+		}
+	}
+	f, err := forge.Open(spec, root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "workline:", err)
+		return 64
+	}
 	if *apply != "" {
-		spec := *forgeSpec
-		if spec == "" {
-			if cfg, err := role.LoadProjectConfig(root); err == nil {
-				spec = cfg.Forge
-			}
-		}
-		f, err := forge.Open(spec, root)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "workline:", err)
-			return 64
-		}
 		res = sample.Apply(*apply, root, f)
 	} else {
 		rolesDir, err := resolveRoles(*roles)
@@ -829,7 +830,7 @@ func sampleCmd(args []string) int {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 1
 		}
-		res = sample.Draw(sample.Options{Repo: root, RolesDir: rolesDir, Week: *week, Since: *since, Judge: *judgeSpec, Now: time.Now()})
+		res = sample.Draw(sample.Options{Repo: root, RolesDir: rolesDir, Week: *week, Since: *since, Judge: *judgeSpec, Now: time.Now(), Forge: f})
 		if *out != "" {
 			data, _ := json.MarshalIndent(res, "", "  ")
 			if err := os.WriteFile(*out, append(data, '\n'), 0o644); err != nil {

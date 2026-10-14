@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 42e5e9c6
+checked: ac20f83f
 verified: agent:claude-code
 judged: fa1d682
 ---
@@ -106,7 +106,9 @@ What else a case can give, run and expect, and how each is checked, is in
   the merge policy, a merge request is a `draft`, its `auto-merge` on
   (`auto-merge-at`, `auto-merge-by`), its head's `checks`, its `pushes`
   (`{head, at}`, a head a revision of the repository), `clean` (merged at
-  once); `job-token: true` is a CI job's own token; `unguarded: <why>` a
+  once); one merged, `merged-at` and `merged-as` (the commit it became,
+  a revision), its head under `refs/pull/<id>/head` of `origin`, as
+  the weekly sample lists them; `job-token: true` is a CI job's own token; `unguarded: <why>` a
   base that holds no yes; `statuses` the statuses on commits (`{commit,
   name, state, description, by}`, a commit a revision, `by` workline's
   token's user `workline-bot` or another); `fixtures/verdict.sh` writes a

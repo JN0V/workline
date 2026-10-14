@@ -1,8 +1,10 @@
-// Package sample is the weekly sample of the docs the documentalist vouched
-// for (ADR-0014, step 4): one in ten of the docs whose `checked` it moved in
-// a week, read whole against their sources at the commit `checked` names, by
-// a judge standing apart from the model that vouched (ADR-0005). Drawing the
-// sample takes no AI; the read is the only call, and the engine checks every
+// Package sample is the weekly sample of every role's acts (ADR-0046): one
+// in ten of a week's acts per role and kind. The docs the documentalist
+// vouched for (ADR-0014, step 4) are read whole against their sources at
+// the commit `checked` names, by a judge standing apart from the model that
+// vouched (ADR-0005); the other roles' acts are drawn and listed for a
+// person. Drawing the sample takes no AI, and reads the forge without
+// writing to it; the read is the only call, and the engine checks every
 // quote the judge gives. What it found goes to the forge, in a job holding
 // the forge's token and no AI key (Apply): one tracking issue, a comment per
 // week, and a merge request putting back a `checked` found false.
@@ -22,6 +24,7 @@ import (
 
 	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/builtin/documentalist"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/role"
@@ -41,6 +44,10 @@ type Options struct {
 	Since    string    // read what was vouched for after this commit, up to HEAD, instead of a week
 	Judge    string    // an --ai value; default WORKLINE_JUDGE, then the `sample.judge` setting
 	Now      time.Time // when the run is, for the default week
+	// Forge is read, never written: the product owner's acts, the
+	// merge requests merged and their heads, the reviewer's summaries
+	// (ADR-0046). nil: those are not drawn, and the sample says so.
+	Forge forge.Forge
 }
 
 // Result is what a sample found, and what applying it wrote.
@@ -59,6 +66,14 @@ type Result struct {
 	Vouched    int               `json:"vouched"`
 	Reads      []Read            `json:"reads"`
 	Acts       *ActsRead         `json:"acts,omitempty"` // the product owner's acts drawn, written with --apply (ADR-0033)
+	// Drawn are the other roles' acts drawn, one in ten per role and
+	// kind; Counts, each role's kinds of act in the window and how many
+	// were drawn, the docs' too; NotDrawn, what could not be drawn, and
+	// why (ADR-0046).
+	Drawn       []Act    `json:"drawn,omitempty"`
+	Counts      []Count  `json:"counts,omitempty"`
+	NotDrawn    []string `json:"not-drawn,omitempty"`
+	unreachable bool     // the forge did not answer a read
 }
 
 // Read is one doc of the sample, and what its reading found.
@@ -97,7 +112,8 @@ type candidate struct {
 	by                []string
 }
 
-// Draw picks the week's sample and has each doc of it read.
+// Draw picks the week's sample: each doc of it read, the other roles'
+// acts drawn for a person.
 func Draw(o Options) *Result {
 	res := &Result{Status: verdict.Pass, Applied: []string{}, Refused: []string{}, Reads: []Read{}}
 	if err := draw(o, res); err != nil {
@@ -118,6 +134,9 @@ func draw(o Options, res *Result) error {
 	}
 	res.Week = week
 	base, tip := "", ""
+	// The days the product owner's acts are drawn from, [first, end), and
+	// since when the merge requests merged are listed.
+	since, first, end := from, from.Format(time.DateOnly), to.Format(time.DateOnly)
 	if o.Since != "" {
 		if base, err = git(o.Repo, "rev-parse", "--verify", o.Since+"^{commit}"); err != nil {
 			return fmt.Errorf("--since %s: not a commit", o.Since)
@@ -126,6 +145,11 @@ func draw(o Options, res *Result) error {
 			return err
 		}
 		res.Window = fmt.Sprintf("after %.7s", base)
+		var sec int64
+		at, _ := git(o.Repo, "log", "-1", "--format=%ct", base)
+		fmt.Sscan(at, &sec)
+		since = time.Unix(sec, 0).UTC()
+		first, end = since.Format(time.DateOnly), ""
 	} else {
 		if base, tip, err = window(o.Repo, from, to); err != nil {
 			return err
@@ -133,6 +157,10 @@ func draw(o Options, res *Result) error {
 		res.Window = fmt.Sprintf("reaching %s from %s to %s", branchName(o.Repo), from.Format("2006-01-02"), to.Add(-time.Second).Format("2006-01-02"))
 	}
 	res.From, res.To = base, tip
+	commits, err := revList(o.Repo, base, tip, "")
+	if err != nil {
+		return err
+	}
 	after := ""
 	if a := string(settings.Sample.After); a != "" {
 		if after, err = git(o.Repo, "rev-parse", "--verify", a+"^{commit}"); err != nil {
@@ -140,40 +168,76 @@ func draw(o Options, res *Result) error {
 		}
 		res.Window += fmt.Sprintf(", after %s", a)
 	}
-	cands, err := vouched(o.Repo, settings, base, tip, after)
+	// The merge requests merged in the window, their heads fetched: a
+	// `checked` naming a commit a squash left off the branch is read
+	// there, and the trailers a squash dropped (ADR-0046). A day early: a
+	// merge's moment and its commit's may differ.
+	h := &heads{in: map[string]string{}, squash: map[string]bool{}}
+	if o.Forge != nil {
+		if h, err = mergedIn(o.Repo, o.Forge, since.AddDate(0, 0, -1), base, tip, after); err != nil {
+			res.NotDrawn = append(res.NotDrawn, fmt.Sprintf("the merge requests merged in the window: the forge did not answer: %v", err))
+			res.unreachable = true
+		}
+	}
+	docCommits, err := revList(o.Repo, base, tip, after)
+	if err != nil {
+		return err
+	}
+	cands, err := vouched(o.Repo, settings, append(docCommits, h.own...))
 	if err != nil {
 		return err
 	}
 	res.Vouched = len(cands)
+	var picked []candidate
 	if len(cands) == 0 {
-		res.Summary = fmt.Sprintf("%s: no doc vouched for", week)
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-empty", Level: "warn",
 			Message: fmt.Sprintf("no doc vouched for by the documentalist in the commits %s: nothing to read", res.Window)})
-		return nil
+	} else {
+		picked = Pick(week, cands)
+		res.Counts = append(res.Counts, Count{Role: docsRole, Kind: "checked", Acts: len(cands), Drawn: len(picked)})
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-window", Level: "warn",
+			Message: fmt.Sprintf("%s vouched for by the documentalist in the commits %s; %d read, one in ten", plural(len(cands), "doc"), res.Window, len(picked))})
 	}
-	picked := Pick(week, cands)
-	res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-window", Level: "warn",
-		Message: fmt.Sprintf("%s vouched for by the documentalist in the commits %s; %d read, one in ten", plural(len(cands), "doc"), res.Window, len(picked))})
-	auditor, err := role.Load(o.RolesDir, "auditor")
-	if err != nil {
-		return err
+	if len(picked) > 0 {
+		auditor, err := role.Load(o.RolesDir, "auditor")
+		if err != nil {
+			return err
+		}
+		spec := o.Judge
+		if spec == "" {
+			spec = os.Getenv("WORKLINE_JUDGE")
+		}
+		if spec == "" {
+			spec = settings.Sample.Judge
+		}
+		for _, c := range picked {
+			r := readOne(o.Repo, settings, auditor, spec, c, res)
+			res.Reads = append(res.Reads, r)
+			res.Findings = append(res.Findings, findings(r)...)
+		}
 	}
-	spec := o.Judge
-	if spec == "" {
-		spec = os.Getenv("WORKLINE_JUDGE")
+	// The other roles' acts, drawn for a person (ADR-0046).
+	acts := actsOfTheWindow(o, res, h, commits, first, end)
+	drawn, counts := drawEach(week, acts)
+	res.Drawn, res.Counts = drawn, append(res.Counts, counts...)
+	for _, c := range counts {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-acts", Level: "warn",
+			Message: fmt.Sprintf("%s, %s, by %s %s; %d drawn, one in ten", plural(c.Acts, "act"), kindWords(c), roleWords(c.Role), actsWindow(c.Role, res.Window, first, end), c.Drawn)})
 	}
-	if spec == "" {
-		spec = settings.Sample.Judge
+	for _, a := range drawn {
+		where := a.Ref
+		if a.Where != "" {
+			where += " " + a.Where
+		}
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-not-read", Where: where, Message: actWords(a) + "; " + a.Why})
 	}
-	for _, c := range picked {
-		r := readOne(o.Repo, settings, auditor, spec, c, res)
-		res.Reads = append(res.Reads, r)
-		res.Findings = append(res.Findings, findings(r)...)
+	for _, why := range res.NotDrawn {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-not-drawn", Level: "warn", Message: "not drawn: " + why})
 	}
 	res.Status = verdict.Pass
-	counts := map[string]int{}
+	tally := map[string]int{}
 	for _, r := range res.Reads {
-		counts[r.Verdict]++
+		tally[r.Verdict]++
 		switch {
 		case r.Verdict == "not-read" && strings.Contains(r.Why, "could not answer"):
 			if res.Status == verdict.Pass {
@@ -183,14 +247,60 @@ func draw(o Options, res *Result) error {
 			res.Status = verdict.Human
 		}
 	}
-	var parts []string
-	for _, v := range []string{"true", "false", "unearned", "unproven", "not-read"} {
-		if counts[v] > 0 {
-			parts = append(parts, fmt.Sprintf("%d %s", counts[v], v))
+	if len(drawn) > 0 {
+		res.Status = verdict.Human
+	}
+	if res.unreachable && res.Status == verdict.Pass {
+		res.Status = verdict.BlockedExternal
+	}
+	res.Summary = fmt.Sprintf("%s: no doc vouched for", week)
+	if len(cands) > 0 {
+		var parts []string
+		for _, v := range []string{"true", "false", "unearned", "unproven", "not-read"} {
+			if tally[v] > 0 {
+				parts = append(parts, fmt.Sprintf("%d %s", tally[v], v))
+			}
+		}
+		res.Summary = fmt.Sprintf("%s: %d of %d docs vouched for read: %s", week, len(res.Reads), len(cands), strings.Join(parts, ", "))
+	}
+	if len(drawn) > 0 {
+		roles := map[string]bool{}
+		for _, a := range drawn {
+			roles[a.Role] = true
+		}
+		res.Summary += fmt.Sprintf("; %s of %s drawn, for a person", plural(len(drawn), "act"), plural(len(roles), "other role"))
+	}
+	return nil
+}
+
+// revList is the commits of base..tip, newest first, merges left out,
+// none an ancestor of after; none with no tip.
+func revList(repo, base, tip, after string) ([]string, error) {
+	if tip == "" || tip == base {
+		return nil, nil
+	}
+	args := []string{"rev-list", "--no-merges", tip}
+	for _, not := range []string{base, after} {
+		if not != "" {
+			args = append(args, "^"+not)
 		}
 	}
-	res.Summary = fmt.Sprintf("%s: %d of %d docs vouched for read: %s", week, len(res.Reads), len(cands), strings.Join(parts, ", "))
-	return nil
+	list, err := git(repo, args...)
+	return strings.Fields(list), err
+}
+
+// actsWindow says where a role's acts were drawn from.
+func actsWindow(role, window, first, end string) string {
+	switch {
+	case role == reviewRole:
+		return "on the merge requests merged in the commits " + window
+	case role == commitRole:
+		return "in the commits " + window
+	case end == "":
+		return "since " + first
+	}
+	last, _ := time.Parse(time.DateOnly, end)
+	return fmt.Sprintf("from %s to %s", first, last.AddDate(0, 0, -1).Format(time.DateOnly))
 }
 
 // roleSettings are the documentalist's settings, the project's over the role's.
@@ -251,27 +361,15 @@ func window(repo string, from, to time.Time) (base, tip string, err error) {
 	return "", tip, nil
 }
 
-// vouched lists the `checked` the documentalist moved in base..tip, newest
-// first, one per doc and value: a commit carrying its Workline-Role (its own,
-// or squashed into another's message), or setting `verified:
-// agent:documentalist` on the doc. Nothing after reaches is drawn.
-func vouched(repo string, s documentalist.Settings, base, tip, after string) ([]candidate, error) {
-	if tip == "" || tip == base {
-		return nil, nil
-	}
-	args := []string{"rev-list", "--no-merges", tip}
-	for _, not := range []string{base, after} {
-		if not != "" {
-			args = append(args, "^"+not)
-		}
-	}
-	list, err := git(repo, args...)
-	if err != nil {
-		return nil, err
-	}
+// vouched lists the `checked` the documentalist moved in the commits
+// given — the window's, newest first, then the heads' of the merge
+// requests merged in it —, one per doc and value: a commit carrying its
+// Workline-Role (its own, or squashed into another's message), or setting
+// `verified: agent:documentalist` on the doc.
+func vouched(repo string, s documentalist.Settings, commits []string) ([]candidate, error) {
 	var out []candidate
 	seen := map[string]bool{}
-	for _, c := range strings.Fields(list) {
+	for _, c := range commits {
 		msg, err := git(repo, "log", "-1", "--format=%B", c)
 		if err != nil {
 			return nil, err
