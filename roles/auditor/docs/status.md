@@ -17,21 +17,21 @@ Beta until the three criteria of
 hold:
 
 1. **Nothing buildable in Missing**: open. Every role's acts
-   ([#205](https://github.com/JN0V/workline/issues/205)) are being built,
-   its verdicts kept and counted
-   ([#276](https://github.com/JN0V/workline/issues/276)) with it, as
-   decided on 2026-10-14; how, decided in
-   [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md).
+   ([#205](https://github.com/JN0V/workline/issues/205)) are drawn and
+   re-checked, the verdicts kept and counted
+   ([#276](https://github.com/JN0V/workline/issues/276)); left, as
+   [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)
+   decided: the records it completes, the product owner's issue folded in.
    The weekly sample's other gaps are parked
    ([#108](https://github.com/JN0V/workline/issues/108)): a judge of
    another provider, a week not run caught up.
 2. **The main issue validated on real use**: open.
    [#155](https://github.com/JN0V/workline/issues/155) collects the weeks;
    no Validation signed by the maintainer yet.
-3. **AI verdicts measured**: open. Its verdicts are not kept as a measure
-   yet ([#276](https://github.com/JN0V/workline/issues/276), built with
-   [#205](https://github.com/JN0V/workline/issues/205)); a `checked`
-   found false on a forge is untried
+3. **AI verdicts measured**: open. Its verdicts are kept and counted
+   ([#276](https://github.com/JN0V/workline/issues/276)): the count, a
+   comment on [#155](https://github.com/JN0V/workline/issues/155), no
+   week answered yet; a `checked` found false on a forge is untried
    ([#155](https://github.com/JN0V/workline/issues/155) collects it when
    one turns up). The bar:
    [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#leaving-beta).
@@ -53,6 +53,14 @@ hold:
   only with a quote found again, within the week's tokens
   ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
   `verdict-*`.
+- **Its verdicts kept and counted**
+  ([#276](https://github.com/JN0V/workline/issues/276)): a dispute
+  settled by three judges, `panel-settles-a-dispute`; the week's rows
+  hidden, the maintainer's 👍 or 👎 and named rows read, the count
+  rewritten from every week, `count-*`; a true finding the judge
+  dropped opened as an issue, three a week at most,
+  `dropped-true-finding-opened-capped`. The count:
+  [a comment kept on #155](https://github.com/JN0V/workline/issues/155).
 
 ## Missing
 
@@ -62,10 +70,8 @@ hold:
   the code it read; the reviewer's line per finding judged, every run's;
   the committer's trailers, so a rewrite is drawn at all
   ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
-- **Its verdicts kept and counted**
-  ([#276](https://github.com/JN0V/workline/issues/276)): the panel on a
-  dispute, the maintainer's agreement, the count; built with
-  [#205](https://github.com/JN0V/workline/issues/205) (decided
-  2026-10-14).
+- **The product owner's issue folded in**
+  ([ADR-0033](../../../docs/adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)'s,
+  its level suggestion kept), with its fields, after its trial.
 - **The weeks, read**
   ([#155](https://github.com/JN0V/workline/issues/155)).

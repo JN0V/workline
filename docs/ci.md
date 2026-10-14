@@ -182,10 +182,20 @@ roles:
   further apart. On workline itself, Opus reads what Sonnet vouched for:
   another model of the same provider, the best independence there.
   Without a judge, the docs drawn are listed for a person.
-- **The result**: one issue, "workline: the weekly sample of the docs
-  vouched for", a comment a week; a `checked` found false labels it
+- **The result**: one issue, "workline: the weekly sample of every role's
+  acts" (its former title, "… of the docs vouched for", renamed), a
+  comment a week, its acts numbered; a `checked` found false labels it
   `documentalist-step-0` and opens a merge request putting it back, for
   you to review.
+- **A dispute**: a verdict against the act goes to three judges, Claude's
+  three models by default (`sample: {panel: […]}`), each choosing between
+  the two readings, not told whose; the majority settles it.
+- **Your answer**: 👍 on the week's comment agrees with all of it; 👎 and a
+  reply naming rows (`not 3, 7`) contests those. The count, one comment
+  on the same issue, is written again each week from every week
+  ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#kept-and-counted-with-the-maintainers-agreement)).
+- **A true finding the judge dropped**, still in the code, is opened as an
+  issue, `needs-triage`, three a week at most.
 - **The cost**: one call an act, about 4k to 12k tokens; about 380k on a
   week as busy as workline's busiest
   ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md#cost-a-week)).

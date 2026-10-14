@@ -151,8 +151,9 @@ kind has any, drawn the same on a rerun.
 - **Each re-checked**, one call an act, by the judge (`--judge`, else
   `WORKLINE_JUDGE`, else `sample.judge`), never a model that acted;
   a finding blind. False only with a quote the engine finds again, a
-  comment of the code no evidence; else for a person. Without a judge,
-  each is listed for a person.
+  comment of the code no evidence; else for a person. A false one goes
+  to three judges (`sample.panel`), who settle it. Without a judge, each
+  is listed for a person.
 - **A cap**: `sample.ai-max-tokens`, 400,000 by default; each role's first
   act read before any second, the rest listed unread.
 - **A squash**: each merge request's head is fetched from the forge's ref
@@ -160,8 +161,11 @@ kind has any, drawn the same on a rerun.
 - **Writes nothing**; `--out <file>` keeps the result.
 - **`workline sample --apply <file> --forge <forge>`** (default: the
   project's `forge`), with no agent:
-  - comments the week on one tracking issue, labelled
-    `documentalist-step-0`;
+  - comments the week on one tracking issue, its acts numbered, labelled
+    `documentalist-step-0` when a `checked` is false; rewrites the count
+    there from every week and the maintainer's 👍 or 👎;
+  - opens an issue for a true finding the reviewer's judge dropped, still
+    in the code, three a week at most;
   - opens a merge request putting back a `checked` found false;
   - with no forge, writes nothing and says so.
 - **The product owner's own issue**, when turned on (`weekly-sample:
