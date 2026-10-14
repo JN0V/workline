@@ -145,9 +145,10 @@ func ask(spec string, judgeRole *role.Role, question, material string, reading b
 	if errors.Is(err, agent.ErrInvalidOutput) {
 		// A note left unquoted is no YAML ("- note: no: …"), yet it says its verdict.
 		raw, _ := os.ReadFile(filepath.Join(dir, "out", "agent-answer.txt"))
-		var said string
-		said, a.Why, err = verdict(string(raw), reading)
-		a.Yes, a.Unsure = said == "yes", said == "unsure"
+		if reading { // its reads and its quote, item by item
+			return answerReading(a, raw)
+		}
+		a.Yes, a.Why, err = Verdict(string(raw))
 		return a, err
 	}
 	if err != nil {
@@ -174,7 +175,7 @@ func ask(spec string, judgeRole *role.Role, question, material string, reading b
 func answerReading(a Answer, data []byte) (Answer, error) {
 	var items []map[string]any
 	if err := yaml.Unmarshal(data, &items); err != nil {
-		return a, fmt.Errorf("the judge's answer does not read: %v", err)
+		items = itemsOf(string(data))
 	}
 	note, said, why := "", "", ""
 	var noteErr error
@@ -206,6 +207,31 @@ func answerReading(a Answer, data []byte) (Answer, error) {
 		return a, noteErr
 	}
 	return a, nil
+}
+
+// itemsOf reads an answer that is no YAML as a whole item by item, each
+// starting with "- ": a note left unquoted ("- note: no: …") is kept as
+// its text, so a broken item loses neither the reads nor the quote beside.
+func itemsOf(raw string) []map[string]any {
+	var chunks []string
+	for _, l := range strings.SplitAfter(raw, "\n") {
+		if strings.HasPrefix(l, "- ") || len(chunks) == 0 {
+			chunks = append(chunks, l)
+		} else {
+			chunks[len(chunks)-1] += l
+		}
+	}
+	var items []map[string]any
+	for _, c := range chunks {
+		var one []map[string]any
+		switch {
+		case yaml.Unmarshal([]byte(c), &one) == nil && len(one) == 1:
+			items = append(items, one[0])
+		case strings.HasPrefix(strings.TrimSpace(strings.TrimPrefix(c, "- ")), "note:"):
+			items = append(items, map[string]any{"note": strings.TrimSpace(c)})
+		}
+	}
+	return items
 }
 
 // readOf is one read a judge asked, from its YAML: false when it names

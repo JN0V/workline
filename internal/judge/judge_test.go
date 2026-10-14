@@ -57,6 +57,9 @@ func TestAnswerReading(t *testing.T) {
 		"- read: {path: a.go, lines: 10-40, why: the caller}\n- read: {name: Decide}\n- read: {grep: total}": {Reads: []Read{{Path: "a.go", Lines: "10-40", Why: "the caller"}, {Name: "Decide"}, {Grep: "total"}}},
 		"- note: \"unsure: I need the caller\"\n- read: {path: a.go, lines: 12}":                             {Reads: []Read{{Path: "a.go", Lines: "12"}}, Why: "I need the caller"},
 		"- read: {name: Decide}\n- note: \"yes: it fails\"":                                                  {Yes: true, Why: "it fails"},
+		// No YAML as a whole: each item read alone, the unquoted note too.
+		"- note: no: the guard: it returns first\n- quote: {path: a.go, text: \"if x == nil {\"}": {Why: "the guard: it returns first", Quote: &Quote{Path: "a.go", Text: "if x == nil {"}},
+		"- note: I need: the caller\n- read: {path: a.go, lines: 12}":                             {Reads: []Read{{Path: "a.go", Lines: "12"}}},
 	} {
 		got, err := answerReading(Answer{}, []byte(answer))
 		if err != nil || got.Yes != want.Yes || got.Unsure != want.Unsure || got.Why != want.Why ||
