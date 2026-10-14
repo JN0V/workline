@@ -1065,7 +1065,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 		return err
 	}
 	ap := applier{repo: st.Repo, runDir: runDir, targets: st.Targets, writes: r.Writes(settings),
-		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings}
+		forge: f, target: st.Target, runID: filepath.Base(runDir), role: r.Name, settings: settings, own: st.trailers()}
 	for _, c := range res.Calls {
 		if c.Task != "judge" && c.Model != "" {
 			ap.model = c.Model
@@ -1490,6 +1490,33 @@ const OwnTrailer = "Workline-Role"
 // ModelTrailer names, in the engine's own commits, each agent and model whose
 // answer they hold, as <agent>:<model> (claude:claude-sonnet-5).
 const ModelTrailer = "Workline-Model"
+
+// Rewriter is the role whose trailer marks a person's commit whose
+// message it rewrote (ADR-0046): never a commit workline made.
+const Rewriter = "committer"
+
+// madeBy are the roles a commit's Workline-Role trailers say made it, a
+// comma between two: the committer's left out, as a rewrite's.
+func madeBy(roles string) string {
+	var out []string
+	for _, r := range strings.Split(roles, ",") {
+		if r = strings.TrimSpace(r); r != "" && !strings.EqualFold(r, Rewriter) {
+			out = append(out, r)
+		}
+	}
+	return strings.Join(out, ",")
+}
+
+// withTrailers is a rewritten message with the run's own trailers — its
+// role, the agents and models that wrote it — in its trailer block, as
+// git places them; never the words it replaced (ADR-0046).
+func withTrailers(repo, msg, trailers string) (string, error) {
+	args := []string{"interpret-trailers", "--if-exists", "addIfDifferent"}
+	for _, t := range strings.Split(trailers, "\n") {
+		args = append(args, "--trailer", t)
+	}
+	return git(repo, strings.NewReader(msg+"\n"), args...)
+}
 
 // branchPrefix is where a role's merge requests come from (ADR-0006).
 func branchPrefix(roleName string) string { return "workline/" + roleName + "/" }
@@ -2016,6 +2043,7 @@ type applier struct {
 	capped       int               // findings not opened as issues, past issues-max
 	findings     []verdict.Finding // what the applying says
 	model        string            // the model whose answer is applied, as an announcement records it
+	own          string            // the run's own trailers: its role, the agents and models that answered
 }
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
@@ -2033,6 +2061,11 @@ func (a *applier) apply(in intent.Intention) error {
 		msg, ok := in.Value.(string)
 		if !ok {
 			return errors.New("value must be text")
+		}
+		// A rewrite says who wrote it, so the weekly sample draws it.
+		msg, err := withTrailers(a.repo, msg, a.own)
+		if err != nil {
+			return err
 		}
 		if err := os.WriteFile(filepath.Join(a.runDir, "out", "commit-message"), []byte(msg), 0o644); err != nil {
 			return err

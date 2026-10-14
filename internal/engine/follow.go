@@ -368,7 +368,7 @@ func personsCommit(repo, baseTip, tip, role string) string {
 		if len(fields) < 4 {
 			continue
 		}
-		if strings.Contains(fields[1], " ") || strings.TrimSpace(fields[3]) != role {
+		if strings.Contains(fields[1], " ") || madeBy(fields[3]) != role {
 			return fmt.Sprintf("a person committed to it (%s %q)", fields[0], fields[2])
 		}
 	}

@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 5cb449a5
+checked: aacddb36
 verified: agent:claude-code
 ---
 # The merge policy
@@ -70,7 +70,9 @@ merge: {autonomy: cautious}   # off unless set: no auto-merge is touched
     `judged-in-parts` or `verified`, a derived block as its command gives
     it ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)).
 - **Still a push**: a docs fix changing a doc's text or another key, and
-  any commit with no workline trailer, whatever it changes.
+  any commit with no workline trailer, whatever it changes; one whose
+  message the committer rewrote (`Workline-Role: committer`) is a
+  person's.
 - **Held by the forge, not by a race**: GitHub keeps auto-merge on after a
   writer's push. So the base requires the status `workline/accepted` from
   the App, which `follow` sets on the head a yes covers: a new head lacks

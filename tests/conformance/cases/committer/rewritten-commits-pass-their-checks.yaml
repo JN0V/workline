@@ -1,0 +1,14 @@
+case: committer/rewritten-commits-pass-their-checks
+about: "Commits whose messages the committer rewrote, pushed, pass its own checks: its two trailers trip no subject, internal-code, term or identity check."
+given:
+  repo: basic
+  setup:
+    - "git tag base && echo a >> main.go && git commit -qam 'fix(parser): stop crashing on an empty input file' -m 'Workline-Role: committer\nWorkline-Model: claude:claude-haiku-4-5'"
+    - "echo b >> main.go && git commit -qam 'feat: greet the user' -m 'Refs: AC-3\nWorkline-Role: committer\nWorkline-Model: claude:claude-sonnet-5'"
+run: {role: committer, event: merge-request, input: {range: "base..HEAD"}, ai: none}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings:
+    - {rule: internal-code, where: commit}
+    - {rule: possible-internal-code, where: commit}

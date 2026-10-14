@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/committer, roles/committer/role.yaml, routing.default.yaml]
-checked: 6d6cf83
+checked: 98ca21f8
 verified: agent:claude-code
 ---
 # Committer
@@ -154,12 +154,23 @@ commits are already made: the verdict lists them, to fix with `git rebase -i`.
 - A rewrite keeps the author's type, scope and breaking mark, when the header
   was not what was refused; adding a scope the author left out is allowed
   (`header-changed`).
+- It adds no line git could read as a `Workline-` trailer, however its
+  key is cased or spaced: those are the engine's (`trailer-added`).
 - One commit, one message: several proposals are refused (`several-messages`).
 - A `note` ends the run as `human`: a person splits the commit.
 
 A refused rewrite is asked once more, of a stronger model (`promote-after: 1`).
 A rewrite that passes replaces the message, and the commit goes on; the hook
 prints the message committed, since it is no longer the one you wrote.
+
+- **It says it is a rewrite**: the engine adds `Workline-Role: committer`
+  and `Workline-Model: <agent>:<model>` to its trailers, so the
+  [weekly sample](../../docs/ci.md#the-weekly-sample) draws it
+  ([ADR-0046](../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
+- **Never your words**: nothing of the message it replaced reaches the
+  commit, its internal codes above all.
+- **Still your commit**: workline never takes a rewritten commit for one
+  it made itself; the line judges it as yours.
 
 ## Without AI
 

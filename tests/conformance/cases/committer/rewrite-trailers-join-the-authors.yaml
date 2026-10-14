@@ -1,0 +1,10 @@
+case: committer/rewrite-trailers-join-the-authors
+about: "A rewrite keeping the author's trailers gets workline's two below them, in the same last paragraph, as git places trailers (ADR-0046)."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3\n\nCo-Authored-By: A <a@example.invalid>"}, ai: "fake:rewrite-keeping-trailer"}
+expect:
+  status: pass
+  applied: [commit-message]
+  run-files:
+    out/commit-message:
+      contains: ["fix(parser): stop crashing on an empty input file\n\nCo-Authored-By: A <a@example.invalid>\nWorkline-Role: committer\nWorkline-Model: fake:rewrite-keeping-trailer"]
