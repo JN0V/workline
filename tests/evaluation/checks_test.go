@@ -377,6 +377,9 @@ func TestJudgeReplaySet(t *testing.T) {
 	if len(items) != 40 {
 		t.Fatalf("%d items; the measure drew 40", len(items))
 	}
+	if _, err := readReplay(t.TempDir()); err == nil {
+		t.Error("a set with no item is an error, never a replay of nothing")
+	}
 	lenses := []string{"correctness", "edge-cases", "tests", "intent", "claims"}
 	then := make([]replayAnswer, len(items))
 	var matters []int

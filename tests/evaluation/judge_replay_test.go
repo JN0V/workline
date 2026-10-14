@@ -100,6 +100,9 @@ func readReplay(dir string) ([]replayItem, error) {
 		}
 		items = append(items, it)
 	}
+	if len(items) == 0 { // a replay of nothing would pass, its tally all zeros
+		return nil, fmt.Errorf("%s: no item (<item>/item.yaml)", dir)
+	}
 	return items, nil
 }
 
