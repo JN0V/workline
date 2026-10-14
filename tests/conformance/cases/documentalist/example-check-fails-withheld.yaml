@@ -1,0 +1,26 @@
+case: documentalist/example-check-fails-withheld
+about: "A project names the command checking its code examples (`examples.check`): it runs on a checkout with the fixed doc written in, the doc as its argument. When it fails, the example is withheld, the command's output shown, the rest of the fix applied and `checked` left (#121)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "printf '\\n## Terms\\n\\n' >> docs/tech/auth.md && seq 40 | sed 's/^/- Term /' >> docs/tech/auth.md && git commit -qam 'docs(auth): the terms'"
+    - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {examples: {check: "grep -q 'auth.TokenTTL' \"$@\" && echo \"$1:11: auth.TokenTTL (untyped int constant) is not a time.Duration\" && exit 1"}}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/fix-with-an-example.sh", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: example-failed, where: docs/tech/auth.md, message: "docs/tech/auth.md:11: auth.TokenTTL (untyped int constant) is not a time.Duration"}
+  no-findings: [{rule: example-unverified, where: docs/tech/auth.md}, {rule: example-checked, where: docs/tech/auth.md}]
+  forge:
+    merge-requests:
+      - id: 1
+        body-contains:
+          - "`docs/tech/auth.md` — fixed in 1 place"
+          - "`docs/tech/auth.md` (example-failed): the code example the fix writes at line 9 (lines 10-12 of the doc as fixed) fails"
+          - "is not a time.Duration"
+        body-lacks: ["1 code example,"]
+  pushed: {workline/documentalist/suspect: {docs/tech/auth.md: "Access tokens last two hours."}}

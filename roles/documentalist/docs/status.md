@@ -21,12 +21,15 @@ Beta until the three criteria of
 hold:
 
 1. **Nothing buildable in Missing**: open. Judging in parts goes on by
-   default once [#356](https://github.com/JN0V/workline/issues/356) and
-   [#121](https://github.com/JN0V/workline/issues/121) are built
-   ([#82](https://github.com/JN0V/workline/issues/82), decided
+   default once [#356](https://github.com/JN0V/workline/issues/356) is
+   built ([#82](https://github.com/JN0V/workline/issues/82), decided
    2026-10-14); the docs to split are still to do.
    [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
-   simple version (Built: a doc judged on its diff).
+   simple version (Built: a doc judged on its diff);
+   [#121](https://github.com/JN0V/workline/issues/121) too (Built: code
+   examples said unverified, or checked by the project's command), a
+   model reading them parked
+   ([#353](https://github.com/JN0V/workline/issues/353)).
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
 3. **AI verdicts measured**: in part. Step 4 of
@@ -109,6 +112,8 @@ its evaluation in
   `count-fixed-needs-no-claim`, `refused-place-reported-the-rest-applied`,
   `patch-part-not-applying-rest-applied`, `hunk-*`, `claim-without-doc-*`,
   `answer-not-yaml-asked-again-once`, `gardening-lists-places-withheld`.
+- **Code examples a fix writes** told apart: said unverified, or checked
+  by the command the project names, withheld when it fails: `example-*`.
 - **Says what it read**: "nothing found wrong", and "in what was read"
   for a doc judged on its diff: `judged-nothing-found-wrong-says-so`,
   `judged-on-its-diff-says-what-was-read`.
@@ -131,38 +136,36 @@ its evaluation in
 2. **Gaps left by step 3** of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)
    ([#106](https://github.com/JN0V/workline/issues/106)).
-3. **Code examples it writes are not checked**
-   ([#121](https://github.com/JN0V/workline/issues/121)).
-4. **Judging in parts on by default**
+3. **Judging in parts on by default**
    ([#82](https://github.com/JN0V/workline/issues/82), decided
    2026-10-14), once a doc in parts is no longer judged again each night
-   while it waits ([#356](https://github.com/JN0V/workline/issues/356))
-   and the code examples it writes are checked
-   ([#121](https://github.com/JN0V/workline/issues/121)). On WaterMeter,
+   while it waits ([#356](https://github.com/JN0V/workline/issues/356));
+   the code examples it writes are told apart (Built,
+   [#121](https://github.com/JN0V/workline/issues/121)). On WaterMeter,
    far behind, 7 of 10 suspect docs were too large to be judged whole.
-5. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
+4. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
    `docs/narrow-wide-sources`, not pushed); four to split
    (`reference/eventbus-architecture.md`,
    `components/core/project-context.md`,
    `architecture/component-configuration-pattern.md`,
    `components/webui/project-context.md`). No issue yet.
-6. **workline's own docs far behind**, gardened nightly in parts since
+5. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-7. **The agent reads**: the pages the reader checks point to
+6. **The agent reads**: the pages the reader checks point to
    ([#256](https://github.com/JN0V/workline/issues/256)); a doc judged on
    its diff against the code as it is now, a read each night (no issue
    yet).
-8. **To watch**: Sonnet citing lines a line off in long docs (now placed
+7. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
-9. **The merge policy, what is left**: at `normal`,
+8. **The merge policy, what is left**: at `normal`,
    agents' pull requests, and its criteria to be offered
    ([#322](https://github.com/JN0V/workline/issues/322), second part).
-10. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
+9. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.
-11. **Tries on real use** (no issue yet):
+10. **Tries on real use** (no issue yet):
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;
@@ -172,6 +175,8 @@ its evaluation in
     - `checked` earned by what was read, with a real agent;
     - the Forgejo sample on a live instance;
     - `whole-chars` raised, its tokens measured;
+    - a real agent writing a code example, a real project's
+      `examples.check` running on it;
     - the merge policy in CI: its jobs with the GitHub App's token, the
       `verdict` job, a merge starting `follow` and release-please on
       `main`, a release and its docs, a fork's pull request; on GitLab, a

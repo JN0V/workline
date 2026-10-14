@@ -1,0 +1,31 @@
+case: reviewer/moved-file-only-its-change-is-the-change
+about: "A file moved, one line of it changed: git finds the rename, so that line is the change and the rest of the file kept lines (#358). The lens reads it marked so, and its judge sees the hunk near the cause, not the whole file added; a finding on the changed line is the author's, a comment on its line at the new path; one on a kept line, from before the move, becomes an issue. The comment over Average, holding a code, is not read as added."
+given:
+  repo: reviewed
+  setup: ["git mv calc/calc.go calc/mean.go && sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/mean.go && git commit -qam 'refactor: move the mean to its own file'"]
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests: [{id: 5, labels: [], comments: []}]
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-moved"}
+expect:
+  status: pass
+  agent-calls: 3
+  applied: [comment, issue]
+  findings: [{rule: correctness, where: "calc/mean.go:11", message: "Important: Average divides by one less than the count"}]
+  no-findings:
+    - {rule: correctness, where: "calc/mean.go:16"}
+    - {rule: internal-code}
+    - {rule: line-comment-refused}
+  run-files:
+    in/parts/1-correctness/task.md:
+      contains: ["### calc/mean.go", "\n package calc\n", "\n-\treturn total / len(values)\n", "\n+\treturn total / (len(values) - 1)\n"]
+      not-contains: "+package calc"
+    in/judge/01/question.yaml: {contains: "return total / (len(values) - 1)", not-contains: "+package calc"}
+  forge:
+    issues:
+      - {id: 1, title: "Parse drops the conversion error", labels: [needs-triage]}
+    merge-requests:
+      - id: 5
+        comments: 1
+        threads: [{path: calc/mean.go, line: 11, contains: "**Important: Average divides by one less than the count**"}]

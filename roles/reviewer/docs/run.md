@@ -21,6 +21,10 @@ flowchart LR
 1. **The range.** `workline review`: `base..HEAD` (`base`, `--base`); on a
    merge request, the range CI gives. A change touching only what is not
    code (`ignore`) asks nobody.
+   - **A file moved** is read as moved, as git finds a rename
+     ([#358](https://github.com/JN0V/workline/issues/358)): only its
+     changed lines are the change. Moved whole, it asks nobody; rewritten
+     past half its lines, git's similarity, it is a new file.
 2. **The rules**, on the comments the change adds, no agent:
    - a story of the code (`bug-story`, `story-words`: "used to", "the bug
      was");
@@ -105,6 +109,7 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
    breaks aside: in the file at the head of the range, among the lines the
    change removed, or in the issue it names (`#4`, the change's); a
    symptom, in its file; a claim, in what the author said.
+   - A file moved, quoted on its old path, is found on its new one.
    - Not found: dropped, said (`finding-unfounded`).
    - Two on one line are grouped, never one dropped
      ([#229](https://github.com/JN0V/workline/issues/229)).

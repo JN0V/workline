@@ -1,0 +1,11 @@
+case: reviewer/moved-file-unchanged-asks-no-lens
+about: "A file moved and nothing else: git finds the rename whole, no line of it is the change's (#358). No agent is asked, no rule reads its lines as added (the comment over Average holds a code), and the review says why."
+given:
+  repo: reviewed
+  setup: ["git mv calc/calc.go calc/mean.go && git commit -qm 'refactor: move the mean to its own file'"]
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  no-findings: [{rule: internal-code}]
+  summary: "files moved unchanged"

@@ -121,10 +121,10 @@ one place the engine had already named (step 4). Now:
 ## What the finding says
 
 - A doc judged and not vouched for: what the run did, counted in its body
-  — "fixed in 2 places", or "nothing found wrong" when the patch only
-  records `judged`. Never "fixed" for a header alone: workline's first
-  nightly, 2026-10-02, said "what the agent found wrong is fixed" of a doc
-  it found true.
+  — "fixed in 2 places", a code example apart ("and 1 code example"), or
+  "nothing found wrong" when the patch only records `judged`. Never
+  "fixed" for a header alone: workline's first nightly, 2026-10-02, said
+  "what the agent found wrong is fixed" of a doc it found true.
 - A doc whose sources did not all go whole: "nothing found wrong in what
   was read", then `read:` what the task gave (what changed in a source
   since `checked`, the doc it follows) and `not read:` the rest. Never
@@ -156,9 +156,12 @@ one place the engine had already named (step 4). Now:
 
 ## After the fixes pass
 
-Two findings are added, never refusing:
+These findings are added, never refusing:
 
 - **`count-off`** a fix brought right says "fixed in this run".
+- **`example-unverified`**, **`example-checked`**: a code example a fix
+  writes, unverified or checked by the project's command; a failing one
+  is withheld ([code examples](examples.md)).
 - **`value-left`** (step 2): a version a fix replaces is still said in the
   doc fixed, or in another doc declaring one of its source files that now
   says the new version. Reported with the lines; not fixed by the engine:
