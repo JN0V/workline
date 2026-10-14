@@ -145,8 +145,9 @@ func (r Record) add(commits, patches []string) Record {
 // standing are the blocks of the last review that still stand at the head
 // (#326), each at its line there: its lens still blocks (`ai-findings`),
 // and its cause is found again on the change, as a lens's is. A cause no
-// longer found is a commit's answer. One quoted from an issue stands
-// until its lens reads the issue again.
+// longer found is a commit's answer; one whose file moved is found on its
+// new path, and kept there (#358). One quoted from an issue stands until
+// its lens reads the issue again.
 func standing(repo string, s Settings, st state, blocks []Block) []Block {
 	var out []Block
 	for _, b := range blocks {
@@ -158,7 +159,7 @@ func standing(repo string, s Settings, st state, blocks []Block) []Block {
 			if why != "" || !f.Related {
 				continue
 			}
-			b.Where = f.Where
+			b.Where, b.Cause.Path = f.Where, f.Cause.Path
 		}
 		out = append(out, b)
 	}
@@ -174,7 +175,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 	if len(st.Standing) == 0 {
 		return nil, nil
 	}
-	var files []string
+	var files []File
 	if whole {
 		var err error
 		if files, err = codeFiles(repo, s, st.lensFrom(), st.Head); err != nil {
@@ -196,7 +197,7 @@ func reread(repo string, s Settings, st state, c candidates, related []Finding, 
 		if strings.HasPrefix(b.Cause.Path, "#") {
 			return issueOf(st, b.Cause.Path) != nil
 		}
-		return slices.Contains(files, b.Cause.Path)
+		return slices.Contains(paths(files), b.Cause.Path)
 	}), nil
 }
 
@@ -278,13 +279,16 @@ func (r Record) since(repo, base, head string) (span, error) {
 // of a change, the same whatever commit it sits on (`git patch-id
 // --verbatim`: the stable algorithm, whitespace kept, since an indent can
 // be code), read from `git diff-tree`, plumbing no diff setting of the
-// machine alters. A commit changing nothing has none.
+// machine alters. Without renames, unlike what a lens reads (#358): a
+// file moved whole would show no line, and its commit no patch id; and
+// the records written before keep their ids. A commit changing nothing
+// has none.
 func patchIDs(repo string, commits []string) (map[string]string, error) {
 	ids := map[string]string{}
 	if len(commits) == 0 {
 		return ids, nil
 	}
-	diff, err := gitIn(repo, strings.Join(commits, "\n")+"\n", "diff-tree", "--stdin", "-p", "--no-color")
+	diff, err := gitIn(repo, strings.Join(commits, "\n")+"\n", "diff-tree", "--stdin", "-p", "--no-color", "--no-renames")
 	if err != nil {
 		return nil, err
 	}
