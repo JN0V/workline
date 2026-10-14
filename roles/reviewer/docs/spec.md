@@ -67,7 +67,7 @@ routing:
 - **The hold** is the product owner's: its `ready` waits until the
   reviewer read the body as it is and no important finding is open, then
   the engine moves it, with no agent
-  ([backlog acts](../../../docs/spec/backlog-acts.md#refining-to-ready)).
+  ([backlog acts](../../../docs/spec/backlog-acts/refine.md)).
 - **The answer**: the product owner's next refine rewrites the sections
   the findings lie in that are its own; a person's, it asks the reporter.
   The body changed, the reviewer reads it again: one round more.

@@ -19,7 +19,7 @@ first, the cause folded.
 | The builder's, below | Verification, Scope | who builds it |
 
 - **Four sections are required**: Need, Verification, Validation, Scope
-  ([what ready means](../../../docs/spec/backlog-acts.md#refining-to-ready)).
+  ([what ready means](../../../docs/spec/backlog-acts/refine.md)).
 - **Example and Steps to reproduce are not**, nor any other heading you
   add: kept as they are.
 - The product owner adds a missing section where this layout puts it,

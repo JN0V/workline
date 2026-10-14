@@ -192,7 +192,7 @@ switches `normal` off.
 - **The night's summary**, grouped, one line an issue linked, 10 a group
   then "and N more" and the filter: the judging job decides the plan,
   reading only, and says it; the applying job does that plan
-  ([backlog-acts.md](../spec/backlog-acts.md#on-the-issue)).
+  ([On the issue](../spec/backlog-acts/on-the-issue.md)).
 - **`enterprising`** raises the caps; `ready` never has a draft.
 - **Reading order** (from [#270](https://github.com/JN0V/workline/pull/270)):
   answers, then a person's new issues newest first, the catch-up last.

@@ -131,6 +131,6 @@ file a share at a time
 
 Every role opens an issue through one way the engine keeps for the
 product owner
-([backlog acts, "Opening issues"](../../../docs/spec/backlog-acts.md#opening-issues)):
+([backlog acts, "Opening issues"](../../../docs/spec/backlog-acts/opening.md)):
 a key per subject, never opened twice; the role named, `needs-triage`; a
 cap a run (`issues-max`).
