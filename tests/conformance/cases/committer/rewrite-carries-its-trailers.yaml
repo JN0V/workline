@@ -1,0 +1,12 @@
+case: committer/rewrite-carries-its-trailers
+about: "A message the committer rewrote says so in two trailers, `Workline-Role: committer` and `Workline-Model` naming the agent and model that wrote it, so the weekly sample draws it (ADR-0046); nothing of the message it replaced reaches it, its internal code above all."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:good-commit-message"}
+expect:
+  status: pass
+  agent-calls: 1
+  applied: [commit-message]
+  run-files:
+    out/commit-message:
+      contains: ["fix(parser): stop crashing on an empty input file\n\nWorkline-Role: committer\nWorkline-Model: fake:good-commit-message"]
+      not-contains: ["AC-3", "Workline-Was"]

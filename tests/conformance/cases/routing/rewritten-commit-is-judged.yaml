@@ -1,0 +1,10 @@
+case: routing/rewritten-commit-is-judged
+about: "A commit the committer rewrote carries `Workline-Role: committer` (ADR-0046), and stays a person's commit: changing docs alone, it is judged as one, never left as one workline made — workline's own last commits leave the documentalist nothing to judge."
+given:
+  repo: documented
+  setup:
+    - "sed -i 's/Access tokens last one hour./Access tokens last an hour./' docs/tech/auth.md && git commit -qam 'docs(auth): say how long a token lasts' -m 'Workline-Role: committer\nWorkline-Model: fake:good-commit-message'"
+run: {route: merge-request, input: {range: "HEAD~1..HEAD"}, ai: none}
+expect:
+  agent-calls: 0
+  steps: [committer, documentalist]

@@ -288,10 +288,20 @@ func Post(runDir, repo string) int {
 			for _, t := range Trailers(msg) {
 				kept[t] = true
 			}
+			had := map[string]bool{}
 			for _, t := range Trailers(original) {
+				had[t] = true
 				if !kept[t] {
 					findings = append(findings, verdict.Finding{Rule: "trailer-dropped", Where: "trailers",
 						Message: fmt.Sprintf("the rewrite dropped %q, or did not keep it on its own line in the last paragraph; trailers are kept as written", t)})
+				}
+			}
+			// workline's own trailers say who made or rewrote a commit:
+			// the engine writes them, never the agent (ADR-0046).
+			for _, t := range Trailers(msg) {
+				if strings.HasPrefix(t, "Workline-") && !had[t] {
+					findings = append(findings, verdict.Finding{Rule: "trailer-added", Where: "trailers",
+						Message: fmt.Sprintf("the rewrite added %q; workline's own trailers are the engine's to write", t)})
 				}
 			}
 			if len(findings) > 0 {

@@ -238,7 +238,7 @@ func OwnCommit(repo, commit, base string) string {
 		return ""
 	}
 	parents, role, _ := strings.Cut(out, "\x1f")
-	if role = strings.TrimSpace(role); role == "" {
+	if role = madeBy(role); role == "" {
 		return ""
 	}
 	switch len(strings.Fields(parents)) {
@@ -424,8 +424,8 @@ func pushedAfter(o FollowOptions, branch string, st forge.MergeState, yes, baseT
 
 // ownTrailer is the role a commit's trailer names, "".
 func ownTrailer(repo, c string) string {
-	by, _ := git(repo, nil, "log", "-1", "--format=%(trailers:key="+OwnTrailer+",valueonly)", c)
-	return strings.TrimSpace(by)
+	by, _ := git(repo, nil, "log", "-1", "--format=%(trailers:key="+OwnTrailer+",valueonly,separator=%x2c)", c)
+	return madeBy(by)
 }
 
 // commitSaid names a commit by its short id and subject.

@@ -1,0 +1,8 @@
+case: committer/rewrite-cannot-write-workline-trailers
+about: "workline's own trailers say who made or rewrote a commit: the engine writes them, never the agent. A rewrite adding one is refused, nothing applied."
+given: {repo: basic}
+run: {role: committer, event: commit-msg, input: {message: "fix: AC-3"}, ai: "fake:rewrite-forging-trailer"}
+expect:
+  status: block
+  applied: []
+  findings: [{rule: trailer-added, where: trailers, message: "Workline-Role: documentalist"}]
