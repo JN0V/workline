@@ -17,7 +17,8 @@ permissions: {}
 jobs:
   read:
     runs-on: ubuntu-latest
-    permissions: {contents: read}
+    # issues and pull-requests read: the acts the other roles recorded there.
+    permissions: {contents: read, issues: read, pull-requests: read}
     env: {HAS_CLAUDE: "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}"}
     outputs:
       drawn: ${{ steps.sample.outputs.drawn }}
@@ -36,10 +37,11 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           WORKLINE_JUDGE: ${{ vars.WORKLINE_JUDGE }}
+          GH_TOKEN: ${{ github.token }}
           WEEK: ${{ inputs.week }}
         run: |
           status=0
-          workline sample ${WEEK:+--week "$WEEK"} --out sample.json --summary workline-summary.md || status=$?
+          workline sample ${WEEK:+--week "$WEEK"} --forge github --out sample.json --summary workline-summary.md || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           [ "$status" != 1 ] && [ -s sample.json ] && echo "drawn=true" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
@@ -52,8 +54,8 @@ jobs:
         run: |
           case "${{ steps.sample.outputs.status }}" in
             0) ;;
-            2) echo "::warning title=workline::the sample holds docs for a person: see the tracking issue" ;;
-            3) echo "::warning title=workline::the judge could not be reached; the docs are listed for a person" ;;
+            2) echo "::warning title=workline::the sample holds acts for a person: see the tracking issue" ;;
+            3) echo "::warning title=workline::the judge or the forge could not be reached; what was drawn is listed for a person" ;;
             *) exit 1 ;;
           esac
 

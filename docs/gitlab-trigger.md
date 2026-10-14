@@ -137,7 +137,7 @@ case "$step:$WORKLINE_TASK" in
   judge:import)                                   # the issues it would open; apply:* opens them
     workline issues import "$WORKLINE_IMPORT" --ai "$ai" --forge gitlab $sum --json > line.json || status=$? ;;
   judge:sample)
-    workline sample --out sample.json $sum || status=$?; [ "$status" != 1 ] && status=0 ;;
+    workline sample --forge gitlab --out sample.json $sum || status=$?; [ "$status" != 1 ] && status=0 ;;
   apply:sample) [ ! -s sample.json ] || workline sample --apply sample.json --forge gitlab $sum ;;
   judge:follow) ;;                                # no agent: all in the applying job
   apply:follow) workline follow --base "$CI_DEFAULT_BRANCH" --forge gitlab $sum || status=$? ;;
@@ -189,7 +189,7 @@ exit "$status"
 | Variable | Holds | Masked | Protected |
 |---|---|---|---|
 | `WORKLINE_GITLAB_TOKEN` | a project (or group) access token, Developer, `api` and `write_repository` ([triggers.md](triggers.md#gitlab-tokens)) | yes | only if every triggered pipeline runs on a protected branch |
-| `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner and the reviewer read the forge while judging; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
+| `WORKLINE_GITLAB_READ_TOKEN` | a token with `read_api`, Reporter: gardening, the product owner, the reviewer and the weekly sample read the forge while judging; unset, `CI_JOB_TOKEN`, which reads no issue | yes | the same |
 | the agent's credentials | whichever agent you chose; for Claude, `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`, a Claude subscription) or `ANTHROPIC_API_KEY` | yes | the same |
 
 A merge request's source branch is rarely protected: a protected variable
