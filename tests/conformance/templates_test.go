@@ -280,7 +280,8 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 			t.Fatal(err)
 		}
 		// After the judge's workflow, run on its completion: whatever its
-		// conclusion, unless the job's condition reads it.
+		// conclusion, unless the job's condition reads it — but for a run a
+		// newer push cancelled (#359).
 		afterAny := wf.On.WorkflowRun != nil && slices.Equal(wf.On.WorkflowRun.Types, []string{"completed"})
 		for name, job := range wf.Jobs {
 			for _, s := range job.Steps {
@@ -288,7 +289,8 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 					continue
 				}
 				n++
-				if afterAny && strings.Contains(job.If, "conclusion") || !afterAny && !strings.HasPrefix(job.If, "always()") {
+				reads := strings.Contains(strings.ReplaceAll(job.If, notCancelled, ""), "conclusion")
+				if afterAny && reads || !afterAny && !strings.HasPrefix(job.If, "always()") {
 					t.Errorf("%s, job %s: if %q: a failed judge would skip it", filepath.Base(f), name, job.If)
 				}
 			}
@@ -296,6 +298,104 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 	}
 	if n < 4 {
 		t.Fatalf("found %d jobs running workline apply, want the merge request's and the gardening's, here and in workline's own", n)
+	}
+}
+
+// notCancelled is how a job after the judge's workflow skips a run a
+// newer push cancelled.
+const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
+
+// One line per merge request at a time (#359): a push cancels the run
+// still judging the head before — on GitHub, a concurrency group per pull
+// request; on GitLab, an interruptible judge —, and nothing of a cancelled
+// run is uploaded after, applied, kept, followed or commented. The jobs that
+// write on a merge request's pipeline are never interruptible: one begun
+// goes to its end.
+func TestOneLinePerMergeRequestAtATime(t *testing.T) {
+	type workflow struct {
+		Jobs map[string]struct {
+			If          string         `yaml:"if"`
+			Concurrency map[string]any `yaml:"concurrency"`
+			Steps       []struct {
+				If  string `yaml:"if"`
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	read := func(f string) workflow {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+		return wf
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		judges := 0
+		for name, job := range read(dir + "workline.yml").Jobs {
+			route := false
+			for _, s := range job.Steps {
+				route = route || strings.Contains(s.Run, "workline route merge-request")
+				if strings.Contains(s.If, "always()") {
+					t.Errorf("%sworkline.yml, job %s: a step runs on always(), a cancelled run's too: %q", dir, name, s.If)
+				}
+			}
+			if !route {
+				continue
+			}
+			judges++
+			group := fmt.Sprint(job.Concurrency["group"])
+			if !strings.Contains(group, "${{ github.event.pull_request.number }}") || job.Concurrency["cancel-in-progress"] != true {
+				t.Errorf("%sworkline.yml, job %s: no concurrency group per pull request cancelling the run in progress: %v", dir, name, job.Concurrency)
+			}
+		}
+		if judges == 0 {
+			t.Errorf("%sworkline.yml: no job runs the merge request's line", dir)
+		}
+		for _, f := range []string{"workline-apply.yml", "workline-fork.yml"} {
+			for name, job := range read(dir + f).Jobs {
+				if !strings.Contains(job.If, notCancelled) {
+					t.Errorf("%s%s, job %s: if %q: it runs after a cancelled run too", dir, f, name, job.If)
+				}
+			}
+		}
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for name, v := range top {
+		job, ok := v.(map[string]any)
+		if !ok || strings.HasPrefix(name, ".") {
+			continue
+		}
+		rules := job["rules"]
+		if base, _ := job["extends"].(string); rules == nil && base != "" {
+			rules = top[base].(map[string]any)["rules"]
+		}
+		if !strings.Contains(fmt.Sprint(rules), "merge_request_event") {
+			continue
+		}
+		n++
+		judge := strings.Contains(fmt.Sprint(job["script"]), "workline route merge-request")
+		why := "a job that writes goes to its end"
+		if judge {
+			why = "a push must cancel the judge still on the head before"
+		}
+		if got, set := job["interruptible"]; !set || got != judge {
+			t.Errorf("job %s: interruptible %v, want %v: %s", name, got, judge, why)
+		}
+	}
+	if n < 3 {
+		t.Fatalf("found %d jobs of a merge request's pipeline, want the judge and the two that write", n)
 	}
 }
 

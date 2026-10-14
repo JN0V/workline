@@ -91,6 +91,11 @@ variables:
 workline:judge:
   extends: .workline
   stage: test
+  # One pipeline per merge request (#359): a push cancels the one still
+  # judging the head before, with GitLab's "Auto-cancel redundant
+  # pipelines" on (docs/ci-gitlab.md). The jobs that write are not
+  # interruptible: one begun goes to its end.
+  interruptible: true
   script:
     - *claude
     - *ready
@@ -117,6 +122,7 @@ workline:apply:
   extends: .workline
   stage: deploy
   needs: [workline:judge]
+  interruptible: false
   rules:                            # also when the judge failed: a blocked merge request still gets the reviewer's comment (#226)
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
       when: always
@@ -145,6 +151,7 @@ workline:merge:
   image: $WORKLINE_IMAGE:$WORKLINE_VERSION
   stage: deploy
   needs: [workline:judge]
+  interruptible: false
   variables: {GIT_DEPTH: 0}         # the whole history, as .workline
   resource_group: workline-follow   # one at a time, with workline:follow
   rules:
