@@ -1,2 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+reviewer/moved-file-only-its-change-is-the-change
+reviewer/moved-file-unchanged-asks-no-lens
+reviewer/moved-file-unchanged-not-given-to-the-lens
+reviewer/block-stands-when-its-file-is-moved
