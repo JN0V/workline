@@ -546,6 +546,9 @@ merge-request line; on in workline's own repository.
   `lenses=all`. The record then says so (`read=all`), and the next push
   gets one lens. `lenses=all` on the event stays: the first run, and a
   merge request marked ready again with no push between.
+- **Written once the lenses were asked**, whatever they answered, as
+  `owed` is dropped (above): a budget spent or a lens failing does not
+  ask every lens again on each push.
 - **A draft forgets it**: a run on a draft drops `read=all`, so a merge
   request turned back into a draft, then ready, is read by every lens
   once more, as on GitHub's second `ready_for_review`.
