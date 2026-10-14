@@ -1,0 +1,13 @@
+case: committer/identity-empty-address-on-commit
+about: On the commit being written, an empty author address is refused and said as empty.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf '^fixture@example\\\\.invalid$\\n' > \"$XDG_CONFIG_HOME/workline/allowed-identities\""
+    - "echo x >> main.go && git add main.go"
+  env: {GIT_AUTHOR_EMAIL: ""}
+run: {role: committer, event: commit-msg, input: {message: "feat: add x"}, ai: none}
+expect:
+  status: block
+  findings: [{rule: identity, where: author, message: "address is empty"}]
+  no-findings: [{rule: identity, where: committer}]

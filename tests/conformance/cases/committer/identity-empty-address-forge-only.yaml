@@ -1,0 +1,11 @@
+case: committer/identity-empty-address-forge-only
+about: With only the forge's addresses named and no allow list, identities are not checked, an empty address included; the forge's addresses never turn the check on alone.
+given:
+  repo: basic
+  setup:
+    - "git checkout -qb feature && echo x >> main.go && git commit -qam 'feat: add x' --author 'Name <>'"
+  config: {roles: {committer: {settings: {forge-identities: [noreply@github.com]}}}}
+run: {role: committer, event: merge-request, input: {range: "main..feature"}, ai: none}
+expect:
+  status: pass
+  no-findings: [{rule: identity, where: author}, {rule: identity, where: committer}]

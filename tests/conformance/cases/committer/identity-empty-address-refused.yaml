@@ -1,0 +1,17 @@
+case: committer/identity-empty-address-refused
+about: A commit with an empty author or committer address (--author "Name <>") is refused, said as empty, and the other address of that commit is still checked.
+given:
+  repo: basic
+  setup:
+    - "mkdir -p \"$XDG_CONFIG_HOME/workline\" && printf '^fixture@example\\\\.invalid$\\n' > \"$XDG_CONFIG_HOME/workline/allowed-identities\""
+    - "git checkout -qb feature && echo x >> main.go && GIT_COMMITTER_EMAIL=someone@elsewhere.invalid git commit -qam 'feat: add x' --author 'Name <>'"
+    - "echo y >> main.go && GIT_COMMITTER_EMAIL= git commit -qam 'fix: y'"
+  config: {roles: {committer: {settings: {forge-identities: [noreply@github.com]}}}}
+run: {role: committer, event: merge-request, input: {range: "main..feature"}, ai: none}
+expect:
+  status: block
+  findings:
+    - {rule: identity, where: author, message: "address is empty"}
+    - {rule: identity, where: committer, message: "someone@elsewhere.invalid"}
+    - {rule: identity, where: committer, message: "address is empty"}
+  no-findings: [{rule: identity, where: author, message: "fixture@example.invalid"}]
