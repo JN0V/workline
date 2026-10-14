@@ -41,7 +41,7 @@ on #14, #14 waits on #12".
 
 ## What is next, what is stuck
 
-The job's summary says two lists (ADR-0031), computed by `pre` at every
+The job's summary says two lists (ADR-0031, ADR-0038), computed by `pre` at every
 run, with or without an agent, from the forge as it is — nothing of them
 stored:
 
