@@ -75,7 +75,9 @@ before the push; and on the merge request, a safety net.
    naming its file and the commit, a cap a run. It is not posted on the
    merge request.
    *(Amended 2026-10-06: a kept line beside a removal is the change's too;
-   see Amendment, #224.)*
+   see Amendment, #224. Amended 2026-10-14: so is one further down using
+   a name a removed line of its function tested or assigned; see
+   Amendment, #357.)*
 5. **A judge for each important finding**, apart, at the best independence
    available, the level said in the verdict (ADR-0005): at least `model`
    for a merge request the developer role opened, `context` for a person's
@@ -530,3 +532,24 @@ merge-request line; on in workline's own repository.
   not answered or the tokens spent (not reviewed whole) leaves auto-merge
   off, said in the job's summary. A block stands as before.
 - **The reviewer still never approves, never patches, never merges.**
+
+## Amendment (2026-10-14, #357): a removal's reach
+
+- **The window was too short.** A guard removed opens a defect where
+  the guarded name is used next, often more than three lines below. The
+  evaluation's `Page` lost its guard on `p`, and the lenses quoted a use
+  of `p` further down: the engine sent the change's defect to an issue.
+- **The rule, after the removed lines**: a kept line is the change's
+  when, in the same function, it uses a name a removed line tested
+  (after `if`, `while`, `for`, `case`…) or assigned. Its comment goes on
+  the line where the removal shows, which the merge request's diff holds.
+- **Mechanical**: the function is found as the judge's reach finds it,
+  Go by its parser, other languages by their definitions; names are words
+  that are not keywords, fields after a dot, nor calls. No agent decides.
+- **Narrower than the whole function**, which #224 rejected: a defect
+  from before the change on other names in that function stays outside
+  it. The cost: one from before on a guarded name goes to the author;
+  the judge still verifies it.
+- **Rejected**: following what the names flow into (a name assigned from
+  a guarded one), which needs a parser of each language and reaches
+  most of a function.

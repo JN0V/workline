@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-13)
+# Reviewer — where it stands (2026-10-14)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -62,6 +62,10 @@ its measure in
 - **A removal's exposed lines are the change's**:
   `finding-beside-removed-lines-is-fixed-by-author`,
   `finding-far-from-removed-lines-becomes-issue`.
+- **A removal's reach**, a later use of a name it tested or assigned
+  ([#357](https://github.com/JN0V/workline/issues/357)):
+  `finding-on-a-removed-guards-name-is-fixed-by-author`,
+  `finding-on-a-name-the-removal-never-tested-becomes-issue`.
 - **A judge for each important finding**, asking the lens's question:
   `judged-no-not-reported`, `independence-level-in-verdict`,
   `tests-judge-*`, `correctness-judge-keeps-its-question`,
@@ -119,13 +123,11 @@ its measure in
    ([#243](https://github.com/JN0V/workline/issues/243)).
 7. **The tests lens outside the change**: untested code the change did not
    touch, left alone in the measure. No issue yet.
-8. **A removal's reach past three lines** (a guard removed, its defect
-   further down). No issue yet.
-9. **A file moved**: read without renames, every line the change's. No
+8. **A file moved**: read without renames, every line the change's. No
    issue yet.
-10. **Tries on real use**: every lens on ready, tried opened ready on
-    [#307](https://github.com/JN0V/workline/pull/307) (five lenses, 33k
-    tokens in, then one a push); left, a draft marked ready, a run on
-    ready a rule held, and GitLab (the job token reading the notes, the
-    next pipeline). A block standing, on a forge; an issue outside the
-    change written by a real agent. No issue yet.
+9. **Tries on real use**: every lens on ready, tried opened ready on
+   [#307](https://github.com/JN0V/workline/pull/307) (five lenses, 33k
+   tokens in, then one a push); left, a draft marked ready, a run on
+   ready a rule held, and GitLab (the job token reading the notes, the
+   next pipeline). A block standing, on a forge; an issue outside the
+   change written by a real agent. No issue yet.

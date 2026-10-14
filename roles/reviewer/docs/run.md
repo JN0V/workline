@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: f78d077
+checked: fb27d4e2
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -113,6 +113,11 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
      on a kept line within three of a removal (a hunk taking away more
      lines than it adds, [#224](https://github.com/JN0V/workline/issues/224)).
      Reported on that line, for its author to fix.
+   - **A removal's reach**
+     ([#357](https://github.com/JN0V/workline/issues/357)): a kept line
+     further down is the change's too when, in the same function, it uses
+     a name a removed line tested or assigned (`if p < 1` removed, then
+     `from := (p - 1) * size`). Its comment goes where the removal shows.
    - **Elsewhere**: an issue, once, labelled `needs-triage`, with the
      product owner's state; never on the merge request. Its key is the
      file and the cause's line; an issue open or closed holds it, none

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/reviewer/lines.go, internal/builtin/reviewer/reviewer.go, internal/forge/review.go, internal/forge/github_review.go, internal/forge/gitlab_review.go, internal/engine/review.go]
-checked: 55569113
+checked: fb27d4e2
 verified: agent:claude-code
 ---
 # Reviewer — each finding on its line
@@ -25,7 +25,9 @@ flowchart LR
 - **Each comment** says what it does to the merge request, `**blocks**` or
   `warns`, and the lens or rule; then the finding whole: its title, why,
   the fix, the author's words it contradicts, how it was verified.
-- **Its line**: the line of the cause's quote that the change touched.
+- **Its line**: the line of the cause's quote that the change touched;
+  for a use further down of a name a removed line tested, the line where
+  the removal shows ([#357](https://github.com/JN0V/workline/issues/357)).
 - **Not on a line**, in the summary comment as before: a finding quoted
   from the issue the change closes (`#4`), a question for a person.
   What lies outside the change is an issue, never a comment.
