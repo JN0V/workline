@@ -4,6 +4,7 @@ given:
   repo: reviewed
   setup: ["sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"]
   env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-no.yaml"}
+  config: {roles: {reviewer: {settings: {judge-read-rounds: 0}}}}   # a judge that reads nothing: its no drops
 run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "fake:review-related"}
 expect:
   status: pass

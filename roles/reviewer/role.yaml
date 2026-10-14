@@ -100,10 +100,10 @@ settings:
   # places a word is written, read from git at the commit reviewed, and is
   # asked again; a no quotes the lines that refute the finding, found
   # again, else the finding is shown not verified; unsure too. Rounds of
-  # reads a judge may ask: 0, today's judge, until the measure (#362)
-  # shows it does better; a project may turn it on (2, as decided); at
-  # most 8, the engine asking a judge ten times a run at most.
-  judge-read-rounds: 0
+  # reads a judge may ask, on since the replay of 2026-10-14 (ADR-0045,
+  # amended); 0: the judge reads nothing, a no drops the finding; at most
+  # 8, the engine asking a judge ten times a run at most.
+  judge-read-rounds: 2
   # Lines read for one judge, all its rounds together; past them, cut, the
   # rest named; 0: no read. A search past 50 places is not read: narrow it.
   judge-read-lines-max: 400
