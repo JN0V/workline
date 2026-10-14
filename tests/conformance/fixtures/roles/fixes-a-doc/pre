@@ -1,0 +1,3 @@
+#!/bin/sh
+# Always a question for the agent: what the doc says of the change.
+echo "Fix docs/usage.md for the change." > "$WORKLINE_RUN_DIR/in/task.md"

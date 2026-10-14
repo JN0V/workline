@@ -17,11 +17,83 @@ type Line struct {
 
 // Change is what a range of commits did to the files: the lines it added and
 // removed, by file, and the lines of the new file each removal spans: a
-// hunk removing more lines than it adds.
+// hunk removing more lines than it adds. A file moved is read as moved
+// (#358): its lines are by its new path, those it kept are not the change.
 type Change struct {
 	Added    map[string][]Line  `json:"added"`
 	Removed  map[string][]Line  `json:"removed"`
 	Removals map[string][]Place `json:"removals,omitempty"` // a hunk only removing: From is To+1, between two lines
+	Moved    map[string]string  `json:"moved,omitempty"`    // a file moved: its path now, by where it was
+}
+
+// File is a file a range of commits changed, as git lists it with its
+// renames found (#358): its path at the range's end, or where it was when
+// deleted; where it was before, when it moved; and whether it moved
+// whole, its content the same.
+type File struct {
+	Path string
+	Was  string
+	Same bool
+}
+
+// changedFiles lists the files from..to changed, renames found as git's
+// porcelain does by default: a file moved keeping at least half its
+// content is one file, its kept lines context; past that, one file
+// removed and one added, every line of it new.
+func changedFiles(repo, from, to string) ([]File, error) {
+	out, err := git(repo, "diff", "--raw", "-z", "--no-abbrev", "--find-renames", from, to)
+	if err != nil {
+		return nil, err
+	}
+	var files []File
+	fields := strings.Split(out, "\x00")
+	for i := 0; i < len(fields); i++ {
+		meta := strings.Fields(strings.TrimPrefix(fields[i], ":")) // modes, blobs, status
+		if !strings.HasPrefix(fields[i], ":") || len(meta) < 5 || i+1 >= len(fields) {
+			continue
+		}
+		f := File{Path: fields[i+1]}
+		i++
+		if s := meta[4]; (s[0] == 'R' || s[0] == 'C') && i+1 < len(fields) {
+			f.Was, f.Path, f.Same = f.Path, fields[i+1], meta[2] == meta[3]
+			i++
+		}
+		files = append(files, f)
+	}
+	return files, nil
+}
+
+// pathspec is what a diff of files is limited to: each file, and where a
+// moved one was; git, not shown the file it came from, finds no rename.
+func pathspec(files []File) []string {
+	var out []string
+	for _, f := range files {
+		out = append(out, f.Path)
+		if f.Was != "" {
+			out = append(out, f.Was)
+		}
+	}
+	return out
+}
+
+// paths are the files' paths at the range's end.
+func paths(files []File) []string {
+	var out []string
+	for _, f := range files {
+		out = append(out, f.Path)
+	}
+	return out
+}
+
+// file is a file at its path now, with where it was when the change
+// moved it.
+func (c Change) file(path string) File {
+	for from, to := range c.Moved {
+		if to == path {
+			return File{Path: path, Was: from}
+		}
+	}
+	return File{Path: path}
 }
 
 // exposed is how many kept lines either side of a removal count as the
@@ -33,17 +105,26 @@ const exposed = 3
 
 var hunk = regexp.MustCompile(`^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@`)
 
-// readChange reads `git diff -U0 from to -- files`, every line it adds and
-// removes placed in the new file.
-func readChange(repo, from, to string, files []string) (Change, error) {
+// readChange reads `git diff -U0 from to -- files`, renames found, every
+// line it adds and removes placed in the new file.
+func readChange(repo, from, to string, files []File) (Change, error) {
 	if len(files) == 0 {
 		return Change{Added: map[string][]Line{}, Removed: map[string][]Line{}}, nil
 	}
-	out, err := git(repo, append([]string{"diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", from, to, "--"}, files...)...)
+	out, err := git(repo, append([]string{"diff", "-U0", "--no-color", "--no-ext-diff", "--find-renames", from, to, "--"}, pathspec(files)...)...)
 	if err != nil {
 		return Change{}, err
 	}
-	return parseDiff(out), nil
+	c := parseDiff(out)
+	for _, f := range files {
+		if f.Was != "" {
+			if c.Moved == nil {
+				c.Moved = map[string]string{}
+			}
+			c.Moved[f.Was] = f.Path
+		}
+	}
+	return c, nil
 }
 
 // parseDiff reads a unified diff without context. A file's `---` and `+++`
@@ -139,13 +220,14 @@ func fileAt(repo, commit, path string) (string, bool) {
 }
 
 // marked is a file as it reads at to, whole, the change from..to marked
-// in it: each line after its mark, `+` added, `-` removed, a space kept.
-// false: the file is gone at to, or its change has no lines (binary).
-func marked(repo, from, to, path string) (string, bool) {
-	if _, ok := fileAt(repo, to, path); !ok {
+// in it: each line after its mark, `+` added, `-` removed, a space kept;
+// a file moved, against where it was. false: the file is gone at to, or
+// its change has no lines (binary).
+func marked(repo, from, to string, f File) (string, bool) {
+	if _, ok := fileAt(repo, to, f.Path); !ok {
 		return "", false
 	}
-	out, err := git(repo, "diff", "--unified=1000000000", "--no-color", "--no-ext-diff", from, to, "--", path)
+	out, err := git(repo, append([]string{"diff", "--unified=1000000000", "--no-color", "--no-ext-diff", "--find-renames", from, to, "--"}, pathspec([]File{f})...)...)
 	if err != nil {
 		return "", false
 	}

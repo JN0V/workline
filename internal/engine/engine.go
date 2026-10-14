@@ -1119,7 +1119,7 @@ func fixElsewhere(f forge.Forge, st runState, runDir string) (verdict.Finding, i
 	if mr.Title == "" {
 		mr.Title = "docs: what the release waits for"
 	}
-	diff, err := git(st.Repo, nil, append([]string{"diff", "--"}, st.Written...)...)
+	diff, err := writtenDiff(st)
 	if err != nil {
 		return verdict.Finding{}, 0, err
 	}
@@ -1144,7 +1144,7 @@ func fixElsewhere(f forge.Forge, st runState, runDir string) (verdict.Finding, i
 		id, err := f.OpenMergeRequest(branchPrefix(st.Role)+"release", to.Base, mr.Title, body)
 		return verdict.Finding{}, id, err
 	}
-	body := fmt.Sprintf("**Proposed by workline's %s**, not opened as a merge request: %s. Apply it on %s with `git apply`; the release waits for it:\n\n```diff\n%s\n```", st.Role, why, to.Base, diff)
+	body := fmt.Sprintf("**Proposed by workline's %s**, not opened as a merge request: %s. Apply it on %s with `git apply`; the release waits for it:\n\n%s", st.Role, why, to.Base, diffBlock(diff))
 	if err := f.Sticky(*st.Target, body, forge.Marker("sticky="+st.Role+"/patch"), true); err != nil {
 		return verdict.Finding{}, 0, err
 	}
@@ -1228,7 +1228,7 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 	if mr.Title == "" {
 		mr.Title = "chore(" + st.Role + "): what the " + st.Role + " proposes"
 	}
-	diff, err := git(st.Repo, nil, append([]string{"diff", "--"}, st.Written...)...)
+	diff, err := writtenDiff(st)
 	if err != nil {
 		return verdict.Finding{}, err
 	}
@@ -1248,11 +1248,71 @@ func pushToMergeRequest(f forge.Forge, st runState, runDir string) (verdict.Find
 				Message: fmt.Sprintf("the patches were committed to %s (%q)", branch, mr.Title)}, nil
 		}
 	}
-	body := fmt.Sprintf("**Proposed by workline's %s**, not pushed: %s. Apply it with `git apply`:\n\n```diff\n%s\n```", st.Role, why, diff)
+	body := fmt.Sprintf("**Proposed by workline's %s**, not pushed: %s. Apply it with `git apply`:\n\n%s", st.Role, why, diffBlock(diff))
 	if err := f.Sticky(*st.Target, body, forge.Marker("sticky="+st.Role+"/patch"), true); err != nil {
 		return verdict.Finding{}, err
 	}
 	return verdict.Finding{Rule: "patch-as-comment", Level: "warn", Message: "the patches went in a comment: " + why}, nil
+}
+
+// writtenDiff is the diff of the files the run wrote, as git prints it:
+// never trimmed, since a hunk's last line may be a blank line of context,
+// and without it the diff no longer applies. A file the run created — a
+// split's or a condense's new doc — is not tracked yet, so `git diff`
+// leaves it out: it is diffed against nothing, a new file, the index left
+// as it was.
+func writtenDiff(st runState) (string, error) {
+	if len(st.Written) == 0 {
+		return "", nil // no path: git would diff, and list, the whole tree
+	}
+	diff, err := gitRaw(st.Repo, append([]string{"diff", "--"}, st.Written...)...)
+	if err != nil {
+		return "", err
+	}
+	created, err := gitRaw(st.Repo, append([]string{"ls-files", "-z", "--others", "--"}, st.Written...)...)
+	if err != nil {
+		return "", err
+	}
+	for _, p := range strings.Split(created, "\x00") {
+		if p == "" {
+			continue
+		}
+		d, err := gitRaw(st.Repo, "diff", "--no-index", "--", os.DevNull, p)
+		if err != nil {
+			return "", err
+		}
+		diff += d
+	}
+	return diff, nil
+}
+
+// gitRaw runs git in repo and returns what it printed, untrimmed. `diff
+// --no-index` exits 1 when the files differ: that is its answer, not a
+// failure.
+func gitRaw(repo string, args ...string) (string, error) {
+	cmd := exec.Command("git", append([]string{"-C", repo, "-c", "core.quotePath=off"}, args...)...)
+	var errOut strings.Builder
+	cmd.Stderr = &errOut
+	out, err := cmd.Output()
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && exit.ExitCode() == 1 && slices.Contains(args, "--no-index") {
+		err = nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("git %s: %v: %s", args[0], err, strings.TrimSpace(errOut.String()))
+	}
+	return string(out), nil
+}
+
+// diffBlock is a diff as a comment shows it, for a person to copy whole and
+// apply with `git apply`: its fence longer than any run of backticks in it,
+// so a code block of a doc it changes does not end the block early (#145).
+func diffBlock(diff string) string {
+	if !strings.HasSuffix(diff, "\n") {
+		diff += "\n"
+	}
+	fence := backlog.FenceFor(diff)
+	return fence + "diff\n" + diff + fence
 }
 
 // commitOnto commits the written files on top of branch, fetched from

@@ -78,6 +78,10 @@ its measure in
 - **A removal's exposed lines are the change's**:
   `finding-beside-removed-lines-is-fixed-by-author`,
   `finding-far-from-removed-lines-becomes-issue`.
+- **A file moved read as moved**, its kept lines not the change
+  ([#358](https://github.com/JN0V/workline/issues/358)): `moved-file-*`,
+  `moved-and-rewritten-file-read-as-new`,
+  `block-stands-when-its-file-is-moved`.
 - **A judge for each important finding**, asking the lens's question:
   `judged-no-not-reported`, `independence-level-in-verdict`,
   `tests-judge-*`, `correctness-judge-keeps-its-question`,
@@ -129,21 +133,19 @@ its measure in
    ([#360](https://github.com/JN0V/workline/issues/360)).
 3. **A removal's reach past three lines**: a guard removed, its defect
    further down ([#357](https://github.com/JN0V/workline/issues/357)).
-4. **A file moved**, read as all new lines
-   ([#358](https://github.com/JN0V/workline/issues/358)).
-5. **Reviews of one pull request at once** overwrite each other
+4. **Reviews of one pull request at once** overwrite each other
    ([#359](https://github.com/JN0V/workline/issues/359)).
-6. **Spec review on workline**, turned on after the product owner's trial
+5. **Spec review on workline**, turned on after the product owner's trial
    (2026-10-16); then more specs measured, the product owner's real answer
    read again, on GitLab and in CI. Several specs a night parked until a
    queue shows. No issue yet.
-7. **The tests lens outside the change**: untested code the change did not
+6. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
-8. **The developer's loop**: a handoff to the developer, five rounds, then
+7. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-9. **Tries on real use**: a draft marked ready, a run on ready a rule
+8. **Tries on real use**: a draft marked ready, a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
    real agent; every lens on ready tried on

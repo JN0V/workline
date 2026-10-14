@@ -15,3 +15,5 @@ expect:
   files:
     "docs/clock/README.md": {contains: "| `Clock.h` | 569 |"}
     "docs/clock/project-context.md": {contains: "Clock.h           (569 lines)", lacks: "~283"}
+  no-findings:
+    - {rule: example-unverified, where: docs/clock/project-context.md}
