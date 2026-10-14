@@ -30,7 +30,7 @@ expect:
     - {rule: acts-suggest, message: "autonomy: enterprising"}
   forge:
     issues:
-      - {id: 43, title: "workline: the weekly sample of the docs vouched for", comments: 1}
+      - {id: 43, title: "workline: the weekly sample of every role's acts", comments: 2}
       - {id: 44, title: "workline: the weekly sample of the product owner's acts", comments: 1, comment-contains: "### 2026-W03"}
       - {id: 44, comment-contains: "12 acts done alone by the product owner from 2026-01-12 to 2026-01-18; 2 drawn, one in ten"}
       - {id: 44, comment-contains: "| #27 | order | 2026-01-12 | normal | standing |\n| #29 | ready | 2026-01-14 | normal | standing |"}

@@ -11,4 +11,4 @@ expect:
     - {rule: sample-empty}
   forge:
     issues:
-      - {id: 1, labels: [], comments: 1, comment-contains: "2026-W03"}
+      - {id: 1, labels: [], comments: 2, comment-contains: "2026-W03"}

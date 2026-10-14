@@ -12,5 +12,5 @@ expect:
     - {rule: acts-sample}
   forge:
     issues:
-      - {id: 4, title: "workline: the weekly sample of the docs vouched for", comments: 1, comment-contains: "2026-W03"}
+      - {id: 4, title: "workline: the weekly sample of every role's acts", comments: 2, comment-contains: "2026-W03"}
       - {id: 5, absent: true}

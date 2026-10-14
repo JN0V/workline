@@ -11,6 +11,14 @@ case "$p" in
 	echo '- note: "leaked: the judge'"'"'s answer reached the auditor"'; exit 0 ;;
 esac
 mode=${AUDIT:-wrong}
+if [ "$mode" = defects ]; then # AUDIT=defects: each "Enn overflows" true, quoting its line
+	n=$(printf '%s\n' "$p" | grep -o 'E[0-9][0-9] overflows' | head -1 | cut -c2-3)
+	if [ -n "$n" ]; then
+		printf '%s\n' "- claim: {status: contradicted, source: {path: src/notes/extra.go, quote: \"const E$n = $(expr "$n" + 0)\"}, why: \"It overflows.\"}" \
+			'- note: "true: the code fails as the finding says"'
+		exit 0
+	fi
+fi
 case "$mode:$p" in
 *"## The doc:"*)
 	echo '- note: "true: every passage holds against the sources"' ;;

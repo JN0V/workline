@@ -60,7 +60,7 @@ expect:
     - {rule: sample-not-read, where: "#30 src/notes/extra.go:1"}
   forge:
     issues:
-      - {id: 25, title: "workline: the weekly sample of the docs vouched for", comments: 1, comment-contains: "#### Every role's acts"}
+      - {id: 25, title: "workline: the weekly sample of every role's acts", comments: 2, comment-contains: "#### Every role's acts"}
       - {id: 25, comment-contains: "| product owner | `ready` | 3 | 1 |\n| product owner | `rename` | 1 | 1 |\n| reviewer | finding dropped | 1 | 1 |\n| reviewer | finding kept | 1 | 1 |\n| committer | message rewritten | 1 | 1 |"}
       - {id: 25, comment-contains: "| documentalist | `checked` moved | 11 | 2 |"}
       - {id: 25, comment-contains: "| #23 | product owner, `rename` | 2026-01-09, at normal | Did rename on #23 |"}

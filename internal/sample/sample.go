@@ -93,6 +93,7 @@ type Read struct {
 	Independence string  `json:"independence,omitempty"`
 	Proofs       []Proof `json:"proofs,omitempty"`
 	Unproven     []Proof `json:"unproven,omitempty"`
+	Panel        *Panel  `json:"panel,omitempty"` // how a false verdict was settled
 }
 
 // Proof is a passage said false, and the source's words saying otherwise.
@@ -579,6 +580,9 @@ func (rd *reader) readOne(c candidate) Read {
 		}
 	}
 	check(repo, d, content, answer, &r)
+	if r.Verdict == "false" {
+		r.Panel = rd.settleByPanel(c.doc+"\x00"+c.commit, "checked", true, r.Proofs, task(c, d, content, evidence), &r.Verdict, &r.Why)
+	}
 	return r
 }
 

@@ -61,6 +61,8 @@ expect:
     - {rule: sample-not-read, where: "#20"}
   forge:
     issues:
-      - {id: 29, title: "workline: the weekly sample of the docs vouched for", comment-contains: "| #20 | product owner, `ready` | 2026-01-06, at normal | Moved #20 to ready | **false** |"}
-      - {id: 29, comment-contains: "- **#26**, false:\n  - #26 says \"send the CSV by mail\"\n"}
-      - {id: 29, comment-contains: "| **false** | `cmd:sh \"$FIXTURES/agents/audit-acts.sh\"`, provider (claude-sonnet-5, claude-opus-5 → cmd) |"}
+      - {id: 30, title: "workline: the weekly sample of every role's acts", comment-contains: "| #20 | product owner, `ready` | 2026-01-06, at normal | Moved #20 to ready | **false** |"}
+      - {id: 30, comment-contains: "- **#26**, false:\n  - #26 says \"send the CSV by mail\"\n"}
+      - {id: 30, comment-contains: "| **false** | `cmd:sh \"$FIXTURES/agents/audit-acts.sh\"`, provider (claude-sonnet-5, claude-opus-5 → cmd) |"}
+      - {id: 30, comment-contains: "no panel: the auditor's reading, for a person"}
+      - {id: 29, title: "Extra shadows N12", labels: [needs-triage], body-contains: ["The reviewer's correctness lens found this on #30, and its judge dropped it", "const Extra = 12", "Found by the auditor role"]}
