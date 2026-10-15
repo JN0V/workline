@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: 5f871e24
+checked: 9980d8c2
 verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader
@@ -8,16 +8,20 @@ verified: agent:claude-code
 [The reader checks](checks.md#docs-for-their-reader) say where a user page
 is hard to read. With an agent, gardening also has it read those pages as
 their reader would, and propose a fix
-([ADR-0047](../../../docs/adr/0047-the-agent-reads-the-pages-the-reader-checks-flag.md)).
+([ADR-0048](../../../docs/adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md)).
 Part of [the documentalist](../README.md).
 
 ## When
 
-- Last in a gardening run: only when no other task is asked — suspect or
-  stale docs, duplicates, condensing, splitting, merging cards. Docs are
-  made true before they are made easy to read.
+- Last in each gardening run, after the other tasks — suspect or stale
+  docs, duplicates, condensing, splitting, merging cards: docs are made
+  true before they are made easy to read.
+  - A night with another task asks it in a round of its own, once the
+    others are done (`in/then`,
+    [the role contract](../../../docs/spec/role-contract.md#one-run)).
 - With no agent, nothing is read: the checks' findings stand alone.
-- `ai-max-tokens` caps it as any task.
+- `ai-max-tokens` caps it as any task: once the run spent it, the pages
+  wait, said (`ai-max-tokens`).
 
 ## What the task holds
 
@@ -30,7 +34,8 @@ Part of [the documentalist](../README.md).
   characters). The rest wait for a later run, said on their findings.
 - A page too large for a task alone: `too-large-to-read`, for a person.
 - A page is not read again until it changes, nor while a merge request
-  changing it waits for review.
+  changing it waits for review, nor after one was closed without merging
+  (below).
 
 ## What the agent answers
 
@@ -65,8 +70,10 @@ passes.
   merge request leaves it. While the page's body still matches, it is not
   read again. A page with no header gets one, in a comment no rendering
   shows.
-- A merge request closed without merging takes the record with it: the
-  page is read again at the next run, as for any gardening task.
+- A merge request closed without merging keeps its branch: where it left
+  the default branch holds the page as read. While the page is still that,
+  it is not read again, said on its findings — no fix proposed each night.
+  - A branch deleted with it leaves no trace: the page is read again.
 
 ## Cost
 

@@ -1,4 +1,4 @@
-# ADR-0047: The agent reads the pages the reader checks flag, last in a gardening run
+# ADR-0048: The agent reads the pages the reader checks flag, last in a gardening run
 
 - **Status:** accepted (2026-10-15)
 - **Date:** 2026-10-15
@@ -25,10 +25,13 @@
 
 ## Decision
 
-- **When**: last in a gardening run, after the suspect and stale docs,
-  duplicates, condensing, splitting and merging cards. It asks nothing
-  while any of these has a task: docs are made true before they are made
-  easy to read. The project's `schedule` sets how often.
+- **When**: last in each gardening run, after the suspect and stale docs,
+  duplicates, condensing, splitting and merging cards: docs are made true
+  before they are made easy to read. A round that asked another task
+  writes `in/then`, and the engine goes one round more for the reader
+  task alone, once the run's other rounds are done, within what the run
+  may still spend; when `ai-max-tokens` is spent, it is skipped, and said.
+  The project's `schedule` sets how often.
 - **What it holds**: only pages the reader checks flagged — a page only
   out of reach is fixed on another page, and is not read for that —, at
   most `reader.agent-pages` (4) a run within one task's characters
@@ -43,9 +46,13 @@
   - a page's patch changing its header, lines no kept claim quotes, or
     losing a link, a code span, a number or a heading, is withheld whole,
     said, the page left as it was.
-- **Not read again until the page changes**: the page's header records a
-  hash of its body as the run leaves it (`reader:`), on the same merge
-  request; a page a waiting merge request changes waits too.
+- **Not read again until the page changes**:
+  - the page's header records a hash of its body as the run leaves it
+    (`reader:`), on the same merge request;
+  - a page a waiting merge request changes waits too;
+  - a merge request closed without merging is not proposed again each
+    night: its branch stays, and where it left the default branch holds
+    the page as read. While the page is still that, it is not read again.
 - **Caps**: `ai-max-tokens` as every task; with no agent, the checks'
   findings stand alone, and no page is recorded as read.
 
@@ -54,7 +61,7 @@
 - A night on workline's flagged pages: 3 pages, a prompt of 43,187
   characters, about 36k tokens estimated, measured with a recording agent
   (no tokens) on this engine; by their sizes, the 8 pages take three runs.
-- A merge request closed without merging takes its record with it: the
-  page is read again at the next run, as any gardening task is.
-- A page busy every night with other tasks waits as long: the order puts
-  truth first.
+- A night with other tasks spends their tokens first; the pages wait only
+  when the run's `ai-max-tokens` is spent.
+- A closed merge request whose branch is deleted leaves no trace: its
+  pages are read again at the next run.

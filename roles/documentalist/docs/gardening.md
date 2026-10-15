@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
-checked: 5f871e24
+checked: 9980d8c2
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -77,11 +77,12 @@ each other one moves, as written, into a card of its own that it links to.
 
 ## Pages read for their reader
 
-Last, with no other task, the pages the reader checks flagged: per page,
-what a reader would miss or skip, each passage quoted, and a patch making
-it easy to read, at most `reader.agent-pages` (4) a run. What the engine
-cannot check against the quotes is withheld, never blocking; a page is not
-read again until it changes ([more](reader.md)).
+Last in each run, after the other tasks, in a round of its own: the pages
+the reader checks flagged. Per page, what a reader would miss or skip,
+each passage quoted, and a patch making it easy to read, at most
+`reader.agent-pages` (4) a run. What the engine cannot check against the
+quotes is withheld, never blocking; a page is not read again until it
+changes, even after its merge request is closed ([more](reader.md)).
 
 ## One merge request per task
 

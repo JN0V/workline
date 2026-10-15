@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 7327530a
+checked: 9980d8c2
 verified: agent:claude-code
 judged: 88db06e
 ---
@@ -324,6 +324,10 @@ token), **apply** (trusted, no AI key).
    gardening night, the docs judged in parts after those judged whole
    (ADR-0013, amended). Each round is a run folder to apply, listed in the
    result's `pending`, a merge request each.
+
+   **Then.** A round that passed may name in `in/then` a task asked once
+   the others are done: one round more, `WORKLINE_THEN` naming it, within
+   what the run may still spend ([ADR-0048](../adr/0048-the-agent-reads-the-pages-the-reader-checks-flag.md)).
 
    **A cap on tokens.** A role setting `ai-max-tokens` caps what one run may
    spend, every round, part and retry together: the tokens in, cache

@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: 5f871e24
+checked: 9980d8c2
 judged: f70db89
 verified: agent:claude-code
 ---
