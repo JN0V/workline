@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 59713a7e
+checked: efe5ad2d
 verified: agent:claude-code
 ---
 # Reviewer
@@ -59,7 +59,9 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - **Outputs**: on a machine, the findings and `out/review.json` for your
   agent to fix; on a merge request, each finding as a comment on its
   line in the forge's own review ([more](docs/lines.md)), one summary
-  comment edited each run, the findings for GitHub's code scanning or
+  comment edited each run, hiding a line per finding judged for the
+  weekly sample ([more](docs/judge.md#every-finding-judged-kept-for-the-weekly-sample)),
+  the findings for GitHub's code scanning or
   GitLab's Code Quality (`--sarif`, `--code-quality`), and an issue
   (`needs-triage`) for each verified finding outside the change.
 - **Cost**: one call for the lenses (all of them on a machine, together;

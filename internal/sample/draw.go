@@ -10,17 +10,18 @@ import (
 	"time"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 )
 
 // Every role's acts in the weekly sample (ADR-0046): one in ten of the
 // window's acts per role and kind, at least one when a kind has any, each
 // ranked by a digest of the week and the act, so a rerun draws the same.
-// Each is drawn from the record its role keeps today, read and never
-// written: the product owner's `did` in each issue's state, the reviewer's
-// summary comment on each merge request merged in the window, the
-// committer's trailers on the commits. The auditor re-checks the docs only
-// yet: these are listed for a person.
+// Each is drawn from the record its role keeps, read and never written:
+// the product owner's `did` in each issue's state; the lines the
+// reviewer's summary comment hides for the findings judged, every run's,
+// on each merge request merged in the window; the committer's trailers on
+// the commits.
 
 // The roles whose acts are drawn, in the order they are said.
 const (
@@ -149,25 +150,38 @@ var (
 )
 
 // reviewerActs are the important findings the reviewer's judge kept or
-// dropped, as the summary comment on each merge request holds them: the
-// last run's, which the comment keeps alone. A block's row says the head
-// it was found at; another's is read at the merge request's head, its
-// last review's.
-func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.MergeRequest) ([]Act, int, error) {
+// dropped on each merge request, read from the lines its summary comment
+// hides for them, every run's, each at the head its review read
+// (ADR-0046); and what they leave unread: the merge requests whose
+// comment no longer holds some lines, with how many, and those whose
+// comment an engine before the lines wrote.
+func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.MergeRequest) ([]Act, []string, error) {
 	var out []Act
-	read := 0
+	var unread, before []string
 	for _, m := range mrs {
+		ref := forge.MergeRef(f, m.ID)
 		comments, err := b.Comments(forge.Target{Kind: "merge-request", ID: m.ID})
 		if err != nil {
-			return nil, read, fmt.Errorf("the comments of %s: %w", forge.MergeRef(f, m.ID), err)
+			return nil, nil, fmt.Errorf("the comments of %s: %w", ref, err)
 		}
 		for _, c := range comments {
 			if !strings.Contains(c, summaryMarker) {
 				continue
 			}
-			read++
+			judged, gone, held := reviewer.ReadJudged(c)
+			if held {
+				for _, j := range judged {
+					out = append(out, judgedAct(ref, j))
+				}
+				if gone > 0 {
+					unread = append(unread, fmt.Sprintf("%s on %s whose lines its summary comment no longer holds: past its size (%d characters, the oldest gone first), or not readable", plural(gone, "finding")+" judged", ref, reviewer.SummaryMax))
+				}
+				break
+			}
+			// An engine before the lines: the last run's rows of its table.
+			before = append(before, ref)
 			head, _ := git(repo, "rev-parse", "-q", "--verify", fmt.Sprintf("refs/workline/sample/%d^{commit}", m.ID))
-			for _, a := range summaryActs(forge.MergeRef(f, m.ID), c) {
+			for _, a := range summaryActs(ref, c) {
 				if a.Commit == "" {
 					a.Commit = head
 				}
@@ -176,7 +190,26 @@ func reviewerActs(repo string, f forge.Forge, b forge.Backlog, mrs []forge.Merge
 			break
 		}
 	}
-	return out, read, nil
+	if len(before) > 0 {
+		unread = append(unread, "the reviewer's findings of a run before the last on a merge request whose summary comment an engine before its judged lines wrote, its table read alone: "+strings.Join(before, ", "))
+	}
+	return out, unread, nil
+}
+
+// judgedAct is a finding judged, as its line says: kept or dropped, at the
+// head its review read, by the models of its lens and its judge.
+func judgedAct(ref string, j reviewer.Answered) Act {
+	kind := "dropped"
+	if j.Yes {
+		kind = "kept"
+	}
+	by := j.Finder
+	if j.Judge != "" {
+		by += " → " + j.Judge
+	}
+	return Act{Role: reviewRole, Kind: kind, Ref: ref, Where: j.Where, Commit: j.At, By: by, Lens: j.Lens, Title: j.Title,
+		Line: fmt.Sprintf("the %s lens: Important: %s", j.Lens, j.Title),
+		key:  strings.Join([]string{ref, kind, j.Where, j.Lens, j.At, j.Title}, "\x00")}
 }
 
 // summaryActs reads the rows of one summary comment: a finding the judge
@@ -310,12 +343,11 @@ func hasValue(list, v string) bool {
 // commits of the heads that the branch does not hold, whose trailers the
 // squash dropped.
 type heads struct {
-	merged  []forge.MergeRequest // merged in the window
-	own     []string             // the heads' commits the branch does not hold, newest first
-	in      map[string]string    // such a commit → its merge request, as the forge names it
-	squash  map[string]bool      // the commits merge requests read on their heads became: their heads stand for them
-	unread  []string             // why some could not be read
-	summary int                  // the reviewer's summary comments read
+	merged []forge.MergeRequest // merged in the window
+	own    []string             // the heads' commits the branch does not hold, newest first
+	in     map[string]string    // such a commit → its merge request, as the forge names it
+	squash map[string]bool      // the commits merge requests read on their heads became: their heads stand for them
+	unread []string             // why some could not be read
 }
 
 // mergedIn lists the merge requests merged in the window base..tip — the
@@ -424,15 +456,12 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 		}
 		if _, ok := o.Forge.(forge.Merged); !ok {
 			notDrawn("the reviewer's findings, and the commits of a merge request squashed: this forge does not list the merge requests merged")
-		} else if rv, read, err := reviewerActs(o.Repo, o.Forge, b, h.merged); err != nil {
+		} else if rv, unread, err := reviewerActs(o.Repo, o.Forge, b, h.merged); err != nil {
 			unreachable("the reviewer's findings", err)
 		} else {
 			acts = append(acts, rv...)
-			h.summary = read
+			res.NotDrawn = append(res.NotDrawn, unread...)
 		}
-	}
-	if h.summary > 0 {
-		notDrawn("the reviewer's findings of a run before the last on a merge request: its summary comment keeps the last run's only")
 	}
 	res.NotDrawn = append(res.NotDrawn, h.unread...)
 	var own []string

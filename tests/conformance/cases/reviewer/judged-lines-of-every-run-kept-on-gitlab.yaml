@@ -1,0 +1,43 @@
+case: reviewer/judged-lines-of-every-run-kept-on-gitlab
+about: "On GitLab, which keeps no earlier version of a note: the summary comment is rewritten on each run, and keeps the lines of every run's findings judged (ADR-0046): an earlier run's line stays, at the head it read, and this run's is added, for the merge request's life."
+given:
+  repo: reviewed
+  setup:
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    # The review of that commit judged a finding, and dropped it.
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: edge-cases.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | finding-judged-no |  | dropped, from the edge-cases lens: "Half rounds an odd count down" at calc/half.go:4 — the judge: rounding down is what halving a count means (independence: model (claude-sonnet-5 → claude-opus-5)) |
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:judged-lines gone=0 -->
+            <!-- workline:judged {"lens":"edge\u002dcases","where":"calc/half.go:4","at":"@reviewed@","yes":false,"finder":"claude\u002dsonnet\u002d5","judge":"claude\u002dopus\u002d5","title":"Half rounds an odd count down"} -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD, lenses: correctness}, target: {merge-request: 5}, ai: "fake:review-related", forge: gitlab}
+expect:
+  status: pass
+  applied: [comment]
+  findings: [{rule: correctness, where: "calc/calc.go:11", message: "verified"}]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - " runs=2 -->"
+          - "<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"calc/half.go:4\",\"at\":\""
+          - "\",\"yes\":false,\"finder\":\"claude\\u002dsonnet\\u002d5\",\"judge\":\"claude\\u002dopus\\u002d5\",\"title\":\"Half rounds an odd count down\"} -->\n<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"calc/calc.go:11\",\"at\":\""
+          - "\",\"yes\":true,\"finder\":\"review\\u002drelated\",\"judge\":\"judge\\u002dyes\",\"title\":\"Average divides by one less than the count\"} -->"
+        comment-lacks: "@reviewed@"

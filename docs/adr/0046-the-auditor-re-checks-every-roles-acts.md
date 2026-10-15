@@ -2,8 +2,9 @@
 
 - **Status:** accepted (2026-10-14); being built: every role's acts
   drawn, re-checked, settled by a panel and counted; the reviewer's
-  line per finding judged, the product owner's fields and its issue
-  folded in to come
+  line per finding judged, the oldest going first past the comment's
+  size ([the reviewer's judge](../../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample));
+  the product owner's fields and its issue folded in to come
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below

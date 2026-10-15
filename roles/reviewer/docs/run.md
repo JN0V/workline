@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 59713a7e
+checked: efe5ad2d
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -48,6 +48,9 @@ flowchart LR
 3. **The record.** Commits a review answered whole are not asked again.
    - It is kept in the summary comment on a merge request,
      `.git/workline/reviewer-record` on a machine. One that does not read is said (`record-unread`, [#302](https://github.com/JN0V/workline/issues/302)): every commit reviewed again, once, as a whole review writes it anew.
+   - Beside it on a merge request, a line per finding judged, every
+     run's, for the weekly sample; kept even when the record does not
+     read ([more](judge.md#every-finding-judged-kept-for-the-weekly-sample)).
    - **A rebase** ([#286](https://github.com/JN0V/workline/issues/286)): it
      holds each change's patch id too, so a commit rebased with its change
      intact is not asked again. One a conflict changed is, and those after

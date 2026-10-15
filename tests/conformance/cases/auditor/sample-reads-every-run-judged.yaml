@@ -1,0 +1,50 @@
+case: auditor/sample-reads-every-run-judged
+about: "The reviewer's acts are drawn from the lines its summary comment hides for each finding judged, every run's (ADR-0046), not from its table, which shows the last run only: a finding an earlier run kept is drawn, and re-checked on the code at the head that run read; one the last run dropped, at its own. The findings judged whose lines the comment no longer holds, past its size, are said, not drawn."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git"
+    - "git checkout -q -b feat && printf 'package notes\\n\\nconst Extra = 12\\n' > src/notes/extra.go && git add src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-06T09:00:00Z GIT_COMMITTER_DATE=2026-01-06T09:00:00Z git commit -q -m 'feat(notes): add an extra note'"
+    - "sed -i \"s/@first@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf 'package notes\\n\\nconst Extra = 13\\n' > src/notes/extra.go && GIT_AUTHOR_DATE=2026-01-07T09:00:00Z GIT_COMMITTER_DATE=2026-01-07T09:00:00Z git commit -qam 'fix(notes): number the extra note 13'"
+    - "sed -i \"s/@last@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "git push -q origin feat:refs/pull/30/head && git checkout -q main && git merge -q --squash feat && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -q -m 'feat(notes): add an extra note (#30)' && git push -q origin main"
+    - "git branch -q -D feat && git reflog expire --expire=now --all && git gc -q --prune=now"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 30
+        title: Add an extra note
+        branch: feat
+        base: main
+        labels: []
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: correctness.
+
+            | | | Where | Finding |
+            |---|---|---|---|
+            | warns | finding-judged-no |  | dropped, from the correctness lens: "Extra shadows N12" at src/notes/extra.go:3 — the judge: no N12 is declared in the code shown (independence: model (claude-sonnet-5 → claude-opus-5)) |
+
+            The reviewer never approves and never changes the code: the author fixes, a person merges.
+
+            <!-- workline:record reviewed=@last@ runs=2 -->
+            <!-- workline:judged-lines gone=3 -->
+            <!-- workline:judged {"lens":"correctness","where":"src/notes/extra.go:3","at":"@first@","yes":true,"finder":"claude\u002dsonnet\u002d5","judge":"claude\u002dopus\u002d5","title":"Extra is not a note's number"} -->
+            <!-- workline:judged {"lens":"correctness","where":"src/notes/extra.go:3","at":"@last@","yes":false,"finder":"claude\u002dsonnet\u002d5","judge":"claude\u002dopus\u002d5","title":"Extra shadows N12"} -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-acts.sh"']}
+expect:
+  status: human   # the dropped one, unproven, is for a person
+  findings:
+    - {rule: sample-acts, message: "1 act, finding kept, by the reviewer on the merge requests merged in the commits"}
+    - {rule: sample-acts, message: "1 act, finding dropped, by the reviewer"}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge kept on #30, at src/notes/extra.go:3: the correctness lens: Important: Extra is not a note's number — false: src/notes/extra.go:3 says \"const Extra = 12\""}
+    - {rule: act-false, where: "#30 src/notes/extra.go:3", message: "independence: provider (claude-sonnet-5, claude-opus-5 → cmd)"}
+    - {rule: act-unproven, where: "#30 src/notes/extra.go:3", message: "a finding the reviewer's judge dropped on #30, at src/notes/extra.go:3: the correctness lens: Important: Extra shadows N12 — said wrong, not proven"}
+    - {rule: sample-not-drawn, message: "3 findings judged on #30 whose lines its summary comment no longer holds"}
+  no-findings:
+    - {rule: sample-not-drawn, message: "a run before the last"}

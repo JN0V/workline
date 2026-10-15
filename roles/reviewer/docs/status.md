@@ -112,6 +112,10 @@ its measure in
 - **A block stands until a commit answers it**: `block-stands-*`,
   `block-goes-*`, `block-found-again-shown-once`,
   `passed-stays-passed-on-the-same-commits-again`.
+- **A line per finding judged**, every run's, on GitHub and GitLab, the
+  oldest gone first past the comment's size, for the weekly sample
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):
+  `judged-line-for-each-finding-judged`, `judged-lines-*`.
 - **`workline review`**, findings as JSON: `local-review-outputs-json`.
 - **Each finding on its line**, in the forge's own review:
   `line-comment-*`.
