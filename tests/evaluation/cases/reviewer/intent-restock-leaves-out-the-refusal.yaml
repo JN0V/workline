@@ -38,4 +38,6 @@ review:
   defects:
     - lens: intent
       kind: need-left-out
-      at: [{file: "#8", text: "Restock refuses it, adds nothing of the order, and returns an error naming the product."}]
+      at:
+        - {file: "#8", text: "Restock refuses it, adds nothing of the order, and returns an error naming the product."}
+        - {file: shop/stock.go, lines: [46, 51], text: "func (s *Stock) Restock(order map[string]int) {"}
