@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 7327530a
+checked: 733da152
 verified: agent:claude-code
 judged: 83cecff
 ---
@@ -43,6 +43,9 @@ refused there is said as warnings, not failed
   job's, from the base (`--repo`); once the branch moved on, only the
   reviewer's review of the head judged, never a fix
   ([more](spec/routing.md#on-a-forge-judge-then-apply)).
+- With both, on GitHub: the line's documentalist findings as annotations
+  of the check `workline findings` on the head judged; `checks: write`
+  ([#412](https://github.com/JN0V/workline/issues/412)).
 
 ### workline gate
 

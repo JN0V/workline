@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 7327530a
+checked: 733da152
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -30,7 +30,7 @@ then one that applies, with the write token and no AI key
 
 | Task | When | Judges | Applies |
 |---|---|---|---|
-| merge request | each one | the line on its commits | the fixes, to its branch |
+| merge request | each one | the line on its commits | the fixes, to its branch; the doc findings beside their lines |
 | follow | a push to the default branch; with the merge policy, after each judge and when a label changes | — | the release fix rebuilt on it ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set, the branch merged into people's pull requests in conflict only on workline's lines ([ADR-0041](adr/0041-workline-settles-its-own-lines-when-the-base-moves.md)), and the forge's auto-merge turned on for what a person accepted ([merge policy](merge-policy.md)) |
 | gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
@@ -104,6 +104,17 @@ who reads neither the log nor `line.json`:
 - **The applying job** writes its own: what it did on each issue, linked,
   grouped as the judge's; what failed, the runs it left unapplied, and the
   command that resumes them.
+
+On the merge request, each finding is beside its line, and none is a
+conversation to resolve but the reviewer's comments
+([ADR-0047](adr/0047-findings-on-a-merge-request-open-no-conversation.md)):
+
+- **GitHub**: the documentalist's as the annotations of the check
+  `workline findings`; code scanning keeps the gates' and the
+  committer's.
+- **GitLab**: the Code Quality report, a report, not a thread.
+- `workline doctor` says whether merging requires every conversation
+  resolved.
 
 ## The product owner
 

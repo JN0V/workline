@@ -1,0 +1,12 @@
+case: setup/doctor-conversations-unread
+about: "A token that cannot read all of the default branch's rules — a classic branch protection, which only an admin's reads — gets that said plainly by the doctor, never taken for a branch that requires nothing; how the findings reach pull requests is said all the same (#412)."
+given:
+  repo: documented
+  forge: {merge-requests: [], conversations-unread: "its classic branch protection, which only an admin's token reads"}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: findings-on-merge-requests, where: main, level: note, message: "could not read whether main requires every conversation resolved: its classic branch protection, which only an admin's token reads"}
+  no-findings:
+    - {rule: findings-on-merge-requests, message: "does not require"}

@@ -95,7 +95,10 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   docs` proposes changes in the working tree, then one `docs:` commit.
 - On a merge request: one comment listing what is left for a person, edited
   on each run; the fix committed to the branch (`Workline-Role:
-  documentalist`); from a fork, the diff in a comment.
+  documentalist`); from a fork, the diff in a comment. Its findings sit
+  beside their lines, none a conversation to resolve: on GitHub the
+  check `workline findings`, on GitLab the Code Quality report
+  ([#412](https://github.com/JN0V/workline/issues/412)).
 - Gardening: a branch and merge request per task,
   `workline/documentalist/<task>`, rebuilt on `main` once `main` moved, or
   closed, saying why, when nothing is left to merge

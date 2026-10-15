@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 9054d164
+checked: 84d8b322
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -142,6 +142,24 @@ waits. Give the job read access to the repository's branches.
 - GitLab: `CI_JOB_TOKEN` reaches no issue; give `GITLAB_TOKEN`
   ([ci-gitlab.md](ci-gitlab.md#gitlabcom)). A **protected** variable never reaches a merge
   request's pipeline on an unprotected branch.
+- `findings-not-annotated`, on GitHub: the check `workline findings` was
+  refused. Give `workline-apply.yml`'s `apply` job `checks: write`, and a
+  GitHub App the permission **Checks**, read and write
+  ([the App](ci-github-app.md)). The findings stay in the judge's job
+  summary.
+
+## A pull request blocked, its checks green
+
+- **Conversations to resolve**: GitHub's rule "require conversation
+  resolution" holds the merge while one is open. `workline doctor` says
+  whether the default branch has it.
+- **Code scanning's**: workline before
+  [#412](https://github.com/JN0V/workline/issues/412) sent every finding
+  there, one conversation each. Copy `ci/github/workline.yml` and
+  `workline-apply.yml` of this release: the documentalist's findings
+  become a check's annotations, which open none.
+- **The reviewer's comments** are conversations by design: answer or
+  resolve each.
 
 ## Nothing merges
 

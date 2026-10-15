@@ -119,3 +119,39 @@ tried on gitlab.com (JN0V/workline-sandbox, a Free user's project).
 **Decision** (ADR-0023): a project access token, Reporter for the
 backlog alone, Developer with `write_repository` for gardening; members
 from Planner up are of the project.
+
+## Findings and conversations to resolve (2026-10-15)
+
+For [#412](https://github.com/JN0V/workline/issues/412): a base branch
+requiring conversations resolved holds a pull request whose checks are
+green. Tried on [workline-sandbox#57](https://github.com/JN0V/workline-sandbox/pull/57),
+a ruleset with the rule on, no agent.
+
+- **Code scanning opens a conversation per new alert** on a line the pull
+  request added or changed, a review by `github-advanced-security`; the
+  rule counts them ([alerts in pull requests](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-code-scanning-alerts/triaging-code-scanning-alerts-in-pull-requests),
+  [SARIF support](https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support-for-code-scanning)).
+- **The SARIF level does not change it**: [DomoticsCore#211](https://github.com/JN0V/DomoticsCore/pull/211)'s 100 alerts
+  were all `note`, 36 conversations; the sandbox's three `note`s, three
+  conversations, the pull request `BLOCKED`.
+- **Uploading to the branch's ref** (`ref: refs/heads/<branch>`, the
+  head's `sha`) still opens one: GitHub ties the commit to its pull request.
+- **A fixed alert's conversation resolves itself** at the next upload;
+  only findings left standing block: a count nobody fixed, a doc suspect
+  with no agent, a section too long.
+- **Nothing turns the comments off**: no setting, and code scanning reads
+  no SARIF `suppressions` ([codeql-action#1230](https://github.com/github/codeql-action/issues/1230)).
+- **A check's annotations open no conversation**: shown on the check and
+  in the pull request's changed files. Workflow commands keep 10 notices a
+  step, 50 a job (12 sent, 10 kept); the Checks API takes 50 a call,
+  appended over as many calls, with a GitHub App's token and `checks:
+  write`, a job's own included ([check runs](https://docs.github.com/en/rest/checks/runs)).
+- **The rule can be read** without rights on a public repository:
+  `GET /repos/{owner}/{repo}/rules/branches/{branch}`,
+  `required_review_thread_resolution` ([rules for a branch](https://docs.github.com/en/rest/repos/rules#get-rules-for-a-branch)).
+  Classic branch protection's setting needs an admin's token (401 without).
+- **The reviewer's line findings come twice**: its own review and a code
+  scanning conversation ([#400](https://github.com/JN0V/workline/pull/400): 7 and 7).
+- **GitLab**: "All threads must be resolved" counts discussions. Code
+  Quality shows in the Reports tab and, on Ultimate, beside the diff's
+  lines, never as a discussion ([Code Quality](https://docs.gitlab.com/ci/testing/code_quality/)).

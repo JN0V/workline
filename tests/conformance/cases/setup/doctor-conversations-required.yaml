@@ -1,0 +1,10 @@
+case: setup/doctor-conversations-required
+about: "On a forge whose default branch requires every conversation resolved before a merge, the doctor says how workline's findings reach pull requests: the documentalist's as a check's annotations, which open none, the reviewer's as conversations to resolve (#412)."
+given:
+  repo: documented
+  forge: {merge-requests: [], conversations-required: [main]}
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: findings-on-merge-requests, where: main, level: ok, message: "main requires every conversation resolved before a merge: the documentalist's findings reach pull requests as annotations on the check `workline findings`, which open none"}
