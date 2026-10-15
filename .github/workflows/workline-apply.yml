@@ -23,6 +23,10 @@
 #          someone to approve them. The commit carries `Workline-Role:`: the
 #          line judges the commits before it, never the fix again. Nothing is
 #          applied for a fork: workline-fork.yml comments what was found.
+#          One at a time per pull request, with workline.yml's judge: the
+#          next push is judged once the review before it is written. A
+#          branch moved on since the head judged gets the reviewer's review
+#          of that head alone, never a fix (ADR-0044, amended).
 #   verdict with the merge policy, `merge: {autonomy: cautious}` (ADR-0042),
 #          after judge: the head's verdict kept as the status
 #          workline/verdict, by the App; in no concurrency group, so no newer
@@ -55,6 +59,10 @@ jobs:
     # steps that passed before one blocked still get their proposals applied.
     # Never a cancelled run: a newer push stopped it, and its run applies.
     if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' && github.event.workflow_run.head_repository.full_name == github.repository
+    # One review at a time per pull request (#375), with workline.yml's
+    # judge, neither cancelling the other: the next push's judge waits for
+    # this apply, and reads the record it writes.
+    concurrency: {group: "workline-review-${{ github.event.workflow_run.pull_requests[0].number }}", cancel-in-progress: false}
     runs-on: ubuntu-latest
     environment: workline-app
     # actions: read, the artifacts of the pull request's run.

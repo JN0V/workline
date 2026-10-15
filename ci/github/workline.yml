@@ -33,6 +33,11 @@ on:
   # reviewer once, when the line runs it (ADR-0020).
   pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
 permissions: {}
+# One run per pull request (#359): a push cancels the run still on the
+# head before, whose commits the newer run reviews with its own. Nothing
+# of a cancelled run is uploaded after (`!cancelled()`), nor applied
+# (workline-apply.yml).
+concurrency: {group: "workline-judge-${{ github.event.pull_request.number }}", cancel-in-progress: true}
 
 env:
   WORKLINE_VERSION: v0.29.0          # a release of workline: update it to take a newer one (x-release-please-version)
@@ -42,11 +47,11 @@ env:
 jobs:
   judge:
     runs-on: ubuntu-latest
-    # One run per pull request (#359): a push cancels the run still on the
-    # head before, whose commits this run reviews with its own. Nothing
-    # of a cancelled run is uploaded after (`!cancelled()`), nor applied
-    # (workline-apply.yml).
-    concurrency: {group: "workline-judge-${{ github.event.pull_request.number }}", cancel-in-progress: true}
+    # One review at a time per pull request (#375), with workline-apply.yml's
+    # apply, neither cancelling the other: a push waits while the run
+    # before it is applied, then reads its record and reviews only what is
+    # new.
+    concurrency: {group: "workline-review-${{ github.event.pull_request.number }}", cancel-in-progress: false}
     # pull-requests read: the reviewer, when the line runs it, reads its
     # summary comment, to review only the commits it has not reviewed yet.
     permissions: {contents: read, security-events: write, pull-requests: read}
