@@ -1,0 +1,25 @@
+case: documentalist/reader-capped-a-run
+about: "The agent reads at most `reader.agent-pages` pages a run, within one task's characters (#256): a page too large for a task alone is said (`too-large-to-read`), the pages past the cap wait for a later run, said. A page read with nothing to say gets its record all the same."
+given:
+  repo: documented
+  setup:
+    - |
+      w() { i=0; while [ $i -lt $1 ]; do printf '%s%d ' "$2" $i; i=$((i+1)); done; }
+      printf '# Shop\n\n[A](docs/a.md), [B](docs/b.md), [C](docs/c.md), [D](docs/d.md).\n' > README.md
+      for p in a c d; do { printf '# %s\n\n' "$p"; w 90 "$p"; printf '\n'; } > docs/$p.md; done
+      { printf '# b\n\n'; w 9000 b; printf '\n'; } > docs/b.md
+      git add . && git commit -qm 'docs: four pages'
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}, budgets: {section-words: 100000}, reader: {agent-pages: 2}}}}}
+run: {role: documentalist, event: schedule, ai: "fake:reader-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: too-large-to-read, where: docs/b.md}
+    - {rule: paragraph-too-long, where: docs/d.md, message: "read by the agent in a later run"}
+  run-files:
+    in/task.md: {contains: ["## docs/a.md", "## docs/c.md"], not-contains: ["## docs/b.md", "## docs/d.md"]}
+  files:
+    docs/a.md: {contains: "reader: "}
+    docs/c.md: {contains: "reader: "}
+    docs/d.md: {lacks: "reader:"}

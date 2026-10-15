@@ -1,0 +1,23 @@
+# The documentalist's `reader` task on docs/guide.md, as the reader cases
+# write it: one paragraph of 96 words at line 3. The agent says what a
+# reader skips there, quoting it, and breaks it into bullets, keeping its
+# code spans, its number and the link below it.
+calls:
+  - - claim:
+        doc: docs/guide.md
+        lines: "3"
+        quote: "Install the tool with `make install`"
+        why: "one sentence of 96 words: a reader skims past how to remove it"
+    - patch: |
+        --- a/docs/guide.md
+        +++ b/docs/guide.md
+        @@ -1,5 +1,8 @@
+         # Guide
+
+        -Install the tool with `make install`, then run it once in each repository you want it to watch, and it will look at every commit you make there before the commit leaves your machine, and it will tell you what it found in a short list that gives the file and the line of each finding, so that you can fix it before anyone else reads it, and it keeps doing so for every push until the day you remove it with `make uninstall`, which takes about 2 seconds and leaves nothing behind on your machine.
+        +- Install the tool with `make install`, then run it once in each repository it watches.
+        +- It looks at every commit there before the commit leaves your machine.
+        +- It lists what it found, the file and the line of each finding, for you to fix first.
+        +- `make uninstall` removes it in about 2 seconds, leaving nothing behind.
+
+         See [the setup](setup.md) for more.

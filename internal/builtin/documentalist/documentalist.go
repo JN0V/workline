@@ -1167,6 +1167,32 @@ doc when its reader really gained something to know.
 			}
 		}
 	}
+	// Last, the pages the reader checks flagged, read by the agent for what
+	// a reader would miss or skip (#256).
+	if task == "" && partsAsked == 0 && gardening {
+		var r *readerTask
+		if r, task, findings, err = readerFor(findings, tree, s, wait, repo); err != nil {
+			return fail(err)
+		}
+		if r != nil {
+			if err := writeYAML(filepath.Join(runDir, "in", "reader.yaml"), r); err != nil {
+				return fail(err)
+			}
+			// Whether the agent answered, as the engine tells it: a
+			// fallback written only with an answer that reads.
+			file := filepath.Join(runDir, "in", "fallback.yaml")
+			fb, err := intent.Read(file)
+			if err != nil {
+				return fail(err)
+			}
+			if err := intent.Write(file, append(fb, readerRead)); err != nil {
+				return fail(err)
+			}
+			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("reader\n"), 0o644); err != nil {
+				return fail(err)
+			}
+		}
+	}
 	if os.Getenv("WORKLINE_EVENT") == "release" {
 		if findings, err = holdTheRelease(findings, suspects, repo); err != nil {
 			return fail(err)
@@ -1529,7 +1555,9 @@ func Post(runDir, repo string) int {
 	}
 	var refused, reported, withheld []verdict.Finding
 	var judgedFix *judgedFixes
-	inParts := map[string]string{} // the docs judged in parts, by the commit they were judged at
+	var readerOutcome map[string]string // the pages read for their reader (#256), and what became of each
+	var readerClaims map[string][]claim // what a reader would miss or skip, by page
+	inParts := map[string]string{}      // the docs judged in parts, by the commit they were judged at
 	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
@@ -1563,6 +1591,23 @@ func Post(runDir, repo string) int {
 			return fail(err)
 		}
 		resolved["card-too-short "+m.Card] = len(refused) == 0 && proposedPatch(intents, fallback)
+	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "reader.yaml")); err == nil {
+		// The pages read for their reader: what the agent answers never
+		// blocks; what cannot be checked is withheld, said (#256).
+		var r readerTask
+		if err := yaml.Unmarshal(data, &r); err != nil {
+			return fail(err)
+		}
+		if readerAnswered(intents) {
+			j, err := judgeReader(repo, &r, intents, fallback)
+			if err != nil {
+				return fail(err)
+			}
+			intents, withheld, readerOutcome, readerClaims = j.intents, j.withheld, j.outcome, j.claims
+			if err := writeIntents(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
+				return fail(err)
+			}
+		}
 	} else if data, err := os.ReadFile(filepath.Join(runDir, "in", "dedupe.yaml")); err == nil {
 		var d dedupeTask
 		if err := yaml.Unmarshal(data, &d); err != nil {
@@ -1671,7 +1716,14 @@ func Post(runDir, repo string) int {
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
 		outcome := outcomes(judged, inParts, patched, partly, judgedFix, readOf)
-		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)); err != nil {
+		if readerOutcome != nil {
+			outcome = readerOutcome
+		}
+		mr := mergeRequest(runDir, judged, inParts, proposedPatch(intents, fallback), withheld, outcome)
+		if list := readerList(readerClaims); list != "" {
+			mr["body"] = strings.Replace(mr["body"], "\nRunning the same task", "\nWhat a reader would miss or skip, as the agent read the pages:\n\n"+list+"\nRunning the same task", 1)
+		}
+		if err := writeYAML(filepath.Join(runDir, "out", "merge-request.yaml"), mr); err != nil {
 			return fail(err)
 		}
 	}
@@ -2331,6 +2383,14 @@ func mergeRequest(runDir string, judged map[string]map[string]string, inParts ma
 		var d dedupeTask
 		if data, err := os.ReadFile(filepath.Join(runDir, "in", "dedupe.yaml")); err == nil && yaml.Unmarshal(data, &d) == nil {
 			docs, key, title = d.Docs, d.key(), "docs: keep a repeated passage in one place"
+		}
+	case "reader":
+		var r readerTask
+		if data, err := os.ReadFile(filepath.Join(runDir, "in", "reader.yaml")); err == nil && yaml.Unmarshal(data, &r) == nil && len(r.Pages) > 0 {
+			docs, key, title = r.Pages, r.Key, "docs: read "+r.Pages[0]+" for its reader"
+			if len(r.Pages) > 1 {
+				title = fmt.Sprintf("docs: read %s and %d more for their reader", r.Pages[0], len(r.Pages)-1)
+			}
 		}
 	case "merge-card":
 		var m mergeCardTask

@@ -1,0 +1,4 @@
+# The documentalist's `reader` task: every page serves its reader, so the
+# agent claims nothing and patches nothing.
+calls:
+  - []

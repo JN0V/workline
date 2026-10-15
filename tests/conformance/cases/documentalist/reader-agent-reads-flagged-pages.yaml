@@ -1,0 +1,28 @@
+case: documentalist/reader-agent-reads-flagged-pages
+about: "When gardening, last, the agent reads the pages the reader checks flagged, and only those (#256): per page, what a reader would miss or skip, each passage quoted, and a patch making it easy to read. It lands on a merge request of its own, the page's header recording the body it was read as, and the merge request saying what the reader would miss. A page only out of reach is fixed on another page: it is not read."
+given:
+  repo: documented
+  setup:
+    - |
+      git init -q --bare ../origin.git && git remote add origin ../origin.git
+      printf '# Shop\n\nSee [the guide](docs/guide.md).\n' > README.md
+      printf '# Guide\n\n%s\n\nSee [the setup](setup.md) for more.\n' 'Install the tool with `make install`, then run it once in each repository you want it to watch, and it will look at every commit you make there before the commit leaves your machine, and it will tell you what it found in a short list that gives the file and the line of each finding, so that you can fix it before anyone else reads it, and it keeps doing so for every push until the day you remove it with `make uninstall`, which takes about 2 seconds and leaves nothing behind on your machine.' > docs/guide.md
+      printf '# Setup\n\nOne step.\n' > docs/setup.md
+      git add . && git commit -qm 'docs: a guide' && git push -q origin main
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "fake:reader-bullets", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/task.md:
+      contains: ["Kind: reader", "## docs/guide.md", "paragraph-too-long"]
+      not-contains: ["## docs/setup.md", "## README.md", "## docs/tech/auth.md"]
+  forge:
+    merge-requests:
+      - {id: 1, branch: "workline/documentalist/reader-docs-guide-md", base: main, title: "docs: read docs/guide.md for its reader",
+         body-contains: ["a reader skims past how to remove it", "rewritten in 1 place"]}
+  pushed:
+    workline/documentalist/reader-docs-guide-md:
+      docs/guide.md: "-->\n# Guide\n\n- Install the tool with `make install`, then run it once in each repository it watches.\n"

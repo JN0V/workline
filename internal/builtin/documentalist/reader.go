@@ -33,6 +33,9 @@ type Reader struct {
 	FlowHeadings   []string `json:"flow-headings"`
 	ParagraphWords int      `json:"paragraph-words"`
 	CellWords      int      `json:"cell-words"`
+	// AgentPages: the flagged pages the agent reads a run, last when
+	// gardening (#256, readertask.go); 0, none.
+	AgentPages int `json:"agent-pages"`
 }
 
 // userPages are the docs the reader checks look at, sorted.
