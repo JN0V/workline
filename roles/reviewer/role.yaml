@@ -48,6 +48,10 @@ intentions: [issue, comment, note]
 # blocked run still applies these, which only say what was found, the
 # record of the commits reviewed in the comment (#226).
 on-block: [comment, issue]
+# A push landing before the run is applied: the review of the head it
+# judged is still applied, its line comments at that head, so the push's
+# run reviews only what is new (#375, ADR-0044's amendment).
+on-moved-on: [comment, issue]
 
 # Without AI, the rules that need no judgement still run and still block; the
 # change waits for a person's review, said.

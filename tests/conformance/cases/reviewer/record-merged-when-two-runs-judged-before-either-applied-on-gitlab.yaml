@@ -1,0 +1,30 @@
+case: reviewer/record-merged-when-two-runs-judged-before-either-applied-on-gitlab
+about: "On GitLab, a push lands in the seconds between a run's end and its apply taking the resource group (#375): the push's run takes it first, reads the record before that apply wrote it, and reviews the first run's commit again. Each apply then merges the record the comment holds into its own: one summary comment, the newer run's, holding both runs' commits, both runs counted, and the line of each finding judged, the first run's at its head and the second's at its own (ADR-0046)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge: {issues: [], merge-requests: [{id: 5, labels: [], comments: []}]}
+run:
+  role: reviewer
+  event: merge-request
+  input: {range: main..HEAD, lenses: correctness}
+  target: {merge-request: 5}
+  ai: "cmd:sh $FIXTURES/agents/review-calc-only.sh"
+  no-apply: true
+  then: judged-twice
+  pushed:
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge: gitlab
+expect:
+  status: pass
+  # Each run: its lens, then the judge, the second on the first's commit again.
+  agent-calls: 4
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - " runs=2 -->"
+          - "\"title\":\"Average divides by one less than the count\"} -->\n<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"calc/calc.go:11\",\"at\":\""

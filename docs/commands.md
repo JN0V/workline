@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
-checked: 9388c83d
+checked: 7327530a
 verified: agent:claude-code
 judged: 83cecff
 ---
@@ -40,7 +40,8 @@ refused there is said as warnings, not failed
   what was left.
 - `--from-merge-request <n> --head <sha>`: merge request `<n>`'s own CI
   run read as data — only its proposals; settings, roles, forge this
-  job's, from the base (`--repo`); nothing once the branch moved on
+  job's, from the base (`--repo`); once the branch moved on, only the
+  reviewer's review of the head judged, never a fix
   ([more](spec/routing.md#on-a-forge-judge-then-apply)).
 
 ### workline gate

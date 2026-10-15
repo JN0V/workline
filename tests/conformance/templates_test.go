@@ -306,14 +306,15 @@ func TestGitHubApplyRunsWhenTheJudgeFails(t *testing.T) {
 const notCancelled = "github.event.workflow_run.conclusion != 'cancelled'"
 
 // One line per merge request at a time (#359): a push cancels the run
-// still judging the head before — on GitHub, a concurrency group per pull
-// request; on GitLab, an interruptible judge —, and nothing of a cancelled
+// still judging the head before — on GitHub, the workflow's concurrency
+// group per pull request; on GitLab, an interruptible judge —, and nothing of a cancelled
 // run is uploaded after, applied, kept, followed or commented. The jobs that
 // write on a merge request's pipeline are never interruptible: one begun
 // goes to its end.
 func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	type workflow struct {
-		Jobs map[string]struct {
+		Concurrency map[string]any `yaml:"concurrency"`
+		Jobs        map[string]struct {
 			If          string         `yaml:"if"`
 			Concurrency map[string]any `yaml:"concurrency"`
 			Steps       []struct {
@@ -335,7 +336,11 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	}
 	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
 		judges := 0
-		for name, job := range read(dir + "workline.yml").Jobs {
+		wf := read(dir + "workline.yml")
+		if group := fmt.Sprint(wf.Concurrency["group"]); !strings.Contains(group, "${{ github.event.pull_request.number }}") || wf.Concurrency["cancel-in-progress"] != true {
+			t.Errorf("%sworkline.yml: no concurrency group per pull request cancelling the run in progress: %v", dir, wf.Concurrency)
+		}
+		for name, job := range wf.Jobs {
 			route := false
 			for _, s := range job.Steps {
 				route = route || strings.Contains(s.Run, "workline route merge-request")
@@ -347,10 +352,6 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 				continue
 			}
 			judges++
-			group := fmt.Sprint(job.Concurrency["group"])
-			if !strings.Contains(group, "${{ github.event.pull_request.number }}") || job.Concurrency["cancel-in-progress"] != true {
-				t.Errorf("%sworkline.yml, job %s: no concurrency group per pull request cancelling the run in progress: %v", dir, name, job.Concurrency)
-			}
 		}
 		if judges == 0 {
 			t.Errorf("%sworkline.yml: no job runs the merge request's line", dir)
@@ -401,6 +402,69 @@ func TestOneLinePerMergeRequestAtATime(t *testing.T) {
 	}
 	if n < 3 {
 		t.Fatalf("found %d jobs of a merge request's pipeline, want the judge and the two that write", n)
+	}
+}
+
+// One review at a time per merge request (#375): the judge and the apply
+// share a lock, neither cancelling the other, so a push is judged once
+// the review before it is written, and reads its record. On GitHub, a
+// concurrency group per pull request; on GitLab, a resource group per
+// merge request.
+func TestOneReviewAtATimePerMergeRequest(t *testing.T) {
+	type workflow struct {
+		Jobs map[string]struct {
+			Concurrency map[string]any `yaml:"concurrency"`
+			Steps       []struct {
+				Run string `yaml:"run"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	locks := func(file, command string) []string {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatalf("%s: %v", file, err)
+		}
+		var out []string
+		for name, job := range wf.Jobs {
+			runs := false
+			for _, s := range job.Steps {
+				runs = runs || strings.Contains(s.Run, command)
+			}
+			if !runs {
+				continue
+			}
+			group := fmt.Sprint(job.Concurrency["group"])
+			if !strings.HasPrefix(group, "workline-review-${{ github.event.") || !strings.HasSuffix(group, "number }}") || job.Concurrency["cancel-in-progress"] != false {
+				t.Errorf("%s, job %s: not in the review's lock per pull request, never cancelling: %v", file, name, job.Concurrency)
+			}
+			out = append(out, group)
+		}
+		if len(out) == 0 {
+			t.Errorf("%s: no job runs %q", file, command)
+		}
+		return out
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		locks(dir+"workline.yml", "workline route merge-request")
+		locks(dir+"workline-apply.yml", "--from-merge-request")
+	}
+	data, err := os.ReadFile("../../ci/gitlab/workline.gitlab-ci.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var top map[string]any
+	if err := yaml.Unmarshal(data, &top); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"workline:judge", "workline:apply"} {
+		job, _ := top[name].(map[string]any)
+		if got := job["resource_group"]; got != "workline-review-$CI_MERGE_REQUEST_IID" {
+			t.Errorf("job %s: resource_group %v, want the review's lock per merge request, workline-review-$CI_MERGE_REQUEST_IID", name, got)
+		}
 	}
 }
 

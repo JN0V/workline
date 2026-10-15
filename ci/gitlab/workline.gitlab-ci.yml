@@ -98,6 +98,10 @@ workline:judge:
   # pipelines" on (docs/ci-gitlab.md). The jobs that write are not
   # interruptible: one begun goes to its end.
   interruptible: true
+  # One review at a time per merge request (#375), with workline:apply: a
+  # push waits while the pipeline before it applies, then reads its
+  # record and reviews only what is new.
+  resource_group: workline-review-$CI_MERGE_REQUEST_IID
   script:
     - *claude
     - *ready
@@ -125,6 +129,7 @@ workline:apply:
   stage: deploy
   needs: [workline:judge]
   interruptible: false
+  resource_group: workline-review-$CI_MERGE_REQUEST_IID   # one review at a time, with workline:judge (#375)
   rules:                            # also when the judge failed: a blocked merge request still gets the reviewer's comment (#226)
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $WORKLINE_GITLAB_TOKEN
       when: always

@@ -2115,6 +2115,15 @@ func (a *applier) apply(in intent.Intention) error {
 					return err
 				}
 			}
+			if read, ok := m["read"].(string); ok {
+				// The record the run read, merged with the one the
+				// comment holds now: never a run's commits nor judged
+				// findings lost to a run applied since (#375).
+				var err error
+				if body, err = a.mergedRecord(*target, key, body, read); err != nil {
+					return err
+				}
+			}
 			return a.forge.Sticky(*target, backlog.Inert(body), forge.Marker("sticky="+a.role+"/"+key), !only)
 		}
 		return a.forge.Comment(*target, backlog.Inert(body), a.marker())

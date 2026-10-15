@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-14)
+# Reviewer — where it stands (2026-10-15)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -69,6 +69,12 @@ its measure in
   `every-lens-on-the-push-after-a-failed-run-on-ready`,
   `every-lens-not-whole-said-after-a-second-failure`,
   `every-lens-run-on-ready-unreachable-writes-nothing`.
+- **One review at a time per merge request**: a push waits for the
+  review before it to be written, which the apply writes even once the
+  branch moved on; each apply merges the record it finds
+  ([#375](https://github.com/JN0V/workline/issues/375)):
+  `review-applied-when-a-push-lands-before-it*`,
+  `record-merged-when-two-runs-judged-before-either-applied*`.
 - **Lenses as parts**, answering findings only; an answer that does not
   read asked again once: `never-approves-nor-patches`,
   `lens-failed-not-clean`, `lens-answer-asked-again-once`.
@@ -146,19 +152,17 @@ its measure in
    ([#243](https://github.com/JN0V/workline/issues/243)); then the
    maintainer's choice for correctness
    ([#360](https://github.com/JN0V/workline/issues/360)).
-2. **Reviews of one pull request at once** overwrite each other
-   ([#359](https://github.com/JN0V/workline/issues/359)).
-3. **Spec review on workline**, turned on after the product owner's trial
+2. **Spec review on workline**, turned on after the product owner's trial
    (2026-10-16); then more specs measured, the product owner's real answer
    read again, on GitLab and in CI. Several specs a night parked until a
    queue shows. No issue yet.
-4. **The tests lens outside the change**: untested code the change did not
+3. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
-5. **The developer's loop**: a handoff to the developer, five rounds, then
+4. **The developer's loop**: a handoff to the developer, five rounds, then
    a person. Waits for the developer role, after inspector and security
    ([#117](https://github.com/JN0V/workline/issues/117)).
-6. **Tries on real use**: a draft marked ready, a run on ready a rule
+5. **Tries on real use**: a draft marked ready, a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
    real agent; every lens on ready tried on

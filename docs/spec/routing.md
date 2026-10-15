@@ -151,7 +151,9 @@ Where the merge request's code can change its judging job (GitHub), the
 job that applies runs from the base and reads only the run's proposals
 (`--from-merge-request <n> --head <sha>`): refused whole, a role not on
 merge requests or a proposal its role never makes (`run-refused`);
-nothing applied once the branch moved on (`moved-on`). A release's fix
+once the branch moved on (`moved-on`), only what the role names in
+`on-moved-on`, the reviewer's review of the head judged, never a patch nor
+a label ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)). A release's fix
 goes to a merge request of the App's only when the forge says the App
 (`WORKLINE_APP`) alone pushed to the release branch; else in a comment.
 
