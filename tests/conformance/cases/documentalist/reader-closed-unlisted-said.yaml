@@ -1,0 +1,20 @@
+case: documentalist/reader-closed-unlisted-said
+about: "When the reader task's merge requests closed without merging cannot be listed (the remote unreachable), its round says so (`reader-declined-unread`, a warning): a page one of them proposed may be read again, never silently. Said in the reader's own round, after another task, too (ADR-0048)."
+given:
+  repo: documented
+  setup:
+    - |
+      git remote add origin ../nowhere.git
+      printf '# Shop\n\nSee [the guide](docs/guide.md).\n' > README.md
+      printf '# Guide\n\n%s\n\nSee [the setup](setup.md) for more.\n' 'Install the tool with `make install`, then run it once in each repository you want it to watch, and it will look at every commit you make there before the commit leaves your machine, and it will tell you what it found in a short list that gives the file and the line of each finding, so that you can fix it before anyone else reads it, and it keeps doing so for every push until the day you remove it with `make uninstall`, which takes about 2 seconds and leaves nothing behind on your machine.' > docs/guide.md
+      printf '# Setup\n\nOne step.\n' > docs/setup.md
+      git add . && git commit -qm 'docs: a guide'
+      echo '// Checked on every request.' >> src/auth/token.go && git commit -qam 'docs(auth): say when tokens are checked'
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, open-merge-request: true, no-apply: true, ai: 'cmd:out=$(sh "$FIXTURES/agents/confirm-each-doc.sh"); if [ -n "$out" ]; then printf "%s\n" "$out"; else echo "[]"; fi'}
+expect:
+  status: pass
+  agent-calls: 2
+  findings:
+    - {rule: reader-declined-unread, level: warn, message: "may be read again"}

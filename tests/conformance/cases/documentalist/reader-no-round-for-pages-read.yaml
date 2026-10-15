@@ -1,0 +1,21 @@
+case: documentalist/reader-no-round-for-pages-read
+about: "After another task, the reader's own round is asked only when a flagged page is left to read (ADR-0048): one recorded as read as it is now, or held by a waiting merge request, asks no round more, which would read nothing."
+given:
+  repo: documented
+  setup:
+    - |
+      w() { i=0; while [ $i -lt $1 ]; do printf '%s%d ' "$2" $i; i=$((i+1)); done; }
+      printf '# Shop\n\nSee [the guide](docs/guide.md).\n' > README.md
+      { printf '# Guide\n\n'; w 90 g; printf '\n'; } > body.md
+      { printf '<!-- workline\nreader: %s\n-->\n' "$(sha256sum < body.md | cut -c1-12)"; cat body.md; } > docs/guide.md && rm body.md
+      git add . && git commit -qm 'docs: a guide, read once'
+      echo '// Checked on every request.' >> src/auth/token.go && git commit -qam 'docs(auth): say when tokens are checked'
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+run: {role: documentalist, event: schedule, ai: 'cmd:out=$(sh "$FIXTURES/agents/confirm-each-doc.sh"); if [ -n "$out" ]; then printf "%s\n" "$out"; else echo "[]"; fi'}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: paragraph-too-long, where: docs/guide.md}
+  no-findings:
+    - {rule: paragraph-too-long, where: docs/guide.md, message: "not read again until it changes"}

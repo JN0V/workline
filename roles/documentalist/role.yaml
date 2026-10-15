@@ -86,6 +86,11 @@ settings:
     flow-headings: ["how it works"]   # a heading holding one, as words, any case, explains a flow too; in the docs' language
     paragraph-words: 80               # a paragraph, or a list item, over it is a wall of prose
     cell-words: 30                    # a table cell holds one short sentence and a link
+    # With an agent, last in a gardening run, it reads the pages these checks
+    # flagged — what a reader would miss or skip — and proposes a patch on a
+    # merge request (#256): at most this many pages a run, within one task;
+    # a page is not read again until it changes. 0: no page is read.
+    agent-pages: 4
   duplicates:
     min-words: 40                    # shorter repeats are not worth merging
     similarity: 0.85

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: 757dbca1
+checked: 1a0ca6ec
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -8,8 +8,8 @@ verified: agent:claude-code
 What the agent is asked of the suspect docs, judged whole or in parts. A
 doc is *vouched for* when its `checked` moves to the commit the task gave.
 When gardening (the scheduled run, nightly or weekly), the agent also gets
-stale docs, duplicates, condensing, merging and splitting cards:
-[gardening](gardening.md). Part of [the documentalist](../README.md).
+stale docs, duplicates, condensing, merging and splitting cards, and the
+pages the reader checks flag: [gardening](gardening.md). Part of [the documentalist](../README.md).
 
 ## Suspect docs
 

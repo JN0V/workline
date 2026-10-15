@@ -1,8 +1,8 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
 checked: 733da152
-verified: agent:claude-code
-judged: 83cecff
+verified: agent:documentalist
+judged: e343388
 ---
 # The commands, in detail
 
@@ -15,7 +15,7 @@ What a role does is on its page ([roles](roles.md)).
 
 `workline run-role <role> --event <event>` runs one role: prepare,
 propose, judge, apply, again if `pre` left work for later (`in/more`), up
-to 5 rounds. Options: [usage](usage.md#options-of-run-role-and-route).
+to 5 rounds, then a task it asks last (`in/then`). [Options](usage.md#options-of-run-role-and-route).
 
 ### workline route
 

@@ -1,0 +1,29 @@
+case: documentalist/reader-not-read-again-after-its-merge-request-closed
+about: "A page whose reader merge request was closed without merging is not read again, while the page is as that merge request read it: no fix proposed again each night, at a task's tokens (ADR-0048, as #356 for docs judged in parts). The branch stays once closed; where it left main holds the page as read. A page changed since is read again."
+given:
+  repo: documented
+  setup:
+    - |
+      w() { i=0; while [ $i -lt $1 ]; do printf '%s%d ' "$2" $i; i=$((i+1)); done; }
+      git init -q --bare ../origin.git && git remote add origin ../origin.git
+      printf '# Shop\n\n[Guide](docs/guide.md), [other](docs/other.md).\n' > README.md
+      { printf '# Guide\n\n'; w 90 g; printf '\n'; } > docs/guide.md
+      { printf '# Other\n\n'; w 90 o; printf '\n'; } > docs/other.md
+      git add . && git commit -qm 'docs: two pages' && git push -q origin main
+      for p in guide other; do
+        git checkout -qb workline/documentalist/reader-docs-$p-md
+        sed -i '1i <!-- workline\nreader: 0123456789ab\n-->' docs/$p.md
+        git commit -qam "docs: read docs/$p.md for its reader" && git push -q origin workline/documentalist/reader-docs-$p-md
+        git checkout -q main
+      done
+      echo 'One more line.' >> docs/other.md && git commit -qam 'docs: say one more thing' && git push -q origin main
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+  forge: {merge-requests: []}
+run: {role: documentalist, event: schedule, ai: "fake:reader-nothing", open-merge-request: true, no-apply: true}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: paragraph-too-long, where: docs/guide.md, message: "workline/documentalist/reader-docs-guide-md proposed a fix for it and was closed without merging"}
+  run-files:
+    in/task.md: {contains: ["## docs/other.md"], not-contains: ["## docs/guide.md"]}

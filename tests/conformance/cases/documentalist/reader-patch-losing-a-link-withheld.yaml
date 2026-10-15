@@ -1,0 +1,21 @@
+case: documentalist/reader-patch-losing-a-link-withheld
+about: "A patch of the reader task that loses a link, a code span, a number or a heading of the page is withheld, said for a person (#256): making a page easy to read never takes away what it points to or states. The run passes, the page as it was."
+given:
+  repo: documented
+  setup:
+    - |
+      printf '# Shop\n\nSee [the guide](docs/guide.md).\n' > README.md
+      printf '# Guide\n\n%s\n\nSee [the setup](setup.md) for more.\n' 'Install the tool with `make install`, then run it once in each repository you want it to watch, and it will look at every commit you make there before the commit leaves your machine, and it will tell you what it found in a short list that gives the file and the line of each finding, so that you can fix it before anyone else reads it, and it keeps doing so for every push until the day you remove it with `make uninstall`, which takes about 2 seconds and leaves nothing behind on your machine.' > docs/guide.md
+      printf '# Setup\n\nOne step.\n' > docs/setup.md
+      git add . && git commit -qm 'docs: a guide'
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+run: {role: documentalist, event: schedule, ai: "fake:reader-loses-a-link"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: reader-patch-withheld, where: docs/guide.md, message: "setup.md"}
+  no-findings:
+    - {rule: reader-claim-dropped}
+  files:
+    docs/guide.md: {contains: "See [the setup](setup.md) for more."}

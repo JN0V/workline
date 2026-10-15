@@ -1,0 +1,21 @@
+case: documentalist/reader-not-read-again-until-it-changes
+about: "A page whose header records the body it was read as (`reader:`, a hash of its body) is not put before the agent again until the page changes, said on its findings (#256); a page changed since its record is read again."
+given:
+  repo: documented
+  setup:
+    - |
+      w() { i=0; while [ $i -lt $1 ]; do printf '%s%d ' "$2" $i; i=$((i+1)); done; }
+      printf '# Shop\n\n[Guide](docs/guide.md), [other](docs/other.md).\n' > README.md
+      { printf '# Guide\n\n'; w 90 g; printf '\n'; } > body.md
+      { printf '<!-- workline\nreader: %s\n-->\n' "$(sha256sum < body.md | cut -c1-12)"; cat body.md; } > docs/guide.md && rm body.md
+      { printf '<!-- workline\nreader: 000000000000\n-->\n# Other\n\n'; w 90 o; printf '\n'; } > docs/other.md
+      git add . && git commit -qm 'docs: two pages, read once'
+  config: {roles: {documentalist: {settings: {freshness: {stale-after-days: 100000}}}}}
+run: {role: documentalist, event: schedule, ai: "fake:reader-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: paragraph-too-long, where: docs/guide.md, message: "not read again until it changes"}
+  run-files:
+    in/task.md: {contains: ["## docs/other.md"], not-contains: ["## docs/guide.md"]}
