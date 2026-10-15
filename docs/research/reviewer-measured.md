@@ -95,6 +95,9 @@ below), who agree on each one's truth:
   finding shown did.
 - On a push, one lens asked alone: correctness verified its 3 defects,
   nothing on the 3 clean changes.
+- **Decided (the maintainer, 2026-10-15)**: correctness blocks on
+  workline itself; the role's default stays `warn` until real blocks
+  there have been watched.
 
 ## Intent and claims
 

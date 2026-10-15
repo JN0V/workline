@@ -19,23 +19,32 @@ hold:
 1. **Nothing buildable in Missing**: open. The judge reads the code it
    needs, on since 2026-10-14
    ([#362](https://github.com/JN0V/workline/issues/362)); the reviewer
-   measured on it, five runs a case, the maintainer's choice for
-   correctness left
-   ([#360](https://github.com/JN0V/workline/issues/360)); the developer's
+   measured on it, five runs a case, correctness blocking on workline
+   itself ([#360](https://github.com/JN0V/workline/issues/360)); the developer's
    loop waits for that role
    ([#117](https://github.com/JN0V/workline/issues/117)).
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
-3. **AI verdicts measured**: measured, the choice left. Five runs a
-   case, every lens together, the judge reading: 55 of 55 planted
-   defects found, no false finding verified
+3. **AI verdicts measured**: measured. Five runs a case, every lens
+   together, the judge reading: 55 of 55 planted defects found, no false
+   finding verified
    ([the reviewer, measured](../../../docs/research/reviewer-measured.md));
    its judge measured on real use
    ([the judge, measured](../../../docs/research/judge-measured.md)).
-   `ai-findings` for correctness, block or warn, is the maintainer's
-   choice from these numbers
-   ([#360](https://github.com/JN0V/workline/issues/360)). Its cost:
+   Its cost:
    [measured](../../../docs/research/code-review.md#the-reviewers-cost-measured).
+
+**Correctness blocks on workline itself** (the maintainer, 2026-10-15,
+[#360](https://github.com/JN0V/workline/issues/360)):
+
+- **Set**: `ai-findings: {correctness: block}` in workline's
+  `.workline/config.yaml`; the other lenses warn.
+- **Why**: on the 70 reviews measured, a block on correctness held 29
+  merges, all on true findings; no false block; no correctness defect
+  let through.
+- **The role's default stays `warn`** until the first real blocks on
+  workline's pull requests have been watched; then it becomes the
+  default.
 
 ## Built
 
@@ -150,11 +159,11 @@ its measure in
 
 ## Missing, in the order to build it
 
-1. **The maintainer's choice for correctness**, block or warn, from
-   [the reviewer, measured](../../../docs/research/reviewer-measured.md)
-   ([#360](https://github.com/JN0V/workline/issues/360)). Measured: five
-   runs a case, intent and claims; lenses apart not needed, together
-   missing nothing; the diff alone does not win
+1. **Correctness blocking by default**, once its first real blocks on
+   workline's pull requests have been watched (above). Measured on
+   [#360](https://github.com/JN0V/workline/issues/360): five runs a case,
+   intent and claims; lenses apart not needed, together missing nothing;
+   the diff alone does not win
    ([#243](https://github.com/JN0V/workline/issues/243)). Not measured:
    the finder floor's worth, a decision for a person (no case plants
    one), one lens a push whichever lens is in turn, the cheaper push over
