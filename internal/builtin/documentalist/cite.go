@@ -513,17 +513,46 @@ func quoteWords(w []string) string {
 // with at least one character of it outside a comment, and the line its
 // first finding starts on.
 func quoteIn(p, content, quote string) (found, code bool, line int) {
+	return quoteInMasked(content, commentMask(p, content), quote, 1)
+}
+
+// commentOnlyAt says whether a quote found at lines r of a file is there in
+// a comment only, and the line it starts on: a part's support resting on a
+// comment (#106). The comments are read on the whole file, a block comment
+// opened above r included.
+func commentOnlyAt(p, content string, r lineRange, quote string) (bool, int) {
+	mask := commentMask(p, content)
+	from, to, ln := 0, len(content), 1
+	for i := 0; i < len(content); i++ {
+		if content[i] != '\n' {
+			continue
+		}
+		ln++
+		if ln == r.from {
+			from = i + 1
+		}
+		if ln == r.to+1 {
+			to = i
+			break
+		}
+	}
+	found, code, line := quoteInMasked(content[from:to], mask[from:to], quote, r.from)
+	return found && !code, line
+}
+
+// quoteInMasked is quoteIn on content whose comments mask gives, its first
+// line numbered first.
+func quoteInMasked(content string, mask []bool, quote string, first int) (found, code bool, line int) {
 	q := strings.Join(strings.Fields(quote), " ")
 	if q == "" {
 		return false, false, 0
 	}
-	mask := commentMask(p, content)
 	// The content with each run of white space made one space, each byte
 	// remembering whether it is in a comment, and its line.
 	var norm []byte
 	var inComment []bool
 	var lineOf []int
-	ln, space := 1, true
+	ln, space := first, true
 	for i := 0; i < len(content); i++ {
 		c := content[i]
 		if c == '\n' || c == ' ' || c == '\t' || c == '\r' {

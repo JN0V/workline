@@ -4,7 +4,7 @@
   independent reviewers (BMAD analyst, architect, product manager,
   developer; adversarial, verification-gap and edge-case lenses);
   amended 2026-10-01 (who confirms a verdict), 2026-10-02 (where the
-  weekly sample is written: ADR-0015)
+  weekly sample is written: ADR-0015), 2026-10-15 (what step 3 left)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -170,6 +170,19 @@ are accepted; the weekly sample starts with the release
 - **The reader** is the judge the project sets, never the model the
   vouching commit names (`Workline-Model`); on workline, Opus reading what
   Sonnet vouched for, ADR-0005's level 2, no other provider being set up.
+
+## Amendment (2026-10-15): what step 3 left
+
+Decided on [#106](https://github.com/JN0V/workline/issues/106), for the gaps
+[step 3](../research/documentalist-fixes-reviewed.md#replayed-with-a-real-agent-adr-0014-step-3) left:
+
+- **Built**: a part's support quoted from a comment only is no support
+  (step 2's rule, in parts): it neither settles nor disputes another
+  part's claim; the fix is told, the comment reported
+  (`comment-disagrees`) when the code contradicts it.
+- **Left**: a line no part claims (parts never move `checked`); a fixed
+  bug left in a doc (`value-left` reports it); a claim reaching three
+  lines either way (stricter, it would withhold more right fixes).
 
 ## Not decided here
 
