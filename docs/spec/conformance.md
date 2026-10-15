@@ -1,8 +1,8 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
 checked: f28701f9
-verified: agent:claude-code
-judged: fa1d682
+verified: agent:documentalist
+judged: af2d6fb
 ---
 # Conformance — v1 (draft)
 
