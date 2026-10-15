@@ -85,7 +85,17 @@ saying so.
   each item, by kind and id, takes the fields given): what one run
   records, the next reads back. Both runs' agent calls, calls and findings
   are counted together, the rest is the second's;
-- `apply-from` — with `then: resume`, apply as a job of the base's
+- `then: judged-twice` and `then: applied-between` — a push landing before
+  the run is applied ([#375](https://github.com/JN0V/workline/issues/375)):
+  the commands in `pushed` run, the same run judges the new head, and both
+  are applied, the first first. `judged-twice` judges both before either
+  is applied; `applied-between` applies the first before the second
+  judges, as the lock the judging and applying jobs share makes it. With
+  `apply-from`, each is applied with the head its run judged as `--head`.
+  Both judges' agent calls and calls are counted, all four's findings; the
+  rest is the last apply's;
+- `apply-from` — with `then: resume`, `judged-twice` or
+  `applied-between`, apply as a job of the base's
   applies a merge request's own CI run (`apply --from-merge-request`):
   `merge-request`, the one it judged; `base`, the branch checked out
   first; `head`, a branch of `origin` whose tip is `--head`; what that

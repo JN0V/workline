@@ -1,0 +1,30 @@
+case: reviewer/review-applied-when-a-push-lands-before-it-on-gitlab
+about: "On GitLab, a push lands while the run before it waits to be applied (#375): the push's judging job waits for that apply, one resource group a merge request, which the judging and the applying jobs share. The apply writes the review of the head its run judged, the record in it; the push's run reads that record, reviews only the new commit, and the judge is not asked again. The comment keeps both runs' commits and the line of the finding the first judged (ADR-0046)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && git commit -qam 'fix: average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  forge: {issues: [], merge-requests: [{id: 5, labels: [], comments: []}]}
+run:
+  role: reviewer
+  event: merge-request
+  input: {range: main..HEAD, lenses: correctness}
+  target: {merge-request: 5}
+  ai: "cmd:sh $FIXTURES/agents/review-calc-only.sh"
+  no-apply: true
+  then: applied-between
+  pushed:
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+  forge: gitlab
+expect:
+  status: pass
+  # The first run: its lens, then the judge. The push's: its lens alone.
+  agent-calls: 3
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - " runs=2 -->"
+          - "<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\":\"correctness\",\"where\":\"calc/calc.go:11\",\"at\":\""

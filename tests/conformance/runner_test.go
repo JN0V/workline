@@ -95,6 +95,9 @@ type runSpec struct {
 	Tamper  string            `yaml:"tamper"`
 	Then    string            `yaml:"then"`
 	Between map[string]any    `yaml:"between"` // with then: again, a person's edits to the forge before the second run
+	// Pushed: with then: judged-twice or applied-between, what lands on
+	// the branch after the run judged, before it is applied (#375).
+	Pushed []string `yaml:"pushed"`
 	Route   string            `yaml:"route"`
 	Item    int               `yaml:"item"`
 	Gate    string            `yaml:"gate"`
@@ -612,6 +615,12 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r2.Findings = append(r.Findings, r2.Findings...)
 		r = r2
 	}
+	if c.Run.Then == "judged-twice" || c.Run.Then == "applied-between" {
+		var p []string
+		if r, p = pushedBeforeApplied(c, engineBin, args, cmd.Env, repo, forgeSpec, r); len(p) > 0 {
+			return p
+		}
+	}
 	if l := c.Run.ThenLine; l != nil {
 		exec.Command("git", "-C", repo, "fetch", "-q", "origin").Run()
 		if out, err := exec.Command("git", "-C", repo, "checkout", "-q", "--detach", "origin/"+l.Branch).CombinedOutput(); err != nil {
@@ -1055,6 +1064,102 @@ func readPending(t *testing.T) map[string]bool {
 // poisoned changes the runs' folders as a merge request's own run could
 // have (run.yaml's keys, proposals added), checks the base out, and gives
 // the runs as listed and the options `apply --from-merge-request` takes.
+// pushedBeforeApplied is a push landing before a run judged on the merge
+// request is applied (#375): the case's `pushed` commands, the same run
+// judged again on the new head, and both applied, the first first. In the
+// order `judged-twice`, both are judged before either is applied: no lock,
+// or a push in the seconds before the apply took it. In the order
+// `applied-between`, the first is applied before the second judges: the
+// lock the judging and the applying jobs share. With apply-from, each is
+// applied as GitHub's job of the base applies it, the head its run judged
+// as --head. The result is the last apply's; the calls, both judges'; the
+// findings, all four's.
+func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo, forgeSpec string, first result) (result, []string) {
+	exe := func(dir string, cmdArgs ...string) (result, []string) {
+		cmd := exec.Command(engineBin, cmdArgs...)
+		cmd.Dir, cmd.Env = dir, env
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		_ = cmd.Run()
+		var r result
+		if err := json.Unmarshal(stdout.Bytes(), &r); err != nil {
+			return r, []string{fmt.Sprintf("workline %s printed no result: %v\n%s", cmdArgs[0], err, stderr.String())}
+		}
+		return r, nil
+	}
+	git := func(gitArgs ...string) (string, []string) {
+		out, err := exec.Command("git", append([]string{"-C", repo}, gitArgs...)...).CombinedOutput()
+		if err != nil {
+			return "", []string{fmt.Sprintf("git %s: %v: %s", strings.Join(gitArgs, " "), err, out)}
+		}
+		return strings.TrimSpace(string(out)), nil
+	}
+	apply := func(r result, head string) (result, []string) {
+		dirs := r.Pending
+		if len(dirs) == 0 && r.RunDir != "" {
+			dirs = []string{r.RunDir}
+		}
+		if len(dirs) == 0 {
+			return r, []string{"a judging run reported no run folder to apply"}
+		}
+		applyArgs := append(append([]string{"apply"}, dirs...), "--json")
+		if a := c.Run.ApplyFrom; a != nil {
+			if a.Base != "" {
+				if _, p := git("checkout", "-q", "--detach", a.Base); p != nil {
+					return r, p
+				}
+			}
+			applyArgs = append(applyArgs, "--from-merge-request", fmt.Sprint(a.MergeRequest), "--head", head, "--forge", forgeSpec)
+		}
+		return exe(repo, applyArgs...)
+	}
+	heads := make([]string, 2)
+	var p []string
+	if heads[0], p = git("rev-parse", "HEAD"); p != nil {
+		return first, p
+	}
+	for _, s := range c.Run.Pushed {
+		cmd := exec.Command("sh", "-c", s)
+		cmd.Dir, cmd.Env = repo, env
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return first, []string{fmt.Sprintf("pushed: %q failed: %v\n%s", s, err, out)}
+		}
+	}
+	if heads[1], p = git("rev-parse", "HEAD"); p != nil {
+		return first, p
+	}
+	judge := func() (result, []string) {
+		if _, p := git("checkout", "-q", "--detach", heads[1]); p != nil {
+			return result{}, p
+		}
+		return exe(repo, args...)
+	}
+	var second, applied1, applied2 result
+	if c.Run.Then == "judged-twice" {
+		if second, p = judge(); p != nil {
+			return first, p
+		}
+		if applied1, p = apply(first, heads[0]); p != nil {
+			return first, p
+		}
+	} else {
+		if applied1, p = apply(first, heads[0]); p != nil {
+			return first, p
+		}
+		if second, p = judge(); p != nil {
+			return first, p
+		}
+	}
+	if applied2, p = apply(second, heads[1]); p != nil {
+		return first, p
+	}
+	out := applied2
+	out.AgentCalls = first.AgentCalls + second.AgentCalls
+	out.Calls = append(slices.Clone(first.Calls), second.Calls...)
+	out.Findings = slices.Concat(first.Findings, applied1.Findings, second.Findings, applied2.Findings)
+	return out, nil
+}
+
 func poisoned(a *applyFrom, dirs []string, repo, forgeSpec string) (listed, args []string, problems []string) {
 	for _, d := range dirs {
 		if len(a.Run) > 0 {
