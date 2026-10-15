@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: 9980d8c2
+checked: 757dbca1
 verified: agent:claude-code
 ---
 # Documentalist — the judge

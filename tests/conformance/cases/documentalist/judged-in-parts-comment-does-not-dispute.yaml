@@ -1,0 +1,21 @@
+case: documentalist/judged-in-parts-comment-does-not-dispute
+about: "A part's support quoted from a code comment only does not dispute what another part finds contradicted by the code (ADR-0014, a comment is not evidence; #106): the passage goes to the fix as found wrong, not as a disagreement, and the comment is reported for a person (`comment-disagrees`, at its file and line), as for a fix."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && echo '// Access tokens last one hour.' >> src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+  config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
+run: {role: documentalist, event: merge-request, ai: "fake:parts-contradicted-supported-by-a-comment"}
+expect:
+  status: pass
+  agent-calls: 3
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "2 claims kept, 1 resting on a comment only"}
+    - {rule: comment-disagrees, where: src/auth/big.go, message: "src/auth/big.go:3001"}
+  run-files:
+    in/task.md:
+      contains: ["### Found wrong\n", "Supported only by a comment, which is not evidence: src/auth/big.go, line 3001"]
+      not-contains: ["Found wrong by one part, and supported by another"]
+  files: {"docs/tech/auth.md": {contains: "Access tokens last two hours."}}
