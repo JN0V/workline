@@ -1,6 +1,6 @@
 ---
 sources: [ci/forgejo/workline-forge.sh, ci/github, internal/forge/local.go, cmd/workline]
-checked: 5cb449a5
+checked: 7327530a
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -45,8 +45,9 @@ JSON request per operation ([forge-command.md](spec/forge-command.md)).
 - **The jobs**: Forgejo Actions reads, largely, GitHub's workflow syntax.
   The [GitHub templates](ci-github.md) are a start: `--forge github`
   replaced by the command, the GitHub App's steps by `FORGEJO_TOKEN`.
-  Check that your version honours `judge`'s `concurrency`, which keeps
-  one run per pull request.
+  Check that your version honours `concurrency`, the workflow's and the
+  jobs': one run per pull request, and one review at a time, the judge
+  waiting for the apply before it.
 - **Not tried yet** on a live instance — the script was run against a mock
   of the API only: tell us what differs.
 - **The [weekly sample](ci.md#the-weekly-sample)** draws the product

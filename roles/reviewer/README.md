@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: efe5ad2d
+checked: 7327530a
 verified: agent:claude-code
 ---
 # Reviewer
@@ -87,7 +87,8 @@ Step by step, with every rule: [a run on code](docs/run.md).
 2. **The rules** on the comments added, with no agent; while one blocks, no
    agent is asked.
 3. **The record**: commits already reviewed whole are not asked again,
-   rebased or not; a merge of the base is read for what it settled.
+   rebased or not, nor pushed on before their review was written; a merge
+   of the base is read for what it settled.
 4. **The lenses**: correctness, edge cases, tests, intent (the issue the
    change closes), claims (what its author says), in one call; a project
    adds its own in `.workline/roles/reviewer/lenses/`.

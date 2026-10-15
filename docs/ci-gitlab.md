@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: 17d6abde
+checked: 7327530a
 judged: cd97f28
 verified: agent:claude-code
 ---
@@ -119,6 +119,10 @@ A push cancels the pipeline still judging the merge request's head before
 - your own jobs in that pipeline are `interruptible: true` too: once one
   that is not has started, GitLab cancels nothing
   ([GitLab's docs](https://docs.gitlab.com/ci/yaml/#interruptible)).
+
+One review at a time: `workline:judge` waits while `workline:apply` writes
+the review before it, one resource group per merge request, then reviews
+only what is new ([#375](https://github.com/JN0V/workline/issues/375)).
 
 Not tried on a GitLab yet.
 

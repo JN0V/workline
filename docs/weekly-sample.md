@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 10aaccb9
+checked: 7327530a
 judged: 452058d
 verified: agent:documentalist
 ---

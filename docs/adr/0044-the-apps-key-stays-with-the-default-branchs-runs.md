@@ -48,7 +48,8 @@
 - **The pull request's run is read as data**:
   - its artifacts downloaded outside the checkout; the base checked out;
   - the head is the event's (`workflow_run.head_sha`): the verdict kept
-    only for it; nothing applied once the branch moved on;
+    only for it; nothing applied once the branch moved on, but the
+    reviewer's review ([amended](#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from));
   - `workline apply --from-merge-request <n> --head <sha>`: only the
     agents' proposals are read. The runs are found by name; the
     repository, roles, forge and merge request are the job's. A run whose
@@ -104,3 +105,47 @@
     a pipeline ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md#built-2026-10-12-321)).
 
 [#331]: https://github.com/JN0V/workline/issues/331
+
+## Amendment (2026-10-15): the review of a head the branch moved on from
+
+Decided by the maintainer on [#375], from the options written there.
+
+- **What happened.** On [#368](https://github.com/JN0V/workline/pull/368),
+  the judging run ended at 08:58:27 and `apply` wrote the reviewer's
+  comment at 08:59:08. A push in those 40 seconds started a run that read
+  the old record and reviewed the same commits again; one lens on that
+  pull request read 48,755 tokens.
+- **Why a lock alone was not enough.** A push before `apply` checked the
+  head, the first 35 of those seconds, made it apply nothing: the
+  branch had moved on. The record of the commits judged was never
+  written, so the next run had to review them again.
+- **Decision.**
+  - **The reviewer's review of the head judged is applied although the
+    branch moved on**: its summary comment, its comments on lines at that
+    head, its issues for what lies outside the change, its record. Never
+    a patch, a label nor a verdict: the run of the new head applies its
+    own. A role names what it applies then (`on-moved-on`,
+    [role contract](../spec/role-contract.md)); the reviewer alone does.
+  - **The next judging run waits for that apply**: one lock per pull
+    request, which the judging and the applying jobs share, neither
+    cancelling the other (GitHub's `concurrency`, GitLab's
+    `resource_group`). A push still cancels a judging run, by the
+    workflow's own group ([#359](https://github.com/JN0V/workline/issues/359)).
+  - **Each apply merges the record it finds** with the one its run read:
+    every run's commits, patch ids and findings judged kept, each run
+    counted once; what blocks and what is owed, the newer run's.
+- **Cost.** A push right after a run is judged about 40 seconds later on
+  GitHub, the time `apply` takes.
+- **Left.**
+  - A push in the seconds between a run's end and its apply taking the
+    lock is still reviewed twice; the merge loses nothing.
+  - On GitHub, a pending job in a group is cancelled when another queues:
+    an apply still pending when a newer run's judge queues is skipped,
+    and that judge reviews its commits again.
+  - On GitLab, with auto-cancel left `conservative`, a push before
+    `workline:apply` starts cancels its pipeline: reviewed twice, as
+    before. The resource group's process mode stays `unordered`: GitLab
+    sets it by API only, per group, and with auto-cancel on, one job at
+    most waits.
+
+[#375]: https://github.com/JN0V/workline/issues/375

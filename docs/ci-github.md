@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: 5cb449a5
+checked: 7327530a
 judged: eb7fc7c
 verified: agent:claude-code
 ---
@@ -101,6 +101,9 @@ and `apply`, with the App, commits the fix to its branch,
   commits too, and `apply`, `verdict`, `follow` and the fork's comment skip
   a cancelled run ([#359](https://github.com/JN0V/workline/issues/359)).
   A cancelled run on ready leaves every lens to the next run.
+- **One review at a time**: `judge` waits while `apply` writes the review
+  before it, then reviews only what is new; `apply` writes it even once
+  the branch moved on ([#375](https://github.com/JN0V/workline/issues/375)).
 - `apply`, `follow` and each pair's second job hold the write token, the
   App's when there is one, and no AI key, in the environment
   `workline-app`. `follow`'s merge into a pull request runs its checks

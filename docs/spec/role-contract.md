@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 9388c83d
+checked: 7327530a
 verified: agent:claude-code
 judged: 88db06e
 ---
@@ -106,6 +106,10 @@ part-intentions: [claim]        # what a part of a question answers with (In par
                                 # claims when unset; a reviewer's lens, findings
 on-block: []                    # what a run still applies when post blocks: what
                                 # only says why (the reviewer's comment); none by default
+on-moved-on: []                 # what a merge request's run still applies once its
+                                # branch moved on from the head judged: what only says
+                                # what that head held (the reviewer's review); never a
+                                # patch nor a label; none by default
 
 without-ai: block               # block | report | pass — see "No AI" (not read yet)
 
@@ -301,6 +305,10 @@ token), **apply** (trusted, no AI key).
    reviewer's summary comment and the record in it (#226). The run still
    blocks; judged with `--no-apply`, they wait in `pending` like any
    other, for the applying job, which runs whatever the judge's outcome.
+   Applied by a job of the base once the merge request's branch moved on
+   from the head judged (`--from-merge-request`), a run applies only the
+   kinds its role names in `on-moved-on`, said (`moved-on`); none, nothing
+   ([ADR-0044, amended](../adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)).
 6. **Again.** If `pre` took less than there was to do, it writes `in/more`:
    the findings it defers, one `<rule> <where>` a line. When the run passed
    and applied something other than a note, the engine then runs the role

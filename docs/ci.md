@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: 17d6abde
+checked: 7327530a
 judged: a8574a5
 verified: agent:claude-code
 ---
@@ -45,6 +45,10 @@ then one that applies, with the write token and no AI key
   judging the head before, and nothing of it is applied; the newer run
   reviews its commits too ([#359](https://github.com/JN0V/workline/issues/359)).
   GitLab needs a project setting ([how](ci-gitlab.md#6-one-pipeline-per-merge-request)).
+- **One review at a time**: a push landing while the run before it is
+  applied is judged once that apply is done, and reviews only what is new
+  ([#375](https://github.com/JN0V/workline/issues/375),
+  [ADR-0044](adr/0044-the-apps-key-stays-with-the-default-branchs-runs.md#amendment-2026-10-15-the-review-of-a-head-the-branch-moved-on-from)).
 - **The write token stays with the base**: on GitHub, a pull request's
   own run can be changed by its branch, so the applying jobs run the
   default branch's workflow and read that run as data

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: efe5ad2d
+checked: 7327530a
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -150,8 +150,10 @@ comment hides a line for each.
   person, a spec's finding.
 - **Every run's**, for the merge request's life, on GitHub and GitLab:
   each run writes the comment again, the lines before kept, its own
-  added. A run that asks no lens keeps them too. GitLab keeps no earlier
-  version of a comment: the lines do.
+  added. A run that asks no lens keeps them too, and one applied after
+  another it never read keeps that one's
+  ([#375](https://github.com/JN0V/workline/issues/375)). GitLab keeps no
+  earlier version of a comment: the lines do.
 - **Within 60,000 characters**, under GitHub's 65,536: past it, the
   oldest lines go first, and the comment counts them
   (`<!-- workline:judged-lines gone=N -->`). The sample says them not
