@@ -43,12 +43,17 @@ awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/r
 kind, and the places its cause may be quoted at (a file, a range of lines
 as they read at the change's head, a `text` within them); the places
 where nothing may be found (`not`); and code outside the change
-(`outside`), measured and not scored. Built on the `shop` fixture, every
-lens asked, each apart (`lenses-together: false`, set by the harness),
-event `review`. The run's folder is read with no agent — what
-each lens answered, what the engine kept of it, the judge's verdict on
-each important finding, the tokens each lens's call and its judges used —
-and scored: a point for each defect a finding shown on the change has its
+(`outside`), measured and not scored. An intent defect's place is the
+issue the change closes (`file: "#8"`, no lines), held in the case's
+simulated forge (`given.forge`, as a conformance case's). Built on the
+`shop` fixture, event `review`, every lens asked in one call as on a
+machine; `WORKLINE_EVAL_REVIEWER='{lenses-together: false}'` asks each
+apart, as a push to a merge request asks its one lens, and
+`WORKLINE_EVAL_LENSES=diff-alone` the diff-alone facet alone
+([#360](https://github.com/JN0V/workline/issues/360)). The run's folder is read with no agent — what
+each lens answered, what the engine kept of it, each important finding
+verified, shown not verified or dropped (`in/review.json`), the tokens of
+each call by what it answered (`for`) — and scored: a point for each defect a finding shown on the change has its
 cause in, whichever lens raised it (AI review benchmarks count known bugs
 found and false positives, docs/research/code-review.md; the place, from
 the quote the engine found again, needs no judge); a point for each
@@ -57,10 +62,16 @@ planted. The `measure` column of `results.tsv` holds, a lens each, the
 defects planted for it and found, those it raised itself, those the judge
 refused, what it raised that nothing planted (shown, nits, refused),
 outside the change (and verified), its answers, its quotes not found
-again, its tokens, and the finder floor asked; the summary sums them by
+again, its tokens, and the finder floor asked; what `ai-findings: block`
+would have held a merge on (its own finding verified on a defect, one
+verified on nothing planted), its findings shown not verified, its
+decisions for a person, its judges' calls; asked together, the call's
+answers and tokens are the `lenses` part's. The summary sums them by
 lens. `TestReviewerCasesPointRight` builds each case — each place holds
 its text, the code builds, the fixture's tests pass, a planted defect
-they caught measuring nothing — and `TestReviewerWithFakeAgent` plays one
+they caught measuring nothing — `TestIntentAndClaimsCasesGiveTheirLens`
+shows the intent and claims lenses given the issue and the author's
+words, and `TestReviewerWithFakeAgent` plays one, apart and together,
 through the engine with a fake agent (testdata/review-agent.sh). The
 model and independence matrix of ADR-0005 is a run with
 `WORKLINE_EVAL=claude:<model>` and `WORKLINE_JUDGE=claude:<model>`, never

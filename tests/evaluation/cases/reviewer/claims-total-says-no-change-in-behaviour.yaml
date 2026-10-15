@@ -1,0 +1,15 @@
+case: reviewer/claims-total-says-no-change-in-behaviour
+about: "Claims, a description the change contradicts: the message says the total's loop is only rewritten, with no change in behaviour; Total now leaves out a line of zero or fewer units, which it counted before (a line of -1 took a returned unit off). The fixture's test holds positive quantities only, and passes either way."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      sed -i 's|^\t\tsum += it.Price \* it.Qty$|\t\tif it.Qty > 0 {\n\t\t\tsum += it.Price * it.Qty\n\t\t}|' shop/cart.go
+      git commit -qam 'refactor(cart): read each line of the total on its own' -m 'No change in behaviour: Total returns what it returned before.'
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: claims
+      kind: contradicted
+      at: [{file: shop/cart.go, lines: [15, 17], text: "if it.Qty > 0 {"}]

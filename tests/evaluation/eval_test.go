@@ -12,7 +12,8 @@
 // WORKLINE_JUDGE_AT_LEAST (provider, model or context) sets a floor.
 // For the reviewer's cases, WORKLINE_EVAL_LENSES names the lenses asked
 // (`diff-alone`, the facet alone) and WORKLINE_EVAL_REVIEWER sets its
-// settings, a YAML map (`{ai-max-tokens: 12000}`). TestJudgeReplay asks
+// settings, a YAML map (`{ai-max-tokens: 12000}`, `{lenses-together:
+// false}`). TestJudgeReplay asks
 // the reviewer's judge its 40 measured questions again
 // (judge_replay_test.go), WORKLINE_EVAL naming the judge.
 package evaluation
@@ -46,6 +47,7 @@ type caseFile struct {
 		Config         map[string]any `yaml:"config"`          // .workline/config.yaml
 		WorklineCommit string         `yaml:"workline-commit"` // this repository: that commit's diff, staged on its parent
 		WorklineAt     string         `yaml:"workline-at"`     // this repository, at that commit
+		Forge          map[string]any `yaml:"forge"`           // a simulated forge, as conformance's: the issues a change closes
 	} `yaml:"given"`
 	Run struct {
 		Role    string            `yaml:"role"`
@@ -78,6 +80,7 @@ type call struct {
 	TokensOut int     `json:"tokens-out"`
 	CostUSD   float64 `json:"cost-usd"`
 	Task      string  `json:"task"` // part, judge, or "" for the role's own question
+	For       string  `json:"for"`  // what it answered: a part (1-lenses), a judge's question (judge/01)
 }
 
 // answeredBy says which models answered, in order, `>` marking a step up, the
@@ -262,6 +265,14 @@ func play(t *testing.T, c *caseFile, ai string) (*run, error) {
 	if l := os.Getenv("WORKLINE_EVAL_LENSES"); l != "" && c.Review != nil {
 		args = append(args, "--input", "lenses="+l) // the reviewer's lenses a measure asks, `diff-alone` among them
 	}
+	if c.Given.Forge != nil { // the issues a change closes, for the intent lens
+		forgeFile := filepath.Join(work, "forge.json")
+		data, _ := json.Marshal(c.Given.Forge)
+		if err := os.WriteFile(forgeFile, data, 0o644); err != nil {
+			return nil, err
+		}
+		args = append(args, "--forge", "fake:"+forgeFile)
+	}
 	cmd := exec.Command(engineBin, args...)
 	cmd.Env = env
 	var out, errOut bytes.Buffer
@@ -313,12 +324,11 @@ func build(t *testing.T, c *caseFile) (work, repo string, env []string, err erro
 	}
 	cfg := c.Given.Config
 	if c.Review != nil {
-		// The reviewer's measure is by lens: each asked apart, as step 1
-		// measured them, not together as a review on a machine asks them
-		// (#147).
-		cfg = withSetting(cfg, "reviewer", "lenses-together", false)
-		// A measure of some of its settings (the diff-alone facet, #126):
-		// WORKLINE_EVAL_REVIEWER, a YAML map of them.
+		// The reviewer as a review on a machine runs it, every lens in one
+		// call (#147), unless the measure sets otherwise (#360):
+		// WORKLINE_EVAL_REVIEWER, a YAML map of its settings —
+		// `{lenses-together: false}` asks each lens apart, as a push to a
+		// merge request asks its one lens.
 		if v := os.Getenv("WORKLINE_EVAL_REVIEWER"); v != "" {
 			var set map[string]any
 			if err := yaml.Unmarshal([]byte(v), &set); err != nil {
