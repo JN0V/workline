@@ -62,8 +62,10 @@ roles:
   reviewer:
     settings:
       # The role's list, plus the judge's replay set: questions and answers
-      # copied from past runs, kept as they were, with no code to review.
-      ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*", "tests/evaluation/judge-replay/**"]
+      # copied from past runs, kept as they were, with no code to review;
+      # and the evaluation's results, a row a run (a measure's 107 rows
+      # were a lens call past the role's budget, #360).
+      ignore: ["*.md", "**/*.md", "docs/**", "LICENSE*", "**/*.txt", "CHANGELOG*", "tests/evaluation/judge-replay/**", "tests/evaluation/results.tsv"]
 routing:
   # Before a push, the committer checks the commits leaving the machine, and
   # the documentalist has the docs they made suspect judged. On a pull
