@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: d9922bf7
+checked: 757dbca1
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -115,6 +115,11 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
 - Contradicted and supported by another: a conflict.
 - Partial: to be read together — unless another part supports the same
   lines, which settles them.
+- A support quoted from a code comment only is no support
+  ([ADR-0014, amended](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-15-what-step-3-left)):
+  - it neither settles a partial nor makes a contradiction a conflict;
+  - the fix is told, with the code around the comment;
+  - a comment the code contradicts is reported (`comment-disagrees`).
 - A line naming a name from the code that no part speaks of: `uncovered`,
   for a person.
 

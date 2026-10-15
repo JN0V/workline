@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go, internal/builtin/documentalist/counts.go]
-checked: 7705a9b7
+checked: 757dbca1
 verified: agent:claude-code
 ---
 # Documentalist — the judge's claims
@@ -92,6 +92,8 @@ file only inside comments. A stale comment had won over the code's setting
 - **The comment is reported** (`comment-disagrees`, at the comment's file
   and line), kept for the run's verdict, so a person or the committer
   fixes it. *Withheld*: the place resting on it.
+- **In parts too**: a part's support quoted from a comment only is no
+  support ([the parts' claims](tasks.md#reading-the-claims-no-ai)).
 - **A type whose comments the engine does not know**: its quote is taken
   as code, and said (`comment-style-unknown`, once a type a run), so a
   comment there passing as evidence is not silent.
