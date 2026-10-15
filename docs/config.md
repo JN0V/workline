@@ -1,8 +1,8 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
 checked: 733da152
-judged: 8b6aecc
-verified: agent:claude-code
+judged: e343388
+verified: agent:documentalist
 ---
 # Configuration
 
@@ -203,3 +203,4 @@ A role's `pre` and `post` receive:
   leaves the versions the tool bumps
   ([#384](https://github.com/JN0V/workline/issues/384));
 - run by a handoff: the inputs `handoff-from` and `handoff-reason`.
+- in the round a role asks last (`in/then`): `WORKLINE_THEN`, its task.

@@ -1,8 +1,8 @@
 ---
 sources: [cmd/workline, internal/engine/engine.go, internal/hooks]
 checked: 733da152
-verified: agent:claude-code
-judged: 83cecff
+verified: agent:documentalist
+judged: e343388
 ---
 # The commands, in detail
 
