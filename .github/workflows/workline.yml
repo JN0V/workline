@@ -22,9 +22,13 @@
 #   judge  runs the line; it can read the code, and holds no write token but
 #          code scanning's, which only uploads its findings as SARIF (free on
 #          public repositories; private ones need GitHub Advanced Security —
-#          remove that step otherwise). It stops before applying (--no-apply),
-#          and leaves what it proposed and its verdict on the head as
-#          artifacts, for workline-apply.yml; a fork's report, for
+#          remove that step otherwise). The documentalist's and the
+#          reviewer's stay out of code scanning, a conversation each to
+#          resolve: workline-apply.yml shows the documentalist's as the
+#          annotations of the check `workline findings`, the reviewer's are
+#          its review (#412). It stops before applying (--no-apply),
+#          and leaves what it proposed, what it found and its verdict on the
+#          head as artifacts, for workline-apply.yml; a fork's report, for
 #          workline-fork.yml.
 #          With the secret CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`, a
 #          Claude subscription), Claude judges; without it, or on a fork,
@@ -115,6 +119,7 @@ jobs:
             --sarif workline.sarif --summary workline-summary.md --verdict workline-verdict.json --json > line.json || status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "proposed=$(jq '(.pending // []) | length > 0' line.json)" >> "$GITHUB_OUTPUT"
+          echo "found=$(jq '[.steps[]? | select(.name | startswith("documentalist")) | .result.findings[]?] | length > 0' line.json)" >> "$GITHUB_OUTPUT"
           [ ! -s workline-summary.md ] || cat workline-summary.md
           [ ! -s workline-summary.md ] || cat workline-summary.md >> "$GITHUB_STEP_SUMMARY"
           mkdir -p report && { [ ! -s workline-summary.md ] || cp workline-summary.md report/report.md; }
@@ -123,10 +128,10 @@ jobs:
       # Applied by workline-apply.yml, from the default branch: said when
       # this branch has no workflow run after this one.
       - name: Whether anything applies what it proposed
-        if: steps.line.outputs.proposed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        if: (steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true') && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           grep -qs 'workflows: \[workline\]' .github/workflows/*.yml ||
-            echo "::warning title=workline::no workflow applies what this run proposed; copy workline-apply.yml beside workline.yml (docs/ci-github.md)"
+            echo "::warning title=workline::no workflow applies what this run proposed, nor shows the docs' findings on their lines; copy workline-apply.yml beside workline.yml (docs/ci-github.md)"
 
       # From a fork, this job has no right to comment: the report goes to
       # workline-fork.yml, which comments it from the repository's side.
@@ -140,11 +145,14 @@ jobs:
         if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
         with: {name: workline-verdict, path: "workline-verdict.json\nreport/number", if-no-files-found: ignore, retention-days: 1}
 
-      # What the line proposed, for workline-apply.yml to apply.
+      # What the line proposed, for workline-apply.yml to apply, and what
+      # the documentalist found, for it to show beside the docs' lines.
       - uses: actions/upload-artifact@v4
-        if: steps.line.outputs.proposed == 'true'
+        if: steps.line.outputs.proposed == 'true' || steps.line.outputs.found == 'true'
         with: {name: workline-runs, path: "line.json\n.workline-runs\nreport/number", include-hidden-files: true}
 
+      # The findings code scanning keeps: neither the documentalist's nor
+      # the reviewer's, which would each open a conversation (#412).
       - uses: github/codeql-action/upload-sarif@v4
         if: '!cancelled() && github.event.pull_request.head.repo.full_name == github.repository'
         with: {sarif_file: workline.sarif, category: workline}

@@ -810,3 +810,47 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 	}
 }
+
+// The documentalist's findings on a pull request reach the applying job,
+// though the line proposed nothing, and that job may write the check
+// holding them (#412): code scanning no longer gets them.
+func TestGitHubFindingsReachTheApplyingJob(t *testing.T) {
+	type workflow struct {
+		Jobs map[string]struct {
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Uses string `yaml:"uses"`
+				If   string `yaml:"if"`
+				Run  string `yaml:"run"`
+				With struct {
+					Name string `yaml:"name"`
+				} `yaml:"with"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	read := func(f string) workflow {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		return wf
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		judge := read(dir + "workline.yml").Jobs["judge"]
+		found, uploaded := false, false
+		for _, s := range judge.Steps {
+			found = found || strings.Contains(s.Run, `echo "found=`)
+			uploaded = uploaded || s.With.Name == "workline-runs" && strings.Contains(s.If, "steps.line.outputs.found == 'true'")
+		}
+		if !found || !uploaded {
+			t.Errorf("%sworkline.yml: the documentalist's findings do not reach the applying job (found said: %v, uploaded on it: %v)", dir, found, uploaded)
+		}
+		if p := read(dir + "workline-apply.yml").Jobs["apply"].Permissions; p["checks"] != "write" {
+			t.Errorf("%sworkline-apply.yml: apply may not write the check holding the findings (permissions %v)", dir, p)
+		}
+	}
+}
