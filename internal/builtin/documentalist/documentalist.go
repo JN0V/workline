@@ -1205,7 +1205,7 @@ doc when its reader really gained something to know.
 			readerAsked = true
 		}
 	}
-	if gardening && !readerOnly && !readerAsked && (task != "" || partsAsked > 0) && readerWaits(findings, s) {
+	if gardening && !readerOnly && !readerAsked && (task != "" || partsAsked > 0) && readerWaits(findings, s, tree, wait) {
 		if err := os.WriteFile(filepath.Join(runDir, "in", "then"), []byte("reader\n"), 0o644); err != nil {
 			return fail(err)
 		}
@@ -1261,7 +1261,7 @@ doc when its reader really gained something to know.
 		}
 	}
 	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool {
-		return f.Rule == "" || readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read"
+		return f.Rule == "" || readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read" && f.Rule != "reader-declined-unread"
 	})
 	// Once each finding says what became of its doc: those left to a person.
 	if i, ok := personIssue(findings, repo); ok && !readerOnly {

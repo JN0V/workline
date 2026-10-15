@@ -211,14 +211,17 @@ func readerFor(findings []verdict.Finding, tree Tree, s Settings, w waiting, rep
 }
 
 // readerWaits says whether pages wait to be read, after the round's other
-// task: an agent, the setting on, and a page a reader check flagged. The
-// round of their own says which, if any, it reads.
-func readerWaits(findings []verdict.Finding, s Settings) bool {
+// task: an agent, the setting on, and a page a reader check flagged, not
+// recorded as read as it is now nor held by a waiting merge request. The
+// round of their own says which, if any, it reads: one closed without
+// merging is known there, from the forge.
+func readerWaits(findings []verdict.Finding, s Settings, tree Tree, w waiting) bool {
 	if s.Reader.AgentPages <= 0 || os.Getenv("WORKLINE_AI") == "none" {
 		return false
 	}
 	for _, f := range findings {
-		if slices.Contains(readerRules, f.Rule) && f.Where != "" {
+		content, ok := tree.Docs[f.Where]
+		if slices.Contains(readerRules, f.Rule) && ok && readerRecord(content) != readerHash(content) && readerHeld(w, f.Where) == "" {
 			return true
 		}
 	}
