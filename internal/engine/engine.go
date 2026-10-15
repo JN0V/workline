@@ -92,6 +92,8 @@ type Result struct {
 	Waiting   string `json:"waiting,omitempty"`
 	maxTokens int    // the role's ai-max-tokens: what the run may spend; 0, no cap
 	proposed     []string // the merge requests' tasks earlier rounds proposed, with NoApply, not opened yet
+	then         string   // the task this round asks alone, once the others are done (in/then)
+	thenAsked    bool     // the run went round once for it: never twice
 	capped       bool     // a call was refused, the run having spent maxTokens
 	partRefused  []string // what the parts answered and may not: refused with them
 }
@@ -184,6 +186,12 @@ func Run(o Options) *Result {
 			res.ToApply = len(res.Pending) > 0 // what earlier rounds proposed is still to apply
 		}
 		last := err != nil || res.Status != verdict.Pass || !goOn || round == maxRounds
+		// A task the role asks for once the others are done (in/then): one
+		// round more, that task alone, within what the run may still spend
+		// (the documentalist's pages read for their reader, ADR-0048).
+		if then, _ := os.ReadFile(filepath.Join(res.RunDir, "in", "then")); last && res.Status == verdict.Pass && !res.thenAsked && strings.TrimSpace(string(then)) != "" {
+			res.then, res.thenAsked, last = strings.TrimSpace(string(then)), true, false
+		}
 		if res.capped || !last && res.overBudget() {
 			// A cap is checked against what was spent, never estimated: the
 			// call that crossed it is paid. What is left waits, said.
@@ -372,6 +380,9 @@ func run(o Options, res *Result) error {
 	env := scriptEnv(runDir, r.Name, o)
 	if branch != "" {
 		env = append(env, "WORKLINE_RELEASE_BRANCH="+branch)
+	}
+	if res.then != "" {
+		env = append(env, "WORKLINE_THEN="+res.then)
 	}
 	releaseFrom := "" // the release, held by a role run on it
 	if o.Event == "release" {

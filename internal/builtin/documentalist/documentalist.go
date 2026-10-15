@@ -967,6 +967,10 @@ func Pre(runDir, repo string) int {
 	// task; the suspect ones wait for the next run, once the person has
 	// reviewed what this one proposes.
 	adopting := os.Getenv("WORKLINE_EVENT") == "init"
+	// The round the engine runs once the others are done, for the pages
+	// read for their reader alone (in/then, ADR-0048): nothing else is
+	// asked nor proposed again, and what the earlier rounds said stands.
+	readerOnly := os.Getenv("WORKLINE_THEN") == "reader"
 	wait, err := readWaiting(runDir)
 	if err != nil {
 		return fail(err)
@@ -980,8 +984,10 @@ func Pre(runDir, repo string) int {
 			return fail(err)
 		}
 		findings = append(findings, more...)
-	} else if task, judged, err = suspectTask(suspects, s, pl, repo); err != nil {
-		return fail(err)
+	} else if !readerOnly {
+		if task, judged, err = suspectTask(suspects, s, pl, repo); err != nil {
+			return fail(err)
+		}
 	}
 	// Docs too large to be judged whole are judged in parts, unless the
 	// project turns it off (ADR-0009): the parts first, then one call to fix. A
@@ -990,7 +996,7 @@ func Pre(runDir, repo string) int {
 	partsAsked := 0
 	var partsFallback []intent.Intention
 	inPartsTask := func(docs map[string]*suspectDoc) error {
-		if adopting || !s.JudgeInParts {
+		if adopting || !s.JudgeInParts || readerOnly {
 			return nil
 		}
 		// A doc no part could judge, whatever its sources hold, says so in
@@ -1030,7 +1036,7 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	// Due now (at the release): each doc is brought up to date for its reader.
-	if task == "" && partsAsked == 0 && len(propagate) > 0 {
+	if task == "" && partsAsked == 0 && len(propagate) > 0 && !readerOnly {
 		if task, judged, err = docTask(`Kind: propagate
 
 These docs follow technical docs that changed, and are updated now, at the
@@ -1073,7 +1079,7 @@ doc when its reader really gained something to know.
 	// doc most over its budget. A merge request or a push never turns into a
 	// rewrite of the docs.
 	holdJudgedInParts(stale, repo)
-	if task == "" && partsAsked == 0 && len(stale) > 0 {
+	if task == "" && partsAsked == 0 && len(stale) > 0 && !readerOnly {
 		if task, judged, err = staleTask(stale, s, pl, repo); err != nil {
 			return fail(err)
 		}
@@ -1108,7 +1114,7 @@ doc when its reader really gained something to know.
 		}
 		return waits
 	}
-	if task == "" && partsAsked == 0 && gardening {
+	if task == "" && partsAsked == 0 && gardening && !readerOnly {
 		if d := pickDedupe(problems, rewriteWaits); d != nil {
 			task = writeDedupeTask(d, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "dedupe.yaml"), d); err != nil {
@@ -1119,7 +1125,7 @@ doc when its reader really gained something to know.
 			}
 		}
 	}
-	if task == "" && partsAsked == 0 && gardening {
+	if task == "" && partsAsked == 0 && gardening && !readerOnly {
 		for _, c := range condenseCandidates(problems) {
 			if rewriteWaits(c.key(), c.resolves) {
 				continue
@@ -1140,7 +1146,7 @@ doc when its reader really gained something to know.
 		}
 	}
 	// A card too long holds more than one concept: split into cards.
-	if task == "" && partsAsked == 0 && gardening {
+	if task == "" && partsAsked == 0 && gardening && !readerOnly {
 		if c := pickSplit(problems, rewriteWaits); c != nil {
 			if t := writeSplitTask(c, problems, tree); len(t) > taskChars(s) {
 				findings = append(findings, tooLargeToRewrite("split", c.Doc, len(t), taskChars(s)))
@@ -1156,7 +1162,7 @@ doc when its reader really gained something to know.
 		}
 	}
 	// Last, a card too short to stand alone goes into the one it belongs with.
-	if task == "" && partsAsked == 0 && gardening {
+	if task == "" && partsAsked == 0 && gardening && !readerOnly {
 		if m := pickMergeCard(problems, tree, rewriteWaits); m != nil {
 			task = writeMergeCardTask(m, problems, tree)
 			if err := writeYAML(filepath.Join(runDir, "in", "merge-card.yaml"), m); err != nil {
@@ -1168,7 +1174,12 @@ doc when its reader really gained something to know.
 		}
 	}
 	// Last, the pages the reader checks flagged, read by the agent for what
-	// a reader would miss or skip (#256).
+	// a reader would miss or skip (#256): in this round when it asks
+	// nothing else, else in a round of their own once the others are done.
+	readerAsked := false
+	if readerOnly { // what the earlier rounds proposed is not proposed again
+		os.Remove(filepath.Join(runDir, "in", "fallback.yaml"))
+	}
 	if task == "" && partsAsked == 0 && gardening {
 		var r *readerTask
 		if r, task, findings, err = readerFor(findings, tree, s, wait, repo); err != nil {
@@ -1191,6 +1202,12 @@ doc when its reader really gained something to know.
 			if err := os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("reader\n"), 0o644); err != nil {
 				return fail(err)
 			}
+			readerAsked = true
+		}
+	}
+	if gardening && !readerOnly && !readerAsked && (task != "" || partsAsked > 0) && readerWaits(findings, s) {
+		if err := os.WriteFile(filepath.Join(runDir, "in", "then"), []byte("reader\n"), 0o644); err != nil {
+			return fail(err)
 		}
 	}
 	if os.Getenv("WORKLINE_EVENT") == "release" {
@@ -1200,8 +1217,8 @@ doc when its reader really gained something to know.
 	}
 	var left strings.Builder
 	for i := range findings {
-		if adopting {
-			break // adoption said itself what it left for the next round
+		if adopting || readerOnly {
+			break // adoption said itself what it left for the next round; the reader's round leaves nothing
 		}
 		f := &findings[i]
 		// Only the docs this run could put before the agent are left for its
@@ -1243,9 +1260,11 @@ doc when its reader really gained something to know.
 			fmt.Fprintf(&left, "%s %s\n", f.Rule, f.Where)
 		}
 	}
-	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool { return f.Rule == "" })
+	findings = slices.DeleteFunc(findings, func(f verdict.Finding) bool {
+		return f.Rule == "" || readerOnly && !slices.Contains(readerShown, f.Rule) && f.Rule != "too-large-to-read"
+	})
 	// Once each finding says what became of its doc: those left to a person.
-	if i, ok := personIssue(findings, repo); ok {
+	if i, ok := personIssue(findings, repo); ok && !readerOnly {
 		file := filepath.Join(runDir, "in", "fallback.yaml")
 		fallback, err := intent.Read(file)
 		if err != nil {

@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -16,7 +18,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// The agent reads the pages the reader checks flagged (#256, ADR-0047):
+// The agent reads the pages the reader checks flagged (#256, ADR-0048):
 // per page, what a reader would miss or skip, each passage quoted, and a
 // patch making it easy to read. Last in a gardening run, at most
 // `reader.agent-pages` pages a run within one task; a page is not read
@@ -166,6 +168,14 @@ func readerFor(findings []verdict.Finding, tree Tree, s Settings, w waiting, rep
 		}
 		return nil, "", findings, nil
 	}
+	asRead := map[string]string{}
+	for _, p := range cands {
+		asRead[p] = tree.Docs[p]
+	}
+	declined, unlisted := readerDeclined(repo, w, asRead)
+	if unlisted != "" {
+		findings = append(findings, verdict.Finding{Rule: "reader-declined-unread", Level: "warn", Message: unlisted})
+	}
 	var picked []string
 	var b strings.Builder
 	b.WriteString(readerTaskHeader)
@@ -173,6 +183,10 @@ func readerFor(findings []verdict.Finding, tree Tree, s Settings, w waiting, rep
 		content := tree.Docs[p]
 		if readerRecord(content) == readerHash(content) {
 			note(p, "(read by the agent as it is now: not read again until it changes)")
+			continue
+		}
+		if t := declined[p]; t != "" {
+			note(p, "(workline/documentalist/"+t+" proposed a fix for it and was closed without merging: not read again until the page changes)")
 			continue
 		}
 		if t := readerHeld(w, p); t != "" {
@@ -194,6 +208,89 @@ func readerFor(findings []verdict.Finding, tree Tree, s Settings, w waiting, rep
 		return nil, "", findings, nil
 	}
 	return &readerTask{Pages: picked, Key: readerKey(picked, w)}, b.String(), findings, nil
+}
+
+// readerWaits says whether pages wait to be read, after the round's other
+// task: an agent, the setting on, and a page a reader check flagged. The
+// round of their own says which, if any, it reads.
+func readerWaits(findings []verdict.Finding, s Settings) bool {
+	if s.Reader.AgentPages <= 0 || os.Getenv("WORKLINE_AI") == "none" {
+		return false
+	}
+	for _, f := range findings {
+		if slices.Contains(readerRules, f.Rule) && f.Where != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// readerPrefix is the branches of the reader task's merge requests.
+const readerPrefix = "workline/documentalist/reader"
+
+// readerDeclined are the pages a reader merge request proposed that was
+// closed without merging, each as it is now — the page it read: not read
+// again until it changes, rather than proposed again each night. The
+// branch stays once its merge request is closed (CloseMergeRequest, and the
+// forges themselves), and where it left the default branch holds the page
+// as read. Only gardening with merge requests has them; a branch that
+// cannot be listed is said, the pages then read as any.
+func readerDeclined(repo string, w waiting, pages map[string]string) (map[string]string, string) {
+	out := map[string]string{}
+	if os.Getenv("WORKLINE_OPEN_MERGE_REQUESTS") == "" {
+		return out, ""
+	}
+	tips := map[string]string{} // task -> its tip
+	if refs, err := git(repo, "for-each-ref", "--format=%(objectname) %(refname)", "refs/heads/"+readerPrefix+"*"); err == nil {
+		for _, l := range strings.Split(refs, "\n") {
+			if sha, ref, ok := strings.Cut(l, " "); ok {
+				tips[strings.TrimPrefix(ref, "refs/heads/workline/documentalist/")] = sha
+			}
+		}
+	}
+	if remotes, _ := git(repo, "remote"); slices.Contains(strings.Fields(remotes), "origin") {
+		refs, err := git(repo, "ls-remote", "--heads", "origin", "refs/heads/"+readerPrefix+"*")
+		if err != nil {
+			return out, "the reader task's merge requests closed without merging could not be listed (" + err.Error() + "): a page one of them proposed may be read again"
+		}
+		for _, l := range strings.Split(refs, "\n") {
+			if sha, ref, ok := strings.Cut(l, "\t"); ok {
+				tips[strings.TrimPrefix(ref, "refs/heads/workline/documentalist/")] = sha
+			}
+		}
+	}
+	for _, task := range slices.Sorted(maps.Keys(tips)) {
+		if w.open[task] || w.proposed[task] {
+			continue // waiting: readerHeld says it
+		}
+		tip := tips[task]
+		if _, err := git(repo, "cat-file", "-e", tip+"^{commit}"); err != nil {
+			if _, err := git(repo, "fetch", "-q", "origin", "refs/heads/workline/documentalist/"+task); err != nil {
+				continue
+			}
+		}
+		if _, err := git(repo, "merge-base", "--is-ancestor", tip, "HEAD"); err == nil {
+			continue // merged
+		}
+		base, err := git(repo, "merge-base", "HEAD", tip)
+		if err != nil {
+			continue
+		}
+		files, err := git(repo, "diff", "--name-only", "--no-renames", base, tip)
+		if err != nil {
+			continue
+		}
+		for _, p := range strings.Split(files, "\n") {
+			now, ok := pages[p]
+			if !ok || out[p] != "" {
+				continue
+			}
+			if was, err := exec.Command("git", "-C", repo, "show", base+":"+p).Output(); err == nil && readerHash(string(was)) == readerHash(now) {
+				out[p] = task
+			}
+		}
+	}
+	return out, ""
 }
 
 // readerBlock is one page of the task: what the reader checks found, then
