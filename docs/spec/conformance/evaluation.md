@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: b62ca106
+checked: 968debfc
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -67,7 +67,8 @@ would have held a merge on (its own finding verified on a defect, one
 verified on nothing planted), its findings shown not verified, its
 decisions for a person, its judges' calls; asked together, the call's
 answers and tokens are the `lenses` part's. The summary sums them by
-lens. `TestReviewerCasesPointRight` builds each case — each place holds
+lens, agent and how the lenses were asked — together, apart, one lens,
+or the diff alone, told by the measure's parts. `TestReviewerCasesPointRight` builds each case — each place holds
 its text, the code builds, the fixture's tests pass, a planted defect
 they caught measuring nothing — `TestIntentAndClaimsCasesGiveTheirLens`
 shows the intent and claims lenses given the issue and the author's

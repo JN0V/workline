@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: b62ca106
+checked: 968debfc
 verified: agent:documentalist
 judged: af2d6fb
 ---
@@ -149,7 +149,8 @@ tests/evaluation/
                              the runs, the pass rate (runs earning every point),
                              mean score, range, tokens and seconds; fewer than
                              five runs are marked `few runs`, a model that no
-                             longer answers `replaced`
+                             longer answers `replaced`; the reviewer's tallies
+                             by lens, agent and how the lenses were asked
 ```
 
 ```sh
