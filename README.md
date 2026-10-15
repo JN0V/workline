@@ -1,8 +1,8 @@
 <!-- workline
 sources: [ci/gitlab/workline.gitlab-ci.yml, ci/github/workline-fork.yml, routing.default.yaml, internal/forge/forge.go, internal/agent/agent.go, ci/github/workline-apply.yml, internal/gate, cmd/workline/cli.go, ci/github/workline.yml, ci/forgejo/workline-forge.sh, ci/github/workline-gardening.yml, ci/github/workline-sample.yml]
 checked: 7327530a
-judged: 7a26b30
-verified: agent:claude-code
+judged: 14ff934
+verified: agent:documentalist
 -->
 <h1>
   <picture>
@@ -23,7 +23,7 @@ A software factory for AI-assisted development:
 
 Status (2026-10-06): runs on every commit of its author, and in CI on the
 pull requests and nightly gardening of workline and of another project;
-<!-- workline:derive conformance-cases -->770<!-- workline:end --> conformance cases green in CI.
+<!-- workline:derive conformance-cases -->864<!-- workline:end --> conformance cases green in CI.
 
 ## Get started
 
