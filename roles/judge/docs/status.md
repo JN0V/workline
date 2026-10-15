@@ -1,18 +1,17 @@
-# Judge — where it stands (2026-10-14)
+# Judge — where it stands (2026-10-15)
 
 **In one line:** asked on real use by the documentalist (a fix it
 vouches for), the reviewer (each important finding) and the product owner
 (a closing as obsolete), at the best independence available from the
-agent judged ([ADR-0005](../../../docs/adr/0005-independence-takes-the-best-level-available.md)). Beta.
+agent judged ([ADR-0005](../../../docs/adr/0005-independence-takes-the-best-level-available.md)). Built on 2026-10-15.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
 
-## To leave beta
+## The three criteria
 
-Beta until the three criteria of
-[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
-hold:
+Built on 2026-10-15, by the maintainer, against the three criteria of
+[ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md):
 
 1. **Nothing buildable in Missing**: met, 2026-10-14. The judge reads
    the code it needs before saying no, on by default
@@ -21,8 +20,15 @@ hold:
    are parked ([#80](https://github.com/JN0V/workline/issues/80)): any
    command can already be the judge, and using one waits on a second
    provider.
-2. **The main issue validated on real use**: open. No issue of the role
-   holds a Validation section the maintainer has signed.
+2. **The main issue validated on real use**: met. The maintainer
+   validated the role on 2026-10-15 from its real use:
+   - its verdicts on workline's pull requests measured: 40 of 229 read
+     again in the code, its "yes" right 19 of 20, its "no" 12 of 20
+     ([the judge, measured](../../../docs/research/judge-measured.md));
+   - the judge that reads the code it needs replayed on the same 40
+     ([replayed](../../../docs/research/judge-measured.md#replayed-2026-10-14)),
+     on by default since
+     ([ADR-0045, amended](../../../docs/adr/0045-the-judge-asks-for-the-code-it-needs.md#amendment-2026-10-14-on-by-default)).
 3. **AI verdicts measured**: met on real use, 2026-10-14: 40 of its 229
    verdicts on workline's pull requests read again in the code, its "yes"
    right 19 of 20, its "no" 12 of 20
