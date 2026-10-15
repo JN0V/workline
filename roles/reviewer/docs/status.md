@@ -19,19 +19,21 @@ hold:
 1. **Nothing buildable in Missing**: open. The judge reads the code it
    needs, on since 2026-10-14
    ([#362](https://github.com/JN0V/workline/issues/362)); the reviewer
-   is measured next, before the developer role
+   measured on it, five runs a case, the maintainer's choice for
+   correctness left
    ([#360](https://github.com/JN0V/workline/issues/360)); the developer's
    loop waits for that role
    ([#117](https://github.com/JN0V/workline/issues/117)).
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
-3. **AI verdicts measured**: in part.
-   [#90](https://github.com/JN0V/workline/issues/90)'s step 1 ran once
-   ([tried](tried.md#2026-10-06--the-measure-step-1-90),
-   [ADR-0020](../../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md#amendment-2026-10-06));
+3. **AI verdicts measured**: measured, the choice left. Five runs a
+   case, every lens together, the judge reading: 55 of 55 planted
+   defects found, no false finding verified
+   ([the reviewer, measured](../../../docs/research/reviewer-measured.md));
    its judge measured on real use
-   ([the judge, measured](../../../docs/research/judge-measured.md));
-   five runs a case left
+   ([the judge, measured](../../../docs/research/judge-measured.md)).
+   `ai-findings` for correctness, block or warn, is the maintainer's
+   choice from these numbers
    ([#360](https://github.com/JN0V/workline/issues/360)). Its cost:
    [measured](../../../docs/research/code-review.md#the-reviewers-cost-measured).
 
@@ -140,18 +142,23 @@ its measure in
 - **An issue outside the change**, opened the one way every role shares,
   written for a person first: the backlog's `issue-*` cases,
   `finding-cause-outside-diff-becomes-issue`.
-- **Its measure**: twelve evaluation cases on the `shop` fixture,
+- **Its measure**: fourteen evaluation cases on the `shop` fixture,
+  intent and claims among them; every lens together, apart, one lens or
+  the diff alone ([#360](https://github.com/JN0V/workline/issues/360)):
   `TestScoreReview`, `TestReviewerWithFakeAgent`,
-  `TestReviewerCasesPointRight`.
+  `TestReviewerCasesPointRight`, `TestIntentAndClaimsCasesGiveTheirLens`.
 
 ## Missing, in the order to build it
 
-1. **Measured before the developer**, on the judge that reads: five runs a case, the
-   finder floor's worth, the lenses together against apart; intent, claims
-   and decisions; the diff alone as a cheap pass
-   ([#243](https://github.com/JN0V/workline/issues/243)); then the
-   maintainer's choice for correctness
-   ([#360](https://github.com/JN0V/workline/issues/360)).
+1. **The maintainer's choice for correctness**, block or warn, from
+   [the reviewer, measured](../../../docs/research/reviewer-measured.md)
+   ([#360](https://github.com/JN0V/workline/issues/360)). Measured: five
+   runs a case, intent and claims; lenses apart not needed, together
+   missing nothing; the diff alone does not win
+   ([#243](https://github.com/JN0V/workline/issues/243)). Not measured:
+   the finder floor's worth, a decision for a person (no case plants
+   one), one lens a push whichever lens is in turn, the cheaper push over
+   five runs. No issue yet.
 2. **Spec review on workline**, turned on after the product owner's trial
    (2026-10-16); then more specs measured, the product owner's real answer
    read again, on GitLab and in CI. Several specs a night parked until a

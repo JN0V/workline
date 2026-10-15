@@ -75,7 +75,9 @@ words, and `TestReviewerWithFakeAgent` plays one, apart and together,
 through the engine with a fake agent (testdata/review-agent.sh). The
 model and independence matrix of ADR-0005 is a run with
 `WORKLINE_EVAL=claude:<model>` and `WORKLINE_JUDGE=claude:<model>`, never
-by default.
+by default. Measured on 2026-10-15, five runs a case, the commands with
+the results:
+[the reviewer, measured](../../research/reviewer-measured.md).
 
 ## The judge's replay
 

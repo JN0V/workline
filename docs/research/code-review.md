@@ -172,6 +172,7 @@ What reviews a spec before it is built, in the field's words:
 workline's own, 2026-10-06 to 10-12: the runs in its
 [tried.md](../../roles/reviewer/docs/tried.md) (archived), what they decided in
 [ADR-0020](../adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md).
+Five runs a case, 2026-10-15: [the reviewer, measured](reviewer-measured.md).
 
 - **Code, every lens**: [#146]'s eight commits, 142k tokens in, estimated;
   the lenses' call 73.6k (430k before [#147]). The judges reading whole
