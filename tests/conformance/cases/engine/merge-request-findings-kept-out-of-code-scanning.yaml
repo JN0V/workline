@@ -1,0 +1,16 @@
+case: engine/merge-request-findings-kept-out-of-code-scanning
+about: "On a merge request, the documentalist's findings stay out of the SARIF for code scanning, which opens a conversation for each, whatever its level, that a base requiring them resolved holds the merge on (#412): the job applying the run shows them as a check's annotations. The Code Quality report, a report and no thread, keeps them; the committer's secret stays in both."
+given:
+  repo: documented
+  config:
+    routing: {fail-fast: {merge-request: false}}
+  setup:
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && printf 'name = x\\naws_key = AKIA%s\\n' QYLPMN5HHHFPZAM2 > config.ini && git add config.ini && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {route: merge-request, input: {range: "main..feature"}, ai: none, no-apply: true, reports: true}
+expect:
+  findings: [{rule: suspect, where: docs/tech/auth.md}]
+  sarif: [{rule: committer/leak, uri: config.ini, line: 2, level: error}]
+  sarif-lacks: [documentalist/suspect, documentalist/pending]
+  code-quality:
+    - {check_name: documentalist/suspect, path: docs/tech/auth.md, line: 1}
+    - {check_name: committer/leak, path: config.ini, line: 2}

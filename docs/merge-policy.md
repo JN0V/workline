@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 7327530a
+checked: 733da152
 verified: agent:claude-code
 ---
 # The merge policy

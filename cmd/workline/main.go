@@ -259,7 +259,7 @@ func runRole(args []string) int {
 		Inputs: inputs, Targets: targets, TamperBeforeApply: *tamper,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR,
 	})
-	if err := wlreport.Write(absRepo, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
+	if err := wlreport.Write(absRepo, *event, wlreport.FromRole(name, res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -368,7 +368,7 @@ func reviewCmd(args []string) int {
 	}
 	res := engine.Run(engine.Options{Repo: root, RolesDir: absRoles, Role: "reviewer", Event: event, AI: *ai, DefaultAI: userDefaultAI(),
 		Inputs: inputs, Forge: *forgeSpec})
-	if err := wlreport.Write(root, wlreport.FromRole("reviewer", res), *sarifFile, *cqFile); err != nil {
+	if err := wlreport.Write(root, event, wlreport.FromRole("reviewer", res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -1054,7 +1054,7 @@ func routeCmd(args []string) int {
 	}
 	res := line.Run(event, engine.Options{Repo: abs, RolesDir: rolesDir, AI: *ai, DefaultAI: userDefaultAI(), Inputs: inputs,
 		Forge: *forgeSpec, Target: t, Branch: *branch, Scope: scope, NoApply: *noApply, OpenMergeRequest: *openMR, PushToMergeRequest: *pushMR})
-	if err := wlreport.Write(abs, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
+	if err := wlreport.Write(abs, event, wlreport.FromLine(res), *sarifFile, *cqFile); err != nil {
 		fmt.Fprintln(os.Stderr, "workline:", err)
 		return 1
 	}
@@ -1279,9 +1279,10 @@ func applyCmd(args []string) int {
 		return code
 	}
 	resume := engine.Resume
+	var from engine.FromMergeRequest
 	if *fromMR != 0 {
-		from, err := fromMergeRequest(*fromMR, *head, *repo, *forgeSpec)
-		if err != nil {
+		var err error
+		if from, err = fromMergeRequest(*fromMR, *head, *repo, *forgeSpec); err != nil {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 64
 		}
@@ -1290,6 +1291,9 @@ func applyCmd(args []string) int {
 		fmt.Fprintln(os.Stderr, "workline: --head goes with --from-merge-request")
 		return 64
 	}
+	// What the line's documentalist found on a merge request, shown beside
+	// its lines on the head judged, a check's annotations (#412).
+	var noted []verdict.Finding
 	if *lineFile != "" {
 		data, err := os.ReadFile(*lineFile)
 		var l line.Result
@@ -1300,12 +1304,30 @@ func applyCmd(args []string) int {
 			fmt.Fprintln(os.Stderr, "workline:", err)
 			return 1
 		}
+		if *fromMR != 0 {
+			noted = engine.Annotate(from, func(read func(string) ([]byte, error)) ([]forge.Annotation, int) {
+				var found []wlreport.Item
+				for _, i := range wlreport.FromLine(&l) {
+					if i.Role == "documentalist" {
+						found = append(found, i)
+					}
+				}
+				return wlreport.Annotations(read, found)
+			})
+		}
 		dirs = append(dirs, l.Pending...)
 		if len(dirs) == 0 {
-			fmt.Fprintln(os.Stderr, "pass — nothing to apply: the line proposed nothing")
-			if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true}); err != nil {
+			res := &engine.Result{Status: verdict.Pass, Summary: "nothing to apply: the line proposed nothing",
+				Applied: []string{}, Refused: []string{}, Findings: noted}
+			if err := wlreport.AppendSummary(summaryFiles, wlreport.Summary{Title: "apply", Status: verdict.Pass, NothingToApply: true, Findings: noted}); err != nil {
 				fmt.Fprintln(os.Stderr, "workline:", err)
 				return 1
+			}
+			if *asJSON {
+				out, _ := json.MarshalIndent(res, "", "  ")
+				fmt.Println(string(out))
+			} else {
+				report(res)
 			}
 			return 0
 		}
@@ -1331,6 +1353,7 @@ func applyCmd(args []string) int {
 			res.Issues, res.Waiting = next.Issues, next.Waiting
 		}
 	}
+	res.Findings = append(noted, res.Findings...)
 	// The runs after the one that stopped are not applied: said, with the
 	// command that resumes them all, never left out of the job's page.
 	if left := dirs[stopped+1:]; len(left) > 0 {
@@ -1476,6 +1499,7 @@ func doctorCmd(args []string) int {
 	fs := newFlags("doctor")
 	repo := fs.String("repo", ".", "repository to look at; outside one, the machine only")
 	asJSON := fs.Bool("json", false, "print the report as JSON")
+	forgeSpec := fs.String("forge", "", "the forge whose rules are read: whether the default branch requires every conversation resolved (default: the project's `forge` setting; github when the repository's GitHub workflows run workline)")
 	if code, done := parseOnly(fs, args); done {
 		return code
 	}
@@ -1486,7 +1510,7 @@ func doctorCmd(args []string) int {
 	}
 	root, _ := gitRoot(*repo)
 	r := doctor.Run(doctor.Options{Repo: root, RolesDir: rolesDir, AI: os.Getenv("WORKLINE_AI"), UserAI: userDefaultAI(),
-		NoPushApproval: !userConfig().approvePush()})
+		NoPushApproval: !userConfig().approvePush(), Forge: *forgeSpec})
 	if *asJSON {
 		out, _ := json.MarshalIndent(r, "", "  ")
 		fmt.Println(string(out))

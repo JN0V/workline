@@ -1,13 +1,16 @@
 // Package report writes findings in the formats forges read: SARIF 2.1.0,
 // for GitHub code scanning (and GitLab Ultimate), and GitLab's Code Quality
-// report, which every GitLab tier shows on a merge request. Both place a
-// finding on a file and a line, so a finding whose `where` names no file of
-// the repository (a commit's subject, a gate, a folder) is left out: it stays
-// in the verdict and in --json.
+// report, which every GitLab tier shows on a merge request; and the
+// documentalist's findings on a merge request as a check's annotations,
+// which open no conversation (#412). Each places a finding on a file and a
+// line, so a finding whose `where` names no file of the repository (a
+// commit's subject, a gate, a folder) is left out: it stays in the verdict
+// and in --json.
 package report
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -18,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -87,6 +91,16 @@ type placed struct {
 // its first line. A file a range of commits held, and no longer holds, is
 // still placed: code scanning shows it on the commit.
 func place(repo string, items []Item) []placed {
+	return placeIn(func(path string) ([]byte, error) {
+		if st, err := os.Stat(filepath.Join(repo, path)); err != nil || !st.Mode().IsRegular() {
+			return nil, os.ErrNotExist
+		}
+		return os.ReadFile(filepath.Join(repo, path))
+	}, items)
+}
+
+// placeIn is place, the files read by read: a file it cannot read is none.
+func placeIn(read func(path string) ([]byte, error), items []Item) []placed {
 	var out []placed
 	for _, i := range items {
 		path, anchor, _ := strings.Cut(i.Where, "#")
@@ -100,11 +114,12 @@ func place(repo string, items []Item) []placed {
 		if i.Where == "" || filepath.IsAbs(path) || strings.HasPrefix(path, "../") {
 			continue
 		}
-		if st, err := os.Stat(filepath.Join(repo, path)); line == 0 && (err != nil || !st.Mode().IsRegular()) {
-			continue
-		}
 		if line == 0 {
-			line = headingLine(filepath.Join(repo, path), anchor)
+			data, err := read(path)
+			if err != nil {
+				continue
+			}
+			line = headingLine(data, anchor)
 		}
 		out = append(out, placed{i, path, line})
 	}
@@ -112,16 +127,11 @@ func place(repo string, items []Item) []placed {
 }
 
 // headingLine is the line of the heading whose anchor is given, or 1.
-func headingLine(file, anchor string) int {
+func headingLine(data []byte, anchor string) int {
 	if anchor == "" {
 		return 1
 	}
-	f, err := os.Open(file)
-	if err != nil {
-		return 1
-	}
-	defer f.Close()
-	s := bufio.NewScanner(f)
+	s := bufio.NewScanner(bytes.NewReader(data))
 	for n := 1; s.Scan(); n++ {
 		if t := s.Text(); strings.HasPrefix(t, "#") && slug(strings.TrimLeft(t, "# ")) == anchor {
 			return n
@@ -240,16 +250,72 @@ func CodeQuality(repo string, items []Item) ([]byte, error) {
 	return json.MarshalIndent(out, "", "  ")
 }
 
-// Write writes the reports asked for; an empty file name skips that one.
-func Write(repo string, items []Item, sarifFile, codeQualityFile string) error {
+// postedOnMergeRequest are the roles whose findings a merge request gets
+// from workline itself: the documentalist's as a check's annotations, the
+// job applying the run writes them; the reviewer's in its own review.
+var postedOnMergeRequest = map[string]bool{"documentalist": true, "reviewer": true}
+
+// ForCodeScanning is what of a run on event goes to code scanning: on a
+// merge request, neither the documentalist's findings nor the reviewer's,
+// which workline posts there itself. Code scanning would open a
+// conversation for each, whatever its level, that a base requiring them
+// resolved holds the merge on (#412); the gates' and the committer's stay.
+func ForCodeScanning(event string, items []Item) []Item {
+	if event != "merge-request" {
+		return items
+	}
+	var out []Item
+	for _, i := range items {
+		if !postedOnMergeRequest[i.Role] {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+
+// Most annotations written for one head, and the most of a message: what
+// a merge request's own run hands the applying job is data its code could
+// have written.
+const (
+	maxAnnotations   = 500
+	maxAnnotationLen = 4000
+)
+
+// Annotations are the findings as a check's annotations, each on the file
+// and line it names, the files as read gives them — the head judged, not
+// the base checked out —; one that names no file is left out, as from the
+// reports. Beyond maxAnnotations, the rest are counted, not written.
+func Annotations(read func(path string) ([]byte, error), items []Item) (notes []forge.Annotation, left int) {
+	level := map[string]string{"error": "failure", "warning": "warning", "note": "notice"}
+	for _, p := range placeIn(read, items) {
+		if len(notes) == maxAnnotations {
+			left++
+			continue
+		}
+		msg := p.Message
+		if msg == "" {
+			msg = p.Rule
+		}
+		if len(msg) > maxAnnotationLen {
+			msg = strings.ToValidUTF8(msg[:maxAnnotationLen], "") + "…"
+		}
+		notes = append(notes, forge.Annotation{Path: p.path, Line: p.line, Level: level[p.level()], Title: p.rule(), Message: msg})
+	}
+	return notes, left
+}
+
+// Write writes the reports asked for of a run on event; an empty file
+// name skips that one. Code scanning gets what ForCodeScanning keeps.
+func Write(repo, event string, items []Item, sarifFile, codeQualityFile string) error {
 	for _, w := range []struct {
-		file string
-		make func(string, []Item) ([]byte, error)
-	}{{sarifFile, SARIF}, {codeQualityFile, CodeQuality}} {
+		file  string
+		items []Item
+		make  func(string, []Item) ([]byte, error)
+	}{{sarifFile, ForCodeScanning(event, items), SARIF}, {codeQualityFile, items, CodeQuality}} {
 		if w.file == "" {
 			continue
 		}
-		data, err := w.make(repo, items)
+		data, err := w.make(repo, w.items)
 		if err != nil {
 			return err
 		}

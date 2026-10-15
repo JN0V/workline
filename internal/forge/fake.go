@@ -43,6 +43,26 @@ type FakeState struct {
 	// commit a revision of the repository, who set it (`workline-bot`, the
 	// token's user, or another).
 	Statuses []FakeStatus `json:"statuses,omitempty"`
+	// Checks are the checks written on commits, each with its annotations
+	// (Annotate), in the order written.
+	Checks []FakeCheck `json:"checks,omitempty"`
+	// ChecksRefused: the forge refuses every check, as a token without
+	// checks: write does (HTTP 403), with this reason.
+	ChecksRefused string `json:"checks-refused,omitempty"`
+	// ConversationsRequired are the branches requiring every conversation
+	// of a merge request resolved before it merges; ConversationsUnread,
+	// what of the branches' rules the token cannot read (Conversations).
+	ConversationsRequired []string `json:"conversations-required,omitempty"`
+	ConversationsUnread   string   `json:"conversations-unread,omitempty"`
+}
+
+// FakeCheck is a check written on a commit.
+type FakeCheck struct {
+	Commit      string       `json:"commit"`
+	Name        string       `json:"name"`
+	Conclusion  string       `json:"conclusion"`
+	Summary     string       `json:"summary,omitempty"`
+	Annotations []Annotation `json:"annotations"`
 }
 
 // FakeStatus is a status set on a commit.
