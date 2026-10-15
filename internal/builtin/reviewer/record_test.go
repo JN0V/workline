@@ -1,9 +1,11 @@
 package reviewer
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -99,5 +101,57 @@ func TestSinceCountsTheCommitsNotReviewed(t *testing.T) {
 	sp, err := rec.since(repo, base, "HEAD")
 	if err != nil || sp.From != reviewed || sp.New != 2 || len(sp.Commits) != 4 {
 		t.Errorf("after the merge: from %s, %d new of %d, %v; want from %s, 2 new of 4", sp.From, sp.New, len(sp.Commits), err, reviewed)
+	}
+}
+
+// The findings judged, every run's, read back as written; past the
+// comment's size, the oldest go first, counted, and the comment stays
+// within it (ADR-0046). A title holding what would end a hidden comment
+// does not end it.
+func TestJudgedLinesFitTheComment(t *testing.T) {
+	var r Record
+	for i := range 400 {
+		r.Judged = append(r.Judged, Answered{Lens: "edge-cases", Where: fmt.Sprintf("a/f%03d.go:%d", i, i+1), At: strings.Repeat("ab", 20),
+			Yes: i%2 == 0, Finder: "claude-sonnet-5", Judge: "claude-opus-5", Title: "A title -- with --> in it, <b>and</b> a quote \""})
+	}
+	r.Gone = 2
+	all := r.judgedLines(1 << 20)
+	back, gone, held := ReadJudged("text\n" + all + "\ntext")
+	if !held || gone != 2 || !slices.Equal(back, r.Judged) {
+		t.Fatalf("read back: held %v, gone %d, %d lines, equal %v", held, gone, len(back), slices.Equal(back, r.Judged))
+	}
+	if n := strings.Count(all, "-->"); n != 401 {
+		t.Errorf("%d comments closed, want 401: a title ended one", n)
+	}
+	body := strings.Repeat("x", 20000)
+	text := body + r.judgedLines(SummaryMax-len(body))
+	back, gone, _ = ReadJudged(text)
+	switch {
+	case len(text) > SummaryMax:
+		t.Errorf("the comment holds %d characters, over %d", len(text), SummaryMax)
+	case len(back) == 0 || back[len(back)-1] != r.Judged[len(r.Judged)-1]:
+		t.Errorf("the newest line went")
+	case gone != 2+len(r.Judged)-len(back) || back[0] != r.Judged[len(r.Judged)-len(back)]:
+		t.Errorf("%d kept, %d gone: want the oldest gone, counted with the 2 before", len(back), gone)
+	case len(text)+300 < SummaryMax:
+		t.Errorf("the comment holds %d characters: one more line would have fit", len(text))
+	}
+	if _, gone, _ := ReadJudged("<!-- workline:judged-lines gone=0 -->\n<!-- workline:judged {\"lens\": -->"); gone != 1 {
+		t.Errorf("a line that does not read: %d gone, want 1", gone)
+	}
+	if _, _, held := ReadJudged("<!-- workline:record reviewed= runs=1 -->"); held {
+		t.Errorf("a comment an engine before the lines wrote holds them")
+	}
+}
+
+// A record that does not read keeps the findings judged, read apart; the
+// machine's record never holds them.
+func TestJudgedLinesOutliveARecordDamaged(t *testing.T) {
+	r, err := parseRecord("<!-- workline:record runs=x -->\n<!-- workline:judged-lines gone=3 -->\n<!-- workline:judged {\"lens\":\"tests\",\"where\":\"a.go:1\",\"at\":\"ab\",\"yes\":true,\"finder\":\"\",\"judge\":\"\",\"title\":\"t\"} -->")
+	if err == nil || len(r.Judged) != 1 || r.Gone != 3 {
+		t.Errorf("a record damaged: %+v, %v; want an error, 1 line and 3 gone kept", r, err)
+	}
+	if s := (Record{Runs: 1, Judged: r.Judged}).String(); strings.Contains(s, "judged") {
+		t.Errorf("the machine's record holds the findings judged: %s", s)
 	}
 }

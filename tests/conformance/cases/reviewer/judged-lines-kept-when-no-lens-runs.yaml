@@ -1,0 +1,34 @@
+case: reviewer/judged-lines-kept-when-no-lens-runs
+about: "A run that asks no lens — new commits changing no code, or a rule blocking first — rewrites the summary comment too: the lines of the findings judged before stay in it (ADR-0046)."
+given:
+  repo: reviewed
+  setup:
+    - "printf 'package calc\\n\\n// Half halves a count.\\nfunc Half(n int) int { return n / 2 }\\n' > calc/half.go && git add calc/half.go && git commit -qm 'feat: halve a count'"
+    - "sed -i \"s/@reviewed@/$(git rev-parse HEAD)/g\" \"$FORGE_FILE\""
+    - "printf '# Calc\\n\\nSmall sums, and halves.\\n' > README.md && git commit -qam 'docs: say what calc does'"
+  forge:
+    issues: []
+    merge-requests:
+      - id: 5
+        labels: []
+        comments:
+          - |
+            **workline reviewer** — 0 findings on the change; lenses: edge-cases.
+
+            <!-- workline:record reviewed=@reviewed@ runs=1 -->
+            <!-- workline:judged-lines gone=1 -->
+            <!-- workline:judged {"lens":"edge\u002dcases","where":"calc/half.go:4","at":"@reviewed@","yes":false,"finder":"claude\u002dsonnet\u002d5","judge":"claude\u002dopus\u002d5","title":"Half rounds an odd count down"} -->
+
+            <!-- workline:sticky=reviewer/summary -->
+run: {role: reviewer, event: merge-request, input: {range: main..HEAD}, target: {merge-request: 5}, ai: "fake:review-related"}
+expect:
+  status: pass
+  agent-calls: 0
+  applied: [comment]
+  forge:
+    merge-requests:
+      - id: 5
+        comments: 1
+        comment-contains:
+          - "no code changed since the last review"
+          - "<!-- workline:judged-lines gone=1 -->\n<!-- workline:judged {\"lens\":\"edge\\u002dcases\",\"where\":\"calc/half.go:4\",\"at\":\""

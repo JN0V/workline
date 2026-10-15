@@ -253,7 +253,7 @@ func prepare(runDir, repo string, s Settings) int {
 		// once, and a whole review writes the record anew.
 		advisories = append(advisories, verdict.Finding{Rule: "record-unread", Level: "warn",
 			Message: "the record of what was reviewed before, " + where + ", could not be read (" + err.Error() + "): every commit of the range is reviewed again, and a whole review writes it anew"})
-		rec = Record{}
+		rec = Record{Judged: rec.Judged, Gone: rec.Gone} // the findings judged read apart: kept (ADR-0046)
 	}
 	sp, err := rec.since(repo, base, head)
 	if err != nil {
@@ -1271,6 +1271,10 @@ func settle(runDir, repo string, s Settings) int {
 	}
 	unjudged := 0 // findings the judge was not asked of, the run's tokens spent
 	var readsDone []JudgeRead
+	var judged []Answered // the findings the judge kept or dropped (ADR-0046)
+	answered := func(f Finding, a readAnswer, yes bool) {
+		judged = append(judged, Answered{Lens: f.Lens, Where: f.Where, At: st.Head, Yes: yes, Finder: a.Author, Judge: a.Model, Title: f.Title})
+	}
 	verify := func(l []Finding) []Finding {
 		var kept []Finding
 		for _, f := range l {
@@ -1321,11 +1325,13 @@ func settle(runDir, repo string, s Settings) int {
 				}
 				c.Logged = append(c.Logged, verdict.Finding{Rule: "finding-judged-no", Level: "warn",
 					Message: fmt.Sprintf("dropped, from the %s lens: %q at %s — the judge: %s (%s)", f.Lens, f.Title, f.Where, reason, who)})
+				answered(f, a, false)
 				continue
 			case judge.Levels[a.Level] < judge.Levels[floor]:
 				f.Verified, f.Level = fmt.Sprintf("not verified: the judge stood at %s, below %s (%s)", a.Level, floor, a.Why), a.Level
 			default:
 				f.Verified, f.Level = "verified, "+who+read, a.Level
+				answered(f, a, true)
 			}
 			kept = append(kept, f)
 		}
@@ -1394,6 +1400,12 @@ func settle(runDir, repo string, s Settings) int {
 			v.Record = st.Record.add(st.Commits, st.Patches)
 		}
 		v.Record.Blocks = blocks
+		v.Record.Judged = slices.Clone(v.Record.Judged)
+		for _, j := range judged { // one answer a finding at a head: the same asked again is not a second act
+			if !slices.Contains(v.Record.Judged, j) {
+				v.Record.Judged = append(v.Record.Judged, j)
+			}
+		}
 	}
 	v.Record.Owed = false // the lenses were asked: a rule holds them no more
 	everyLens(st, &v, len(c.Failed) == 0)
@@ -1711,6 +1723,9 @@ func summaryComment(v Review, issues int, short map[string]string, lines []forge
 	}
 	b.WriteString("The reviewer never approves and never changes the code: the author fixes, a person merges.\n\n")
 	b.WriteString(v.Record.String())
+	if v.Subject != "spec" { // what every run's judge answered, within the comment's size (ADR-0046)
+		b.WriteString(v.Record.judgedLines(SummaryMax - b.Len()))
+	}
 	return b.String()
 }
 

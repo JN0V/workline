@@ -30,7 +30,32 @@ type Record struct {
 	ReadAll  bool     `json:"read-all,omitempty"` // every lens answered on the whole change, since the merge request was last a draft (#359)
 	Retried  bool     `json:"retried,omitempty"`  // the run on ready failed once: every lens owed again, once (#359)
 	Blocks   []Block  `json:"blocks,omitempty"`   // the findings that block, carried to the next run (#326)
+	// Judged are the findings the judge answered, every run's, kept on a
+	// merge request for the weekly sample (ADR-0046); Gone, how many of
+	// them the summary comment no longer holds. Never on a machine.
+	Judged []Answered `json:"judged,omitempty"`
+	Gone   int        `json:"judged-gone,omitempty"`
 }
+
+// Answered is a finding the judge answered: kept (yes) or dropped (no), at
+// the head the review read, with the models of the lens that found it and
+// of its judge. A line each in the summary comment, for the merge
+// request's life: the weekly sample draws the reviewer's acts from them
+// (ADR-0046).
+type Answered struct {
+	Lens   string `json:"lens"`
+	Where  string `json:"where"`
+	At     string `json:"at"`
+	Yes    bool   `json:"yes"`
+	Finder string `json:"finder"`
+	Judge  string `json:"judge"`
+	Title  string `json:"title"`
+}
+
+// SummaryMax is the most characters the summary comment holds: GitHub
+// takes 65,536, the engine adds to the review region when it applies. The
+// lines of the findings judged give way first, the oldest first.
+const SummaryMax = 60000
 
 // Block is a lens's finding that blocked a review: it stands, run after
 // run, while its cause is found again on the change and no review of its
@@ -52,6 +77,10 @@ const SummaryKey = "summary"
 var (
 	recordLine = regexp.MustCompile(`<!-- workline:record reviewed=([0-9a-f,]*)(?: patches=([0-9a-f,]*))? runs=(\d+)( owed=all)?( read=all)?( retried=once)? -->`)
 	blocksLine = regexp.MustCompile(`<!-- workline:blocks (.*?) -->`)
+	// judgedHead opens the lines of the findings judged, saying how many
+	// the comment no longer holds; an engine before them wrote none.
+	judgedHead = regexp.MustCompile(`<!-- workline:judged-lines gone=(\d+) -->`)
+	judgedLine = regexp.MustCompile(`<!-- workline:judged (.*?) -->`)
 )
 
 // The openings of the record and of its blocks: a text holding one that
@@ -63,8 +92,7 @@ const (
 
 // String is the record as the summary comment and the local file hold it;
 // with no patch id, as an engine before them wrote it. The blocks follow,
-// as JSON on one line: a dash written \u002d, and `<`, `>` escaped by the
-// JSON library, so nothing in a finding ends the comment hiding them.
+// on one line (hidden); the findings judged, apart (judgedLines).
 func (r Record) String() string {
 	patches := ""
 	if len(r.Patches) > 0 {
@@ -82,24 +110,71 @@ func (r Record) String() string {
 	}
 	s := fmt.Sprintf("<!-- workline:record reviewed=%s%s runs=%d%s -->", strings.Join(r.Reviewed, ","), patches, r.Runs, owed)
 	if len(r.Blocks) > 0 {
-		data, _ := json.Marshal(r.Blocks)
-		s += "\n<!-- workline:blocks " + strings.ReplaceAll(string(data), "-", `\u002d`) + " -->"
+		s += "\n<!-- workline:blocks " + hidden(r.Blocks) + " -->"
 	}
 	return s
 }
 
+// hidden is a value as JSON on one line, safe in a comment hidden in
+// Markdown: a dash written \u002d, and `<`, `>` escaped by the JSON
+// library, so nothing in a finding ends the comment hiding it.
+func hidden(v any) string {
+	data, _ := json.Marshal(v)
+	return strings.ReplaceAll(string(data), "-", `\u002d`)
+}
+
+// judgedLines are the lines of the findings judged as the summary comment
+// holds them, within room characters: the newest kept, the oldest gone
+// first, and how many went counted in the line opening them (ADR-0046).
+func (r Record) judgedLines(room int) string {
+	lines := make([]string, len(r.Judged))
+	size := 0
+	for i, j := range r.Judged {
+		lines[i] = "\n<!-- workline:judged " + hidden(j) + " -->"
+		size += len(lines[i])
+	}
+	head := func(gone int) string { return fmt.Sprintf("\n<!-- workline:judged-lines gone=%d -->", gone) }
+	drop := 0
+	for drop < len(lines) && len(head(r.Gone+drop))+size > room {
+		size -= len(lines[drop])
+		drop++
+	}
+	return head(r.Gone+drop) + strings.Join(lines[drop:], "")
+}
+
+// ReadJudged reads the lines of the findings judged in a summary comment:
+// each line; how many the comment no longer holds — past its size, or a
+// line that does not read; and whether it holds them at all: one an
+// engine before them wrote does not (ADR-0046).
+func ReadJudged(comment string) (judged []Answered, gone int, held bool) {
+	if m := judgedHead.FindStringSubmatch(comment); m != nil {
+		gone, _ = strconv.Atoi(m[1])
+		held = true
+	}
+	for _, m := range judgedLine.FindAllStringSubmatch(comment, -1) {
+		var j Answered
+		if err := json.Unmarshal([]byte(m[1]), &j); err != nil || j.Lens == "" || j.Where == "" {
+			gone++
+			continue
+		}
+		judged = append(judged, j)
+	}
+	return judged, gone, held
+}
+
 // parseRecord reads a record from a text holding one; an empty one when
 // none. A record or blocks that do not read are an error (#302): never
-// read as none.
+// read as none. The findings judged read apart, and are kept still.
 func parseRecord(text string) (Record, error) {
+	var r Record
+	r.Judged, r.Gone, _ = ReadJudged(text)
 	m := recordLine.FindStringSubmatch(text)
 	if m == nil {
 		if strings.Contains(text, recordOpening) || strings.Contains(text, blocksOpening) {
-			return Record{}, backlog.UnreadRecord(text, recordOpening)
+			return Record{Judged: r.Judged, Gone: r.Gone}, backlog.UnreadRecord(text, recordOpening)
 		}
-		return Record{}, nil
+		return r, nil
 	}
-	var r Record
 	r.Reviewed, r.Patches = ids(m[1]), ids(m[2])
 	r.Runs, _ = strconv.Atoi(m[3])
 	r.Owed = m[4] != ""
@@ -107,7 +182,7 @@ func parseRecord(text string) (Record, error) {
 	r.Retried = m[6] != ""
 	if b := blocksLine.FindStringSubmatch(text); b != nil {
 		if err := json.Unmarshal([]byte(b[1]), &r.Blocks); err != nil {
-			return Record{}, fmt.Errorf("the findings that blocked do not read: %v", err)
+			return Record{Judged: r.Judged, Gone: r.Gone}, fmt.Errorf("the findings that blocked do not read: %v", err)
 		}
 	}
 	return r, nil
@@ -125,10 +200,11 @@ func ids(list string) []string {
 }
 
 // add records commits as reviewed, and the patch ids of their changes, once
-// each, and one more run; the blocks kept, and whether every lens read the
-// change.
+// each, and one more run; the blocks kept, the findings judged, and
+// whether every lens read the change.
 func (r Record) add(commits, patches []string) Record {
-	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried}
+	out := Record{Reviewed: slices.Clone(r.Reviewed), Patches: slices.Clone(r.Patches), Runs: r.Runs + 1, Blocks: slices.Clone(r.Blocks), ReadAll: r.ReadAll, Retried: r.Retried,
+		Judged: slices.Clone(r.Judged), Gone: r.Gone}
 	for _, c := range commits {
 		if !slices.Contains(out.Reviewed, c) {
 			out.Reviewed = append(out.Reviewed, c)
@@ -364,12 +440,14 @@ func loadRecord(repo string, s Settings) (Record, string, error) {
 // readRecord reads the record of a text that always holds one.
 func readRecord(text string) (Record, error) {
 	if !strings.Contains(text, recordOpening) {
-		return Record{}, backlog.UnreadRecord(text, recordOpening)
+		r, _ := parseRecord(text) // the findings judged, read apart
+		return r, backlog.UnreadRecord(text, recordOpening)
 	}
 	return parseRecord(text)
 }
 
-// saveLocal keeps the record on this machine.
+// saveLocal keeps the record on this machine: never the findings judged,
+// which only a merge request's summary keeps (String leaves them out).
 func saveLocal(repo string, r Record) error {
 	file := localRecord(repo)
 	if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
