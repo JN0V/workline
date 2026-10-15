@@ -17,6 +17,8 @@ run:
   then: resume
   apply-from: {merge-request: 1, base: main, head: feature, line: true}
 expect:
-  findings: [{rule: findings-not-annotated, level: warn, where: workline findings, message: "Resource not accessible by integration", fix: "Checks: read and write"}]
+  findings:
+    - {rule: findings-not-annotated, level: warn, where: workline findings, message: "Resource not accessible by integration"}
+    - {rule: findings-not-annotated, message: "a GitHub App the permission Checks: read and write; the findings stay in the judge's job summary"}
   forge:
     check-runs: [{commit: feature, name: workline findings, absent: true}]

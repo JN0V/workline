@@ -1,5 +1,5 @@
 case: documentalist/findings-annotated-on-a-check
-about: "The job applying a merge request's own run writes the documentalist's findings as the annotations of a check, `workline findings`, on the head judged, each on its doc and line: shown on the merge request's changes, none a conversation to resolve (#412). With no agent, nothing else is applied, and no comment is posted."
+about: "The job applying a merge request's own run writes the documentalist's findings as the annotations of a check, `workline findings`, on the head judged, each on its doc and line: shown on the merge request's changes, none a conversation to resolve (#412). With no agent, the checklist of docs to check is its one comment, as before, and nothing is posted on a line."
 given:
   repo: documented
   setup:
@@ -18,7 +18,7 @@ expect:
   status: pass
   findings: [{rule: annotated, where: workline findings, message: "2 findings of the documentalist"}]
   forge:
-    merge-requests: [{id: 1, comments: 0}]
+    merge-requests: [{id: 1, comments: 1, comment-contains: "Docs to check", threads: []}]
     check-runs:
       - commit: feature
         name: workline findings

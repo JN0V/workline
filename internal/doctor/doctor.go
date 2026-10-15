@@ -52,6 +52,10 @@ type Options struct {
 	UserAI   string // `ai:` in the user's config
 	// NoPushApproval: the person has not asked to approve each push (ADR-0011).
 	NoPushApproval bool
+	// Forge: the forge whose rules are read (--forge); empty, the
+	// project's `forge`, else GitHub when the repository's GitHub workflows
+	// run workline and its origin is on github.com.
+	Forge string
 }
 
 // Run looks at the machine, then at the repository when there is one.
@@ -243,6 +247,7 @@ func repository(r *Report, o Options) {
 		r.add(Check{Area: "repository", Rule: "docs-counted-at-push", Where: where, Level: OK,
 			Message: "the push counts the docs its commits make suspect"})
 	}
+	findingsOnMergeRequests(r, o, cfg.Forge)
 	// A shallow clone lacks the commits docs were checked against, and the
 	// last release: the documentalist and the release say so and stop.
 	if out, err := exec.Command("git", "-C", o.Repo, "rev-parse", "--is-shallow-repository").Output(); err == nil && strings.TrimSpace(string(out)) == "true" {
