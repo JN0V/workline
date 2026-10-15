@@ -1,0 +1,43 @@
+case: reviewer/intent-restock-leaves-out-the-refusal
+about: "Intent, a part of the issue's Need left out: #8 asks Restock to refuse a line of zero or fewer units, adding nothing and returning an error naming the product; the change adds every line through Add, which passes over such a line in silence, and returns nothing. Its code and its test are right for what they do: only the issue says what is missing."
+given:
+  repo: shop
+  setup:
+    - |
+      git checkout -q -b feature
+      cat >> shop/stock.go <<'GO'
+
+      // Restock adds each product of an order from a supplier to the stock.
+      func (s *Stock) Restock(order map[string]int) {
+      	for sku, n := range order {
+      		s.Add(sku, n)
+      	}
+      }
+      GO
+      cat >> shop/stock_test.go <<'GO'
+
+      func TestRestock(t *testing.T) {
+      	s := NewStock()
+      	s.Restock(map[string]int{"tea": 2, "cup": 1})
+      	if s.Left("tea") != 2 || s.Left("cup") != 1 {
+      		t.Errorf("left %d tea, %d cup", s.Left("tea"), s.Left("cup"))
+      	}
+      }
+      GO
+      git commit -qam 'feat(stock): restock from an order from a supplier' -m 'Closes #8.'
+  forge:
+    issues:
+      - id: 8
+        title: Restock from an order from a supplier
+        body: "## Need\n\nThe shop restocks from an order from a supplier: each product of the order is added to the stock. A line of zero or fewer units is a mistake in the order: Restock refuses it, adds nothing of the order, and returns an error naming the product.\n\n## Verification\n\nA test of Restock on an order of two products, and on an order holding a line of zero units.\n\n## Scope\n\nshop/stock.go, shop/stock_test.go\n"
+        labels: []
+        comments: []
+    merge-requests: []
+run: {role: reviewer, event: review, input: {range: main..HEAD}}
+review:
+  defects:
+    - lens: intent
+      kind: need-left-out
+      at:
+        - {file: "#8", text: "Restock refuses it, adds nothing of the order, and returns an error naming the product."}
+        - {file: shop/stock.go, lines: [46, 51], text: "func (s *Stock) Restock(order map[string]int) {"}

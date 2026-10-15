@@ -100,7 +100,7 @@ func main() {
 		add(&g.tokensOut, get("tokens out"))
 		add(&g.seconds, get("seconds"))
 		add(&g.calls, get("agent calls"))
-		addMeasure(lenses, outside, k, get("measure"))
+		addMeasure(lenses, outside, get("agent"), get("measure"))
 	}
 	keys := make([]key, 0, len(groups))
 	for k := range groups {
@@ -146,8 +146,10 @@ func main() {
 
 // The reviewer's measure (#90): its cases write, a run, each lens's tallies
 // in the `measure` column (tests/evaluation/review_test.go); they are summed
-// here by lens, models and judge.
-type lensKey struct{ lens, models, judge string }
+// here by lens, the agent asked (the `agent` column: a run with no judge
+// call names fewer models, and is the same measure) and how the lenses
+// were asked — together, apart, or the diff-alone facet alone (#360).
+type lensKey struct{ lens, agent, asked string }
 
 type lensSum struct {
 	runs   int
@@ -157,10 +159,11 @@ type lensSum struct {
 
 // addMeasure reads one row's measure: "floor=2; correctness planted=1
 // found=1 …; edge-cases …; outside-planted tests:untested=opened by tests".
-func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int, k key, measure string) {
+func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int, agent, measure string) {
 	if measure == "" {
 		return
 	}
+	asked := askedIn(measure)
 	floor := ""
 	for _, part := range strings.Split(measure, "; ") {
 		if v, ok := strings.CutPrefix(part, "floor="); ok {
@@ -168,7 +171,7 @@ func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int,
 			continue
 		}
 		if v, ok := strings.CutPrefix(part, "outside-planted "); ok {
-			ok := lensKey{"", k.models, k.judge}
+			ok := lensKey{"", agent, asked}
 			if outside[ok] == nil {
 				outside[ok] = map[string]int{}
 			}
@@ -181,7 +184,7 @@ func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int,
 		if len(fields) == 0 {
 			continue
 		}
-		lk := lensKey{fields[0], k.models, k.judge}
+		lk := lensKey{fields[0], agent, asked}
 		s := lenses[lk]
 		if s == nil {
 			s = &lensSum{n: map[string]int{}}
@@ -197,10 +200,34 @@ func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int,
 	}
 }
 
+// askedIn is how a row's lenses were asked: together (the `lenses` part,
+// their one call), the diff-alone facet alone (its part, and no
+// `lenses`), one lens (one part only spent tokens, as a push to a merge
+// request asks), or apart.
+func askedIn(measure string) string {
+	asked, spent := "apart", 0
+	for _, part := range strings.Split(measure, "; ") {
+		switch {
+		case strings.HasPrefix(part, "lenses "):
+			return "together"
+		case strings.HasPrefix(part, "diff-alone "):
+			asked = "alone"
+		case strings.Contains(part, " in=") && !strings.Contains(part, " in=0 "):
+			spent++
+		}
+	}
+	if asked == "apart" && spent == 1 {
+		return "one lens"
+	}
+	return asked
+}
+
 // printLenses prints, a lens each, the defects planted for it and how many
-// were found (by any lens), the judge's refusals of true findings, what it
-// raised that nothing planted — shown, nits, or refused — what it raised
-// outside the change, the finder floor, and its tokens.
+// were found (by any lens), those its own finding verified (what a block on
+// it holds), the judge's refusals of true findings, what it raised that
+// nothing planted — shown, verified, nits, or refused — its findings shown
+// not verified, what it raised outside the change, its decisions for a
+// person, its judges' calls, the finder floor, and its tokens.
 func printLenses(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int) {
 	if len(lenses) == 0 {
 		return
@@ -211,19 +238,20 @@ func printLenses(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int
 	}
 	sort.Slice(keys, func(i, j int) bool {
 		a, b := keys[i], keys[j]
-		if a.models+a.judge != b.models+b.judge {
-			return a.models+a.judge < b.models+b.judge
+		if a.agent+a.asked != b.agent+b.asked {
+			return a.agent+a.asked < b.agent+b.asked
 		}
 		return lensOrder(a.lens) < lensOrder(b.lens)
 	})
 	fmt.Println()
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "reviewer lens\tmodels\tjudge\truns\tfound/planted\town\tjudge refused true\tfalse shown\tnits\tfalse refused\toutside (opened)\tanswers\tfloor\ttokens in\ttokens out\t")
+	fmt.Fprintln(w, "reviewer lens\tagent\tasked\truns\tfound/planted\town\town verified\tjudge refused true\tfalse shown\tfalse verified\tnot verified\tnits\tfalse refused\toutside (opened)\tanswers\tdecisions\tjudge calls\tfloor\ttokens in\ttokens out\t")
 	for _, k := range keys {
 		s := lenses[k]
 		n := s.n
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d/%d\t%d\t%d\t%d\t%d\t%d\t%d (%d)\t%d\t%s\t%d\t%d\t\n", k.lens, k.models, k.judge, s.runs,
-			n["found"], n["planted"], n["own"], n["judge-no"], n["fp"], n["nits"], n["dropped"], n["outside"], n["opened"], n["answers"], show(s.floors, "%.1f"), n["in"], n["out"])
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d/%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d (%d)\t%d\t%d\t%d\t%s\t%d\t%d\t\n", k.lens, k.agent, k.asked, s.runs,
+			n["found"], n["planted"], n["own"], n["own-verified"], n["judge-no"], n["fp"], n["fp-verified"], n["unsure"], n["nits"], n["dropped"],
+			n["outside"], n["opened"], n["answers"], n["questions"], n["judges"], show(s.floors, "%.1f"), n["in"], n["out"])
 	}
 	w.Flush()
 	for k, o := range outside {
@@ -232,12 +260,12 @@ func printLenses(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int
 			lines = append(lines, fmt.Sprintf("%s ×%d", what, n))
 		}
 		sort.Strings(lines)
-		fmt.Printf("outside the change, planted (%s, judge %s): %s\n", k.models, k.judge, strings.Join(lines, "; "))
+		fmt.Printf("outside the change, planted (%s, %s): %s\n", k.agent, k.asked, strings.Join(lines, "; "))
 	}
 }
 
 func lensOrder(l string) int {
-	for i, x := range []string{"correctness", "edge-cases", "tests"} {
+	for i, x := range []string{"lenses", "correctness", "edge-cases", "tests", "intent", "claims", "diff-alone"} {
 		if l == x {
 			return i
 		}

@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: f094fd52
+checked: 968debfc
 verified: agent:documentalist
 judged: af2d6fb
 ---
@@ -149,7 +149,8 @@ tests/evaluation/
                              the runs, the pass rate (runs earning every point),
                              mean score, range, tokens and seconds; fewer than
                              five runs are marked `few runs`, a model that no
-                             longer answers `replaced`
+                             longer answers `replaced`; the reviewer's tallies
+                             by lens, agent and how the lenses were asked
 ```
 
 ```sh
@@ -159,9 +160,12 @@ WORKLINE_EVAL=claude go test -count=1 -timeout 60m ./tests/evaluation/
 It runs only when `WORKLINE_EVAL` names the agent — it costs tokens — and says
 so when skipped. The name is an `--ai` value, so `WORKLINE_EVAL=claude:haiku@medium`
 runs every case on one model and effort, to compare them with the roles' own.
-The reviewer's cases ask each lens apart; `WORKLINE_EVAL_LENSES` names the
-lenses asked (`diff-alone`: the facet alone) and `WORKLINE_EVAL_REVIEWER`
-sets its settings, a YAML map (`{ai-max-tokens: 10000}`). A case is read as strictly as a conformance case: a key no field names fails to load
+The reviewer's cases ask every lens in one call, as on a machine;
+`WORKLINE_EVAL_LENSES` names the lenses asked (`diff-alone`: the facet
+alone) and `WORKLINE_EVAL_REVIEWER` sets its settings, a YAML map
+(`{lenses-together: false}`: each lens apart; `{ai-max-tokens: 10000}`).
+A reviewer case may hold a simulated forge (`given.forge`, as a
+conformance case's): the issues its change closes. A case is read as strictly as a conformance case: a key no field names fails to load
 it, as does a check `grade` does not know. Besides the fixtures, a case can start from this repository
 itself: `given.workline-commit: <sha>` stages that commit's diff on its parent
 (a message the hook refused, replayed with the author's words in

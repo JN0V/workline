@@ -1,6 +1,7 @@
 package evaluation
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,7 +31,7 @@ func TestChecks(t *testing.T) {
 }
 
 func TestAnsweredBy(t *testing.T) {
-	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part"}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge"}})
+	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part", "1-lenses"}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge", "judge/01"}})
 	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || in != "3000" || out != "120" || c != "0.0300" {
 		t.Errorf("got %q %q %q %q %q", m, e, in, out, c)
 	}
@@ -217,9 +218,10 @@ func TestNewChecks(t *testing.T) {
 
 // TestReviewerCasesPointRight builds each reviewer case: each place it names
 // holds its text within its lines, the code builds, and the fixture's tests
-// pass — a planted defect the tests already catch would measure nothing.
-// The cases cover the three lenses, three each, clean changes, and code
-// outside the change.
+// pass — a planted defect the tests already catch would measure nothing;
+// an issue a place names holds its text. The cases cover the three code
+// lenses, three each, intent and claims, clean changes, and code outside
+// the change.
 func TestReviewerCasesPointRight(t *testing.T) {
 	perLens, clean, outside := map[string]int{}, 0, 0
 	for f, c := range loadCases(t) {
@@ -250,6 +252,12 @@ func TestReviewerCasesPointRight(t *testing.T) {
 				t.Fatal(err)
 			}
 			for _, p := range places {
+				if p.issue() { // an issue the change closes: its body holds the text
+					if body := issueBody(c, p.File); !strings.Contains(body, p.Text) || p.Text == "" {
+						t.Errorf("%s: %q is not in %s's body, in given.forge", f, p.Text, p.File)
+					}
+					continue
+				}
 				data, err := os.ReadFile(filepath.Join(repo, p.File))
 				lines := strings.Split(string(data), "\n")
 				if err != nil || len(p.Lines) != 2 || p.Lines[0] < 1 || p.Lines[1] < p.Lines[0] || p.Lines[1] > len(lines) {
@@ -266,14 +274,77 @@ func TestReviewerCasesPointRight(t *testing.T) {
 			}
 		})
 	}
-	for _, lens := range []string{"correctness", "edge-cases", "tests"} {
-		if perLens[lens] < 3 {
-			t.Errorf("%d defects planted for the %s lens, fewer than three", perLens[lens], lens)
+	for lens, least := range map[string]int{"correctness": 3, "edge-cases": 3, "tests": 3, "intent": 1, "claims": 1} {
+		if perLens[lens] < least {
+			t.Errorf("%d defects planted for the %s lens, fewer than %d", perLens[lens], lens, least)
 		}
 	}
 	if clean < 2 || outside < 1 {
 		t.Errorf("%d clean changes, %d with code outside the change", clean, outside)
 	}
+}
+
+// TestIntentAndClaimsCasesGiveTheirLens plays each case planting an intent
+// or a claims defect through the engine, a fake agent finding nothing:
+// the lenses' call asks that lens, and holds what it checks the change
+// against — the issue's words the defect stands on, read from the case's
+// forge, or what the author says. No real agent, no tokens.
+func TestIntentAndClaimsCasesGiveTheirLens(t *testing.T) {
+	agent, _ := filepath.Abs("testdata/review-agent.sh")
+	spec := "cmd:sh " + agent + " " + t.TempDir()
+	t.Setenv("WORKLINE_JUDGE", spec)
+	t.Setenv("WORKLINE_EVAL_REVIEWER", "")
+	t.Setenv("WORKLINE_EVAL_LENSES", "")
+	asked := map[string]int{}
+	for f, c := range loadCases(t) {
+		if c.Review == nil {
+			continue
+		}
+		var want []string
+		for _, d := range c.Review.Defects {
+			switch d.Lens {
+			case "intent":
+				want = append(want, "## Lens: intent", d.At[0].Text)
+			case "claims":
+				want = append(want, "## Lens: claims", "## What the author says")
+			default:
+				continue
+			}
+			asked[d.Lens]++
+		}
+		if len(want) == 0 {
+			continue
+		}
+		r, err := play(t, c, spec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		task, err := os.ReadFile(filepath.Join(r.res.RunDir, "in", "parts", "1-lenses", "task.md"))
+		if err != nil {
+			t.Fatalf("%s: the lenses' call: %v", f, err)
+		}
+		for _, w := range want {
+			if !strings.Contains(string(task), w) {
+				t.Errorf("%s: the lenses' call lacks %q", f, w)
+			}
+		}
+	}
+	if asked["intent"] == 0 || asked["claims"] == 0 {
+		t.Errorf("no case plants an intent or a claims defect: %v", asked)
+	}
+}
+
+// issueBody is the body of the issue ref (`#4`) in a case's simulated
+// forge, "" when it holds none.
+func issueBody(c *caseFile, ref string) string {
+	issues, _ := c.Given.Forge["issues"].([]any)
+	for _, i := range issues {
+		is, _ := i.(map[string]any)
+		if fmt.Sprintf("#%v", is["id"]) == ref {
+			return fmt.Sprint(is["body"])
+		}
+	}
+	return ""
 }
 
 // TestScoreReview scores canned reviews: a defect found, by another lens; a
@@ -330,8 +401,9 @@ func TestScoreReview(t *testing.T) {
 // TestReviewerWithFakeAgent plays a reviewer case through the engine with a
 // fake agent (testdata/review-agent.sh): the run's folder is read back —
 // each lens's answers, the quotes not found again, the judge's verdicts,
-// the tokens each lens's call and its judges used — and scored. No real
-// agent, no tokens.
+// the tokens each lens's call and its judges used, what a block would have
+// held — and scored, the lenses asked apart and together. No real agent,
+// no tokens.
 func TestReviewerWithFakeAgent(t *testing.T) {
 	agent, _ := filepath.Abs("testdata/review-agent.sh")
 	answers, _ := filepath.Abs("testdata/review-answers")
@@ -341,29 +413,43 @@ func TestReviewerWithFakeAgent(t *testing.T) {
 	}
 	spec := "cmd:sh " + agent + " " + answers
 	t.Setenv("WORKLINE_JUDGE", spec)
-	r, err := play(t, c, spec)
-	if err != nil {
-		t.Fatal(err)
-	}
-	passed, failed, _ := grade(c, r)
-	t.Logf("%d/%d; %v\n%s\n%s", passed, passed+len(failed), failed, r.measure, strings.Join(r.reviewNotes, "\n"))
-	if passed != 1 || len(failed) != 1 || !strings.HasPrefix(failed[0], "clean:") {
-		t.Errorf("the defect found, an unplanted finding shown: passed %d, failed %v", passed, failed)
-	}
-	for _, want := range []string{
-		"correctness planted=1 found=1 own=1 judge-no=0 fp=0 nits=0 dropped=1 outside=0 opened=0 answers=2 unfounded=0 in=2100 out=210",
-		"edge-cases planted=0 found=0 own=0 judge-no=0 fp=1 nits=0 dropped=0 outside=1 opened=1 answers=2 unfounded=0 in=2100 out=210",
-		"tests planted=0 found=0 own=0 judge-no=0 fp=0 nits=1 dropped=0 outside=0 opened=0 answers=2 unfounded=1 in=100 out=10",
+	for _, run := range []struct {
+		settings string
+		want     []string
+	}{
+		{"{lenses-together: false}", []string{ // each lens a call of its own: its tokens, and its judges'
+			"correctness planted=1 found=1 own=1 judge-no=0 fp=0 nits=0 dropped=1 outside=0 opened=0 answers=2 unfounded=0 in=2100 out=210 own-verified=1 fp-verified=0 unsure=0 questions=0 judges=2",
+			"edge-cases planted=0 found=0 own=0 judge-no=0 fp=1 nits=0 dropped=0 outside=1 opened=1 answers=2 unfounded=0 in=2100 out=210 own-verified=0 fp-verified=1 unsure=0 questions=0 judges=2",
+			"tests planted=0 found=0 own=0 judge-no=0 fp=0 nits=1 dropped=0 outside=0 opened=0 answers=2 unfounded=1 in=100 out=10 own-verified=0 fp-verified=0 unsure=0 questions=0 judges=0",
+		}},
+		{"", []string{ // the role's own way: one call, its answers and tokens the `lenses` part's
+			"lenses planted=0 found=0 own=0 judge-no=0 fp=0 nits=0 dropped=0 outside=0 opened=0 answers=6 unfounded=0 in=100 out=10",
+			"correctness planted=1 found=1 own=1 judge-no=0 fp=0 nits=0 dropped=1 outside=0 opened=0 answers=0 unfounded=0 in=2000 out=200 own-verified=1 fp-verified=0 unsure=0 questions=0 judges=2",
+			"edge-cases planted=0 found=0 own=0 judge-no=0 fp=1 nits=0 dropped=0 outside=1 opened=1 answers=0 unfounded=0 in=2000 out=200 own-verified=0 fp-verified=1",
+			"tests planted=0 found=0 own=0 judge-no=0 fp=0 nits=1 dropped=0 outside=0 opened=0 answers=0 unfounded=1 in=0 out=0",
+		}},
 	} {
-		if !strings.Contains(r.measure, want) {
-			t.Errorf("measure lacks %q:\n%s", want, r.measure)
+		t.Setenv("WORKLINE_EVAL_REVIEWER", run.settings)
+		r, err := play(t, c, spec)
+		if err != nil {
+			t.Fatal(err)
 		}
-	}
-	if !strings.HasPrefix(r.measure, "floor=") || strings.HasPrefix(r.measure, "floor=0") {
-		t.Errorf("the finder floor is read from the lenses' task: %s", r.measure)
-	}
-	if r.judgedBy != "fake-judge (provider)" {
-		t.Errorf("judged by %q", r.judgedBy)
+		passed, failed, _ := grade(c, r)
+		t.Logf("%s: %d/%d; %v\n%s\n%s", run.settings, passed, passed+len(failed), failed, r.measure, strings.Join(r.reviewNotes, "\n"))
+		if passed != 1 || len(failed) != 1 || !strings.HasPrefix(failed[0], "clean:") {
+			t.Errorf("%s: the defect found, an unplanted finding shown: passed %d, failed %v", run.settings, passed, failed)
+		}
+		for _, want := range run.want {
+			if !strings.Contains(r.measure, want) {
+				t.Errorf("%s: measure lacks %q:\n%s", run.settings, want, r.measure)
+			}
+		}
+		if !strings.HasPrefix(r.measure, "floor=") || strings.HasPrefix(r.measure, "floor=0") {
+			t.Errorf("the finder floor is read from the lenses' task: %s", r.measure)
+		}
+		if r.judgedBy != "fake-judge (provider)" {
+			t.Errorf("judged by %q", r.judgedBy)
+		}
 	}
 }
 

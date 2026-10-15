@@ -399,7 +399,7 @@ func TestJudgeReplay(t *testing.T) {
 					a.Shown, readsLine(a), a.Why, stop.spent(), stop.max)
 				var calls []call
 				for _, c := range a.Calls {
-					calls = append(calls, call{c.Effort, c.Model, c.TokensIn, c.TokensOut, c.CostUSD, "judge"})
+					calls = append(calls, call{c.Effort, c.Model, c.TokensIn, c.TokensOut, c.CostUSD, "judge", c.For})
 				}
 				models, efforts, tokensIn, tokensOut, cost := answeredBy(calls)
 				line := strings.Join([]string{time.Now().UTC().Format(time.RFC3339), version, spec, models, efforts,
