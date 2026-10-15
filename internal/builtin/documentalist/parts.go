@@ -56,7 +56,8 @@ sources says something about, return one ` + "`claim`" + `:
   source's, with its path and lines; say why they disagree.
 - partial: the source bears on it but does not settle it; say in ` + "`why`" + ` what
   this share leaves out.
-- supported: the source says the same; quote both.
+- supported: the source says the same; quote both. A comment is not
+  evidence: a support quoted from a comment only counts for nothing.
 
 Say nothing of a passage this share does not speak to: it is not covered by
 this share, and another part may hold what does. Quote exactly, as the lines
@@ -178,6 +179,20 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		entry := verdictOf.fixEntry(sd.doc.Path, string(content), repo)
 		summary := fmt.Sprintf("judged in parts at %s: %d parts, %d claims kept", at, len(plans), len(verdictOf.kept))
+		// A support quoted from a comment only is said, and so is the comment
+		// where the code, quoted by another claim, says otherwise (#106).
+		if only := verdictOf.commentOnly(); len(only) > 0 {
+			summary += fmt.Sprintf(", %d resting on a comment only, not read as support", len(only))
+			for _, o := range only {
+				for _, c := range verdictOf.kept {
+					if c.Status == "contradicted" && c.Lines.overlaps(o.Lines) {
+						*findings = append(*findings, verdict.Finding{Rule: "comment-disagrees", Where: strings.SplitN(o.comment, ":", 2)[0],
+							Message: fmt.Sprintf("the comment at %s was given by a part as support for %s %s, which %s, %s contradicts; a comment is not evidence: if the code says otherwise, the comment is stale — fix it", o.comment, sd.doc.Path, o.Lines, c.Source.Path, c.Source.Lines)})
+						break
+					}
+				}
+			}
+		}
 		switch {
 		case entry == "":
 			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
@@ -413,6 +428,25 @@ type claim struct {
 	} `yaml:"source"`
 	Why  string `yaml:"why"`
 	part int    // which part said it
+	// comment is where a `supported` claim's source quote is, path:line,
+	// when it is there in a comment only: kept, but no support — it
+	// neither settles nor disputes another part's claim (ADR-0014, a
+	// comment is not evidence; #106).
+	comment string
+}
+
+// supports says whether a claim is support another part's claim can rest on.
+func (c claim) supports() bool { return c.Status == "supported" && c.comment == "" }
+
+// commentOnly are the kept claims whose support rests on a comment only.
+func (v *partsVerdict) commentOnly() []claim {
+	var out []claim
+	for _, c := range v.kept {
+		if c.comment != "" {
+			out = append(out, c)
+		}
+	}
+	return out
 }
 
 // partsVerdict is what the parts of one doc said, once their quotes are checked.
@@ -462,6 +496,9 @@ func readParts(runDir, repo string, names []string, plans []partPlan) (*partsVer
 					continue
 				}
 				c.Source.Path = src
+				if only, line := commentOnlyAt(src, sources[src], c.Source.Lines, c.Source.Quote); only && c.Status == "supported" {
+					c.comment = fmt.Sprintf("%s:%d", src, line)
+				}
 			}
 			c.part = k
 			v.kept = append(v.kept, c)
@@ -497,8 +534,10 @@ func quotedAt(content string, r lineRange, quote string) bool {
 // part and supported in another is a conflict; partial is to be read
 // together, unless another part supports the lines it speaks of: that part
 // held the source settling them, and the fix would act on a share that
-// cannot (workline #29). It returns the doc's part of the fix task, with only the source
-// lines the parts cited; nothing when there is nothing to fix.
+// cannot (workline #29). A support quoted from a comment only does neither
+// (#106): the fix is told of it. It returns the doc's part of the fix task,
+// with only the source lines the parts cited; nothing when there is nothing
+// to fix.
 func (v *partsVerdict) fixEntry(p, content, repo string) string {
 	var wrong, conflict, together []claim
 	for _, c := range v.kept {
@@ -506,7 +545,7 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 		case "contradicted":
 			disputed := false
 			for _, o := range v.kept {
-				disputed = disputed || o.Status == "supported" && o.part != c.part && o.Lines.overlaps(c.Lines)
+				disputed = disputed || o.supports() && o.part != c.part && o.Lines.overlaps(c.Lines)
 			}
 			if disputed {
 				conflict = append(conflict, c)
@@ -516,7 +555,7 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 		case "partial":
 			settled := false
 			for _, o := range v.kept {
-				settled = settled || o.Status == "supported" && o.part != c.part && o.Lines.covers(c.Lines)
+				settled = settled || o.supports() && o.part != c.part && o.Lines.covers(c.Lines)
 			}
 			if !settled {
 				together = append(together, c)
@@ -545,9 +584,14 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 			}
 			if title == "Found wrong by one part, and supported by another" {
 				for _, o := range v.kept {
-					if o.Status == "supported" && o.part != c.part && o.Lines.overlaps(c.Lines) {
+					if o.supports() && o.part != c.part && o.Lines.overlaps(c.Lines) {
 						fmt.Fprintf(&b, "  Supported by %s, %s: %q\n", o.Source.Path, o.Source.Lines, o.Source.Quote)
 					}
+				}
+			}
+			for _, o := range v.commentOnly() {
+				if o.Lines.overlaps(c.Lines) {
+					fmt.Fprintf(&b, "  Supported only by a comment, which is not evidence: %s, %s: %q\n", o.Source.Path, o.Source.Lines, o.Source.Quote)
 				}
 			}
 		}
@@ -556,18 +600,24 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 	show("Found wrong", wrong)
 	show("Found wrong by one part, and supported by another", conflict)
 	show("To be read together: each part holds only a share of what they say", together)
-	// Only the source lines the parts cited, with a few lines around them.
+	// Only the source lines the parts cited, with a few lines around them:
+	// a comment's too, with the code beside it.
 	cited := map[string][]lineRange{}
 	for _, list := range [][]claim{wrong, conflict, together} {
 		for _, c := range list {
 			if c.Source != nil {
 				cited[c.Source.Path] = append(cited[c.Source.Path], c.Source.Lines)
 			}
+			for _, o := range v.commentOnly() {
+				if o.Lines.overlaps(c.Lines) {
+					cited[o.Source.Path] = append(cited[o.Source.Path], o.Source.Lines)
+				}
+			}
 		}
 	}
 	for _, c := range conflict {
 		for _, o := range v.kept {
-			if o.Status == "supported" && o.part != c.part && o.Lines.overlaps(c.Lines) {
+			if o.supports() && o.part != c.part && o.Lines.overlaps(c.Lines) {
 				cited[o.Source.Path] = append(cited[o.Source.Path], o.Source.Lines)
 			}
 		}
@@ -587,7 +637,10 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 		lines := strings.Split(sources[f], "\n")
 		ranges := cited[f]
 		sort.Slice(ranges, func(i, j int) bool { return ranges[i].from < ranges[j].from })
-		for _, r := range ranges {
+		for k, r := range ranges {
+			if k > 0 && r == ranges[k-1] { // cited by two claims: shown once
+				continue
+			}
 			from, to := max(1, r.from-3), min(len(lines), r.to+3)
 			b.WriteString("#" + numberedPiece(f, lines, from, to)) // under the doc's heading
 		}

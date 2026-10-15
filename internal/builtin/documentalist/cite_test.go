@@ -67,6 +67,32 @@ func TestQuoteIn(t *testing.T) {
 	}
 }
 
+// A part's support rests on a comment only when its quote, at the lines it
+// cites, is in a comment there: a block comment opened above them counts,
+// and the same words in the code elsewhere do not (#106).
+func TestCommentOnlyAt(t *testing.T) {
+	src := "/* Tokens\n   last one hour. */\nconst TTL = 7200\n// Tokens last one hour.\nvar s = \"Tokens last one hour.\"\n"
+	for _, c := range []struct {
+		from, to int
+		quote    string
+		only     bool
+		line     int
+	}{
+		{2, 2, "last one hour.", true, 2},          // inside a block comment opened at line 1
+		{1, 2, "Tokens last one hour.", true, 1},   // the block comment whole
+		{3, 3, "const TTL = 7200", false, 3},       // code
+		{4, 4, "Tokens last one hour.", true, 4},   // a line comment, though line 5 says it in code
+		{5, 5, "Tokens last one hour.", false, 5},  // a string a value takes is code
+		{5, 5, "Tokens last two hours.", false, 0}, // not there
+		{4, 5, "Tokens last one hour.", false, 4},  // in a comment at 4, and in the code at 5: not only
+	} {
+		only, line := commentOnlyAt("a.go", src, lineRange{c.from, c.to}, c.quote)
+		if only != c.only || line != c.line {
+			t.Errorf("commentOnlyAt(%d-%d, %q) = %v, %d; want %v, %d", c.from, c.to, c.quote, only, line, c.only, c.line)
+		}
+	}
+}
+
 // A type whose comments the engine does not know is said, never taken
 // silently as code; a script names its type on its first line.
 func TestStyleOf(t *testing.T) {
@@ -119,7 +145,7 @@ func TestWordsTakenOut(t *testing.T) {
 func TestGlueByLanguage(t *testing.T) {
 	for _, c := range []struct {
 		removed, added, lang string
-		want             string
+		want                 string
 	}{
 		{"Le connexion reste ouverte.", "La connexion reste ouverte.", "fr", ""},
 		{"La fiche du employeur.", "La fiche de l\u2019employeur.", "fr", ""},
@@ -135,7 +161,7 @@ func TestGlueByLanguage(t *testing.T) {
 	}
 	for text, want := range map[string]string{
 		"Le jeton d'accès dure une heure, et la session reste ouverte.": "fr",
-		"Access tokens last one hour, and the session stays open.":     "en",
+		"Access tokens last one hour, and the session stays open.":      "en",
 		"1.4.1": "en",
 	} {
 		if got := docLanguage(text); got != want {

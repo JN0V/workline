@@ -1,0 +1,29 @@
+# docs/tech/auth.md judged in parts, in the `documented` fixture once it
+# names src/auth/big.go too, and tokens went to two hours while token.go's
+# comment still says one hour: the first part supports line 10 with that
+# comment only; the second, the rest of big.go, finds line 10 partial.
+# Then the fix, reading the code beside the comment.
+calls:
+  - - claim:
+        lines: "10"
+        status: supported
+        quote: "Access tokens last one hour."
+        source: {path: src/auth/token.go, lines: "3", quote: "Tokens last one hour."}
+  - - claim:
+        lines: "10"
+        status: partial
+        quote: "Access tokens last one hour."
+        source: {path: src/auth/big.go, lines: "3000", quote: "const b3000"}
+        why: "the token lifetime is not in this share"
+  - - patch: |
+        --- a/docs/tech/auth.md
+        +++ b/docs/tech/auth.md
+        @@ -8,3 +8,3 @@
+         ## Token refresh
+
+        -Access tokens last one hour.
+        +Access tokens last two hours.
+    - claim:
+        lines: "10"
+        status: contradicted
+        source: {path: src/auth/token.go, quote: "const TokenTTL = 7200"}
