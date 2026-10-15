@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: d9922bf7
+checked: 5f871e24
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -45,7 +45,8 @@ A patch is refused, and the agent asked again with the reasons, when it:
 
 Places marked *withheld* below are not refused with the whole answer: the
 rest of the fix is applied without them. Condense, split, merge-card and
-dedupe tasks are judged by [their own rules](#condense-split-merge-dedupe).
+dedupe tasks are judged by [their own rules](#condense-split-merge-dedupe),
+the reader task by [its own](reader.md#what-the-engine-checks).
 
 ## Hunks that misquote the doc
 

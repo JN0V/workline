@@ -132,7 +132,9 @@ its evaluation in
   `comment-style-unknown-reported`, `whole-chars-*`,
   `docs-not-read-reported`, `removal-rule-reads-french`, setup's
   `init-without-ai-proposes-by-name`.
-- **Docs for their reader**: `reader-*`.
+- **Docs for their reader**: the checks; with an agent, the pages they
+  flag read last in a gardening run, a fix proposed on a merge request
+  ([#256](https://github.com/JN0V/workline/issues/256)): `reader-*`.
 - **Staying on the task**: the evaluation's `stays-on-the-task`.
 
 ## Missing, in the order it matters
@@ -151,10 +153,8 @@ its evaluation in
 4. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-5. **The agent reads**: the pages the reader checks point to
-   ([#256](https://github.com/JN0V/workline/issues/256)); a doc judged on
-   its diff against the code as it is now, a read each night (no issue
-   yet).
+5. **The agent reads**: a doc judged on its diff against the code as it
+   is now, a read each night (no issue yet).
 6. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.

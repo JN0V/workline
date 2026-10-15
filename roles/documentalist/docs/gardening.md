@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
-checked: d9922bf7
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
+checked: 5f871e24
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -56,7 +56,7 @@ it within budget by moving whole parts into a new doc, and linking to it.
 
 ## Merging cards
 
-Last, with nothing else to do, a card too short to stand alone goes into
+With nothing else to do, a card too short to stand alone goes into
 the card it belongs with, chosen by the agent among the others, those of
 its folder first: its text added as it is, under a heading, the card
 deleted, and every link to it pointed there. The judge checks that:
@@ -74,6 +74,14 @@ each other one moves, as written, into a card of its own that it links to.
 - Then a judge model — not the one that split it — is asked whether each
   card holds one concept, the one its title names. A no goes back to the
   agent with its reason.
+
+## Pages read for their reader
+
+Last, with no other task, the pages the reader checks flagged: per page,
+what a reader would miss or skip, each passage quoted, and a patch making
+it easy to read, at most `reader.agent-pages` (4) a run. What the engine
+cannot check against the quotes is withheld, never blocking; a page is not
+read again until it changes ([more](reader.md)).
 
 ## One merge request per task
 

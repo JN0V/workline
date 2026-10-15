@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist, routing.default.yaml]
-checked: 17d6abde
+checked: 5f871e24
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -36,8 +36,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
   blocks; when gardening, whether user pages serve their reader.
 - With an agent: reads each suspect doc against its sources, and fixes it
   or vouches for it by moving `checked`; when gardening, it also reads
-  stale docs again, merges repeated passages and condenses a doc over
-  budget.
+  stale docs again, merges repeated passages, condenses a doc over
+  budget, and reads the pages the reader checks flag.
 
 **Does not**: write code (its patches touch only `docs`), rewrite a doc the
 code follows (`truth: doc`, decisions by default: it opens an issue
@@ -72,7 +72,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `propagation` | code → `docs/tech/**` now; `docs/tech/**` → `docs/product/**` at the release | which cascades wait |
 | `budgets` | doc 200 lines, section 400 words, card 80–400 words, folder 2000 lines, `AGENTS.md` 200 lines | sizes reported |
 | `freshness.stale-after-days` | `180` | a doc confirmed longer ago is read again |
-| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30 | which pages a reader uses, and how much they read at once ([checks](docs/checks.md)) |
+| `reader` | user pages `README.md`, `docs/**` but specs; from `README.md`; paragraph 80 words, cell 30; `agent-pages: 4` | which pages a reader uses, how much they read at once ([checks](docs/checks.md)), and how many the agent reads a run ([more](docs/reader.md)) |
 | `duplicates` | `{min-words: 40, similarity: 0.85}` | repeated passages |
 | `derive` | `{}` | named commands filling `<!-- workline:derive name -->` blocks |
 | `examples` | `{check: ""}` | a command checking the code examples a fix writes; unset, they are said unverified ([code examples](docs/examples.md)) |
@@ -116,6 +116,8 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   large, judged in parts, 130k to 250k
   ([measured](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736)).
 - Condensing and splitting ask a frontier model (`model.tasks`).
+- Reading pages for their reader: about 36k tokens a run on workline, 3
+  pages ([measured](docs/reader.md#cost)).
 - Caps: `ai-max-calls`, `ai-max-tokens`, `whole-chars`,
   `parts-max-per-run` (a night's parts), `max-open-merge-requests`;
   `judge-in-parts: false` spends nothing on docs too large.
@@ -135,7 +137,8 @@ comment. Gardening only regenerates derived blocks.
   levels; [cascades](docs/cascades.md): how they are cut, what holds a
   release, the docs the code never rewrites.
 - [The agent's tasks](docs/tasks.md): suspect docs judged whole or in parts;
-  [gardening](docs/gardening.md): its tasks, one merge request per task.
+  [gardening](docs/gardening.md): its tasks, one merge request per task;
+  [pages read for their reader](docs/reader.md).
 - [The judge](docs/judge.md): what `post` refuses of the agent's patches;
   [its claims](docs/judge-claims.md): what backs a word taken out;
   [code examples](docs/examples.md): said unverified, or checked by your

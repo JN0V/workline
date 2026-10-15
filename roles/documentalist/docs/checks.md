@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: d9922bf7
+checked: 5f871e24
 judged: f70db89
 verified: agent:documentalist
 ---
@@ -13,9 +13,9 @@ or weekly (`schedule`).
 
 ## Prepare (`pre`, no AI)
 
-Twelve checks, each below. Not built yet: style (vale); the agent reading
-the pages the reader checks point to
-([#256](https://github.com/JN0V/workline/issues/256)).
+Twelve checks, each below. Not built yet: style (vale). With an agent,
+gardening also reads the pages the reader checks flag
+([pages read for their reader](reader.md)).
 
 ### Suspects
 
@@ -216,9 +216,9 @@ turns one off with `enforce`.
   `cites-superseded`, `stale`, `links-not-checked`, `nothing-tracked`,
   `no-sources` and `sources-by-name` (on `init`), `undocumented`,
   `source-gone`, `docs-not-read`, `gardening-paused`, the reader checks,
-  `too-large-to-condense` and `too-large-to-split` (gardening);
-  for a doc judged in
-  parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
+  `too-large-to-condense`, `too-large-to-split`, `too-large-to-read`,
+  `reader-claim-dropped` and `reader-patch-withheld` (gardening); for a
+  doc judged in parts, `sources-too-wide`, `uncovered`, `claims-dropped`.
 - **Reported, and the block regenerated**: `derived-stale` (gardening,
   `init`).
 - **Reported, left as it is**: `derive-unclosed`, a derive marker with no end before the next block's ([#302](https://github.com/JN0V/workline/issues/302)).
