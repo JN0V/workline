@@ -1,0 +1,11 @@
+case: setup/doctor-conversations-older-template
+about: "A workflow applying a pull request's run copied before the findings became annotations grants no `checks: write` — another workflow granting it does not count: the doctor warns that the documentalist's findings reach pull requests only in the job's summary, and says what to copy again (#412)."
+given:
+  repo: documented
+  setup:
+    - "mkdir -p .github/workflows && printf 'jobs:\\n  apply:\\n    permissions: {contents: write, pull-requests: write}\\n    steps:\\n      - run: workline apply --line line.json --from-merge-request 1\\n' > .github/workflows/workline-apply.yml && printf 'jobs:\\n  other:\\n    permissions: {checks: write}\\n    steps:\\n      - run: workline route schedule\\n' > .github/workflows/other.yml && git add .github && git commit -qm 'ci: apply the line'"
+  forge: {merge-requests: [], conversations-required: [main]}
+run: {doctor: true}
+expect:
+  checks:
+    - {rule: findings-on-merge-requests, where: main, level: warn, message: "grants no `checks: write`", fix: "Checks: read and write"}

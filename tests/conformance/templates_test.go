@@ -1,14 +1,20 @@
 package conformance
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/JN0V/workline/internal/engine"
+	"github.com/JN0V/workline/internal/line"
+	"github.com/JN0V/workline/internal/verdict"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -807,6 +813,92 @@ func TestMergePolicyRunsAfterTheJudgeAndOnLabels(t *testing.T) {
 		}
 		if _, ok := wf.Jobs["judge"]; ok {
 			t.Errorf("%s: holds a judge job, which would show skipped on a label", filepath.Base(f))
+		}
+	}
+}
+
+// The documentalist's findings on a pull request reach the applying job,
+// though the line proposed nothing, and that job may write the check
+// holding them (#412): code scanning no longer gets them.
+func TestGitHubFindingsReachTheApplyingJob(t *testing.T) {
+	type workflow struct {
+		Jobs map[string]struct {
+			Permissions map[string]string `yaml:"permissions"`
+			Steps       []struct {
+				Uses string `yaml:"uses"`
+				If   string `yaml:"if"`
+				Run  string `yaml:"run"`
+				With struct {
+					Name string `yaml:"name"`
+				} `yaml:"with"`
+			} `yaml:"steps"`
+		} `yaml:"jobs"`
+	}
+	read := func(f string) workflow {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wf workflow
+		if err := yaml.Unmarshal(data, &wf); err != nil {
+			t.Fatal(err)
+		}
+		return wf
+	}
+	for _, dir := range []string{"../../ci/github/", "../../.github/workflows/"} {
+		judge := read(dir + "workline.yml").Jobs["judge"]
+		found, uploaded := false, false
+		for _, s := range judge.Steps {
+			found = found || strings.Contains(s.Run, `echo "found=`)
+			uploaded = uploaded || s.With.Name == "workline-runs" && strings.Contains(s.If, "steps.line.outputs.found == 'true'")
+		}
+		if !found || !uploaded {
+			t.Errorf("%sworkline.yml: the documentalist's findings do not reach the applying job (found said: %v, uploaded on it: %v)", dir, found, uploaded)
+		}
+		if p := read(dir + "workline-apply.yml").Jobs["apply"].Permissions; p["checks"] != "write" {
+			t.Errorf("%sworkline-apply.yml: apply may not write the check holding the findings (permissions %v)", dir, p)
+		}
+	}
+}
+
+// The judge's filter telling the documentalist found something reads the
+// line's result as the engine writes it: a documentalist step's findings,
+// handed off too, yes; another role's, or none, no.
+func TestGitHubJudgeTellsTheDocumentalistFound(t *testing.T) {
+	if _, err := exec.LookPath("jq"); err != nil {
+		t.Skip("jq is not installed: the judge's filter is not run here")
+	}
+	found := regexp.MustCompile(`echo "found=\$\(jq '([^']+)' line\.json\)"`)
+	step := func(name string, findings ...verdict.Finding) line.Step {
+		return line.Step{Name: name, Status: verdict.Pass, Result: &engine.Result{Status: verdict.Pass, Findings: findings}}
+	}
+	doc := verdict.Finding{Rule: "count-off", Where: "docs/a.md", Message: "`a.go` has 7 lines, not ~40"}
+	for _, f := range []string{"../../ci/github/workline.yml", "../../.github/workflows/workline.yml"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := found.FindSubmatch(data)
+		if m == nil {
+			t.Fatalf("%s: no `found=` filter", filepath.Base(f))
+		}
+		for _, c := range []struct {
+			name  string
+			steps []line.Step
+			want  string
+		}{
+			{"the documentalist's", []line.Step{step("committer"), step("documentalist", doc)}, "true"},
+			{"handed off", []line.Step{step("documentalist (handoff)", doc)}, "true"},
+			{"another role's", []line.Step{step("committer", verdict.Finding{Rule: "leak", Where: "config.ini:2"}), step("documentalist")}, "false"},
+			{"a gate's step", []line.Step{{Name: "gate:secrets", Status: verdict.Pass, Gate: &verdict.Verdict{Status: verdict.Pass}}}, "false"},
+		} {
+			res, _ := json.Marshal(line.Result{Status: verdict.Pass, Steps: c.steps})
+			cmd := exec.Command("jq", string(m[1]))
+			cmd.Stdin = bytes.NewReader(res)
+			out, err := cmd.Output()
+			if got := strings.TrimSpace(string(out)); err != nil || got != c.want {
+				t.Errorf("%s, %s: %q (%v), want %s", filepath.Base(f), c.name, got, err, c.want)
+			}
 		}
 	}
 }

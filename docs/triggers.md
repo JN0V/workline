@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 7327530a
+checked: 733da152
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -131,8 +131,9 @@ product owner's acts onto their own issue, when turned on
 ### Your own scanners
 
 `--sarif <file>` beside `--code-quality` writes the findings for GitHub's
-code scanning. The `gate:<name>` steps of a line, or `workline gate
-<name>`, run your own scanners.
+code scanning, on a merge request not the documentalist's nor the
+reviewer's ([#412](https://github.com/JN0V/workline/issues/412)).
+`gate:<name>` steps, or `workline gate <name>`, run your own scanners.
 
 ## What each job needs
 
