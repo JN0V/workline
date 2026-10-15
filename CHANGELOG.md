@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.30.0](https://github.com/JN0V/workline/compare/v0.29.0...v0.30.0) (2026-10-15)
+
+
+### Features
+
+* **reviewer:** a hidden line per finding judged, drawn by the sample ([#405](https://github.com/JN0V/workline/issues/405)) ([e1b53f4](https://github.com/JN0V/workline/commit/e1b53f4f24d4d0a480b82e44c0b96dbb4b67037f))
+
+
+### Bug Fixes
+
+* **product-owner:** four bugs found splitting the backlog acts spec ([#406](https://github.com/JN0V/workline/issues/406)) ([ebc5d06](https://github.com/JN0V/workline/commit/ebc5d068561e5c28860b9d16a507e19549d96bdb))
+* **reviewer:** one review at a time, applied once a push moved on ([#409](https://github.com/JN0V/workline/issues/409)) ([fe0b3a7](https://github.com/JN0V/workline/commit/fe0b3a7aed215b593ccb9db7a9dba49650a67025))
+
 ## [0.29.0](https://github.com/JN0V/workline/compare/v0.28.0...v0.29.0) (2026-10-14)
 
 
