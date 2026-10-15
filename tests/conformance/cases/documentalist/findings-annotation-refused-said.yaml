@@ -1,0 +1,22 @@
+case: documentalist/findings-annotation-refused-said
+about: "A token that may not write checks gets the documentalist's findings refused as annotations: the applying job says so, with the right to give, and never passes it silently; the findings stay in the judge's summary (#412)."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature"
+  forge:
+    merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]
+    checks-refused: "Resource not accessible by integration (HTTP 403)"
+run:
+  route: merge-request
+  input: {range: "main..feature"}
+  target: {merge-request: 1}
+  ai: none
+  no-apply: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: feature, line: true}
+expect:
+  findings: [{rule: findings-not-annotated, level: warn, where: workline findings, message: "Resource not accessible by integration", fix: "Checks: read and write"}]
+  forge:
+    check-runs: [{commit: feature, name: workline findings, absent: true}]

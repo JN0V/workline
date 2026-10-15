@@ -1,0 +1,27 @@
+case: documentalist/findings-annotated-on-a-check
+about: "The job applying a merge request's own run writes the documentalist's findings as the annotations of a check, `workline findings`, on the head judged, each on its doc and line: shown on the merge request's changes, none a conversation to resolve (#412). With no agent, nothing else is applied, and no comment is posted."
+given:
+  repo: documented
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours' && git push -q origin feature"
+  forge: {merge-requests: [{id: 1, branch: feature, labels: [], comments: []}]}
+run:
+  route: merge-request
+  input: {range: "main..feature"}
+  target: {merge-request: 1}
+  ai: none
+  no-apply: true
+  then: resume
+  apply-from: {merge-request: 1, base: main, head: feature, line: true}
+expect:
+  status: pass
+  findings: [{rule: annotated, where: workline findings, message: "2 findings of the documentalist"}]
+  forge:
+    merge-requests: [{id: 1, comments: 0}]
+    check-runs:
+      - commit: feature
+        name: workline findings
+        annotations:
+          - {path: docs/tech/auth.md, line: 1, level: notice, contains: "src/auth/token.go changed since it was checked"}
+          - {path: docs/product/sign-in.md, line: 1, level: notice}

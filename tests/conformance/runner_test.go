@@ -134,6 +134,9 @@ type applyFrom struct {
 	Listed       string            `yaml:"listed"`  // the run listed at this path, not its own
 	Setup        []string          `yaml:"setup"`   // commands run in the repository first: what its branches became since the run
 	Env          map[string]string `yaml:"env"`     // variables of the applying job (WORKLINE_APP)
+	// Line: apply the line's result, as CI's job does (`apply --line`),
+	// the runs it lists, none when it proposed nothing.
+	Line bool `yaml:"line"`
 }
 
 // thenLine is the line run after a case's run: the event, the branch of
@@ -167,6 +170,7 @@ type expectSpec struct {
 	SARIF       []map[string]any             `yaml:"sarif"`         // results, by rule, uri, line, level
 	CodeQuality []map[string]any             `yaml:"code-quality"`  // issues, by check_name, path, line, severity
 	LeftOut     []string                     `yaml:"left-out"`      // wheres found in neither report
+	SARIFLacks  []string                     `yaml:"sarif-lacks"`   // rules no SARIF result has
 	Notes       []string                     `yaml:"notes"`         // texts the agent's notes hold
 	RefusedKept int                          `yaml:"refused-kept"`  // refused answers kept in the run folders
 	CallsKept   int                          `yaml:"calls-kept"`    // agent calls recorded in the run folders
@@ -224,6 +228,27 @@ type forgeWant struct {
 	// revision of the repository) — by, state and a part of its description
 	// when given; absent: none of that name there.
 	Statuses []statusWant `yaml:"statuses"`
+	// CheckRuns: each must be the last check of its name on its commit (a
+	// revision of the repository), holding each annotation listed;
+	// absent: none of that name there.
+	CheckRuns []checkRunWant `yaml:"check-runs"`
+}
+
+// checkRunWant is a check the simulated forge holds on a commit.
+type checkRunWant struct {
+	Commit      string           `yaml:"commit"`
+	Name        string           `yaml:"name"`
+	Annotations []annotationWant `yaml:"annotations"`
+	Absent      bool             `yaml:"absent"`
+}
+
+// annotationWant is an annotation of a check: its path, line and level,
+// a text its message holds.
+type annotationWant struct {
+	Path     string `yaml:"path"`
+	Line     int    `yaml:"line"`
+	Level    string `yaml:"level"`
+	Contains string `yaml:"contains"`
 }
 
 // statusWant is a status the simulated forge holds on a commit.
@@ -653,7 +678,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 		if len(dirs) == 0 && r.RunDir != "" {
 			dirs = []string{r.RunDir}
 		}
-		if len(dirs) == 0 {
+		if len(dirs) == 0 && (c.Run.ApplyFrom == nil || !c.Run.ApplyFrom.Line) {
 			return []string{"the first run reported no run folder to resume"}
 		}
 		var fromArgs []string
@@ -664,6 +689,19 @@ func runCase(t *testing.T, c *caseFile) []string {
 			}
 		}
 		resumeArgs := append(append(append([]string{"apply"}, dirs...), "--json"), fromArgs...)
+		if a := c.Run.ApplyFrom; a != nil && a.Line {
+			// The line's result as the judge printed it, its runs listed
+			// where the run's code could have changed them (poisoned).
+			lineFile := filepath.Join(work, "line.json")
+			var l map[string]any
+			json.Unmarshal(stdout.Bytes(), &l)
+			if len(dirs) > 0 {
+				l["pending"] = dirs
+			}
+			data, _ := json.Marshal(l)
+			os.WriteFile(lineFile, data, 0o644)
+			resumeArgs = append([]string{"apply", "--line", lineFile, "--json"}, fromArgs...)
+		}
 		if c.Run.JobSum {
 			resumeArgs = append(resumeArgs, "--summary", summaryFile, "--summary", summaryHTML)
 		}
@@ -756,6 +794,7 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Expect.Forge != nil {
 		problems = append(problems, compareForge(c.Expect.Forge, forgeFile)...)
 		problems = append(problems, compareStatuses(c.Expect.Forge.Statuses, forgeFile, repo)...)
+		problems = append(problems, compareCheckRuns(c.Expect.Forge.CheckRuns, forgeFile, repo)...)
 	}
 	return problems
 }
@@ -1282,6 +1321,55 @@ func compareStatuses(want []statusWant, file, repo string) []string {
 	return p
 }
 
+// compareCheckRuns checks the checks the simulated forge holds: the last of
+// each name on each commit, the commits revisions of the repository.
+func compareCheckRuns(want []checkRunWant, file, repo string) []string {
+	if len(want) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []string{err.Error()}
+	}
+	var s forge.FakeState
+	if err := json.Unmarshal(data, &s); err != nil {
+		return []string{err.Error()}
+	}
+	commit := func(rev string) string {
+		out, _ := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
+		return strings.TrimSpace(string(out))
+	}
+	var p []string
+	for _, w := range want {
+		var last *forge.FakeCheck
+		for i := range s.Checks {
+			if ch := &s.Checks[i]; ch.Name == w.Name && commit(ch.Commit) == commit(w.Commit) {
+				last = ch
+			}
+		}
+		switch {
+		case w.Absent && last != nil:
+			p = append(p, fmt.Sprintf("forge: check %s on %s is there (%+v), want none", w.Name, w.Commit, *last))
+			continue
+		case w.Absent:
+			continue
+		case last == nil:
+			p = append(p, fmt.Sprintf("forge: no check %s on %s (checks: %+v)", w.Name, w.Commit, s.Checks))
+			continue
+		}
+		for _, a := range w.Annotations {
+			found := false
+			for _, g := range last.Annotations {
+				found = found || g.Path == a.Path && (a.Line == 0 || g.Line == a.Line) && (a.Level == "" || g.Level == a.Level) && strings.Contains(g.Message, a.Contains)
+			}
+			if !found {
+				p = append(p, fmt.Sprintf("forge: check %s on %s has no annotation %+v (got %+v)", w.Name, w.Commit, a, last.Annotations))
+			}
+		}
+	}
+	return p
+}
+
 // compareForge checks the simulated forge's state: each item listed, by
 // id, holds what itemWant says of it; `absent: true`, no item with that id.
 func compareForge(want *forgeWant, file string) []string {
@@ -1557,6 +1645,13 @@ func compareReports(c *caseFile, sarifFile, cqFile string) []string {
 	for _, w := range c.Expect.CodeQuality {
 		if !has(gotCQ, w) {
 			p = append(p, fmt.Sprintf("Code Quality lacks %v (got %v)", w, gotCQ))
+		}
+	}
+	for _, rule := range c.Expect.SARIFLacks {
+		for _, g := range got {
+			if g["rule"] == rule {
+				p = append(p, fmt.Sprintf("SARIF holds %v, and should not", g))
+			}
 		}
 	}
 	for _, w := range c.Expect.LeftOut {

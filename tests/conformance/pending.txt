@@ -1,2 +1,8 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+engine/merge-request-findings-kept-out-of-code-scanning
+documentalist/findings-annotated-on-a-check
+documentalist/findings-annotation-refused-said
+setup/doctor-conversations-required
+setup/doctor-conversations-unread
+setup/doctor-conversations-older-template
