@@ -88,13 +88,16 @@ func onGitHub(repo string) bool {
 	return err == nil && strings.Contains(string(out), "github.com")
 }
 
-// applyWorkflow says whether a GitHub workflow runs `workline apply`, and
-// whether one grants checks: write, which writing its check needs with the
-// job's own token.
+// applyWorkflow says whether a GitHub workflow applies a pull request's
+// run (`--from-merge-request`), and whether each one doing so grants
+// checks: write, which writing its check needs with the job's own token.
 func applyWorkflow(repo string) (applies, granted bool) {
+	granted = true
 	for _, w := range workflows(repo) {
-		applies = applies || strings.Contains(w, "workline apply")
-		granted = granted || strings.Contains(w, "checks: write")
+		if strings.Contains(w, "workline apply") && strings.Contains(w, "--from-merge-request") {
+			applies = true
+			granted = granted && strings.Contains(w, "checks: write")
+		}
 	}
-	return applies, granted
+	return applies, applies && granted
 }

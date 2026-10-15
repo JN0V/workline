@@ -62,15 +62,15 @@ func Annotate(from FromMergeRequest, build func(read func(path string) ([]byte, 
 		summary += fmt.Sprintf(" %d more are not written here.", left)
 	}
 	url, err := a.Annotate(from.Head, forge.FindingsCheck, summary, notes)
-	if forge.Refused(err) {
+	if err != nil {
 		why := forge.Said(err)
-		if !strings.Contains(why, "checks: write") {
+		if forge.Refused(err) && !strings.Contains(why, "checks: write") {
 			why += "; " + annotateFix
 		}
+		if url != "" { // the check written, some of its annotations not
+			why = "only part of them written, " + url + ": " + why
+		}
 		return not(why)
-	}
-	if err != nil {
-		return not(forge.Said(err))
 	}
 	where := "on " + short(from.Head)
 	if url != "" {
