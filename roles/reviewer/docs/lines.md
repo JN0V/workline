@@ -43,6 +43,9 @@ flowchart LR
 
 - **Never an approval**, nor a request for changes
   ([ADR-0020](../../../docs/adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)).
+- **Once, not twice**: on a merge request, its findings stay out of the
+  SARIF for code scanning, which would open a second conversation each
+  ([#412](https://github.com/JN0V/workline/issues/412)).
 - **The diff read first**: the pull request's files, the merge request's
   diffs; a line the forge does not show is known before anything is posted.
 - **The summary comment** keeps a row for each finding, its title only,

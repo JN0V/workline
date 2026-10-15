@@ -58,6 +58,12 @@ changes nothing.
 - In this repository: which hooks git runs there, whether the
   documentalist runs before a push, how many docs declare their sources,
   which files read as docs it does not read.
+- On GitHub: whether the default branch requires every conversation
+  resolved before a merge, and how workline's findings reach pull
+  requests ([#412](https://github.com/JN0V/workline/issues/412)). A rule
+  it cannot read — classic branch protection, without an admin's token —
+  is said. `--forge` names the forge; by default the project's `forge`,
+  else GitHub when its workflows run workline.
 - Exits 1 only on an error — the agent named cannot be called, the config
   does not load — never for a tool left out; `--json` prints every check.
 

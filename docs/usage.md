@@ -60,7 +60,7 @@ Each in detail: [the commands](commands.md), and
 | `--push-to-merge-request` | commits what the patches write to the merge request's branch ([below](#writing-to-a-merge-request)) |
 | `--open-merge-request` | puts what the patches write in a merge request of its own ([below](#writing-to-a-merge-request)) |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
-| `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's ([role outcome](spec/role-outcome.md)) |
+| `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's and the reviewer's ([role outcome](spec/role-outcome.md)) |
 | `--summary <file>` | also add what a CI job's page shows ([below](#the-jobs-summary)) |
 | `--verdict <file>` | `route` only: also write the line's verdict on the head it judged, for the [merge policy](merge-policy.md); `--verdict-head <commit>`, the head when the commit judged is a merge result |
 | `--json` | print the result as JSON ([below](#the-jobs-summary)) |

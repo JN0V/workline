@@ -131,8 +131,9 @@ product owner's acts onto their own issue, when turned on
 ### Your own scanners
 
 `--sarif <file>` beside `--code-quality` writes the findings for GitHub's
-code scanning. The `gate:<name>` steps of a line, or `workline gate
-<name>`, run your own scanners.
+code scanning, on a merge request not the documentalist's nor the
+reviewer's ([#412](https://github.com/JN0V/workline/issues/412)).
+`gate:<name>` steps, or `workline gate <name>`, run your own scanners.
 
 ## What each job needs
 

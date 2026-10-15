@@ -91,7 +91,9 @@ and `apply`, with the App, commits the fix to its branch,
 
 - `judge` reads the code and the pull request (`pull-requests: read`: the
   reviewer reads its own summary comment, to review only new commits);
-  it writes only code scanning's SARIF.
+  it writes only code scanning's SARIF, without the documentalist's and
+  the reviewer's findings: a conversation each to resolve
+  ([#412](https://github.com/JN0V/workline/issues/412)).
 - `judge` runs on a pull request opened, pushed to, reopened, and marked
   ready (`ready_for_review`): opened ready or marked ready, the reviewer
   reads every lens once, on the whole change
@@ -118,6 +120,9 @@ and `apply`, with the App, commits the fix to its branch,
   review (`pull-requests: write`); a token without it leaves them in the
   summary comment, said
   ([more](../roles/reviewer/docs/lines.md)).
+- `apply` writes the documentalist's findings as the annotations of the
+  check `workline findings` (`checks: write`; an App's **Checks**):
+  beside the docs' lines, none a conversation. Refused, it says so.
 - The product owner's issues: read when judging, write when applying —
   the gardening template gives both.
 - **The sample**: the judge is the repository variable `WORKLINE_JUDGE`,

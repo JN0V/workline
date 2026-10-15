@@ -47,7 +47,13 @@ a run that passed, or of level `question` (a reviewer's question for a
 person), a `note` (`info`). One whose `where` names no file — a
 commit's subject, a folder, a gate's check — is left out: both formats need a
 file, and `--json` still has it, as does `--summary`, the summary a CI job's
-page shows (ADR-0035). `route --verdict <file>` writes the line's verdict
+page shows (ADR-0035). On a merge request, `--sarif` leaves out the
+documentalist's and the reviewer's findings: code scanning would open a
+conversation for each, whatever its level, which a base requiring them
+resolved holds the merge on ([ADR-0047](../adr/0047-findings-on-a-merge-request-open-no-conversation.md)).
+`apply --line --from-merge-request` shows the documentalist's as the
+annotations of a check (`notice`, `warning`, `failure` as `note`,
+`warning`, `error`), the reviewer's are its review. `route --verdict <file>` writes the line's verdict
 on the head it judged — its status, each step's, the findings — which
 `follow --verdict` keeps for the merge policy (ADR-0042).
 

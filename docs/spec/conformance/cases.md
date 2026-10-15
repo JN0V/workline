@@ -103,7 +103,8 @@ saying so.
   `out/run.yaml` written over), `intents` (proposals added), `listed` (the
   run listed at that path instead), `setup` (commands run first: what the
   branches became since); `env`, the applying job's variables
-  (`WORKLINE_APP`);
+  (`WORKLINE_APP`); `line: true`, the line's result applied as CI's job
+  does (`apply --line`), its runs, none when it proposed nothing;
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 ## Expect
@@ -140,7 +141,9 @@ saying so.
   `issues`, `merge-requests`, and `labels`, the labels the forge defines,
   their order as id, by `title`; `statuses`, the last status of a name on
   a commit (a revision), by `state`, `by` and a part of its
-  `description`, or `absent: true`.
+  `description`, or `absent: true`; `check-runs`, the last check of a
+  name on a commit, each annotation listed held by `path`, `line`,
+  `level` and a part of its message (`contains`), or `absent: true`.
 
 ## Expect, after the run
 
@@ -161,7 +164,8 @@ saying so.
   the judge's map, `workline apply` printing none.
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `sarif` / `code-quality` / `left-out` — with `reports`, results each report
-  must hold, and the places neither may name.
+  must hold, and the places neither may name; `sarif-lacks`, rules no
+  SARIF result may have.
 - `summary-file` / `summary-html` — with `summary`, texts the Markdown and
   the HTML summary must hold, in this order; with `cli`, the Markdown in
   `workline-summary.md`.

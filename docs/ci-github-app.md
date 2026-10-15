@@ -23,9 +23,14 @@ branch's workflow
 1. **Create the App**: your settings → Developer settings → GitHub Apps →
    New GitHub App:
    - no webhook;
-   - repository permissions **Contents**, **Pull requests** and
-     **Issues**, read and write; with the merge policy, **Commit
-     statuses** too;
+   - repository permissions **Contents**, **Pull requests**,
+     **Issues** and **Checks**, read and write; with the merge policy,
+     **Commit statuses** too;
+   - **Checks** writes the check `workline findings`: the documentalist's
+     findings beside their lines, none a conversation to resolve
+     ([#412](https://github.com/JN0V/workline/issues/412)). An App made
+     before: Settings → Developer settings → your App → Permissions, then
+     accept the new permission on its installation;
    - generate a private key, install the App on the repository.
 2. **Its ID**: Settings → Secrets and variables → Actions → Variables →
    `WORKLINE_APP_ID`.
