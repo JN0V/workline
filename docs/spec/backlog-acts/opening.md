@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/opening.go, internal/engine/engine.go]
+sources: [internal/backlog/opening.go, internal/engine/engine.go, internal/engine/backlog.go]
 status: draft
-checked: aacddb36
+checked: 9388c83d
 judged: 8b6aecc
 verified: agent:claude-code
 ---

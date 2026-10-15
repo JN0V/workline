@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: aacddb36
+checked: 9388c83d
 judged: dbb1f1f
 verified: agent:claude-code
 ---
