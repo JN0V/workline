@@ -1059,21 +1059,13 @@ func readPending(t *testing.T) map[string]bool {
 	return out
 }
 
-// editForge makes a person's edits to the simulated forge between two runs
-// (between): each item listed, by kind and id, takes the fields given.
-// poisoned changes the runs' folders as a merge request's own run could
-// have (run.yaml's keys, proposals added), checks the base out, and gives
-// the runs as listed and the options `apply --from-merge-request` takes.
-// pushedBeforeApplied is a push landing before a run judged on the merge
-// request is applied (#375): the case's `pushed` commands, the same run
-// judged again on the new head, and both applied, the first first. In the
-// order `judged-twice`, both are judged before either is applied: no lock,
-// or a push in the seconds before the apply took it. In the order
-// `applied-between`, the first is applied before the second judges: the
-// lock the judging and the applying jobs share. With apply-from, each is
-// applied as GitHub's job of the base applies it, the head its run judged
-// as --head. The result is the last apply's; the calls, both judges'; the
-// findings, all four's.
+// pushedBeforeApplied is a push landing before a judged run is applied
+// (#375): `pushed`, the same run judged again on the new head, both
+// applied, the first first; `judged-twice` judges both before applying,
+// `applied-between` applies the first before the second judges. With
+// apply-from, each --head is the head its run judged. The result is the
+// last apply's; the calls, both judges'; the findings, all four's
+// (docs/spec/conformance/cases.md).
 func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo, forgeSpec string, first result) (result, []string) {
 	exe := func(dir string, cmdArgs ...string) (result, []string) {
 		cmd := exec.Command(engineBin, cmdArgs...)
@@ -1160,6 +1152,11 @@ func pushedBeforeApplied(c *caseFile, engineBin string, args, env []string, repo
 	return out, nil
 }
 
+// editForge makes a person's edits to the simulated forge between two runs
+// (between): each item listed, by kind and id, takes the fields given.
+// poisoned changes the runs' folders as a merge request's own run could
+// have (run.yaml's keys, proposals added), checks the base out, and gives
+// the runs as listed and the options `apply --from-merge-request` takes.
 func poisoned(a *applyFrom, dirs []string, repo, forgeSpec string) (listed, args []string, problems []string) {
 	for _, d := range dirs {
 		if len(a.Run) > 0 {

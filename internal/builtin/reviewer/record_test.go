@@ -160,7 +160,7 @@ func TestJudgedLinesOutliveARecordDamaged(t *testing.T) {
 // by then (#375): a run applied after this one read it keeps its commits,
 // its run counted and its findings judged; what blocks is this run's. A
 // comment no run wrote since, or one whose record does not read, is
-// written over as it is.
+// written over as it is, and so is one when the record read does not.
 func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
 	line := func(at string) Answered {
 		return Answered{Lens: "correctness", Where: "a.go:1", At: at, Yes: true, Title: "t"}
@@ -180,6 +180,9 @@ func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
 		t.Errorf("a record damaged: the body changed:\n%s", got)
 	}
 	now := Record{Reviewed: []string{"a1", "b2"}, Runs: 2, Judged: []Answered{line("a1"), line("b2")}}
+	if got := MergeSummary(body, "no record", comment(now)); got != body {
+		t.Errorf("the record read does not read: the body changed, its runs counted twice:\n%s", got)
+	}
 	got := MergeSummary(body, was.Read(), comment(now))
 	if !strings.HasPrefix(got, "**workline reviewer** — ours.") {
 		t.Errorf("not this run's summary:\n%s", got)

@@ -387,15 +387,12 @@ func (r Record) Read() string {
 	return r.String() + r.judgedLines(math.MaxInt)
 }
 
-// MergeSummary is the summary comment a run writes, body, its record
+// MergeSummary is body, the summary comment a run writes, its record
 // merged with the one the comment holds now, found, when a run applied
-// since this one read it, read (#375): a push judged before the run
-// before it was applied. Every run's commits, patch ids and findings
-// judged are kept, and each run counted once; what blocks and what is
-// owed are this run's, the newer head's: the lock the judging and the
-// applying jobs share applies the runs in the order they judged. A
-// comment whose record does not read is replaced, as a run reading it
-// said (#302).
+// since this one read read (#375): every run's commits, patch ids and
+// findings judged kept, each run counted once; what blocks and what is
+// owed, this run's. A record that does not read, found or read, leaves
+// body as it is (roles/reviewer/docs/run.md, step 3).
 func MergeSummary(body, read, found string) string {
 	at := strings.Index(body, recordOpening)
 	ours, err := parseRecord(body)
@@ -406,7 +403,10 @@ func MergeSummary(body, read, found string) string {
 	if err != nil {
 		return body
 	}
-	was, _ := parseRecord(read)
+	was, err := readRecord(read)
+	if err != nil {
+		return body
+	}
 	if now.String() == was.String() && slices.Equal(now.Judged, was.Judged) {
 		return body // none applied since this run read it
 	}
