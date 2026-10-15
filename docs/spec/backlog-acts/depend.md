@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/depend.go, internal/backlog/backlog.go, internal/forge/forge.go]
 status: draft
-checked: 17d6abde
+checked: 9054d164
 verified: agent:claude-code
 ---
 # What an issue waits on
@@ -45,11 +45,12 @@ An issue that cannot start before another is done names it (ADR-0028):
   The role's own are told from a person's by what it keeps: the blockers
   of each `depend` in the issue's state (`done`), those a split set among its
   children in the parent's state (`after: {12: [11]}`), and the engine's
-  marked line in a body (`Ledger.OwnBlockers`) — a closed parent's state
-  is not read yet, unless an old report recorded its split: then still
-  read while a child that waits is open, kept watched when it does
-  not read, let go once the forge no longer gives the parent. The task
-  marks them "set by the role".
+  marked line in a body (`Ledger.OwnBlockers`). A parent closed first
+  keeps its state read (#393): found through a child that waits and
+  names it — the marker it was opened with, or its first line `Part of
+  #9.` —, or an old report that recorded its split; read while a child
+  that waits is open, kept watched when it does not read, let go once the
+  forge no longer gives the parent. The task marks them "set by the role".
 
 ```yaml
 - undepend: {issue: 14, blocked-by: [13], why: "#14 no longer reads #13's row count"}

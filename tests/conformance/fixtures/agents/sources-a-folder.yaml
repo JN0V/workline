@@ -1,0 +1,17 @@
+# Code named as a folder, a file and its anchor, and a folder the quote is
+# not from (#392).
+- sources:
+    issue: 9
+    sources: [src/export]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#9's WriteRows is defined in this folder."
+- sources:
+    issue: 10
+    sources: ["src/export/csv.go#WriteRows"]
+    quote: {path: src/export/csv.go, text: "func WriteRows(rows []string, write func(string)) {"}
+    why: "#10's WriteRows is defined here."
+- sources:
+    issue: 11
+    sources: [src/export]
+    quote: {path: README.md, text: "Exports rows as CSV."}
+    why: "the quote is from outside the folder named"

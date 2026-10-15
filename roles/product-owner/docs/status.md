@@ -77,7 +77,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **Obsolete, announced then closed**: `obsolete-*`.
 - **A backlog read a share a run**, read again when its code or a person
   moved: `reads-a-*`, `read-again-when-*`, `first-run-reads-nothing-new`.
-- **The code an issue is about named**: `code-named-*`, `sources-named`.
+- **The code an issue is about named**: `code-named-*`, `sources-named`,
+  `sources-a-folder`.
 - **Ordering and milestones**, by due date: `order-*`, `milestone-set`,
   `slipped-*`, `summary-next-milestones-by-due-date`.
 - **A backlog file imported**, mapped item by item, judged then applied

@@ -149,3 +149,30 @@ func TestStateSays(t *testing.T) {
 		t.Errorf("read back: %+v %v %v", st, found, err)
 	}
 }
+
+// An answer to the text last proposed holds it back until the role reads
+// it: the reporter's or a person of the project's, written after the last
+// round and not read yet; never a bot's nor a stranger's (#390).
+func TestAnswerUnheard(t *testing.T) {
+	is := forge.Issue{ID: 9, Author: "zed"}
+	round := forge.Note{Body: "Proposed.\n\n" + ProposalMarker(role, 1)}
+	heard := func(n int) *State { return &State{Heard: &n} }
+	for _, c := range []struct {
+		name  string
+		st    *State
+		notes []forge.Note
+		want  bool
+	}{
+		{"the reporter, not read", heard(0), []forge.Note{round, {Author: "zed", Body: "Not quite."}}, true},
+		{"a person of the project, not read", heard(0), []forge.Note{round, {Author: "dev", Insider: true, Body: "Only JSON."}}, true},
+		{"the reporter, read", heard(1), []forge.Note{round, {Author: "zed", Body: "Not quite."}}, false},
+		{"a bot", heard(0), []forge.Note{round, {Author: "stale", Bot: true, Body: "No activity."}}, false},
+		{"a stranger", heard(0), []forge.Note{round, {Author: "yan", Body: "Same here."}}, false},
+		{"before the round, not read", heard(0), []forge.Note{{Author: "zed", Body: "Rows lost."}, round}, false},
+		{"no round", heard(0), []forge.Note{{Author: "zed", Body: "Rows lost."}}, false},
+	} {
+		if got := AnswerUnheard(c.st, c.notes, is, role); got != c.want {
+			t.Errorf("%s: %v, want %v", c.name, got, c.want)
+		}
+	}
+}

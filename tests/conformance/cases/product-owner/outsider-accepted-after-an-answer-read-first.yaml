@@ -1,0 +1,17 @@
+case: product-owner/outsider-accepted-after-an-answer-read-first
+about: An outsider's issue whose reporter answered the text proposed to them, then a maintainer labelled it workline:accepted — the next run gives the agent the answer first and writes its refine in the issue, the proposal left as answered; the run after moves it to ready, by the label (#390).
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [workline:to-refine, workline:accepted], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nheard: 0\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Every row exported.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: zed, body: "Not quite: only the last sale of the day is lost, at 18:59."}]}
+run: {role: product-owner, event: schedule, ai: fake:refine-after-an-answer, then: again}
+expect:
+  agent-calls: 1
+  no-findings: [{rule: not-ready, where: "#9"}]
+  forge:
+    issues:
+      - id: 9
+        labels: [workline:ready]
+        body-contains: ["## Need\n\nEvery sale of the day exported, the last at 18:59 too.", "## Scope\n\nWriteRows in src/export/csv.go, and its test."]
+        body-lacks: ["Every row exported.", "workline:draft"]

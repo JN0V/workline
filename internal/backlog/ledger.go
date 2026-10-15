@@ -121,6 +121,24 @@ func Unheard(st *State, notes []forge.Note, is forge.Issue) []forge.Note {
 	return nil
 }
 
+// AnswerUnheard says whether someone who counts — the reporter, a person
+// of the project — wrote after the last round to an issue's reporter, and
+// the role has not read it yet: an answer may change the text last
+// proposed, and the agent reads it first (#390). A bot's comment or a
+// stranger's is no answer; one the role read, leaving its text as it was,
+// no longer holds it back.
+func AnswerUnheard(st *State, notes []forge.Note, is forge.Issue, role string) bool {
+	last := -1
+	for i, n := range notes {
+		if Round(n.Body, role) {
+			last = i
+		}
+	}
+	// The comments not read are the last ones counted: one is after the
+	// round when any counted comment is.
+	return last >= 0 && len(Counted(notes[last+1:], is)) > 0 && len(Unheard(st, notes, is)) > 0
+}
+
 // StillAside says whether an issue a person set aside stays so: its body
 // as it was then, and no comment of a person since the role last read it.
 // Either brings it back (ADR-0038).
@@ -383,6 +401,14 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 	var err error
 	if l.Standing, l.Undone, l.Own, err = findUndone(f, role, byID, l.Record.Done); err != nil {
 		return nil, err
+	}
+	// A split's parent closed before its parts (#393): its state is not
+	// among the open issues', yet the links it set among them are still
+	// the role's own, read from it through a part that names it.
+	for _, id := range closedParents(byID, l.Record.Done) {
+		if _, err := closedSplit(f, role, byID, id, l.Own); err != nil {
+			return nil, err
+		}
 	}
 	for _, u := range l.Undone {
 		l.Signs = append(l.Signs, fmt.Sprintf("#%d: %s undone", u.Issue, u.Act))

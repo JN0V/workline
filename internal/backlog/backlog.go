@@ -94,8 +94,6 @@ func RecordMarker(role string) string { return forge.Marker("sticky=" + role + "
 // ReportTitle is the title of the role's report issue.
 func ReportTitle(role string) string { return "Backlog — " + strings.ReplaceAll(role, "-", " ") }
 
-var fenced = regexp.MustCompile("(?s)```yaml\n(.*?)```")
-
 // readBlock decodes the fenced YAML block of the comment carrying marker
 // into v: the last, when another user's left behind could not be edited
 // (GitLab: a note is its author's). found is false when no comment carries
@@ -1182,7 +1180,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 				return "sources-unknown", fmt.Sprintf("could not tell which code #%d is about: %s, named for it, is not in the repository; nothing changed", c.Issue, path)
 			}
 		}
-		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return strings.HasPrefix(s, c.Quote.Path) }) {
+		if c.Quote != nil && c.Quote.Path != "" && !slices.ContainsFunc(c.Sources, func(s string) bool { return holds(s, c.Quote.Path) }) {
 			return "no-quote", "the line quoted to show its code is from none of the files named: nothing changed"
 		}
 	} else if c.Do == "close" && !slices.Contains(closeReasons, c.Reason) {
@@ -2201,8 +2199,16 @@ func ProposalComment(author string, c Proposal, role string) string {
 		}
 	}
 	data, _ := yaml.Marshal(kept)
-	b.WriteString(engineBlock + "\n\n```yaml\n" + string(data) + "```\n</details>")
+	b.WriteString(engineBlock + "\n\n" + yamlFenced(string(data)) + "\n</details>")
 	return b.String()
+}
+
+// yamlFenced puts YAML in a code block whose fence is longer than any run
+// of backticks it holds: a fence in a bug's steps or an example neither
+// ends it nor is read for it (#391); yamlBlock reads it back.
+func yamlFenced(data string) string {
+	fence := FenceFor(data)
+	return fence + "yaml\n" + data + fence
 }
 
 // engineBlock opens the block of a proposal the engine reads back.
@@ -2237,12 +2243,12 @@ func lastProposal(comments []string, role string) (*Proposal, error) {
 		if at < 0 {
 			return nil, fmt.Errorf("no %q block in it", "As the engine reads it")
 		}
-		m := fenced.FindStringSubmatch(comments[i][at:])
-		if m == nil {
+		text, ok := yamlBlock(comments[i][at:])
+		if !ok {
 			return nil, fmt.Errorf("no YAML in its %q block", "As the engine reads it")
 		}
 		var p Proposal
-		if err := yaml.Unmarshal([]byte(m[1]), &p); err != nil {
+		if err := yaml.Unmarshal([]byte(text), &p); err != nil {
 			return nil, fmt.Errorf("its YAML: %v", err)
 		}
 		return &p, nil
@@ -2315,10 +2321,20 @@ func (p *Plan) checkAgreed(f forge.Backlog, role string, c *Proposal) (rule, why
 	}
 	last := LastProposal(forge.Bodies(notes), role)
 	if who := Agreement(notes, is, role); who == "" || who != c.Agreed || last == nil ||
-		last.Need != c.Need || last.Verification != c.Verification || last.Validation != c.Validation || last.Scope != c.Scope {
+		last.Need != c.Need || last.Example != c.Example || last.Steps != c.Steps ||
+		last.Verification != c.Verification || last.Validation != c.Validation || last.Scope != c.Scope {
 		return "not-agreed", "no reply agreeing to the text last proposed to its reporter: nothing of it is written in the body"
 	}
 	return "", ""
+}
+
+// holds says whether a source named for an issue's code holds the file a
+// quote is from: that file, with an anchor or not, or a folder it is in
+// (#392).
+func holds(source, file string) bool {
+	s, _, _ := strings.Cut(source, "#")
+	s = strings.TrimSuffix(s, "/")
+	return s != "" && (s == file || strings.HasPrefix(file, s+"/"))
 }
 
 // found says whether a quote is there, as written but for spaces: in a file

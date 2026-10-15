@@ -226,13 +226,17 @@ func Pre(runDir, repo string) int {
 		// still lacks what it adds.
 		p := backlog.LastProposal(comments, role)
 		agreed := ""
+		unheard := false // an answer to it the agent reads first (#390)
 		if p != nil {
 			_, adds, _ := backlog.Refine(is.Body, *p, role)
 			if len(adds) > 0 {
 				agreed = backlog.Agreement(notes, is, role)
 			}
-			// An answer may change it, unless it is the agreement itself.
-			if len(adds) == 0 || (backlog.ReadExchange(comments, role).Answered && agreed == "") {
+			// An answer may change it, unless it is the agreement itself:
+			// the reporter's or the project's, not read yet — a bot's or a
+			// stranger's leaves it as it stands.
+			unheard = len(adds) > 0 && agreed == "" && backlog.AnswerUnheard(st, notes, is, role)
+			if len(adds) == 0 || unheard {
 				p = nil
 			}
 		}
@@ -282,9 +286,12 @@ func Pre(runDir, repo string) int {
 		}
 		if found && err == nil && backlog.Accepted(is) && !closing {
 			// A person accepted its drafts, with the label: the engine moves
-			// it to ready if its sections are there, with no agent.
-			fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
-				"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
+			// it to ready if its sections are there, with no agent — once
+			// the agent read an answer to the text proposed (#390).
+			if !unheard {
+				fallback = append(fallback, intent.Intention{Kind: "ready", Value: map[string]any{
+					"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
+			}
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
 			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, st, false)) == 0 {
 			// The reviewer read its spec as it is and found no important
@@ -419,8 +426,11 @@ func Pre(runDir, repo string) int {
 		}
 		d := due{is, st, comments, notes}
 		switch {
-		case agreed != "" || backlog.Accepted(is):
+		case agreed != "" || backlog.Accepted(is) && !unheard:
 			// Agreed to, or accepted: done this run, not read again for it.
+			// Accepted after an answer to the text proposed, it is read
+			// below for that answer: its refine is written in the issue,
+			// and the label moves it to ready at the next run (#390).
 			rest = append(rest, d)
 		case len(back) > 0:
 			// A person's comment brought it back, read under an older way

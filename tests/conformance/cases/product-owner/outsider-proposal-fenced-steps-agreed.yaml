@@ -1,0 +1,20 @@
+case: product-owner/outsider-proposal-fenced-steps-agreed
+about: The reporter replies `agreed` to a proposal written before #391, its steps holding a code block inside the engine's three-backtick block — only a fence at a line's start ends the block, so every proposed section is written whole, with no agent.
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: zed, insider: false, labels: [workline:to-refine], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->", "@zed, the product owner read this issue.\n\n<details><summary>As the engine reads it</summary>\n\n```yaml\nneed: Exports keep every row.\nsteps: |-\n    1. Run:\n\n    ```sh\n    shop export --day 2026-10-08\n    ```\n\n    2. Count the rows: 2, not 3.\nverification: A test writes three rows.\nvalidation: Zed opens a known day.\nscope: WriteRows in src/export/csv.go.\nsources: [src/export/csv.go]\n```\n</details>\n\n<!-- workline:product-owner/proposal=1 -->", {author: zed, body: "agreed"}]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  findings: [{rule: done, where: "#9", message: "agreed to by @zed (its reporter) in a reply"}]
+  no-findings: [{rule: proposal-unread, where: "#9"}]
+  agent-calls: 0
+  forge:
+    issues:
+      - id: 9
+        body-contains:
+          - "## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Run:"
+          - "1. Run:\n\n```sh\nshop export --day 2026-10-08\n```\n\n2. Count the rows: 2, not 3."
+          - "## Verification\n\nA test writes three rows."
+          - "## Scope\n\nWriteRows in src/export/csv.go."

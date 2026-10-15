@@ -109,7 +109,7 @@ func AnnouncementComment(author string, c Proposal, role string, a Announcement,
 	kept := a
 	kept.Why = why
 	data, _ := yaml.Marshal(kept)
-	b.WriteString(engineBlock + "\n\n```yaml\n" + string(data) + "```\n</details>")
+	b.WriteString(engineBlock + "\n\n" + yamlFenced(string(data)) + "\n</details>")
 	return b.String()
 }
 
@@ -124,12 +124,12 @@ func LastAnnouncement(notes []forge.Note, role string) (*Announcement, []forge.N
 		if at < 0 {
 			return nil, nil
 		}
-		m := fenced.FindStringSubmatch(notes[i].Body[at:])
-		if m == nil {
+		text, ok := yamlBlock(notes[i].Body[at:])
+		if !ok {
 			return nil, nil
 		}
 		var a Announcement
-		if yaml.Unmarshal([]byte(m[1]), &a) != nil || a.Quote.Text == "" {
+		if yaml.Unmarshal([]byte(text), &a) != nil || a.Quote.Text == "" {
 			return nil, nil
 		}
 		return &a, notes[i+1:]

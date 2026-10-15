@@ -74,6 +74,63 @@ func TestProposalReadBack(t *testing.T) {
 	}
 }
 
+// A bug's steps or an example holding a code block read back whole, the
+// sections after them too (#391): the engine's block is fenced longer than
+// any fence in it, and only its own fence, at a line's start, ends it.
+func TestProposalReadBackFencedSteps(t *testing.T) {
+	c := Proposal{Do: "refine", Added: []string{"Need", "Example", "Steps to reproduce", "Verification", "Validation", "Scope"},
+		Sources:      []string{"src/export/csv.go"},
+		Need:         "Exports keep every row.",
+		Example:      "On 2026-10-08:\n\n````text\nday,rows\n```\n2026-10-08,2\n````\n",
+		Steps:        "1. Run:\n\n```sh\nshop export --day 2026-10-08\n```\n\n2. Count the rows: 2, not 3.",
+		Verification: "A test writes three rows and reads three back.",
+		Validation:   "Zed exports a known day.",
+		Scope:        "WriteRows in src/export/csv.go."}
+	body := ProposalComment("zed", c, "product-owner") + "\n\n" + ProposalMarker("product-owner", 1)
+	p := LastProposal([]string{body}, "product-owner")
+	if err := ProposalUnread([]string{body}, "product-owner"); err != nil || p == nil {
+		t.Fatalf("does not read (%v) from:\n%s", err, body)
+	}
+	got := []string{p.Need, p.Example, p.Steps, p.Verification, p.Validation, p.Scope}
+	want := []string{c.Need, c.Example, c.Steps, c.Verification, c.Validation, c.Scope}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("read back %q, want %q, from:\n%s", got[i], want[i], body)
+		}
+	}
+	// A proposal written before, its block fenced with three backticks, its
+	// steps' fences indented in it: read back whole too.
+	old := "@zed, the product owner read this issue.\n\n" + engineBlock + "\n\n```yaml\nneed: Exports keep every row.\nsteps: |-\n    1. Run:\n\n    ```sh\n    shop export --day 2026-10-08\n    ```\n\n    2. Count the rows: 2, not 3.\nscope: WriteRows in src/export/csv.go.\n```\n</details>\n\n" + ProposalMarker("product-owner", 1)
+	if p := LastProposal([]string{old}, "product-owner"); p == nil || p.Steps != c.Steps || p.Scope != c.Scope {
+		t.Errorf("an earlier proposal read back %+v", p)
+	}
+}
+
+// The code named for an issue holds the file its quote is from: that file,
+// with an anchor or not, or a folder it is in; never a folder that only
+// starts like it, nor a file whose name only starts like it (#392).
+func TestSourceHoldsQuote(t *testing.T) {
+	for _, c := range []struct {
+		source, file string
+		want         bool
+	}{
+		{"src/export", "src/export/csv.go", true},
+		{"src/export/", "src/export/csv.go", true},
+		{"src", "src/export/csv.go", true},
+		{"src/export/csv.go", "src/export/csv.go", true},
+		{"src/export/csv.go#WriteRows", "src/export/csv.go", true},
+		{"src/export", "README.md", false},
+		{"src/export", "src/exporter/csv.go", false},
+		{"src/export/csv.go", "src/export/csv.go.orig", false},
+		{"src/export/csv.go#WriteRows", "src/export", false},
+		{"#WriteRows", "src/export/csv.go", false},
+	} {
+		if got := holds(c.source, c.file); got != c.want {
+			t.Errorf("holds(%q, %q) = %v, want %v", c.source, c.file, got, c.want)
+		}
+	}
+}
+
 // A text is cut into its questions: a list's items each one, the options
 // of one question kept together, a sentence before it left out.
 func TestQuestions(t *testing.T) {
