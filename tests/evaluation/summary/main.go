@@ -201,18 +201,19 @@ func addMeasure(lenses map[lensKey]*lensSum, outside map[lensKey]map[string]int,
 }
 
 // askedIn is how a row's lenses were asked: together (the `lenses` part,
-// their one call), the diff-alone facet alone (its part, with tokens), or
-// apart.
+// their one call), the diff-alone facet alone (its part, and no
+// `lenses`), or apart.
 func askedIn(measure string) string {
+	asked := "apart"
 	for _, part := range strings.Split(measure, "; ") {
 		switch {
 		case strings.HasPrefix(part, "lenses "):
 			return "together"
-		case strings.HasPrefix(part, "diff-alone ") && !strings.Contains(part, " in=0 "):
-			return "alone"
+		case strings.HasPrefix(part, "diff-alone "):
+			asked = "alone"
 		}
 	}
-	return "apart"
+	return asked
 }
 
 // printLenses prints, a lens each, the defects planted for it and how many
