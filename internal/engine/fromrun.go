@@ -48,8 +48,10 @@ var plainModel = regexp.MustCompile(`^[A-Za-z0-9._:@/+-]+$`)
 // merge request's line may do is applied: by a role of this engine's that
 // runs on a merge request, proposals of its own kinds, to that merge
 // request — its branch, its comments —, never another merge request
-// opened but the release's own fix (ADR-0017). Nothing is applied once
-// the merge request's branch moved on from the head judged.
+// opened but the release's own fix (ADR-0017). Once the merge request's
+// branch moved on from the head judged, only what its role names to say
+// what that head held is applied (`on-moved-on`: the reviewer's review,
+// #375), nothing else.
 func ResumeFrom(listed string, from FromMergeRequest) *Result {
 	res := &Result{Applied: []string{}, Refused: []string{}, RunDir: listed}
 	refuse := func(why string) {
@@ -129,11 +131,21 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		if err != nil {
 			return err
 		}
-		if from.Head == "" || tip != from.Head {
+		// Moved on, only what says what the head judged held is applied
+		// (`on-moved-on`: the reviewer's review, #375); never a patch nor a
+		// label, which the run of the new head applies.
+		movedOn := from.Head == "" || tip != from.Head
+		if movedOn {
+			kept := slices.DeleteFunc(slices.Clone(intents), func(i intent.Intention) bool { return !slices.Contains(r.OnMovedOn, i.Kind) })
 			res.Status = verdict.Pass
+			if from.Head == "" || len(kept) == 0 {
+				res.Findings = append(res.Findings, verdict.Finding{Rule: "moved-on", Level: "warn", Where: mr.Branch,
+					Message: fmt.Sprintf("merge request #%d's branch is at %s, not at %s, the head its run judged: nothing applied; the run of its new head applies its own", from.ID, short(tip), short(from.Head))})
+				return nil
+			}
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "moved-on", Level: "warn", Where: mr.Branch,
-				Message: fmt.Sprintf("merge request #%d's branch is at %s, not at %s, the head its run judged: nothing applied; the run of its new head applies its own", from.ID, short(tip), short(from.Head))})
-			return nil
+				Message: fmt.Sprintf("merge request #%d's branch is at %s, not at %s, the head its run judged: only the review of that head applied (%s), at that head; the run of its new head applies its own", from.ID, short(tip), short(from.Head), strings.Join(kindsOf(kept), ", "))})
+			intents = kept
 		}
 		st := runState{Role: r.Name, RolesDir: from.RolesDir, Repo: from.Repo, Forge: from.Forge,
 			Target: &forge.Target{Kind: "merge-request", ID: from.ID}, Digest: was.Digest,
@@ -157,11 +169,13 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 				}
 			}
 		}
-		back, err := onHead(from.Repo, from.Head)
-		if err != nil {
-			return err
+		if !movedOn { // what applies once moved on reads no file of the head
+			back, err := onHead(from.Repo, from.Head)
+			if err != nil {
+				return err
+			}
+			defer back()
 		}
-		defer back()
 		res.Status = verdict.Pass
 		if err := applyAll(r, r.MergedSettings(cfg), st, runDir, intents, res); err != nil {
 			return err
@@ -180,6 +194,17 @@ func ResumeFrom(listed string, from FromMergeRequest) *Result {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "engine-error", Message: err.Error()})
 	}
 	return res
+}
+
+// kindsOf are the kinds of intentions, each once, in their order.
+func kindsOf(intents []intent.Intention) []string {
+	var out []string
+	for _, i := range intents {
+		if !slices.Contains(out, i.Kind) {
+			out = append(out, i.Kind)
+		}
+	}
+	return out
 }
 
 // releaseNotOwn says why a release tool's branch is not workline's App's

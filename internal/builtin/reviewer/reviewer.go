@@ -125,6 +125,7 @@ type state struct {
 	Skipped    []string          `json:"skipped,omitempty"`   // lenses not asked, each with why
 	Spec       *Spec             `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
 	Standing   []Block           `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
+	Read       string            `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -255,6 +256,7 @@ func prepare(runDir, repo string, s Settings) int {
 			Message: "the record of what was reviewed before, " + where + ", could not be read (" + err.Error() + "): every commit of the range is reviewed again, and a whole review writes it anew"})
 		rec = Record{Judged: rec.Judged, Gone: rec.Gone} // the findings judged read apart: kept (ADR-0046)
 	}
+	read := rec.Read() // before a draft's run drops its marks (runOnReady)
 	sp, err := rec.since(repo, base, head)
 	if err != nil {
 		return fail(err)
@@ -268,7 +270,7 @@ func prepare(runDir, repo string, s Settings) int {
 	if ready {
 		start = base
 	}
-	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories}
+	st := state{Head: head, From: start, Base: base, Change: change, Mechanical: mech, Commits: sp.Commits, Patches: sp.Patches, Record: rec, Every: ready, Advisories: advisories, Read: read}
 	// What blocked the last review stands until a commit answers it (#326):
 	// a run with nothing new to read never turns it green.
 	st.Standing = standing(repo, s, st, rec.Blocks)
@@ -446,7 +448,7 @@ func recordOnly(runDir string, s Settings, st state, fresh int) int {
 	v.Record.Runs, v.Record.Blocks = st.Record.Runs, st.Standing
 	var fallback []intent.Intention
 	if mergeRequest() != nil && s.ForgeWrites {
-		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"sticky": SummaryKey, "body": summaryComment(v, 0, nil, nil)}})
+		fallback = append(fallback, intent.Intention{Kind: "comment", Value: summaryValue(st, summaryComment(v, 0, nil, nil))})
 	}
 	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
 		return fail(err)
@@ -1691,11 +1693,18 @@ func summaryIntention(repo string, s Settings, st state, v Review, related []Fin
 			short[g.Lens+"\x00"+g.Where] = shortMessage(g)
 		}
 	}
-	value := map[string]any{"sticky": SummaryKey, "body": summaryComment(v, issues, short, lines)}
+	value := summaryValue(st, summaryComment(v, issues, short, lines))
 	if len(lines) > 0 {
 		value["review"] = reviewOf(st, lines)
 	}
 	return intent.Intention{Kind: "comment", Value: value}
+}
+
+// summaryValue is the summary comment's proposal: its body, and the
+// record the run read, which the apply merges with the one the comment
+// holds by then, a run applied since having written it (#375).
+func summaryValue(st state, body string) map[string]any {
+	return map[string]any{"sticky": SummaryKey, "body": body, "read": st.Read}
 }
 
 // summaryComment is the one summary the merge request gets, edited on each run,

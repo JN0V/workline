@@ -155,3 +155,41 @@ func TestJudgedLinesOutliveARecordDamaged(t *testing.T) {
 		t.Errorf("the machine's record holds the findings judged: %s", s)
 	}
 }
+
+// The summary comment a run writes merges the record the comment holds
+// by then (#375): a run applied after this one read it keeps its commits,
+// its run counted and its findings judged; what blocks is this run's. A
+// comment no run wrote since, or one whose record does not read, is
+// written over as it is.
+func TestMergeSummaryKeepsTheRunAppliedSince(t *testing.T) {
+	line := func(at string) Answered {
+		return Answered{Lens: "correctness", Where: "a.go:1", At: at, Yes: true, Title: "t"}
+	}
+	comment := func(r Record) string {
+		return "**workline reviewer** — x.\n\n" + r.String() + r.judgedLines(SummaryMax) + "\n\n<!-- workline:sticky=reviewer/summary -->"
+	}
+	was := Record{Reviewed: []string{"a1"}, Runs: 1, Judged: []Answered{line("a1")}}
+	ours := Record{Reviewed: []string{"a1", "c3"}, Runs: 2, Judged: []Answered{line("a1"), line("c3")},
+		Blocks: []Block{{Lens: "correctness", Where: "a.go:1", Title: "t"}}}
+	body := "**workline reviewer** — ours.\n\n" + ours.String() + ours.judgedLines(SummaryMax)
+
+	if got := MergeSummary(body, was.Read(), comment(was)); got != body {
+		t.Errorf("no run applied since: the body changed:\n%s", got)
+	}
+	if got := MergeSummary(body, was.Read(), "<!-- workline:record runs=x -->"); got != body {
+		t.Errorf("a record damaged: the body changed:\n%s", got)
+	}
+	now := Record{Reviewed: []string{"a1", "b2"}, Runs: 2, Judged: []Answered{line("a1"), line("b2")}}
+	got := MergeSummary(body, was.Read(), comment(now))
+	if !strings.HasPrefix(got, "**workline reviewer** — ours.") {
+		t.Errorf("not this run's summary:\n%s", got)
+	}
+	m, err := parseRecord(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(m.Reviewed, []string{"a1", "b2", "c3"}) || m.Runs != 3 || len(m.Blocks) != 1 ||
+		!slices.Equal(m.Judged, []Answered{line("a1"), line("b2"), line("c3")}) {
+		t.Errorf("merged: %+v; want a1 b2 c3, 3 runs, this run's block, every run's line once", m)
+	}
+}

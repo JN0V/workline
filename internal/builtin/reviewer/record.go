@@ -3,6 +3,7 @@ package reviewer
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -378,6 +379,63 @@ func patchIDs(repo string, commits []string) (map[string]string, error) {
 		}
 	}
 	return ids, nil
+}
+
+// Read is the record a run read, as the summary comment held it: the
+// applying job merges the comment it finds with it (MergeSummary, #375).
+func (r Record) Read() string {
+	return r.String() + r.judgedLines(math.MaxInt)
+}
+
+// MergeSummary is the summary comment a run writes, body, its record
+// merged with the one the comment holds now, found, when a run applied
+// since this one read it, read (#375): a push judged before the run
+// before it was applied. Every run's commits, patch ids and findings
+// judged are kept, and each run counted once; what blocks and what is
+// owed are this run's, the newer head's: the lock the judging and the
+// applying jobs share applies the runs in the order they judged. A
+// comment whose record does not read is replaced, as a run reading it
+// said (#302).
+func MergeSummary(body, read, found string) string {
+	at := strings.Index(body, recordOpening)
+	ours, err := parseRecord(body)
+	if at < 0 || err != nil {
+		return body
+	}
+	now, err := readRecord(found)
+	if err != nil {
+		return body
+	}
+	was, _ := parseRecord(read)
+	if now.String() == was.String() && slices.Equal(now.Judged, was.Judged) {
+		return body // none applied since this run read it
+	}
+	merged := ours
+	merged.Reviewed = union(now.Reviewed, ours.Reviewed)
+	merged.Patches = union(now.Patches, ours.Patches)
+	merged.Runs = now.Runs + max(0, ours.Runs-was.Runs)
+	merged.Judged, merged.Gone = slices.Clone(now.Judged), now.Gone
+	for _, j := range ours.Judged {
+		if !slices.Contains(was.Judged, j) && !slices.Contains(merged.Judged, j) {
+			merged.Judged = append(merged.Judged, j)
+		}
+	}
+	out := body[:at] + merged.String()
+	if _, _, held := ReadJudged(body); held {
+		out += merged.judgedLines(SummaryMax - len(out))
+	}
+	return out
+}
+
+// union is a's ids, then b's not in a.
+func union(a, b []string) []string {
+	out := slices.Clone(a)
+	for _, x := range b {
+		if !slices.Contains(out, x) {
+			out = append(out, x)
+		}
+	}
+	return out
 }
 
 // localRecord is where a machine keeps the record: in the git directory,

@@ -29,8 +29,13 @@ type Role struct {
 	// those that only tell why, never change what was judged (the
 	// reviewer's summary comment, #226). Empty: nothing applied on a block.
 	OnBlock []string `yaml:"on-block"`
-	Model   Model    `yaml:"model"`
-	Duties  struct {
+	// OnMovedOn are the intentions a merge request's run still applies
+	// once its branch moved on from the head the run judged (#375): those
+	// that only say what that head held, never a patch nor a label (the
+	// reviewer's review). Empty: nothing applied once the branch moved on.
+	OnMovedOn []string `yaml:"on-moved-on"`
+	Model     Model    `yaml:"model"`
+	Duties    struct {
 		Reads  []string `yaml:"reads"`
 		Writes []string `yaml:"writes"`
 	} `yaml:"duties"`
@@ -122,6 +127,14 @@ func Load(rolesDir, name string) (*Role, error) {
 	for _, k := range r.OnBlock {
 		if !slices.Contains(r.Intentions, k) {
 			return nil, fmt.Errorf("role %q: on-block names %q, not one of its intentions", name, k)
+		}
+	}
+	for _, k := range r.OnMovedOn {
+		switch {
+		case !slices.Contains(r.Intentions, k):
+			return nil, fmt.Errorf("role %q: on-moved-on names %q, not one of its intentions", name, k)
+		case k == "patch" || k == "label" || k == "commit-message":
+			return nil, fmt.Errorf("role %q: on-moved-on names %q: what changes the branch or the merge request applies on the head judged only", name, k)
 		}
 	}
 	r.Dir = dir

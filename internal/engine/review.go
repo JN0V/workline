@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/JN0V/workline/internal/backlog"
+	"github.com/JN0V/workline/internal/builtin/reviewer"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/verdict"
 )
@@ -55,4 +56,27 @@ func (a *applier) lineReview(t forge.Target, v any, body string) (string, error)
 		}
 	}
 	return forge.FillReview(body, done.Section()), nil
+}
+
+// mergedRecord is a sticky comment's body, the record in it merged with
+// the one the comment holds by then (#375): a run applied after this one
+// read it wrote it, a push having been judged before the run before it
+// was applied. read is the record the run read; no comment yet, or a
+// forge that lists none, leaves body as it is.
+func (a *applier) mergedRecord(t forge.Target, key, body, read string) (string, error) {
+	b, ok := a.forge.(forge.Backlog)
+	if !ok {
+		return body, nil
+	}
+	comments, err := b.Comments(t)
+	if err != nil {
+		return "", err
+	}
+	marker := forge.Marker("sticky=" + a.role + "/" + key)
+	for _, c := range comments { // the first, the one a run reads
+		if strings.Contains(c, marker) {
+			return reviewer.MergeSummary(body, read, c), nil
+		}
+	}
+	return body, nil
 }
