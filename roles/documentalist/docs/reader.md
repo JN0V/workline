@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: 9980d8c2
+checked: 1a0ca6ec
 verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader
@@ -74,6 +74,8 @@ passes.
   the default branch holds the page as read. While the page is still that,
   it is not read again, said on its findings — no fix proposed each night.
   - A branch deleted with it leaves no trace: the page is read again.
+  - Branches that cannot be listed (the remote unreachable) are said
+    (`reader-declined-unread`, a warning).
 
 ## Cost
 
