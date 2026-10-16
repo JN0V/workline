@@ -3,6 +3,7 @@ sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owne
 checked: 733da152
 judged: a8574a5
 verified: agent:claude-code
+reader: dccc73a60a07
 ---
 # Setting up workline in CI
 
