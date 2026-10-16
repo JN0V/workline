@@ -3,6 +3,7 @@ sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workli
 checked: 733da152
 judged: cd97f28
 verified: agent:claude-code
+reader: 9799dcaf51f3
 ---
 # workline on GitLab CI
 
@@ -171,17 +172,17 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   - Not tried: a merge request's `expose_as` link, an applying job's page,
     a private project's Pages preview, a self-managed instance.
 - **The reviewer** ([ADR-0020](adr/0020-the-reviewer-finds-the-engine-verifies-the-person-merges.md)):
-  the judging job reads its summary comment to review only new commits;
-  `CI_JOB_TOKEN` may not read a merge request's notes, so give
-  `GITLAB_TOKEN` (`read_api`), or each push reviews the whole merge request
-  again, said (`record-unread`).
-  The applying job posts each finding as a discussion on its line, with
-  `WORKLINE_GITLAB_TOKEN`
-  ([more](../roles/reviewer/docs/lines.md)).
-  Marking a draft ready starts no pipeline: the next one, a push or
-  **Run pipeline**, has every lens read the whole change once
-  ([how](../roles/reviewer/docs/ready.md); not tried on
-  a GitLab yet).
+  - the judging job reads its summary comment to review only new commits;
+    `CI_JOB_TOKEN` may not read a merge request's notes, so give
+    `GITLAB_TOKEN` (`read_api`), or each push reviews the whole merge request
+    again, said (`record-unread`);
+  - the applying job posts each finding as a discussion on its line, with
+    `WORKLINE_GITLAB_TOKEN`
+    ([more](../roles/reviewer/docs/lines.md));
+  - marking a draft ready starts no pipeline: the next one, a push or
+    **Run pipeline**, has every lens read the whole change once
+    ([how](../roles/reviewer/docs/ready.md); not tried on
+    a GitLab yet).
 
 ## The product owner
 

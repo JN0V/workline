@@ -3,6 +3,7 @@ sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-
 checked: 733da152
 judged: eb7fc7c
 verified: agent:claude-code
+reader: fe1505d43360
 ---
 # workline on GitHub Actions
 
@@ -43,17 +44,21 @@ write run the default branch's workflow, never a pull request's own
      request, its own run: no write token; it warns when no workflow
      applies what it proposed.
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
-     default branch: `apply` after each `judge`, the fixes committed to
-     the pull request's branch; `follow` on each push to `main`
-     ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the
-     documentalist's pull request for the release, when one is open, is
-     rebuilt on `main`'s new tip, so a pull request merged meanwhile that
-     touched the same doc leaves it mergeable; one a person committed to
-     is left alone. With `update-branches: conflicts`, `main` is merged
-     into people's pull requests in conflict only on workline's lines
-     ([more](../roles/documentalist/docs/follow.md)). With the
-     [merge policy](merge-policy.md), `verdict` and `follow` run after
-     `judge`. Rename `main` in its `push:` for another default branch.
+     default branch:
+     - `apply` after each `judge`, the fixes committed to the pull
+       request's branch;
+     - `follow` on each push to `main`
+       ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)): the
+       documentalist's pull request for the release, when one is open, is
+       rebuilt on `main`'s new tip, so a pull request merged meanwhile that
+       touched the same doc leaves it mergeable; one a person committed to
+       is left alone;
+     - with `update-branches: conflicts`, `main` is merged
+       into people's pull requests in conflict only on workline's lines
+       ([more](../roles/documentalist/docs/follow.md));
+     - with the [merge policy](merge-policy.md), `verdict` and `follow` run
+       after `judge`;
+     - rename `main` in its `push:` for another default branch.
    - [workline-merge.yml](../ci/github/workline-merge.yml), with the merge
      policy: `follow` on a label.
    - [workline-fork.yml](../ci/github/workline-fork.yml): comments a fork's
