@@ -1,0 +1,19 @@
+case: documentalist/parts-left-for-gardening
+about: "On a merge request, a doc too large to be judged whole is left for the next gardening, which judges it in parts: the doc that fits is judged, and no part is asked. Judged in parts on each merge request touching its sources, such a doc cost 6 or 7 calls a merge request (#458); the gardening judges it once (judged-in-parts-by-default)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && printf -- '---\\nsources: [src/auth/token.go]\\nchecked: %s\\n---\\n# Token lifetime\\n\\nTokens are short-lived.\\n' $C > docs/tech/ttl.md && git add -A && git commit -qm 'docs: confirm the auth doc, say tokens are short-lived'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: merge-request, ai: 'cmd:sh "$FIXTURES/agents/whole-then-parts.sh"'}
+expect:
+  status: pass
+  agent-calls: 1   # docs/tech/ttl.md, judged whole; before #458, then two parts and the fix
+  applied: [patch]
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "left for the next gardening, which judges it in parts"}
+  no-findings:
+    - {rule: suspect, where: docs/tech/auth.md, message: "judged in parts at"}
+  files:
+    "docs/tech/auth.md": {lacks: "judged-in-parts:"}

@@ -1,12 +1,12 @@
 case: documentalist/judged-in-parts-by-default
-about: "A suspect doc whose sources do not fit a task is judged in parts with no setting: judge-in-parts is on by default. A contradiction one part finds is fixed by one last call, and `checked` does not move."
+about: "When gardening, a suspect doc whose sources do not fit a task is judged in parts with no setting: judge-in-parts is on by default (on a merge request: parts-left-for-gardening). A contradiction one part finds is fixed by one last call, and `checked` does not move."
 given:
   repo: documented
   setup:
     - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
-run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+run: {role: documentalist, event: schedule, ai: "fake:parts-contradiction"}
 expect:
   status: pass
   agent-calls: 3

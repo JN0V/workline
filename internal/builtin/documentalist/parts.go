@@ -100,6 +100,47 @@ the excerpts do not let you settle stays as it is; say so in a note.
 // nothing changed).
 const partsFixAsked = "what they found wrong goes to the fix in this run"
 
+// tooWide is the finding of a doc whose sources would take more than
+// parts-max parts, and tooWideNote what its suspect finding says.
+func tooWide(doc string, parts, max int) verdict.Finding {
+	return verdict.Finding{Rule: "sources-too-wide", Where: doc,
+		Message: fmt.Sprintf("judging it in parts would take %d parts, past parts-max (%d): its sources name more than a doc can be judged against; narrow them to the files it describes, or split the doc", parts, max)}
+}
+
+const tooWideNote = "(too large to be judged whole, and its sources too wide to be judged in parts: a person judges it)"
+
+// partsLater is what a doc too large to be judged whole says on a merge
+// request: it waits for the next gardening, which judges it in parts.
+const partsLater = "(too large to be judged whole: left for the next gardening, which judges it in parts)"
+
+// leftForGardening says, on any run but gardening, what becomes of each doc
+// too large to be judged whole (#458): left for the next gardening, which
+// judges it in parts, or, past parts-max, for a person, as gardening would
+// say. No part is asked: judged on each merge request touching its sources,
+// such a doc cost 6 or 7 calls a merge request, and as many again on the next.
+func leftForGardening(docs map[string]*suspectDoc, repo string, s Settings, findings *[]verdict.Finding) error {
+	partsMax := orInt(s.PartsMax, partsMaxDefault)
+	for _, p := range sortedDocs(docs) {
+		sd := docs[p]
+		if !sd.tooLarge || sd.note != "" {
+			continue
+		}
+		plans, why, err := planParts(sd.doc, repo, s.PartChars)
+		switch {
+		case err != nil:
+			return err
+		case why != "":
+			sd.note = why
+		case len(plans) > partsMax:
+			*findings = append(*findings, tooWide(sd.doc.Path, len(plans), partsMax))
+			sd.note = tooWideNote
+		default:
+			sd.note = partsLater
+		}
+	}
+	return nil
+}
+
 // partsFor judges in parts the docs too large to be judged whole, unless
 // the project turned it off. Asked first (no WORKLINE_PARTS), it writes each
 // part's question under in/parts; run again with the parts answered, it puts
@@ -125,9 +166,8 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			sd.note = why
 			continue
 		case len(plans) > partsMax:
-			*findings = append(*findings, verdict.Finding{Rule: "sources-too-wide", Where: sd.doc.Path,
-				Message: fmt.Sprintf("judging it in parts would take %d parts, past parts-max (%d): its sources name more than a doc can be judged against; narrow them to the files it describes, or split the doc", len(plans), partsMax)})
-			sd.note = "(too large to be judged whole, and its sources too wide to be judged in parts: a person judges it)"
+			*findings = append(*findings, tooWide(sd.doc.Path, len(plans), partsMax))
+			sd.note = tooWideNote
 			continue
 		case *total+len(plans) > perRun:
 			sd.deferred = true
