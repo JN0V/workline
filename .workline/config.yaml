@@ -76,9 +76,9 @@ routing:
   # the documentalist has the docs they made suspect judged. On a pull
   # request, the reviewer reads the code too (ADR-0020). Gardening at
   # night: the docs, then the backlog — the GitHub issues, kept by the
-  # product owner (ADR-0018) —, then the spec of one issue it refined, read
-  # by the reviewer, which holds it from ready while a finding is open
-  # (#128; on since 2026-10-17, after the product owner's trial).
+  # product owner (ADR-0018) —, then the specs of up to five issues it
+  # refined (specs-per-run), read by the reviewer, which holds each from
+  # ready while a finding is open (#128; on since 2026-10-17).
   events: {pre-push: [committer, documentalist], merge-request: [committer, documentalist, reviewer],
     schedule: [documentalist, product-owner, reviewer]}
 
