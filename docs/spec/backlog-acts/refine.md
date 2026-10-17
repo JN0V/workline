@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 434f7e39
+checked: 064d7a0c
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -99,7 +99,10 @@ what it can and asks for the rest:
     design. Past `repeated-percent-max` (40 by default, 1 to 100), the
     draft is left out, the rest of the refine kept (`repeated`, said),
     and the issue's line says "Not written: the Example, which said
-    again what is above it." A person's text is only read.
+    again what is above it." A person's text is only read; what a
+    person said yes to — a proposal accepted with the label, a text the
+    reporter agreed to — is written as they read it, measured when it
+    was proposed, the top taken only if it said so.
   - A `description` given apart, as an earlier engine asked, is left out
     (`description-kept`, said).
 - **What it writes is readable**, where the engine can tell
