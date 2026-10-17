@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, five times on 2026-10-09, once on 2026-10-10); a week's trial running
+- **Status:** accepted — built (amended below, five times on 2026-10-09, once each on 2026-10-10, 10-11 and 10-17); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -373,3 +373,54 @@ Decided:
   ([ADR-0039](0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
   rejects it); one sentence in the instruction would promise what was
   never tried.
+
+## Amendment (2026-10-17): what the trial's first week showed
+
+A week of nights on workline and on DomoticsCore: 18 issues waited on a
+person, none answered.
+
+- **A proposal is a new comment** ([#426](https://github.com/JN0V/workline/issues/426)).
+  Edited into the role's comment, it mailed nobody: a forge mails whoever
+  follows an issue for a new comment, never for an edit or a label
+  ([research](../research/surfacing-proposals.md#what-each-forge-notifies)).
+  When a proposal starts waiting on a person — the label put on —, the
+  role's comment is posted anew, last, under the role's own account, and
+  the one before is deleted.
+  - Still one comment of the role's on each issue; one mail per proposal,
+    none for an update. "Notifications" above now reads: one mail when
+    the comment is created, one each time a proposal starts waiting.
+  - The new one is posted before the old is deleted: the state is never
+    lost between the two. A note GitLab lets only its author delete (a
+    person's) is left; the last one is read, as before.
+  - A comment created in the same run is not posted twice. A forge that
+    deletes nothing (a `cmd:` forge, the local one) edits in place.
+  - Rejected: a second, short comment per proposal (two comments of the
+    role's, one more each time); a mention edited in (no forge lets a bot
+    mention whoever follows, and GitHub mails nobody for an edit; GitLab
+    only a user newly mentioned).
+- **A run reads what fits** ([#427](https://github.com/JN0V/workline/issues/427)).
+  Fifteen issues a night made a task over the role's context budget:
+  four nights, no agent asked, the summary saying the issues were read.
+  Now the task holds as many issues as its prompt fits, the others read
+  first the night after; a night whose agent was not asked takes no
+  issue as read and says so. The budget and `issues-per-run` are
+  unchanged.
+- **The cap holds the label too** ([#428](https://github.com/JN0V/workline/issues/428)).
+  Upgrading from the report, one night labelled 15 issues, past
+  `proposals-max` (10), its summary counting 1; the role then read
+  nothing. Now no run labels past the cap: the issues it decided on
+  first, then by number; the others keep their proposal, said, labelled
+  once fewer wait. Each issue labelled is named in the summary.
+- **A question past the night's limit waits for the next night**
+  ([#430](https://github.com/JN0V/workline/issues/430)). The fourth
+  question of a night became a proposal to be asked, labelled, one of
+  the 15. A question is the role's to ask: past `acts.ask.max` it is
+  held, never a person's to answer, and its issue read again first. One
+  an earlier engine recorded so waits on no one: its label comes off.
+- **Workline's own issues are not the backlog**
+  ([#429](https://github.com/JN0V/workline/issues/429)). The role asked
+  its own bot what need the weekly sample serves. The weekly sample, an
+  issue a role keeps in place and a demotion of the merge policy are now
+  left alone, as the old report was; a bot's issue is the project's —
+  "Who counts" above already ignored bots' comments —: nobody is asked
+  there, and a refine is not addressed to the bot.

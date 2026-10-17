@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 21e91932
+checked: 18109269
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -82,6 +82,12 @@ waits. Give the job read access to the repository's branches.
 - `proposals-waiting`: more issues wait on your answer than
   `proposals-max` (10): it reads only those you commented on. Answer
   some — `workline:accepted`, a comment, the label taken off.
+  `proposal-held`: the same cap, for an issue not labelled yet; it is
+  labelled once fewer wait.
+- `issues-cut`: the night's share stopped where the prompt would pass
+  the role's context budget; those issues are read first the next night.
+  "The agent was not asked": one issue alone is over it; lower
+  `code-lines-max`.
 - An issue you commented on is read first, set aside or not: set aside,
   your comment brings it back, completed as any other unless it says "not
   now". A comment written before you took `workline:proposed` off goes

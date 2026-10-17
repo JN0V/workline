@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 21e91932
+checked: 18109269
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -10,7 +10,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
 
 ## On each issue
 
-- **One comment**, created once, then edited in place
+- **One comment**, edited in place; posted anew, the old one deleted,
+  when a proposal starts waiting on you — a new comment mails you, an
+  edit does not
   ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
   - what it did there last, and when — for its sections, one line:
     "Added: Verification, Scope. Changed: —. See the issue's edit
@@ -73,7 +75,9 @@ read-only, grouped, one line an issue linked to its page:
 Each group lists 10 issues, then "and N more"; the waiting groups link
 the saved filter on `workline:proposed`. The role's own line counts
 issues, as you will see them: "issues: 2 done alone, 1 proposed to a
-person, 5 set aside by a person".
+person, 5 set aside by a person"; a night whose agent was not asked says
+so first, never "nothing to do". Each issue labelled is named, and one
+not labelled yet for `proposals-max` is said.
 
 The judging job, which writes nothing (`--no-apply`), decides the acts
 already and says them: "to do alone, once applied", "to propose, once

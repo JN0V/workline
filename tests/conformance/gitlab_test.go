@@ -250,11 +250,26 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 		if it == nil {
 			return notFound, 404
 		}
+		// A note's id is its place, kept once a note before it is deleted.
+		noteID := func(i int, c forge.FakeComment) int {
+			if n, err := strconv.Atoi(c.ID); err == nil {
+				return n
+			}
+			return id*1000 + i + 1
+		}
+		at := func(n int) int {
+			for i, c := range it.Comments {
+				if noteID(i, c) == n {
+					return i
+				}
+			}
+			return -1
+		}
 		switch {
 		case method == "GET":
 			out := []map[string]any{}
 			for i, c := range it.Comments {
-				out = append(out, map[string]any{"id": id*1000 + i + 1, "body": c.Body, "system": false, "author": user(c.Author)})
+				out = append(out, map[string]any{"id": noteID(i, c), "body": c.Body, "system": false, "author": user(c.Author)})
 			}
 			for i, t := range it.Threads { // a discussion's note is a note too, as GitLab lists it
 				out = append(out, map[string]any{"id": id*1000 + 500 + i + 1, "body": t.Body, "system": false, "author": user(tokenUser), "type": "DiffNote"})
@@ -268,19 +283,39 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			}
 			return out, 200
 		case method == "POST":
-			it.Comments = append(it.Comments, forge.FakeComment{Body: form.Get("body"), Author: tokenUser})
-			return map[string]any{"id": id*1000 + len(it.Comments)}, 201
+			c := forge.FakeComment{Body: form.Get("body"), Author: tokenUser}
+			n := id*1000 + len(it.Comments) + 1
+			if k := len(it.Comments); k > 0 && it.Comments[k-1].ID != "" {
+				n = noteID(k-1, it.Comments[k-1]) + 1
+				c.ID = strconv.Itoa(n)
+			}
+			it.Comments = append(it.Comments, c)
+			return map[string]any{"id": n}, 201
 		case method == "PUT":
 			n, _ := strconv.Atoi(sm[3])
-			i := n - id*1000 - 1
-			if i < 0 || i >= len(it.Comments) {
+			i := at(n)
+			if i < 0 {
 				return notFound, 404
 			}
 			if a := it.Comments[i].Author; a != "" && a != tokenUser {
 				return map[string]any{"message": "403 Forbidden"}, 403 // a note is its author's
 			}
-			it.Comments[i] = forge.FakeComment{Body: form.Get("body"), Author: tokenUser}
+			it.Comments[i] = forge.FakeComment{Body: form.Get("body"), Author: tokenUser, ID: it.Comments[i].ID}
 			return map[string]any{"id": n}, 200
+		case method == "DELETE":
+			n, _ := strconv.Atoi(sm[3])
+			i := at(n)
+			if i < 0 {
+				return notFound, 404
+			}
+			if a := it.Comments[i].Author; a != "" && a != tokenUser {
+				return map[string]any{"message": "403 Forbidden"}, 403 // a note is its author's, or a Maintainer's to delete
+			}
+			for k := range it.Comments {
+				it.Comments[k].ID = strconv.Itoa(noteID(k, it.Comments[k]))
+			}
+			it.Comments = slices.Delete(it.Comments, i, i+1)
+			return nil, 204
 		}
 	case mrPath.MatchString(p):
 		sm := mrPath.FindStringSubmatch(p)

@@ -1,0 +1,16 @@
+case: product-owner/over-budget-reads-nothing-says-so
+about: "One issue whose task alone is over the role's context budget — it names a file of 160,000 characters —: the agent is not asked, and the night's summary says so. It lists no issue as read, says no \"nothing to do\", and records nothing of the issue as read: it waits for a person, or a smaller task (#427)."
+given:
+  repo: backlog
+  setup:
+    - "awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0396d\\n\", i }' > src/huge.go && git add src && git commit -qm 'feat: one huge file'"
+  forge:
+    issues:
+      - {id: 9, title: "Huge", body: "Rows lost in `src/huge.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'", no-apply: true}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "judged, not applied (the agent was not asked: no issue read)"
+  findings: [{rule: prompt-over-budget, message: "the agent was not asked"}]
+  no-findings: [{rule: nothing-proposed}]
