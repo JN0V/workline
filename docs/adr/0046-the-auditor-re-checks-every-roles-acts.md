@@ -1,10 +1,11 @@
 # ADR-0046: The auditor re-checks a sample of every role's acts, and its verdicts are counted
 
-- **Status:** accepted (2026-10-14); being built: every role's acts
-  drawn, re-checked, settled by a panel and counted; the reviewer's
-  line per finding judged, the oldest going first past the comment's
-  size ([the reviewer's judge](../../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample));
-  the product owner's fields and its issue folded in to come
+- **Status:** accepted (2026-10-14); built: every role's acts drawn,
+  re-checked, settled by a panel and counted; the reviewer's line per
+  finding judged, the oldest going first past the comment's size
+  ([the reviewer's judge](../../roles/reviewer/docs/judge.md#every-finding-judged-kept-for-the-weekly-sample));
+  the committer's trailers; the product owner's fields and its issue
+  folded in (2026-10-17, [settled while building](#settled-while-building))
 - **Date:** 2026-10-14
 - **Decided by:** the maintainer, on 2026-10-14: [#205] and [#276] built
   together, the share one in ten; the open points settled as below
@@ -253,6 +254,29 @@ measured:
 4. **A true finding the judge dropped, its defect still on `main`**, is
    opened as an issue, `needs-triage`, through the one way roles open
    issues, at most 3 a week.
+
+## Settled while building
+
+The product owner's row (2026-10-17), where this decision was silent:
+
+- **What its run read**: `at` is the commit the run's first step ran
+  on; `body`, the digest of each open issue's body that step read, the
+  state's own digest (12 characters of SHA-256); `model`, the agents and
+  models the run asked, as the committer's trailer writes them. An act a
+  person accepted keeps no `model`: it is theirs, never drawn.
+- **A refine** writes the sections it is judged on: the text it read
+  lacks them. Its auditor gets that text and, beside it, the issue as it
+  reads now (`#<n> now`).
+- **An older record**, without these fields, is read as before — the
+  issue as it reads now, the code at the last commit of its day — and
+  the week's comment names it.
+- **Edit history**: GitHub's is read through its GraphQL API, each edit
+  holding the whole body it left. GitLab's API keeps none: an act whose
+  issue changed since, a refine among them, is `not-read` there.
+- **Its own issue folded in**: the level suggestion moves to the week's
+  comment, with each act a person undid; the product owner's
+  `weekly-sample` setting is no longer read, and said; its former
+  tracking issue, still open, is told where the weeks went, and closed.
 
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108

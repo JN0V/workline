@@ -1,8 +1,8 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 7327530a
+checked: 55fce2ad
 judged: c9d96e2
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # The weekly sample
 
@@ -35,6 +35,12 @@ roles:
   a person.
 - **False** only with the material's words, which the engine finds again;
   else the act is for a person.
+- **What a product owner's act was done on**: the issue's text it read,
+  found by the digest its record keeps — the body now, else the version
+  GitHub's edit history keeps; for a refine, the issue as it reads now
+  beside it —, and the code at the commit it read. A text gone from the
+  forge is not read, for you: GitLab keeps no edit history. An act
+  recorded before this record is read as its issue reads now, and named.
 - **A dispute**: a verdict against the act goes to three judges, Claude's
   three models by default (`sample: {panel: […]}`), each choosing between
   the two readings, not told whose; the majority settles it.
@@ -48,6 +54,11 @@ roles:
   merge request putting it back, for you to review.
 - **A true finding the judge dropped**, still in the code, is opened as an
   issue, `needs-triage`, three a week at most.
+- **The product owner's acts**: each one a person undid is said, and the
+  level its acts done alone suggest, never set
+  ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
+  Its former issue of its own, still open, is told where the weeks went,
+  and closed.
 - **What could not be drawn** is listed, with why: the findings judged
   whose lines a merge request's summary comment no longer holds, past its
   size; a comment written before the lines, its last run's alone.
@@ -75,11 +86,6 @@ roles:
   refused, YAML reading it as another number.
 - **The week** is the last whole one; for another (`--week 2026-W40`),
   each forge page says how.
-- **The product owner's own issue**, on a project that turns it on
-  (`weekly-sample: true`;
-  [ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)):
-  one in ten of those it did alone in the week, onto the issue "workline:
-  the weekly sample of the product owner's acts" — each with its day, its
-  level, and whether a person undid it — for you to judge; undo one you
-  find wrong. It may suggest another `autonomy` level; nothing to set up,
-  no agent asked.
+- **Nothing to turn on for the product owner**: its acts are drawn like
+  any role's. Its former `weekly-sample` setting is no longer read, and
+  its run says so.

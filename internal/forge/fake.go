@@ -76,16 +76,19 @@ type FakeStatus struct {
 
 // FakeItem is an issue or a merge request.
 type FakeItem struct {
-	ID        int           `json:"id"`
-	Branch    string        `json:"branch,omitempty"` // a merge request's source branch
-	Base      string        `json:"base,omitempty"`
-	Closed    bool          `json:"closed,omitempty"`
-	Reason    string        `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
-	Milestone string        `json:"milestone,omitempty"`
-	Fork      bool          `json:"fork,omitempty"` // a merge request from a fork
-	Bot       bool          `json:"bot,omitempty"`  // a merge request a bot opened: an app, a token's user
-	Title     string        `json:"title,omitempty"`
-	Body      string        `json:"body,omitempty"`
+	ID        int    `json:"id"`
+	Branch    string `json:"branch,omitempty"` // a merge request's source branch
+	Base      string `json:"base,omitempty"`
+	Closed    bool   `json:"closed,omitempty"`
+	Reason    string `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
+	Milestone string `json:"milestone,omitempty"`
+	Fork      bool   `json:"fork,omitempty"` // a merge request from a fork
+	Bot       bool   `json:"bot,omitempty"`  // a merge request a bot opened: an app, a token's user
+	Title     string `json:"title,omitempty"`
+	Body      string `json:"body,omitempty"`
+	// Edits are an issue's earlier bodies, newest first, as GitHub's edit
+	// history keeps them: SetBody adds the one it replaces (Versions).
+	Edits     []string      `json:"edits,omitempty"`
 	Labels    []string      `json:"labels"`
 	Comments  []FakeComment `json:"comments"`
 	Author    string        `json:"author,omitempty"`
@@ -614,9 +617,26 @@ func (f *Fake) SetBody(id int, body string) error {
 		if err != nil {
 			return err
 		}
+		if it.Body != body && it.Body != "" {
+			it.Edits = append([]string{it.Body}, it.Edits...)
+		}
 		it.Body = body
 		return nil
 	})
+}
+
+// Versions lists an issue's bodies, the one it has now first, then its
+// earlier ones, as GitHub's edit history does once it was edited.
+func (f *Fake) Versions(id int) ([]string, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil || len(it.Edits) == 0 {
+		return nil, err
+	}
+	return append([]string{it.Body}, it.Edits...), nil
 }
 
 func (f *Fake) SetMilestone(id int, title string) error {

@@ -120,6 +120,36 @@ EOF
 	}
 }
 
+// An issue's earlier bodies, from its whole edit history, page after page
+// as gh prints them: each edit's diff is the body it left, newest first;
+// an edit deleted holds none (ADR-0046).
+func TestGitHubVersions(t *testing.T) {
+	bin := t.TempDir()
+	args := filepath.Join(bin, "args")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + args + "\n" + `cat <<'EOF'
+{"data":{"repository":{"issue":{"userContentEdits":{"nodes":[{"diff":"### Validation\nMia opens it."},{"diff":null}],"pageInfo":{"hasNextPage":true,"endCursor":"Y3Vy"}}}}}}
+{"data":{"repository":{"issue":{"userContentEdits":{"nodes":[{"diff":"### Validation\nTBD"}],"pageInfo":{"hasNextPage":false,"endCursor":"Y3Vz"}}}}}}
+EOF
+`
+	if err := os.WriteFile(filepath.Join(bin, "gh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	got, err := (&github{repo: t.TempDir()}).Versions(40)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"### Validation\nMia opens it.", "### Validation\nTBD"}; fmt.Sprintf("%q", got) != fmt.Sprintf("%q", want) {
+		t.Errorf("versions: %q, want %q", got, want)
+	}
+	asked, _ := os.ReadFile(args)
+	for _, w := range []string{"graphql", "--paginate", "userContentEdits", "endCursor", "number=40"} {
+		if !strings.Contains(string(asked), w) {
+			t.Errorf("gh not asked for %q: %s", w, asked)
+		}
+	}
+}
+
 // The open pull requests, each with where it comes from and who opened it
 // (ADR-0041): a fork's, or one whose fork is gone, is not here; an app's
 // is a bot's; each head where GitHub keeps it.

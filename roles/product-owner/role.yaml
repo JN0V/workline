@@ -59,10 +59,10 @@ settings:
   next-max: 5
   stuck-days: 14
   # Off by default, the code kept (ADR-0038): a changed Need or Scope flags
-  # the issues built on it (ADR-0032); the weekly sample of the acts done
-  # alone (ADR-0033). True turns each on.
+  # the issues built on it (ADR-0032). True turns it on. The acts done
+  # alone are drawn by the weekly sample of every role's acts, with no
+  # setting (ADR-0046).
   changed-needs: false
-  weekly-sample: false
   # The files no longer a source, as paths or globs — a roadmap archived
   # once its items became issues: a change to their lines flags no issue
   # opened from them (ADR-0032).

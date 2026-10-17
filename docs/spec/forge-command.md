@@ -109,7 +109,9 @@ Nor one listing the merge requests merged: through a command, the weekly
 sample draws none of the reviewer's findings, nor reads the head of a
 merge request squashed, and says so (ADR-0046). Nor one reading a
 comment's reactions: the sample's count reads no 👍 nor 👎 through a
-command, every week left unanswered.
+command, every week left unanswered. Nor one reading an issue's edit
+history: a product owner's act whose issue changed since is not read
+through a command (ADR-0046).
 
 ## What stays with the engine
 

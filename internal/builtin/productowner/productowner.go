@@ -105,6 +105,17 @@ func Pre(runDir, repo string) int {
 		return fail(fmt.Errorf("the commit the run is on: %v", err))
 	}
 	commit := strings.TrimSpace(string(head))
+	// What the run reads, kept with each act it does, for the weekly
+	// sample to re-check it on that text and that code (ADR-0046).
+	thisRun := backlog.Read{At: commit, Bodies: map[int]string{}}
+	for _, is := range open {
+		thisRun.Bodies[is.ID] = backlog.BodyDigest(is.Body)
+	}
+	if data, err := yaml.Marshal(thisRun); err != nil {
+		return fail(err)
+	} else if err := os.WriteFile(filepath.Join(runDir, "in", backlog.ReadFile), data, 0o644); err != nil {
+		return fail(err)
+	}
 	s := Settings{IssuesPerRun: 8, CodeLinesMax: 1500}
 	raw := map[string]any{}
 	if data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json")); err == nil {
@@ -130,7 +141,7 @@ func Pre(runDir, repo string) int {
 	var findings []verdict.Finding
 	for _, name := range cfg.Gone {
 		findings = append(findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
-			Message: name + " is no longer read: the role keeps no report, and never pauses (ADR-0038); take it off the project's settings"})
+			Message: name + " is no longer read: " + backlog.GoneSettings[name] + "; take it off the project's settings"})
 	}
 	judged := 0
 	tracked := trackedFiles(repo)

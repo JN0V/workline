@@ -1,6 +1,10 @@
 # ADR-0033: The weekly sample draws the product owner's acts, for a person
 
-- **Status:** accepted
+- **Status:** accepted; amended by
+  [ADR-0046](0046-the-auditor-re-checks-every-roles-acts.md): the acts
+  are drawn into the weekly sample of every role's, re-checked by the
+  auditor; its own tracking issue folded in there, the level suggestion
+  kept
 - **Date:** 2026-10-06
 - **Builds on:** ADR-0015 (the weekly sample, written on the forge),
   ADR-0018 (the product owner; trust earned and lost), ADR-0026 (autonomy
