@@ -344,8 +344,9 @@ func (l *Ledger) UndoneOn(id int) []string {
 }
 
 // Waiting are the open issues that wait on a person: the role's label on
-// them, for a proposal or a draft of the role's — a question held for a
-// later run waits on no one (#430).
+// them, for a proposal or a draft of the role's, as Persist labels them —
+// a question held for a later run, or a label left on nothing, waits on
+// no one (#430).
 func (l *Ledger) Waiting(open []forge.Issue) int {
 	n := 0
 	for _, is := range open {
@@ -353,7 +354,7 @@ func (l *Ledger) Waiting(open []forge.Issue) int {
 		if st == nil || st.Label == "" || l.Aside[is.ID] {
 			continue
 		}
-		if len(ForPerson(st.Proposed)) > 0 || HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady) || len(st.Proposed) == 0 {
+		if len(ForPerson(st.Proposed)) > 0 || HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady) {
 			n++
 		}
 	}
