@@ -23,7 +23,10 @@ it grades both sides: never `checked` over a planted falsehood, and
 without a real agent on every `go test`, by a fake `cmd:` agent changing
 headers only (`TestDriftedWithFakeAgents`): vouching for every doc must lose
 the falsehood checks, recording `judged` on every doc must lose the
-control, doing both right must lose neither; the `count-off` findings,
+control, doing both right must lose neither, nor doing so and opening an
+issue for the stale comment, as the role's rules ask: the cases keep it on
+the local forge (`forge: local`,
+[#439](https://github.com/JN0V/workline/issues/439)). The `count-off` findings,
 reported by the engine with no agent (ADR-0014, step 2), are graded there
 too and must never be lost.
 

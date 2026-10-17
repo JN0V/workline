@@ -3,6 +3,8 @@ about: "ADR-0014's ground truth, on docs drifted as DomoticsCore's and workline'
 given:
   repo: drifted
   setup:
+    # An issue the role opens, for the stale comment, is kept in the clone (#439).
+    - "mkdir -p .workline && printf 'forge: local\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: keep issues in the clone'"
     - "sed -i 's/\"version\": \"1.4.1\"/\"version\": \"1.5.0\"/' Clock/library.json && sed -i 's/#define CLOCK_VERSION \"1.4.1\"/#define CLOCK_VERSION \"1.5.0\"/' Clock/include/Clock.h && sed -i 's|^// Events the clock publishes.$|// Events the clock publishes on the bus, by topic.|' Clock/include/ClockEvents.h && git commit -qam 'feat(clock): 1.5.0'"
 run: {role: documentalist, event: merge-request}
 grade:
