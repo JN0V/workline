@@ -179,10 +179,12 @@ in `grade` is a point: `status`, `agent-calls-max`, `subject-max`,
 `keeps-words` (the share of the author's subject words kept), `no-vague-words`,
 `file-contains`, `file-lacks`, `checked-is-head`, `judged-is-head` (the
 doc's `judged` names the commit judged), `checked-unchanged` (the doc keeps
-the `checked` it had), `body-unchanged`, `never-confirms` (a claim fixed, or
+the `checked` it had), `body-unchanged` (the doc below its header),
+`never-confirms` (a claim fixed, or
 left unconfirmed, never checked again as it is), `finding` and `no-finding`
 (a finding of the run, or none, by `rule`, a part of `where` and of
-`message`, each when given), `lines-max`, `new-files-min`, and `judge`. A case's score is the points it earned; nothing
+`message`, each when given), `lines-max` (the lines below a doc's header,
+as its `doc-lines` budget counts them), `new-files-min`, and `judge`. A case's score is the points it earned; nothing
 passes or fails, the scores are compared from one run to the next. Each line of
 `results.tsv` also holds the exact models that answered (`>` for a step up),
 the efforts asked, the tokens in and out, and the cost at list price (on a

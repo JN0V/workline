@@ -108,6 +108,11 @@ func scan(content string) []line {
 	return out
 }
 
+// BodyLines is how many lines a doc holds below its header: what its
+// `doc-lines` budget counts. The header records who checked the doc, it says
+// nothing.
+func BodyLines(content string) int { return len(scan(content)) }
+
 // words counts the words of prose: tokens holding a letter or a digit, so
 // list markers and table bars are not words.
 func words(s string) int {
@@ -154,7 +159,7 @@ func budgets(t Tree, b Budgets) []Problem {
 	}
 	folders := map[string]int{}
 	for p, content := range t.Docs {
-		n := len(scan(content)) // the body: the header records who checked the doc, it says nothing
+		n := BodyLines(content)
 		folders[path.Dir(p)] += n
 		if b.DocLines > 0 && n > b.DocLines {
 			out = append(out, Problem{Rule: "doc-too-long", Where: p, Key: "doc-too-long " + p, Size: n,
