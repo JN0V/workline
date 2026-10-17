@@ -1,0 +1,42 @@
+case: product-owner/each-thing-said-once
+about: "Each thing said once (ADR-0039, amended): an example or a bug's steps that say again what is above them — the share of their words already said in the text on top and the Need, common words out, past repeated-percent-max (40) — are not written, said in the role's line on the issue and in the summary. #103, an item imported from workline's old backlog as it was opened, and the drafts a night of the role wrote for it: its Example, 53% said above it, is left out. An example adding a fact is written; a bug's steps adding commands and output are written, steps saying the text on top again are not. How a person accepts it restates the case by design: never measured. What a person said yes to — a proposal accepted with the label — is written whole, measured when it was proposed."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 103, title: "Install lychee on Linux without brew or cargo", author: JN0V, insider: true, labels: [], body: "- **Installing lychee on Linux without brew or cargo.** `setup` then only\n  names the page; its release binaries could be fetched, pinned.\n\nOpened from `docs/BACKLOG.md`, lines 157 to 158 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:128a7b71d461 -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 31, title: "Export a month", author: ann, insider: true, labels: [], body: "Accountants closing a month cannot export it as one file: the export takes one day at a time.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 32, title: "Exclude with a slash", author: ann, insider: true, labels: [], body: "Users who exclude a folder with a trailing slash still upload all of it.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 33, title: "Last sale", author: ann, insider: true, labels: [], body: "The export drops the last sale of the day: 3 sales, 2 rows.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - id: 34
+        title: "Last sale, accepted"
+        author: ann
+        insider: true
+        labels: [workline:to-refine, workline:proposed, workline:accepted]
+        label-events: [{label: workline:accepted, added: true, author: bob, insider: true, created: "2026-10-17T07:00:00Z"}]
+        body: "The export drops the last sale of the day: 3 sales, 2 rows."
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\njudged: d8c4dff\nlabel: workline:proposed\nproposed:\n  - act: refine\n    line: 'Refine #34: Example (draft).'\n    since: \"2026-10-15\"\n    proposal:\n      do: refine\n      issue: 34\n      example: 'The export drops the last sale of the day.'\n      why: No case.\n      added: [Example]\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:said-once}
+expect:
+  findings:
+    - {rule: repeated, where: "#103", message: "its Example draft was not written: 53% of its words are said above it already, past 40 (repeated-percent-max)"}
+    - {rule: done, where: "#103", message: "Refined #103: Need (draft), Validation (draft), Verification."}
+    - {rule: done, where: "#31", message: "Refined #31: Example (draft), Validation (draft)."}
+    - {rule: done, where: "#32", message: "Refined #32: Steps to reproduce (draft)."}
+    - {rule: repeated, where: "#33", message: "its Steps to reproduce draft was not written: 100% of its words"}
+    - {rule: done, where: "#33", message: "Refined #33: Validation (draft)."}
+    - {rule: done-as-accepted, where: "#34"}
+  forge:
+    issues:
+      - id: 103
+        body-contains: "## Need\n\n<!-- workline:draft -->\n\nA Linux user without brew or cargo needs `workline setup` to install lychee for them, so link checks work without manual steps.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **No brew, no cargo:**"
+        body-lacks: "## Example"
+        comment-contains: "- Added: Need (draft), Validation (draft), Verification. Changed: —. Not written: the Example, which said again what is above it. See the issue's edit history."
+      - {id: 31, body-contains: "Accountants closing a month cannot export it as one file: the export takes one day at a time.\n\n## Example\n\n<!-- workline:draft -->\n\nClosing September 2026"}
+      - {id: 31, body-contains: "accountants export a month as one file, not one day at a time."}
+      - {id: 32, body-contains: "Users who exclude a folder with a trailing slash still upload all of it.\n\n## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Run `snapsync push"}
+      - id: 33
+        body-contains: "The export drops the last sale of the day: 3 sales, 2 rows.\n\n## Validation"
+        body-lacks: "## Steps to reproduce"
+        comment-contains: "Not written: the Steps to reproduce, which said again what is above it."
+      - {id: 34, body-contains: "## Example\n\n<!-- workline:draft -->\n\nThe export drops the last sale of the day."}

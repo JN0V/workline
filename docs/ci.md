@@ -1,8 +1,8 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
 checked: e2580728
-judged: a8574a5
-verified: agent:claude-code
+judged: 7e7b322
+verified: agent:documentalist
 reader: dccc73a60a07
 ---
 # Setting up workline in CI

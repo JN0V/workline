@@ -24,7 +24,7 @@ hold:
 
 1. **Nothing buildable in Missing**: met once
    [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
-   is built. Missing holds only that decision and
+   is built (in parts, [#435](https://github.com/JN0V/workline/issues/435)). Missing holds only that decision and
    [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
    next to build; the rest are tries on real use, or parked as issues.
 2. **The main issue validated on real use**: open. The trial of
@@ -75,6 +75,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **What no person wrote, in plain words**: `description-*`,
   `level-cautious-proposes-example-and-steps`, `question-written-once`,
   `closings-capped`.
+- **A draft that repeats left out**
+  ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
+  amended): `each-thing-said-once`, `repeated-percent-max-is-a-setting`.
 - **Refining, the reporter asked**: `refine-*`, `answer-read-*`,
   `ask-the-reporter-once`, `same-question-*`, `asked-before-*`,
   `rounds-capped-then-person`, `ready-checked-by-the-engine`; an
@@ -128,11 +131,12 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 
 1. **Issue sections and kinds, proposed**
    ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-   [examples](proposed-headings.md)): established section names, each
-   thing said once, a bug readied only with its steps, the kind label set
-   by the role. Built after the trial of
-   [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md).
-   No issue yet.
+   [examples](proposed-headings.md),
+   [#435](https://github.com/JN0V/workline/issues/435)): established
+   section names, a role's text on top as the Need, a bug readied only
+   with its steps, the kind label set by the role. Built: sections read
+   by meaning; a draft that repeats left out, not tried with a real
+   agent.
 2. **Priority and effort where the forge keeps them, proposed**
    ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
    [examples](priority-and-effort.md)): six steps, conformance first, then

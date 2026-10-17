@@ -40,7 +40,7 @@ func offer(c Proposal) string {
 		if c.ToReporter {
 			return say(fmt.Sprintf("Propose to its reporter (an outsider), in a comment, the sections %s: nothing is written in the issue until they or a maintainer agree.", and(c.Added)))
 		}
-		return say(addSections(c.Added))
+		return say(strings.Join(append([]string{addSections(c.Added)}, notWritten(c)...), " "))
 	case "ready":
 		return say(fmt.Sprintf("Label it `%s`: offered to whoever builds next.", LabelReady))
 	case "unready":

@@ -68,7 +68,8 @@ Scope). What each holds:
 - `example`: one real case of it — a named person or role, numbers with
   their unit, a real command or output, what happens today next to what
   is wanted. A task: what it costs today (the warning printed, the
-  minutes lost).
+  minutes lost). Only with a fact the Need and the text on top lack: a
+  command, a real output, a number, a name. No real case: no `example`.
 - `steps`, for a bug, instead of `example`: the steps to reproduce,
   numbered, then Expected, Actual and the version. The need of a bug is
   who it hurts, in one line.
@@ -87,7 +88,12 @@ Propose `refine` with those it lacks: `scope` and `sources`,
 `steps`, and `validation` only from what the issue and its comments say
 — they are drafts, the reporter's to make theirs; the engine marks them
 so, write the text alone. Write an `example` or `steps` only with a Need
-you draft: a person's Need is left as it is. A section it has is never
+you draft: a person's Need is left as it is.
+
+**Each thing said once.** An `example` or `steps` that says again what
+is above it — the text on top, the Need — is not written: the engine
+measures the share of its words already said, and leaves it out past a
+limit. `validation` restates the case by design: it is never measured. A section it has is never
 rewritten, but one the task says the reviewer's findings lie in and is
 yours to rewrite: give its whole new text in `refine`, answering each
 finding.
@@ -112,8 +118,9 @@ given show: no number, name, command or output they do not hold. Do not
 draft at all, and write instead:
 
 - `ask` — one plain question for its reporter — when the issue is too
-  thin to say who needs what and why; when it shows no real case (ask
-  for one: what they ran, what they saw); a bug with no steps to
+  thin to say who needs what and why; when it shows no real case and
+  one would change what is built (ask for one: what they ran, what they
+  saw); a bug with no steps to
   reproduce (ask for them); when it holds several topics (name them, ask
   whether it should be split); when what it rests on is closed (name it,
   ask what is left);
