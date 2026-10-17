@@ -1,0 +1,21 @@
+case: auditor/sample-folds-the-product-owners-issue
+about: "The product owner's own weekly sample is folded into the sample of every role's acts (ADR-0046): its acts drawn there, each saying when a person undid it, with the level its acts done alone suggest — no setting to turn on. Its former issue, still open, is told where the weeks went, once, and closed."
+given:
+  repo: vouched
+  forge:
+    issues:
+      - {"id": 3, "title": "workline: the weekly sample of the product owner's acts", "body": "Each week, one in ten of the acts the product owner did alone.", "labels": [], "comments": ["### 2026-W01\n\nNo act done alone by the product owner: nothing to judge.\n\n<!-- workline:sample-acts:2026-W01 -->"]}
+      - {"id": 20, "title": "Issue 20", "body": "Issue 20.", "labels": [], "closed": true, "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: rename, level: normal, day: '2026-01-07', line: 'Renamed #20 to \"Rows lost\"'}\nundone:\n- {act: rename, evidence: '#20 renamed back by a person', day: '2026-01-08'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {sample: [--week, 2026-W02, --judge, none], then: apply}
+expect:
+  findings:
+    - {rule: sample-acts, message: "1 act, `rename`, by the product owner from 2026-01-05 to 2026-01-11; 1 drawn"}
+    - {rule: sample-folded, where: "#3", message: "folded into #21"}
+  no-findings:
+    - {rule: acts-sample}
+  forge:
+    issues:
+      - {id: 21, title: "workline: the weekly sample of every role's acts", comment-contains: "| Renamed #20 to \"Rows lost\" — **undone**: #20 renamed back by a person | **not-read** |"}
+      - {id: 21, comment-contains: "**The product owner's level**: 1 act done alone at normal in the acts the issues keep, 1 undone, up to 2026-01-11. Too few acts done alone at normal to suggest a level: 1, at least 10."}
+      - {id: 3, closed: true, comments: 2, comment-contains: "folded into #21, the weekly sample of every role's acts"}
+      - {id: 22, absent: true}

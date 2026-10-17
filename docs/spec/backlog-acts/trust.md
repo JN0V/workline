@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/undo.go, internal/backlog/backlog.go, internal/backlog/acts.go, internal/sample/acts.go, internal/backlog/autonomy.go, internal/backlog/ledger.go]
+sources: [internal/backlog/undo.go, internal/backlog/backlog.go, internal/backlog/acts.go, internal/sample/acts.go, internal/sample/draw.go, internal/backlog/autonomy.go, internal/backlog/ledger.go]
 status: draft
-checked: 9054d164
+checked: 18109269
 verified: agent:claude-code
 ---
 # Trust
@@ -40,17 +40,22 @@ choice, and are not watched.
 
 ## The weekly sample of its acts
 
-Off by default; `weekly-sample: true` turns it on (ADR-0033, ADR-0038).
-`workline sample --apply`, after the docs' sample, reads every issue's
+Part of the weekly sample of every role's acts, with no setting
+(ADR-0046, folding in ADR-0033's issue of its own; `weekly-sample` is no
+longer read, `setting-gone`). `workline sample` reads every issue's
 state, open and closed — one forge call an issue — for the acts done
 alone (`did`, a person's yes left out): of those whose day falls in the
-week sampled, one in ten, rounded up, drawn the same on a rerun, goes to
-the tracking issue "workline: the weekly sample of the product owner's
-acts", a comment a week, for a person to judge — each with its issue,
-kind, day, level, and, when a person undid it since, what shows it (a
-closing reopened, the state's `undone`); an undo counts against one act,
-the newest of its issue and kind done by the day it was found. Over the
-acts done alone at the level of the last one, up to the week's end, 10 or
-more: more than one in ten undone suggests the level below; none undone
-at `normal` suggests `enterprising`. The sample never changes the
-setting.
+week sampled, one in ten of each kind, rounded up, drawn the same on a
+rerun, each re-checked by the auditor on what its record says it read
+(`at`, `model`, `body`; [The issue's state](state.md)). Each says, when
+a person undid it since, what shows it (a closing reopened, the state's
+`undone`); an undo counts against one act, the newest of its issue and
+kind done by the day it was found.
+
+Over the acts done alone at the level of the last one, up to the week's
+end, 10 or more: more than one in ten undone suggests the level below;
+none undone at `normal` suggests `enterprising` (`acts-suggest`), said
+in the week's comment. The sample never changes the setting. The
+role's former tracking issue, "workline: the weekly sample of the product
+owner's acts", still open, is told once where the weeks went, and closed
+(`sample-folded`).

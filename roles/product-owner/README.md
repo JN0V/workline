@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go, routing.default.yaml]
-checked: 9054d164
+checked: 18109269
 verified: agent:claude-code
 ---
 # Product owner
@@ -45,9 +45,9 @@ is on each issue; you answer there
 
 ## On each issue
 
-- **Its one comment**, created once, then edited in place: what it did,
-  what it proposes, what it wants from you; what it knows of the issue,
-  folded.
+- **Its one comment**, edited in place: what it did, what it proposes,
+  what it wants from you; what it knows of the issue, folded. Posted
+  anew when it proposes something: one mail per proposal.
 - **The label `workline:proposed`** (GitLab: `workline::proposed`) while
   the issue waits on you: its drafts, or a proposal.
 - **What waits on you** is a saved filter on that label.
@@ -67,7 +67,8 @@ is on each issue; you answer there
 | it should not exist | close it | never reopens it |
 
 - **Silence is never a yes.** Past `proposals-max` issues waiting, the
-  role reads only those you commented on.
+  role reads only those you commented on, and labels no more: the next
+  wait for room.
 - **Three rounds at most** (the draft, two revisions), then one line
   "left to a person" in the summary, nothing more on the issue.
 - **Who counts**: the reporter and the project's people; their comment
@@ -125,7 +126,9 @@ roles:
 
 - **One call a run** (standard tier, context budget 120k tokens,
   estimated): 45k to 62k tokens in for four issues on a real backlog, up
-  to 97.6k with their code; `issues-per-run` and `code-lines-max` size it.
+  to 97.6k with their code; `issues-per-run` and `code-lines-max` size it,
+  and a run reads only the issues that fit the budget, the rest first at
+  the next run.
 - A person's answer, an accepted proposal, an undo: read with no agent.
 
 ## Without AI

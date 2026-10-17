@@ -1,0 +1,19 @@
+case: product-owner/over-budget-applied-says-no-issue-read
+about: "Applied, a run whose agent was not asked — its one issue's task over the role's context budget — says so, and that no issue was read, in place of \"nothing done\"; nothing of the issue is recorded as read: read again at the next run (#427)."
+given:
+  repo: backlog
+  setup:
+    - "awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0396d\\n\", i }' > src/huge.go && git add src && git commit -qm 'feat: one huge file'"
+  forge:
+    issues:
+      - {id: 9, title: "Huge", body: "Rows lost in `src/huge.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'"}
+expect:
+  status: pass
+  agent-calls: 0
+  summary: "the agent was not asked: no issue read"
+  findings: [{rule: prompt-over-budget}]
+  no-findings: [{rule: nothing-proposed}]
+  forge:
+    issues:
+      - {id: 9, comment-lacks: "judged: "}

@@ -76,16 +76,19 @@ type FakeStatus struct {
 
 // FakeItem is an issue or a merge request.
 type FakeItem struct {
-	ID        int           `json:"id"`
-	Branch    string        `json:"branch,omitempty"` // a merge request's source branch
-	Base      string        `json:"base,omitempty"`
-	Closed    bool          `json:"closed,omitempty"`
-	Reason    string        `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
-	Milestone string        `json:"milestone,omitempty"`
-	Fork      bool          `json:"fork,omitempty"` // a merge request from a fork
-	Bot       bool          `json:"bot,omitempty"`  // a merge request a bot opened: an app, a token's user
-	Title     string        `json:"title,omitempty"`
-	Body      string        `json:"body,omitempty"`
+	ID        int    `json:"id"`
+	Branch    string `json:"branch,omitempty"` // a merge request's source branch
+	Base      string `json:"base,omitempty"`
+	Closed    bool   `json:"closed,omitempty"`
+	Reason    string `json:"reason,omitempty"` // why it was closed: completed, not_planned or duplicate
+	Milestone string `json:"milestone,omitempty"`
+	Fork      bool   `json:"fork,omitempty"` // a merge request from a fork
+	Bot       bool   `json:"bot,omitempty"`  // a merge request a bot opened: an app, a token's user
+	Title     string `json:"title,omitempty"`
+	Body      string `json:"body,omitempty"`
+	// Edits are an issue's earlier bodies, newest first, as GitHub's edit
+	// history keeps them: SetBody adds the one it replaces (Versions).
+	Edits     []string      `json:"edits,omitempty"`
 	Labels    []string      `json:"labels"`
 	Comments  []FakeComment `json:"comments"`
 	Author    string        `json:"author,omitempty"`
@@ -104,6 +107,9 @@ type FakeItem struct {
 	// ReactionsBy are the reactions people put on its comments, by the
 	// comment's id, with who: what Reactions reads, the role's own besides.
 	ReactionsBy map[string][]Reaction `json:"reactions-by,omitempty"`
+	// Posted counts the comments posted on it, each mailing whoever
+	// follows the issue on a real forge; an edit posts none (Renewer).
+	Posted int `json:"posted,omitempty"`
 	// Threads are a merge request's comments on lines, as a review leaves
 	// them (LineReviewer).
 	Threads []FakeThread `json:"threads,omitempty"`
@@ -379,6 +385,7 @@ func (f *Fake) Comment(t Target, body, marker string) error {
 			}
 		}
 		it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true})
+		it.Posted++
 		return nil
 	})
 }
@@ -391,15 +398,42 @@ func (f *Fake) Sticky(t Target, body, marker string, create bool) error {
 		}
 		for i := len(it.Comments) - 1; i >= 0; i-- { // the last, as a forge's
 			if strings.Contains(it.Comments[i].Body, marker) {
-				if it.Comments[i].Body != body+"\n\n"+marker {
-					it.Comments[i] = FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true}
-				}
+				// Edited, it stays its author's, as on a forge.
+				it.Comments[i].Body = body + "\n\n" + marker
 				return nil
 			}
 		}
 		if create {
 			it.Comments = append(it.Comments, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true})
+			it.Posted++
 		}
+		return nil
+	})
+}
+
+// Renew posts the comment anew, the token's, and deletes the ones carrying
+// marker before it; the comments left keep their ids (Renewer).
+func (f *Fake) Renew(t Target, body, marker string) error {
+	return f.write(func(s *FakeState) error {
+		it, err := s.item(t)
+		if err != nil {
+			return err
+		}
+		next := len(it.Comments) + 1
+		var kept []FakeComment
+		for i, c := range it.Comments {
+			if c.ID == "" {
+				c.ID = strconv.Itoa(i + 1) // its place, kept once another goes
+			}
+			if n, err := strconv.Atoi(c.ID); err == nil && n >= next {
+				next = n + 1
+			}
+			if !strings.Contains(c.Body, marker) {
+				kept = append(kept, c)
+			}
+		}
+		it.Comments = append(kept, FakeComment{Body: body + "\n\n" + marker, Author: fakeBot, Bot: true, ID: strconv.Itoa(next)})
+		it.Posted++
 		return nil
 	})
 }
@@ -583,9 +617,26 @@ func (f *Fake) SetBody(id int, body string) error {
 		if err != nil {
 			return err
 		}
+		if it.Body != body && it.Body != "" {
+			it.Edits = append([]string{it.Body}, it.Edits...)
+		}
 		it.Body = body
 		return nil
 	})
+}
+
+// Versions lists an issue's bodies, the one it has now first, then its
+// earlier ones, as GitHub's edit history does once it was edited.
+func (f *Fake) Versions(id int) ([]string, error) {
+	s, err := f.load()
+	if err != nil {
+		return nil, err
+	}
+	it, err := s.item(Target{Kind: "issue", ID: id})
+	if err != nil || len(it.Edits) == 0 {
+		return nil, err
+	}
+	return append([]string{it.Body}, it.Edits...), nil
 }
 
 func (f *Fake) SetMilestone(id int, title string) error {

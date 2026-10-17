@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 9054d164
+checked: 18109269
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -10,7 +10,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
 
 ## On each issue
 
-- **One comment**, created once, then edited in place
+- **One comment**, edited in place; posted anew, the old one deleted,
+  when a proposal starts waiting on you — a new comment mails you, an
+  edit does not
   ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
   - what it did there last, and when — for its sections, one line:
     "Added: Verification, Scope. Changed: —. See the issue's edit
@@ -73,7 +75,9 @@ read-only, grouped, one line an issue linked to its page:
 Each group lists 10 issues, then "and N more"; the waiting groups link
 the saved filter on `workline:proposed`. The role's own line counts
 issues, as you will see them: "issues: 2 done alone, 1 proposed to a
-person, 5 set aside by a person".
+person, 5 set aside by a person"; a night whose agent was not asked says
+so first, never "nothing to do". Each issue labelled is named, and one
+not labelled yet for `proposals-max` is said.
 
 The judging job, which writes nothing (`--no-apply`), decides the acts
 already and says them: "to do alone, once applied", "to propose, once
@@ -89,8 +93,13 @@ applied". The applying job does exactly that plan.
 
 ## The weekly sample
 
-Off by default (`weekly-sample`). Turned on, with the docs' sample
-(`workline sample --apply`, no agent): one in ten of the acts it did alone
-that week, read from each issue's state, on the issue "workline: the
-weekly sample of the product owner's acts", each with its day, level and
-whether a person undid it; a level suggested, never set.
+The [weekly sample of every role's acts](../../../docs/weekly-sample.md)
+draws one in ten of each kind it did alone, with no setting:
+
+- **Each act re-checked by the auditor** on what it read, kept in the
+  issue's state with the act: `at`, the commit; `model`, the agent and
+  model asked; `body`, a digest of the issue's text
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
+- **Each one a person undid** said, and a level suggested from them,
+  never set
+  ([ADR-0033](../../../docs/adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).

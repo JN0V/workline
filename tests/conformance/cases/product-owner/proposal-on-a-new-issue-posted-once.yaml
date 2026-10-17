@@ -1,0 +1,14 @@
+case: product-owner/proposal-on-a-new-issue-posted-once
+about: "A person's new issue, its first comment of the role's written in the run that proposes on it, gets one comment posted — that one, mailed once — never a second one renewing it in the same run (#426)."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: []}
+run: {role: product-owner, event: schedule, ai: fake:refine-nine-again}
+expect:
+  findings: [{rule: done, where: "#9"}]
+  forge:
+    issues:
+      - {id: 9, labels: [workline:to-refine, workline:draft, workline:proposed], comments: 1, posted: 1, comment-contains: "Your answer"}

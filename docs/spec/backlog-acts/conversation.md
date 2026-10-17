@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 9054d164
+checked: 18109269
 verified: agent:claude-code
 ---
 # The conversation with the reporter
@@ -25,8 +25,13 @@ A later ask thanks the reporter ("thank you; to refine this issue,
 still: …"). The agent is given the conversation in order — the engine's
 rounds among the people's comments — and the rounds spent.
 
-**An outsider's issue** — its reporter without write access, not opened by
-a role, not bearing `workline:accepted` — is theirs: a `refine` writes
+**A bot's issue** (`backlog.Bot`: a `[bot]` login, a GitLab project or
+group bot) is never addressed to it (#429): an `ask` is dropped
+(`reporter-bot`), a `refine` follows its mode as on an issue of the
+project's; the agent is told nobody there answers.
+
+**An outsider's issue** — its reporter without write access, not a bot,
+not opened by a role, not bearing `workline:accepted` — is theirs: a `refine` writes
 nothing in its body. The engine comments to the reporter, naming them:
 what the role understood (its `why`), the sections it would add (Need and
 Validation as drafts from their words), what it still needs (`questions`),

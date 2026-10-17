@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 733da152
+checked: 9fcf6cf6
 verified: agent:claude-code
 ---
 # Running each role from any trigger
@@ -115,8 +115,8 @@ Before your release tool tags; a non-zero exit holds it.
 `workline sample --forge gitlab --out sample.json` (agent, reads the
 forge, writes nothing; `--week 2026-W40`): every role's acts drawn
 ([ADR-0046](adr/0046-the-auditor-re-checks-every-roles-acts.md)). Then `workline sample --apply
-sample.json --forge gitlab` (token, no agent), which also draws the
-product owner's acts onto their own issue, when turned on
+sample.json --forge gitlab` (token, no agent), which writes the week on
+one issue, the level the product owner's acts suggest among it
 ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
 
 ### Import

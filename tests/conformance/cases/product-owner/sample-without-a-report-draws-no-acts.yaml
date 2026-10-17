@@ -1,5 +1,5 @@
 case: product-owner/sample-without-a-report-draws-no-acts
-about: A project with no product owner's report gets no sample of its acts — no tracking issue for them, nothing said of them — and the docs' weekly sample is written as before.
+about: A project whose issues keep no act of the product owner's gets nothing of it in the weekly sample — no issue of its own, no level said — and the sample of every role's acts is written as before.
 given:
   repo: vouched
   forge:
@@ -12,5 +12,5 @@ expect:
     - {rule: acts-sample}
   forge:
     issues:
-      - {id: 4, title: "workline: the weekly sample of every role's acts", comments: 2, comment-contains: "2026-W03"}
+      - {id: 4, title: "workline: the weekly sample of every role's acts", comments: 2, comment-contains: "2026-W03", comment-lacks: "The product owner's level"}
       - {id: 5, absent: true}

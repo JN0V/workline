@@ -1,4 +1,4 @@
-# Product owner — where it stands (2026-10-13)
+# Product owner — where it stands (2026-10-17)
 
 **In one line:** refocused by
 [ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md):
@@ -6,8 +6,9 @@ it completes issues (sources, drafts, a question to the reporter), closes
 an evident duplicate and readies an evident issue alone, proposes the
 rest on each issue (`workline:proposed`, one comment edited in place),
 and reads a person's answer there. Milestones, priorities, splits,
-renames, links, obsolete issues, changed needs and the weekly sample are
-off by default, their code kept. Tried on both sandboxes; a trial on
+renames, links, obsolete issues and changed needs are off by default,
+their code kept; its acts done alone are drawn by the weekly sample of
+every role's. Tried on both sandboxes; a trial on
 workline and another project of its author's is running. Beta.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive (the first
@@ -57,6 +58,14 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `edited-draft-is-the-persons`, `labels-follow-the-state`,
   `obsolete-said-when-off`, `draft-links-decisions-and-says-closed`,
   `summary-in-plain-words`.
+- **What the trial's first week showed**: a proposal mails once,
+  `proposal-on-a-*-posted-*`, `proposal-update-posts-nothing`; a run
+  reads what fits its budget, `reads-what-fits-the-budget`,
+  `over-budget-*`; no more labelled than `proposals-max`,
+  `proposals-labelled-within-the-cap`, `proposals-held-labelled-later`;
+  a question past the night's limit asked the night after,
+  `capped-ask-*`; workline's own issues and bots left unasked,
+  `workline-issues-left-alone`, `bot-reporter-asked-nothing`.
 - **A person's word first**: `set-aside-*`, `brought-back-*`,
   `left-with-nothing-read-again-once`, `task-says-whose-sections`.
 - **Issues a person reads**, the person's part on top:
@@ -100,8 +109,11 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 - **Next and stuck**, in the job's summary: `summary-*`, `report-stuck-*`.
 - **A changed need**: `changed-*`, `unchanged-need-flags-nothing`,
   `unready-accepted-moves-back`, `archived-source-flags-nothing`.
-- **The weekly sample of its acts**: `acts-recorded-with-day-and-level`,
-  `sample-*`.
+- **The weekly sample of its acts**, folded into every role's, each act
+  keeping what its run read — `at`, `model`, `body`
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)):
+  `acts-recorded-with-day-and-level`, `acts-record-what-was-read`,
+  `sample-*`, `weekly-sample-said-gone`.
 - **A spec read before ready**: `ready-held-while-a-spec-finding-is-open`,
   `ready-released-once-the-spec-is-answered`,
   `refine-answers-the-spec-findings`.
@@ -157,8 +169,7 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
      [#164](https://github.com/JN0V/workline/issues/164)'s Validation;
    - **off by default, once turned on**: closing as obsolete (a real delay
      of days; the label taken off, an exempt label, a judge's no, live; 7
-     days and 3 a run measured); the weekly sample (a real week's acts
-     read by the maintainer, ten or more, on GitLab and on workline); a
+     days and 3 a run measured); a
      changed need (a real agent proposing `unready` only when it should,
      an imported file's lines changed live, GitLab,
      [#165](https://github.com/JN0V/workline/issues/165)'s Validation).

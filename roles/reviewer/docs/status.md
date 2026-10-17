@@ -148,8 +148,18 @@ its measure in
 - **A spec, on a machine and on the forge**: `spec-*`.
 - **Spec review on workline**, on since 2026-10-17, after the product
   owner's trial: the reviewer after it in the `schedule` line of
-  workline's `.workline/config.yaml`; a night's cost estimated offline
-  in its pull request ([#424](https://github.com/JN0V/workline/pull/424)).
+  workline's `.workline/config.yaml`, up to 5 specs a night
+  (`specs-per-run`, below); a night's cost estimated offline in its pull
+  request ([#424](https://github.com/JN0V/workline/pull/424)).
+- **Several specs a night** on the forge, `specs-per-run` (5), the rest
+  the next night; measured with no model on workline's 10 waiting, two
+  nights instead of ten
+  ([#433](https://github.com/JN0V/workline/issues/433)):
+  `spec-several-read-in-one-run`, `spec-rest-read-at-the-next-run`,
+  `spec-tokens-spent-later-specs-wait`,
+  `spec-question-to-a-person-takes-no-place`,
+  `spec-without-ai-questions-still-asked`,
+  `spec-agent-unreachable-questions-wait`.
 - **A record that does not read is said**: `spec-record-unread-*`,
   `record-unread-reviews-every-commit-again`.
 - **An issue outside the change**, opened the one way every role shares,
@@ -176,8 +186,7 @@ its measure in
    read right, not functions picked from plain words
    ([#425](https://github.com/JN0V/workline/issues/425)); then more
    specs, the product owner's real answer read again, on GitLab and in CI
-   (a round over two nights). Several specs a night parked until a queue
-   shows: ten waited on workline when it was turned on, one read a night.
+   (a round over two nights). No issue yet for these.
 3. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.

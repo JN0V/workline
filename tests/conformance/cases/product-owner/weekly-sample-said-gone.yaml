@@ -1,0 +1,15 @@
+case: product-owner/weekly-sample-said-gone
+about: "The product owner's own weekly sample is folded into the sample of every role's acts (ADR-0046), which draws its acts and suggests its level with no setting; a project still setting weekly-sample is told the setting is not read, never silently ignored, and the role runs."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {weekly-sample: true}
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  agent-calls: 1
+  findings: [{rule: setting-gone, message: "weekly-sample is no longer read: the weekly sample of every role's acts draws the product owner's"}]

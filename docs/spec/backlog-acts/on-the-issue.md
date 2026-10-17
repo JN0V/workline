@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: 9388c83d
+checked: 18109269
 verified: agent:claude-code
 ---
 # On the issue
@@ -35,14 +35,24 @@ state folded under it (`backlog.FormatState`):
 - once set aside: that nothing more is proposed until the issue changes.
 
 Written at the end of each run (`Plan.Persist`), edited in place, never a
-new comment: one mail when it is created, none after. A comment with
-nothing to say is the state alone, as before.
+second comment. When a proposal starts waiting on a person — the label
+put on —, the comment held before the run is posted anew, last, under
+the role's own account, and the one before deleted (`forge.Renewer`):
+a forge mails whoever follows the issue for a new comment, never for an
+edit (ADR-0038, amended). So one mail when it is created, one per
+proposal, none for an update; a comment created in the same run is not
+posted again. The new one is posted first; a note GitLab lets only its
+author delete is left, and the last is read. A `cmd:` forge and the
+local one edit in place. A comment with nothing to say is the state
+alone, as before.
 
 **The label.** `workline:proposed` (on a forge with scoped labels,
 GitLab: `workline::proposed`), created once, is on an open issue while it
 waits on a person: a proposal in its state, or a draft of the role's in
-its body and not ready. Taken off when it no longer waits, when it is
-closed, and when a person accepts. A label a bot took off, as the forge's
+its body and not ready — never on more than `proposals-max` issues at
+once: one more waits for room, said (`proposal-held`,
+[A person's answers](answers.md)). Taken off when it no longer waits,
+when it is closed, and when a person accepts. A label a bot took off, as the forge's
 label events say, is put back.
 
 **Its labels follow its state**, at every run that writes the issues'
@@ -78,7 +88,9 @@ its message, no rule's name; on the backlog (`proposals-waiting`,
 `demoted`, `setting-gone`), "the backlog" and its message. The role's own
 line counts what a person will see on the issues, by issue — "issues: 2
 done alone, 1 proposed to a person, 5 set aside by a person" —, never the
-writes the run takes (`engine.onIssues`).
+writes the run takes (`engine.onIssues`). A run whose agent was not
+asked, though it had a task, says so first — "the agent was not asked:
+no issue read" —, never "nothing to do" (#427).
 
 **Judged, not applied** (`--no-apply`, CI's first job): the engine
 decides the plan (`backlog.Decide`, reading the forge only), keeps it in

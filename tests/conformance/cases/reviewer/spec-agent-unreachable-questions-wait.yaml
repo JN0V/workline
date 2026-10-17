@@ -1,0 +1,29 @@
+case: reviewer/spec-agent-unreachable-questions-wait
+about: "On the forge (#433), an agent that cannot be reached ends the run blocked-external, never a pass: nothing of it is written, the question to a person whose rounds are spent included. That question is said to wait, never said to be on the issue; its record asks it again at the next run."
+given:
+  repo: reviewed
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 8
+        title: The median of no values
+        body: "## Need\n\nMedian gives 0 for an empty list.\n\n## Verification\n\nA test of Median on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec — 1 findings on the spec.\n\n<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need -->\n\n<!-- workline:sticky=reviewer/spec -->"
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "unavailable:quota"}
+expect:
+  status: blocked-external
+  findings: [{rule: spec-rounds-spent, where: "#8", message: "waits for the next run"}]
+  no-findings: [{rule: spec-rounds-spent, message: "a question for a person, on the issue"}]
+  summary: "the question to a person waits for the next run (#8)"
+  forge:
+    issues:
+      - {id: 4, comments: 1}
+      - {id: 8, comments: 2, comment-lacks: "stopped"}

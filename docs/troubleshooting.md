@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 1a0ca6ec
+checked: 18109269
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -82,19 +82,27 @@ waits. Give the job read access to the repository's branches.
 - `proposals-waiting`: more issues wait on your answer than
   `proposals-max` (10): it reads only those you commented on. Answer
   some — `workline:accepted`, a comment, the label taken off.
+  `proposal-held`: the same cap, for an issue not labelled yet; it is
+  labelled once fewer wait.
+- `issues-cut`: the night's share stopped where the prompt would pass
+  the role's context budget; those issues are read first the next night.
+  "The agent was not asked": one issue alone is over it; lower
+  `code-lines-max`.
 - An issue you commented on is read first, set aside or not: set aside,
   your comment brings it back, completed as any other unless it says "not
   now". A comment written before you took `workline:proposed` off goes
   with that "not now", and does not bring it back.
-- `setting-gone`: `ignored-runs-max` is no longer read; take it off.
+- `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
+  take it off.
 - An issue gets nothing: the summary's "read, left incomplete" says why —
   no file found for its Scope (link or name its files, or write the Scope
   yourself), or nothing drafted (read again once it changes or someone
   comments).
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - An issue refined never goes ready, the reviewer after it in the line
-  ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads one issue a run, none
-  without an agent or with `forge-writes: false`; `spec-findings-open` —
+  ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads `specs-per-run` issues a
+  run (5), the rest the next (`spec-waits`), none without an agent or
+  with `forge-writes: false`; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
 - A hidden record does not read

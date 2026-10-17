@@ -1,0 +1,23 @@
+case: product-owner/capped-ask-asked-at-the-next-run
+about: "Four questions decided in a run with ask at most 3 a run: three are asked; the fourth is the role's to ask later, never a proposal to a person — no label, nothing proposed on the issue, not among those waiting on a person —, and its issue is read again first at the next run, which asks it (#430)."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export wrong", body: "The export is wrong.", author: bob, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Totals off", body: "Totals are off.", author: cid, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Duplicates after restart", body: "Duplicates after a restart.", author: dee, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ask-four, then: again}
+expect:
+  status: pass
+  findings:
+    - {rule: act-cap, where: "#12", message: "past this run's limit of 3 (ask): asked at a later run"}
+    - {rule: done, where: "#12"}
+  no-findings: [{rule: proposed, where: "#12"}]
+  run-files:
+    in/task.md: {contains: "## #12 Duplicates after restart"}
+  forge:
+    issues:
+      - {id: 9, comment-contains: "@ann, to refine this issue: Which rows are lost"}
+      - {id: 12, labels: [], comment-contains: "@dee, to refine this issue: What is seen today after a restart?", comment-lacks: ["**Proposes**", "label: workline:proposed"]}

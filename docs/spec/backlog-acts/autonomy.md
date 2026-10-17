@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 9054d164
+checked: 18109269
 verified: agent:claude-code
 ---
 # Autonomy and caps
@@ -21,7 +21,6 @@ undone-max: 3                               # acts of a kind undone across the i
 next-max: 5                                 # the ready issues the summary lists, 0 to 20; 0 none
 stuck-days: 14                              # an issue waiting on a person longer is said stuck, 1 to 365
 changed-needs: false                        # "A changed need"
-weekly-sample: false                        # "The weekly sample of its acts"
 acts:
   open: {mode: act, max: 30}
   sources: {mode: act, max: 10}
@@ -37,7 +36,10 @@ acts:
   depend: {mode: off, max: 5}
 ```
 
-- `act`: done, up to `max` a run; past it, proposed.
+- `act`: done, up to `max` a run; past it, proposed — but a question to
+  a reporter (`ask`), the role's to ask at a later run: held, never a
+  person's to answer, no label nor line on the issue, its issue read
+  again first (`Pending.Held`, #430).
 - `propose`: proposed on its issue for a person to accept, not done.
 - `off`: dropped; a closing off is said on its issue for a person to close
   ([Closing](closing.md)).
@@ -90,5 +92,5 @@ four sections are there, Need and Validation a person's, not ready and
 it, the engine checks it, and an outsider's is proposed. Its reporter is
 said of the project or not. A level the role does
 not have, a number out of its bounds, `changed-needs` not true or false,
-or `archived` not a list of paths, stops the run; `ignored-runs-max`, no
-longer read, is said (`setting-gone`).
+or `archived` not a list of paths, stops the run; `ignored-runs-max` and
+`weekly-sample`, no longer read, are said (`setting-gone`).

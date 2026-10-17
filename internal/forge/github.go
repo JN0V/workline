@@ -249,6 +249,46 @@ func (g *github) Trail(id int, label string) (Trail, error) {
 	return t, nil
 }
 
+// versionsQuery asks an issue's edit history: each edit's `diff` holds
+// the whole body as that edit left it, the newest first, the body it was
+// opened with last; an edit deleted holds none (checked on workline's
+// issues, 2026-10-17). A hundred a page, gh following the pages.
+const versionsQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { issue(number: $number) { userContentEdits(first: 100, after: $endCursor) { nodes { diff } pageInfo { hasNextPage endCursor } } } } }`
+
+// Versions reads the bodies an issue had, from its whole edit history:
+// one GraphQL call a hundred edits (ADR-0046).
+func (g *github) Versions(id int) ([]string, error) {
+	out, err := g.api("graphql", "--paginate", "-f", "query="+versionsQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
+	if err != nil {
+		return nil, err
+	}
+	pages, err := lines[struct {
+		Data struct {
+			Repository struct {
+				Issue struct {
+					Edits struct {
+						Nodes []struct {
+							Diff *string `json:"diff"`
+						} `json:"nodes"`
+					} `json:"userContentEdits"`
+				} `json:"issue"`
+			} `json:"repository"`
+		} `json:"data"`
+	}](out)
+	if err != nil {
+		return nil, err
+	}
+	var all []string
+	for _, p := range pages {
+		for _, n := range p.Data.Repository.Issue.Edits.Nodes {
+			if n.Diff != nil {
+				all = append(all, *n.Diff)
+			}
+		}
+	}
+	return all, nil
+}
+
 // insider says whether GitHub's author_association gives write access:
 // the owner, a member of the organisation, a collaborator.
 func insider(association string) bool {
@@ -415,10 +455,11 @@ func (g *github) Sticky(t Target, body, marker string, create bool) error {
 		return err
 	}
 	if len(found) > 0 {
-		if found[0].Body == body+"\n\n"+marker {
+		last := found[len(found)-1] // the one read, as GitLab's (backlog's readBlock)
+		if last.Body == body+"\n\n"+marker {
 			return nil // as it is already: not edited again
 		}
-		_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", found[0].ID), "-f", "body="+body+"\n\n"+marker)
+		_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", last.ID), "-f", "body="+body+"\n\n"+marker)
 		return err
 	}
 	if !create {
@@ -426,6 +467,26 @@ func (g *github) Sticky(t Target, body, marker string, create bool) error {
 	}
 	_, err = g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+body+"\n\n"+marker)
 	return err
+}
+
+// Renew posts the comment anew, under the token's account, then deletes
+// the ones carrying marker before it: GitHub mails an issue's subscribers
+// for a new comment, never for an edit (Renewer).
+func (g *github) Renew(t Target, body, marker string) error {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID),
+		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | .id", marker))
+	if err != nil {
+		return err
+	}
+	if _, err := g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+body+"\n\n"+marker); err != nil {
+		return err
+	}
+	for _, id := range strings.Fields(string(out)) {
+		if _, err := g.api("-X", "DELETE", "repos/{owner}/{repo}/issues/comments/"+id); err != nil && !errors.Is(err, errNotFound) {
+			return err
+		}
+	}
+	return nil
 }
 
 func (g *github) Label(t Target, add, remove []string) error {

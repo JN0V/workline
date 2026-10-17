@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.31.0](https://github.com/JN0V/workline/compare/v0.30.0...v0.31.0) (2026-10-17)
+
+
+### Features
+
+* **documentalist:** a comment is no support for a part ([#415](https://github.com/JN0V/workline/issues/415)) ([5a131d6](https://github.com/JN0V/workline/commit/5a131d6acdaf9a758e2b1ff793aa31616e6e4435))
+* **documentalist:** the agent reads the pages the reader checks flag ([#417](https://github.com/JN0V/workline/issues/417)) ([c9d96e2](https://github.com/JN0V/workline/commit/c9d96e2bebc64fda9150b1461daa11949c245bf8))
+* **sample:** re-check the product owner's acts on what they read ([#431](https://github.com/JN0V/workline/issues/431)) ([55c2687](https://github.com/JN0V/workline/commit/55c2687ddb692a45bab3f8a322ebf34f8d949066))
+
+
+### Bug Fixes
+
+* **documentalist:** findings on a pull request open no conversation ([#416](https://github.com/JN0V/workline/issues/416)) ([2ab7f51](https://github.com/JN0V/workline/commit/2ab7f51b4c27e62b818c8d8708ed0cf430549383))
+* **product-owner:** five faults the trial showed ([#432](https://github.com/JN0V/workline/issues/432)) ([ba468fa](https://github.com/JN0V/workline/commit/ba468fa4b3a301fd56e89e0a1de2f945f1f01d65))
+
 ## [0.30.0](https://github.com/JN0V/workline/compare/v0.29.0...v0.30.0) (2026-10-15)
 
 

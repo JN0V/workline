@@ -1,0 +1,52 @@
+case: product-owner/proposals-held-labelled-later
+about: "Of fifteen issues waiting on a person, ten labelled — proposals-max —: once a person answers those ten, here taking the label off, the next run labels the other five, still within the cap, each mailed then (#428)."
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {proposals-max: 10}}}
+  forge:
+    issues:
+      - {id: 1, title: "Draft 1", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 1.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 2, title: "Draft 2", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 2.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 3, title: "Draft 3", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 3.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 4, title: "Draft 4", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 4.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 5, title: "Draft 5", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 5.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 6, title: "Draft 6", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 6.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 7, title: "Draft 7", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 7.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 8, title: "Draft 8", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 8.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Draft 9", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 9.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Draft 10", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 10.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Draft 11", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 11.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Draft 12", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 12.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 13, title: "Draft 13", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 13.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 14, title: "Draft 14", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 14.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 15, title: "Draft 15", body: "## Need\n\n<!-- workline:draft -->\n\nA need of 15.", author: ann, insider: true, labels: [workline:draft], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run:
+  role: product-owner
+  event: schedule
+  ai: fake:proposes-nothing
+  then: again
+  between:
+    issues:
+      - {id: 1, labels: [workline:draft]}
+      - {id: 2, labels: [workline:draft]}
+      - {id: 3, labels: [workline:draft]}
+      - {id: 4, labels: [workline:draft]}
+      - {id: 5, labels: [workline:draft]}
+      - {id: 6, labels: [workline:draft]}
+      - {id: 7, labels: [workline:draft]}
+      - {id: 8, labels: [workline:draft]}
+      - {id: 9, labels: [workline:draft]}
+      - {id: 10, labels: [workline:draft]}
+expect:
+  status: pass
+  findings:
+    - {rule: proposal-held, where: "#11"}
+    - {rule: set-aside, where: "#1"}
+    - {rule: proposed, where: "#11"}
+    - {rule: proposed, where: "#15"}
+  forge:
+    issues:
+      - {id: 1, labels: [workline:draft]}
+      - {id: 11, labels: [workline:draft, workline:proposed], posted: 1}
+      - {id: 15, labels: [workline:draft, workline:proposed], posted: 1}

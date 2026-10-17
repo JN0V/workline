@@ -192,8 +192,9 @@ before it is built — a file, or an issue by its number (`--input
 issue=<n>`); on a machine, `workline review --spec` or `--issue` (#128).
 
 After the product owner in a line, the reviewer reads the specs it
-refined (#128): on `schedule`, one issue a run, its findings in a comment
-on it; the product owner's `ready` waits until none important is open
+refined (#128): on `schedule`, up to `specs-per-run` issues a run (#433),
+the findings on each in a comment on it; the product owner's `ready`
+waits until none important is open
 (docs/spec/backlog-acts.md, "A spec read before ready"). Opt-in, as on
 merge requests:
 

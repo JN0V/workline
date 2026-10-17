@@ -315,6 +315,29 @@ type Merged interface {
 	MergedSince(since time.Time) ([]MergeRequest, error)
 }
 
+// Renewer is a forge that posts a sticky comment anew, last on its issue,
+// and deletes the ones carrying its marker before: a new comment mails
+// whoever follows the issue, an edit nobody (ADR-0038, amended). The new
+// one is posted first, so the state is never lost between the two; one
+// the token may not delete (GitLab: another user's note) is left, and the
+// last carrying the marker is the one read.
+type Renewer interface {
+	Renew(t Target, body, marker string) error
+}
+
+// GitHub, GitLab and the simulated forge renew a comment; the others edit
+// it in place.
+var _ = []Renewer{&github{}, &gitlab{}, &Fake{}}
+
+// Edited is a forge that keeps an issue's earlier bodies, GitHub's edit
+// history: the weekly sample reads there the text the product owner read,
+// once the body changed since (ADR-0046). GitLab's API keeps none.
+type Edited interface {
+	// Versions lists the bodies an issue had, newest first, as its edit
+	// history keeps them; none when it was never edited.
+	Versions(id int) ([]string, error)
+}
+
 // botBranches are the branches of the merge requests the dependency bots
 // open, which rebuild them themselves, and stop once someone else
 // commits: left to them whoever their token's user is (ADR-0041).
@@ -370,10 +393,12 @@ func Marker(key string) string { return "<!-- workline:" + key + " -->" }
 
 // Every forge workline speaks keeps a backlog; GitHub, GitLab and the
 // simulated forge take comments on a merge request's lines, and list the
-// merge requests merged.
+// merge requests merged; GitHub and the simulated forge keep an issue's
+// earlier bodies.
 var (
 	_ = []Backlog{&github{}, &gitlab{}, &Local{}, &command{}, &Fake{}}
 	_ = []LineReviewer{&github{}, &gitlab{}, &Fake{}}
 	_ = []Merged{&github{}, &gitlab{}, &Fake{}}
 	_ = []Reacted{&github{}, &gitlab{}, &Fake{}}
+	_ = []Edited{&github{}, &Fake{}}
 )

@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 17d6abde
+checked: 18109269
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -103,11 +103,15 @@ number. There is no `release` operation:
 releases are the project's release tool's, not workline's (ADR-0017). Nor
 one for comments on a merge request's lines: a reviewer's findings go, in
 full, into its summary comment, `sticky` (role-outcome.md, `comment`). Nor
-one listing the merge requests merged: through a command, the weekly
+one deleting a comment: the product owner's comment is edited in place,
+never posted anew, so a proposal there mails nobody (ADR-0038, amended).
+Nor one listing the merge requests merged: through a command, the weekly
 sample draws none of the reviewer's findings, nor reads the head of a
 merge request squashed, and says so (ADR-0046). Nor one reading a
 comment's reactions: the sample's count reads no 👍 nor 👎 through a
-command, every week left unanswered.
+command, every week left unanswered. Nor one reading an issue's edit
+history: a product owner's act whose issue changed since is not read
+through a command (ADR-0046).
 
 ## What stays with the engine
 

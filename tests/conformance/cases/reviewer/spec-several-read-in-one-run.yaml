@@ -1,0 +1,43 @@
+case: reviewer/spec-several-read-in-one-run
+about: "On the forge (#433), a run reads up to specs-per-run issues whose spec waits, in the backlog's order: each spec its own lens call, its findings judged, and its own comment and record, as when one is read; the issues past that number wait for the next run, named in one finding, nothing written on them."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {specs-per-run: 2}}}}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 6
+        title: Every row exported
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 8
+        title: The sum of no values
+        body: "## Need\n\nThe sum of no values is 0.\n\n## Verification\n\nA test of Sum on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-batch"}
+expect:
+  status: pass
+  calls: [{task: part, for: 01-1-lenses}, {task: part, for: 02-1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: out-of-scope, where: "#4:3", message: "verified"}
+    - {rule: spec-waits, level: warn, message: "1 more spec waits on a review, read first at the next run (specs-per-run 2): #8"}
+  summary: "2 specs read (#4: 1 finding; #6: no finding)"
+  forge:
+    issues:
+      - id: 4
+        comments: 2
+        comment-contains: ["**Holds it from ready**: 1 important finding open, round 1 of 5", "<!-- workline:spec-review body=5c971ac44520 round=1 open=1 in=Need -->"]
+        comment-lacks: "#6"
+      - id: 6
+        comments: 2
+        comment-contains: ["No important finding open: the product owner may move it to ready.", "round=1 open=0 in= -->"]
+        comment-lacks: "README"
+      - {id: 8, comments: 1}

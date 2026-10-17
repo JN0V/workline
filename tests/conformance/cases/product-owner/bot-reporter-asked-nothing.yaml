@@ -1,0 +1,21 @@
+case: product-owner/bot-reporter-asked-nothing
+about: "An issue a bot opened is never addressed to it: a question to its reporter is asked of no one, said; a refine is the project's, its drafts written in the body as for an issue of the project's, never proposed to @the-bot in a comment (#429)."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, insider: true, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 22, title: "Rows lost", body: "Some rows are lost.", author: "ci-helper[bot]", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 23, title: "Last row dropped", body: "The CSV export drops its last row.", author: "ci-helper[bot]", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ask-workline-and-bots}
+expect:
+  status: pass
+  findings:
+    - {rule: reporter-bot, where: "#22", message: "opened by a bot, @ci-helper[bot]: nobody to ask"}
+    - {rule: done, where: "#23"}
+  run-files:
+    in/task.md: {contains: "Opened by: ci-helper[bot], a bot: nobody to ask"}
+  forge:
+    issues:
+      - {id: 22, comments: 1, comment-lacks: "@ci-helper[bot]"}
+      - {id: 23, comments: 1, body-contains: "## Need", comment-lacks: "@ci-helper[bot]"}

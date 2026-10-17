@@ -48,6 +48,12 @@ type Act struct {
 	Line   string `json:"line,omitempty"`   // what its record says of it
 	Lens   string `json:"lens,omitempty"`   // a finding's lens
 	Title  string `json:"title,omitempty"`  // a finding's title, all its judge's answer left out
+	// A product owner's act: the agents and models that acted and the
+	// digest of the issue's text it read, when its record says
+	// (ADR-0046); what shows a person undid it since (ADR-0033).
+	Acted  string `json:"acted,omitempty"`
+	Body   string `json:"body,omitempty"`
+	Undone string `json:"undone,omitempty"`
 	// Verdict: true (it stands), false (proven wrong, with the
 	// material's words), unproven (said wrong, not proven: for a person),
 	// or not-read (for a person, Why says why).
@@ -61,6 +67,7 @@ type Act struct {
 	Panel        *Panel  `json:"panel,omitempty"`  // how a false verdict was settled
 	Defect       *Defect `json:"defect,omitempty"` // a true finding its judge dropped, for an issue
 	key          string  // what it is ranked by, with the week
+	older        bool    // a product owner's act read without the record ADR-0046 completes: as its issue reads now
 }
 
 // Count is how many acts of a role's kind the window held, and how many
@@ -121,22 +128,38 @@ func drawEach(week string, acts []Act) ([]Act, []Count) {
 }
 
 // productOwnerActs are the acts the product owner did alone on the days
-// [first, end), from each issue's state (ADR-0033's record): a person's
+// [first, end), from each issue's state (ADR-0033's record), each with
+// what it read when the record says (ADR-0046) and what shows a person
+// undid it; and the level its acts done alone suggest, from those at the
+// level of its last, up to end (until, the last day counted). A person's
 // yes makes an act theirs, never drawn.
-func productOwnerActs(b forge.Backlog, first, end string) ([]Act, error) {
+func productOwnerActs(b forge.Backlog, first, end, until string) ([]Act, *Autonomy, error) {
 	acts, err := backlog.ReadActs(b, productOwner)
 	if err != nil || acts == nil {
-		return nil, err
+		return nil, nil, err
 	}
+	au := &Autonomy{Level: acts.Level, Until: until}
 	var out []Act
-	for _, d := range acts.Did {
-		if d.Day < first || (end != "" && d.Day >= end) {
+	for i, d := range acts.Did {
+		if end != "" && d.Day >= end {
+			continue
+		}
+		undone, isUndone := acts.Undone(i)
+		if d.Level == acts.Level {
+			au.Counted++
+			if isUndone {
+				au.Undone++
+			}
+		}
+		if d.Day < first {
 			continue
 		}
 		out = append(out, Act{Role: productOwner, Kind: d.Act, Ref: fmt.Sprintf("#%d", d.Issue), Day: d.Day, By: d.Level, Line: d.Line,
+			Commit: d.At, Acted: d.Model, Body: d.Body, Undone: undone,
 			key: fmt.Sprintf("%d\x00%s\x00%s", d.Issue, d.Act, d.Day)})
 	}
-	return out, nil
+	au.Suggest, au.Why = backlog.SuggestFromActs(au.Level, au.Counted, au.Undone)
+	return out, au, nil
 }
 
 // summaryMarker marks the reviewer's one comment on a merge request.
@@ -449,10 +472,20 @@ func actsOfTheWindow(o Options, res *Result, h *heads, commits []string, first, 
 	case !isBacklog:
 		notDrawn("the product owner's acts and the reviewer's findings: this forge keeps no issues to read them from")
 	default:
-		if po, err := productOwnerActs(b, first, end); err != nil {
+		// The last day counted for the product owner's level: the window's,
+		// or today for one that reaches now (--since).
+		until := o.Now
+		if until.IsZero() {
+			until = time.Now()
+		}
+		if t, err := time.Parse(time.DateOnly, end); err == nil {
+			until = t.AddDate(0, 0, -1)
+		}
+		if po, au, err := productOwnerActs(b, first, end, until.UTC().Format(time.DateOnly)); err != nil {
 			unreachable("the product owner's acts", err)
 		} else {
 			acts = append(acts, po...)
+			res.Autonomy = au
 		}
 		if _, ok := o.Forge.(forge.Merged); !ok {
 			notDrawn("the reviewer's findings, and the commits of a merge request squashed: this forge does not list the merge requests merged")

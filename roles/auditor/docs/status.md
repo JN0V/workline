@@ -1,11 +1,11 @@
-# Auditor — where it stands (2026-10-14)
+# Auditor — where it stands (2026-10-17)
 
 **In one line:** re-checks, each week, one in ten of every role's acts,
 per kind (`workline sample`): the docs the documentalist vouched for, the
 product owner's acts, the reviewer's judged findings, the committer's
-rewrites. The docs' sample tried on a GitLab sandbox, its first scheduled
-run on workline on 2026-10-05; the other acts' verdicts tried with no
-real agent yet. Beta.
+rewrites, each against what it was done on. The docs' sample tried on a GitLab
+sandbox, its first scheduled run on workline on 2026-10-05; the other
+acts' verdicts tried with no real agent yet. Beta.
 
 A try since 2026-10-13 is told in its pull request's `## Tried`
 ([ADR-0043](../../../docs/adr/0043-a-try-is-told-in-its-pull-request.md)).
@@ -16,13 +16,13 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. Every role's acts
+1. **Nothing buildable in Missing**: met (2026-10-17). Every role's acts
    ([#205](https://github.com/JN0V/workline/issues/205)) are drawn and
-   re-checked, the verdicts kept and counted
-   ([#276](https://github.com/JN0V/workline/issues/276)); left, as
+   re-checked on the records
    [ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)
-   decided: the records it completes, the product owner's issue folded in.
-   The weekly sample's other gaps are parked
+   completes, the verdicts kept and counted
+   ([#276](https://github.com/JN0V/workline/issues/276)), the product
+   owner's issue folded in. The weekly sample's other gaps are parked
    ([#108](https://github.com/JN0V/workline/issues/108)): a judge of
    another provider, a week not run caught up.
 2. **The main issue validated on real use**: open.
@@ -41,8 +41,12 @@ hold:
 - **The weekly sample of the docs vouched for**: documentalist's
   `sample-*`, forge's `*-sample-written`, engine's
   `job-summary-of-a-sample`.
-- **The product owner's acts drawn for a person**: product owner's
-  `sample-*`.
+- **The product owner's acts drawn**, each a person undid said, the
+  level they suggest in the week's comment, its own issue folded in and
+  its `weekly-sample` said no longer read
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md#settled-while-building)):
+  product owner's `sample-*`, `weekly-sample-said-gone`; auditor's
+  `sample-folds-the-product-owners-issue`.
 - **Every role's acts drawn**, one in ten per role and kind, from the
   records each keeps, listed for a person
   ([#205](https://github.com/JN0V/workline/issues/205)): auditor's
@@ -72,16 +76,20 @@ hold:
   ([#401](https://github.com/JN0V/workline/pull/401)): committer's
   `rewrite-carries-its-trailers`, `rewrite-trailers-join-the-authors`,
   `no-rewrite-no-trailer`; auditor's `sample-draws-every-role`.
+- **The product owner's acts, on what they read**: each keeps `at`,
+  `model` and `body` in the issue's state; the auditor reads the issue's
+  text by that digest — the body now, else GitHub's edit history — and
+  the code at `at`, judges apart from `model`, and names an act an older
+  engine recorded, read as its issue reads now: product owner's
+  `acts-record-what-was-read`; auditor's
+  `verdict-reads-what-the-product-owner-read`.
 
 ## Missing
 
-- **The record ADR-0046 completes last**
-  ([#205](https://github.com/JN0V/workline/issues/205)): the product
-  owner's `at`, `model` and `body`, so its act is read on the text and
-  the code it read
-  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
-- **The product owner's issue folded in**
-  ([ADR-0033](../../../docs/adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)'s,
-  its level suggestion kept), with its fields, after its trial.
+Nothing to build; tries on real use:
+
 - **The weeks, read**
   ([#155](https://github.com/JN0V/workline/issues/155)).
+- **A product owner's act read on GitHub's edit history**, live: its
+  record's fields are written from the first run of an engine holding
+  them.

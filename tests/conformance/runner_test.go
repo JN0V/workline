@@ -278,6 +278,7 @@ type itemWant struct {
 	BodyContains    texts               `yaml:"body-contains"`
 	BodyLacks       texts               `yaml:"body-lacks"`
 	Comments        *int                `yaml:"comments"` // how many
+	Posted          *int                `yaml:"posted"`   // comments posted, each mailing the issue's followers; an edit posts none
 	CommentContains texts               `yaml:"comment-contains"`
 	CommentLacks    texts               `yaml:"comment-lacks"`
 	BlockedBy       *[]int              `yaml:"blocked-by"` // the forge's own relation
@@ -1445,6 +1446,9 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	comments, _ := found["comments"].([]any)
 	if wm.Comments != nil && len(comments) != *wm.Comments {
 		p = append(p, fmt.Sprintf("forge: %s %v has %d comments, want %d", kind, wm.ID, len(comments), *wm.Comments))
+	}
+	if posted, _ := found["posted"].(float64); wm.Posted != nil && int(posted) != *wm.Posted {
+		p = append(p, fmt.Sprintf("forge: %s %v posted %d comments, want %d", kind, wm.ID, int(posted), *wm.Posted))
 	}
 	held := func(text string) bool {
 		for _, c := range comments {

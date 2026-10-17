@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go]
-checked: 9054d164
+checked: 18109269
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -17,17 +17,21 @@ over the level, field by field.
 | `autonomy` | `normal` | how far it goes alone: `cautious`, `normal`, `enterprising` (below) |
 | `issues-per-run` | `8` | issues read a run |
 | `code-lines-max` | `1500` | lines of code given a run, all files together |
-| `proposals-max` | `10` (1 to 100) | issues waiting on a person before it reads only those a person commented on |
+| `proposals-max` | `10` (1 to 100) | issues waiting on a person before it reads only those a person commented on, and labels no more |
 | `undone-max` | `3` (1 to 20) | acts of a kind a person undoes, across the issues, before that kind is proposed on every issue |
 | `next-max` | `5` (0 to 20) | ready issues the summary lists as next |
 | `stuck-days` | `14` (1 to 365) | days an issue waits on a person before the summary says it stuck |
 | `archived` | `[]` | files no longer a source: a change to their lines flags nothing |
 | `changed-needs` | `false` | a changed Need or Scope flags the issues built on it ([ADR-0032](../../../docs/adr/0032-a-changed-need-flags-the-issues-built-on-it.md)) |
-| `weekly-sample` | `false` | the weekly sample draws a week's acts done alone ([ADR-0033](../../../docs/adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)) |
 | `moved-percent-max` | `20` | with `milestone` or `order` on: the share of the open issues a run moves |
 
-`ignored-runs-max` is no longer read: the role never pauses
-([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+No longer read, each said by the run:
+
+- `ignored-runs-max`: the role never pauses
+  ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)).
+- `weekly-sample`: the weekly sample of every role's acts draws the
+  role's, with no setting
+  ([ADR-0046](../../../docs/adr/0046-the-auditor-re-checks-every-roles-acts.md)).
 A project still setting it is told so in every run.
 
 ## Each kind of act
