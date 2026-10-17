@@ -51,7 +51,10 @@ doc's sources, or a name the code no longer has:
 A comment in the code is not evidence: a quote found only in a comment is
 refused, and the disagreement reported for a person. With nothing else to
 cite, leave the words as they are and say in a ` + "`note`" + ` what you could not
-confirm. A line a diff shown here adds is in the file as it is now: quote it.
+confirm, naming its doc: ` + "`- note: {doc: docs/example.md, text: \"…\"}`" + `. A doc
+a note names, in ` + "`doc`" + ` or by path or file name in its text, is not vouched
+for: its ` + "`checked`" + ` does not move. A line a diff shown here adds is in the
+file as it is now: quote it.
 Words only added need no claim. Nor does a line count the engine lists as off
 for a doc, a table's total among them, brought to the engine's number: the
 engine's count is the evidence; the words around it may then be said anew,

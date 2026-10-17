@@ -498,6 +498,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 	fixed := 0
 	var tree Tree
 	claims, unread := readCitations(intents)
+	doubted := doubtedDocs(intents, judged)
 	agentDocs := map[string]bool{}
 	for _, in := range intents {
 		if in.Kind == "patch" && !isFallback(in, fallback) {
@@ -573,6 +574,16 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 				}
 				return fileVerdict{rule: "checked-over-count-off", why: msg, header: true,
 					person: "`checked` not moved: the doc still states a line count off (" + strings.Join(said, "; ") + "); `judged` set instead"}
+			}
+			// The answer's own note says what it could not confirm here:
+			// kept is not confirmed (#449).
+			if notes := doubted[f.path]; len(notes) > 0 {
+				msg := "the patch moves `checked`, but a note of this answer names the doc, saying what could not be confirmed in it: moving `checked` vouches for every sentence the doc keeps, so it stays where it is"
+				if full != "" {
+					msg += fmt.Sprintf("; set `judged: %s` instead", full[:7])
+				}
+				return fileVerdict{rule: "checked-over-note", why: msg, header: true,
+					person: "`checked` not moved: the agent's own note on this doc says what it could not confirm, " + doubtSaid(notes) + "; `judged` set instead, for a person to check that"}
 			}
 		}
 		// A fix the agent could not vouch for is kept: what it found wrong

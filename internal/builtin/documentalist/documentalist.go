@@ -1703,7 +1703,9 @@ func Post(runDir, repo string) int {
 			f.Level = "" // judged, its header says when: a person's now, as one judged in parts
 			if !said[f.Where] {
 				said[f.Where] = true
-				f.Message += "\n" + notVouched(judgedFix.placesSaid(f.Where), partly[f.Where], readOf(f.Where))
+				// A move of `checked` withheld over the answer's own note,
+				// and nothing else: not a fix refused, a doc its note doubts.
+				f.Message += "\n" + notVouched(judgedFix.placesSaid(f.Where), partly[f.Where] && !onlyDoubted(withheld, f.Where), readOf(f.Where))
 			}
 		}
 		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
