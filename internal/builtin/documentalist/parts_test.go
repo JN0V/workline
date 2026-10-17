@@ -50,6 +50,73 @@ func TestSameWordsNotSameLines(t *testing.T) {
 	}
 }
 
+// A quote a part read and judged partial for a passage is no proof the
+// passage is wrong (#467), unless it stands elsewhere in the code too, or
+// a part found those words wrong.
+func TestPartialQuoteIsNoProof(t *testing.T) {
+	src := "package s\n" + // 1
+		"\n" + // 2
+		"func topic(c Config) string {\n" + // 3
+		"\tt := fmt.Sprintf(\"%s/%s/availability\",\n" + // 4
+		"\t\tc.Prefix, c.Node)\n" + // 5
+		"\treturn adopt(t) // fmt.Sprintf(\"%s/%s/will\")\n" + // 6
+		"}\n" // 7
+	quote := `"%s/%s/availability", c.Prefix, c.Node)`
+	if got := quoteLines("s.go", src, quote); len(got) != 1 || got[0] != (lineRange{4, 5}) {
+		t.Fatalf("the quote stands at lines 4-5, whitespace aside: got %v", got)
+	}
+	if got := quoteLines("s.go", src, `fmt.Sprintf("%s/%s/will")`); len(got) != 0 {
+		t.Fatalf("a place wholly in a comment is not where a quote stands in the code: got %v", got)
+	}
+	block := citedBlock{from: 12, to: 12}
+	for _, tc := range []struct {
+		name    string
+		partial []partialCite
+		quote   string
+		refused bool
+	}{
+		{"the quote a part judged partial", []partialCite{{Lines: "12", Path: "s.go", Source: "4-5"}}, quote, true},
+		{"read wider than the quote", []partialCite{{Lines: "11-13", Path: "s.go", Source: "3-6"}}, quote, true},
+		{"read narrower than the quote", []partialCite{{Lines: "12", Path: "s.go", Source: "4"}}, quote, false},
+		{"another passage of the doc", []partialCite{{Lines: "20", Path: "s.go", Source: "4-5"}}, quote, false},
+		{"another file", []partialCite{{Lines: "12", Path: "t.go", Source: "4-5"}}, quote, false},
+		{"lines the part did not cite", []partialCite{{Lines: "12", Path: "s.go", Source: "4-5"}}, "return adopt(t)", false},
+		{"no part judged it partial", nil, quote, false},
+	} {
+		cc := &citeContext{partial: map[string][]partialCite{"d.md": tc.partial}}
+		why := cc.partialOnly("d.md", "s.go", src, tc.quote, block)
+		if (why != "") != tc.refused {
+			t.Errorf("%s: refused %v (%q), want %v", tc.name, why != "", why, tc.refused)
+		}
+	}
+	// A quote standing elsewhere in the code too may be what the fix read.
+	twice := src + "var x = fmt.Sprintf(\"%s/%s/availability\", c.Prefix, c.Node)\n"
+	cc := &citeContext{partial: map[string][]partialCite{"d.md": {{Lines: "12", Path: "s.go", Source: "4-5"}}}}
+	if why := cc.partialOnly("d.md", "s.go", twice, quote, block); why != "" {
+		t.Errorf("a quote standing outside the lines a part judged partial is refused: %s", why)
+	}
+}
+
+// Only a partial claim on lines no part found anything wrong in is kept,
+// with its source lines, for the judge of the fix (#467).
+func TestPartialCitesLeaveWhatAPartFoundWrong(t *testing.T) {
+	v := &partsVerdict{kept: []claim{
+		claimOf(t, 0, `{lines: "2", status: partial, quote: "At most 100 requests", source: {path: a.go, lines: "8", quote: "Max = 100"}}`),
+		claimOf(t, 0, `{lines: "2-3", status: contradicted, quote: "a 503", source: {path: a.go, lines: "8", quote: "Max = 100"}}`), // other words, its quote among the same lines
+		claimOf(t, 0, `{lines: "4", status: partial, quote: "the configured session TTL", source: {path: a.go, lines: "10-11", quote: "TTL = 24"}}`),
+		claimOf(t, 1, `{lines: "4", status: partial, quote: "Each one lasts"}`),
+		claimOf(t, 1, `{lines: "4", status: supported, quote: "Each one lasts", source: {path: b.go, lines: "17", quote: "ttl: c.TTL"}}`),
+	}}
+	got := v.partialCites()
+	want := []partialCite{{Lines: "4", Path: "a.go", Source: "10-11"}}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("partial cites: got %v, want %v", got, want)
+	}
+	if lines, src, ok := got[0].ranges(); !ok || lines != (lineRange{4, 4}) || src != (lineRange{10, 11}) {
+		t.Fatalf("read back: %v %v %v", lines, src, ok)
+	}
+}
+
 func TestQuotedAtIgnoresWhitespaceOnly(t *testing.T) {
 	doc := "line one\nAccess tokens   last\n  one hour.\nline four\n"
 	if !quotedAt(doc, lineRange{2, 3}, "Access tokens last one hour.") {
