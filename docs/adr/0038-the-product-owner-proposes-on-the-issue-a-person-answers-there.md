@@ -411,3 +411,9 @@ person, none answered.
   nothing. Now no run labels past the cap: the issues it decided on
   first, then by number; the others keep their proposal, said, labelled
   once fewer wait. Each issue labelled is named in the summary.
+- **A question past the night's limit waits for the next night**
+  ([#430](https://github.com/JN0V/workline/issues/430)). The fourth
+  question of a night became a proposal to be asked, labelled, one of
+  the 15. A question is the role's to ask: past `acts.ask.max` it is
+  held, never a person's to answer, and its issue read again first. One
+  an earlier engine recorded so waits on no one: its label comes off.

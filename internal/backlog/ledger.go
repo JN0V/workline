@@ -659,7 +659,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 				// back and the run decided on it: proposed again.
 				st.Aside = ""
 			}
-			waits := st.Aside == "" && (len(st.Proposed) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
+			waits := st.Aside == "" && (len(ForPerson(st.Proposed)) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
 			switch {
 			case waits && st.Label == "":
 				w.wants = true // labelled below, within proposals-max
@@ -809,7 +809,7 @@ func (p *Plan) labelWithin(b forge.Backlog, f forge.Forge, writes []stateWrite, 
 // summary: what it proposes, or the drafts in it.
 func (s State) waitsOn() string {
 	var says []string
-	for _, q := range s.Proposed {
+	for _, q := range ForPerson(s.Proposed) {
 		if q.Proposal != nil {
 			says = append(says, strings.TrimSuffix(strings.TrimSpace(offer(*q.Proposal)), "."))
 		} else if q.Line != "" {

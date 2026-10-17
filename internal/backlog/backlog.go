@@ -228,14 +228,15 @@ func (s State) say() string {
 			lines = append(lines, fmt.Sprintf("**The product owner**, on %s:\n\n%s", day, strings.Join(did, "\n")))
 		}
 	}
-	for _, q := range s.Proposed {
+	proposed := ForPerson(s.Proposed) // a question held for a later run is not shown
+	for _, q := range proposed {
 		line := q.Line
 		if q.Proposal != nil {
 			line = offer(*q.Proposal)
 		}
 		lines = append(lines, "- **Proposes**: "+line)
 	}
-	for _, q := range s.Proposed {
+	for _, q := range proposed {
 		if c := q.Proposal; c != nil && c.Do == "refine" && !c.ToReporter {
 			lines = append(lines, fold("The sections it proposes", drafts(*c)))
 		}
@@ -244,7 +245,7 @@ func (s State) say() string {
 	case s.Aside != "":
 		lines = append(lines, "Set aside by a person: nothing more is proposed here until the issue changes.")
 	case s.Label != "":
-		if len(s.Proposed) == 0 && len(s.Did) == 0 {
+		if len(proposed) == 0 && len(s.Did) == 0 {
 			var names []string
 			for _, m := range layout() {
 				if name, wrote := s.wrote(m); wrote != "" && drafted(m) {
@@ -265,7 +266,7 @@ func (s State) say() string {
 // answers is what a person may answer on an issue waiting on them: one
 // gesture a line, read on every proposal (ADR-0038).
 func (s State) answers() string {
-	if len(s.Proposed) > 0 && !slices.ContainsFunc(s.Proposed, func(q Pending) bool { return q.Proposal == nil || !q.Proposal.Advice }) {
+	if proposed := ForPerson(s.Proposed); len(proposed) > 0 && !slices.ContainsFunc(proposed, func(q Pending) bool { return q.Proposal == nil || !q.Proposal.Advice }) {
 		// Only what a person does themselves: no yes to give.
 		return fmt.Sprintf("**Your answer:**\n\n- close the issue: yes\n- take `%s` off: keep it open as it is\n- comment: tell the role why not", s.Label)
 	}
@@ -285,7 +286,7 @@ func (s State) drafts() bool {
 			return true
 		}
 	}
-	return slices.ContainsFunc(s.Proposed, func(q Pending) bool { return q.Proposal != nil && q.Proposal.Do == "refine" })
+	return slices.ContainsFunc(ForPerson(s.Proposed), func(q Pending) bool { return q.Proposal != nil && q.Proposal.Do == "refine" })
 }
 
 // drafts says the sections a refine would write, each under its name.
@@ -341,6 +342,24 @@ type Pending struct {
 	// Since is the day it was first proposed, YYYY-MM-DD: the job's summary
 	// says it stuck past stuck-days (ADR-0031).
 	Since string `yaml:"since,omitempty"`
+}
+
+// Held says whether a pending act is a question past a run's cap: the
+// role's to ask at a later run, its issue read again first, never a
+// person's to answer (#430). It adds no label, is not shown on the issue,
+// and waits on no one.
+func (q Pending) Held() bool { return q.Capped && q.Act == "ask" }
+
+// ForPerson are the acts proposed on an issue that wait on a person: those
+// held for a later run left out.
+func ForPerson(proposed []Pending) []Pending {
+	var out []Pending
+	for _, q := range proposed {
+		if !q.Held() {
+			out = append(out, q)
+		}
+	}
+	return out
 }
 
 // Closing is one issue the role closed.
@@ -815,6 +834,16 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				p.Decisions = append(p.Decisions, d)
 				continue
 			}
+			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max && c.Do == "ask" {
+				// A question past the cap is the role's to ask at a later
+				// run, never a person's to answer (#430): held, its issue
+				// read again first; no label, nothing shown on it.
+				d.Mode, d.Capped = Off, true
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
+					Message: fmt.Sprintf("past this run's limit of %d (ask): asked at a later run, its issue read again first", s.Max)})
+				p.Decisions = append(p.Decisions, d)
+				continue
+			}
 			if d.Mode == Act && s.Max > 0 && done[c.Kind()] >= s.Max {
 				d.Mode, d.Capped = Propose, c.From == ""
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "act-cap", Where: c.where(),
@@ -1027,7 +1056,8 @@ func (p *Plan) keepProposed() {
 		}
 	}
 	for _, d := range p.Decisions {
-		if d.Mode == Propose && d.Act.Do != "open" && d.Act.Issue > 0 {
+		held := d.Mode == Off && d.Capped && d.Act.Do == "ask" // asked at a later run (Held)
+		if (d.Mode == Propose || held) && d.Act.Do != "open" && d.Act.Issue > 0 {
 			act := d.Act
 			q := Pending{Issue: d.Act.Issue, Act: d.Act.Kind(), Line: describe(d.Act, "Close"), Capped: d.Capped, Proposal: &act}
 			if q.Since = since[q.ID()]; q.Since == "" {

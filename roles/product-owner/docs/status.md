@@ -61,7 +61,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `proposal-on-a-*-posted-*`, `proposal-update-posts-nothing`; a run
   reads what fits its budget, `reads-what-fits-the-budget`,
   `over-budget-*`; no more labelled than `proposals-max`,
-  `proposals-labelled-within-the-cap`, `proposals-held-labelled-later`.
+  `proposals-labelled-within-the-cap`, `proposals-held-labelled-later`;
+  a question past the night's limit asked the night after,
+  `capped-ask-*`.
 - **A person's word first**: `set-aside-*`, `brought-back-*`,
   `left-with-nothing-read-again-once`, `task-says-whose-sections`.
 - **Issues a person reads**, the person's part on top:

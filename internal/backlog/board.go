@@ -176,7 +176,7 @@ func MakeBoard(open []forge.Issue, report int, waits []Wait, proposed []Pending,
 		seen[is.ID] = true
 	}
 	all := slices.Clone(waits)
-	for _, q := range proposed {
+	for _, q := range ForPerson(proposed) {
 		if q.Since != "" && (q.Issue == 0 || isOpen[q.Issue]) {
 			w := Wait{Issue: q.Issue, Waits: WaitsProposed, Since: q.Since, Act: q.Act}
 			if q.Issue == 0 {
