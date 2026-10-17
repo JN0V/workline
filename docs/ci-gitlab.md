@@ -189,13 +189,7 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
 `WORKLINE_GITLAB_TOKEN`'s `api` scope covers its issues
 ([ADR-0023](adr/0023-the-project-bot-keeps-a-gitlab-backlog.md)):
 
-- a project that runs only the product owner may give its token the
-  Reporter role and `api` alone; not Planner, which may not give a split's
-  child its parent;
-- who is of the project is a member with the Planner role or above; a
-  Guest's issue, or a stranger's, is its reporter's;
-- on GitLab Free, which keeps `blocks` links for Premium, what an issue
-  waits on is a line `Blocked by #12.` in its body.
+its token's role, who is of the project, and on GitLab Free what an issue waits on: [gitlab/product-owner.md](gitlab/product-owner.md).
 
 **Importing a file** ([how it works](ci.md#importing-a-file)): a pipeline
 run by hand (Build → Pipelines → Run pipeline, the variable
