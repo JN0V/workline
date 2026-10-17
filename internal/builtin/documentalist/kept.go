@@ -20,15 +20,11 @@ import (
 )
 
 // Records kept off a person's branch (ADR-0013 and ADR-0010, amended
-// 2026-10-17). On a person's merge request, a doc the agent judged without
-// vouching for it, its patch changing only the lines recording when —
-// `judged`, `judged-in-parts`, `verified` —, gets no commit: its record is
-// kept hidden in the documentalist's comment on the merge request, with the
-// ids of the doc and of its sources at the commit judged. The next push
-// reads it; once merged, gardening writes `judged` on the default branch,
-// naming the commit the merge request became, when the doc and its sources
-// are still as judged. 41 of the 42 commits the documentalist pushed to
-// people's pull requests in two weeks only moved such a line (#463).
+// 2026-10-17): a patch changing only the lines recording when a doc was
+// read gets no commit on a person's merge request; its record waits in the
+// documentalist's comment, with the ids of the doc and its sources, read by
+// the next push, and written on the default branch by gardening once
+// merged, naming the commit the merge request became.
 
 // keptRecord is a doc's record, as the comment keeps it.
 type keptRecord struct {
@@ -225,8 +221,9 @@ func parseKept(comment string) map[string]keptRecord {
 
 // keptOn reads the records the documentalist's comment on a merge request
 // keeps: the last comment carrying its marker that a bot or a person of the
-// project wrote — who may edit it anyway —, or whose author the forge does
-// not say; never one anyone else could post on a public merge request.
+// project wrote, who may edit it anyway; never one whose author the forge
+// does not say, which anyone could have posted on a public merge request.
+// A record that does not stand for the doc as it is holds nothing.
 func keptOn(f forge.Forge, t forge.Target) (map[string]keptRecord, error) {
 	b, ok := f.(forge.Backlog)
 	if !ok {
@@ -239,7 +236,7 @@ func keptOn(f forge.Forge, t forge.Target) (map[string]keptRecord, error) {
 	marker := forge.Marker("sticky=documentalist/" + keptKey)
 	body := ""
 	for _, n := range notes {
-		if strings.Contains(n.Body, marker) && (n.Bot || n.Insider || n.Author == "") {
+		if strings.Contains(n.Body, marker) && (n.Bot || n.Insider) {
 			body = n.Body
 		}
 	}
@@ -486,16 +483,13 @@ type fromMerged struct {
 	As         string `yaml:"as"` // the commit the merge request became, whole
 }
 
-// recordsMerged reads, when gardening, the records the merged merge
-// requests kept for the suspect docs (ADR-0010, amended 2026-10-17). For
-// each doc, the last commit of the first-parent history changing it or a
-// source; the merge request the forge says became it, or the closest
-// after it; the record its comment keeps for the doc. The doc stands when
-// it and its sources are as judged, at that commit and now: it is held,
-// returned to have `judged` name that commit. One that does not is judged
-// again, its finding saying why (said). A forge that does not say which
-// commit a merge request became reads none: its merge requests committed
-// their records.
+// recordsMerged reads, when gardening, the records merged merge requests
+// kept for the suspect docs: for each, the last first-parent commit
+// changing it or a source, the merge request the forge says became it or
+// the closest after, and its record. A doc as judged in that commit and
+// now is returned, for `judged` to name the commit; one that is not is
+// judged again, said. A forge naming no such commit reads none: its merge
+// requests committed their records.
 func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, []verdict.Finding, error) {
 	f, err := forge.Open(os.Getenv("WORKLINE_FORGE"), repo)
 	if err != nil || f == nil {
