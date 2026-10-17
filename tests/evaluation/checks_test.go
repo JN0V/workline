@@ -30,6 +30,30 @@ func TestChecks(t *testing.T) {
 	}
 }
 
+// TestLinesMax: lines-max counts what the engine's doc-lines budget counts,
+// the body below the header (#454).
+func TestLinesMax(t *testing.T) {
+	r := &run{repo: t.TempDir()}
+	doc := func(body int) {
+		text := "---\nsources: [internal/x.go]\nchecked: abc1234\n---\n" + strings.Repeat("A line.\n", body)
+		if err := os.MkdirAll(filepath.Join(r.repo, "docs"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(r.repo, "docs", "x.md"), []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	max := map[string]any{"docs/x.md": 200}
+	doc(199)
+	if why := check("lines-max", max, &caseFile{}, r); why != "" {
+		t.Errorf("4 header lines and 199 below them are within 200: %s", why)
+	}
+	doc(201)
+	if why := check("lines-max", max, &caseFile{}, r); !strings.Contains(why, "201 lines") {
+		t.Errorf("201 lines below the header are over 200, and said: %q", why)
+	}
+}
+
 func TestAnsweredBy(t *testing.T) {
 	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part", "1-lenses"}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge", "judge/01"}})
 	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || in != "3000" || out != "120" || c != "0.0300" {

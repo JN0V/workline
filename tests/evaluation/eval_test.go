@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	wjudge "github.com/JN0V/workline/internal/judge"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,6 +34,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/builtin/documentalist"
+	wjudge "github.com/JN0V/workline/internal/judge"
 	"github.com/JN0V/workline/internal/role"
 )
 
@@ -493,8 +494,9 @@ func check(kind string, v any, c *caseFile, r *run) string {
 	case "lines-max":
 		for path, n := range v.(map[string]any) {
 			data, _ := os.ReadFile(filepath.Join(r.repo, path))
-			if got := strings.Count(string(data), "\n"); got > n.(int) {
-				return fmt.Sprintf("%s has %d lines", path, got)
+			// The lines its `doc-lines` budget counts: the body, not the header.
+			if got := documentalist.BodyLines(string(data)); got > n.(int) {
+				return fmt.Sprintf("%s has %d lines below its header", path, got)
 			}
 		}
 	case "new-files-min":
