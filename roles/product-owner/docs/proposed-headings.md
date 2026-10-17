@@ -2,8 +2,10 @@
 
 Part of [the product owner](../README.md). Proposed by
 [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-not built: issues are written today as
-[writing an issue](writing.md) says. Below, the same issues under the
+built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
+each thing said once is built, under today's names
+([writing an issue](writing.md#each-thing-said-once)); the names, a bug's
+steps and the kind are not yet. Below, the same issues under the
 proposed names, each thing said once.
 
 | Today | Proposed |
@@ -91,8 +93,8 @@ role left it, said its problem three times:
 | Text | Words already said above |
 |---|---|
 | On top, the import's: "`workline setup` cannot install lychee … It only names the lychee page." | — |
-| Need: "A Linux user without brew or cargo needs `workline setup` to install lychee" | 57% |
-| Example: "`workline setup` prints the lychee page and stops. The user installs it by hand." | 62% |
+| Need: "A Linux user without brew or cargo needs `workline setup` to install lychee" | 60% |
+| Example: "`workline setup` prints the lychee page and stops. The user installs it by hand." | 53% |
 
 Under the amendment, the text on top becomes the Problem, the builder's
 part unchanged below the line; no real case is known, so no Example,
@@ -118,7 +120,7 @@ the link checker: it names the lychee page and stops.
 - **A person's text on top** is the Problem when no Problem section
   follows: the role adds Acceptance criteria and the builder's part,
   and no Problem restating it.
-- **An Example kept** adds a fact: the feature's above shares 18% of its
+- **An Example kept** adds a fact: the feature's above shares 17% of its
   words with its Problem, the bug's steps 3%. Past 40%
   (`repeated-percent-max`), a draft is not written.
 

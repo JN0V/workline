@@ -1,8 +1,8 @@
 # ADR-0039: Issue sections take established names, read by meaning; a bug waits for its steps; the role sets the kind
 
-- **Status:** proposed — built after the trial of
-  [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md);
-  one question at the end waits on the maintainer
+- **Status:** proposed — built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
+  piece 1 and the amendment built, pieces 2 to 5 next; one question at
+  the end waits on the maintainer
 - **Date:** 2026-10-10, revised 2026-10-11, amended 2026-10-11 (below)
 - **Builds on:** [ADR-0018](0018-the-product-owner.md) (Need and
   Validation a person's), [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)

@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/backlog/write.go, internal/work/headings.go, internal/work/work.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 18109269
+checked: 434f7e39
 verified: agent:claude-code
 ---
 # Refining to ready
@@ -11,7 +11,9 @@ Part of [Acts on the backlog](../backlog-acts.md): writing the sections an issue
 
 An issue is `ready` when four sections are written in its body — `## Need`,
 `## Verification`, `## Validation`, `## Scope` (docs/spec/routing.md) — and
-its Need and Validation are a person's (ADR-0018). The product owner writes
+its Need and Validation are a person's (ADR-0018). A person's text on top,
+with no Need section holding text, is its Need (`backlog.NeedOnTop`,
+ADR-0039, amended). The product owner writes
 what it can and asks for the rest:
 
 ```yaml
@@ -23,7 +25,6 @@ what it can and asks for the rest:
     need: "Every row exported, so a report counts what was sold."   # a draft
     example: "Ann makes 3 sales on 8 Oct and exports that day: 2 rows."   # a draft, never required; a bug: steps
     validation: "The maintainer opens an export of a known day."    # a draft
-    description: "Exporting a day drops its last sale: 3 sales, 2 rows."   # a role's text on top, rewritten
     why: "The issue says what is wrong, not how it will be proved."
 - ready: {issue: 12, why: "Its four sections are there, Need and Validation the reporter's."}
 - ask: {issue: 14, questions: "Which export: CSV or JSON? What should a blank row become?", why: "The need is not clear."}
@@ -67,26 +68,40 @@ what it can and asks for the rest:
   written (`scope-without-files`, said in the summary with what a person
   may do). Nothing to add drops the act (`nothing-to-refine`). The
   issue gets the label `workline:to-refine`.
-- **A role's text on top, in plain words** (ADR-0038, amended). The
-  text above an issue's sections — its description — a role opened it
-  with and no person edited is rewritten when the agent gives a
-  `description`: an import's item, another role's finding. The engine
-  tells it is the role's, never the agent (`backlog.Rewrite`): the issue
-  holds an import's key or a finding's `opened-by`, and its description,
-  spaces aside, matches the digest the state kept at opening (`wrote:
-  {Description: …}`); opened before that digest was kept, an import's key
-  holds one, and a finding opened by a bot (a GitHub app, a GitLab bot)
-  counts as unedited while its body is unchanged since the role last read
-  it. A description the role rewrote (`plain`) is again only to answer a
-  person's comment on its proposal; edited since, it is theirs. The
-  engine's lines there — where it comes from ("Opened from …", "Found by
-  …"), its hidden markers — are kept after the new text, in their order;
-  the text before is in the forge's edit history. Over 100 words outside
-  its folds and fenced code, given on an issue a person opened or edited, or in a
-  text proposed to an outsider, it is left out, the rest of the refine
-  kept (`description-kept`, said). It follows the refine's mode and
-  level as the drafts do: at `cautious`, proposed. The issue's one line
-  says "Rewrote: the description, in plain words."
+- **Each thing said once** (ADR-0039, amended). The text above an
+  issue's sections — its description — is read by whose it is, the
+  engine telling so, never the agent (`backlog.RolesTop`): a role's when
+  the issue holds an import's key or a finding's `opened-by`, and its
+  description, spaces aside, matches the digest the state kept at
+  opening (`wrote: {Description: …}`), an import's key, or an earlier
+  engine's rewrite in plain words (`plain`); opened before that digest
+  was kept, a finding opened by a bot (a GitHub app, a GitLab bot)
+  counts as unedited while its body is unchanged since the role last
+  read it. Otherwise it is a person's.
+  - **A role's text on top becomes the Need draft**: when the refine
+    writes a `need` — added, filled, or rewritten to answer a comment —,
+    that text leaves the top; the engine's lines there — where it comes
+    from ("Opened from …", "Found by …"), its hidden markers — stay, in
+    their order, and the text before is in the forge's edit history.
+    Never on an outsider's issue proposed in a comment. It follows the
+    refine's mode and level as the drafts do: at `cautious`, proposed.
+    The issue's one line says "Rewrote: the text on top as the Need, in
+    plain words."
+  - **A person's text on top, with no Need section, is the Need**, a
+    person's: `ready` reads it so, and the task says it. A Need draft is
+    written, and read instead, only when it does not say that text again.
+  - **A draft that repeats is not written** (`backlog.Repeated`):
+    containment, the share of its words already said above it, over
+    one-word shingles, common words out. Compared: a Need draft with a
+    person's text on top; an example or a bug's steps with all above
+    them as the issue will read — the text on top, unless taken into the
+    Need, and the Need. Never Validation, which restates the case by
+    design. Past `repeated-percent-max` (40 by default, 1 to 100), the
+    draft is left out, the rest of the refine kept (`repeated`, said),
+    and the issue's line says "Not written: the Example, which said
+    again what is above it." A person's text is only read.
+  - A `description` given apart, as an earlier engine asked, is left out
+    (`description-kept`, said).
 - **What it writes is readable**, where the engine can tell
   (`backlog.LinkDecisions`, `backlog.MarkClosed`): a decision cited bare,
   `ADR-0038`, becomes a link to its page on the forge, when the commit
@@ -99,7 +114,8 @@ what it can and asks for the rest:
   act dropped with its reason — though it lacks a section is said in the
   summary (`nothing-proposed`), never left in silence.
 - **`ready`** is checked by the engine, not taken from the agent: the four
-  sections there and not empty, no draft of the role's left in Need or
+  sections there and not empty — a person's text on top standing for a
+  Need —, no draft of the role's left in Need or
   Validation unless the issue bears `workline:accepted` — read on the
   issue, never in a proposal (`not-ready` otherwise, naming what is
   missing); a mark left in a section a person edited is taken out. Done, the issue gets

@@ -1,6 +1,6 @@
 ---
-sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/work/work.go]
-checked: 9fcf6cf6
+sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/work/work.go]
+checked: 434f7e39
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
@@ -22,6 +22,8 @@ first, the cause folded.
   ([what ready means](../../../docs/spec/backlog-acts/refine.md)).
 - **Example and Steps to reproduce are not**, nor any other heading you
   add: kept as they are.
+- **Your text on top, with no Need heading, is the Need**: the product
+  owner drafts no Need saying it again.
 - The product owner adds a missing section where this layout puts it,
   never moving yours, and the line between the two parts.
 
@@ -29,7 +31,8 @@ first, the cause folded.
 
 - **Need**: one line — who needs what, and why. Not the solution.
 - **Example**: one real case — a named person or role, numbers with
-  their unit, a real command or output, today next to what is wanted.
+  their unit, a real command or output, today next to what is wanted;
+  only with a fact the Need lacks.
 - **Validation**: named scenarios a person runs, as Given / When / Then.
 - **A bug**: the Need says who it hurts; Steps to reproduce, then
   Expected, Actual, the version; its Validation repeats the steps, the
@@ -110,18 +113,25 @@ Users who exclude a folder with a trailing slash still upload it:
 `matchExclude` in `internal/filter/glob.go`.
 ```
 
-## Text a role wrote
+## Each thing said once
 
-What an import or another role opened an issue with, above its sections,
-is the role's until a person edits it:
+A problem said three times reads as three problems
+([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
+amended; [worked case](proposed-headings.md#each-thing-said-once)):
 
-- **Rewritten in plain words**, the problem first, one real case, at most
-  100 words; what only a builder needs — the code, a path, the fix —
-  folded in `<details>` at its end.
-- **Kept**: the line saying where it comes from, the hidden markers.
-- **Who decides**: the engine, from the digest it kept when the issue was
-  opened, never the agent. Edited by you, the text is yours: never
-  rewritten. Rewritten once, again only when your comment asks.
+- **A role's text on top becomes the Need draft**: what an import or
+  another role opened the issue with, rewritten in plain words, then
+  taken from the top. The line saying where it comes from, and the
+  hidden markers, stay.
+- **Your text on top is the Need**, when no Need heading follows: the
+  product owner adds Validation and the builder's part, never a Need
+  restating it.
+- **A draft that says again what is above it is not written**: past
+  `repeated-percent-max` ([settings](settings.md)), 40% of its words
+  already said. Validation is never measured: it restates the case.
+- **Who decides whose text it is**: the engine, from the digest it kept
+  when the issue was opened, never the agent. Edited by you, the text
+  is yours: never taken.
 - **Your level decides how**: written at `normal`, proposed at
   `cautious`, like the drafts.
 
@@ -131,8 +141,10 @@ is the role's until a person edits it:
   Changed: —. See the issue's edit history."
 - **Changed** lists only its own sections it rewrote — a draft, or a text
   as it wrote it; it never changes a sentence of yours.
-- **Rewrote: the description, in plain words** when it rewrote a role's
-  text on top.
+- **Rewrote: the text on top as the Need, in plain words** when it took
+  a role's text on top into the Need.
+- **Not written: the Example, which said again what is above it** when
+  it left a draft out.
 - **The text before** is in the forge's edit history: "edited" above the
   description on GitHub, Gitea and Forgejo; the "changed the
   description" note on GitLab, compared with the version before on its
@@ -140,6 +152,7 @@ is the role's until a person edits it:
 
 ## Proposed next
 
-New names for these sections, each thing said once, a bug readied only
-with its steps, and the kind set by the role are proposed, not built:
-[the proposed headings](proposed-headings.md).
+New names for these sections, a bug readied only with its steps, and
+the kind set by the role are proposed, not built:
+[the proposed headings](proposed-headings.md),
+[#435](https://github.com/JN0V/workline/issues/435).

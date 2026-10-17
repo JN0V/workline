@@ -170,7 +170,8 @@ Label lists read on each repository on 2026-10-11.
   [#103](https://github.com/JN0V/workline/issues/103)'s Example scores
   54% against its text on top at one word, 18% at three
   ([ADR-0039](../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-  amended 2026-10-11).
+  amended 2026-10-11); the engine's own, with its common words, in
+  [repeat_test.go](../../internal/backlog/repeat_test.go).
 
 ## Languages
 
