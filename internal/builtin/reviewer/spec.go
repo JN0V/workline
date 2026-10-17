@@ -125,9 +125,7 @@ func prepareSpecs(runDir, repo string, s Settings, head string) int {
 			v.Summary = fmt.Sprintf("no agent: the %d specs were not reviewed", len(subs))
 		}
 		v.Subject, v.Spec = "spec", strings.Join(paths, ", ")
-		if len(run.Stopped) > 0 {
-			v.Summary += "; " + strings.Join(run.Stopped, "; ")
-		}
+		v.Summary += afterSpecs(run)
 		if len(run.Stops) == 0 {
 			return final(runDir, v)
 		}

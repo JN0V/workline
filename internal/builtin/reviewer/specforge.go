@@ -235,6 +235,23 @@ func settleSpecs(runDir, repo string, s Settings, run state) int {
 	return 0
 }
 
+// waitingQuestions says, of a run the agent could not be reached for, that
+// its questions to a person wait: an outside failure applies nothing of
+// the run, though they need no agent. Their record asks them again at the
+// next run.
+func waitingQuestions(v *Review) {
+	var at []string
+	for i, f := range v.Findings {
+		if f.Rule == "spec-rounds-spent" {
+			at = append(at, f.Where)
+			v.Findings[i].Message = "its question to a person waits for the next run: the agent could not be reached, and nothing of this run is written; ready stays held"
+		}
+	}
+	if len(at) > 0 {
+		v.Summary += fmt.Sprintf("; the %s to a person %s for the next run (%s)", plural(len(at), "question", "questions"), plural(len(at), "waits", "wait"), strings.Join(at, ", "))
+	}
+}
+
 // noAnswer says why none of a spec's lenses got an answer for want of the
 // agent: it could not be reached, or the run spent its tokens before them;
 // "" when one answered, or failed otherwise (its answer did not read).
@@ -285,6 +302,13 @@ func specsSummary(run state, vs []Review, notRead []string, v Review, s Settings
 	if n := len(notRead); n > 0 {
 		fmt.Fprintf(&b, "; %d not read, the agent asking nothing more: %s", n, strings.Join(notRead, ", "))
 	}
+	return b.String() + afterSpecs(run)
+}
+
+// afterSpecs is what a summary says after the specs read: those put to a
+// person, those left for the next run.
+func afterSpecs(run state) string {
+	var b strings.Builder
 	for _, l := range run.Stopped {
 		b.WriteString("; " + l)
 	}

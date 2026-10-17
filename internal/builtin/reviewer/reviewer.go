@@ -795,6 +795,7 @@ func readLenses(runDir, repo string, s Settings) int {
 		v := review(st, nil, "the agent could not be reached: only the rules ran")
 		if len(st.Specs) > 0 {
 			v.Subject = "spec"
+			waitingQuestions(&v)
 		}
 		v.Status = verdict.BlockedExternal
 		if code := final(runDir, v); code != exitNothing {
