@@ -37,7 +37,13 @@ hold:
    and [tried.md](tried.md) (2026-10-01 to 10-02). The `drifted` cases,
    five runs each, and how to run them again: [the
    evaluation](../../../docs/spec/conformance/evaluation.md#real-shapes).
-   The other evaluation cases have one run each, not five.
+   Every evaluation case, five runs on one engine: **not met** on
+   2026-10-17. `drifted-version-bump` vouched for a planted falsehood in
+   one run of three, its own note saying it could not check it; the
+   measure stopped there
+   ([the documentalist, measured](../../../docs/research/documentalist-measured.md)).
+   Before it, each case had 5 to 24 runs, spread over engine commits and
+   models, rarely five on one.
 
 ## Built
 
