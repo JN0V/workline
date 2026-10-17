@@ -30,25 +30,20 @@ hold:
    ([#353](https://github.com/JN0V/workline/issues/353)).
 2. **The main issue validated on real use**: open. No issue of the role
    holds a Validation section the maintainer has signed.
-3. **AI verdicts measured**: in part. Step 4 of
+3. **AI verdicts measured**: **met** (2026-10-17). Step 4 of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
    holds, at the third run, on the held-out set: the bars and runs in
    [research](../../../docs/research/documentalist-fixes-reviewed.md#the-held-out-set-adr-0014-step-4)
    and [tried.md](tried.md) (2026-10-01 to 10-02). The `drifted` cases,
    five runs each, and how to run them again: [the
    evaluation](../../../docs/spec/conformance/evaluation.md#real-shapes).
-   Every evaluation case, five runs on one engine: **12 of 14 met** on
-   2026-10-17, at be99f444, after the guard of
+   Every evaluation case, five concordant full runs on one engine: 12 of
+   14 at be99f444, after the guard of
    [#451](https://github.com/JN0V/workline/pull/451)
-   ([the documentalist, measured](../../../docs/research/documentalist-measured.md#after-the-guard-2026-10-17-afternoon)).
-   The last two, that evening at 1f81fa73
-   ([measured](../../../docs/research/documentalist-measured.md#the-last-two-cases-in-the-evening)):
-   `condenses-the-role-contract` 4 runs of 5 full, its judge asked;
-   `stays-on-the-task` 0 of 5, 6 calls each for a cap of 2, a merge
-   request judging a large doc in parts since
-   [#381](https://github.com/JN0V/workline/pull/381); since
-   [#458](https://github.com/JN0V/workline/issues/458) such a doc waits
-   for the gardening, 1 call again, replayed offline.
+   ([the documentalist, measured](../../../docs/research/documentalist-measured.md#after-the-guard-2026-10-17-afternoon));
+   the last two that evening at 2c532600, after
+   [#460](https://github.com/JN0V/workline/pull/460)
+   ([measured](../../../docs/research/documentalist-measured.md#the-last-two-cases-met-2026-10-17-evening)).
 
 ## Built
 
@@ -166,36 +161,30 @@ its evaluation in
 
 ## Missing, in the order it matters
 
-1. **The measure's last two cases**, five runs each again:
-   `stays-on-the-task`, 1 call replayed offline since a merge request
-   leaves a large doc for the gardening
-   ([#458](https://github.com/JN0V/workline/issues/458));
-   `condenses-the-role-contract`, its cap now 3 calls: the condense, one
-   retry, and the reader's call, asked in every run there.
-2. **The weekly sample's first weeks**, watched
+1. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
-3. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
+2. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
    `docs/narrow-wide-sources`, not pushed); four to split
    (`reference/eventbus-architecture.md`,
    `components/core/project-context.md`,
    `architecture/component-configuration-pattern.md`,
    `components/webui/project-context.md`). No issue yet.
-4. **workline's own docs far behind**, gardened nightly in parts since
+3. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-5. **The agent reads**: a doc judged on its diff against the code as it
+4. **The agent reads**: a doc judged on its diff against the code as it
    is now, a read each night (no issue yet).
-6. **To watch**: Sonnet citing lines a line off in long docs (now placed
+5. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
-7. **The merge policy, what is left**: at `normal`, the developer
+6. **The merge policy, what is left**: at `normal`, the developer
    role's pull requests, pushed with the App, built with that role
    ([#117](https://github.com/JN0V/workline/issues/117); decided on
    [#322](https://github.com/JN0V/workline/issues/322#issuecomment-6186910822)).
-8. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
+7. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.
-9. **Tries on real use** (no issue yet):
+8. **Tries on real use** (no issue yet):
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;

@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: c077e9f1
+checked: da339f03
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -42,8 +42,9 @@ awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/r
 Measured again on 2026-10-17, every documentalist case planned at five
 runs: stopped at three in the morning when one vouched for a falsehood;
 after the guard against it, 12 of 14 cases earning every point in every
-run, the last two not, that evening:
-[the documentalist, measured](../../research/documentalist-measured.md).
+run; the last two too that evening, once a merge request left a doc too
+large for the gardening: all 14 met
+([the documentalist, measured](../../research/documentalist-measured.md)).
 
 ## The reviewer's measure
 
