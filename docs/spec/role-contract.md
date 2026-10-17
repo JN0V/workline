@@ -2,7 +2,7 @@
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
 checked: e2580728
 verified: agent:documentalist
-judged: b530b72
+judged: 1c056de
 ---
 # Role contract — v1 (draft)
 
