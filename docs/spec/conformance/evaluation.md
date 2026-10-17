@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: e94245f9
+checked: 70b9569b
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -38,6 +38,10 @@ for i in 1 2 3 4 5; do WORKLINE_EVAL=claude:sonnet go test -count=1 -timeout 60m
 # the summary pools every run of a case: keep one engine's rows apart (the workline column)
 awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv" | grep drifted
 ```
+
+Measured again on 2026-10-17, every documentalist case planned at five
+runs, stopped at three when one vouched for a falsehood:
+[the documentalist, measured](../../research/documentalist-measured.md).
 
 ## The reviewer's measure
 
