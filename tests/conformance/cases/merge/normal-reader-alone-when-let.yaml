@@ -1,0 +1,27 @@
+case: merge/normal-reader-alone-when-let
+about: "A project lets the reader's rewordings merge alone (#438): with `merge: {autonomy: normal, alone: [reader]}`, the documentalist's reader pull request — workline's own, its page recorded read (`reader:`), its head's verdict passed — merges with no person's yes, as the other routine kinds: `workline follow` sets `workline/accepted` on its head, records its kind, `reader`, on it — what a revert of it demotes — and turns auto-merge on. The summary lists `reader` among the kinds that merge alone (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal, alone: [reader]}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/reader-docs-product-sign-in-md && sed -i -e '/^checked:/a reader: 0a1b2c3d4e5f' -e 's/without doing anything/even when you do nothing/' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: read docs/product/sign-in.md for its reader' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/reader-docs-product-sign-in-md && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/reader-docs-product-sign-in-md", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/reader-docs-product-sign-in-md, base: main, author: workline-bot, bot: true, title: "docs: read docs/product/sign-in.md for its reader", labels: [], comments: [],
+         pushes: [{head: workline/documentalist/reader-docs-product-sign-in-md, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: auto-merge-on, where: "#9", message: "with no person's yes, workline's own reader — it rewords pages an agent read for their reader —, opened and pushed by its App, every commit its own"}
+  no-findings: [{rule: waits-for-a-yes}]
+  summary-file: ["merge policy (normal; with no person's yes: workline's own merge requests, records, derived, docs, reader)"]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: true, comments: 1, comment-contains: ["Merging with no person's yes", "workline's own reader", "workline:merge-alone=reader"]}
+    statuses:
+      - {commit: "workline/documentalist/reader-docs-product-sign-in-md", name: workline/accepted, state: success, by: workline-bot, description: "with no person's yes: workline's own reader"}

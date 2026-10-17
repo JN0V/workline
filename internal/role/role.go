@@ -187,12 +187,21 @@ type ProjectConfig struct {
 // follow` turns the forge's auto-merge on for (ADR-0042).
 type Merge struct {
 	Autonomy string `yaml:"autonomy"`
+	// Alone are the kinds of workline's own pull requests that wait for a
+	// person's yes at `normal` the project lets merge with none (MergeAlone).
+	Alone []string `yaml:"alone"`
 }
 
 // MergeLevels are the merge policy's levels, as the product owner's are
 // named (ADR-0042): `cautious`, a person's yes on each pull request;
 // `normal`, workline's own routine ones merged with none.
 var MergeLevels = []string{"cautious", "normal"}
+
+// MergeAlone are the kinds of workline's own pull requests that wait for a
+// person's yes at `normal` until the project lets them merge with none
+// (`merge: {alone: [...]}`, ADR-0042 amended): `reader`, an agent's
+// rewording of pages for their reader.
+var MergeAlone = []string{"reader"}
 
 // LoadProjectConfig reads <repo>/.workline/config.yaml. A missing file is an
 // empty config; an unreadable or invalid one is an error.
@@ -213,6 +222,16 @@ func LoadProjectConfig(repo string) (*ProjectConfig, error) {
 	}
 	if c.Merge != nil && !slices.Contains(MergeLevels, c.Merge.Autonomy) {
 		return nil, &ConfigError{fmt.Sprintf("merge.autonomy is %q: the levels are %s", c.Merge.Autonomy, strings.Join(MergeLevels, ", "))}
+	}
+	if c.Merge != nil {
+		for _, kind := range c.Merge.Alone {
+			if !slices.Contains(MergeAlone, kind) {
+				return nil, &ConfigError{fmt.Sprintf("merge.alone lists %q: the kinds it may let merge alone are %s", kind, strings.Join(MergeAlone, ", "))}
+			}
+		}
+		if len(c.Merge.Alone) > 0 && c.Merge.Autonomy != "normal" {
+			return nil, &ConfigError{fmt.Sprintf("merge.alone lets kinds merge with no person's yes, which only autonomy normal does: autonomy is %q", c.Merge.Autonomy)}
+		}
 	}
 	return &c, nil
 }

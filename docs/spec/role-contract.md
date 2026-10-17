@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: 18109269
+checked: e2580728
 verified: agent:documentalist
 judged: b530b72
 ---

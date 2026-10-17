@@ -1,0 +1,9 @@
+case: merge/alone-needs-normal
+about: "`merge.alone` is refused below `normal` (#438): it lets a kind of workline's own pull requests merge with no person's yes, which `cautious` never does. A setting someone believes in and nothing applies is a wish (principle 12): `workline follow` stops before touching anything, saying why."
+given:
+  repo: documented
+  config: {merge: {autonomy: cautious, alone: [reader]}}
+run: {cli: [follow, --base, main]}
+expect:
+  exit: 64
+  stderr: [".workline/config.yaml: merge.alone lets kinds merge with no person's yes, which only autonomy normal does: autonomy is \"cautious\""]

@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: 1a0ca6ec
+sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml, internal/engine/routine.go]
+checked: e2580728
 verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader
@@ -66,6 +66,11 @@ passes.
 - A merge request of its own, `workline/documentalist/reader-<first page>`:
   the pages, what became of each, what the agent found a reader would
   miss, and what was withheld.
+- **It waits for a person's yes**, even where the project's merge policy
+  merges workline's own docs alone (`normal`): a comment on it says so.
+  A project lets these merge alone with
+  `merge: {autonomy: normal, alone: [reader]}`
+  ([the merge policy](../../../docs/merge-policy-normal.md#the-readers-rewordings-wait-for-a-yes)).
 - Each page read gets `reader: <hash>` in its header: its body as the
   merge request leaves it. While the page's body still matches, it is not
   read again. A page with no header gets one, in a comment no rendering
