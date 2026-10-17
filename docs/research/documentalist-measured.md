@@ -8,41 +8,35 @@ earning every point — for criterion 3 of
 
 **Verdict.**
 
-- **Met for 12 of 14 cases in the afternoon**, after the guard of
-  [#451](https://github.com/JN0V/workline/pull/451) ([below](#after-the-guard-2026-10-17-afternoon));
-  the last two not met in the evening ([below](#the-last-two-cases-in-the-evening)).
+- **Met for all 14 cases**, five concordant full runs on one engine
+  each: 12 in the afternoon at be99f444, after the guard of
+  [#451](https://github.com/JN0V/workline/pull/451)
+  ([below](#after-the-guard-2026-10-17-afternoon)); the last two in the
+  evening at 2c532600, after [#460](https://github.com/JN0V/workline/pull/460)
+  ([below](#the-last-two-cases-met-2026-10-17-evening)).
 - **Not met in the morning: the measure stopped at its first
   confirmation.** `drifted-version-bump` moved `checked` over a planted
-  falsehood in one run of three, its own note saying it could not check
-  that claim. `drifted-gardening`: three of three earning every point.
-  The twelve other cases were not run.
+  falsehood in one run of three, its own note doubting that claim.
 - **Spent**: 979,908 tokens in of the day's 1,000,000. The morning's
   255,597 came from an agent session, at twice the rate; the
   afternoon's 724,311 from outside one ([what it cost](#what-it-cost)).
 
 ## The morning's runs
 
-On the engine at 760678b9: `main` after
-[#441](https://github.com/JN0V/workline/pull/441) (a drifted case's issue
-kept on the local forge) and
-[#443](https://github.com/JN0V/workline/pull/443) (a part disputes a
-defect only on the same words). `WORKLINE_EVAL=claude`, every call
-answered by `claude-sonnet-5-5`, one call a run.
+At 760678b9: `main` after the two fixes to confirm,
+[#441](https://github.com/JN0V/workline/pull/441) and
+[#443](https://github.com/JN0V/workline/pull/443). `WORKLINE_EVAL=claude`,
+every call answered by `claude-sonnet-5-5`, one call a run.
 
 | Case | Runs | Scores | Every point, every run | Tokens in |
 |---|---|---|---|---|
 | drifted-gardening | 3 | 19/19, 19/19, 19/19 | yes, 3 of 3 (5 asked) | 123,331 |
 | drifted-version-bump | 3 | 23/23, 23/23, 20/23 | **no** | 132,266 |
-| finds-planted-defects-in-parts | 0 | — | not run | — |
-| the eleven others | 0 | — | not run | — |
+| the twelve others | 0 | — | not run | — |
 
-The plan, written before the runs:
-
-1. Confirm the two fixes: the `drifted` cases three runs each, every run
-   earning every point; `finds-planted-defects-in-parts` eight runs, 12/12
-   each.
-2. Only if both held: every documentalist case to five runs on that
-   commit, the confirming runs counted, stopping before the budget.
+The plan, written before the runs: confirm the two fixes (`drifted`
+three runs each, `finds-planted-defects-in-parts` eight at 12/12), and
+only then every case to five runs, stopping before the budget.
 
 The command run, and how to read its rows:
 
@@ -72,37 +66,27 @@ head).
   each sentence kept was found in the sources, else `judged` and a note.
   The agent kept the words, rightly, and vouched for them, wrongly: it
   took "kept" for "confirmed".
-- **No guard in the engine sees it.** A `note` is free text for a
-  person, tied to no doc (`case "note"` in internal/engine/engine.go): the
-  engine cannot tell that the doc it lets the agent vouch for is the one
-  the note doubts. `checked-unread` refuses only a doc whose sources were
-  not given whole; status.md's one source was.
+- **No guard in the engine saw it.** A `note` was free text tied to no
+  doc (`case "note"` in internal/engine/engine.go): the engine could not
+  tell the note doubted the doc it let the agent vouch for.
+  `checked-unread` refuses only a doc whose sources were not given whole.
 - **Not new.** The same three checks failed together once in five runs
-  at d66eeea (2026-10-01, before ADR-0014's step 2). Since step 2 on this
-  case: none in five at 7427ae8, none in the weekly runs of 10-04 and
-  10-11 (both lost only the issue the run opened,
-  [#439](https://github.com/JN0V/workline/issues/439), fixed by
-  [#441](https://github.com/JN0V/workline/pull/441)),
-  one in three today: 1 run of 10.
+  at d66eeea (2026-10-01, before ADR-0014's step 2); since step 2, 1 run
+  of 10 (none at 7427ae8 nor in the weekly runs of 10-04 and 10-11).
 - **The patch itself is not kept**: the run's folder goes with the test;
   its note and the checks are in the run's log.
 
-Leads, not built here (the task was a measure), for
-[#449](https://github.com/JN0V/workline/issues/449):
-
-- **A note naming its doc**, as a `claim` does, and the engine keeping
-  `checked` on a doc an answer's own note doubts: a mechanical guard
-  ([principle 7](../PRINCIPLES.md)).
-- **Five docs in one call**: the version bump asks one call for the five
-  suspect docs; one note for five docs may blur which one it doubts.
-  Unmeasured.
+Leads, for [#449](https://github.com/JN0V/workline/issues/449): the
+engine keeping `checked` on a doc an answer's own note doubts, a
+mechanical guard ([principle 7](../PRINCIPLES.md)), built by
+[#451](https://github.com/JN0V/workline/pull/451); one note for the five
+docs of one call blurring which one it doubts, unmeasured.
 
 ## The runs before this measure
 
-[status.md](../../roles/documentalist/docs/status.md) said the cases other
-than `drifted` had one run each. They had 5 to 24 rows each in
-`results.tsv`, but over several engine commits and models (Haiku, Opus,
-two Sonnet models), so few hold five on one engine and one model:
+[status.md](../../roles/documentalist/docs/status.md) said the other
+cases had one run each: they had 5 to 24 rows each, over several engine
+commits and models, so few held five on one engine and one model:
 
 | Case | Rows | Engine commits | Most on one engine and model |
 |---|---|---|---|
@@ -129,14 +113,10 @@ engine.
 - **Tokens in** are the whole input, cache included
   (internal/agent/claude.go).
 - **Twice the weekly timer's.** The `drifted` cases took 41,109 to 44,090
-  a run here; the weekly timer's runs of the same cases, 19,785 to 21,589
-  (10-04, 10-11); 10-01's runs, launched from an agent session as these
-  were, 35,892 to 39,934. `stays-on-the-task` alike: 22.7k on 10-01,
-  13.2k to 13.5k weekly. The editor's session variable doubled them
+  a run here, 19,785 to 21,589 in the weekly timer's runs (10-04, 10-11):
+  the editor's session variables doubled them
   ([claude-session-env.md](claude-session-env.md); [what it cost](#what-it-cost)).
-- **A budget built on the weekly rows** is half what a run from a
-  session spends: at today's rate, the whole plan would have taken about
-  1.4M tokens in, not 1M.
+  At that rate the whole plan would have taken about 1.4M tokens in, not 1M.
 
 ## After the guard (2026-10-17, afternoon)
 
@@ -174,19 +154,17 @@ go test -count=5 -timeout 90m -run 'TestEvaluation/documentalist/<case>$' ./test
 awk -F'\t' 'NR==1 || $2 == "be99f444"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv"
 ```
 
-### The last two cases, in the evening
+### The last two cases, a first try
 
-Left in the afternoon: one graded on its header ([#454](https://github.com/JN0V/workline/issues/454)),
-its judge unset; the other not run. Five runs each at 1f81fa73, after
-[#457](https://github.com/JN0V/workline/pull/457), the judge on Sonnet:
+Left in the afternoon: one graded on its header, its judge unset
+([#454](https://github.com/JN0V/workline/issues/454)); the other not run.
+Five runs each at 1f81fa73, the judge on Sonnet:
 
-- **`condenses-the-role-contract`: 4 of 5 full**, 2 calls a run, the condense
-  and the reader's ([#417](https://github.com/JN0V/workline/pull/417)), 21,578 tokens in.
-  The fifth: 3 calls for a cap of 2, 31,861 in; the third the size of a
-  condense asked again, as one refused still over budget is.
-- **`stays-on-the-task`: 0 of 5**, the fix right each time, but 6 calls
-  for a cap of 2, about 103k tokens in, against 1 and 13.5k on 10-11: a
-  merge request judges `README.md` in parts since [#381](https://github.com/JN0V/workline/pull/381)
+- **`condenses-the-role-contract`: 4 of 5 full**; the fifth made 3 calls
+  for a cap of 2, a condense asked again.
+- **`stays-on-the-task`: 0 of 5**, the fix right, but 6 calls, about 103k
+  tokens in: a merge request judged `README.md` in parts since
+  [#381](https://github.com/JN0V/workline/pull/381)
   ([#458](https://github.com/JN0V/workline/issues/458)).
 
 ### What it cost
@@ -198,3 +176,24 @@ its judge unset; the other not run. Five runs each at 1f81fa73, after
   variables reach the agent and double each call
   ([#452](https://github.com/JN0V/workline/issues/452); its fix,
   [#453](https://github.com/JN0V/workline/pull/453)).
+
+## The last two cases, met (2026-10-17, evening)
+
+At 2c532600: `main` after [#460](https://github.com/JN0V/workline/pull/460)
+(a merge request leaves a doc too large for the gardening). From outside
+any agent session, a run at a time; models as in the afternoon, the judge
+on Sonnet.
+
+- **`stays-on-the-task`: 5 of 5 at 4/4**, 1 call a run (6 at 1f81fa73),
+  13,647 tokens in each.
+- **`condenses-the-role-contract`: 5 of 5 at 5/5**, its judge asked; 2
+  calls a run, the condense and the reader's, 21,578 tokens in each.
+- **176,125 tokens in** for the 10 runs, under a guard of 200,000.
+
+How it was run, in a worktree at 2c532600, from a clean environment:
+
+```sh
+# measure-guarded.sh (not in the repository): one `go test -count=1` per run, stopping before BUDGET tokens in
+systemd-run --user --setenv=BUDGET=200000 --setenv=WORKLINE_EVAL=claude --setenv=WORKLINE_JUDGE=claude:sonnet \
+  measure-guarded.sh 5 stays-on-the-task condenses-the-role-contract
+```
