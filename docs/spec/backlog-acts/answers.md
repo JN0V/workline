@@ -33,4 +33,10 @@ alone (`outsider-evidence`).
 
 **Slowing down**: from `proposals-max` issues waiting on a person, a run
 reads only the issues a person commented on (`proposals-waiting`).
-Silence is never a yes.
+Silence is never a yes. Nor does a run put more than `proposals-max`
+issues on a person: the label goes on those it decided on first, then by
+number, while fewer wait; the others keep their proposal, said
+(`proposal-held`), labelled once fewer wait (`Plan.labelWithin`, #428).
+Each issue labelled is named in the summary (`proposed`), whether this
+run proposed on it or an earlier one, a draft or a migrated report's
+record.

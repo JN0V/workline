@@ -49,8 +49,10 @@ alone, as before.
 **The label.** `workline:proposed` (on a forge with scoped labels,
 GitLab: `workline::proposed`), created once, is on an open issue while it
 waits on a person: a proposal in its state, or a draft of the role's in
-its body and not ready. Taken off when it no longer waits, when it is
-closed, and when a person accepts. A label a bot took off, as the forge's
+its body and not ready — never on more than `proposals-max` issues at
+once: one more waits for room, said (`proposal-held`,
+[A person's answers](answers.md)). Taken off when it no longer waits,
+when it is closed, and when a person accepts. A label a bot took off, as the forge's
 label events say, is put back.
 
 **Its labels follow its state**, at every run that writes the issues'

@@ -512,6 +512,9 @@ type Plan struct {
 	Visit    []int           `yaml:"visit,flow,omitempty"`
 	SetAside map[int]bool    `yaml:"set-aside,omitempty"`
 	Answers  map[int]*Answer `yaml:"answers,omitempty"`
+	// ProposalsMax is how many issues may bear the role's label at once:
+	// one more waits for room (#428).
+	ProposalsMax int `yaml:"proposals-max,omitempty"`
 	open     map[int]bool    // the open issues, read once
 	issues   map[int]forge.Issue
 	judged   map[int]Judged // the second judge's answers on the issues announced obsolete
@@ -653,7 +656,7 @@ func MovedPercent(settings map[string]any) int {
 // "revise" (ADR-0038).
 func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Proposal, read []int, judged map[int]Judged, changes []Change, answers map[int]*Answer) (*Plan, error) {
 	settings, movedPercent := cfg.Acts, cfg.MovedPercent
-	p := &Plan{read: read, judged: judged, settings: settings, config: cfg, Answers: answers}
+	p := &Plan{read: read, judged: judged, settings: settings, config: cfg, Answers: answers, ProposalsMax: cfg.ProposalsMax}
 	if err := p.readRecord(f, role); err != nil {
 		return nil, err
 	}

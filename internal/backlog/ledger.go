@@ -11,6 +11,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/verdict"
 	"github.com/JN0V/workline/internal/work"
 )
 
@@ -603,7 +604,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 	slices.Sort(ids)
 	ids = slices.Compact(ids)
 	proposed := ProposedLabel(f)
-	ensured := false
+	var writes []stateWrite
 	for _, id := range ids {
 		if id <= 0 || id == p.Report {
 			continue
@@ -615,8 +616,8 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		if err != nil {
 			continue // gone from the forge since: deleted, moved
 		}
-		t := forge.Target{Kind: "issue", ID: id}
-		comments, err := b.Comments(t)
+		w := stateWrite{t: forge.Target{Kind: "issue", ID: id}, is: is}
+		comments, err := b.Comments(w.t)
 		if err != nil {
 			return err
 		}
@@ -624,17 +625,15 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		if !found || err != nil {
 			continue
 		}
-		before := FormatState(*st)
+		w.st, w.before = st, FormatState(*st)
 		p.stateOf(id, st)
 		if err := linkComments(b, f, role, id, st); err != nil {
 			return err
 		}
-		var add, remove []string
-		renew := false // a proposal starts waiting on a person: its comment posted anew
 		switch {
 		case is.Closed:
 			if st.Label != "" && slices.Contains(is.Labels, st.Label) {
-				remove = append(remove, st.Label)
+				w.remove = append(w.remove, st.Label)
 			}
 			st.Label, st.Proposed = "", nil
 		case st.Label != "" && !slices.Contains(is.Labels, st.Label) && !Accepted(*is) && p.SetAside[id]:
@@ -649,8 +648,8 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		case Accepted(*is):
 			// Their yes, on every plan: the role takes its label off itself.
 			for _, l := range []string{st.Label, LabelProposed, scopedProposed} {
-				if l != "" && slices.Contains(is.Labels, l) && !slices.Contains(remove, l) {
-					remove = append(remove, l)
+				if l != "" && slices.Contains(is.Labels, l) && !slices.Contains(w.remove, l) {
+					w.remove = append(w.remove, l)
 				}
 			}
 			st.Label = ""
@@ -663,23 +662,12 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			waits := st.Aside == "" && (len(st.Proposed) > 0 || (HasDraft(is.Body, st) && !slices.Contains(is.Labels, LabelReady)))
 			switch {
 			case waits && st.Label == "":
-				if !ensured {
-					if err := b.EnsureLabel(proposed, "fbca04", proposedSays(AcceptedLabel(f))); err != nil {
-						return err
-					}
-					ensured = true
-				}
-				add, st.Label = append(add, proposed), proposed
-				// An edit mails nobody, a new comment whoever follows the
-				// issue: the comment held before this run is posted anew,
-				// the role's own, last (ADR-0038, amended). One written in
-				// this run was mailed as it was created.
-				renew = slices.Contains(p.Visit, id)
+				w.wants = true // labelled below, within proposals-max
 			case waits && !slices.Contains(is.Labels, st.Label):
-				add = append(add, st.Label) // taken off by a bot, or lost: put back
+				w.add = append(w.add, st.Label) // taken off by a bot, or lost: put back
 			case !waits && st.Label != "":
 				if slices.Contains(is.Labels, st.Label) {
-					remove = append(remove, st.Label)
+					w.remove = append(w.remove, st.Label)
 				}
 				st.Label = ""
 			}
@@ -689,22 +677,28 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			// left, no workline:draft; set aside, its body a person's, the
 			// role's way to ready is off it too (ADR-0038).
 			for _, l := range []string{LabelDraft, LabelToRefine} {
-				if slices.Contains(is.Labels, l) && (l == LabelDraft || st.Aside != "") && !slices.Contains(remove, l) {
-					remove = append(remove, l)
+				if slices.Contains(is.Labels, l) && (l == LabelDraft || st.Aside != "") && !slices.Contains(w.remove, l) {
+					w.remove = append(w.remove, l)
 				}
 			}
 		}
-		if r, ok := f.(forge.Renewer); ok && renew {
-			if err := r.Renew(t, FormatState(*st), StateMarker(role)); err != nil {
+		writes = append(writes, w)
+	}
+	if err := p.labelWithin(b, f, writes, proposed); err != nil {
+		return err
+	}
+	for _, w := range writes {
+		if r, ok := f.(forge.Renewer); ok && w.renew {
+			if err := r.Renew(w.t, FormatState(*w.st), StateMarker(role)); err != nil {
 				return err
 			}
-		} else if after := FormatState(*st); after != before {
-			if err := f.Sticky(t, after, StateMarker(role), false); err != nil {
+		} else if after := FormatState(*w.st); after != w.before {
+			if err := f.Sticky(w.t, after, StateMarker(role), false); err != nil {
 				return err
 			}
 		}
-		if len(add) > 0 || len(remove) > 0 {
-			if err := f.Label(t, add, remove); err != nil {
+		if len(w.add) > 0 || len(w.remove) > 0 {
+			if err := f.Label(w.t, w.add, w.remove); err != nil {
 				return err
 			}
 		}
@@ -739,6 +733,93 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 		}
 	}
 	return nil
+}
+
+// stateWrite is what Persist writes on one issue: its state, as read and
+// as left, the labels it adds and takes off; wants: a proposal starts
+// waiting on a person, labelled within proposals-max; renew: its comment
+// posted anew.
+type stateWrite struct {
+	t            forge.Target
+	is           *forge.Issue
+	st           *State
+	before       string
+	add, remove  []string
+	wants, renew bool
+}
+
+// labelWithin puts the role's label on the issues whose proposal starts
+// waiting on a person while fewer than proposals-max wait (#428): those
+// the run decided on first, then by number. The others wait for room,
+// their proposal kept, said, and are labelled at a later run: past the
+// cap the role slows down, never piles up (ADR-0038). An issue labelled
+// that the summary names nowhere yet is named.
+func (p *Plan) labelWithin(b forge.Backlog, f forge.Forge, writes []stateWrite, proposed string) error {
+	var want []*stateWrite
+	waiting := 0
+	for i := range writes {
+		switch w := &writes[i]; {
+		case w.wants:
+			want = append(want, w)
+		case w.st.Label != "":
+			waiting++
+		}
+	}
+	slices.SortStableFunc(want, func(a, c *stateWrite) int {
+		switch da, dc := p.decidedOn(a.t.ID), p.decidedOn(c.t.ID); {
+		case da && !dc:
+			return -1
+		case dc && !da:
+			return 1
+		}
+		return a.t.ID - c.t.ID
+	})
+	most := p.ProposalsMax
+	if most <= 0 {
+		most = ProposalsMax
+	}
+	for i, w := range want {
+		where := fmt.Sprintf("#%d", w.t.ID)
+		if waiting+i >= most {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "proposal-held", Level: "info", Where: where,
+				Message: fmt.Sprintf("waits on a person, not labelled yet: %d issues wait already, the most allowed (proposals-max: %d); labelled once fewer wait", most, most)})
+			continue
+		}
+		if i == 0 {
+			if err := b.EnsureLabel(proposed, "fbca04", proposedSays(AcceptedLabel(f))); err != nil {
+				return err
+			}
+		}
+		w.add, w.st.Label = append(w.add, proposed), proposed
+		// An edit mails nobody, a new comment whoever follows the issue:
+		// the comment held before this run is posted anew, the role's own,
+		// last (ADR-0038, amended). One written in this run was mailed as
+		// it was created.
+		w.renew = slices.Contains(p.Visit, w.t.ID)
+		if !slices.ContainsFunc(p.Findings, func(x verdict.Finding) bool {
+			return x.Where == where && (x.Rule == "proposed" || x.Rule == "done" || x.Rule == "done-as-accepted")
+		}) {
+			p.Findings = append(p.Findings, verdict.Finding{Rule: "proposed", Level: "info", Where: where, Message: w.st.waitsOn()})
+		}
+	}
+	return nil
+}
+
+// waitsOn says what an issue newly labelled waits on a person for, in the
+// summary: what it proposes, or the drafts in it.
+func (s State) waitsOn() string {
+	var says []string
+	for _, q := range s.Proposed {
+		if q.Proposal != nil {
+			says = append(says, strings.TrimSuffix(strings.TrimSpace(offer(*q.Proposal)), "."))
+		} else if q.Line != "" {
+			says = append(says, strings.TrimSuffix(q.Line, "."))
+		}
+	}
+	if len(says) == 0 {
+		return "its drafts wait on your answer."
+	}
+	return "waits on your answer: " + strings.Join(says, "; ") + "."
 }
 
 // linkComments links each line of this run's that says the role wrote to

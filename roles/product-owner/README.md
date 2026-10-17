@@ -67,7 +67,8 @@ is on each issue; you answer there
 | it should not exist | close it | never reopens it |
 
 - **Silence is never a yes.** Past `proposals-max` issues waiting, the
-  role reads only those you commented on.
+  role reads only those you commented on, and labels no more: the next
+  wait for room.
 - **Three rounds at most** (the draft, two revisions), then one line
   "left to a person" in the summary, nothing more on the issue.
 - **Who counts**: the reporter and the project's people; their comment

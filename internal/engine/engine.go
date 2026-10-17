@@ -1137,12 +1137,15 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 			Message: fmt.Sprintf("%d more issues not opened (issues-max %d): found again, they are opened at a later run", ap.capped, ap.opens.Max)})
 	}
 	if plan != nil {
+		links(f, res)
+		// Written back first: what it labels is named in the summary
+		// (#428).
+		err := report(f, r.Name, plan)
 		res.Findings = append(res.Findings, plan.Findings...)
 		if res.Status == verdict.Pass {
 			res.Summary = onIssues(res.Findings, false, st.Unasked)
 		}
-		links(f, res)
-		if err := report(f, r.Name, plan); errors.Is(err, forge.ErrUnreachable) {
+		if errors.Is(err, forge.ErrUnreachable) {
 			res.Status, res.Summary = verdict.BlockedExternal, fmt.Sprintf("stopped while writing back what the run left on the issues; resume with: workline apply %s", runDir)
 			res.Findings = append(res.Findings, verdict.Finding{Rule: "forge-unreachable", Message: err.Error()})
 			return nil

@@ -405,3 +405,9 @@ person, none answered.
   first the night after; a night whose agent was not asked takes no
   issue as read and says so. The budget and `issues-per-run` are
   unchanged.
+- **The cap holds the label too** ([#428](https://github.com/JN0V/workline/issues/428)).
+  Upgrading from the report, one night labelled 15 issues, past
+  `proposals-max` (10), its summary counting 1; the role then read
+  nothing. Now no run labels past the cap: the issues it decided on
+  first, then by number; the others keep their proposal, said, labelled
+  once fewer wait. Each issue labelled is named in the summary.
