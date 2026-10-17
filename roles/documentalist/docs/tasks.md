@@ -78,7 +78,9 @@ the parts — says that every word a patch takes out of a body is cited
 - sources are not numbered in the task, so a claim quotes, and the engine
   finds the quote;
 - a comment is not evidence: with nothing else to cite, the words stay,
-  and a `note` says what could not be confirmed.
+  and a `note` says what could not be confirmed, naming its doc in `doc`:
+  that doc's `checked` does not move (`checked-over-note`,
+  [the judge](judge.md#moving-checked)).
 
 ## Judged in parts
 
