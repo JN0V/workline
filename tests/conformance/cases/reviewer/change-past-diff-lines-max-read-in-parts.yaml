@@ -1,0 +1,18 @@
+case: reviewer/change-past-diff-lines-max-read-in-parts
+about: "A change whose hunks are past diff-lines-max, the lines one part reads, is read in parts, never cut: a hunk longer than a part cut in consecutive pieces, each its own header, every line read once (#446)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && mkdir -p src && awk 'BEGIN { for (i = 1; i <= 40; i++) printf \"// line %d of the list\\n\", i }' > src/list.go && git add calc src && git commit -qm 'feat: a list, and the average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {diff-lines-max: 40, code-lines-max: 0}}}}
+run: {role: reviewer, event: review, input: {range: main..HEAD, lenses: correctness}, ai: "cmd:sh $FIXTURES/agents/review-in-parts.sh"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-correctness}, {task: part, for: 1.2-correctness}, {task: judge, for: judge/01}]
+  summary: "read in 2 parts"
+  no-findings: [{rule: lens-failed}]
+  run-files:
+    in/parts/1-correctness/task.md: {contains: ["This is part 1 of 2", "+++ b/calc/calc.go", "+// line 1 of the list"], not-contains: ["the change is cut here", "+// line 40 of the list"]}
+    in/parts/1.2-correctness/task.md: {contains: ["This is part 2 of 2", "+++ b/src/list.go", "+// line 40 of the list"], not-contains: ["+++ b/calc/calc.go", "+// line 1 of the list"]}
+    out/review.json: {contains: '"complete": true'}

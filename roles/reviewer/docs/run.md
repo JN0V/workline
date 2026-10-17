@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: 3fc58797
+checked: 57a78c71
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
@@ -90,8 +90,8 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
     reviewed yet, whole, their trailers left, and the merge request's
     title and body (`testimony-lines-max`);
   - each file they change once: whole, the change marked in it, while the
-    files fit `code-lines-max`; the others by the change's hunks
-    (`diff-lines-max`).
+    files fit `code-lines-max`; the others by the change's hunks. A change
+    past one call (the budget, `diff-lines-max`): [in parts](parts.md).
 - **Intent** (`needs: issue`): a change saying `Closes #4` (or `fixes`,
   `resolves`, `implements`), in a commit or the merge request, has `#4` read
   from the forge, its Need, Verification and Scope given
