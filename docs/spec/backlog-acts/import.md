@@ -4,6 +4,7 @@ sources: [internal/backlog/coverage.go, internal/builtin/productowner/productown
 status: draft
 checked: e2580728
 verified: agent:claude-code
+judged-in-parts: e8bd744
 ---
 # Importing a file
 
