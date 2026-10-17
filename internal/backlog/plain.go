@@ -9,18 +9,17 @@ import (
 )
 
 // An issue a role opened — an import's item, a finding — starts with a
-// text no person wrote: its description, above its sections. The role
-// rewrites it in plain words while no person has edited it, the engine
-// telling so from what it recorded, never the agent; a person's text is
-// never rewritten (ADR-0038, amended).
+// text no person wrote: its description, above its sections. While no
+// person has edited it, the role takes it into the Need it drafts,
+// rewritten in plain words, and it leaves the top: each thing said once
+// (ADR-0039, amended). The engine tells it is the role's from what it
+// recorded, never the agent. A person's text on top, with no Need
+// section, is the Need, a person's: read, never touched.
 
 // DescriptionName names an issue's description among the sections a
-// refine writes (Proposal.Added) and those the role wrote (State.Wrote).
+// refine writes (Proposal.Added: taken into the Need) and those the role
+// wrote (State.Wrote: its text at opening).
 const DescriptionName = "Description"
-
-// DescriptionWordsMax bounds a description rewritten in plain words, its
-// words outside a fold and fenced code: past it, it is not written.
-const DescriptionWordsMax = 100
 
 // engineLine is a line of the engine's in a description: a hidden marker,
 // or the line saying where the issue comes from ("Opened from … by the
@@ -97,43 +96,41 @@ func DescriptionDigest(body string) string {
 	return BodyDigest(squeeze(DescriptionOf(body)))
 }
 
-// withDescription is a body with its description replaced by text, the
-// engine's lines there kept after it, in their order.
-func withDescription(body, text string) string {
+// withoutTop is a body with its description taken out, the engine's lines
+// there kept, in their order, above its sections.
+func withoutTop(body string) string {
 	top, rest := splitTop(body)
-	out := strings.TrimSpace(text)
+	var kept []string
 	for _, l := range strings.Split(top, "\n") {
 		if t := strings.TrimSpace(l); engineLine.MatchString(t) {
-			out += "\n\n" + t
+			kept = append(kept, t)
 		}
 	}
 	if rest = strings.TrimSpace(rest); rest != "" {
-		out += "\n\n" + rest
+		kept = append(kept, rest)
 	}
-	return out
+	return strings.Join(kept, "\n\n")
 }
 
-// Rewrite says whether the role may rewrite an issue's description in
-// plain words, and why not: opened by a role, and as the role wrote it —
-// the digest it recorded when opening it (State.Wrote), else an import's
-// key; a finding opened before by a bot and its body unchanged since the
-// role last read it. Rewritten once (State.Plain), it is again only to
-// answer a person's comment (revising). Edited by a person, it is theirs.
-func Rewrite(is forge.Issue, st *State, revising bool) (bool, string) {
+// RolesTop says whether an issue's description is a role's, and why not:
+// opened by a role, and as the role wrote it — the digest it recorded when
+// opening it (State.Wrote), an import's key, its rewrite in plain words by
+// an earlier engine (State.Plain); a finding opened before by a bot, its
+// body unchanged since the role last read it. Edited by a person, it is
+// theirs.
+func RolesTop(is forge.Issue, st *State) (bool, string) {
 	if !opener.MatchString(is.Body) {
-		return false, "a person opened the issue: its text is theirs, never rewritten"
+		return false, "a person opened the issue: its text is theirs"
 	}
 	if DescriptionOf(is.Body) == "" {
 		return false, "it has no text above its sections"
 	}
 	digest := DescriptionDigest(is.Body)
 	switch {
-	case st != nil && st.Plain != "" && st.Plain != digest:
-		return false, "a person edited its description since the role rewrote it: theirs, never rewritten"
-	case st != nil && st.Plain != "" && !revising:
-		return false, "its description is rewritten already: again only when a person's comment asks"
 	case st != nil && st.Plain != "":
-		return true, ""
+		if st.Plain == digest {
+			return true, ""
+		}
 	case st != nil && st.Wrote[DescriptionName] != "":
 		if st.Wrote[DescriptionName] == digest {
 			return true, ""
@@ -142,35 +139,25 @@ func Rewrite(is forge.Issue, st *State, revising bool) (bool, string) {
 		if importDigest.FindStringSubmatch(is.Body)[1] == digest {
 			return true, ""
 		}
-	case OpenedBy(is.Body) != "" && bot(is.Author) && st != nil && st.Body != "" && st.Body == BodyDigest(is.Body):
+	case OpenedBy(is.Body) != "" && Bot(is.Author) && st != nil && st.Body != "" && st.Body == BodyDigest(is.Body):
 		// Opened before the role recorded its text: the bot's, and no
 		// change since the role last read it.
 		return true, ""
 	}
-	return false, "a person edited its description, or the role cannot tell no one did: theirs, never rewritten"
+	return false, "a person edited its description, or the role cannot tell no one did: theirs"
 }
 
-// bot says whether an author is a bot: a GitHub app's `[bot]` login, a
-// GitLab project or group bot.
-func bot(author string) bool {
-	return strings.HasSuffix(author, "[bot]") || gitlabBot.MatchString(author)
-}
-
-// words counts a description's words a reader reads first: those outside
-// a fold and fenced code.
-func words(text string) int {
-	n, fence, folded := 0, "", 0
-	for _, l := range strings.Split(text, "\n") {
-		t := strings.TrimSpace(l)
-		var code bool
-		if fence, code = inFence(l, fence); code {
-			continue
-		}
-		folded += strings.Count(t, "<details")
-		if folded == 0 {
-			n += len(strings.Fields(t))
-		}
-		folded = max(0, folded-strings.Count(t, "</details>"))
+// NeedOnTop says whether an issue's Need is the text above its sections: a
+// person's, with no Need section holding text (ADR-0039, amended). The
+// engine reads it so, with no agent and nothing recorded; a person's own
+// Need section, or a draft of one, is read instead.
+func NeedOnTop(is forge.Issue, st *State) bool {
+	if strings.TrimSpace(work.ByMeaning(is.Body)[work.Need].Text) != "" || DescriptionOf(is.Body) == "" {
+		return false
 	}
-	return n
+	if st == nil && opener.MatchString(is.Body) {
+		return false // a role's issue, its record not read: never taken for a person's
+	}
+	roles, _ := RolesTop(is, st)
+	return !roles
 }

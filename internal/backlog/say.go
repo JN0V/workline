@@ -3,9 +3,11 @@ package backlog
 import (
 	"fmt"
 	"html"
+	"slices"
 	"strings"
 
 	"github.com/JN0V/workline/internal/scale"
+	"github.com/JN0V/workline/internal/work"
 )
 
 // What the role says on an issue, in its one comment there (ADR-0038):
@@ -80,14 +82,14 @@ func offer(c Proposal) string {
 }
 
 // addSections says what a refine adds: the sections, the drafts among
-// them.
+// them; a role's text on top taken into the Need draft (ADR-0039,
+// amended).
 func addSections(added []string) string {
 	var drafts, sections []string
-	rewrite := false
+	rewrite := slices.Contains(added, DescriptionName)
 	for _, n := range added {
 		switch {
-		case n == DescriptionName:
-			rewrite = true
+		case n == DescriptionName, rewrite && work.MeaningOf(n) == work.Need:
 			continue
 		case Drafted(n):
 			drafts = append(drafts, n)
@@ -96,7 +98,7 @@ func addSections(added []string) string {
 	}
 	var what []string
 	if rewrite {
-		what = append(what, "Rewrite its description in plain words")
+		what = append(what, fmt.Sprintf("Take its text on top into the %s, rewritten in plain words as a draft for you to correct", work.Name(work.Need)))
 	}
 	if len(sections) > 0 || !rewrite {
 		add := fmt.Sprintf("add %s to it", and(sections))

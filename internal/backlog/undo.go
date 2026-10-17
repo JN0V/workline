@@ -294,7 +294,7 @@ func (p *Plan) splitDrafts(c Proposal, role string) (facts, drafts Proposal, ok 
 	}
 	facts, drafts = c, c
 	facts.Need, facts.Example, facts.Steps, facts.Validation, facts.Description = "", "", "", "", ""
-	facts.Repeated = nil // the drafts' own: said with them
+	facts.Lift, facts.Repeated = false, nil // the drafts' own: said with them
 	drafts.Scope, drafts.Verification, drafts.Sources = "", "", nil
 	_, facts.Added, _ = Refine(is.Body, facts, role)
 	_, drafts.Added, _ = Refine(is.Body, drafts, role)

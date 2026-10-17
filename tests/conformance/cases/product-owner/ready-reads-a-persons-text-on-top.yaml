@@ -1,0 +1,18 @@
+case: product-owner/ready-reads-a-persons-text-on-top
+about: "A person's text on top, with no Need section, is the Need, a person's (ADR-0039, amended): the engine reads it so, with no agent and nothing recorded — the task says it, and an issue whose other sections are there and a person's moves to ready. A role's text on top, an import no person edited, is no Need: ready is refused, the Need named missing."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 41, title: "Last sale missing", author: ann, insider: true, labels: [], body: "Exports drop the last sale of the day: 3 sales, 2 rows.\n\n## Validation\n\nAnn exports a day of 3 sales and counts 3 rows.\n\n---\n\n## Verification\n\nA test writes 3 rows and reads 3 back.\n\n## Scope\n\n`WriteRows` in `src/export/csv.go`.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 42, title: "Five whys", author: ann, insider: true, labels: [], body: "- **Five whys as a shared skill.** Root cause before any countermeasure in the\n  defect ledger; used by reviewer, developer, tester, architect.\n\nOpened from `docs/BACKLOG.md`, lines 10 to 11 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:e17512fffb50 -->\n\n## Validation\n\nA role asks why five times.\n\n---\n\n## Verification\n\nA test.\n\n## Scope\n\n`src/export/csv.go`.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:ready-text-on-top}
+expect:
+  findings:
+    - {rule: not-ready, where: "#42", message: "not moved to ready: Need is missing"}
+  run-files:
+    in/task.md: {contains: ["## #41 Last sale missing\n\nOpened by: ann, of the project\nSections: Need (the text on top, a person's), Verification, Validation (a person's), Scope"]}
+  forge:
+    issues:
+      - {id: 41, labels: [workline:ready]}
+      - {id: 42, labels: []}

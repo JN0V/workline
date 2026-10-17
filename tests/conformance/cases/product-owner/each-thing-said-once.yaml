@@ -1,5 +1,5 @@
 case: product-owner/each-thing-said-once
-about: "Each thing said once (ADR-0039, amended): an example or a bug's steps that say again what is above them — the share of their words already said in the text on top and the Need, common words out, past repeated-percent-max (40) — are not written, said in the role's line on the issue and in the summary. #103, an item imported from workline's old backlog as it was opened, and the drafts a night of the role wrote for it: its Example, 53% said above it, is left out. An example adding a fact is written; a bug's steps adding commands and output are written, steps saying the text on top again are not. How a person accepts it restates the case by design: never measured. What a person said yes to — a proposal accepted with the label — is written whole, measured when it was proposed."
+about: "Each thing said once (ADR-0039, amended): an example or a bug's steps that say again what is above them — the share of their words already said in the text on top and the Need, common words out, past repeated-percent-max (40) — are not written, said in the role's line on the issue and in the summary. #103, an item imported from workline's old backlog as it was opened, and the drafts a night of the role wrote for it: its text on top becomes the Need draft, and its Example, 47% said in that Need, is left out. An example adding a fact is written; a bug's steps adding commands and output are written, steps saying the text on top again are not. How a person accepts it restates the case by design: never measured. What a person said yes to — a proposal accepted with the label — is written whole, measured when it was proposed."
 given:
   repo: backlog
   forge:
@@ -19,8 +19,8 @@ given:
 run: {role: product-owner, event: schedule, ai: fake:said-once}
 expect:
   findings:
-    - {rule: repeated, where: "#103", message: "its Example draft was not written: 53% of its words are said above it already, past 40 (repeated-percent-max)"}
-    - {rule: done, where: "#103", message: "Refined #103: Need (draft), Validation (draft), Verification."}
+    - {rule: repeated, where: "#103", message: "its Example draft was not written: 47% of its words are said above it already, past 40 (repeated-percent-max)"}
+    - {rule: done, where: "#103", message: "Refined #103: Need (draft, from the text on top), Validation (draft), Verification."}
     - {rule: done, where: "#31", message: "Refined #31: Example (draft), Validation (draft)."}
     - {rule: done, where: "#32", message: "Refined #32: Steps to reproduce (draft)."}
     - {rule: repeated, where: "#33", message: "its Steps to reproduce draft was not written: 100% of its words"}
@@ -29,9 +29,9 @@ expect:
   forge:
     issues:
       - id: 103
-        body-contains: "## Need\n\n<!-- workline:draft -->\n\nA Linux user without brew or cargo needs `workline setup` to install lychee for them, so link checks work without manual steps.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **No brew, no cargo:**"
+        body-contains: "<!-- workline:import=docs/BACKLOG.md:128a7b71d461 -->\n\n## Need\n\n<!-- workline:draft -->\n\nA Linux user without brew or cargo needs `workline setup` to install lychee for them, so link checks work without manual steps.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **No brew, no cargo:**"
         body-lacks: "## Example"
-        comment-contains: "- Added: Need (draft), Validation (draft), Verification. Changed: —. Not written: the Example, which said again what is above it. See the issue's edit history."
+        comment-contains: "- Added: Need (draft), Validation (draft), Verification. Changed: —. Rewrote: the text on top as the Need, in plain words. Not written: the Example, which said again what is above it. See the issue's edit history."
       - {id: 31, body-contains: "Accountants closing a month cannot export it as one file: the export takes one day at a time.\n\n## Example\n\n<!-- workline:draft -->\n\nClosing September 2026"}
       - {id: 31, body-contains: "accountants export a month as one file, not one day at a time."}
       - {id: 32, body-contains: "Users who exclude a folder with a trailing slash still upload all of it.\n\n## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Run `snapsync push"}
@@ -40,3 +40,4 @@ expect:
         body-lacks: "## Steps to reproduce"
         comment-contains: "Not written: the Steps to reproduce, which said again what is above it."
       - {id: 34, body-contains: "## Example\n\n<!-- workline:draft -->\n\nThe export drops the last sale of the day."}
+      - {id: 103, body-lacks: "Installing lychee"}
