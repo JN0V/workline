@@ -426,13 +426,22 @@ func (rd *reader) rewrite(a *Act, m *material) string {
 	text := strings.TrimSpace(strings.Join(keep, "\n"))
 	m.items = append(m.items, item{name: "message", text: text, full: text}, item{name: "diff", text: diff, full: diff})
 	m.act = fmt.Sprintf("The message of commit %s, which the committer rewrote.", a.Ref)
-	for _, b := range strings.Split(a.By, ",") {
+	m.author, m.acted = actedBy(a.By)
+	return ""
+}
+
+// actedBy reads the agents and models a record names, <agent>:<model>, a
+// comma between two: the agent, and each model.
+func actedBy(list string) (string, []string) {
+	author := ""
+	var models []string
+	for _, b := range strings.Split(list, ",") {
 		provider, model, _ := strings.Cut(strings.TrimSpace(b), ":")
 		if model != "" {
-			m.author, m.acted = provider, append(m.acted, model)
+			author, models = provider, append(models, model)
 		}
 	}
-	return ""
+	return author, models
 }
 
 // diffChars is the most of a rewritten commit's diff its judge reads.
@@ -443,10 +452,14 @@ const codeLines = 300
 
 var issueRef = regexp.MustCompile(`#(\d+)`)
 
-// issueAct is a product owner's act's material: the issue as it reads
-// now, its comments up to the act's day, its record's own comments left
-// out; the code it names, at the last commit of that day, for a sources
-// or a closing; the parts of a split; the other issue of a duplicate.
+// issueAct is a product owner's act's material: the issue's text it read,
+// found by its record's digest — the body now, else the version the
+// forge's edit history keeps —, its comments up to the act's day, its
+// record's own comments left out; the code it names at the commit it read
+// at, for a sources or a closing; the parts of a split; the other issue
+// of a duplicate. A record an engine before ADR-0046 kept says none of
+// these: the issue as it reads now, the code at the last commit of the
+// act's day, said (older).
 func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 	id, err := strconv.Atoi(strings.TrimPrefix(a.Ref, "#"))
 	if err != nil {
@@ -464,6 +477,24 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 	if err != nil {
 		return fmt.Sprintf("the comments of %s could not be read: %v", a.Ref, err)
 	}
+	m.about = "The issue as it reads now, and its comments up to that day: its record, from an engine before ADR-0046, does not say the text the product owner read."
+	a.older = a.Commit == ""
+	if a.Body != "" {
+		var versions func() ([]string, error)
+		if e, ok := rd.o.Forge.(forge.Edited); ok {
+			versions = func() ([]string, error) { return e.Versions(id) }
+		}
+		body, edited, why := textRead(is.Body, a.Body, versions)
+		if why != "" {
+			return fmt.Sprintf("the text the product owner read (body %s) is %s", a.Body, strings.ReplaceAll(why, "the issue's", a.Ref+"'s"))
+		}
+		is.Body = body
+		m.about = "The issue as the product owner read it, its body unchanged since, and its comments up to that day."
+		if edited {
+			m.about = "The issue as the product owner read it, its body as the forge's edit history keeps it, and its comments up to that day."
+		}
+	}
+	m.author, m.acted = actedBy(a.Acted)
 	m.items = append(m.items, issueItem(is))
 	k := 0
 	for _, n := range notes {
@@ -486,7 +517,6 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 	}
 	st, _, _ := backlog.ReadState(forge.Bodies(notes), productOwner)
 	m.act = fmt.Sprintf("The product owner's `%s` on #%d, on %s, done alone at %s: %s", a.Kind, id, a.Day, a.By, a.Line)
-	m.about = "The issue as it reads now, and its comments up to that day: the text the product owner read is not recorded yet (ADR-0046)."
 	switch {
 	case kind == "split" && st != nil:
 		for _, child := range st.Split {
@@ -504,14 +534,42 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 			}
 		}
 	case (kind == "sources" || kind == "closing") && st != nil && len(st.Sources) > 0:
-		at, err := dayCommit(rd.o.Repo, a.Day)
-		if err != nil {
-			return err.Error()
+		at, which := a.Commit, "the commit it read at"
+		if at == "" {
+			if at, err = dayCommit(rd.o.Repo, a.Day); err != nil {
+				return err.Error()
+			}
+			which = "the last commit on the branch that day"
+		} else if _, err := git(rd.o.Repo, "rev-parse", "-q", "--verify", at+"^{commit}"); err != nil {
+			return fmt.Sprintf("%s, the commit it read at, is not in this clone", at)
 		}
 		m.items = append(m.items, codeAt(rd.o.Repo, at, st.Sources, codeLines)...)
-		m.about += fmt.Sprintf(" The code it names at %.7s, the last commit on the branch that day, %d lines at most.", at, codeLines)
+		m.about += fmt.Sprintf(" The code it names at %.7s, %s, %d lines at most.", at, which, codeLines)
 	}
 	return ""
+}
+
+// textRead is the issue's text the product owner read, found by its
+// digest (backlog.BodyDigest): its body now when it matches, else the
+// version its edit history keeps, edited then; why, when neither holds
+// it — versions nil, a forge keeping no history.
+func textRead(now, digest string, versions func() ([]string, error)) (text string, edited bool, why string) {
+	if backlog.BodyDigest(now) == digest {
+		return now, false, ""
+	}
+	if versions == nil {
+		return "", false, "not the issue's body now, and this forge keeps no edit history"
+	}
+	all, err := versions()
+	if err != nil {
+		return "", false, "not the issue's body now, and its edit history could not be read: " + err.Error()
+	}
+	for _, v := range all {
+		if backlog.BodyDigest(v) == digest {
+			return v, true, ""
+		}
+	}
+	return "", false, "neither the issue's body now nor a version its edit history keeps"
 }
 
 func issueItem(is *forge.Issue) item {

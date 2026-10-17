@@ -140,7 +140,7 @@ func Pre(runDir, repo string) int {
 	var findings []verdict.Finding
 	for _, name := range cfg.Gone {
 		findings = append(findings, verdict.Finding{Rule: "setting-gone", Level: "warn",
-			Message: name + " is no longer read: the role keeps no report, and never pauses (ADR-0038); take it off the project's settings"})
+			Message: name + " is no longer read: " + backlog.GoneSettings[name] + "; take it off the project's settings"})
 	}
 	judged := 0
 	tracked := trackedFiles(repo)

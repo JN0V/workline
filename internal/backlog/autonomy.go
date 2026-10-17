@@ -2,6 +2,7 @@ package backlog
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -23,6 +24,15 @@ const (
 
 // AutonomyLevels are the autonomy levels a project may pick.
 var AutonomyLevels = []string{Cautious, Normal, Enterprising}
+
+// GoneSettings are the settings the role no longer reads, each with why:
+// a project still setting one is told so.
+var GoneSettings = map[string]string{
+	// The pause lived on the report, gone (ADR-0038).
+	"ignored-runs-max": "the role keeps no report, and never pauses (ADR-0038)",
+	// Its own weekly issue, folded into every role's (ADR-0046).
+	"weekly-sample": "the weekly sample of every role's acts draws the product owner's, and says the level they suggest (ADR-0046)",
+}
 
 // byLevel is the setting the engine adds beside a role's own: its settings
 // as the level alone gives them (role.ByLevel).
@@ -96,10 +106,12 @@ func ReadConfig(settings map[string]any) (Config, error) {
 		}
 		c.Level = s
 	}
-	if v, ok := settings["ignored-runs-max"]; ok && v != nil {
-		// The pause lived on the report, gone (ADR-0038): a project still
-		// setting it is told, never silently ignored (principle 12).
-		c.Gone = append(c.Gone, "ignored-runs-max")
+	for _, name := range slices.Sorted(maps.Keys(GoneSettings)) {
+		if v, ok := settings[name]; ok && v != nil {
+			// A project still setting one is told, never silently ignored
+			// (principle 12).
+			c.Gone = append(c.Gone, name)
+		}
 	}
 	if v, ok := settings["changed-needs"]; ok && v != nil {
 		b, isBool := v.(bool)

@@ -20,11 +20,11 @@ expect:
     - {rule: act-false, where: "#41", message: "src/notes/n01.go:3 says \"const N01 = 11\""}
     - {rule: sample-not-read, where: "#42", message: "the text the product owner read (body 0123456789ab) is neither #42's body now nor a version its edit history keeps; for a person"}
     - {rule: act-stands, where: "#43", message: "independence: unknown"}
-    - {rule: sample-record-older, message: "#43, whose record an engine before"}
+    - {rule: sample-record-older, message: "the product owner's act on #43, read on its issue as it reads now and the last commit of its day, the model that acted unknown"}
   no-findings:
     - {rule: act-unproven}
     - {rule: sample-record-older, message: "#40"}
   forge:
     issues:
       - {id: 44, title: "workline: the weekly sample of every role's acts", comment-contains: "| #40 | product owner, `ready` | 2026-01-07, at normal | Moved #40 to ready | **false** |"}
-      - {id: 44, comment-contains: "Read on the issue as it reads now and the last commit of their day, the model that acted unknown: #43, whose record an engine before"}
+      - {id: 44, comment-contains: "\nThe product owner's act on #43, read on its issue as it reads now and the last commit of its day, the model that acted unknown: an engine before ADR-0046 kept no `at`, `model` nor `body` in its record.\n"}
