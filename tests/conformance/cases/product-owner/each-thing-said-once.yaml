@@ -1,0 +1,34 @@
+case: product-owner/each-thing-said-once
+about: "Each thing said once (ADR-0039, amended): a draft of the role's that says again what is above it is not written — the share of its words already said, common words out, past repeated-percent-max (40) —, said in the role's line on the issue and in the summary. #103, an item imported from workline's old backlog as it was opened: its text on top becomes the Need draft, and the Example a night of the role wrote for it, 53% said in that Need, is left out. A person's text on top is the Need: a Need draft restating it is left out, an Example adding a fact is written; a bug's steps adding commands and output are written, steps saying the text on top again are not. How a person accepts it restates the case by design: never measured."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - {id: 103, title: "Install lychee on Linux without brew or cargo", author: JN0V, insider: true, labels: [], body: "- **Installing lychee on Linux without brew or cargo.** `setup` then only\n  names the page; its release binaries could be fetched, pinned.\n\nOpened from `docs/BACKLOG.md`, lines 157 to 158 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:128a7b71d461 -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 31, title: "Export a month", author: ann, insider: true, labels: [], body: "Accountants closing a month cannot export it as one file: the export takes one day at a time.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 32, title: "Exclude with a slash", author: ann, insider: true, labels: [], body: "Users who exclude a folder with a trailing slash still upload all of it.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 33, title: "Last sale", author: ann, insider: true, labels: [], body: "The export drops the last sale of the day: 3 sales, 2 rows.", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:said-once}
+expect:
+  findings:
+    - {rule: repeated, where: "#103", message: "its Example draft was not written: 53% of its words are said above it already, past 40 (repeated-percent-max)"}
+    - {rule: done, where: "#103", message: "Refined #103: Need (draft, from the text on top), Validation (draft), Verification."}
+    - {rule: repeated, where: "#31", message: "its Need draft was not written: 86% of its words"}
+    - {rule: done, where: "#31", message: "Refined #31: Example (draft), Validation (draft)."}
+    - {rule: done, where: "#32", message: "Refined #32: Steps to reproduce (draft)."}
+    - {rule: repeated, where: "#33", message: "its Steps to reproduce draft was not written: 100% of its words"}
+    - {rule: done, where: "#33", message: "Refined #33: Validation (draft)."}
+  forge:
+    issues:
+      - id: 103
+        body-contains: "Opened from `docs/BACKLOG.md`, lines 157 to 158 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:128a7b71d461 -->\n\n## Need\n\n<!-- workline:draft -->\n\nOn Linux without brew or cargo, `workline setup` cannot install lychee, the link checker: it names the lychee page and stops.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **No brew, no cargo:**"
+        body-lacks: "## Example"
+        comment-contains: "- Added: Need (draft), Validation (draft), Verification. Changed: —. Rewrote: the text on top as the Need, in plain words. Not written: the Example, which said again what is above it. See the issue's edit history."
+      - {id: 103, body-lacks: "Installing lychee"}
+      - id: 31
+        body-contains: "Accountants closing a month cannot export it as one file: the export takes one day at a time.\n\n## Example\n\n<!-- workline:draft -->\n\nClosing September 2026"
+        body-lacks: "## Need"
+        comment-contains: "- Added: Example (draft), Validation (draft). Changed: —. Not written: the Need, which said again what is above it. See the issue's edit history."
+      - {id: 31, body-contains: "accountants export a month as one file, not one day at a time."}
+      - {id: 32, body-contains: "Users who exclude a folder with a trailing slash still upload all of it.\n\n## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Run `snapsync push"}
+      - {id: 33, body-contains: "The export drops the last sale of the day: 3 sales, 2 rows.\n\n## Validation", body-lacks: "## Steps to reproduce"}

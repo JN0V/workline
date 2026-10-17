@@ -1,5 +1,5 @@
 case: reviewer/finding-cause-outside-diff-becomes-issue
-about: "A finding whose cause lies outside the change is not the author's to fix there: it is not reported on the merge request, it becomes an issue labelled needs-triage, written for a person first — what a person sees, then the cause in the code folded, the lens and the judge hidden, one line saying where it was found —, with the product owner's state — the digest of its text kept, so the product owner may rewrite it in plain words until a person edits it; one an open issue holds already is not opened again."
+about: "A finding whose cause lies outside the change is not the author's to fix there: it is not reported on the merge request, it becomes an issue labelled needs-triage, written for a person first — what a person sees, then the cause in the code folded, the lens and the judge hidden, one line saying where it was found —, with the product owner's state — the digest of its text kept, so the product owner may take it into the Need it drafts until a person edits it; one an open issue holds already is not opened again."
 given:
   repo: reviewed
   setup: ["printf '\\nfunc Double(n int) int { return 2 * n }\\n' >> calc/calc.go && git commit -qam 'feat: double a count'"]

@@ -1,5 +1,5 @@
 case: product-owner/refine-writes-the-persons-part-first
-about: "Refining, the role writes an issue's sections in the reader's order — the person's part, Need, an example or a bug's steps to reproduce, Validation, above a thematic break; the builder's part, Verification and Scope, below it — inserting a section it adds among those there, never moving a person's; the example and the steps are drafts, never required; its comment on the issue says in one line what it added and changed, and where the text before is."
+about: "Refining, the role writes an issue's sections in the reader's order — the person's part, Need, an example or a bug's steps to reproduce, Validation, above a thematic break; the builder's part, Verification and Scope, below it — inserting a section it adds among those there, never moving a person's; the example and the steps are drafts, never required; a Need draft saying again the reporter's text on top is not written, that text being the Need (ADR-0039); its comment on the issue says in one line what it added and changed, and where the text before is."
 given:
   repo: backlog
   forge:
@@ -17,7 +17,8 @@ expect:
         labels: [workline:to-refine, workline:draft, workline:proposed]
         comment-contains: "- Added: Need (draft), Example (draft), Validation (draft), Verification, Scope. Changed: —. See the issue's edit history."
       - id: 10
-        body-contains: "The export drops the last sale of the day.\n\n## Need\n\n<!-- workline:draft -->\n\nAccountants lose the last sale of each day in the daily export.\n\n## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Make 3 sales on 8 Oct, the last at 18:59.\n2. Export 8 Oct.\n- **Expected:** 3 rows. **Actual:** 2 rows. Version 0.21.0.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Last sale:**"
+        body-lacks: "## Need"
+        body-contains: "The export drops the last sale of the day.\n\n## Steps to reproduce\n\n<!-- workline:draft -->\n\n1. Make 3 sales on 8 Oct, the last at 18:59.\n2. Export 8 Oct.\n- **Expected:** 3 rows. **Actual:** 2 rows. Version 0.21.0.\n\n## Validation\n\n<!-- workline:draft -->\n\n- **Last sale:**"
       - id: 11
         body-contains: "## Need\n\nAnn needs the month's total right.\n\n## Validation\n\nAnn adds up a known month by hand.\n\n---\n\n## Verification\n\nA test writes three rows and reads three lines back.\n\n## Scope\n\nWriteRows in src/export/csv.go."
         labels: [workline:to-refine]

@@ -305,7 +305,7 @@ func Pre(runDir, repo string) int {
 					"issue": is.ID, "why": "its drafts accepted (" + backlog.AcceptedLabel(b) + ")", "ticked": who, "own": true}})
 			}
 		} else if r, cleared := backlog.SpecCleared(is, comments); found && err == nil && cfg.SpecReview && cleared &&
-			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is.Body, st, false)) == 0 {
+			!slices.Contains(is.Labels, backlog.LabelReady) && len(backlog.NotReady(is, st, false)) == 0 {
 			// The reviewer read its spec as it is and found no important
 			// finding open: the hold lifts, and the engine moves it to
 			// ready, with no agent (#128).
@@ -331,7 +331,7 @@ func Pre(runDir, repo string) int {
 				Message: "its state comment does not read (" + err.Error() + "): the issue is held — not judged, nothing written on it — until a person mends that comment, or deletes it for a state anew"})
 			continue
 		}
-		if perr := backlog.ProposalUnread(comments, role); perr != nil && len(backlog.NotReady(is.Body, nil, true)) > 0 {
+		if perr := backlog.ProposalUnread(comments, role); perr != nil && len(backlog.NotReady(is, nil, true)) > 0 {
 			// The text last proposed to its reporter does not read (#302):
 			// an agreement to it writes nothing; said while the body still
 			// lacks a section, a person's to complete.
@@ -906,8 +906,10 @@ func acceptedBy(b forge.Backlog, is forge.Issue) (string, error) {
 // answers — its own drafts rewritten whole, a person's sections kept.
 func revise(is forge.Issue, st *backlog.State, a *backlog.Answer, max int) string {
 	mine := backlog.Own(is, st)
-	if ok, _ := backlog.Rewrite(is, st, true); ok {
-		mine = append(mine, "the description, as `description`")
+	if lift(is, st) || slices.Contains(mine, work.ByMeaning(is.Body)[work.Need].Heading) {
+		if ok, _ := backlog.RolesTop(is, st); ok {
+			mine = append(mine, "its text on top, a role's: taken from the top into the `need` you give")
+		}
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "A person of the project commented on what you proposed on it (@%s, the last comments below): revision %d of %d. Read them as asking you to revise: ", a.Who, a.Revision, max)
@@ -1065,12 +1067,10 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		}
 		fmt.Fprintf(b, "Opened by: %s%s\n", is.Author, whose)
 	}
-	if ok, _ := backlog.Rewrite(is, st, false); ok {
-		// A role's text no person edited (ADR-0038, amended): the engine
-		// tells so, from what it recorded.
-		b.WriteString("Description: the text above its sections is a role's, and no person edited it — rewrite it in plain words, as `description` in a `refine`\n")
-	} else if st.Plain != "" && st.Plain == backlog.DescriptionDigest(is.Body) {
-		b.WriteString("Description: rewritten in plain words by you — again only as a person's comment asks\n")
+	if lift(is, st) {
+		// A role's text no person edited, and no Need yet (ADR-0039,
+		// amended): the engine tells so, from what it recorded.
+		fmt.Fprintf(b, "Description: the text above its sections is a role's, and no person edited it — give it as the `need` draft, rewritten in plain words: the engine takes it from the top, its %s said once\n", work.Name(work.Need))
 	}
 	if st.Title != "" && st.Title != is.Title {
 		b.WriteString("Title: a person's, set after the role's (kept)\n")
@@ -1110,7 +1110,7 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		}
 		fmt.Fprintf(b, "Waits on: %s — ordered after the open ones; a depend only adds what is missing; an undepend only takes off a link set by the role\n", strings.Join(said, ", "))
 	}
-	fmt.Fprintf(b, "Sections: %s\n", sections(is.Body, st))
+	fmt.Fprintf(b, "Sections: %s\n", sections(is, st))
 	fmt.Fprintf(b, "Sources: %s. Confirmed at: %s.\n", sources, st.Confirmed)
 	if len(files) > 0 {
 		fmt.Fprintf(b, "Code it names, given below: %s.\n", strings.Join(files, ", "))
@@ -1211,12 +1211,16 @@ func placed(is forge.Issue) string {
 // sections says which of the four sections an issue's body has — an
 // example or the steps to reproduce after them, never required —, and
 // which are drafts no person made theirs yet.
-func sections(body string, st *backlog.State) string {
+func sections(is forge.Issue, st *backlog.State) string {
+	body := is.Body
 	have := work.ByMeaning(body)
 	var there, missing []string
 	for _, m := range append(slices.Clone(work.Required), work.Example, work.Steps) {
 		text, name := strings.TrimSpace(have[m].Text), have[m].Heading
 		switch {
+		case m == work.Need && text == "" && backlog.NeedOnTop(is, st):
+			// A person's text on top is its Need (ADR-0039, amended).
+			there = append(there, work.Name(m)+" (the text on top, a person's)")
 		case text == "" && !slices.Contains(work.Required, m):
 		case text == "":
 			missing = append(missing, work.Name(m))
@@ -1438,13 +1442,15 @@ func readyOpen(is forge.Issue, st *backlog.State, cfg backlog.Config) bool {
 	if s, ok := cfg.Acts["ready"]; !ok || s.Mode == backlog.Off || slices.Contains(is.Labels, backlog.LabelReady) {
 		return false
 	}
-	have := work.ByMeaning(is.Body)
-	for _, m := range work.Required {
-		if strings.TrimSpace(have[m].Text) == "" || backlog.IsDraft(is.Body, m, st) {
-			return false
-		}
-	}
-	return true
+	return len(backlog.NotReady(is, st, false)) == 0
+}
+
+// lift says whether the agent is told an issue's text on top is a role's
+// to take into the Need it drafts: no person edited it, and the issue has
+// no Need yet (ADR-0039, amended).
+func lift(is forge.Issue, st *backlog.State) bool {
+	ok, _ := backlog.RolesTop(is, st)
+	return ok && strings.TrimSpace(work.ByMeaning(is.Body)[work.Need].Text) == ""
 }
 
 // releases says where the project stands: its last release, and the

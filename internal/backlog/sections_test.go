@@ -28,11 +28,11 @@ func TestReadyFollowsTheTable(t *testing.T) {
 	newer := strings.NewReplacer("## Need", "## Problem", "## Validation", "## Accepted when").Replace(oldNames)
 	mixed := strings.Replace(oldNames, "## Need", "## Problem", 1)
 	for _, body := range []string{oldNames, newer, mixed} {
-		if missing := NotReady(body, nil, false); missing != nil {
+		if missing := NotReady(forge.Issue{Body: body}, nil, false); missing != nil {
 			t.Errorf("%q: not ready: %v", body, missing)
 		}
 	}
-	if missing := NotReady(noAccept, nil, false); !slices.Equal(missing, []string{"Accepted when is missing"}) {
+	if missing := NotReady(forge.Issue{Body: noAccept}, nil, false); !slices.Equal(missing, []string{"Accepted when is missing"}) {
 		t.Errorf("a missing section is named as the table writes it: %v", missing)
 	}
 	// A draft recorded under the old heading is the role's under the new.
@@ -40,7 +40,7 @@ func TestReadyFollowsTheTable(t *testing.T) {
 	st := &State{Wrote: map[string]string{"Validation": BodyDigest(draft)}}
 	for _, h := range []string{"## Validation", "## Accepted when"} {
 		body := "## Need\n\nA.\n\n" + h + draft + "\n\n## Verification\n\nC.\n\n## Scope\n\nD."
-		if !IsDraft(body, work.Validation, st) || NotReady(body, st, false) == nil || NotReady(body, st, true) != nil {
+		if !IsDraft(body, work.Validation, st) || NotReady(forge.Issue{Body: body}, st, false) == nil || NotReady(forge.Issue{Body: body}, st, true) != nil {
 			t.Errorf("%s: a draft of the role's not accepted holds ready back, accepted it does not", h)
 		}
 		if own := Own(forge.Issue{Body: body}, st); !slices.Equal(own, []string{strings.TrimPrefix(h, "## ")}) {

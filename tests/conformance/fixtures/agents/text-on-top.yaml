@@ -1,0 +1,15 @@
+- refine:
+    issue: 7
+    need: "When a defect is found, the team fixes what it sees, not why it happened, and the same defect comes back."
+    why: "The imported text is one line of internal words."
+- ask: {issue: 7, questions: "Which defect came back after a fix that missed its root cause?", why: "no real case"}
+- refine:
+    issue: 8
+    need: "Exporting a CSV file drops its last row: 3 sales give a file of 2 rows."
+    scope: "WriteRows in src/export/csv.go."
+    sources: [src/export/csv.go]
+    why: "A finding in code words."
+- refine: {issue: 10, need: "The export takes too long: 9 minutes for 1.2 GB.", why: "said again"}
+- refine: {issue: 11, need: "Rows are lost.", why: "said again"}
+- refine: {issue: 12, need: "The export loses the last row of the day.", why: "the role's own text, rewritten before"}
+- refine: {issue: 13, description: "A cache would help.", why: "the field an earlier engine asked for"}

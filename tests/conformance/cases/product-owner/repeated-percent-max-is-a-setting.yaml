@@ -1,0 +1,18 @@
+case: product-owner/repeated-percent-max-is-a-setting
+about: "How much of a draft may be said above it already is the project's setting, repeated-percent-max (1 to 100, 40 by default; ADR-0039, amended): at 60, #103's Example, 53% said in its Need, is written."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {repeated-percent-max: 60}
+  forge:
+    issues:
+      - {id: 103, title: "Install lychee on Linux without brew or cargo", author: JN0V, insider: true, labels: [], body: "- **Installing lychee on Linux without brew or cargo.** `setup` then only\n  names the page; its release binaries could be fetched, pinned.\n\nOpened from `docs/BACKLOG.md`, lines 157 to 158 by the product-owner role.\n\n<!-- workline:import=docs/BACKLOG.md:128a7b71d461 -->", comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:said-once-setting}
+expect:
+  findings:
+    - {rule: done, where: "#103", message: "Refined #103: Need (draft, from the text on top), Example (draft)."}
+  forge:
+    issues:
+      - {id: 103, body-contains: "it names the lychee page and stops.\n\n## Example\n\n<!-- workline:draft -->\n\nOn a Linux machine with neither brew nor cargo"}

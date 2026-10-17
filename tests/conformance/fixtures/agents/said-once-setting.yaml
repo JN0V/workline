@@ -1,0 +1,5 @@
+- refine:
+    issue: 103
+    need: "On Linux without brew or cargo, `workline setup` cannot install lychee, the link checker: it names the lychee page and stops."
+    example: "On a Linux machine with neither brew nor cargo, `workline setup` prints the lychee page and stops. The user installs it by hand."
+    why: "The imported item is in a builder's words."
