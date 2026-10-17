@@ -10,7 +10,7 @@ expect:
   status: pass
   agent-calls: 0
   findings:
-    - {rule: review-not-whole, message: "would take 2 parts of the role's context budget, past parts-max (1): no lens asked"}
+    - {rule: review-not-whole, message: "would take 2 parts, each within the role's context budget and diff-lines-max, past parts-max (1): no lens asked"}
   no-findings: [{rule: part-unanswered}, {rule: correctness}]
   summary: "not reviewed whole"
   run-files: {out/review.json: {contains: '"complete": false'}}

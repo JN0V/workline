@@ -10,7 +10,7 @@ expect:
   status: pass
   calls: [{task: part, for: 1-lenses}, {task: part, for: 1.2-lenses}, {task: part, for: 1.2-lenses}, {task: judge, for: judge/01}]
   findings:
-    - {rule: correctness, where: "calc/calc.go:11", message: "Average divides by one less than the count (verified"}
+    - {rule: correctness, where: "calc/calc.go:11", message: "Average divides by one less than the count — the mean of [2, 4] comes out 6, and one value divides by zero Fix: divide by len(values) (verified"}
     - {rule: part-unanswered, where: 1.2-lenses}
     - {rule: lens-failed, message: "asked together, part 2 of 2, got no answer that reads"}
   no-findings: [{rule: edge-cases}]

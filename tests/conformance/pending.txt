@@ -1,6 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-reviewer/change-too-large-read-in-parts
-reviewer/change-in-parts-a-part-failed-not-whole
-reviewer/change-past-parts-max-asks-nobody
-reviewer/change-past-diff-lines-max-read-in-parts
