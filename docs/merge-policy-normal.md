@@ -26,7 +26,10 @@ merge: {autonomy: normal}   # a project's choice, never a default
     (not [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md), a page they link to, a prompt…);
   - their head's verdict passed, every agent's review whole.
 - **Four kinds, by what changed**:
-  - `records`: only when docs were read (`judged`);
+  - `records`: only when docs were read (`judged`) — gardening's
+    `workline/documentalist/records` among them, for the docs judged on
+    merged merge requests
+    ([more](../roles/documentalist/docs/gardening.md#records-kept-on-merged-merge-requests));
   - `derived`: derived blocks, as their commands give them;
   - `docs`: doc text a role wrote — the release's docs fix, gardening's;
   - `reader`: pages an agent reworded for their reader, which wait for a

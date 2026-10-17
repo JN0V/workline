@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: c077e9f1
+checked: edc68fd6
 verified: agent:claude-code
 ---
 # Documentalist — at the push, the release and the adoption
@@ -27,6 +27,33 @@ moves to the commit the task gave.
   judges it [in parts](tasks.md#judged-in-parts), there as with
   `workline docs` and at the release
   ([#458](https://github.com/JN0V/workline/issues/458)).
+
+### A doc found with nothing to fix: no commit
+
+On a person's merge request, the agent may find nothing wrong in a doc yet
+not vouch for every sentence: its patch only records when (`judged`). That
+took a commit on their branch, 41 of 42 in two weeks
+([#463](https://github.com/JN0V/workline/issues/463)). Now:
+
+- **Nothing is pushed for it.** Its record is kept, hidden, in the
+  documentalist's comment on the merge request: the commit judged, and the
+  ids of the doc and its sources there
+  ([ADR-0013, amended](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-17-on-a-persons-merge-request-the-record-waits-in-a-comment)).
+- **The next push does not judge it again** while the doc and its sources
+  stay the same; a change to either has it judged again.
+- **Once merged, gardening writes `judged`** on the default branch
+  ([records](gardening.md#records-kept-on-merged-merge-requests)).
+- **A real fix is one commit**, naming the doc: "docs: bring
+  docs/tech/auth.md in line with the code". A move of `checked` too.
+- **A fork's merge request** keeps its record too.
+- **Committed, as before**, where the comment cannot keep it:
+  - a forge that does not say which commit a merge request became
+    (`local`, `cmd:`);
+  - a comment the job cannot read, said (`record-unread`): on GitLab, give
+    the judging job `GITLAB_TOKEN`
+    ([ci-gitlab.md](../../../docs/ci-gitlab.md#what-the-template-does));
+  - a doc with a source in another repository.
+- Only a comment a bot or a person of the project wrote is read.
 
 ### At the push
 

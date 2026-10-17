@@ -183,6 +183,9 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
     **Run pipeline**, has every lens read the whole change once
     ([how](../roles/reviewer/docs/ready.md); not tried on
     a GitLab yet).
+- **The documentalist** reads, with the same `GITLAB_TOKEN`, the records
+  its note keeps instead of commits; else it commits them, said
+  (`record-unread`, [more](../roles/documentalist/docs/push.md#a-doc-found-with-nothing-to-fix-no-commit)).
 
 ## The product owner
 

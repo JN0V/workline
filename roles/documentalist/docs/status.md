@@ -20,11 +20,11 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. Two items are buildable: no
-   commit on a person's pull request for a doc only read
-   ([#463](https://github.com/JN0V/workline/issues/463)), and a doc
+1. **Nothing buildable in Missing**: open. One item is buildable: a doc
    judged on its change alone read whole at night, later
-   ([#462](https://github.com/JN0V/workline/issues/462)). DomoticsCore's
+   ([#462](https://github.com/JN0V/workline/issues/462)). No commit on a
+   person's pull request for a doc only read is built (Built:
+   [#463](https://github.com/JN0V/workline/issues/463)). DomoticsCore's
    docs to split are done
    ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211)).
    [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
@@ -99,6 +99,13 @@ its evaluation in
   `parts-judged-once-a-run`, `condense-waits-for-its-merge-request`.
 - **Its stale merge requests rebuilt or closed**: `gardening-branch-*`.
 - **People's pull requests settled on its own lines**: `persons-branch*`.
+- **No commit on a person's pull request for a doc only read**
+  ([#463](https://github.com/JN0V/workline/issues/463)): its record kept
+  in the documentalist's comment, read by the next push, written on `main`
+  by gardening in `records`; a real fix one commit naming the doc; GitHub
+  and GitLab: `judged-kept-*`,
+  `judged-committed-where-the-forge-lists-no-merge`,
+  `patch-pushed-to-the-merge-request`.
 - **The merge policy**, `cautious`, and `normal` for workline's own
   routine pull requests
   ([ADR-0042](../../../docs/adr/0042-the-engine-merges-by-the-projects-policy.md)):
@@ -174,10 +181,9 @@ its evaluation in
 
 1. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
-2. **No commit on a person's pull request for a doc only read**: of the
-   42 commits it pushed to people's pull requests on workline, 41 only
-   moved `judged`, `verified` or `judged-in-parts`
-   ([#463](https://github.com/JN0V/workline/issues/463)).
+2. **No commit for a doc only read, to count**: two weeks of real use,
+   commits to people's pull requests changing only record lines, 0
+   ([#463](https://github.com/JN0V/workline/issues/463)'s Verification).
 3. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
