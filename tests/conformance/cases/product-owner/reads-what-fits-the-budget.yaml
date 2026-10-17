@@ -1,0 +1,26 @@
+case: product-owner/reads-what-fits-the-budget
+about: "Three issues to read, each naming a file of about 52,000 characters, and a context budget of 120,000 tokens: the task holds the two that fit — a person's newest first —, and the agent reads them; the oldest is said left for the next run, which reads it first — never a task over the budget, refused whole every night, the role stuck (#427)."
+given:
+  repo: backlog
+  setup:
+    - "for n in 1 2 3; do awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0126d\\n\", i }' > src/big$n.go; done && git add src && git commit -qm 'feat: three big files'"
+  forge:
+    issues:
+      - {id: 9, title: "First of three", body: "Rows lost in `src/big1.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Second of three", body: "Rows lost in `src/big2.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Third of three", body: "Rows lost in `src/big3.go`.", labels: [], comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: "cmd:cat > /dev/null; echo '[]'", then: again}
+expect:
+  status: pass
+  agent-calls: 2
+  findings:
+    - {rule: issues-cut, message: "1 of the issues to read left for the next run, read first then (#9)"}
+  no-findings: [{rule: prompt-over-budget}]
+  run-files:
+    in/issues-read: {contains: "9"}
+    in/task.md: {contains: "## #9 First of three"}
+  forge:
+    issues:
+      - {id: 9, comment-contains: "judged: "}
+      - {id: 10, comment-contains: "judged: "}
+      - {id: 11, comment-contains: "judged: "}

@@ -1,8 +1,8 @@
 ---
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
-verified: agent:claude-code
-checked: 21e91932
+verified: agent:documentalist
+checked: 18109269
 judged: b5899f5
 status: draft
 ---

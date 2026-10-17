@@ -1,0 +1,24 @@
+case: product-owner/capped-ask-recorded-waits-on-no-one
+about: "A question an earlier engine recorded as a proposal past the night's limit, the label on, as on a real issue on 2026-10-15: it waits on no one — not counted against proposals-max, here 1, the label coming off, nothing proposed shown —, and its issue is read again first, the question the agent's to ask anew (#430)."
+given:
+  repo: backlog
+  config:
+    roles: {product-owner: {settings: {proposals-max: 1}}}
+  forge:
+    issues:
+      - id: 12
+        title: "Duplicates after restart"
+        body: "Duplicates after a restart."
+        author: dee
+        insider: true
+        labels: [workline:proposed]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\nproposed:\n  - act: ask\n    line: 'Ask #12''s reporter'\n    capped: true\n    proposal: {do: ask, issue: 12, questions: 'What is seen today after a restart?'}\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  status: pass
+  no-findings: [{rule: proposed, where: "#12"}]
+  run-files:
+    in/task.md: {contains: "## #12 Duplicates after restart"}
+  forge:
+    issues:
+      - {id: 12, labels: [], posted: 0, comment-lacks: ["**Proposes**", "label: workline:proposed"]}

@@ -1,0 +1,5 @@
+# Four questions in one run, one past ask's cap of 3 a run at normal.
+- ask: {issue: 9, questions: "Which rows are lost: the last one, or any?", why: "unclear"}
+- ask: {issue: 10, questions: "Which export, CSV or XML?", why: "unclear"}
+- ask: {issue: 11, questions: "Since which version?", why: "unclear"}
+- ask: {issue: 12, questions: "What is seen today after a restart?", why: "unclear"}

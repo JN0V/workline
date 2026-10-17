@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 733da152
+checked: 9fcf6cf6
 verified: agent:documentalist
 judged: af2d6fb
 ---
@@ -100,7 +100,10 @@ What else a case can give, run and expect, and how each is checked, is in
   put on its comments, by the comment's id (`{emoji, author, writer}`);
   `edits`, its earlier bodies, newest first, as GitHub's edit history
   keeps them, a body set adding the one it replaces. A comment is its text, or `{body,
-  author, insider, bot, id}`, its id its place from 1 when not given; with
+  author, insider, bot, id}`, its id its place from 1 when not given, kept
+  once a comment before it is deleted; an edit keeps a comment's author;
+  `posted` counts the comments posted on an issue, each one a mail on a
+  real forge; with
   `scoped-labels: true`, the forge's labels are scoped, as GitLab's. A
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines

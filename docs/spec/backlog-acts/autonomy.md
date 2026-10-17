@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 21e91932
+checked: 18109269
 verified: agent:claude-code
 ---
 # Autonomy and caps
@@ -36,7 +36,10 @@ acts:
   depend: {mode: off, max: 5}
 ```
 
-- `act`: done, up to `max` a run; past it, proposed.
+- `act`: done, up to `max` a run; past it, proposed — but a question to
+  a reporter (`ask`), the role's to ask at a later run: held, never a
+  person's to answer, no label nor line on the issue, its issue read
+  again first (`Pending.Held`, #430).
 - `propose`: proposed on its issue for a person to accept, not done.
 - `off`: dropped; a closing off is said on its issue for a person to close
   ([Closing](closing.md)).
