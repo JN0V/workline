@@ -35,8 +35,16 @@ state folded under it (`backlog.FormatState`):
 - once set aside: that nothing more is proposed until the issue changes.
 
 Written at the end of each run (`Plan.Persist`), edited in place, never a
-new comment: one mail when it is created, none after. A comment with
-nothing to say is the state alone, as before.
+second comment. When a proposal starts waiting on a person — the label
+put on —, the comment held before the run is posted anew, last, under
+the role's own account, and the one before deleted (`forge.Renewer`):
+a forge mails whoever follows the issue for a new comment, never for an
+edit (ADR-0038, amended). So one mail when it is created, one per
+proposal, none for an update; a comment created in the same run is not
+posted again. The new one is posted first; a note GitLab lets only its
+author delete is left, and the last is read. A `cmd:` forge and the
+local one edit in place. A comment with nothing to say is the state
+alone, as before.
 
 **The label.** `workline:proposed` (on a forge with scoped labels,
 GitLab: `workline::proposed`), created once, is on an open issue while it

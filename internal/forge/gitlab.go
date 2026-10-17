@@ -868,6 +868,37 @@ func (g *gitlab) Sticky(t Target, body, marker string, create bool) error {
 	return err
 }
 
+// Renew posts the note anew, the token's, then deletes the ones carrying
+// marker before it: GitLab mails an issue's participants for a new note,
+// and for an edit only a user it newly mentions (Renewer). A note GitLab
+// lets only its author or a Maintainer delete is left; the last one is
+// read.
+func (g *gitlab) Renew(t Target, body, marker string) error {
+	out, err := g.api("--paginate", path(t)+"/notes?sort=asc&order_by=created_at&per_page=100")
+	if err != nil {
+		return err
+	}
+	notes, err := pages[struct {
+		ID   int    `json:"id"`
+		Body string `json:"body"`
+	}](out)
+	if err != nil {
+		return err
+	}
+	if _, err := g.api("-X", "POST", path(t)+"/notes", "-f", "body="+body+"\n\n"+marker); err != nil {
+		return err
+	}
+	for _, n := range notes {
+		if !strings.Contains(n.Body, marker) {
+			continue
+		}
+		if _, err := g.api("-X", "DELETE", fmt.Sprintf("%s/notes/%d", path(t), n.ID)); err != nil && !errors.Is(err, errNotFound) && !errors.Is(err, errForbidden) {
+			return err
+		}
+	}
+	return nil
+}
+
 func (g *gitlab) Label(t Target, add, remove []string) error {
 	args := []string{"-X", "PUT", path(t)}
 	if len(add) > 0 {

@@ -630,6 +630,7 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 			return err
 		}
 		var add, remove []string
+		renew := false // a proposal starts waiting on a person: its comment posted anew
 		switch {
 		case is.Closed:
 			if st.Label != "" && slices.Contains(is.Labels, st.Label) {
@@ -669,6 +670,11 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 					ensured = true
 				}
 				add, st.Label = append(add, proposed), proposed
+				// An edit mails nobody, a new comment whoever follows the
+				// issue: the comment held before this run is posted anew,
+				// the role's own, last (ADR-0038, amended). One written in
+				// this run was mailed as it was created.
+				renew = slices.Contains(p.Visit, id)
 			case waits && !slices.Contains(is.Labels, st.Label):
 				add = append(add, st.Label) // taken off by a bot, or lost: put back
 			case !waits && st.Label != "":
@@ -688,7 +694,11 @@ func (p *Plan) Persist(f forge.Forge, role string) error {
 				}
 			}
 		}
-		if after := FormatState(*st); after != before {
+		if r, ok := f.(forge.Renewer); ok && renew {
+			if err := r.Renew(t, FormatState(*st), StateMarker(role)); err != nil {
+				return err
+			}
+		} else if after := FormatState(*st); after != before {
 			if err := f.Sticky(t, after, StateMarker(role), false); err != nil {
 				return err
 			}

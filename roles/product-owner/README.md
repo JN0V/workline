@@ -45,9 +45,9 @@ is on each issue; you answer there
 
 ## On each issue
 
-- **Its one comment**, created once, then edited in place: what it did,
-  what it proposes, what it wants from you; what it knows of the issue,
-  folded.
+- **Its one comment**, edited in place: what it did, what it proposes,
+  what it wants from you; what it knows of the issue, folded. Posted
+  anew when it proposes something: one mail per proposal.
 - **The label `workline:proposed`** (GitLab: `workline::proposed`) while
   the issue waits on you: its drafts, or a proposal.
 - **What waits on you** is a saved filter on that label.

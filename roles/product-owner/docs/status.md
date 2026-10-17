@@ -57,6 +57,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `edited-draft-is-the-persons`, `labels-follow-the-state`,
   `obsolete-said-when-off`, `draft-links-decisions-and-says-closed`,
   `summary-in-plain-words`.
+- **What the trial's first week showed**: a proposal mails once,
+  `proposal-on-a-*-posted-*`, `proposal-update-posts-nothing`.
 - **A person's word first**: `set-aside-*`, `brought-back-*`,
   `left-with-nothing-read-again-once`, `task-says-whose-sections`.
 - **Issues a person reads**, the person's part on top:

@@ -1,6 +1,6 @@
 # ADR-0038: The product owner proposes on the issue; a person answers there, with forge labels
 
-- **Status:** accepted — built (amended below, five times on 2026-10-09, once on 2026-10-10); a week's trial running
+- **Status:** accepted — built (amended below, five times on 2026-10-09, once each on 2026-10-10, 10-11 and 10-17); a week's trial running
 - **Date:** 2026-10-08
 - **Supersedes:** the report issue in
   [ADR-0018](0018-the-product-owner.md) ("one report issue") and
@@ -373,3 +373,28 @@ Decided:
   ([ADR-0039](0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
   rejects it); one sentence in the instruction would promise what was
   never tried.
+
+## Amendment (2026-10-17): what the trial's first week showed
+
+A week of nights on workline and on DomoticsCore: 18 issues waited on a
+person, none answered.
+
+- **A proposal is a new comment** ([#426](https://github.com/JN0V/workline/issues/426)).
+  Edited into the role's comment, it mailed nobody: a forge mails whoever
+  follows an issue for a new comment, never for an edit or a label
+  ([research](../research/surfacing-proposals.md#what-each-forge-notifies)).
+  When a proposal starts waiting on a person — the label put on —, the
+  role's comment is posted anew, last, under the role's own account, and
+  the one before is deleted.
+  - Still one comment of the role's on each issue; one mail per proposal,
+    none for an update. "Notifications" above now reads: one mail when
+    the comment is created, one each time a proposal starts waiting.
+  - The new one is posted before the old is deleted: the state is never
+    lost between the two. A note GitLab lets only its author delete (a
+    person's) is left; the last one is read, as before.
+  - A comment created in the same run is not posted twice. A forge that
+    deletes nothing (a `cmd:` forge, the local one) edits in place.
+  - Rejected: a second, short comment per proposal (two comments of the
+    role's, one more each time); a mention edited in (no forge lets a bot
+    mention whoever follows, and GitHub mails nobody for an edit; GitLab
+    only a user newly mentioned).

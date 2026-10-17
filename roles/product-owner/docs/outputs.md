@@ -10,7 +10,9 @@ Part of [the product owner](../README.md). What a run does, step by step:
 
 ## On each issue
 
-- **One comment**, created once, then edited in place
+- **One comment**, edited in place; posted anew, the old one deleted,
+  when a proposal starts waiting on you — a new comment mails you, an
+  edit does not
   ([ADR-0038](../../../docs/adr/0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)):
   - what it did there last, and when — for its sections, one line:
     "Added: Verification, Scope. Changed: —. See the issue's edit

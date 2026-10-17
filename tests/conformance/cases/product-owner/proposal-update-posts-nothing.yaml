@@ -1,0 +1,20 @@
+case: product-owner/proposal-update-posts-nothing
+about: "A proposal already waiting on a person — the label on the issue — is not posted again when a later run only updates the role's comment: it is edited in place, and an edit mails nobody (#426). A proposal mails once."
+given:
+  repo: backlog
+  forge:
+    issues:
+      - id: 9
+        title: "Rows lost"
+        body: "Some rows are lost.\n\n## Need\n\n*Draft by the product owner: edit it, then delete this line to make it yours.* <!-- workline:draft -->\n\nEvery row exported."
+        author: ann
+        insider: true
+        labels: [workline:proposed]
+        comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\nlabel: workline:proposed\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+run: {role: product-owner, event: schedule, ai: fake:proposes-nothing}
+expect:
+  run-files:
+    in/issues-read: {contains: "9"}
+  forge:
+    issues:
+      - {id: 9, labels: [workline:proposed], comments: 1, posted: 0, comment-contains: "judged: "}

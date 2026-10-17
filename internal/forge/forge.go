@@ -315,6 +315,20 @@ type Merged interface {
 	MergedSince(since time.Time) ([]MergeRequest, error)
 }
 
+// Renewer is a forge that posts a sticky comment anew, last on its issue,
+// and deletes the ones carrying its marker before: a new comment mails
+// whoever follows the issue, an edit nobody (ADR-0038, amended). The new
+// one is posted first, so the state is never lost between the two; one
+// the token may not delete (GitLab: another user's note) is left, and the
+// last carrying the marker is the one read.
+type Renewer interface {
+	Renew(t Target, body, marker string) error
+}
+
+// GitHub, GitLab and the simulated forge renew a comment; the others edit
+// it in place.
+var _ = []Renewer{&github{}, &gitlab{}, &Fake{}}
+
 // botBranches are the branches of the merge requests the dependency bots
 // open, which rebuild them themselves, and stop once someone else
 // commits: left to them whoever their token's user is (ADR-0041).

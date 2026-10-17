@@ -415,10 +415,11 @@ func (g *github) Sticky(t Target, body, marker string, create bool) error {
 		return err
 	}
 	if len(found) > 0 {
-		if found[0].Body == body+"\n\n"+marker {
+		last := found[len(found)-1] // the one read, as GitLab's (backlog's readBlock)
+		if last.Body == body+"\n\n"+marker {
 			return nil // as it is already: not edited again
 		}
-		_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", found[0].ID), "-f", "body="+body+"\n\n"+marker)
+		_, err = g.api("-X", "PATCH", fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", last.ID), "-f", "body="+body+"\n\n"+marker)
 		return err
 	}
 	if !create {
@@ -426,6 +427,26 @@ func (g *github) Sticky(t Target, body, marker string, create bool) error {
 	}
 	_, err = g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+body+"\n\n"+marker)
 	return err
+}
+
+// Renew posts the comment anew, under the token's account, then deletes
+// the ones carrying marker before it: GitHub mails an issue's subscribers
+// for a new comment, never for an edit (Renewer).
+func (g *github) Renew(t Target, body, marker string) error {
+	out, err := g.api("--paginate", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID),
+		"--jq", fmt.Sprintf(".[] | select(.body | contains(%q)) | .id", marker))
+	if err != nil {
+		return err
+	}
+	if _, err := g.api("-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", t.ID), "-f", "body="+body+"\n\n"+marker); err != nil {
+		return err
+	}
+	for _, id := range strings.Fields(string(out)) {
+		if _, err := g.api("-X", "DELETE", "repos/{owner}/{repo}/issues/comments/"+id); err != nil && !errors.Is(err, errNotFound) {
+			return err
+		}
+	}
+	return nil
 }
 
 func (g *github) Label(t Target, add, remove []string) error {
