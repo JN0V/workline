@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/forge/forge.go, internal/engine/backlog.go]
 status: draft
-checked: 9388c83d
+checked: 9fcf6cf6
 verified: agent:claude-code
 ---
 # Splitting and renaming

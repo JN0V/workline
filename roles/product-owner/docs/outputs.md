@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: 9054d164
+checked: 9fcf6cf6
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -75,7 +75,9 @@ read-only, grouped, one line an issue linked to its page:
 Each group lists 10 issues, then "and N more"; the waiting groups link
 the saved filter on `workline:proposed`. The role's own line counts
 issues, as you will see them: "issues: 2 done alone, 1 proposed to a
-person, 5 set aside by a person".
+person, 5 set aside by a person"; a night whose agent was not asked says
+so first, never "nothing to do". Each issue labelled is named, and one
+not labelled yet for `proposals-max` is said.
 
 The judging job, which writes nothing (`--no-apply`), decides the acts
 already and says them: "to do alone, once applied", "to propose, once
