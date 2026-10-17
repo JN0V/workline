@@ -20,10 +20,12 @@ from inside a Claude Code session? Same engine, same case
 - **`CLAUDE_EFFORT` does not override `--effort`**: 88 tokens out without
   it, 87 with `CLAUDE_EFFORT=max`, on `--effort low`.
 - **Fix**: the adapter drops the variables a session exports
-  (internal/agent/claude.go, `claudeSession`). The login a CI job needs
+  (internal/agent/claude.go, `claudeSession`), even one a person set
+  (`CLAUDE_EFFORT`, `CLAUDE_CODE_ENABLE_TASKS`): a call with no tools needs
+  none, and its effort is the role's. The login a CI job needs
   (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL`…)
-  and a person's own settings pass. A `cmd:` agent gets the environment as
-  it is.
+  and a person's other settings pass. A `cmd:` agent gets the environment
+  as it is.
 
 ## How it was measured
 

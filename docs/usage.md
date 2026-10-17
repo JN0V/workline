@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 98b830fa
+checked: e832bfe4
 judged: b5899f5
 verified: agent:documentalist
 ---
@@ -77,8 +77,10 @@ Each in detail: [the commands](commands.md), and
   your environment without the variables a Claude Code session exports
   (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`…): started from a session,
   a commit's hook included, the call would run as its child, at twice
-  the tokens ([measured](research/claude-session-env.md)). Your login
-  (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`…) and settings pass.
+  the tokens ([measured](research/claude-session-env.md)). They are
+  dropped even when you set one (`CLAUDE_EFFORT`: the effort is the
+  role's, or `claude:@<effort>`'s). Your login (`CLAUDE_CODE_OAUTH_TOKEN`,
+  `ANTHROPIC_API_KEY`…) and other settings pass.
 
 ### The forge
 
