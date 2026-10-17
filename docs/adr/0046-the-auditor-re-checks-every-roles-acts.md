@@ -264,6 +264,9 @@ The product owner's row (2026-10-17), where this decision was silent:
   state's own digest (12 characters of SHA-256); `model`, the agents and
   models the run asked, as the committer's trailer writes them. An act a
   person accepted keeps no `model`: it is theirs, never drawn.
+- **A refine** writes the sections it is judged on: the text it read
+  lacks them. Its auditor gets that text and, beside it, the issue as it
+  reads now (`#<n> now`).
 - **An older record**, without these fields, is read as before — the
   issue as it reads now, the code at the last commit of its day — and
   the week's comment names it.

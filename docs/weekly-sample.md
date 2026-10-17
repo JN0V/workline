@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 1ba2b775
+checked: 55fce2ad
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -37,10 +37,10 @@ roles:
   else the act is for a person.
 - **What a product owner's act was done on**: the issue's text it read,
   found by the digest its record keeps — the body now, else the version
-  GitHub's edit history keeps —, and the code at the commit it read. A
-  text gone from the forge is not read, for you: GitLab keeps no edit
-  history. An act recorded before this record is read as its issue reads
-  now, and named.
+  GitHub's edit history keeps; for a refine, the issue as it reads now
+  beside it —, and the code at the commit it read. A text gone from the
+  forge is not read, for you: GitLab keeps no edit history. An act
+  recorded before this record is read as its issue reads now, and named.
 - **A dispute**: a verdict against the act goes to three judges, Claude's
   three models by default (`sample: {panel: […]}`), each choosing between
   the two readings, not told whose; the majority settles it.
