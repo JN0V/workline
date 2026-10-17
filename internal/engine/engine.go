@@ -2079,7 +2079,10 @@ func noteText(v any) string {
 	if !ok {
 		return strings.TrimSpace(fmt.Sprint(v)) // not a {doc, text} note
 	}
-	text := fmt.Sprint(t) // a text YAML read as a number or a list, as it reads
+	text := "" // `text:` left empty
+	if t != nil {
+		text = fmt.Sprint(t) // a text YAML read as a number or a list, as it reads
+	}
 	var docs []string
 	switch d := m["doc"].(type) {
 	case string:

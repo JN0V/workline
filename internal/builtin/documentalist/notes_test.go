@@ -13,7 +13,7 @@ import (
 // end of it no other doc of the task shares (#449).
 func TestDoubtedDocs(t *testing.T) {
 	judged := map[string]map[string]string{
-		"docs/clock/status.md": {}, "docs/clock/README.md": {}, "docs/net/README.md": {}, "docs/clock/events.md": {},
+		"docs/clock/status.md": {}, "docs/clock/README.md": {}, "docs/net/README.md": {}, "docs/clock/events.md": {}, "README.md": {},
 	}
 	note := func(v any) intent.Intention { return intent.Intention{Kind: "note", Value: v} }
 	for _, c := range []struct {
@@ -35,7 +35,9 @@ func TestDoubtedDocs(t *testing.T) {
 		{"in doc, a doc not put before the agent", note(map[string]any{"doc": "docs/clock/tried.md", "text": "A record."}), nil},
 		{"in doc, an end of its path", note(map[string]any{"doc": "status.md", "text": "Kept."}), []string{"docs/clock/status.md"}},
 		{"in doc, a path written wrong: its text read", note(map[string]any{"doc": "doc/clock/status.md", "text": "In status.md the count is kept."}), []string{"docs/clock/status.md"}},
-		{"in doc, an end two docs share: its text read", note(map[string]any{"doc": "README.md", "text": "clock/README.md: kept."}), []string{"docs/clock/README.md"}},
+		{"in doc, a name no doc of the task has: its text read", note(map[string]any{"doc": "net/../README", "text": "clock/README.md: kept."}), []string{"docs/clock/README.md"}},
+		{"in doc, a path other docs end with", note(map[string]any{"doc": "README.md", "text": "Kept."}), []string{"README.md"}},
+		{"in doc, a list, one written wrong: its text read too", note(map[string]any{"doc": []any{"docs/clock/status.md", "doc/clock/evnts.md"}, "text": "events.md: the topics are kept."}), []string{"docs/clock/events.md", "docs/clock/status.md"}},
 		{"in doc, a text not a string", note(map[string]any{"doc": "docs/clock/status.md", "text": 33}), []string{"docs/clock/status.md"}},
 		{"the engine's own mark", note(map[string]any{"own": true, "reader-read": true}), nil},
 	} {

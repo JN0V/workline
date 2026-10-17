@@ -583,7 +583,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 					msg += fmt.Sprintf("; set `judged: %s` instead", full[:7])
 				}
 				return fileVerdict{rule: "checked-over-note", why: msg, header: true,
-					person: "`checked` not moved: the agent's own note on this doc says what it could not confirm, " + doubtSaid(notes) + "; `judged` set instead, for a person to check that"}
+					person: "`checked` not moved: the agent's own note names this doc as not confirmed" + doubtSaid(notes) + "; `judged` set instead, for a person to check it"}
 			}
 		}
 		// A fix the agent could not vouch for is kept: what it found wrong

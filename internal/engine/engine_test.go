@@ -190,6 +190,7 @@ func TestNoteText(t *testing.T) {
 		{map[string]any{"text": "No doc named."}, "No doc named."},
 		{map[string]any{"doc": "docs/a.md", "text": 33}, "docs/a.md: 33"},
 		{map[string]any{"doc": "docs/a.md", "text": ""}, "docs/a.md:"},
+		{map[string]any{"doc": "docs/a.md", "text": nil}, "docs/a.md:"},
 	} {
 		if got := noteText(c.note); got != c.want {
 			t.Errorf("noteText(%v) = %q, want %q", c.note, got, c.want)

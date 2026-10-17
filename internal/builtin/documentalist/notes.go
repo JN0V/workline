@@ -23,10 +23,10 @@ import (
 // doubtedDocs are the docs put before the agent that a note of its answer
 // names, each with the words of the notes naming it. A note names its doc in
 // `doc` ({doc, text}): its path, or an end of it no other doc of the task
-// shares (`status.md`). One given as text, or whose `doc` names no doc of
-// the task, names every doc of the task whose path, or such an end, its
-// text holds, as the run on `drifted` wrote "In status.md, …": a doubt is
-// never lost to a path written wrong.
+// shares (`status.md`). One given as text, or with a `doc` that names no doc
+// of the task, names besides every doc of the task whose path, or such an
+// end, its text holds, as the run on `drifted` wrote "In status.md, …": a
+// doubt is never lost to a path written wrong.
 func doubtedDocs(intents []intent.Intention, judged map[string]map[string]string) map[string][]string {
 	out := map[string][]string{}
 	ends := pathEnds(judged) // an end of a doc's path -> the docs of the task ending so
@@ -39,13 +39,27 @@ func doubtedDocs(intents []intent.Intention, judged map[string]map[string]string
 			continue
 		}
 		var named []string
+		wrong := len(docs) == 0
 		for _, d := range docs {
-			if p := ends[d]; len(p) == 1 && !contains(named, p[0]) {
-				named = append(named, p[0])
+			p := d
+			if _, asked := judged[d]; !asked {
+				if e := ends[d]; len(e) == 1 {
+					p = e[0]
+				} else {
+					wrong = true
+					continue
+				}
+			}
+			if !contains(named, p) {
+				named = append(named, p)
 			}
 		}
-		if len(named) == 0 {
-			named = namedIn(text, ends)
+		if wrong {
+			for _, p := range namedIn(text, ends) {
+				if !contains(named, p) {
+					named = append(named, p)
+				}
+			}
 		}
 		for _, d := range named {
 			if !contains(out[d], text) {
@@ -142,11 +156,14 @@ func onlyDoubted(withheld []verdict.Finding, doc string) bool {
 }
 
 // doubtSaid is what the notes naming a doc say, for a person: their words,
-// on one line, cut short.
+// on one line, cut short, after a colon; nothing when they hold none.
 func doubtSaid(notes []string) string {
 	said := strings.Join(strings.Fields(strings.Join(notes, " — ")), " ")
+	if said == "" {
+		return ""
+	}
 	if r := []rune(said); len(r) > 300 {
 		said = string(r[:299]) + "…"
 	}
-	return "“" + said + "”"
+	return ": “" + said + "”"
 }
