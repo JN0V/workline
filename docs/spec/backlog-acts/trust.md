@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/undo.go, internal/backlog/backlog.go, internal/backlog/acts.go, internal/sample/acts.go, internal/backlog/autonomy.go, internal/backlog/ledger.go]
 status: draft
-checked: 9fcf6cf6
+checked: f0f17828
 verified: agent:claude-code
 ---
 # Trust
