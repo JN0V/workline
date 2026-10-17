@@ -1,12 +1,9 @@
 #!/bin/sh
-# A cmd: lens of the reviewer, on the `reviewed` fixture once Average
-# divides by one less than the count and three large files are added: a
-# change read in parts (#446). Each part answers what its own files hold:
-# Average's defect where the part holds calc/calc.go, a nit on the last
-# line of src/big3.go where it holds that file; the list of every file a
-# part is told names them all, so only a file's own text counts.
-# REVIEW_PART_BROKEN=big3: the part holding src/big3.go answers what does
-# not read, each time it is asked.
+# A cmd: lens of the reviewer on the `reviewed` fixture, Average's defect
+# and three large files added: a change read in parts (#446). Each part
+# answers what its own files hold, not the list naming them all: Average's
+# defect for calc/calc.go, a nit on src/big3.go's last line.
+# REVIEW_PART_BROKEN=big3: the part holding src/big3.go never reads.
 task=$(cat)
 holds() {
 	case $task in

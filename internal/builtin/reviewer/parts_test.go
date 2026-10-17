@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/JN0V/workline/internal/agent"
 )
 
 // bodyLines are the lines of a part's diff that are the file's, not a
@@ -131,6 +133,17 @@ func TestPackOneDiffWithNoHunkWhole(t *testing.T) {
 	parts := pack(fileDiffs(diff), 10, 1)
 	if len(parts) != 1 || parts[0][0].text != diff {
 		t.Fatalf("parts = %+v", parts)
+	}
+}
+
+// TestCharsWithinIsTheEnginesEstimate: the room a part is packed to is
+// read from agent.Tokens itself, the most characters within the budget.
+func TestCharsWithinIsTheEnginesEstimate(t *testing.T) {
+	for _, budget := range []int{1000, 100000} {
+		c := charsWithin(budget)
+		if agent.Tokens(c) > budget || agent.Tokens(c+1) <= budget {
+			t.Errorf("charsWithin(%d) = %d: Tokens %d, then %d", budget, c, agent.Tokens(c), agent.Tokens(c+1))
+		}
 	}
 }
 

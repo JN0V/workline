@@ -389,6 +389,20 @@ func taskRoom(runDir, repo string) (int, error) {
 	if err != nil {
 		return 0, nil // the engine says why when it asks
 	}
-	most := (budget - 711) * 100 / 82 // the characters agent.Tokens holds within the budget
-	return max(most-len(system)-len(user)-askedAgainChars, 1), nil
+	return max(charsWithin(budget)-len(system)-len(user)-askedAgainChars, 1), nil
+}
+
+// charsWithin is the most characters a prompt holds within so many
+// tokens, by agent.Tokens' own estimate, whatever its ratio.
+func charsWithin(budget int) int {
+	lo, hi := 0, max(budget, 0)*16
+	for lo < hi {
+		mid := (lo + hi + 1) / 2
+		if agent.Tokens(mid) <= budget {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	return lo
 }
