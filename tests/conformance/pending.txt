@@ -1,6 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-documentalist/sample-checked-gone-said-without-a-forge
-documentalist/sample-squashed-keeps-who-vouched
-documentalist/sample-squashed-keeps-who-vouched-on-gitlab
-documentalist/sample-squashed-person-s-checked-not-drawn
