@@ -586,7 +586,7 @@ func (f *Fake) SetBody(id int, body string) error {
 		if err != nil {
 			return err
 		}
-		if it.Body != body {
+		if it.Body != body && it.Body != "" {
 			it.Edits = append([]string{it.Body}, it.Edits...)
 		}
 		it.Body = body

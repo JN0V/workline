@@ -252,17 +252,17 @@ func (g *github) Trail(id int, label string) (Trail, error) {
 // versionsQuery asks an issue's edit history: each edit's `diff` holds
 // the whole body as that edit left it, the newest first, the body it was
 // opened with last; an edit deleted holds none (checked on workline's
-// issues, 2026-10-17).
-const versionsQuery = `query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { userContentEdits(first: 100) { nodes { diff } } } } }`
+// issues, 2026-10-17). A hundred a page, gh following the pages.
+const versionsQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) { repository(owner: $owner, name: $name) { issue(number: $number) { userContentEdits(first: 100, after: $endCursor) { nodes { diff } pageInfo { hasNextPage endCursor } } } } }`
 
-// Versions reads the bodies an issue had, from its edit history: one
-// GraphQL call, its last hundred edits (ADR-0046).
+// Versions reads the bodies an issue had, from its whole edit history:
+// one GraphQL call a hundred edits (ADR-0046).
 func (g *github) Versions(id int) ([]string, error) {
-	out, err := g.api("graphql", "-f", "query="+versionsQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
+	out, err := g.api("graphql", "--paginate", "-f", "query="+versionsQuery, "-F", "owner={owner}", "-F", "name={repo}", "-F", fmt.Sprintf("number=%d", id))
 	if err != nil {
 		return nil, err
 	}
-	var v struct {
+	pages, err := lines[struct {
 		Data struct {
 			Repository struct {
 				Issue struct {
@@ -274,14 +274,16 @@ func (g *github) Versions(id int) ([]string, error) {
 				} `json:"issue"`
 			} `json:"repository"`
 		} `json:"data"`
-	}
-	if err := decode(out, &v); err != nil {
+	}](out)
+	if err != nil {
 		return nil, err
 	}
 	var all []string
-	for _, n := range v.Data.Repository.Issue.Edits.Nodes {
-		if n.Diff != nil {
-			all = append(all, *n.Diff)
+	for _, p := range pages {
+		for _, n := range p.Data.Repository.Issue.Edits.Nodes {
+			if n.Diff != nil {
+				all = append(all, *n.Diff)
+			}
 		}
 	}
 	return all, nil
