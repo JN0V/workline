@@ -1,2 +1,6 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# A doc its own note doubts is not vouched for (#449).
+documentalist/checked-doubted-by-its-note-real-answer
+documentalist/checked-doubted-by-a-note-naming-its-doc
