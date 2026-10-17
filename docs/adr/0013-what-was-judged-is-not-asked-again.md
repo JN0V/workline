@@ -3,7 +3,9 @@
 - **Status:** accepted; amended 2026-10-02 (a task proposed earlier in the
   run waits too); amended 2026-10-12 (the reviewer knows a change rebased,
   and what a merge of the base settled; a doc's `judged` says what was
-  read); amended 2026-10-14 (a doc waits while a merge request holds it)
+  read); amended 2026-10-14 (a doc waits while a merge request holds it);
+  amended 2026-10-17 (on a person's merge request, the record waits in a
+  comment)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a fix that cannot vouch is kept), ADR-0006 (one
   merge request per task)
@@ -213,3 +215,50 @@ Not chosen:
   applied has no branch. Such a doc waits for `derived` too, said.
 - **One merge request per doc judged in parts**: one fix call per doc,
   fewer docs a night.
+
+## Amendment (2026-10-17): on a person's merge request, the record waits in a comment
+
+From 2026-10-04 to 2026-10-17, the documentalist pushed 42 commits to 20
+people's pull requests on workline: 41 only moved a record line
+(`judged`, `verified` or `judged-in-parts`), one changed a doc's text
+([#463](https://github.com/JN0V/workline/issues/463)). Each was a new
+head: the checks ran again (`test`, 2 min 46 s on
+[#451](https://github.com/JN0V/workline/pull/451)), and the person pulled
+before pushing again: the record, the doc's header (above), took a commit.
+
+- **A doc found with nothing to fix gets no commit** on a person's merge
+  request: a patch changing only those lines is taken out of what is
+  committed.
+- **Its record is kept in the documentalist's comment** on the merge
+  request, hidden, as the reviewer keeps its own: the commit judged at,
+  and the git object id of the doc and of each of its sources there (a
+  blob, or a tree for a folder). Only a comment a bot or a person of the
+  project wrote is read: on a public merge request, anyone may comment.
+- **The next push reads it**: a doc whose ids are all the same at the new
+  head is not put before an agent again; one whose doc or source changed
+  is judged again.
+- **A real fix is still one commit**, its message naming the doc. A move of
+  `checked` is still a commit too: what earns it does not change
+  ([ADR-0014](0014-checked-is-earned-by-what-was-read.md)).
+- **After the merge, gardening writes `judged` on the default branch**,
+  naming the commit the merge request became, when the doc and its sources
+  are still as judged
+  ([ADR-0010, amended](0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).
+- **A fork's merge request**, which gets no push, gets its record too.
+- **Where the comment cannot serve, the record is committed, as before**:
+  a forge that does not say which commit a merge request became (`local`,
+  `cmd:`), a comment that could not be read (`record-unread`), a doc with
+  a source in another repository.
+
+The record is still the doc's header once merged, in the repository. While
+the merge request is open it is a comment, which anyone with write access
+may edit, as the reviewer's.
+
+Not chosen ([the options](https://github.com/JN0V/workline/issues/463#issuecomment-6239964209),
+[the decision](https://github.com/JN0V/workline/issues/463#issuecomment-6240008472)):
+
+- **One record commit, at the yes**: a merge request merged with the
+  forge's button and no label gets none.
+- **Committing only real fixes, judging again after the merge**: each doc
+  judged twice for one change.
+- **Keeping it as it was**: 41 commits in two weeks that change no text.
