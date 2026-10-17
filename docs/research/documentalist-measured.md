@@ -8,19 +8,19 @@ earning every point — for criterion 3 of
 
 **Verdict.**
 
-- **Not met: the measure stopped at its first confirmation.**
-  `drifted-version-bump` moved `checked` over a planted falsehood in one
-  run of three, its own note saying it could not check that claim.
-- **`drifted-gardening`**: three runs of three earning every point.
-- **Not run**: `finds-planted-defects-in-parts` (its eight confirming
-  runs) and the eleven other cases. The plan ran them only if both
-  confirmations held.
-- **Spent**: 255,597 tokens in and 21,809 out, six calls, of a budget
-  of 1,000,000 in.
-- **A run here costs twice the weekly timer's**: 41k to 44k tokens in
-  against 20k to 22k for the same one call (below).
+- **Met for 12 of 14 cases in the afternoon**, after the guard of
+  [#451](https://github.com/JN0V/workline/pull/451) ([below](#after-the-guard-2026-10-17-afternoon)):
+  `condenses-the-role-contract` and `stays-on-the-task` not measured.
+- **Not met in the morning: the measure stopped at its first
+  confirmation.** `drifted-version-bump` moved `checked` over a planted
+  falsehood in one run of three, its own note saying it could not check
+  that claim. `drifted-gardening`: three of three earning every point.
+  The twelve other cases were not run.
+- **Spent**: 979,908 tokens in of the day's 1,000,000. The morning's
+  255,597 came from an agent session, at twice the rate; the
+  afternoon's 724,311 from outside one ([what it cost](#what-it-cost)).
 
-## The runs
+## The morning's runs
 
 On the engine at 760678b9: `main` after
 [#441](https://github.com/JN0V/workline/pull/441) (a drifted case's issue
@@ -132,7 +132,69 @@ engine.
   a run here; the weekly timer's runs of the same cases, 19,785 to 21,589
   (10-04, 10-11); 10-01's runs, launched from an agent session as these
   were, 35,892 to 39,934. `stays-on-the-task` alike: 22.7k on 10-01,
-  13.2k to 13.5k weekly. Not explained here.
+  13.2k to 13.5k weekly. Explained in the afternoon
+  ([what it cost](#what-it-cost)).
 - **A budget built on the weekly rows** is half what a run from a
   session spends: at today's rate, the whole plan would have taken about
   1.4M tokens in, not 1M.
+
+## After the guard (2026-10-17, afternoon)
+
+On the engine at be99f444: `main` after
+[#451](https://github.com/JN0V/workline/pull/451), which keeps `checked`
+on a doc the answer's own note doubts
+([#449](https://github.com/JN0V/workline/issues/449)). Every run from
+outside any agent session; Sonnet 5.5 answered, Opus 5.5 first on
+condense and split (their `frontier` tier).
+
+| Case | Runs | Every point, every run | Tokens in |
+|---|---|---|---|
+| drifted-version-bump | 5 | yes, 23/23 | 108,505 |
+| finds-planted-defects-in-parts | 8 | yes, 12/12 | 195,252 |
+| condenses-the-role-contract | 5 | **no**: 3 of 5; judge skipped | 107,890 |
+| confirms-a-doc-still-true | 5 | yes, 4/4 | 21,575 |
+| drifted-gardening | 5 | yes, 19/19 | 101,055 |
+| finds-planted-defects-whole | 5 | yes, 12/12 | 36,700 |
+| fixes-a-doc-made-false | 5 | yes, 5/5 | 21,330 |
+| merges-a-card-too-short | 5 | yes, 5/5; one run stepped up to Opus | 21,757 |
+| merges-a-repeated-passage | 5 | yes, 5/5 | 17,855 |
+| never-confirms-a-stale-doc-made-false | 5 | yes, 4/4 | 22,170 |
+| opens-an-issue-when-code-disagrees-with-a-spec | 5 | yes, 5/5 | 21,905 |
+| propagates-a-product-doc-at-release | 5 | yes, 5/5 | 21,160 |
+| splits-a-card-too-long | 5 | yes, 4/4 | 27,157 |
+| stays-on-the-task | 0 | not run | — |
+
+How it was run, in a worktree at be99f444, `WORKLINE_EVAL=claude`:
+
+```sh
+systemd-run --user go test -count=5 -timeout 60m -run 'TestEvaluation/documentalist/drifted-version-bump$' ./tests/evaluation/
+# then one script under systemd-run --user, a case at a time, stopping if in-parts missed its bar or past 630,000 tokens in:
+go test -count=8 -timeout 90m -run 'TestEvaluation/documentalist/finds-planted-defects-in-parts$' ./tests/evaluation/
+go test -count=5 -timeout 90m -run 'TestEvaluation/documentalist/<case>$' ./tests/evaluation/   # each other case, by name
+awk -F'\t' 'NR==1 || $2 == "be99f444"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv"
+```
+
+### What is left
+
+- **`condenses-the-role-contract`, not measured.** Two runs lost
+  `lines-max` at 202 and 203 lines, for 200. The evaluation counts the
+  doc's 4-line header; the engine's budget, which applied both, does
+  not: 198 and 199 lines
+  ([#454](https://github.com/JN0V/workline/issues/454)).
+- **Its judge never asked**: "does every rule the role contract stated
+  before still hold?" was skipped in all five runs, `WORKLINE_JUDGE`
+  unset; the weekly [run.sh](../../tests/evaluation/schedule/run.sh)
+  sets `claude:sonnet`. Five runs again with it.
+- **`stays-on-the-task`, not run**: the script was stopped by hand before
+  it; its five runs, about 68k tokens in (13.2k to 13.5k a run weekly),
+  would have crossed the day's 1,000,000.
+
+### What it cost
+
+- **724,311 tokens in and 167,942 out**: 68 runs, 107 calls.
+- **The doubling explained.** The same one call of
+  `drifted-version-bump` took 44,090 tokens in from a session in the
+  morning, 21,701 here: about the weekly timer's. A Claude Code session's
+  variables reach the agent and double each call
+  ([#452](https://github.com/JN0V/workline/issues/452); its fix,
+  [#453](https://github.com/JN0V/workline/pull/453)).
