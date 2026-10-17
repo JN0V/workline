@@ -1,12 +1,8 @@
-# docs/tech/service.md judged in parts, in the `service` fixture once the
-# default log level is `warn`: DomoticsCore's shape (#467). No part finds
-# the session line wrong: the part holding config.go sees the 24-hour
-# default, the one holding store.go sees the store keep what it is given;
-# each calls it partial. The fix replaces "the configured session TTL, 24
-# hours by default" with the default alone, citing the config part's own
-# quote, the way DomoticsCore's fix put the placeholder topic in place of
-# the will topic the code adopts. Beside it, a contradiction one part found
-# (the log level) and a word only added (line 16), both right.
+# docs/tech/service.md in parts, the `service` fixture, the default log
+# level now `warn`: DomoticsCore's shape (#467). The config and store parts
+# each call the session line partial; the fix puts the 24-hour default in
+# place of "the configured session TTL", citing the config part's quote.
+# Beside it, right: the log level a part found wrong, a word only added.
 calls:
   - - claim:
         lines: "12"
