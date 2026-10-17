@@ -1,4 +1,4 @@
-# Reviewer — where it stands (2026-10-15)
+# Reviewer — where it stands (2026-10-17)
 
 **In one line:** reviews code on a machine (`workline review`) and on a
 merge request (opt-in): rules first, lenses as parts, quotes found again,
@@ -146,6 +146,10 @@ its measure in
   `tests-judge-reads-tests-up-to-a-cap`,
   `review-says-the-tokens-of-each-call`, `budget-spent-*`.
 - **A spec, on a machine and on the forge**: `spec-*`.
+- **Spec review on workline**, on since 2026-10-17, after the product
+  owner's trial: the reviewer after it in the `schedule` line of
+  workline's `.workline/config.yaml`; a night's cost estimated offline
+  in its pull request ([#424](https://github.com/JN0V/workline/pull/424)).
 - **A record that does not read is said**: `spec-record-unread-*`,
   `record-unread-reviews-every-commit-again`.
 - **An issue outside the change**, opened the one way every role shares,
@@ -168,10 +172,12 @@ its measure in
    the finder floor's worth, a decision for a person (no case plants
    one), one lens a push whichever lens is in turn, the cheaper push over
    five runs. No issue yet.
-2. **Spec review on workline**, turned on after the product owner's trial
-   (2026-10-16); then more specs measured, the product owner's real answer
-   read again, on GitLab and in CI. Several specs a night parked until a
-   queue shows. No issue yet.
+2. **Spec review measured on real use**: first, the code a spec names
+   read right, not functions picked from plain words
+   ([#425](https://github.com/JN0V/workline/issues/425)); then more
+   specs, the product owner's real answer read again, on GitLab and in CI
+   (a round over two nights). Several specs a night parked until a queue
+   shows: ten waited on workline when it was turned on, one read a night.
 3. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
