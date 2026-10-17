@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 9fcf6cf6
+checked: e2580728
 judged: e343388
 verified: agent:documentalist
 reader: 02114d783860
@@ -30,7 +30,7 @@ owner), then the project's `settings`.
 | `gates.<name>` | `criteria`, `checks` (`id`, `run`, `output`, `max`, `optional`, `timeout`), `enforce` ([gates](spec/gates.md)) |
 | `repos.<name>` | `url`, `branch`: other repositories docs may name ([multi-repo](spec/multi-repo.md)) |
 | `release` | `branches` (the release tool's), `tags` (`v*`) |
-| `merge` | `autonomy: cautious`: the forge's auto-merge turned on for what a person accepted; `normal`: also for workline's own routine work, with no person's yes ([merge policy](merge-policy.md)); off unless set |
+| `merge` | `autonomy: cautious`: the forge merges what a person accepted; `normal`: workline's own routine work too, with no yes; `alone: [reader]`: the reader's rewordings too ([merge policy](merge-policy.md)); off unless set |
 
 ## `.workline/config.yaml`
 
@@ -99,7 +99,8 @@ Where the comments point:
 
 - **A key the engine does not know**, with its line: an ignored setting is
   one someone believes in and nothing applies.
-- **A level `merge:` does not know**, the levels named.
+- **A level `merge:` does not know**, the levels named; in `alone`, a
+  kind other than `reader`, or `alone` below `normal`.
 - **A role retired**, named in `roles:` or `routing:`: the release manager
   is gone, and the message names the release tool to use instead
   ([ADR-0017](adr/0017-the-release-manager.md)).
