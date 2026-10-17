@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: 968debfc
+checked: b31441c3
 judged: 62abc22
 verified: agent:claude-code
 ---
