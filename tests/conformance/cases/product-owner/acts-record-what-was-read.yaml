@@ -13,5 +13,4 @@ expect:
     issues:
       - {id: 12, closed: true}
       - {id: 12, comment-contains: "    - act: close-duplicate\n      level: normal\n      day: \"20"}
-      - {id: 12, comment-contains: "\n      model: fake:close-duplicate\n      body: 84aa3a3ca6f7\n      line: Closed"}
-      - {id: 12, comment-contains: "\"\n      at: "}
+      - {id: 12, comment-contains: "\"\n      at: d8c4dff\n      model: fake:close-duplicate\n      body: 84aa3a3ca6f7\n      line: 'Closed #12"}

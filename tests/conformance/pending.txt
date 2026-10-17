@@ -2,7 +2,6 @@
 # if one starts passing while still listed here.
 auditor/sample-folds-the-product-owners-issue
 auditor/verdict-reads-what-the-product-owner-read
-product-owner/acts-record-what-was-read
 product-owner/sample-an-undo-counts-once
 product-owner/sample-draws-one-in-ten-of-the-week
 product-owner/sample-says-a-closing-reopened
