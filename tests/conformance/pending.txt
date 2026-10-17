@@ -1,2 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# A quote a part judged partial is no proof a passage is wrong (#467).
+documentalist/judged-in-parts-partial-quote-is-no-proof
