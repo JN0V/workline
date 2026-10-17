@@ -1,8 +1,8 @@
 # ADR-0039: Issue sections take established names, read by meaning; a bug waits for its steps; the role sets the kind
 
-- **Status:** proposed — built after the trial of
-  [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md);
-  one question at the end waits on the maintainer
+- **Status:** proposed — built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
+  piece 1 and the amendment's repeat rule built; the question at the end
+  settled on 2026-10-17
 - **Date:** 2026-10-10, revised 2026-10-11, amended 2026-10-11 (below)
 - **Builds on:** [ADR-0018](0018-the-product-owner.md) (Need and
   Validation a person's), [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)
@@ -155,11 +155,11 @@ are read; the ids (`need`, `example`, `steps`, `validation`,
 - workline's own `.github/ISSUE_TEMPLATE/need.yml` takes the new names
   with piece 2.
 
-## Open question for the maintainer
+## Open question for the maintainer, settled
 
-1. **Implementation notes, or Implementation details?** Recommended:
-   notes; details is more frequent (~3.3k files) but invites a design
-   the role must not invent; notes hold the paths `ready` needs.
+1. **Implementation notes, or Implementation details?** Settled on
+   2026-10-17 by the maintainer: Implementation notes, as recommended;
+   details (~3.3k files) invites a design the role must not invent.
 
 ## Amendment (2026-10-11): each thing said once
 
