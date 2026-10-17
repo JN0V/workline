@@ -126,7 +126,9 @@ saying so.
 - `applied` / `refused` — intentions applied or refused, by kind.
 - `steps` — for a line, the steps that ran, in order.
 - `forge` — fields the simulated forge must hold afterwards: per item, by
-  `id`, `comments` (a count), `labels` (the exact set), `comment-contains`
+  `id`, `comments` (a count), `posted` (the comments posted on it, each
+  one mailing who follows it; an edit posts none), `labels` (the exact
+  set), `comment-contains`
   (a text some comment holds, or a list of them) and `comment-lacks` (a
   text none does, or a list of them), `closed`
   and the `reason` it was closed for, its `milestone`, `branch`, `base`,
