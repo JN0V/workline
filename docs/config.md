@@ -3,6 +3,7 @@ sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal
 checked: 733da152
 judged: e343388
 verified: agent:documentalist
+reader: 02114d783860
 ---
 # Configuration
 
