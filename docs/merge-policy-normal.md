@@ -2,6 +2,7 @@
 sources: [internal/engine/routine.go, internal/engine/demote.go, internal/engine/merge.go, internal/forge/merge.go]
 checked: c6af84e6
 verified: agent:claude-code
+reader: efab3a2a0b35
 ---
 # The merge policy at `normal`
 
@@ -22,7 +23,7 @@ merge: {autonomy: normal}   # a project's choice, never a default
   - every push to it the App's, every commit committed by it and its own
     by its tree;
   - only docs of the documentalist's that agents are not told to read
-    (not AGENTS.md, CLAUDE.md, a page they link to, a prompt…);
+    (not [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md), a page they link to, a prompt…);
   - their head's verdict passed, every agent's review whole.
 - **Three kinds, by what changed**:
   - `records`: only when docs were read (`judged`);
