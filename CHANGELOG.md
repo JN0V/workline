@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.32.1](https://github.com/JN0V/workline/compare/v0.32.0...v0.32.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **agent:** leave a Claude Code session's variables out of a call ([#453](https://github.com/JN0V/workline/issues/453)) ([de61d38](https://github.com/JN0V/workline/commit/de61d385d4e5b64fded2a974c208c3c7038242c2))
+* **evaluation:** count a doc's lines as its budget does ([#457](https://github.com/JN0V/workline/issues/457)) ([1f81fa7](https://github.com/JN0V/workline/commit/1f81fa73752af995dd97178fff6a646d1d5081fa))
+
 ## [0.32.0](https://github.com/JN0V/workline/compare/v0.31.0...v0.32.0) (2026-10-17)
 
 
