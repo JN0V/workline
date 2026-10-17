@@ -54,6 +54,28 @@ func TestLinesMax(t *testing.T) {
 	}
 }
 
+// TestBodyUnchanged: a `checked` moved in a README's `<!-- workline` header
+// is no rewording, as in a frontmatter.
+func TestBodyUnchanged(t *testing.T) {
+	r := &run{repo: t.TempDir(), before: map[string]string{}}
+	for _, head := range []string{"---\nchecked: %s\n---\n", "<!-- workline\nchecked: %s\n-->\n"} {
+		r.before["README.md"] = fmt.Sprintf(head, "abc1234") + "# Title\n\nSame words.\n"
+		now := fmt.Sprintf(head, "def5678") + "# Title\n\nSame words.\n"
+		if err := os.WriteFile(filepath.Join(r.repo, "README.md"), []byte(now), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if why := check("body-unchanged", "README.md", &caseFile{}, r); why != "" {
+			t.Errorf("%q: %s", head, why)
+		}
+		if err := os.WriteFile(filepath.Join(r.repo, "README.md"), []byte(now+"More.\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if why := check("body-unchanged", "README.md", &caseFile{}, r); why == "" {
+			t.Errorf("%q: a line added is a rewording", head)
+		}
+	}
+}
+
 func TestAnsweredBy(t *testing.T) {
 	m, e, in, out, c := answeredBy([]call{{"low", "claude-haiku-4-5", 1000, 50, 0.01, "part", "1-lenses"}, {"low", "claude-sonnet-5", 2000, 70, 0.02, "judge", "judge/01"}})
 	if m != "claude-haiku-4-5>claude-sonnet-5" || e != "low" || in != "3000" || out != "120" || c != "0.0300" {

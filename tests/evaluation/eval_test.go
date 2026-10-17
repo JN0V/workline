@@ -556,14 +556,11 @@ func headerField(doc, field string) string {
 	return m[1]
 }
 
-// body drops a doc's frontmatter.
+// body drops a doc's header, as the engine reads it: a frontmatter, or a
+// README's `<!-- workline` block.
 func body(s string) string {
-	if rest, ok := strings.CutPrefix(s, "---\n"); ok {
-		if _, after, ok := strings.Cut(rest, "\n---\n"); ok {
-			return after
-		}
-	}
-	return s
+	_, n := documentalist.Header(s)
+	return strings.Join(strings.Split(s, "\n")[n:], "\n")
 }
 
 func sh(dir string, env []string, script string) error {
