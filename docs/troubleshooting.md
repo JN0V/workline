@@ -100,8 +100,9 @@ waits. Give the job read access to the repository's branches.
   comments).
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - An issue refined never goes ready, the reviewer after it in the line
-  ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads one issue a run, none
-  without an agent or with `forge-writes: false`; `spec-findings-open` —
+  ([#128](https://github.com/JN0V/workline/issues/128)): `spec-not-reviewed` — the reviewer reads `specs-per-run` issues a
+  run (5), the rest the next (`spec-waits`), none without an agent or
+  with `forge-writes: false`; `spec-findings-open` —
   read the reviewer's comment on the issue; `spec-rounds-spent` — a
   person decides: `workline:accepted`, or `workline:ready` by hand.
 - A hidden record does not read

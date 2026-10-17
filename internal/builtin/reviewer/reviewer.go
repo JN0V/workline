@@ -68,6 +68,7 @@ type Settings struct {
 	SpecLenses      []string `json:"spec-lenses"`          // the lenses a spec is read through (#128)
 	SpecLinesMax    int      `json:"spec-lines-max"`       // lines of a spec the lenses are given; the rest cut, said
 	SpecRounds      int      `json:"spec-rounds"`          // on the forge: reviews in a row with a finding open, then a person (#128)
+	SpecsPerRun     int      `json:"specs-per-run"`        // on the forge: the specs a run reads; the rest wait for the next (#433)
 }
 
 // alone is the facet given the change only, apart from the lenses (#126):
@@ -106,26 +107,31 @@ type Quote struct {
 // state is what pre found on its first pass, for the passes after the
 // lenses and the judge answered.
 type state struct {
-	Head       string            `json:"head"`
-	From       string            `json:"from"`             // where the commits not reviewed yet start
-	Before     string            `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
-	Base       string            `json:"base"`
-	Change     Change            `json:"change"` // the whole range's
-	Mechanical []verdict.Finding `json:"mechanical"`
-	Commits    []string          `json:"commits"`
-	Patches    []string          `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
-	Lenses     []string          `json:"lenses"`
-	Together   bool              `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
-	Alone      bool              `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
-	Record     Record            `json:"record"`
-	Every      bool              `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
-	Advisories []verdict.Finding `json:"advisories,omitempty"`
-	Issues     []ClosedIssue     `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
-	Testimony  string            `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
-	Skipped    []string          `json:"skipped,omitempty"`   // lenses not asked, each with why
-	Spec       *Spec             `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
-	Standing   []Block           `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
-	Read       string            `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
+	Head       string             `json:"head"`
+	From       string             `json:"from"`             // where the commits not reviewed yet start
+	Before     string             `json:"before,omitempty"` // where the diff a lens reads starts, when not From: From with the base merged in (#134)
+	Base       string             `json:"base"`
+	Change     Change             `json:"change"` // the whole range's
+	Mechanical []verdict.Finding  `json:"mechanical"`
+	Commits    []string           `json:"commits"`
+	Patches    []string           `json:"patches,omitempty"` // the patch ids of the commits' changes, recorded with them (#286)
+	Lenses     []string           `json:"lenses"`
+	Together   bool               `json:"together,omitempty"` // the lenses asked in one call (lenses-together)
+	Alone      bool               `json:"alone,omitempty"`    // the diff-alone facet asked too, apart
+	Record     Record             `json:"record"`
+	Every      bool               `json:"every,omitempty"` // every lens asked on the whole change, the run on ready (#129, #359)
+	Advisories []verdict.Finding  `json:"advisories,omitempty"`
+	Issues     []ClosedIssue      `json:"issues,omitempty"`    // the issues the change says it closes, as read (#126)
+	Testimony  string             `json:"testimony,omitempty"` // what the author says of it, as the lenses were given it
+	Skipped    []string           `json:"skipped,omitempty"`   // lenses not asked, each with why
+	Spec       *Spec              `json:"spec,omitempty"`      // the spec reviewed, when the subject is a spec (#128)
+	Part       string             `json:"part,omitempty"`      // one spec of several a run reads: what its parts' names start with (#433)
+	Specs      []state            `json:"specs,omitempty"`     // on the forge: the specs the run reads, each reviewed as if alone (#433)
+	Stops      []intent.Intention `json:"stops,omitempty"`     // on the forge: the comments putting to a person the specs whose rounds are spent (#128)
+	Stopped    []string           `json:"stopped,omitempty"`   // what the run's summary says of each of those
+	Waits      []string           `json:"waits,omitempty"`     // on the forge: the specs left for the next run, past specs-per-run (#433)
+	Standing   []Block            `json:"standing,omitempty"`  // the last review's findings that block, still standing (#326)
+	Read       string             `json:"read,omitempty"`      // the record as read: the apply merges the comment it finds with it (#375)
 }
 
 // candidates is what the lenses answered, its quotes checked, before the judge.
@@ -765,15 +771,66 @@ func readLens(repo, name string) (Lens, error) {
 
 // readLenses reads what each lens answered, finds each finding's quotes
 // again, tells the findings on the change from those outside it, caps them,
-// and puts each important one to the judge.
+// and puts each important one to the judge. A run reading several specs
+// does so for each, its judges numbered after the spec's before (#433).
 func readLenses(runDir, repo string, s Settings) int {
 	var st state
 	if err := readJSON(filepath.Join(runDir, "in", "review-state.json"), &st); err != nil {
 		return fail(err)
 	}
-	var c candidates
+	subs := []state{st}
+	if len(st.Specs) > 0 {
+		subs = st.Specs
+	}
+	cs := make([]candidates, len(subs))
+	unavailable, asked := 0, 0
+	for i, sub := range subs {
+		c, un, err := lensAnswers(runDir, repo, s, sub)
+		if err != nil {
+			return fail(err)
+		}
+		cs[i], unavailable, asked = c, unavailable+un, asked+len(facets(sub))
+	}
+	if unavailable > 0 && unavailable == asked {
+		v := review(st, nil, "the agent could not be reached: only the rules ran")
+		if len(st.Specs) > 0 {
+			v.Subject = "spec"
+			waitingQuestions(&v)
+		}
+		v.Status = verdict.BlockedExternal
+		if code := final(runDir, v); code != exitNothing {
+			return code
+		}
+		return exitExternal
+	}
+	n := 0
+	for i, sub := range subs {
+		if err := askJudges(runDir, repo, s, sub, &cs[i], &n); err != nil {
+			return fail(err)
+		}
+		if err := writeJSON(filepath.Join(runDir, "in", candidatesFile(sub)), cs[i]); err != nil {
+			return fail(err)
+		}
+	}
+	if n > 0 {
+		return 0 // the judge first
+	}
+	return settle(runDir, repo, s)
+}
+
+// candidatesFile is where what the lenses answered is kept for the passes
+// after the judge: one file a spec when a run reads several (#433).
+func candidatesFile(st state) string {
+	if st.Part != "" {
+		return "candidates-" + st.Part + ".json"
+	}
+	return "candidates.json"
+}
+
+// lensReader reads a lens once, then from what it read.
+func lensReader(repo string) func(string) (Lens, error) {
 	read := map[string]Lens{}
-	lensOf := func(name string) (Lens, error) {
+	return func(name string) (Lens, error) {
 		l, ok := read[name]
 		if !ok {
 			var err error
@@ -784,6 +841,15 @@ func readLenses(runDir, repo string, s Settings) int {
 		}
 		return l, nil
 	}
+}
+
+// lensAnswers reads what each lens of a review answered, finds each
+// finding's quotes again, tells the findings on the change from those
+// outside it, and caps them; unavailable counts the lenses the agent could
+// not be reached for.
+func lensAnswers(runDir, repo string, s Settings, st state) (candidates, int, error) {
+	var c candidates
+	lensOf := lensReader(repo)
 	unavailable := 0
 	var asked [][]string // the lenses of each part: one a part, or all in one
 	if st.Together {
@@ -844,7 +910,7 @@ func readLenses(runDir, repo string, s Settings) int {
 			}
 			l, err := lensOf(lens)
 			if err != nil {
-				return fail(err)
+				return c, 0, err
 			}
 			f, why := found(repo, st, lens, l.Cites == "claim", a.Value)
 			if why != "" {
@@ -876,14 +942,6 @@ func readLenses(runDir, repo string, s Settings) int {
 			}
 			*list = append(*list, f)
 		}
-	}
-	if unavailable > 0 && unavailable == len(facets(st)) {
-		v := review(st, nil, "the agent could not be reached: only the rules ran")
-		v.Status = verdict.BlockedExternal
-		if code := final(runDir, v); code != exitNothing {
-			return code
-		}
-		return exitExternal
 	}
 	important := func(l []Finding) {
 		sort.SliceStable(l, func(i, j int) bool { return l[i].Severity == "important" && l[j].Severity != "important" })
@@ -919,18 +977,24 @@ func readLenses(runDir, repo string, s Settings) int {
 			Message: fmt.Sprintf("%d more findings outside the change were not checked nor opened (issues-max %d)", n, s.IssuesMax)})
 	}
 	c.Outside = outside
+	return c, unavailable, nil
+}
+
+// askJudges puts each important finding of a review to the judge, a
+// question each, numbered from n on.
+func askJudges(runDir, repo string, s Settings, st state, c *candidates, n *int) error {
+	lensOf := lensReader(repo)
 	var judged []Finding
 	for _, g := range append(slices.Clone(c.Related), c.Outside...) {
 		judged = append(judged, members(g)...)
 	}
-	n := 0
 	for _, f := range judged {
 		if f.Severity != "important" {
 			continue
 		}
 		l, err := lensOf(f.Lens)
 		if err != nil {
-			return fail(err)
+			return err
 		}
 		question := l.Judge.Question
 		if question == "" {
@@ -948,32 +1012,26 @@ func readLenses(runDir, repo string, s Settings) int {
 		default:
 			m = material(repo, st, s, f)
 		}
-		n++
-		key := fmt.Sprintf("%02d", n)
+		*n++
+		key := fmt.Sprintf("%02d", *n)
 		dir := filepath.Join(runDir, "in", "judge", key)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fail(err)
+			return err
 		}
 		question = strings.Join(strings.Fields(question), " ")
 		if s.JudgeReadRounds > 0 && st.Spec == nil { // the code's judge may read first (ADR-0045)
 			if err := (reading{Question: question, Material: m, Cause: f.Cause.Path}).write(dir, s, st.Head); err != nil {
-				return fail(err)
+				return err
 			}
 		} else {
 			data, _ := json.Marshal(map[string]string{"question": question, "material": m}) // JSON, which YAML reads: code quoted may start a line with a tab
 			if err := os.WriteFile(filepath.Join(dir, "question.yaml"), data, 0o644); err != nil {
-				return fail(err)
+				return err
 			}
 		}
 		c.Asked = append(c.Asked, JudgeKey(f)+"\x00"+key)
 	}
-	if err := writeJSON(filepath.Join(runDir, "in", "candidates.json"), c); err != nil {
-		return fail(err)
-	}
-	if len(c.Asked) > 0 {
-		return 0 // the judge first
-	}
-	return settle(runDir, repo, s)
+	return nil
 }
 
 // found reads one finding a lens answered, and finds its quotes again: its
@@ -1252,16 +1310,36 @@ func testsTouching(repo, head, file string, patterns []string, limit int) string
 
 // settle reads the judge's answers and proposes what follows: the findings
 // on the change in the verdict, an issue for each verified one outside it,
-// and the summary on the merge request.
+// and the summary on the merge request. Several specs: each settled apart,
+// the run's verdict holding them all (#433).
 func settle(runDir, repo string, s Settings) int {
 	var st state
 	var c candidates
 	if err := readJSON(filepath.Join(runDir, "in", "review-state.json"), &st); err != nil {
 		return fail(err)
 	}
+	if len(st.Specs) > 0 {
+		return settleSpecs(runDir, repo, s, st)
+	}
 	if err := readJSON(filepath.Join(runDir, "in", "candidates.json"), &c); err != nil {
 		return fail(err)
 	}
+	v, fallback, err := settled(runDir, repo, s, st, c)
+	if err != nil {
+		return fail(err)
+	}
+	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
+		return fail(err)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
+		return fail(err)
+	}
+	return 0
+}
+
+// settled is one review settled from the judge's answers: its verdict, and
+// what it proposes.
+func settled(runDir, repo string, s Settings, st state, c candidates) (Review, []intent.Intention, error) {
 	keys := map[string]string{}
 	for _, a := range c.Asked {
 		i := strings.LastIndex(a, "\x00")
@@ -1353,7 +1431,7 @@ func settle(runDir, repo string, s Settings) int {
 	related, outside := regroup(c.Related), regroup(c.Outside)
 	var err error
 	if st.Standing, err = reread(repo, s, st, c, related, len(c.Failed) == 0 && unjudged == 0); err != nil {
-		return fail(err)
+		return Review{}, nil, err
 	}
 	v := review(st, nil, "")
 	v.Lenses, v.Change, v.Complete = facets(st), related, len(c.Failed) == 0
@@ -1428,13 +1506,7 @@ func settle(runDir, repo string, s Settings) int {
 		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{"issue": sp.Issue, "sticky": backlog.SpecKey,
 			"body": specComment(v, specRecord(st, v), s.SpecRounds)}})
 	}
-	if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), fallback); err != nil {
-		return fail(err)
-	}
-	if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
-		return fail(err)
-	}
-	return 0
+	return v, fallback, nil
 }
 
 // Post writes the verdict from what pre settled, and keeps the record on
@@ -1807,19 +1879,23 @@ func lensDir(runDir string, st state, lens string) string {
 
 // partName is the part a lens is asked in: its own, or, the lenses asked
 // together, the one part holding them all; the diff-alone facet's after
-// the lenses'.
+// the lenses'. One spec of several a run reads: its number first (#433).
 func partName(st state, lens string) string {
 	n := len(st.Lenses)
 	if st.Together {
 		n = 1
 	}
+	name := fmt.Sprintf("%d-%s", slices.Index(st.Lenses, lens)+1, lens)
 	switch {
 	case lens == alone:
-		return fmt.Sprintf("%d-%s", n+1, alone)
+		name = fmt.Sprintf("%d-%s", n+1, alone)
 	case st.Together:
-		return "1-lenses"
+		name = "1-lenses"
 	}
-	return fmt.Sprintf("%d-%s", slices.Index(st.Lenses, lens)+1, lens)
+	if st.Part != "" {
+		return st.Part + "-" + name
+	}
+	return name
 }
 
 // facets are what a run asked: its lenses, then the diff-alone facet.
@@ -1857,7 +1933,7 @@ func committerSettings(repo string) (committer.Settings, error) {
 }
 
 func settings(runDir string) (Settings, error) {
-	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5}
+	s := Settings{Base: "main", FindingsMax: 10, IssuesMax: 3, DiffLinesMax: 1500, CodeLinesMax: 600, TestsLinesMax: 300, JudgeLinesMax: 200, LensesPerPush: 1, IssueLinesMax: 80, TestimonyLines: 80, QuestionsMax: 3, SpecLinesMax: 300, SpecRounds: 5, SpecsPerRun: 5}
 	data, err := os.ReadFile(filepath.Join(runDir, "in", "settings.json"))
 	if err != nil {
 		return s, err
@@ -1867,6 +1943,9 @@ func settings(runDir string) (Settings, error) {
 	}
 	if s.SpecRounds < 1 || s.SpecRounds > 20 {
 		return s, fmt.Errorf("settings: spec-rounds: %d is not a number from 1 to 20", s.SpecRounds)
+	}
+	if s.SpecsPerRun < 1 || s.SpecsPerRun > 20 {
+		return s, fmt.Errorf("settings: specs-per-run: %d is not a number from 1 to 20", s.SpecsPerRun)
 	}
 	if slices.Contains(s.Lenses, alone) {
 		return s, fmt.Errorf("settings: lenses names %q, a facet asked apart by its own setting, diff-alone", alone)

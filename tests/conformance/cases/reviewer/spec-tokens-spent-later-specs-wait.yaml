@@ -1,0 +1,39 @@
+case: reviewer/spec-tokens-spent-later-specs-wait
+about: "On the forge (#433), once a run has spent its ai-max-tokens, the specs after are not read: no lens asked, nothing written on them, their record as it was; each is said, and read at the next run. The spec read before is settled as usual."
+given:
+  repo: reviewed
+  config: {roles: {reviewer: {settings: {specs-per-run: 3, ai-max-tokens: 1000}}}}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 6
+        title: Every row exported
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec.\n\n<!-- workline:spec-review body=000000000000 round=2 open=1 in=Need -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 8
+        title: The sum of no values
+        body: "## Need\n\nThe sum of no values is 0.\n\n## Verification\n\nA test of Sum on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-costly-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings:
+    - {rule: spec-not-read, where: "#6", level: warn, message: "the run spent its ai-max-tokens"}
+    - {rule: spec-not-read, where: "#8", level: warn, message: "read first at the next run"}
+  no-findings: [{rule: lens-failed}]
+  summary: "1 spec read (#4: no finding)"
+  forge:
+    issues:
+      - {id: 4, comments: 2, comment-contains: "No important finding open"}
+      - {id: 6, comments: 2, comment-contains: "body=000000000000 round=2 open=1 in=Need -->", comment-lacks: "Not read whole"}
+      - {id: 8, comments: 1}

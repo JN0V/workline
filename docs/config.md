@@ -58,6 +58,7 @@ roles:
       judge-read-rounds: 0                # the judge reads no more code than it is shown, a no drops the finding (2: it may ask twice, read at the commit)
       diff-alone: true                    # one call more a run, given the change only, not the files nor the messages (off by default, measured)
       spec-rounds: 3                      # on the forge: reviews of a spec in a row with a finding open, then a question to a person (5)
+      specs-per-run: 2                    # on the forge: the specs a night reads, the rest the next night (5)
 routing:                    # replaces the shipped line, event by event
   events: {merge-request: [committer, documentalist, gate:merge],
     schedule: [documentalist, product-owner, reviewer]}   # the reviewer reads each spec the product owner refines; ready waits on it

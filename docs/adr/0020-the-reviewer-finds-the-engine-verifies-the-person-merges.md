@@ -595,3 +595,30 @@ merge-request line; on in workline's own repository.
 - **Rejected**: sparing the run on ready from the cancel (GitHub's
   concurrency cannot); the forge's timeline, a ready event newer than the
   reviewer's comment (a second reading, the record already read).
+
+## Amendment (2026-10-17, #433: several specs a night)
+
+- **What changed**: with the spec review on for workline
+  ([#424](https://github.com/JN0V/workline/pull/424)), the product
+  owner's ready waits on it. One spec a run left 10 refined issues
+  waiting up to ten nights
+  ([#433](https://github.com/JN0V/workline/issues/433)).
+- **Up to `specs-per-run` a run** (5, from 1 to 20): the issues that
+  wait, in the backlog's order. Each is read as one alone: its lens
+  call, its judges, its comment and record. This replaces "One issue a
+  run" and "one spec review a run" above.
+- **The rest wait**, said (`spec-waits`): the next run takes the queue
+  again in the backlog's order, so they come first unless one is put
+  before them.
+- **The tokens spent**: the specs after are not read. Nothing is written
+  on them, their record stays as it was, each is said (`spec-not-read`)
+  and read at the next run. A spec read part way is not whole, as before.
+- **A question to a person** (the rounds spent) takes no place, and is
+  written in the same run, with no agent too.
+- **Why five**: the dearest spec measured costs about 41k tokens; five
+  spend about 205k, within the 300k a run allows
+  ([measured](../research/code-review.md#the-reviewers-cost-measured)).
+- **Rejected**: the engine going round, a spec a round. In CI the judging
+  job applies nothing between rounds, so each round would read the same
+  issue. Also rejected: `findings-max` shared by the specs; each has its
+  own comment.

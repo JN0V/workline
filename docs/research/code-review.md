@@ -190,6 +190,19 @@ Five runs a case, 2026-10-15: [the reviewer, measured](reviewer-measured.md).
   with two judges.
 - **A spec on the forge**: one spec a run, 19.2k and 23.3k tokens on the
   sandbox, three and four judges.
+- **Several specs a night** ([#433]), estimated with no model: a
+  recording agent on workline's 10 refined issues waiting, 2026-10-17;
+  tokens in from prompt characters, 711 + 0.82 a character.
+  - A spec's lens call: 6.9k to 19.2k tokens in ([#424]); a judge on the
+    text 3.6k to 4.9k, one reading the code about 10.1k.
+  - The dearest spec measured: 37.2k in with three important findings
+    judged, about 41k with the answers.
+  - Five a night (`specs-per-run`'s default): 66.7k in the first night,
+    45.7k the second, then none waits; ten nights at one a night. With
+    three findings planted on each spec, 13 judges: 120k in.
+  - Five at the dearest, about 205k, stay within the reviewer's 300k
+    `ai-max-tokens`; past it the engine asks nothing more, the specs
+    left read at the next run.
 
 [#126]: https://github.com/JN0V/workline/issues/126
 [#127]: https://github.com/JN0V/workline/issues/127
@@ -197,4 +210,6 @@ Five runs a case, 2026-10-15: [the reviewer, measured](reviewer-measured.md).
 [#129]: https://github.com/JN0V/workline/issues/129
 [#146]: https://github.com/JN0V/workline/issues/146
 [#147]: https://github.com/JN0V/workline/issues/147
+[#424]: https://github.com/JN0V/workline/pull/424
+[#433]: https://github.com/JN0V/workline/issues/433
 [workline-sandbox#43]: https://github.com/JN0V/workline-sandbox/issues/43

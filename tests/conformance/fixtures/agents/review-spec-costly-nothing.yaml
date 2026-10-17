@@ -1,0 +1,6 @@
+# The spec lenses finding nothing, the call saying it used 1500 tokens in:
+# a run allowing 1000 asks nothing after it.
+tokens-in: 1500
+tokens-out: 100
+calls:
+  - []
