@@ -194,7 +194,39 @@ func (o *Openings) finish(t forge.Target, op Opening, body string) error {
 // group bot. A person's new issue is read before an import's catch-up
 // (ADR-0018, amended).
 func ByPerson(is forge.Issue) bool {
-	return !openedKey.MatchString(is.Body) && !strings.HasSuffix(is.Author, "[bot]") && !gitlabBot.MatchString(is.Author)
+	return !openedKey.MatchString(is.Body) && !Bot(is.Author)
+}
+
+// Bot says whether an author is a bot: a GitHub app's `[bot]` login, a
+// GitLab project or group bot. Nobody there answers a question (#429).
+func Bot(author string) bool {
+	return strings.HasSuffix(author, "[bot]") || gitlabBot.MatchString(author)
+}
+
+// trackingTitles are the issues workline's weekly sample keeps, now and
+// before (internal/sample): every role's acts, the docs' sample it was,
+// the product owner's own acts.
+var trackingTitles = []string{
+	"workline: the weekly sample of every role's acts",
+	"workline: the weekly sample of the docs vouched for",
+	"workline: the weekly sample of the product owner's acts",
+}
+
+// keptBy is the line the engine ends an issue a role keeps in place with
+// ("Docs waiting for a person"); mergeDemoted, the key of an issue holding
+// the merge policy back after a revert.
+var (
+	keptBy       = regexp.MustCompile(`(?m)^Kept up to date by the [\w -]+ role\.[ \t\r]*$`)
+	mergeDemoted = regexp.MustCompile(`(?m)^<!-- workline:merge-demoted=[^\n]*-->[ \t\r]*$`)
+)
+
+// Tracking says whether an issue is one workline keeps for its own work —
+// the role's old report, the weekly sample, a role's issue kept in place,
+// a demotion of the merge policy —: never refined, asked about, nor
+// proposed on, nor listed among the backlog's (#429). A role's finding or
+// an import is work, not tracking.
+func Tracking(is forge.Issue, role string) bool {
+	return is.Title == ReportTitle(role) || slices.Contains(trackingTitles, is.Title) || keptBy.MatchString(is.Body) || mergeDemoted.MatchString(is.Body)
 }
 
 var openedKey = regexp.MustCompile(`(?m)^<!-- workline:(import|issue|opened-by)=[^\n]*-->[ \t\r]*$`)

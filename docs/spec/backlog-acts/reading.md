@@ -19,7 +19,12 @@ read first at the next run. One issue alone over it goes to the engine,
 which does not ask the agent (`prompt-over-budget`): then no issue is
 taken as read (`unasked` in the run's state) — no "read and left", no
 person's comment answered, the summary saying the agent was not asked
-(#427). The order: an issue a person who counts commented on since the role read it
+(#427). An issue workline keeps for its own work (`backlog.Tracking`:
+the old report, the weekly sample's issue under its titles, a role's
+issue kept in place — its body's last line "Kept up to date by the …
+role." —, a demotion of the merge policy) is never read nor listed, and
+no act is done nor proposed on it (`workline-issue`, #429); a role's
+finding and an import are work. The order: an issue a person who counts commented on since the role read it
 — waiting on them ([A person's answers](answers.md)), set aside, or neither: their
 word, read first, the agent told so —; one read again for a change to
 what it was built on ([A changed need](changed-need.md)); one an act was proposed on only because a run's cap was

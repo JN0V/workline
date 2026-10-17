@@ -417,3 +417,10 @@ person, none answered.
   the 15. A question is the role's to ask: past `acts.ask.max` it is
   held, never a person's to answer, and its issue read again first. One
   an earlier engine recorded so waits on no one: its label comes off.
+- **Workline's own issues are not the backlog**
+  ([#429](https://github.com/JN0V/workline/issues/429)). The role asked
+  its own bot what need the weekly sample serves. The weekly sample, an
+  issue a role keeps in place and a demotion of the merge policy are now
+  left alone, as the old report was; a bot's issue is the project's —
+  "Who counts" above already ignored bots' comments —: nobody is asked
+  there, and a refine is not addressed to the bot.

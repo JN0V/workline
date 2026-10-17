@@ -213,7 +213,9 @@ func Pre(runDir, repo string) int {
 	notesOf := map[int][]forge.Note{}                        // each issue's comments, for what waits on a person
 	var waits []backlog.Wait                                 // the issues waiting on a person, for the summary (ADR-0031)
 	for _, is := range open {
-		if is.Title == backlog.ReportTitle(role) {
+		if backlog.Tracking(is, role) {
+			// Its old report, the weekly sample, a role's issue kept in
+			// place: workline's own, never read as the backlog's (#429).
 			continue
 		}
 		notes := ledger.Notes[is.ID]
@@ -1044,7 +1046,10 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		fmt.Fprintf(b, "Opened by: the %s role, on a finding of its own — a draft to refine: its %s and %s are not a person's yet\n", by, work.Name(work.Need), work.Name(work.Validation))
 	} else if is.Author != "" {
 		whose := ", of the project"
-		if !is.Insider {
+		switch {
+		case backlog.Bot(is.Author):
+			whose = ", a bot: nobody to ask — the project's to complete" // #429
+		case !is.Insider:
 			whose = ", without write access to the project"
 		}
 		fmt.Fprintf(b, "Opened by: %s%s\n", is.Author, whose)

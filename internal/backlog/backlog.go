@@ -1158,6 +1158,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		p.seen[key] = true
 		return "", ""
 	}
+	if is, ok := p.issues[c.Issue]; ok && c.Issue != p.Report && Tracking(is, role) {
+		// The weekly sample, a role's issue kept in place: workline's own
+		// work, never the backlog's (#429).
+		return "workline-issue", fmt.Sprintf("#%d is one workline keeps for its own work: nothing is done nor proposed on it", c.Issue)
+	}
 	if rule, why := p.checkAgreed(f, role, c); rule != "" {
 		return rule, why
 	}
@@ -1254,6 +1259,11 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		if rule, why := SpecHold(p.issues[c.Issue], comments); rule != "" {
 			return rule, why
 		}
+	}
+	if author := p.issues[c.Issue].Author; c.Do == "ask" && Bot(author) {
+		// Nobody answers a bot's issue: what it lacks is the project's to
+		// say (#429).
+		return "reporter-bot", fmt.Sprintf("opened by a bot, @%s: nobody to ask", author)
 	}
 	if c.Do == "ask" || c.ToReporter {
 		rule, why, left := conversation(role, comments, c)
@@ -1410,8 +1420,9 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 		}
 		// An outsider's issue is theirs (ADR-0021): the refined text is
 		// proposed to its reporter in a comment until they, or a person of
-		// the project, agree. A role's finding is the line's own draft.
-		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == ""
+		// the project, agree. A role's finding is the line's own draft; a
+		// bot's issue the project's, never addressed to the bot (#429).
+		c.ToReporter = c.Agreed == "" && !is.Insider && !Accepted(is) && OpenedBy(is.Body) == "" && !Bot(is.Author)
 		// Answering the reviewer's findings on its spec (#128): the role
 		// rewrites the sections they lie in that are still its own.
 		c.Revise, c.Refused = nil, nil

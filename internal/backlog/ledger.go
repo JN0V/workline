@@ -366,6 +366,9 @@ func ReadLedger(f forge.Backlog, role string, open []forge.Issue) (*Ledger, erro
 			l.Report = is.ID
 			continue
 		}
+		if Tracking(is, role) {
+			continue // workline's own: nothing of the role's there (#429)
+		}
 		byID[is.ID] = is
 		notes, err := f.Notes(forge.Target{Kind: "issue", ID: is.ID})
 		if err != nil {
