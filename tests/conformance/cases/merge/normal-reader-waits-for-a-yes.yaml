@@ -1,0 +1,31 @@
+case: merge/normal-reader-waits-for-a-yes
+about: "An agent's rewording waits for a person's yes (#438): at `normal`, the documentalist's reader pull request, #9 — workline's own, opened, pushed and committed by its App, its head's verdict passed — rewords a page and records it read (`reader:` in its header). Its kind is `reader`, told by that record, never by its branch's name, and it merges with no person's yes only once the project lets it. `workline follow` turns nothing on for it, and says so in the summary and in one comment on it: the label that accepts it, and the setting that lets this kind merge alone. #10, a docs fix beside it, still merges alone (ADR-0042, amended)."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal}}
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb workline/documentalist/reader-docs-product-sign-in-md && sed -i -e '/^checked:/a reader: 0a1b2c3d4e5f' -e 's/without doing anything/even when you do nothing/' docs/product/sign-in.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: read docs/product/sign-in.md for its reader' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/reader-docs-product-sign-in-md && git checkout -q main"
+    - "git checkout -qb workline/documentalist/condense && sed -i 's/Access tokens last one hour./Tokens last one hour./' docs/tech/auth.md && GIT_COMMITTER_NAME=workline-bot git commit -qam 'docs: condense docs/tech/auth.md' -m 'Workline-Role: documentalist' && git push -q origin workline/documentalist/condense && git checkout -q main"
+  forge:
+    statuses:
+      - {commit: "main", name: workline/merge-read, state: success, description: "reverts read; held:", by: workline-bot}
+      - {commit: "workline/documentalist/reader-docs-product-sign-in-md", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+      - {commit: "workline/documentalist/condense", name: workline/verdict, state: success, description: "pass: the line passed, every agent's review whole", by: workline-bot}
+    merge-requests:
+      - {id: 9, branch: workline/documentalist/reader-docs-product-sign-in-md, base: main, author: workline-bot, bot: true, title: "docs: read docs/product/sign-in.md for its reader", labels: [], comments: [],
+         pushes: [{head: workline/documentalist/reader-docs-product-sign-in-md, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+      - {id: 10, branch: workline/documentalist/condense, base: main, author: workline-bot, bot: true, title: "docs: condense docs/tech/auth.md", labels: [], comments: [],
+         pushes: [{head: workline/documentalist/condense, at: "2026-01-04T09:00:00Z", by: workline-bot}]}
+run: {follow: [--base, main], summary: true}
+expect:
+  status: pass
+  findings:
+    - {rule: waits-for-a-yes, where: "#9", message: "workline's own reader (it rewords pages an agent read for their reader), which merges with no person's yes only once the project lets it, `merge: {autonomy: normal, alone: [reader]}`: it waits for a person's yes, the label `workline:accepted`"}
+    - {rule: auto-merge-on, where: "#10", message: "with no person's yes, workline's own docs"}
+  no-findings: [{rule: auto-merge-on, where: "#9"}, {rule: merged-at-once}]
+  summary-file: ["with no person's yes: workline's own merge requests, records, derived, docs; only with a person's yes, until `merge.alone` lists them: reader"]
+  forge:
+    merge-requests:
+      - {id: 9, auto-merge: false, comments: 1, comment-contains: ["**Waiting for a person's yes**", "workline's own reader merge request", "put the label `workline:accepted`", "merge: {autonomy: normal, alone: [reader]}", "workline:merge-waits=reader"]}
+      - {id: 10, auto-merge: true, comments: 1, comment-contains: ["workline:merge-alone=docs"]}

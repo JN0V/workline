@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/merge.go, internal/forge/merge.go, internal/forge/github_merge.go, internal/forge/gitlab_merge.go, ci/github/workline-apply.yml, ci/github/workline-merge.yml, ci/gitlab/workline.gitlab-ci.yml]
-checked: 733da152
+checked: e2580728
 verified: agent:claude-code
 ---
 # The merge policy
@@ -99,8 +99,9 @@ merge: {autonomy: normal}   # a project's choice, never a default
 ```
 
 At `normal`, workline's own routine pull requests merge with no label
-too; a revert sends their kind back to a person's yes. What counts as
-workline's own, the kinds, the revert and the limits:
+too — an agent's rewording of a page for its reader only once the
+project lets it; a revert sends their kind back to a person's yes. What
+counts as workline's own, the kinds, the revert and the limits:
 [the merge policy at `normal`](merge-policy-normal.md).
 
 ## The veto is the forge's

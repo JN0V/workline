@@ -50,7 +50,7 @@ var (
 		}}},
 		"repos":   {any: &shape{keys: map[string]*shape{"url": free, "branch": free}}},
 		"release": {keys: map[string]*shape{"branches": free, "tags": free}},
-		"merge":   {keys: map[string]*shape{"autonomy": free}},
+		"merge":   {keys: map[string]*shape{"autonomy": free, "alone": free}},
 	}}
 )
 

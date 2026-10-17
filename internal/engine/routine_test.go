@@ -35,18 +35,23 @@ func gitRepo(t *testing.T) (string, func(args ...string) string, func(p, s strin
 	return repo, run, write
 }
 
-// A routine merge request's kind is told by what its change is: only the
-// lines recording when docs were read, records; derived blocks besides,
-// derived only when they read what their commands give; any other line of
-// a doc — text after a marker with no end of its own too —, or a doc
-// added, docs.
+// A routine merge request's kind is told by what its change is: a page's
+// `reader:` record written, reader, whatever else changed; only the lines
+// recording when docs were read, records; derived blocks besides, derived
+// only when they read what their commands give; any other line of a doc —
+// text after a marker with no end of its own too, `reader:` outside a
+// header —, or a doc added, docs.
 func TestRoutineKind(t *testing.T) {
 	repo, run, write := gitRepo(t)
 	doc := "---\nsources: [a.go]\nchecked: 111\n---\n# A\n\n<!-- workline:derive cases -->3<!-- workline:end -->\n\nOne hour.\n"
 	unclosed := "---\nchecked: 111\n---\n# B\n\n<!-- workline:derive cases -->3\n\nOne hour.\n\n<!-- workline:derive more -->1<!-- workline:end -->\n"
+	plain := "# C\n\nOne hour.\n"
+	read := strings.Replace(doc, "checked: 111\n", "checked: 111\nreader: 0a1b2c3d4e5f\n", 1)
 	write("doc.md", doc)
 	write("unclosed.md", unclosed)
-	run("add", "doc.md", "unclosed.md")
+	write("plain.md", plain)
+	write("read.md", read)
+	run("add", "doc.md", "unclosed.md", "plain.md", "read.md")
 	run("commit", "-q", "-m", "docs: one hour")
 	base := run("rev-parse", "HEAD")
 	asGiven := func([]string) bool { return true }
@@ -64,6 +69,13 @@ func TestRoutineKind(t *testing.T) {
 		{"its text", "doc.md", strings.Replace(doc, "One hour.", "Two hours.", 1), "", asGiven, kindDocs},
 		{"its checked", "doc.md", strings.Replace(doc, "checked: 111", "checked: 333", 1), "", asGiven, kindDocs},
 		{"a doc added", "doc.md", doc, "new.md", asGiven, kindDocs},
+		{"a page read for its reader, reworded", "doc.md", strings.Replace(strings.Replace(doc, "One hour.", "An hour.", 1), "checked: 111\n", "checked: 111\nreader: 0a1b2c3d4e5f\n", 1), "", asGiven, kindReader},
+		{"a page read for its reader, its record alone", "doc.md", strings.Replace(doc, "checked: 111\n", "checked: 111\nreader: 0a1b2c3d4e5f\n", 1), "", asGiven, kindReader},
+		{"a page read again", "read.md", strings.Replace(read, "0a1b2c3d4e5f", "6a7b8c9d0e1f", 1), "", asGiven, kindReader},
+		{"a page with no header read", "plain.md", "<!-- workline\nreader: 0a1b2c3d4e5f\n-->\n# C\n\nAn hour.\n", "", asGiven, kindReader},
+		{"a page read before, its text", "read.md", strings.Replace(read, "One hour.", "Two hours.", 1), "", asGiven, kindDocs},
+		{"reader: in a page's text", "doc.md", strings.Replace(doc, "One hour.", "reader: 0a1b2c3d4e5f", 1), "", asGiven, kindDocs},
+		{"reader: in a header never closed", "plain.md", "---\nreader: 0a1b2c3d4e5f\n# C\n\nOne hour.\n", "", asGiven, kindDocs},
 	} {
 		run("checkout", "-q", "-B", "work", base)
 		write(c.file, c.doc)
@@ -197,6 +209,23 @@ func TestOwnNote(t *testing.T) {
 	}
 	if _, ok := ownNote(notes, "merge-alone=", ""); ok {
 		t.Errorf("read with no App")
+	}
+}
+
+// A demotion's issue names the kind it holds, `reader` too: a revert of a
+// reader merge request merged alone sends that kind back to a person's
+// yes, as the others; a kind the engine does not know holds nothing.
+func TestDemotedKind(t *testing.T) {
+	for _, kind := range append(slices.Clone(RoutineKinds), kindAll) {
+		if got, ok := demotedKind(demotedTitle(kind, "1a2b3c4d")); !ok || got != kind {
+			t.Errorf("%s: %q, %v", kind, got, ok)
+		}
+	}
+	if !slices.Contains(RoutineKinds, kindReader) {
+		t.Errorf("reader is no routine kind: a revert of one merged alone would demote nothing")
+	}
+	if _, ok := demotedKind("workline: its everything merge requests wait for a person's yes again (revert 1a2b3c4)"); ok {
+		t.Errorf("a kind the engine does not know read as a demotion")
 	}
 }
 

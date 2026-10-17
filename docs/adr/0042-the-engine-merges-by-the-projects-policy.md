@@ -5,7 +5,9 @@
   `normal` built for workline's own routine pull requests by [#322]
   ([amendment](#amendment-2026-10-13-322-normal-routine-pull-requests-first)),
   agents' pull requests next; workline's own record commits keep the yes
-  ([#380], [amendment](#amendment-2026-10-14-380-worklines-own-record-commits-keep-the-yes))
+  ([#380], [amendment](#amendment-2026-10-14-380-worklines-own-record-commits-keep-the-yes));
+  an agent's rewording for a reader waits for a yes unless the project
+  lets it ([#438], [amendment](#amendment-2026-10-17-438-an-agents-rewording-waits-for-a-yes))
 - **Date:** 2026-10-12
 - **Decided by:** the maintainer, its direction (2026-10-12), after four
   agents argued role or not
@@ -407,6 +409,43 @@ Conformance: merge/record-commit-keeps-the-yes,
 docs-fix-after-the-yes-takes-it-back, persons-record-commit-takes-it-back;
 TestOwnRecord.
 
+## Amendment (2026-10-17, #438): an agent's rewording waits for a yes
+
+Seen on 2026-10-16 and 10-17: the documentalist's reader task
+([ADR-0048](0048-the-agent-reads-the-pages-the-reader-checks-flag.md))
+opened two pull requests rewording pages for their reader, [#421] and
+[#423]. Each counted as `docs` and merged alone, within four minutes,
+no label. The maintainer decided on 2026-10-17 to read them first, for
+the first weeks: [#256]'s Validation is the maintainer agreeing with
+what it proposes.
+
+- **A fourth kind, `reader`, the highest**: a change writing a page's
+  `reader:` line, the record the reader task leaves in each page's
+  header. Told by what the change is, as the other kinds, never by the
+  branch's name; a `reader:` line elsewhere than a header is text.
+- **It waits for a person's yes at `normal`**, through the same path
+  as a kind demoted: auto-merge left off, or taken back, and said
+  (`waits-for-a-yes`). Said once on the pull request too: the label
+  that accepts it, and the setting that lets it merge alone.
+- **A project lets it merge alone**: `merge: {autonomy: normal, alone:
+  [reader]}`. Written in advance, like the level: the narrow class the
+  line accepts for a person (principle 1). Then it is recorded as
+  `reader`, and a revert demotes it as any kind.
+- **`alone` is checked**: a kind not waiting by default (`docs`), or
+  `alone` below `normal`, stops `follow` before anything is touched.
+- **Not chosen**:
+  - an issue the App opens, closed to let the kind merge alone: a
+    demotion is trust lost; this is a choice made in advance, and
+    belongs where the level is set;
+  - the branch's name, `workline/documentalist/reader-…`: the kinds are
+    told by the change;
+  - holding every `docs` change: gardening's fixes merged alone as
+    designed.
+
+Conformance: merge/normal-reader-waits-for-a-yes,
+normal-reader-alone-when-let, alone-needs-normal,
+alone-unknown-kind-refused; TestRoutineKind, TestDemotedKind.
+
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0011]: 0011-the-review-is-on-the-merge-request-not-the-push.md
 [ADR-0017]: 0017-the-release-manager.md
@@ -420,9 +459,13 @@ TestOwnRecord.
 [ADR-0041]: 0041-workline-settles-its-own-lines-when-the-base-moves.md
 [#73]: https://github.com/JN0V/workline/pull/73
 [#117]: https://github.com/JN0V/workline/issues/117
+[#256]: https://github.com/JN0V/workline/issues/256
 [#260]: https://github.com/JN0V/workline/pull/260
 [#321]: https://github.com/JN0V/workline/issues/321
 [#322]: https://github.com/JN0V/workline/issues/322
 [#329]: https://github.com/JN0V/workline/pull/329
 [#331]: https://github.com/JN0V/workline/issues/331
 [#380]: https://github.com/JN0V/workline/issues/380
+[#421]: https://github.com/JN0V/workline/pull/421
+[#423]: https://github.com/JN0V/workline/pull/423
+[#438]: https://github.com/JN0V/workline/issues/438

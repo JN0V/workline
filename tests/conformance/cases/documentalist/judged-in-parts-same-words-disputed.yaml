@@ -1,0 +1,17 @@
+case: documentalist/judged-in-parts-same-words-disputed
+about: "Words one part finds contradicted and another quotes as supported are a disagreement, for the fix to settle with both sources before it (#440): the server's support quoting \"At most 100\" with the rest of the sentence disputes the configuration's contradiction of it."
+given:
+  repo: service
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500}}}}
+  setup:
+    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
+run: {role: documentalist, event: merge-request, ai: "fake:parts-connections-same-words"}
+expect:
+  status: pass
+  agent-calls: 5
+  run-files:
+    in/task.md:
+      contains:
+        - "### Found wrong by one part, and supported by another\n\n- The doc, line 16: \"At most 100 requests are served at once\""
+        - "Supported by src/service/server.go, line 11"
+      not-contains: "### Found wrong\n"

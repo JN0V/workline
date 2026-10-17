@@ -1,0 +1,15 @@
+case: documentalist/judged-in-parts-other-words-on-the-line-do-not-dispute
+about: "A part's support disputes another part's contradiction only when it quotes some of the same words, not when it only shares a line (#440): the store contradicting \"Each one lasts the configured session TTL\" (lines 22-23) while the configuration supports \"24 hours by default\" (line 23) goes to the fix as found wrong, not as a disagreement."
+given:
+  repo: service
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500}}}}
+  setup:
+    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
+run: {role: documentalist, event: merge-request, ai: "fake:parts-session-ttl-other-words"}
+expect:
+  status: pass
+  agent-calls: 5
+  run-files:
+    in/task.md:
+      contains: "### Found wrong\n\n- The doc, lines 22-23: \"Each one lasts the configured session TTL\""
+      not-contains: "Found wrong by one part, and supported by another"

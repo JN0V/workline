@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-15)
+# Documentalist — where it stands (2026-10-17)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
@@ -106,7 +106,12 @@ its evaluation in
   `judged-in-parts-by-default`; a doc too long itself says so at once:
   `suspect-doc-too-large`; a part's support quoted from a comment only is
   no support ([#106](https://github.com/JN0V/workline/issues/106)):
-  `judged-in-parts-comment-does-not-*`.
+  `judged-in-parts-comment-does-not-*`; a support disputes a
+  contradiction only on the same words, not the same lines
+  ([#440](https://github.com/JN0V/workline/issues/440)):
+  `judged-in-parts-other-words-on-the-line-do-not-dispute`,
+  `judged-in-parts-support-of-the-next-words-does-not-dispute`,
+  `judged-in-parts-same-words-disputed`.
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
   `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
@@ -137,6 +142,10 @@ its evaluation in
 - **Docs for their reader**: the checks; with an agent, the pages they
   flag read last in a gardening run, a fix proposed on a merge request
   ([#256](https://github.com/JN0V/workline/issues/256)): `reader-*`.
+  That merge request waits for a person's yes even at `normal`, until the
+  project lets it merge alone, so the maintainer reads each one for that
+  issue's Validation ([#438](https://github.com/JN0V/workline/issues/438)):
+  merge's `normal-reader-*`, `alone-*`.
 - **Staying on the task**: the evaluation's `stays-on-the-task`.
 
 ## Missing, in the order it matters

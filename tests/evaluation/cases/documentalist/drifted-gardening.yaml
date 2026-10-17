@@ -3,7 +3,8 @@ about: "ADR-0014's ground truth, gardening (fixture `drifted`): no code changed,
 given:
   repo: drifted
   setup:
-    - "mkdir -p .workline && printf 'roles:\\n  documentalist:\\n    settings:\\n      freshness: {stale-after-days: 30}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: read docs again after a month'"
+    # An issue the role opens, for the stale comment, is kept in the clone (#439).
+    - "mkdir -p .workline && printf 'forge: local\\nroles:\\n  documentalist:\\n    settings:\\n      freshness: {stale-after-days: 30}\\n' > .workline/config.yaml && git add .workline && git commit -qm 'chore: read docs again after a month'"
 run: {role: documentalist, event: schedule}
 grade:
   - {status: pass}

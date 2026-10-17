@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:documentalist
-checked: 064d7a0c
+checked: e2580728
 judged: b5899f5
 status: draft
 ---
