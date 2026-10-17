@@ -42,7 +42,11 @@ A share of the open issues (`issues-per-run`), in this order:
 6. the catch-up: an import's or a bot's issue never read, oldest first.
 
 Past `proposals-max` issues waiting on you, only those you commented on
-are read. The role's own comment is told by its hidden mark, never by
+are read. The share stops where the prompt would pass the role's context
+budget: the issues left out are said in the summary and read first at
+the next run. A night whose agent was not asked says so, and takes no
+issue as read
+([#427](https://github.com/JN0V/workline/issues/427)). The role's own comment is told by its hidden mark, never by
 who posted it: it may run with your token. One whose hidden record does
 not read holds its issue, a warning each run, never read as none
 ([#302](https://github.com/JN0V/workline/issues/302), `state-broken`):

@@ -10,8 +10,16 @@ verified: agent:claude-code
 Part of [Acts on the backlog](../backlog-acts.md): which issues a run reads, in what order, with what code.
 
 A run reads at most `issues-per-run` issues, with at most `code-lines-max`
-lines of the code they name (ADR-0018, amended by ADR-0038), in this
-order: an issue a person who counts commented on since the role read it
+lines of the code they name (ADR-0018, amended by ADR-0038), and no more
+than its prompt holds within the role's context budget: pre measures the
+prompt as the engine does (`agent.Prompt`, `agent.Tokens`, room kept for
+an answer asked again) and leaves out the last issue to read while it is
+over, said (`issues-cut`); those left out are recorded as nothing, so
+read first at the next run. One issue alone over it goes to the engine,
+which does not ask the agent (`prompt-over-budget`): then no issue is
+taken as read (`unasked` in the run's state) — no "read and left", no
+person's comment answered, the summary saying the agent was not asked
+(#427). The order: an issue a person who counts commented on since the role read it
 — waiting on them ([A person's answers](answers.md)), set aside, or neither: their
 word, read first, the agent told so —; one read again for a change to
 what it was built on ([A changed need](changed-need.md)); one an act was proposed on only because a run's cap was

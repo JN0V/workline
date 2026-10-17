@@ -495,11 +495,13 @@ func run(o Options, res *Result) error {
 	var intents []intent.Intention
 	var v *verdict.Verdict
 	unreadAsked := false
+	unasked := false // a task the agent was not asked, nor answered: what pre gave it read by no one
 	for {
 		a, err := attempt(r, o, ag, taskErr == nil, tier, runDir, env, line, settings, cfg, res)
 		if err != nil {
 			return err
 		}
+		unasked = taskErr == nil && (!a.askedAgent || a.external || a.unread != "")
 		intents, v = a.intents, a.verdict
 		if a.external && v.Status != verdict.Pass {
 			res.Status, res.Summary = verdict.BlockedExternal, v.Summary
@@ -653,7 +655,8 @@ func run(o Options, res *Result) error {
 		o.Forge = cfg.Forge
 	}
 	st := runState{Role: r.Name, RolesDir: o.RolesDir, Repo: o.Repo, Forge: o.Forge, Target: o.Target, Scope: o.Scope, Digest: digest, Targets: o.Targets,
-		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Release: releaseFrom, Models: authors(res.Calls)}
+		OpenMergeRequest: o.OpenMergeRequest, PushToMergeRequest: o.PushToMergeRequest, Release: releaseFrom, Models: authors(res.Calls),
+		Unasked: unasked}
 	if err := st.save(runDir); err != nil {
 		return err
 	}
@@ -677,7 +680,7 @@ func run(o Options, res *Result) error {
 				return err
 			}
 			// What a person will see on the issues, not the writes it takes.
-			res.Summary = fmt.Sprintf("judged, not applied (%s); apply with: workline apply %s", onIssues(res.Findings, true), runDir)
+			res.Summary = fmt.Sprintf("judged, not applied (%s); apply with: workline apply %s", onIssues(res.Findings, true, st.Unasked), runDir)
 		}
 		// Judged here, the fix is not on the release pull request: it waits.
 		if releaseFrom != "" && o.PushToMergeRequest && slices.ContainsFunc(intents, func(i intent.Intention) bool { return i.Kind == "patch" }) {
@@ -1030,6 +1033,10 @@ type runState struct {
 	// Models: the agents and models that wrote the proposals, as
 	// <agent>:<model>, named in the commit (ModelTrailer).
 	Models []string `yaml:"models,omitempty"`
+	// Unasked: the run had a task and no answer of its agent's was read —
+	// over the role's context budget, its tokens spent: what pre gave it
+	// was read by no one, and no issue is said read (#427).
+	Unasked bool `yaml:"unasked,omitempty"`
 }
 
 // authors are the agents and models whose answers a run applies, as
@@ -1132,7 +1139,7 @@ func applyAll(r *role.Role, settings map[string]any, st runState, runDir string,
 	if plan != nil {
 		res.Findings = append(res.Findings, plan.Findings...)
 		if res.Status == verdict.Pass {
-			res.Summary = onIssues(res.Findings, false)
+			res.Summary = onIssues(res.Findings, false, st.Unasked)
 		}
 		links(f, res)
 		if err := report(f, r.Name, plan); errors.Is(err, forge.ErrUnreachable) {

@@ -86,7 +86,9 @@ its message, no rule's name; on the backlog (`proposals-waiting`,
 `demoted`, `setting-gone`), "the backlog" and its message. The role's own
 line counts what a person will see on the issues, by issue — "issues: 2
 done alone, 1 proposed to a person, 5 set aside by a person" —, never the
-writes the run takes (`engine.onIssues`).
+writes the run takes (`engine.onIssues`). A run whose agent was not
+asked, though it had a task, says so first — "the agent was not asked:
+no issue read" —, never "nothing to do" (#427).
 
 **Judged, not applied** (`--no-apply`, CI's first job): the engine
 decides the plan (`backlog.Decide`, reading the forge only), keeps it in

@@ -23,9 +23,11 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/JN0V/workline/internal/agent"
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
 	"github.com/JN0V/workline/internal/routing"
 	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
@@ -124,7 +126,6 @@ func Pre(runDir, repo string) int {
 		return fail(err)
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
-	var task strings.Builder
 	var fallback []intent.Intention
 	var findings []verdict.Finding
 	for _, name := range cfg.Gone {
@@ -133,8 +134,6 @@ func Pre(runDir, repo string) int {
 	}
 	judged := 0
 	tracked := trackedFiles(repo)
-	var code []string // the files the issues name, given once each
-	var others []string
 	var readIDs []string // the issues read, for the plan (backlog.Decide)
 	// answered: a person's comment on an issue, read first — waiting on
 	// them, set aside or neither; again: an act proposed only for the cap;
@@ -614,71 +613,159 @@ func Pre(runDir, repo string) int {
 	if os.Getenv("WORKLINE_AI") == "none" {
 		toRead = nil
 	}
-	wasRead := map[int]bool{}
-	noCode := false                   // an issue read names no file: the repository's folders are listed
 	issuePages := forge.IssuePages(f) // an issue cited by its page is cited
-	for i, d := range toRead {
-		if i >= s.IssuesPerRun {
-			rest = append(rest, d)
-			continue
-		}
-		judged++
-		wasRead[d.is.ID] = true
-		readIDs = append(readIDs, strconv.Itoa(d.is.ID))
-		files := named(repo, d.is, d.st, d.comments, tracked)
-		noCode = noCode || len(files) == 0
-		review := ""
-		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
-			review = specFindings(d.is, d.st, d.comments, r)
-		}
-		if readyOpen(d.is, d.st, cfg) {
-			review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
-				work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
-		}
-		if a := answers[d.is.ID]; a != nil {
-			review += revise(d.is, d.st, a, revisions)
-		} else if n, ok := heard[d.is.ID]; ok {
-			review += commented(n, d.is, d.st)
-		}
-		// The issues it cites, open or closed: a closed one is history,
-		// never work to come.
-		if ids := backlog.CitedIssues(d.is.Body+"\n"+strings.Join(forge.Bodies(backlog.Counted(d.notes, d.is)), "\n"), issuePages); len(ids) > 0 {
-			if all == nil && slices.ContainsFunc(ids, func(n int) bool { return !isOpen[n] }) {
-				if all, err = b.AllIssues(); errors.Is(err, forge.ErrUnreachable) {
-					fmt.Fprintln(os.Stderr, err)
-					return exitExternal
-				} else if err != nil {
-					return fail(err)
+	said := ""                        // the releases and open milestones, read once
+	// build writes the task of the first n issues to read: each issue with
+	// its state once read, recorded only once the agent answers; the
+	// others in the backlog's order, given whole when on the same code, by
+	// title otherwise; the code they name; nothing is written yet.
+	build := func(n int) (taskBuilt, error) {
+		t := taskBuilt{wasRead: map[int]bool{}}
+		var task strings.Builder
+		var code []string // the files the issues name, given once each
+		noCode := false   // an issue read names no file: the repository's folders are listed
+		left := slices.Clone(rest)
+		for i, d := range toRead {
+			if i >= n {
+				left = append(left, d)
+				continue
+			}
+			t.wasRead[d.is.ID] = true
+			t.ids = append(t.ids, strconv.Itoa(d.is.ID))
+			files := named(repo, d.is, d.st, d.comments, tracked)
+			noCode = noCode || len(files) == 0
+			review := ""
+			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
+				review = specFindings(d.is, d.st, d.comments, r)
+			}
+			if readyOpen(d.is, d.st, cfg) {
+				review += fmt.Sprintf("Ready: its four sections are there, %s and %s a person's — propose `ready` when it is evident: one need, a %s that proves it, nothing left open in its comments; the engine checks it.\n",
+					work.Name(work.Need), work.Name(work.Validation), work.Name(work.Verification))
+			}
+			if a := answers[d.is.ID]; a != nil {
+				review += revise(d.is, d.st, a, revisions)
+			} else if hn, ok := heard[d.is.ID]; ok {
+				review += commented(hn, d.is, d.st)
+			}
+			// The issues it cites, open or closed: a closed one is history,
+			// never work to come.
+			if ids := backlog.CitedIssues(d.is.Body+"\n"+strings.Join(forge.Bodies(backlog.Counted(d.notes, d.is)), "\n"), issuePages); len(ids) > 0 {
+				if all == nil && slices.ContainsFunc(ids, func(n int) bool { return !isOpen[n] }) {
+					var err error
+					if all, err = b.AllIssues(); err != nil {
+						return t, err
+					}
+				}
+				closed := map[int]string{}
+				for _, is := range all {
+					if is.Closed {
+						closed[is.ID] = is.Reason
+					}
+				}
+				if cites := backlog.IssueStates(ids, isOpen, closed); cites != "" {
+					review = "Cites: " + cites + " — a closed issue is done or dropped: never a part to wait for nor work to come.\n" + review
 				}
 			}
-			closed := map[int]string{}
-			for _, is := range all {
-				if is.Closed {
-					closed[is.ID] = is.Reason
+			writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
+			for _, f := range files {
+				if !slices.Contains(code, f) {
+					code = append(code, f)
 				}
 			}
-			if said := backlog.IssueStates(ids, isOpen, closed); said != "" {
-				review = "Cites: " + said + " — a closed issue is done or dropped: never a part to wait for nor work to come.\n" + review
+			read := *d.st
+			counted := len(backlog.Counted(d.notes, d.is))
+			read.Judged, read.Comments, read.Heard, read.Rules = commit, 0, &counted, backlog.Reading
+			if answers[d.is.ID] != nil {
+				read.Revisions++
 			}
-		}
-		writeIssue(&task, role, s.rounds(), d.is, d.st, d.notes, files, isOpen, ledger.OwnBlockers(d.is), front[d.is.ID]+review)
-		for _, f := range files {
-			if !slices.Contains(code, f) {
-				code = append(code, f)
+			if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
+				read.Answered = r.Body
 			}
+			read.Keep(d.is.Body)
+			t.reads = append(t.reads, intent.Intention{Kind: "comment", Value: map[string]any{
+				"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
 		}
-		read := *d.st
-		counted := len(backlog.Counted(d.notes, d.is))
-		read.Judged, read.Comments, read.Heard, read.Rules = commit, 0, &counted, backlog.Reading
-		if answers[d.is.ID] != nil {
-			read.Revisions++
+		if said == "" {
+			said = releases(repo, b)
 		}
-		if r := backlog.SpecOpen(d.is, d.comments); cfg.SpecReview && r != nil {
-			read.Answered = r.Body
+		intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, len(t.ids), said, modes(cfg, ledger.Demoted(cfg.UndoneMax)))
+		if pages := forge.FilePages(f); pages != "" {
+			// What it writes cites a decision or a doc as a link a reader
+			// follows (AGENTS.md, "Writing user docs").
+			intro += fmt.Sprintf("Links: a file of the repository you cite — a decision, a doc, code — is a link to %s<its path>; an issue is cited as #<number>.\n\n", pages)
 		}
-		read.Keep(d.is.Body)
-		fallback = append(fallback, intent.Intention{Kind: "comment", Value: map[string]any{
-			"issue": d.is.ID, "sticky": "state", "update-only": true, "if-answered": true, "body": backlog.FormatState(read)}})
+		// An issue not read in this run, on the same code as one read, is
+		// given whole: it may be the original a duplicate is closed
+		// against, and a duplicate's original is quoted (ADR-0018).
+		var related strings.Builder
+		var others []string
+		shown := 0
+		// The rest in the backlog's order: nearest milestone, priority,
+		// number, an issue after those it waits on (ADR-0028).
+		ordered := make([]forge.Issue, len(left))
+		byID := map[int]due{}
+		for i, d := range left {
+			ordered[i], byID[d.is.ID] = d.is, d
+		}
+		backlog.Order(ordered)
+		for _, is := range ordered {
+			d := byID[is.ID]
+			files := named(repo, d.is, d.st, d.comments, tracked)
+			if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
+				shown++
+				fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
+				continue
+			}
+			others = append(others, fmt.Sprintf("- #%d %s%s", d.is.ID, d.is.Title, place(d.is, isOpen)))
+		}
+		if shown > 0 {
+			fmt.Fprintf(&task, "# Other open issues on the same code\n\nNot to judge in this run: given whole, as the original a duplicate would be closed against.\n\n%s", related.String())
+		}
+		if len(others) > 0 {
+			fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
+		}
+		writeCode(&task, repo, code, s.CodeLinesMax)
+		if noCode {
+			writeFolders(&task, tracked)
+		}
+		t.text = intro + task.String()
+		return t, nil
+	}
+	// What the agent reads fits the role's context budget (#427): the task
+	// holds as many issues as issues-per-run lets, one fewer while its
+	// prompt would be over the budget, as the engine measures it. The
+	// issues left out are read first at the next run: nothing of them is
+	// recorded. One issue alone over it is left to the engine, which says
+	// the agent was not asked.
+	n := min(len(toRead), s.IssuesPerRun)
+	room := fits(runDir, repo, role)
+	var t taskBuilt
+	for n > 0 {
+		var err error
+		if t, err = build(n); errors.Is(err, forge.ErrUnreachable) {
+			fmt.Fprintln(os.Stderr, err)
+			return exitExternal
+		} else if err != nil {
+			return fail(err)
+		}
+		if room == nil || n == 1 || room(t.text) {
+			break
+		}
+		n--
+	}
+	if cut := toRead[n:min(len(toRead), s.IssuesPerRun)]; len(cut) > 0 {
+		var ids []string
+		for _, d := range cut {
+			ids = append(ids, fmt.Sprintf("#%d", d.is.ID))
+		}
+		findings = append(findings, verdict.Finding{Rule: "issues-cut", Level: "info",
+			Message: fmt.Sprintf("%d of the issues to read left for the next run, read first then (%s): with them, the task would be over the role's context budget", len(cut), strings.Join(ids, ", "))})
+	}
+	fallback = append(fallback, t.reads...)
+	readIDs, judged = t.ids, len(t.ids)
+	wasRead := t.wasRead
+	if wasRead == nil {
+		wasRead = map[int]bool{}
 	}
 	// An answer not read this run waits for the next: no 👀, no reply.
 	for id := range answers {
@@ -733,56 +820,53 @@ func Pre(runDir, repo string) int {
 	if judged == 0 {
 		// No task.md: the agent is not asked; the state comments are
 		// written, a person's answers and acts undone read (ADR-0038).
+		os.Remove(filepath.Join(runDir, "in", "task.md"))
 		if len(fallback) > 0 || len(found) > 0 || len(ledger.Signs) > 0 {
 			return writeFindings(runDir, findings)
 		}
 		return final(runDir, verdict.Verdict{Status: verdict.Pass, Summary: "no issue to judge", Findings: findings})
 	}
-	intro := fmt.Sprintf("The run is on commit %s. %d open issues to read against the code.\n\n%s\n%s", commit, judged, releases(repo, b), modes(cfg, ledger.Demoted(cfg.UndoneMax)))
-	if pages := forge.FilePages(f); pages != "" {
-		// What it writes cites a decision or a doc as a link a reader
-		// follows (AGENTS.md, "Writing user docs").
-		intro += fmt.Sprintf("Links: a file of the repository you cite — a decision, a doc, code — is a link to %s<its path>; an issue is cited as #<number>.\n\n", pages)
-	}
-	// An issue not read in this run, on the same code as one read, is given
-	// whole: it may be the original a duplicate is closed against, and a
-	// duplicate's original is quoted (ADR-0018).
-	var related strings.Builder
-	shown := 0
-	// The rest in the backlog's order: nearest milestone, priority, number,
-	// an issue after those it waits on (ADR-0028).
-	ordered := make([]forge.Issue, len(rest))
-	byID := map[int]due{}
-	for i, d := range rest {
-		ordered[i], byID[d.is.ID] = d.is, d
-	}
-	backlog.Order(ordered)
-	for i, is := range ordered {
-		rest[i] = byID[is.ID]
-	}
-	for _, d := range rest {
-		files := named(repo, d.is, d.st, d.comments, tracked)
-		if shown < relatedMax && slices.ContainsFunc(files, func(f string) bool { return slices.Contains(code, f) }) {
-			shown++
-			fmt.Fprintf(&related, "## #%d %s\n\n%s\n\n", d.is.ID, d.is.Title, clip(d.is.Body, bodyMax/2))
-			continue
-		}
-		others = append(others, fmt.Sprintf("- #%d %s%s", d.is.ID, d.is.Title, place(d.is, isOpen)))
-	}
-	if shown > 0 {
-		fmt.Fprintf(&task, "# Other open issues on the same code\n\nNot to judge in this run: given whole, as the original a duplicate would be closed against.\n\n%s", related.String())
-	}
-	if len(others) > 0 {
-		fmt.Fprintf(&task, "# The other open issues, titles only\n\nNot read in this run; a duplicate may be one of them.\n\n%s\n\n", strings.Join(others, "\n"))
-	}
-	writeCode(&task, repo, code, s.CodeLinesMax)
-	if noCode {
-		writeFolders(&task, tracked)
-	}
-	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(intro+task.String()), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(t.text), 0o644); err != nil {
 		return fail(err)
 	}
 	return writeFindings(runDir, findings)
+}
+
+// taskBuilt is a run's task, written once it fits: its text, each issue
+// read with its state as read, recorded once the agent answers.
+type taskBuilt struct {
+	text    string
+	reads   []intent.Intention
+	ids     []string
+	wasRead map[int]bool
+}
+
+// askedAgainChars is the room kept in the prompt for an answer asked again:
+// what was refused, about a thousand characters when it did not read.
+const askedAgainChars = 2000
+
+// fits says whether a task keeps the agent's prompt within the role's
+// context budget (#427), measured as the engine measures it — the same
+// facets, agent.Prompt, agent.Tokens —, room kept for an answer asked
+// again; nil when the role or its budget is not known: the engine then
+// refuses a prompt too large, and says so.
+func fits(runDir, repo, name string) func(task string) bool {
+	r, err := role.Load(os.Getenv("WORKLINE_ROLES_DIR"), name)
+	if err != nil || r.Context.Budget <= 0 {
+		return nil
+	}
+	budget := r.Context.Budget
+	r.Context.Budget = 0 // measured here, refused by the engine only
+	return func(task string) bool {
+		if err := os.WriteFile(filepath.Join(runDir, "in", "task.md"), []byte(task), 0o644); err != nil {
+			return true
+		}
+		system, user, err := agent.Prompt(agent.Request{RunDir: runDir, Repo: repo, Role: r})
+		if err != nil {
+			return true // the engine says why when it asks
+		}
+		return agent.Tokens(len(system)+len(user)+askedAgainChars) <= budget
+	}
 }
 
 // acceptedBy names who labelled an issue workline:accepted, as the forge's

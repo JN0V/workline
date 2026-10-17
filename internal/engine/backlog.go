@@ -505,8 +505,9 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	if !ok {
 		return nil, errors.New("this forge cannot list or close issues")
 	}
+	// The issues pre gave the agent, read only once it answered (#427).
 	var read []int
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", "issues-read")); err == nil {
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "issues-read")); err == nil && !st.Unasked {
 		for _, f := range strings.Fields(string(data)) {
 			if n, err := strconv.Atoi(f); err == nil {
 				read = append(read, n)
@@ -549,7 +550,7 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 	// A person's comments pre read as "revise", on the issues waiting on
 	// them (ADR-0038).
 	revise := map[int]*backlog.Answer{}
-	if data, err := os.ReadFile(filepath.Join(runDir, "in", "answers.yaml")); err == nil {
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", "answers.yaml")); err == nil && !st.Unasked {
 		if err := yaml.Unmarshal(data, &revise); err != nil {
 			return nil, fmt.Errorf("in/answers.yaml: %v", err)
 		}
@@ -587,8 +588,9 @@ func planAhead(r *role.Role, settings map[string]any, st runState, runDir string
 // onIssues says what a backlog role's run leaves for people on the issues,
 // counted by issue as the summary groups them (ADR-0038): done alone,
 // done as a person accepted, proposed, set aside — never the writes it
-// takes, its state comments among them.
-func onIssues(fs []verdict.Finding, ahead bool) string {
+// takes, its state comments among them. A run whose agent was not asked
+// says so first, never "nothing to do" (#427).
+func onIssues(fs []verdict.Finding, ahead, unasked bool) string {
 	if slices.ContainsFunc(fs, func(f verdict.Finding) bool { return f.Rule == "plan-unread" }) {
 		return "what it does on the issues is decided when applied"
 	}
@@ -617,10 +619,14 @@ func onIssues(fs []verdict.Finding, ahead bool) string {
 			parts = append(parts, fmt.Sprintf("%d %s", n, what))
 		}
 	}
-	if len(parts) == 0 && ahead {
+	switch {
+	case unasked && len(parts) == 0:
+		return "the agent was not asked: no issue read"
+	case unasked:
+		return "the agent was not asked, no issue read; issues: " + strings.Join(parts, ", ")
+	case len(parts) == 0 && ahead:
 		return "nothing to do on the issues"
-	}
-	if len(parts) == 0 {
+	case len(parts) == 0:
 		return "nothing done on the issues"
 	}
 	return "issues: " + strings.Join(parts, ", ")

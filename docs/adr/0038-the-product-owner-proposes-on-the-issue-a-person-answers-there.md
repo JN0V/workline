@@ -398,3 +398,10 @@ person, none answered.
     role's, one more each time); a mention edited in (no forge lets a bot
     mention whoever follows, and GitHub mails nobody for an edit; GitLab
     only a user newly mentioned).
+- **A run reads what fits** ([#427](https://github.com/JN0V/workline/issues/427)).
+  Fifteen issues a night made a task over the role's context budget:
+  four nights, no agent asked, the summary saying the issues were read.
+  Now the task holds as many issues as its prompt fits, the others read
+  first the night after; a night whose agent was not asked takes no
+  issue as read and says so. The budget and `issues-per-run` are
+  unchanged.
