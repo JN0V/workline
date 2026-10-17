@@ -4,7 +4,9 @@
   spec subject on a machine and on the forge (#128); the developer's loop
   to come (roles/reviewer/docs/status.md); amended 2026-10-12: where the
   project sets a merge policy, the person accepts and the forge merges
-  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md))
+  ([ADR-0042](0042-the-engine-merges-by-the-projects-policy.md));
+  amended 2026-10-17: a change too large for one call read in parts
+  (#446)
 - **Date:** 2026-10-04
 - **Builds on:** ADR-0005 (a judge's independence), ADR-0009 (a question in
   parts), ADR-0011 (the review is on the merge request), ADR-0013 (what was
@@ -622,3 +624,45 @@ merge-request line; on in workline's own repository.
   job applies nothing between rounds, so each round would read the same
   issue. Also rejected: `findings-max` shared by the specs; each has its
   own comment.
+
+## Amendment (2026-10-17, #446: a change too large read in parts)
+
+- **What was wrong**: the caps are in lines (`diff-lines-max` 1500,
+  `code-lines-max` 600), the call's budget in tokens
+  ([#446](https://github.com/JN0V/workline/issues/446)). A change of
+  +858 −415 lines in 78 files gave one call of 130,196 characters, about
+  107.5k tokens; on the forge, one lens alone, 110.4k. Refused, it was
+  never reviewed: each push refused again, the verdict red. Past 1500
+  lines, a change was cut in silence, recorded as reviewed whole.
+- **What filled it**, offline, a recording agent: the hunks of the files
+  too long to give whole 74.5% (conformance cases 47k characters for 420
+  lines, Go 38k, fixtures 10k); the files given whole 20.6%; the
+  instruction, lenses, testimony, contract and policy 5%. Its 41 docs
+  were left by `ignore`: nothing ignored was there to leave out.
+- **In parts, as a doc too large is judged**
+  ([ADR-0009](0009-docs-far-behind-are-judged-in-parts.md)): only a
+  change past one call — the role's context budget, measured as the
+  engine measures a prompt, or `diff-lines-max`, now the lines of hunks
+  one call reads. Each part: the lenses, what the author says, the issue
+  closed, every file by name, then a share of the files in path order,
+  packed to fill the budget. A file larger than what is left is cut by
+  hunks or by lines, every line read once.
+- **Merged by the engine, no AI**: each part's findings found again in
+  the whole change, grouped by line and judged as one review's. A part
+  unanswered: the lenses failed on its files, the commits not recorded.
+- **`parts-max`** (2, from 1 to 8): past it, no lens is asked, no token
+  spent, and `review-not-whole` says how many parts it would take. Two
+  parts spend at most two budgets, 200k, leaving the judges a third of
+  `ai-max-tokens` (300k).
+- **The result**, the same change offline: two calls, about 94.0k and
+  23.7k tokens; one lens, 92.9k and 22.6k.
+- **The blind spot**, ADR-0009's: a defect seen only across two files in
+  different parts. Each part knows every file by name and is told not to
+  report missing what another part may hold; the judge reads the code it
+  needs ([ADR-0045](0045-the-judge-asks-for-the-code-it-needs.md)).
+- **Rejected**: leaving the conformance cases out (tests the tests lens
+  reads: a choice of what is reviewed, not of its size); cutting the
+  change at the budget (never reviewed whole, recorded as if it were); a
+  larger budget (the role's context, principle 3); `parts-max` drawn from
+  `ai-max-tokens` (estimating calls before making them, rejected in
+  #147's amendment). The diff-alone facet, off, stays one call.

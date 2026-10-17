@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 3fc58797
+checked: 57a78c71
 verified: agent:claude-code
 ---
 # Reviewer
@@ -67,7 +67,8 @@ file. All roles: [docs/roles.md](../../docs/roles.md).
 - **Cost**: one call for the lenses (all of them on a machine, together;
   one a push on a merge request), one judge call for each important
   finding, up to three when it reads the code it needs; a spec, one
-  call. Capped at 300000 tokens a run
+  call. A change too large for one call: a call a part
+  ([in parts](docs/parts.md)). Capped at 300000 tokens a run
   (`ai-max-tokens`) and by the `*-max` settings below. Measured:
   [research](../../docs/research/code-review.md#the-reviewers-cost-measured).
 - **The run when a merge request becomes ready** costs more: every lens
@@ -165,7 +166,8 @@ What a run may read and write, and spend:
 | `findings-max` | `10` | findings on the change a run; the rest counted |
 | `issues-max` | `3` | issues opened a run for what lies outside it |
 | `questions-max` | `3` | questions put to a person a run; the rest counted |
-| `diff-lines-max` | `1500` | lines of the change a lens is given |
+| `diff-lines-max` | `1500` | lines of the change's hunks one call is given; past them, in parts |
+| `parts-max` | `2` | parts a change too large for one call is read in, 1 to 8; past them, no lens asked ([in parts](docs/parts.md)) |
 | `code-lines-max` | `600` | lines of changed files a lens is given whole; the others by their hunks |
 | `judge-lines-max` | `200` | lines of code a judge is shown, the rest named; `0`: the 31 lines around the cause |
 | `judge-read-rounds` | `2` | rounds of reads a judge may ask before it answers, 8 at most ([when the judge reads](docs/judge.md#when-the-judge-reads)); `0`: none, a no drops the finding |
