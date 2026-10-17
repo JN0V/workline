@@ -37,14 +37,14 @@ hold:
    and [tried.md](tried.md) (2026-10-01 to 10-02). The `drifted` cases,
    five runs each, and how to run them again: [the
    evaluation](../../../docs/spec/conformance/evaluation.md#real-shapes).
-   Every evaluation case, five runs on one engine: **not met** on
-   2026-10-17. `drifted-version-bump` vouched for a planted falsehood in
-   one run of three, its own note saying it could not check it
-   ([#449](https://github.com/JN0V/workline/issues/449)); the measure
-   stopped there
-   ([the documentalist, measured](../../../docs/research/documentalist-measured.md)).
-   Before it, each case had 5 to 24 runs, spread over engine commits and
-   models, rarely five on one.
+   Every evaluation case, five runs on one engine: **12 of 14 met** on
+   2026-10-17, at be99f444, after the guard of
+   [#451](https://github.com/JN0V/workline/pull/451)
+   ([the documentalist, measured](../../../docs/research/documentalist-measured.md#after-the-guard-2026-10-17-afternoon)).
+   Left: `condenses-the-role-contract`, two runs graded over its 200
+   lines because the evaluation counts the doc's header
+   ([#454](https://github.com/JN0V/workline/issues/454)), its judge never
+   asked; `stays-on-the-task`, not run (about 68k tokens in).
 
 ## Built
 
@@ -159,8 +159,10 @@ its evaluation in
 
 ## Missing, in the order it matters
 
-1. **A doc vouched for that its own note doubts**, once in ten runs: no
-   guard yet ([#449](https://github.com/JN0V/workline/issues/449)).
+1. **The measure's last two cases**: `condenses-the-role-contract` again,
+   its judge asked, once the evaluation counts a doc's lines as the
+   engine does ([#454](https://github.com/JN0V/workline/issues/454));
+   `stays-on-the-task`, five runs, about 68k tokens in.
 2. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
 3. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch

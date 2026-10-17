@@ -1,6 +1,6 @@
 ---
 sources: [tests/evaluation]
-checked: 95c31649
+checked: 3fbc95f2
 judged: 62abc22
 verified: agent:claude-code
 ---
@@ -40,8 +40,9 @@ awk -F'\t' 'NR==1 || $2 == "<commit>"' tests/evaluation/results.tsv > "$TMPDIR/r
 ```
 
 Measured again on 2026-10-17, every documentalist case planned at five
-runs, stopped at three when one vouched for a falsehood:
-[the documentalist, measured](../../research/documentalist-measured.md).
+runs: stopped at three in the morning when one vouched for a falsehood;
+after the guard against it, 12 of 14 cases earning every point in every
+run: [the documentalist, measured](../../research/documentalist-measured.md).
 
 ## The reviewer's measure
 
