@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, internal/builtin/reviewer/parts.go, internal/builtin/reviewer/reviewer.go]
-checked: 83eff4a0
+checked: 57a78c71
 verified: agent:claude-code
 ---
 # Reviewer — a change too large for one call
