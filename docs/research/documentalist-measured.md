@@ -9,8 +9,8 @@ earning every point — for criterion 3 of
 **Verdict.**
 
 - **Met for 12 of 14 cases in the afternoon**, after the guard of
-  [#451](https://github.com/JN0V/workline/pull/451) ([below](#after-the-guard-2026-10-17-afternoon)):
-  `condenses-the-role-contract` and `stays-on-the-task` not measured.
+  [#451](https://github.com/JN0V/workline/pull/451) ([below](#after-the-guard-2026-10-17-afternoon));
+  the last two not met in the evening ([below](#the-last-two-cases-in-the-evening)).
 - **Not met in the morning: the measure stopped at its first
   confirmation.** `drifted-version-bump` moved `checked` over a planted
   falsehood in one run of three, its own note saying it could not check
@@ -174,20 +174,20 @@ go test -count=5 -timeout 90m -run 'TestEvaluation/documentalist/<case>$' ./test
 awk -F'\t' 'NR==1 || $2 == "be99f444"' tests/evaluation/results.tsv > "$TMPDIR/runs.tsv" && go run ./tests/evaluation/summary "$TMPDIR/runs.tsv"
 ```
 
-### What is left
+### The last two cases, in the evening
 
-- **`condenses-the-role-contract`, not measured.** Two runs lost
-  `lines-max` at 202 and 203 lines, for 200. The evaluation counts the
-  doc's 4-line header; the engine's budget, which applied both, does
-  not: 198 and 199 lines
-  ([#454](https://github.com/JN0V/workline/issues/454)).
-- **Its judge never asked**: "does every rule the role contract stated
-  before still hold?" was skipped in all five runs, `WORKLINE_JUDGE`
-  unset; the weekly [run.sh](../../tests/evaluation/schedule/run.sh)
-  sets `claude:sonnet`. Five runs again with it.
-- **`stays-on-the-task`, not run**: the script was stopped by hand before
-  it; its five runs, about 68k tokens in (13.2k to 13.5k a run weekly),
-  would have crossed the day's 1,000,000.
+Left in the afternoon: one graded on its header ([#454](https://github.com/JN0V/workline/issues/454)),
+its judge unset; the other not run. Five runs each at 1f81fa73, after
+[#457](https://github.com/JN0V/workline/pull/457), the judge on Sonnet:
+
+- **`condenses-the-role-contract`: 4 of 5 full**, 2 calls a run, the condense
+  and the reader's ([#417](https://github.com/JN0V/workline/pull/417)), 21,578 tokens in.
+  The fifth: 3 calls for a cap of 2, 31,861 in; the third the size of a
+  condense asked again, as one refused still over budget is.
+- **`stays-on-the-task`: 0 of 5**, the fix right each time, but 6 calls
+  for a cap of 2, about 103k tokens in, against 1 and 13.5k on 10-11: a
+  merge request judges `README.md` in parts since [#381](https://github.com/JN0V/workline/pull/381)
+  ([#458](https://github.com/JN0V/workline/issues/458)).
 
 ### What it cost
 
