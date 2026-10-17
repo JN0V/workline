@@ -1,6 +1,6 @@
 ---
-sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks]
-checked: abfe56fc
+sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
+checked: 6bd49716
 judged: b5899f5
 verified: agent:documentalist
 ---
@@ -73,6 +73,14 @@ Each in detail: [the commands](commands.md), and
 - `cmd:<command>`: any other agent ([another agent](#another-agent)).
 - Default: `WORKLINE_AI` for the hook, else the project's `ai`, else
   yours, else none.
+- `claude` runs headless, outside the repository, with no tools. It gets
+  your environment without the variables a Claude Code session exports
+  (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`…): started from a session,
+  a commit's hook included, the call would run as its child, at twice
+  the tokens ([measured](research/claude-session-env.md)). They are
+  dropped even when you set one (`CLAUDE_EFFORT`: the effort is the
+  role's, or `claude:@<effort>`'s). Your login (`CLAUDE_CODE_OAUTH_TOKEN`,
+  `ANTHROPIC_API_KEY`…) and other settings pass.
 
 ### The forge
 
@@ -138,6 +146,8 @@ Each in detail: [the commands](commands.md), and
 `cmd:<command>` makes any command the agent: another provider's CLI, or a
 wrapper around your own. It runs with `sh -c`, outside the repository:
 
+- it gets your environment as it is, a Claude Code session's variables
+  included;
 - its input is the prompt, the role's persona first;
 - `WORKLINE_TIER` and `WORKLINE_EFFORT` say what the role asks (`light`,
   `standard`, `frontier`; `none` to `max`), for it to pick its model;

@@ -9,14 +9,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
 
 // claude runs Claude Code headless. It gets no tools, no MCP servers and no
-// session, and runs outside the repository so the project's CLAUDE.md is not
-// loaded: the role's facets are its whole context. model and effort, when
+// session, not even the Claude Code session it may be started from
+// (claudeEnv), and runs outside the repository so the project's CLAUDE.md is
+// not loaded: the role's facets are its whole context. model and effort, when
 // set, replace what the role's tier and effort ask: to compare models on the
 // same cases, or to run a project on one model.
 type claude struct{ model, effort string }
@@ -58,6 +60,7 @@ func (c claude) Propose(req Request) (Call, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = os.TempDir()
+	cmd.Env = claudeEnv(os.Environ())
 	cmd.Stdin = strings.NewReader(user)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
@@ -85,6 +88,32 @@ func (c claude) Propose(req Request) (Call, error) {
 		return call, fmt.Errorf("%w: %v", ErrInvalidOutput, err)
 	}
 	return call, os.WriteFile(filepath.Join(req.RunDir, "out", "intentions.yaml"), proposals, 0o644)
+}
+
+// claudeSession are the variables a Claude Code session exports to every
+// process it starts. Passed on, they made a role's call that session's
+// child, at twice the tokens in (docs/research/claude-session-env.md).
+// They are dropped, even one a person set: a call with no tools needs
+// none, and its effort is the role's. The login (CLAUDE_CODE_OAUTH_TOKEN,
+// ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL…) and other settings pass.
+var claudeSession = []string{
+	"CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_CHILD_SESSION",
+	"CLAUDE_CODE_SESSION_ATTENDED", "CLAUDE_CODE_MESSAGING_SOCKET", "CLAUDE_CODE_MESSAGING_TOKEN",
+	"CLAUDE_CODE_EXECPATH", "CLAUDE_PID", "CLAUDE_EFFORT", "CLAUDE_AGENT_SDK_VERSION",
+	"CLAUDE_CODE_ENABLE_TASKS", "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
+	"CLAUDE_CODE_EMIT_STARTUP_TIMING", "CLAUDE_CODE_QUESTION_PREVIEW_FORMAT",
+	"MCP_CONNECTION_NONBLOCKING", "AI_AGENT",
+}
+
+// claudeEnv is environ without the session's variables.
+func claudeEnv(environ []string) []string {
+	env := make([]string, 0, len(environ))
+	for _, kv := range environ {
+		if name, _, _ := strings.Cut(kv, "="); !slices.Contains(claudeSession, name) {
+			env = append(env, kv)
+		}
+	}
+	return env
 }
 
 // claudeResult is the part of `claude -p --output-format json` workline reads.

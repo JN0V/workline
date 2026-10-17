@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: abfe56fc
+checked: 6bd49716
 verified: agent:documentalist
 judged: b530b72
 ---
@@ -264,8 +264,10 @@ token), **apply** (trusted, no AI key).
    Read whole rather than asked again: the text on the line is exactly
    what the agent wrote, a quote included, and asking costs a call that
    may repeat the slip.
-   *Claude Code runs without tools; a `cmd:` agent is not sandboxed, so
-   read-only is its command's promise, not the engine's.*
+   *Claude Code runs without tools, and apart from a Claude Code session
+   it may be started from: that session's variables are dropped
+   ([measured](../research/claude-session-env.md)). A `cmd:` agent is not
+   sandboxed, so read-only is its command's promise, not the engine's.*
 4. **Judge — `post`.** Reads `in/` and, if present, `out/intentions.yaml`.
    Writes `out/verdict.yaml`. It guards what the AI must not decide (for
    example, the committer's `post` refuses a rewritten message that fails the
