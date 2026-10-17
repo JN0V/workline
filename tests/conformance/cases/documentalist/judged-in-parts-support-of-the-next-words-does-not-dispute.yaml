@@ -1,0 +1,15 @@
+case: documentalist/judged-in-parts-support-of-the-next-words-does-not-dispute
+about: "A part's support of the words that follow a contradiction, on lines overlapping it, does not dispute it (#440): the configuration contradicting \"At most 100 requests are served at once\" (line 16) while the server supports \"past that, the service answers `503 Service Unavailable`\" (lines 16-17) goes to the fix as found wrong."
+given:
+  repo: service
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500}}}}
+  setup:
+    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
+run: {role: documentalist, event: merge-request, ai: "fake:parts-connections-other-words"}
+expect:
+  status: pass
+  agent-calls: 5
+  run-files:
+    in/task.md:
+      contains: "### Found wrong\n\n- The doc, line 16: \"At most 100 requests are served at once\""
+      not-contains: "Found wrong by one part, and supported by another"

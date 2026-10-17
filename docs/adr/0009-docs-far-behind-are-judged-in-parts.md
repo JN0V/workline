@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words)
 - **Date:** 2026-09-29
 
 ## Context
@@ -147,3 +147,19 @@ after six nights, 2026-10-01 to 10-13, on DomoticsCore and workline:
 - A doc that cannot be judged in parts whatever its sources hold — too
   long itself, or sources in another repository — says so in the round
   that finds it, not "in a later round".
+
+## Amendment (2026-10-17)
+
+A contradiction is a **conflict** only when another part's support quotes
+some of the same words of the doc, where they stand — not merely lines
+that overlap ([#440](https://github.com/JN0V/workline/issues/440)):
+
+- A sentence spans lines, so a part supporting the words beside a
+  contradiction shared its lines. The evaluation kept a false sentence
+  in two runs of five; replayed, each could be such a disagreement, which
+  the fix call may leave as it is.
+- Replayed with no agent: "Each one lasts the configured session TTL"
+  (lines 22-23), contradicted by the store, and "24 hours by default"
+  (line 23), supported by the configuration, were a conflict; the first
+  is now found wrong. Words both parts quote stay a conflict.
+- A partial claim is still settled by a support covering its lines.

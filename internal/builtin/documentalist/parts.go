@@ -185,7 +185,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			summary += fmt.Sprintf(", %d resting on a comment only, not read as support", len(only))
 			for _, o := range only {
 				for _, c := range verdictOf.kept {
-					if c.Status == "contradicted" && c.Lines.overlaps(o.Lines) {
+					if c.Status == "contradicted" && sameWords(string(content), c, o) {
 						*findings = append(*findings, verdict.Finding{Rule: "comment-disagrees", Where: strings.SplitN(o.comment, ":", 2)[0],
 							Message: fmt.Sprintf("the comment at %s was given by a part as support for %s %s, which %s, %s contradicts; a comment is not evidence: if the code says otherwise, the comment is stale — fix it", o.comment, sd.doc.Path, o.Lines, c.Source.Path, c.Source.Lines)})
 						break
@@ -529,9 +529,58 @@ func quotedAt(content string, r lineRange, quote string) bool {
 	return strings.Contains(strings.Join(strings.Fields(strings.Join(lines[r.from-1:r.to], " ")), " "), q)
 }
 
-// fixEntry puts the parts' claims together, without AI, by the doc's lines:
+// quoteSpans are where quote stands in the lines r cites, as offsets in the
+// doc's words joined by single spaces, as quotedAt reads it: one span for
+// each time it is there.
+func quoteSpans(content string, r lineRange, quote string) [][2]int {
+	lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+	q := strings.Join(strings.Fields(quote), " ")
+	if q == "" || r.from < 1 || r.to > len(lines) {
+		return nil
+	}
+	before := strings.Join(strings.Fields(strings.Join(lines[:r.from-1], " ")), " ")
+	region := strings.Join(strings.Fields(strings.Join(lines[r.from-1:r.to], " ")), " ")
+	start := len(before)
+	if before != "" && region != "" {
+		start++ // the space between the lines before and these
+	}
+	var spans [][2]int
+	for i := 0; i <= len(region)-len(q); {
+		k := strings.Index(region[i:], q)
+		if k < 0 {
+			break
+		}
+		spans = append(spans, [2]int{start + i + k, start + i + k + len(q)})
+		i += k + 1
+	}
+	return spans
+}
+
+// sameWords says whether two claims speak of some of the same words of the
+// doc: their quotes overlap where they stand, not merely their lines (#440).
+// A doc's sentence spans lines, so a part supporting the words beside a
+// contradiction shares its lines and disputes nothing. A quote that cannot
+// be placed — never one kept, whose quote was found at its lines — falls
+// back on the lines.
+func sameWords(content string, a, b claim) bool {
+	as, bs := quoteSpans(content, a.Lines, a.Quote), quoteSpans(content, b.Lines, b.Quote)
+	if len(as) == 0 || len(bs) == 0 {
+		return a.Lines.overlaps(b.Lines)
+	}
+	for _, x := range as {
+		for _, y := range bs {
+			if x[0] < y[1] && y[0] < x[1] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// fixEntry puts the parts' claims together, without AI, by the doc's words:
 // contradicted and supported by no other part is wrong; contradicted in one
-// part and supported in another is a conflict; partial is to be read
+// part and supported in another, quoting some of the same words (#440), is
+// a conflict; partial is to be read
 // together, unless another part supports the lines it speaks of: that part
 // held the source settling them, and the fix would act on a share that
 // cannot (workline #29). A support quoted from a comment only does neither
@@ -545,7 +594,7 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 		case "contradicted":
 			disputed := false
 			for _, o := range v.kept {
-				disputed = disputed || o.supports() && o.part != c.part && o.Lines.overlaps(c.Lines)
+				disputed = disputed || o.supports() && o.part != c.part && sameWords(content, o, c)
 			}
 			if disputed {
 				conflict = append(conflict, c)
@@ -584,13 +633,13 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 			}
 			if title == "Found wrong by one part, and supported by another" {
 				for _, o := range v.kept {
-					if o.supports() && o.part != c.part && o.Lines.overlaps(c.Lines) {
+					if o.supports() && o.part != c.part && sameWords(content, o, c) {
 						fmt.Fprintf(&b, "  Supported by %s, %s: %q\n", o.Source.Path, o.Source.Lines, o.Source.Quote)
 					}
 				}
 			}
 			for _, o := range v.commentOnly() {
-				if o.Lines.overlaps(c.Lines) {
+				if sameWords(content, o, c) {
 					fmt.Fprintf(&b, "  Supported only by a comment, which is not evidence: %s, %s: %q\n", o.Source.Path, o.Source.Lines, o.Source.Quote)
 				}
 			}
@@ -609,7 +658,7 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 				cited[c.Source.Path] = append(cited[c.Source.Path], c.Source.Lines)
 			}
 			for _, o := range v.commentOnly() {
-				if o.Lines.overlaps(c.Lines) {
+				if sameWords(content, o, c) {
 					cited[o.Source.Path] = append(cited[o.Source.Path], o.Source.Lines)
 				}
 			}
@@ -617,7 +666,7 @@ func (v *partsVerdict) fixEntry(p, content, repo string) string {
 	}
 	for _, c := range conflict {
 		for _, o := range v.kept {
-			if o.supports() && o.part != c.part && o.Lines.overlaps(c.Lines) {
+			if o.supports() && o.part != c.part && sameWords(content, o, c) {
 				cited[o.Source.Path] = append(cited[o.Source.Path], o.Source.Lines)
 			}
 		}

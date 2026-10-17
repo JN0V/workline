@@ -106,7 +106,12 @@ its evaluation in
   `judged-in-parts-by-default`; a doc too long itself says so at once:
   `suspect-doc-too-large`; a part's support quoted from a comment only is
   no support ([#106](https://github.com/JN0V/workline/issues/106)):
-  `judged-in-parts-comment-does-not-*`.
+  `judged-in-parts-comment-does-not-*`; a support disputes a
+  contradiction only on the same words, not the same lines
+  ([#440](https://github.com/JN0V/workline/issues/440)):
+  `judged-in-parts-other-words-on-the-line-do-not-dispute`,
+  `judged-in-parts-support-of-the-next-words-does-not-dispute`,
+  `judged-in-parts-same-words-disputed`.
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
   `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
