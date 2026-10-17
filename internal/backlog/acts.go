@@ -15,7 +15,9 @@ import (
 // sample is on (ADR-0033), which draws a week's acts done alone for a
 // person to judge and suggests a level from them. An act done on a
 // person's yes is kept with who said it, and never drawn: it is theirs.
-// The engine's own move of a slipped milestone is not kept.
+// The engine's own move of a slipped milestone is not kept. Each act keeps
+// what the run read, for the auditor to re-check it on that (ADR-0046):
+// the commit, the agents and models the run asked, the issue's body.
 
 // Did is one act the role did.
 type Did struct {
@@ -23,6 +25,14 @@ type Did struct {
 	Act   string `yaml:"act"`             // its kind, as the settings name it: close-duplicate, rename…
 	Level string `yaml:"level"`           // the autonomy level it was done at
 	Day   string `yaml:"day"`             // the day, YYYY-MM-DD, UTC
+	// At is the commit the run read the code at; Model, the agents and
+	// models it asked, as <agent>:<model>, a comma between two — none for
+	// an act a person accepted, theirs; Body, the digest of the issue's
+	// body as the run read it (BodyDigest). An engine before ADR-0046 kept
+	// none of them.
+	At    string `yaml:"at,omitempty"`
+	Model string `yaml:"model,omitempty"`
+	Body  string `yaml:"body,omitempty"`
 	Line  string `yaml:"line,omitempty"`
 	Yes   string `yaml:"yes,omitempty"` // who accepted it: done on their yes, not alone
 	// to, this run's only: the comment it wrote to the reporter, a question
@@ -82,7 +92,12 @@ func (p *Plan) recordDid(c Proposal) {
 	}
 	oldest := now.AddDate(0, 0, -DidDays).Format(dateLayout)
 	p.Record.Did = slices.DeleteFunc(p.Record.Did, func(d Did) bool { return d.Day < oldest })
-	p.Record.Did = append(p.Record.Did, Did{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level, Day: now.Format(dateLayout), Line: line, Yes: c.Ticked, to: to})
+	d := Did{Issue: c.Issue, Act: c.Kind(), Level: p.config.Level, Day: now.Format(dateLayout), Line: line, Yes: c.Ticked, to: to,
+		At: p.config.Read.At, Body: p.config.Read.Bodies[c.Issue]}
+	if c.Ticked == "" {
+		d.Model = p.config.Read.Model
+	}
+	p.Record.Did = append(p.Record.Did, d)
 	if n := len(p.Record.Did); n > didMax {
 		p.Record.Did = p.Record.Did[n-didMax:]
 	}

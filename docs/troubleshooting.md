@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor, internal/hooks, cmd/workline, internal/builtin/documentalist/documentalist.go, internal/builtin/productowner/productowner.go, internal/forge/local.go]
-checked: 1a0ca6ec
+checked: 21e91932
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -86,7 +86,8 @@ waits. Give the job read access to the repository's branches.
   your comment brings it back, completed as any other unless it says "not
   now". A comment written before you took `workline:proposed` off goes
   with that "not now", and does not bring it back.
-- `setting-gone`: `ignored-runs-max` is no longer read; take it off.
+- `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
+  take it off.
 - An issue gets nothing: the summary's "read, left incomplete" says why —
   no file found for its Scope (link or name its files, or write the Scope
   yourself), or nothing drafted (read again once it changes or someone

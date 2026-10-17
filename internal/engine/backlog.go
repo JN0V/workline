@@ -538,6 +538,14 @@ func planActs(f forge.Forge, r *role.Role, settings map[string]any, st runState,
 		return nil, err
 	}
 	cfg.SpecReview = line.Follows(role, backlog.SpecReviewer)
+	// What the run read — the commit, each issue's body — and the agents
+	// and models it asked, kept with each act (ADR-0046).
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", backlog.ReadFile)); err == nil {
+		if err := yaml.Unmarshal(data, &cfg.Read); err != nil {
+			return nil, fmt.Errorf("in/%s: %v", backlog.ReadFile, err)
+		}
+	}
+	cfg.Read.Model = strings.Join(st.Models, ", ")
 	// What open issues were built on that changed, and those read again
 	// for it (ADR-0032).
 	var changes []backlog.Change

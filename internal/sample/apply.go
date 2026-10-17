@@ -46,6 +46,9 @@ each against what it was done on, on another model than those that
 acted; one said wrong is false only with the material's words, found
 again, and three judges settle the dispute. A true finding the judge
 dropped, still in the code, is opened as an issue (three a week at most).
+A product owner's act you find wrong: undo it on its issue, and the role
+proposes that kind there from its next run (ADR-0038); the level its acts
+done alone suggest is said, never set (ADR-0033).
 
 Each week's comment numbers its acts. Agree with the week: 👍 on it.
 Contest rows: 👎, and a reply naming them (` + "`not 3, 7`" + `). One comment, the count,
@@ -103,7 +106,8 @@ func Apply(file, repo string, f forge.Forge) *Result {
 		}
 		res.Applied = append(res.Applied, "merge-request")
 	}
-	if err := renameFormer(f); err != nil {
+	former, err := renameFormer(f)
+	if err != nil {
 		return failed(res, err)
 	}
 	if err := openDefects(res, repo, f); err != nil {
@@ -112,6 +116,9 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	id, err := f.KeepIssue(IssueTitle, issueIntro, true)
 	if err != nil {
 		return failed(res, err)
+	}
+	if err := foldActs(res, f, former, id); err != nil {
+		return failed(res, fmt.Errorf("the product owner's former issue: %w", err))
 	}
 	issue := forge.Target{Kind: "issue", ID: id}
 	if err := f.Sticky(issue, report(res, falseOnes, moved, mr), forge.Marker("sample:"+res.Week), true); err != nil {
@@ -146,12 +153,6 @@ func Apply(file, repo string, f forge.Forge) *Result {
 	res.Summary = fmt.Sprintf("%s written to issue #%d", res.Week, id)
 	if mr > 0 {
 		res.Summary += fmt.Sprintf(", merge request #%d", mr)
-	}
-	if err := applyActs(res, repo, f); err != nil {
-		return failed(res, fmt.Errorf("the product owner's acts: %w", err))
-	}
-	if res.Acts != nil {
-		res.Summary += fmt.Sprintf("; the product owner's acts to issue #%d", res.Acts.Issue)
 	}
 	return res
 }
@@ -334,31 +335,36 @@ func panelLine(p *Panel) string {
 }
 
 // renameFormer gives the tracking issue its title widened to every role's
-// acts, when it still has its former one: one issue, never a second.
-func renameFormer(f forge.Forge) error {
+// acts, when it still has its former one: one issue, never a second. It
+// says the product owner's own tracking issues still open, to fold in
+// (ADR-0046).
+func renameFormer(f forge.Forge) ([]int, error) {
 	b, ok := f.(forge.Backlog)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	open, err := b.Issues()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	former := 0
+	former, kept := 0, false
+	var acts []int
 	for _, is := range open {
 		switch is.Title {
 		case IssueTitle:
-			return nil
+			kept = true
 		case formerTitle:
 			if former == 0 {
 				former = is.ID
 			}
+		case formerActsTitle:
+			acts = append(acts, is.ID)
 		}
 	}
-	if former == 0 {
-		return nil
+	if former == 0 || kept {
+		return acts, nil
 	}
-	return b.SetTitle(former, IssueTitle)
+	return acts, b.SetTitle(former, IssueTitle)
 }
 
 // actsSection is what the week's comment says of every role's acts: how
@@ -399,6 +405,9 @@ func actsSection(res *Result) string {
 			if a.Role != productOwner && a.By != "" && !strings.Contains(line, a.By) {
 				line += " (" + a.By + ")"
 			}
+			if a.Undone != "" {
+				line += " — **undone**: " + a.Undone
+			}
 			judgeWords := "—"
 			if a.Judge != "" {
 				judgeWords = fmt.Sprintf("`%s`, %s", a.Judge, a.Independence)
@@ -409,6 +418,13 @@ func actsSection(res *Result) string {
 		for _, a := range res.Drawn {
 			b.WriteString(actLines(a))
 		}
+	}
+	if len(res.Older) > 0 {
+		w := olderWords(res.Older)
+		fmt.Fprintf(&b, "\n%s%s.\n", strings.ToUpper(w[:1]), w[1:])
+	}
+	if res.Autonomy != nil {
+		b.WriteString(autonomyLines(res.Autonomy))
 	}
 	if len(res.NotDrawn) > 0 {
 		b.WriteString("\nNot drawn:\n\n")

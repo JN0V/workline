@@ -65,15 +65,20 @@ type Result struct {
 	Window     string            `json:"window"` // the window, in words
 	Vouched    int               `json:"vouched"`
 	Reads      []Read            `json:"reads"`
-	Acts       *ActsRead         `json:"acts,omitempty"` // the product owner's acts drawn, written with --apply (ADR-0033)
 	// Drawn are the other roles' acts drawn, one in ten per role and
 	// kind; Counts, each role's kinds of act in the window and how many
 	// were drawn, the docs' too; NotDrawn, what could not be drawn, and
 	// why (ADR-0046).
-	Drawn       []Act    `json:"drawn,omitempty"`
-	Counts      []Count  `json:"counts,omitempty"`
-	NotDrawn    []string `json:"not-drawn,omitempty"`
-	unreachable bool     // the forge did not answer a read
+	Drawn    []Act    `json:"drawn,omitempty"`
+	Counts   []Count  `json:"counts,omitempty"`
+	NotDrawn []string `json:"not-drawn,omitempty"`
+	// Older are the product owner's acts read without the record
+	// ADR-0046 completes, an engine before it having kept none: on their
+	// issue as it reads now. Autonomy, the level its acts suggest
+	// (ADR-0033).
+	Older       []string  `json:"older,omitempty"`
+	Autonomy    *Autonomy `json:"autonomy,omitempty"`
+	unreachable bool      // the forge did not answer a read
 }
 
 // Read is one doc of the sample, and what its reading found.
@@ -245,7 +250,14 @@ func draw(o Options, res *Result) error {
 	}
 	for _, a := range res.Drawn {
 		res.Findings = append(res.Findings, actFinding(a))
+		if a.older && a.Verdict != "not-read" {
+			res.Older = append(res.Older, a.Ref)
+		}
 	}
+	if len(res.Older) > 0 {
+		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-record-older", Level: "warn", Message: olderWords(res.Older)})
+	}
+	res.Findings = append(res.Findings, autonomyFinding(res.Autonomy)...)
 	for _, why := range res.NotDrawn {
 		res.Findings = append(res.Findings, verdict.Finding{Rule: "sample-not-drawn", Level: "warn", Message: "not drawn: " + why})
 	}

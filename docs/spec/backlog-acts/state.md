@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/builtin/productowner/productowner.go]
+sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: 9054d164
+checked: 21e91932
 verified: agent:claude-code
 ---
 # The issue's state
@@ -33,7 +33,7 @@ proposed:                                # the acts proposed on it, each as deci
   - {act: rename, line: 'Rename #9 to …', since: '2026-10-08', proposal: {do: rename, issue: 9, title: …}}
 done: [{act: ready, level: normal}]      # its acts done alone a person may undo (Trust)
 undone: [{act: rename, evidence: …, day: '2026-10-08'}]  # its acts a person undid: that kind proposed here
-did: [{act: refine, level: normal, day: '2026-10-08', line: …}]  # what the role did, its day; `yes` when a person's
+did: [{act: refine, level: normal, day: '2026-10-08', at: 1a8e5a4, model: 'claude:claude-sonnet-5', body: 3f9a1c0e2b7d, line: …}]  # what the role did, its day, what it read; `yes` when a person's
 closed: close-duplicate                  # the kind it was closed with: open again, undone
 label: workline:proposed                 # the label the role put on it while it waits on a person
 aside: 3f9a1c0e2b7d                      # set aside by a person, at this body: nothing proposed until it changes
@@ -45,6 +45,13 @@ rules: 2                                 # the way of reading it was last read u
 The comment says, above the state, what the role did and proposes there,
 the state folded ([On the issue](on-the-issue.md)). The block's fence is longer than any
 run of backticks in it: a text holding a code fence is kept as written.
+
+Each act in `did` keeps what its run read, for the weekly sample to
+re-check it on that (ADR-0046): `at`, the commit the run's `pre` ran on;
+`body`, the digest of the issue's body `pre` read (`in/read.yaml`, every
+open issue's); `model`, the agents and models the run asked
+(`<agent>:<model>`, a comma between two), none for an act a person
+accepted. An engine before ADR-0046 kept none of them.
 
 `sections`, `wrote` and `deleted` keep each section under the heading it
 had in the body, and are read by its meaning (`work.Headings`,

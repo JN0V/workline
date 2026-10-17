@@ -1,0 +1,32 @@
+case: auditor/verdict-reads-what-the-product-owner-read
+about: "A product owner's act is re-checked on what it read (ADR-0046): its record's `body`, the digest of the issue's text it was given, finds that text — the body now when it matches, else the version the forge's edit history keeps, a refine given the issue as it reads now beside it, what it wrote; its `at` gives the code at the commit it read, not its day's last; its `model` sets the judge apart, the independence said. A text read the forge no longer holds is not read, for a person. An act an engine before these fields recorded is read on the issue as it reads now and its day's last commit, and said."
+given:
+  repo: vouched
+  setup:
+    - "printf 'package notes\\n\\nconst N01 = 11\\n' > src/notes/n01.go && GIT_AUTHOR_DATE=2026-01-08T09:00:00Z GIT_COMMITTER_DATE=2026-01-08T09:00:00Z git commit -qam 'feat(notes): N01 is eleven'"
+    - "printf 'package notes\\n\\nconst N01 = 22\\n' > src/notes/n01.go && GIT_AUTHOR_DATE=2026-01-08T18:00:00Z GIT_COMMITTER_DATE=2026-01-08T18:00:00Z git commit -qam 'feat(notes): N01 is twenty-two'"
+  forge:
+    issues:
+      - {"id": 40, "title": "Export rows", "body": "### Need\nExport the rows as CSV.\n\n### Verification\nA test exports two rows.\n\n### Validation\nMia exports a file and opens it in a spreadsheet.", "edits": ["### Need\nExport the rows as CSV.\n\n### Verification\nA test exports two rows.\n\n### Validation\nTBD"], "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ready, level: normal, day: '2026-01-07', at: 7e26c44, model: 'claude:claude-sonnet-5', body: 8ce6f0be07c5, line: 'Moved #40 to ready'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 41, "title": "CSV export", "body": "The CSV export drops the last row.", "labels": [], "comments": ["```yaml\nsources: [src/notes/n01.go]\nconfirmed: d8c4dff\ndid:\n- {act: sources, level: normal, day: '2026-01-08', at: cae6218, model: 'claude:claude-sonnet-5', body: 344ac0ead902, line: 'Named the code #41 is about: src/notes/n01.go'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 42, "title": "Rows lost", "body": "Customers lose rows every night.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: order, level: normal, day: '2026-01-09', at: c9593a3, model: 'claude:claude-sonnet-5', body: 0123456789ab, line: 'Set #42 priority to 4: nothing urgent'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 43, "title": "Which format", "body": "Export the notes.", "labels": [], "comments": ["```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: ask, level: normal, day: '2026-01-09', line: 'Asked the reporter: which format?'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {"id": 44, "title": "Export for Mia", "body": "### Need\nExport the rows for Mia.\n\n### Validation\nMia opens the file in a spreadsheet.\n\n### Scope\nThe export writes the rows as CSV and as JSON.", "edits": ["### Need\nExport the rows for Mia.\n\n### Validation\nMia opens the file in a spreadsheet."], "labels": [], "comments": [{"body": "CSV only, never JSON.", "author": "mia", "insider": true, "created": "2026-01-06T09:00:00Z"}, "```yaml\nsources: [src/a.go]\nconfirmed: d8c4dff\ndid:\n- {act: refine, level: normal, day: '2026-01-08', at: cae6218, model: 'claude:claude-sonnet-5', body: 3c7b37da94e8, line: 'Added: Scope. Changed: —. See the issue''s edit history.'}\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {sample: [--week, 2026-W02, --judge, 'cmd:sh "$FIXTURES/agents/audit-what-was-read.sh"'], then: apply}
+expect:
+  agent-calls: 6
+  findings:
+    - {rule: act-false, where: "#40", message: "— false: #40 says \"### Validation TBD\""}
+    - {rule: act-false, where: "#40", message: "independence: provider (claude-sonnet-5 → cmd)"}
+    - {rule: act-false, where: "#41", message: "src/notes/n01.go:3 says \"const N01 = 11\""}
+    - {rule: sample-not-read, where: "#42", message: "the text the product owner read (body 0123456789ab) is neither #42's body now nor a version its edit history keeps; for a person"}
+    - {rule: act-stands, where: "#43", message: "independence: unknown"}
+    - {rule: act-false, where: "#44", message: "#44 now says \"as CSV and as JSON\"; #44 comment 1 says \"CSV only, never JSON.\""}
+    - {rule: sample-record-older, message: "the product owner's act on #43, read on its issue as it reads now and the last commit of its day, the model that acted unknown"}
+  no-findings:
+    - {rule: act-unproven}
+    - {rule: sample-record-older, message: "#40"}
+  forge:
+    issues:
+      - {id: 45, title: "workline: the weekly sample of every role's acts", comment-contains: "| #40 | product owner, `ready` | 2026-01-07, at normal | Moved #40 to ready | **false** |"}
+      - {id: 45, comment-contains: "\nThe product owner's act on #43, read on its issue as it reads now and the last commit of its day, the model that acted unknown: an engine before ADR-0046 kept no `at`, `model` nor `body` in its record.\n"}
