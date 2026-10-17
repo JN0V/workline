@@ -87,7 +87,8 @@ head).
 - **The patch itself is not kept**: the run's folder goes with the test;
   its note and the checks are in the run's log.
 
-Leads, not built here (the task was a measure):
+Leads, not built here (the task was a measure), for
+[#449](https://github.com/JN0V/workline/issues/449):
 
 - **A note naming its doc**, as a `claim` does, and the engine keeping
   `checked` on a doc an answer's own note doubts: a mechanical guard

@@ -39,8 +39,9 @@ hold:
    evaluation](../../../docs/spec/conformance/evaluation.md#real-shapes).
    Every evaluation case, five runs on one engine: **not met** on
    2026-10-17. `drifted-version-bump` vouched for a planted falsehood in
-   one run of three, its own note saying it could not check it; the
-   measure stopped there
+   one run of three, its own note saying it could not check it
+   ([#449](https://github.com/JN0V/workline/issues/449)); the measure
+   stopped there
    ([the documentalist, measured](../../../docs/research/documentalist-measured.md)).
    Before it, each case had 5 to 24 runs, spread over engine commits and
    models, rarely five on one.
@@ -156,30 +157,32 @@ its evaluation in
 
 ## Missing, in the order it matters
 
-1. **The weekly sample's first weeks**, watched
+1. **A doc vouched for that its own note doubts**, once in ten runs: no
+   guard yet ([#449](https://github.com/JN0V/workline/issues/449)).
+2. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
-2. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
+3. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
    `docs/narrow-wide-sources`, not pushed); four to split
    (`reference/eventbus-architecture.md`,
    `components/core/project-context.md`,
    `architecture/component-configuration-pattern.md`,
    `components/webui/project-context.md`). No issue yet.
-3. **workline's own docs far behind**, gardened nightly in parts since
+4. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-4. **The agent reads**: a doc judged on its diff against the code as it
+5. **The agent reads**: a doc judged on its diff against the code as it
    is now, a read each night (no issue yet).
-5. **To watch**: Sonnet citing lines a line off in long docs (now placed
+6. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
-6. **The merge policy, what is left**: at `normal`, the developer
+7. **The merge policy, what is left**: at `normal`, the developer
    role's pull requests, pushed with the App, built with that role
    ([#117](https://github.com/JN0V/workline/issues/117); decided on
    [#322](https://github.com/JN0V/workline/issues/322#issuecomment-6186910822)).
-7. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
+8. **Smaller**: Opus's notes see more than the task asks (unused); Copilot
    CLI on a free plan unmeasured (the owner must turn Copilot Free on). No
    issue yet.
-8. **Tries on real use** (no issue yet):
+9. **Tries on real use** (no issue yet):
     - its stale merge requests closed on GitHub and GitLab, and settled
       people's branches pushed there (the App's `workflows` permission),
       each in its CI job;
