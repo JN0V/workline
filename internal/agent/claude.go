@@ -91,14 +91,11 @@ func (c claude) Propose(req Request) (Call, error) {
 }
 
 // claudeSession are the variables a Claude Code session exports to every
-// process it starts, to tie them to itself. Passed on, they make a role's
-// call that session's child: started from an editor's extension, Claude
-// Code adds to the prompt and has a small model read the whole question
-// again, twice the tokens in (docs/research/claude-session-env.md). They
-// are dropped, even when a person set one: a call with no tools needs none,
-// and its effort is the role's, or the one claude:@<effort> names. The rest
-// passes: the login (CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY,
-// ANTHROPIC_BASE_URL…) and the person's other settings.
+// process it starts. Passed on, they made a role's call that session's
+// child, at twice the tokens in (docs/research/claude-session-env.md).
+// They are dropped, even one a person set: a call with no tools needs
+// none, and its effort is the role's. The login (CLAUDE_CODE_OAUTH_TOKEN,
+// ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL…) and other settings pass.
 var claudeSession = []string{
 	"CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_CHILD_SESSION",
 	"CLAUDE_CODE_SESSION_ATTENDED", "CLAUDE_CODE_MESSAGING_SOCKET", "CLAUDE_CODE_MESSAGING_TOKEN",
