@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: 4725e7e3
+checked: c077e9f1
 verified: agent:claude-code
 ---
 # Documentalist — at the push, the release and the adoption
@@ -23,6 +23,10 @@ moves to the commit the task gave.
   are judged, whole, against every source that changed. The other suspect
   docs are reported, left for gardening
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
+- One too large to be judged whole is left for the next gardening, which
+  judges it [in parts](tasks.md#judged-in-parts), there as with
+  `workline docs` and at the release
+  ([#458](https://github.com/JN0V/workline/issues/458)).
 
 ### At the push
 
@@ -48,6 +52,8 @@ docs`, or by a person moving `checked`.
 - One suspect already at that release was let through then.
 - One judged without being vouched for, or in parts, waits for a person
   and does not hold it.
+- One too large to be judged whole holds it until the next gardening
+  judges it in parts, or a person moves `checked`.
 - The last release is the highest version tag merged (`release.tags`, `v*`
   by default), prereleases left out — never the nearest tag, which a
   hotfix merged back would be.

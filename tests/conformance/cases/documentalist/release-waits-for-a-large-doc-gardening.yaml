@@ -1,0 +1,17 @@
+case: documentalist/release-waits-for-a-large-doc-gardening
+about: "At the release, a doc made suspect since the tag and too large to be judged whole is not judged in parts: it is left for the next gardening, and holds the release until then, or until a person moves `checked` (#458)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc' && git tag v1.0.0"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
+run: {role: documentalist, event: release, ai: "fake:parts-contradiction"}
+expect:
+  status: block
+  agent-calls: 0
+  findings:
+    - {rule: suspect, where: docs/tech/auth.md, level: block, message: "the release waits until it is judged"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "left for the next gardening, which judges it in parts"}
+  files:
+    "docs/tech/auth.md": {lacks: "judged-in-parts:"}

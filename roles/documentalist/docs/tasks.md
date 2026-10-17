@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: 4725e7e3
+checked: c077e9f1
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -90,6 +90,15 @@ on by default since
 a suspect or stale doc whose sources, as they are now, do not fit a task
 is judged in parts instead of going to a person. `judge-in-parts: false`
 sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
+
+- **Only when gardening**
+  ([#458](https://github.com/JN0V/workline/issues/458)): on a merge
+  request, at the push or the release, such a doc is left for the next
+  gardening, which judges it in parts, and its finding says so.
+- **Why**: judged on each merge request touching its sources, one doc
+  cost 6 or 7 calls, 100k to 130k tokens in, a merge request; the
+  gardening judges it once.
+- `parts-always`, set only to measure, judges in parts on any event.
 
 ### The parts
 

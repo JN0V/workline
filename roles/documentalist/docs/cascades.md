@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: 4725e7e3
+checked: c077e9f1
 verified: agent:claude-code
 ---
 # Documentalist — cascades and the authority
@@ -36,6 +36,9 @@ documentalist runs before the release tool tags.
 - **One judged without being vouched for** (its `checked` not moved), or in
   parts, since its sources last changed, waits for a person and does not
   block.
+- **One too large to be judged whole** blocks until the next gardening
+  judges it [in parts](tasks.md#judged-in-parts), or a person moves
+  `checked`.
 - **A shallow clone**, which may lack the tag, blocks (`shallow-clone`).
 - **Each doc due at the release** is `due`, and becomes the `propagate`
   task — brought up to date for its reader, growing when the reader gained

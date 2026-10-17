@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening)
 - **Date:** 2026-09-29
 
 ## Context
@@ -163,3 +163,26 @@ that overlap ([#440](https://github.com/JN0V/workline/issues/440)):
   (line 23), supported by the configuration, were a conflict; the first
   is now found wrong. Words both parts quote stay a conflict.
 - A partial claim is still settled by a support covering its lines.
+
+## Amendment (2026-10-17): only when gardening
+
+Judging in parts runs **only when gardening**, decided by the maintainer
+on [#458](https://github.com/JN0V/workline/issues/458#issuecomment-6237581014):
+
+- **What [#82](https://github.com/JN0V/workline/issues/82)'s default did**: parts were asked on every event, so a merge
+  request touching a source of a doc too large paid that doc's parts. The
+  evaluation case `stays-on-the-task`: 6 calls, about 103k tokens in,
+  against 1 call and 13.5k on 2026-10-11. workline's pull requests
+  [#436](https://github.com/JN0V/workline/pull/436) and
+  [#444](https://github.com/JN0V/workline/pull/444): 7 calls each, about
+  129k tokens in, for the same doc 3 minutes apart; neither fix changed
+  anything.
+- **Now**: on a merge request, at the push or the release, such a doc is
+  left for the next gardening, which judges it in parts, and its finding
+  says so. One past `parts-max` is said `sources-too-wide` there too.
+- **The price**: a fix such a doc needs because of the change waits for
+  the next gardening, on that run's own merge request.
+- `parts-always`, set only to measure whole against parts, judges in
+  parts on any event.
+- Nights were not where the cost grew: none on workline asked a part
+  from 10-15 to 10-17.

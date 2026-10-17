@@ -9,7 +9,7 @@ given:
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^type: reference/judged-in-parts: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc in parts'"
     - "sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
   config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
-run: {role: documentalist, event: merge-request, ai: "fake:parts-contradiction"}
+run: {role: documentalist, event: schedule, ai: "fake:parts-contradiction"}
 expect:
   status: pass
   agent-calls: 3

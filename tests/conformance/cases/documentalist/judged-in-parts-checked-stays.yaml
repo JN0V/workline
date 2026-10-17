@@ -1,5 +1,5 @@
 case: documentalist/judged-in-parts-checked-stays
-about: "The fix of a doc judged in parts must leave `checked` where it is — nobody read the doc whole — and is refused when it moves it: asked again, and still refused, nothing is applied."
+about: "The fix of a doc judged in parts must leave `checked` where it is — nobody read the doc whole — and is refused when it moves it: asked again, and still refused, nothing is applied: upkeep left for the next gardening, said as a warning (ADR-0037)."
 given:
   repo: documented
   setup:
@@ -7,10 +7,10 @@ given:
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && sed -i 's/3600/7200/' src/auth/token.go && git commit -qam 'feat(auth): keep users signed in for two hours'"
   config: {roles: {documentalist: {settings: {judge-in-parts: true}}}}
-run: {role: documentalist, event: merge-request, ai: "fake:parts-fix-moves-checked"}
+run: {role: documentalist, event: schedule, ai: "fake:parts-fix-moves-checked"}
 expect:
-  status: block
+  status: pass
   agent-calls: 4   # two parts, the fix, the fix asked again
   applied: []
-  findings: [{rule: checked-moved-in-parts, where: docs/tech/auth.md}]
+  findings: [{rule: checked-moved-in-parts, where: docs/tech/auth.md, level: warn}]
   files: {"docs/tech/auth.md": {contains: "checked: 845334e", lacks: "judged-in-parts"}}

@@ -992,6 +992,10 @@ func Pre(runDir, repo string) int {
 	// Docs too large to be judged whole are judged in parts, unless the
 	// project turns it off (ADR-0009): the parts first, then one call to fix. A
 	// run asking parts asks nothing else: the rest waits for the next.
+	// Only when gardening (#458): a merge request leaves such a doc for the
+	// next gardening, which judges it once, not once a merge request.
+	// `parts-always`, for measuring, judges in parts on any event.
+	partsNow := os.Getenv("WORKLINE_EVENT") == "schedule" || s.PartsAlways
 	inParts := map[string]string{}
 	partsAsked := 0
 	var partsFallback []intent.Intention
@@ -1009,6 +1013,9 @@ func Pre(runDir, repo string) int {
 				}
 				sd.note = why
 			}
+		}
+		if !partsNow {
+			return leftForGardening(docs, repo, s, &findings)
 		}
 		if task != "" {
 			return nil
