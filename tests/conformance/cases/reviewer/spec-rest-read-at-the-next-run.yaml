@@ -1,0 +1,35 @@
+case: reviewer/spec-rest-read-at-the-next-run
+about: "On the forge (#433), the specs a run left waiting past specs-per-run are read at the next run, before nothing else waits: three issues, two a run, the third read the next night, each spec read once."
+given:
+  repo: reviewed
+  config: {roles: {reviewer: {settings: {specs-per-run: 2}}}}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 6
+        title: Every row exported
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 8
+        title: The sum of no values
+        body: "## Need\n\nThe sum of no values is 0.\n\n## Verification\n\nA test of Sum on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-nothing", then: again}
+expect:
+  status: pass
+  agent-calls: 3
+  calls: [{task: part, for: 01-1-lenses}, {task: part, for: 02-1-lenses}, {task: part, for: 1-lenses}]
+  findings: [{rule: spec-waits, message: "(specs-per-run 2): #8"}]
+  summary: "0 findings on the spec"
+  forge:
+    issues:
+      - {id: 4, comments: 2, comment-contains: "round=1 open=0 in= -->"}
+      - {id: 6, comments: 2, comment-contains: "round=1 open=0 in= -->"}
+      - {id: 8, comments: 2, comment-contains: "round=1 open=0 in= -->"}

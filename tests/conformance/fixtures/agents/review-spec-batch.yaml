@@ -1,0 +1,11 @@
+# The spec lenses on two issues read in one run, a call each: on #4, its
+# Need asks for the README, which its Scope leaves out; on #6, nothing.
+calls:
+  - - finding:
+        lens: out-of-scope
+        severity: important
+        title: The Need asks for the README, the Scope leaves it out
+        why: "The Need has the README tell the users; the Scope names calc/calc.go only"
+        cause: {path: "#4", quote: "and the README tells the users"}
+        fix: add README.md to the Scope, or take it out of the Need
+  - []

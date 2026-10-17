@@ -271,6 +271,32 @@ func TestAIFindingsByLens(t *testing.T) {
 	}
 }
 
+// specs-per-run reads 1 to 20, 5 when unset; anything else is refused, said
+// (#433).
+func TestSpecsPerRunBounds(t *testing.T) {
+	for _, c := range []struct {
+		set  string
+		want int
+		err  bool
+	}{{"", 5, false}, {`, "specs-per-run": 1`, 1, false}, {`, "specs-per-run": 20`, 20, false},
+		{`, "specs-per-run": 0`, 0, true}, {`, "specs-per-run": 21`, 0, true}} {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, "in"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "in", "settings.json"), []byte(`{"lenses": ["correctness"]`+c.set+`}`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		s, err := settings(dir)
+		switch {
+		case c.err && (err == nil || !strings.Contains(err.Error(), "specs-per-run")):
+			t.Errorf("specs-per-run%s: error %v, want one naming the setting", c.set, err)
+		case !c.err && (err != nil || s.SpecsPerRun != c.want):
+			t.Errorf("specs-per-run%s: %d, %v; want %d", c.set, s.SpecsPerRun, err, c.want)
+		}
+	}
+}
+
 // Two questions on one line are one; two on different words of one issue,
 // which has no lines, are two (#126).
 func TestQuestionAt(t *testing.T) {

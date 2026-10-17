@@ -18,6 +18,7 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -49,53 +50,151 @@ func (sp Spec) heading() string {
 }
 
 // prepareSpec is a spec run's first pass: the spec read, the code it names
-// found, and the spec lenses asked.
+// found, and the spec lenses asked. On the forge, the specs that wait.
 func prepareSpec(runDir, repo string, s Settings) int {
 	head, err := git(repo, "rev-parse", "--verify", "HEAD^{commit}")
 	if err != nil {
 		return fail(fmt.Errorf("the code a spec is read against: %v", err))
 	}
 	head = strings.TrimSpace(head)
-	var sp Spec
-	var cut int
-	var unread []verdict.Finding // the issues passed over, their record unread (#302)
 	file, issue := input(runDir, "spec"), input(runDir, "issue")
 	if os.Getenv("WORKLINE_EVENT") == gardening && file == "" && issue == "" {
-		// On the forge, after the product owner: the issue it refined that
-		// waits on a review, one a run (#128).
-		got, passed, code, ok := specOnForge(runDir, repo, s)
-		if !ok {
-			return code
-		}
-		sp, cut, unread = *got, 0, passed
+		return prepareSpecs(runDir, repo, s, head)
+	}
+	sp, cut, err := readSpec(repo, file, issue, s.SpecLinesMax)
+	if err != nil {
+		return fail(err)
+	}
+	st := state{Head: head, From: head, Base: head, Spec: &sp}
+	if cut > 0 {
+		st.Advisories = append(st.Advisories, specCut(sp, cut, s))
+	}
+	if noAgent() {
+		st.Advisories = append(st.Advisories, notReviewed(sp))
+		return final(runDir, review(st, nil, "no agent: the spec was not reviewed"))
+	}
+	asked, err := askSpec(runDir, repo, s, &st)
+	if err != nil {
+		return fail(err)
+	}
+	if !asked {
+		return final(runDir, review(st, nil, "no spec lens asked can read this spec: not asked: "+strings.Join(st.Skipped, ", ")))
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
+		return fail(err)
+	}
+	return 0
+}
+
+// prepareSpecs is a spec run's first pass on the forge, after the product
+// owner: the issues it refined that wait on a review, up to specs-per-run
+// (#433), each read as a spec of its own, its lenses asked in parts of its
+// own; the run holds them, with the questions to a person and what it says.
+func prepareSpecs(runDir, repo string, s Settings, head string) int {
+	q, code, ok := specOnForge(runDir, repo, s)
+	if !ok {
+		return code
+	}
+	run := state{Head: head, From: head, Base: head, Advisories: q.said, Stops: q.stops, Stopped: q.stopped, Waits: q.rest}
+	var subs []state
+	for k := range q.read {
+		sp := q.read[k]
+		cut := 0
 		if lines := strings.Split(strings.TrimRight(strings.ReplaceAll(sp.Text, "\r\n", "\n"), "\n"), "\n"); s.SpecLinesMax > 0 && len(lines) > s.SpecLinesMax {
 			sp.Text, cut = strings.Join(lines[:s.SpecLinesMax], "\n"), len(lines)-s.SpecLinesMax
 		} else {
 			sp.Text = strings.Join(lines, "\n")
 		}
-	} else if sp, cut, err = readSpec(repo, file, issue, s.SpecLinesMax); err != nil {
+		sub := state{Head: head, From: head, Base: head, Spec: &sp}
+		if cut > 0 {
+			sub.Advisories = append(sub.Advisories, specCut(sp, cut, s))
+		}
+		if len(q.read) > 1 { // its parts told from the others' (#433)
+			sub.Part = fmt.Sprintf("%02d", k+1)
+		}
+		subs = append(subs, sub)
+	}
+	if noAgent() {
+		var paths []string
+		for _, sub := range subs {
+			run.Advisories = append(append(run.Advisories, sub.Advisories...), notReviewed(*sub.Spec))
+			paths = append(paths, sub.Spec.Path)
+		}
+		v := review(run, nil, "no agent: the spec was not reviewed")
+		if len(subs) > 1 {
+			v.Summary = fmt.Sprintf("no agent: the %d specs were not reviewed", len(subs))
+		}
+		v.Subject, v.Spec = "spec", strings.Join(paths, ", ")
+		v.Summary += afterSpecs(run)
+		if len(run.Stops) == 0 {
+			return final(runDir, v)
+		}
+		// The questions to a person need no agent: written all the same.
+		if err := intent.Write(filepath.Join(runDir, "in", "fallback.yaml"), run.Stops); err != nil {
+			return fail(err)
+		}
+		if err := writeJSON(filepath.Join(runDir, "in", "review.json"), v); err != nil {
+			return fail(err)
+		}
+		return 0
+	}
+	for i := range subs {
+		asked, err := askSpec(runDir, repo, s, &subs[i])
+		if err != nil {
+			return fail(err)
+		}
+		if !asked {
+			sp := subs[i].Spec
+			run.Advisories = append(run.Advisories, verdict.Finding{Rule: "not-reviewed", Where: sp.Path, Level: "warn",
+				Message: "no spec lens asked can read this spec: not asked: " + strings.Join(subs[i].Skipped, ", ")})
+			continue
+		}
+		run.Specs = append(run.Specs, subs[i])
+	}
+	if len(run.Specs) == 0 {
+		v := review(run, nil, "no spec lens asked can read the specs that wait")
+		v.Subject = "spec"
+		return final(runDir, v)
+	}
+	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), run); err != nil {
 		return fail(err)
 	}
-	st := state{Head: head, From: head, Base: head, Spec: &sp, Advisories: unread}
-	if cut > 0 {
-		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "spec-cut", Where: sp.Path, Level: "warn",
-			Message: fmt.Sprintf("the spec is cut past spec-lines-max (%d): its last %d lines were not read", s.SpecLinesMax, cut)})
-	}
-	if ai := os.Getenv("WORKLINE_AI"); ai == "" || ai == "none" {
-		st.Advisories = append(st.Advisories, verdict.Finding{Rule: "not-reviewed", Where: sp.Path, Level: "warn",
-			Message: "no agent: nobody read it; the spec waits for a person's review"})
-		return final(runDir, review(st, nil, "no agent: the spec was not reviewed"))
-	}
-	code := namedCode(repo, head, sp.Text, s.CodeLinesMax)
+	return 0
+}
+
+// noAgent says whether the run has no agent to ask.
+func noAgent() bool {
+	ai := os.Getenv("WORKLINE_AI")
+	return ai == "" || ai == "none"
+}
+
+// notReviewed says a spec was read by nobody, no agent being there.
+func notReviewed(sp Spec) verdict.Finding {
+	return verdict.Finding{Rule: "not-reviewed", Where: sp.Path, Level: "warn",
+		Message: "no agent: nobody read it; the spec waits for a person's review"}
+}
+
+// specCut says a spec was cut past spec-lines-max.
+func specCut(sp Spec, cut int, s Settings) verdict.Finding {
+	return verdict.Finding{Rule: "spec-cut", Where: sp.Path, Level: "warn",
+		Message: fmt.Sprintf("the spec is cut past spec-lines-max (%d): its last %d lines were not read", s.SpecLinesMax, cut)}
+}
+
+// askSpec finds the code a spec names and writes its lenses' parts: one
+// holding them all, or one a lens. asked is false when no spec lens can
+// read it, each lens left out said in st.Skipped.
+func askSpec(runDir, repo string, s Settings, st *state) (asked bool, err error) {
+	sp := *st.Spec
+	code := namedCode(repo, st.Head, sp.Text, s.CodeLinesMax)
 	skip := map[string]string{}
 	read := map[string]Lens{}
 	for _, name := range s.SpecLenses {
 		l, err := readLens(repo, name)
 		if err != nil {
-			return fail(err)
+			return false, err
 		}
 		if l.Subject != "spec" {
-			return fail(fmt.Errorf("lens %q reads code: it belongs under lenses, not spec-lenses", name))
+			return false, fmt.Errorf("lens %q reads code: it belongs under lenses, not spec-lenses", name)
 		}
 		read[name] = l
 		if l.Needs == "code" && code == "" {
@@ -104,10 +203,10 @@ func prepareSpec(runDir, repo string, s Settings) int {
 		}
 	}
 	if st.Lenses, err = specLenses(runDir, s, skip); err != nil {
-		return fail(err)
+		return false, err
 	}
 	if len(st.Lenses) == 0 {
-		return final(runDir, review(st, nil, "no spec lens asked can read this spec: not asked: "+strings.Join(st.Skipped, ", ")))
+		return false, nil
 	}
 	st.Together = s.LensesTogether && len(st.Lenses) > 1
 	material := specIntro(sp) + fenced(sp.Text)
@@ -136,21 +235,14 @@ func prepareSpec(runDir, repo string, s Settings) int {
 		for _, lens := range st.Lenses {
 			fmt.Fprintf(&b, "\n## Lens: %s\n\n%s\n", lens, strings.TrimSpace(read[lens].Text))
 		}
-		err = write(partName(st, st.Lenses[0]), b.String()+floor+"\n"+material)
-	} else {
-		for _, lens := range st.Lenses {
-			if err = write(partName(st, lens), fmt.Sprintf("# Lens: %s\n\n%s\n%s\n%s", lens, strings.TrimSpace(read[lens].Text), floor, material)); err != nil {
-				break
-			}
+		return true, write(partName(*st, st.Lenses[0]), b.String()+floor+"\n"+material)
+	}
+	for _, lens := range st.Lenses {
+		if err := write(partName(*st, lens), fmt.Sprintf("# Lens: %s\n\n%s\n%s\n%s", lens, strings.TrimSpace(read[lens].Text), floor, material)); err != nil {
+			return true, err
 		}
 	}
-	if err != nil {
-		return fail(err)
-	}
-	if err := writeJSON(filepath.Join(runDir, "in", "review-state.json"), st); err != nil {
-		return fail(err)
-	}
-	return 0
+	return true, nil
 }
 
 // readSpec reads the spec a run is given: a file of the repository, as it
