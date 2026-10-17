@@ -46,8 +46,9 @@ hold:
    `condenses-the-role-contract` 4 runs of 5 full, its judge asked;
    `stays-on-the-task` 0 of 5, 6 calls each for a cap of 2, a merge
    request judging a large doc in parts since
-   [#381](https://github.com/JN0V/workline/pull/381)
-   ([#458](https://github.com/JN0V/workline/issues/458)).
+   [#381](https://github.com/JN0V/workline/pull/381); since
+   [#458](https://github.com/JN0V/workline/issues/458) such a doc waits
+   for the gardening, 1 call again, replayed offline.
 
 ## Built
 
@@ -113,7 +114,10 @@ its evaluation in
   `judged-in-parts-*`, `parts-*`, `judge-in-parts-off`. On by default
   ([#82](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736),
   decided 2026-10-14 on six nights; a night capped by `parts-max-per-run`):
-  `judged-in-parts-by-default`; a doc too long itself says so at once:
+  `judged-in-parts-by-default`; only when gardening, a merge request
+  leaving such a doc for the next gardening
+  ([#458](https://github.com/JN0V/workline/issues/458)):
+  `parts-left-for-gardening`; a doc too long itself says so at once:
   `suspect-doc-too-large`; a part's support quoted from a comment only is
   no support ([#106](https://github.com/JN0V/workline/issues/106)):
   `judged-in-parts-comment-does-not-*`; a support disputes a
@@ -162,11 +166,12 @@ its evaluation in
 
 ## Missing, in the order it matters
 
-1. **The measure's last two cases**: `stays-on-the-task`, once a person
-   decides whether a merge request judges a doc in parts
+1. **The measure's last two cases**, five runs each again:
+   `stays-on-the-task`, 1 call replayed offline since a merge request
+   leaves a large doc for the gardening
    ([#458](https://github.com/JN0V/workline/issues/458));
-   `condenses-the-role-contract` again, its fifth run 3 calls for a cap
-   of 2: a condense asked again, beside the reader's call.
+   `condenses-the-role-contract`, its cap now 3 calls: the condense, one
+   retry, and the reader's call, asked in every run there.
 2. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
 3. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
