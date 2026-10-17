@@ -174,10 +174,12 @@ kind has any, drawn the same on a rerun.
     in the code, three a week at most;
   - opens a merge request putting back a `checked` found false;
   - with no forge, writes nothing and says so.
-- **The product owner's own issue**, when turned on (`weekly-sample:
-  true`): its acts of the week, each with whether a person undid it, and
-  the level they suggest
-  ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md)).
+- **The product owner's acts**: each read on the issue's text and the
+  code its record says it read, the version GitHub's edit history keeps
+  when the body changed since; each a person undid said, and the level
+  they suggest
+  ([ADR-0033](adr/0033-the-weekly-sample-draws-the-product-owners-acts.md));
+  its former issue of its own closed, told where the weeks went.
 - Exits 2 when a doc or an act is left for a person; `--summary` as for
   `route`.
 
