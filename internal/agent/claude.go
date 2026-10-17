@@ -95,8 +95,10 @@ func (c claude) Propose(req Request) (Call, error) {
 // call that session's child: started from an editor's extension, Claude
 // Code adds to the prompt and has a small model read the whole question
 // again, twice the tokens in (docs/research/claude-session-env.md). They
-// are dropped; the rest passes, the person's settings and the login with
-// it (CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL…).
+// are dropped, even when a person set one: a call with no tools needs none,
+// and its effort is the role's, or the one claude:@<effort> names. The rest
+// passes: the login (CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY,
+// ANTHROPIC_BASE_URL…) and the person's other settings.
 var claudeSession = []string{
 	"CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_CHILD_SESSION",
 	"CLAUDE_CODE_SESSION_ATTENDED", "CLAUDE_CODE_MESSAGING_SOCKET", "CLAUDE_CODE_MESSAGING_TOKEN",
