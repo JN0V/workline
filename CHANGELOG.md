@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.32.0](https://github.com/JN0V/workline/compare/v0.31.0...v0.32.0) (2026-10-17)
+
+
+### Features
+
+* **documentalist:** never vouch for a doc its own note doubts ([#451](https://github.com/JN0V/workline/issues/451)) ([be99f44](https://github.com/JN0V/workline/commit/be99f444bd3f789cc0213571db699f31f48bc97b))
+* **merge:** reader pull requests wait for a person's yes ([#442](https://github.com/JN0V/workline/issues/442)) ([760678b](https://github.com/JN0V/workline/commit/760678b9f03d0455b4d13f1c5394a36d82974d0a))
+* **reviewer:** read several specs a night on the forge ([#434](https://github.com/JN0V/workline/issues/434)) ([38688ec](https://github.com/JN0V/workline/commit/38688ece06adebb3fbc4ae9dba4a77ff84348383))
+
+
+### Bug Fixes
+
+* **documentalist:** a part disputes a defect only on the same words ([#443](https://github.com/JN0V/workline/issues/443)) ([6a1f621](https://github.com/JN0V/workline/commit/6a1f621621c936c282dd1dca1ed33b9e0ce10401))
+* **reviewer:** read a change too large for one call in parts ([#450](https://github.com/JN0V/workline/issues/450)) ([2d92f96](https://github.com/JN0V/workline/commit/2d92f96bab994a35704a779d39ba3aa39f9f3bff))
+
 ## [0.31.0](https://github.com/JN0V/workline/compare/v0.30.0...v0.31.0) (2026-10-17)
 
 
