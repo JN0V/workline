@@ -1,0 +1,18 @@
+case: reviewer/change-in-parts-a-part-failed-not-whole
+about: "A change read in parts whose second part gets no answer that reads, asked twice: the lenses failed on that part, said with which part; the first part's findings are still shown, judged; the commits are not recorded as reviewed (#446)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && mkdir -p src && for n in 1 2 3; do awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0126d\\n\", i }' > src/big$n.go; done && git add calc src && git commit -qm 'feat: three large files, and the average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml", REVIEW_PART_BROKEN: big3}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "cmd:sh $FIXTURES/agents/review-in-parts.sh"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: part, for: 1.2-lenses}, {task: part, for: 1.2-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Average divides by one less than the count (verified"}
+    - {rule: part-unanswered, where: 1.2-lenses}
+    - {rule: lens-failed, message: "asked together, part 2 of 2, got no answer that reads"}
+  no-findings: [{rule: edge-cases}]
+  summary: "not every lens answered: not reviewed whole"
+  run-files: {out/review.json: {contains: '"complete": false'}}

@@ -1,0 +1,20 @@
+case: reviewer/change-too-large-read-in-parts
+about: "A change whose files are past one call's context budget (three new files of about 52,000 characters each, and Average's defect) is read in parts: each part the lenses, what the author says, the list of every file, then a share of the files, each call within the budget; each part's findings found again and judged as one review's, the commits recorded, the summary saying it (#446)."
+given:
+  repo: reviewed
+  setup:
+    - "sed -i 's|return total / len(values)|return total / (len(values) - 1)|' calc/calc.go && mkdir -p src && for n in 1 2 3; do awk 'BEGIN { for (i = 1; i <= 400; i++) printf \"// %0126d\\n\", i }' > src/big$n.go; done && git add calc src && git commit -qm 'feat: three large files, and the average over the count'"
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+run: {role: reviewer, event: review, input: {range: main..HEAD}, ai: "cmd:sh $FIXTURES/agents/review-in-parts.sh"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: part, for: 1.2-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: correctness, where: "calc/calc.go:11", message: "Average divides by one less than the count (verified"}
+    - {rule: edge-cases, where: "src/big3.go:400", message: "The last line holds only a number"}
+  no-findings: [{rule: part-unanswered}, {rule: lens-failed}, {rule: review-not-whole}]
+  summary: "read in 2 parts"
+  run-files:
+    in/parts/1-lenses/task.md: {contains: ["This is part 1 of 2", "- src/big3.go", "### calc/calc.go"], not-contains: ["+++ b/src/big3.go", "the change is cut here"]}
+    in/parts/1.2-lenses/task.md: {contains: ["This is part 2 of 2", "- calc/calc.go", "+++ b/src/big3.go", "## Lens: edge-cases"], not-contains: ["### calc/calc.go"]}
+    out/review.json: {contains: '"complete": true'}
