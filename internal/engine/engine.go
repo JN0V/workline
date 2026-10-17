@@ -2067,6 +2067,39 @@ type applier struct {
 
 func (a *applier) marker() string { return forge.Marker(fmt.Sprintf("run=%s/%d", a.runID, a.index)) }
 
+// noteText is a note as a person reads it: its text, after the docs it
+// names when it names some — `{doc, text}`, a documentalist's note on what
+// it could not confirm in a doc (#449).
+func noteText(v any) string {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return strings.TrimSpace(fmt.Sprint(v))
+	}
+	t, ok := m["text"]
+	if !ok {
+		return strings.TrimSpace(fmt.Sprint(v)) // not a {doc, text} note
+	}
+	text := "" // `text:` left empty
+	if t != nil {
+		text = fmt.Sprint(t) // a text YAML read as a number or a list, as it reads
+	}
+	var docs []string
+	switch d := m["doc"].(type) {
+	case string:
+		docs = append(docs, d)
+	case []any:
+		for _, x := range d {
+			if s, ok := x.(string); ok {
+				docs = append(docs, s)
+			}
+		}
+	}
+	if len(docs) == 0 {
+		return strings.TrimSpace(text)
+	}
+	return strings.TrimSpace(strings.Join(docs, ", ") + ": " + strings.TrimSpace(text))
+}
+
 func (a *applier) needForge(kind string) error {
 	if a.forge == nil {
 		return fmt.Errorf("a %s needs a forge; %s", kind, forge.Missing)
@@ -2100,7 +2133,7 @@ func (a *applier) apply(in intent.Intention) error {
 			return err
 		}
 		defer f.Close()
-		_, err = fmt.Fprintf(f, "%s\n\n", strings.TrimSpace(fmt.Sprint(in.Value)))
+		_, err = fmt.Fprintf(f, "%s\n\n", noteText(in.Value))
 		return err
 	case "patch":
 		return a.patch(in.Value)

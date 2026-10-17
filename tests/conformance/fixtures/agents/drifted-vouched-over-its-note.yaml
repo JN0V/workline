@@ -1,0 +1,83 @@
+# The answer of the run that vouched for a doc its own note doubts (#449):
+# the `drifted` fixture after its version bump to 1.5.0, judged at eb28bad,
+# answered by Sonnet on 2026-10-17 (drifted-version-bump, run 3, 20/23).
+# Five patches and a note: the version and the counts fixed, the bug long
+# fixed removed, `checked` moved on all five docs, status.md's too, whose
+# "33 tests" no source shows. The note is the run's, word for word; the
+# patches are not kept by the evaluation, so they are written here as that
+# run's checks show them.
+- patch: |
+    --- a/docs/clock/README.md
+    +++ b/docs/clock/README.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+    @@ -12 +12 @@
+    -Current version: **1.4.1** (as declared in `library.json`).
+    +Current version: **1.5.0** (as declared in `library.json`).
+    @@ -26 +26 @@
+    -| `Clock.h` | 524 |
+    +| `Clock.h` | 569 |
+- claim:
+    doc: docs/clock/README.md
+    lines: "12"
+    status: contradicted
+    source: {path: Clock/library.json, quote: '"version": "1.5.0"'}
+- patch: |
+    --- a/docs/clock/project-context.md
+    +++ b/docs/clock/project-context.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+    @@ -13 +13 @@
+    -  library.json                      # package manifest (v1.4.1)
+    +  library.json                      # package manifest (v1.5.0)
+    @@ -15 +15 @@
+    -    Clock.h           (524 lines)   # Clock class, drift table
+    +    Clock.h           (569 lines)   # Clock class, drift table
+    @@ -23,5 +23,1 @@
+    -- `ClockWebUI.h` is currently ~283 lines.
+    -
+    -## Known issues
+    -
+    -- **Bug (minor)**: `getWebUIVersion()` returns hardcoded `"1.4.0"` instead of `"1.4.1"` -- mismatch with `library.json`.
+    +- `ClockWebUI.h` is currently ~236 lines.
+- claim:
+    doc: docs/clock/project-context.md
+    lines: "13"
+    status: contradicted
+    source: {path: Clock/library.json, quote: '"version": "1.5.0"'}
+- claim:
+    doc: docs/clock/project-context.md
+    lines: "25-27"
+    status: contradicted
+    source:
+      path: Clock/include/ClockWebUI.h
+      quote: "const char* getWebUIVersion() const { return CLOCK_VERSION; }"
+- patch: |
+    --- a/docs/clock/status.md
+    +++ b/docs/clock/status.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+- patch: |
+    --- a/docs/clock/events.md
+    +++ b/docs/clock/events.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+- patch: |
+    --- a/docs/getting-started.md
+    +++ b/docs/getting-started.md
+    @@ -3 +3 @@
+    -checked: f5a13e1
+    +checked: eb28bad
+    @@ -10 +10 @@
+    -lib_deps = clock@1.4.1
+    +lib_deps = clock@1.5.0
+- claim:
+    doc: docs/getting-started.md
+    lines: "10"
+    status: contradicted
+    source: {path: Clock/library.json, quote: '"version": "1.5.0"'}
+- note: 'In status.md, the "tried on a real ESP32 board" claims and the "33 tests" count could not be checked against the sources; the 1.5.0 change only touched the version macro, so they are kept.'

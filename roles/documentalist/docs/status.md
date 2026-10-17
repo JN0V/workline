@@ -125,7 +125,9 @@ its evaluation in
   `checked-moves-when-read-whole`,
   `condense-new-doc-born-checked-refused`. The `checked` moved unearned
   put back: workline's 10 (0669684), DomoticsCore's 16 (0d86737 on its
-  main).
+  main). Never over the answer's own note doubting the doc
+  ([#449](https://github.com/JN0V/workline/issues/449)), the real run's
+  answer replayed: `checked-doubted-by-*`.
 - **What it reports and refuses of a fix**: `count-off-*`, `value-left-*`,
   `removal-*`, `comment-not-evidence-refused`,
   `docstring-not-evidence-refused`, `citation-not-a-source-refused`,

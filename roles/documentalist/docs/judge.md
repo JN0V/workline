@@ -1,6 +1,6 @@
 ---
-sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: 1a0ca6ec
+sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
+checked: abfe56fc
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -81,23 +81,24 @@ the reader task by [its own](reader.md#what-the-engine-checks).
 ## Moving `checked`
 
 - **To another commit than the one given**: refused. A fix that leaves
-  `checked` alone is kept, and the doc stays suspect, fixed but not
-  vouched for
+  `checked` alone is kept, the doc fixed but not vouched for
   ([ADR-0012](../../../docs/adr/0012-a-doc-is-judged-against-its-sources-whole.md)),
-  if it sets `judged` to that commit (`judged-not-set`). The doc is then
-  not put before an agent again until a source changes
+  if it sets `judged` to that commit (`judged-not-set`): the doc is not
+  put before an agent again until a source changes
   ([ADR-0013](../../../docs/adr/0013-what-was-judged-is-not-asked-again.md)).
 - **Sources not all given whole** (`checked-unread`,
   [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md)):
   judged on diffs, or beside a doc of the same task, nobody read the rest.
   `pre` records the docs whose sources it gave whole (`in/read-whole.yaml`;
   none, when the file is missing), and what it gave of the others
-  (`in/read-not-whole.yaml`). For any other, the fix sets `judged` and is
-  kept, and the doc stays suspect for a person. *Withheld*: the move of
-  `checked`.
+  (`in/read-not-whole.yaml`). *Withheld*: the move of `checked`.
 - **A line count still off** (`checked-over-count-off`, step 2): the task
   gave the real count; the fix brings it there, with no claim, or leaves
   `checked`. *Withheld*: the move of `checked`.
+- **A doc the answer's own note doubts** (`checked-over-note`,
+  [#449](https://github.com/JN0V/workline/issues/449)): a note names its
+  doc in `doc`, else in its text, by path or by a file name no other doc
+  of the task shares. *Withheld*: the move of `checked`, the note quoted.
 
 ## What holds is applied
 
@@ -142,8 +143,7 @@ one place the engine had already named (step 4). Now:
 ## Asked again
 
 - For any other refusal, the answer asked again replaces the refused one
-  whole: the engine tells the agent to give again, unchanged, every change
-  not refused.
+  whole: the agent gives again, unchanged, every change not refused.
 - Each answer is kept in the run folder as it came (`out/agent-answer.txt`;
   a refused one as `out/refused-<n>-answer.txt`), and the claims of the
   accepted one in `out/claims.yaml`: judged, never applied, kept so that a

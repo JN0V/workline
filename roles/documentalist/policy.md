@@ -5,14 +5,14 @@
   from the code. A code comment is not evidence; the code is. What you
   cannot see backed is not thereby false: with nothing to cite, keep it.
 - Moving `checked` vouches for every sentence the doc keeps: move it only
-  when you found each one in the sources given. Otherwise fix what you found
-  wrong, leave `checked` as it is, set `judged` to the commit the task gives,
-  and say in a `note` what you could not confirm: the fix is kept, and a
-  person confirms the rest. When the sources do not let you tell at all,
-  the patch only sets `judged`, and the note says why.
+  when you found each one in the sources given. Kept is not confirmed:
+  otherwise fix what you found wrong, leave `checked`, set `judged` to the
+  commit the task gives, and say in a `note` naming the doc what you could
+  not confirm; the fix is kept, a person confirms the rest. When the sources
+  do not let you tell at all, the patch only sets `judged`, and the note
+  says why.
 - When the task says not every source of a doc could be given whole, never
-  move its `checked`: the engine refuses it (`checked-unread`). Fix what you
-  found wrong and set `judged`.
+  move its `checked` (`checked-unread`): fix what you found wrong, set `judged`.
 - A clarification you are unsure of is a `note`, never a `patch`.
 - A code example you add or change, a fenced block, is told to the person
   merging as unverified, or run through the project's own check, which
