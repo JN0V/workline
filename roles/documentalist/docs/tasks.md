@@ -142,6 +142,14 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
 - One last call (`fix`) gets the doc and only the source lines the parts
   cited, and patches what is wrong.
 - The judge refuses a fix that moves `checked` (`checked-moved-in-parts`).
+- A quote a part judged partial is no proof
+  ([#467](https://github.com/JN0V/workline/issues/467)): words taken out
+  on it alone are withheld for a person (`citation-unchecked`), the rest
+  applied. The task says so.
+  - Why: on DomoticsCore, three parts called a line partial; the fix
+    cited one of their quotes and made the line false.
+  - Measured on every fix after parts kept, 2026-10-01 to 10-17: the two
+    such removals both took out true words.
 - The header records the commit it was judged in parts at,
   `judged-in-parts`, found wrong or not, and the doc stays suspect, saying
   so: nobody read it whole.
