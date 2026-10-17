@@ -495,15 +495,16 @@ func mergePolicy(f forge.Forge, o FollowOptions, local bool, res *Result, hand m
 		}
 	}
 	// At `normal`: the App workline's own work comes from, the pages agents
-	// read, the kinds waiting for a person's yes again since a revert —
-	// said where the level is set.
+	// read, the kinds the project lets merge alone besides the routine
+	// ones, those waiting for a person's yes again since a revert — said
+	// where the level is set.
 	var n *normal
 	if o.Merge == MergeNormal {
 		tip, err := remoteTip(o.Repo, o.Base)
 		if err != nil {
 			return "", err
 		}
-		n = &normal{}
+		n = &normal{alone: o.Alone}
 		if n.app, n.committer, err = forge.App(f); err != nil {
 			if errors.Is(err, forge.ErrUnreachable) && !forge.Refused(err) {
 				return "", err

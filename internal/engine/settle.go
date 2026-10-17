@@ -39,6 +39,10 @@ type FollowOptions struct {
 	// cautious}`); "" none: no merge request's auto-merge is touched
 	// (ADR-0042, merge.go).
 	Merge string
+	// Alone are the kinds that wait for a person's yes at `normal` the
+	// project lets merge with none (`merge: {alone: [reader]}`,
+	// role.MergeAlone).
+	Alone []string
 	// Verdict is a file holding the line's verdict on a merge request's
 	// head (`workline route --verdict`), kept first, for the merge policy;
 	// with VerdictOnly, nothing else is done: a job of its own keeps it,

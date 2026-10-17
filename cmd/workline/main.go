@@ -105,7 +105,7 @@ func followCmd(args []string) int {
 		return 64
 	}
 	if cfg.Merge != nil {
-		o.Merge = cfg.Merge.Autonomy
+		o.Merge, o.Alone = cfg.Merge.Autonomy, cfg.Merge.Alone
 	}
 	if o.Verdict != "" {
 		if o.Verdict, err = filepath.Abs(o.Verdict); err != nil {

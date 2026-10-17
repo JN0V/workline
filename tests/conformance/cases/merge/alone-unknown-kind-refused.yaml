@@ -1,0 +1,9 @@
+case: merge/alone-unknown-kind-refused
+about: "`merge.alone` names only a kind that waits for a person's yes at `normal` (#438): `docs` merges alone there already, and a kind the engine does not know would let nothing. `workline follow` stops before touching anything, the kinds named."
+given:
+  repo: documented
+  config: {merge: {autonomy: normal, alone: [docs]}}
+run: {cli: [follow, --base, main]}
+expect:
+  exit: 64
+  stderr: [".workline/config.yaml: merge.alone lists \"docs\": the kinds it may let merge alone are reader"]
