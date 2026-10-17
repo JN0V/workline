@@ -1,7 +1,9 @@
 case: product-owner/capped-ask-recorded-waits-on-no-one
-about: "A question an earlier engine recorded as a proposal past the night's limit, the label on, as on a real issue on 2026-10-15: it waits on no one — the label comes off, nothing proposed is shown —, and its issue is read again first, the question the agent's to ask anew (#430)."
+about: "A question an earlier engine recorded as a proposal past the night's limit, the label on, as on a real issue on 2026-10-15: it waits on no one — not counted against proposals-max, here 1, the label coming off, nothing proposed shown —, and its issue is read again first, the question the agent's to ask anew (#430)."
 given:
   repo: backlog
+  config:
+    roles: {product-owner: {settings: {proposals-max: 1}}}
   forge:
     issues:
       - id: 12
