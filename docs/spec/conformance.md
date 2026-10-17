@@ -97,7 +97,9 @@ What else a case can give, run and expect, and how each is checked, is in
   issue's `closed-by` lists what closed it, `{kind, ref, text}`;
   `label-events`, its labels set and taken off with who (`{label, added,
   author, insider, bot, created}`); `reactions-by`, the reactions people
-  put on its comments, by the comment's id (`{emoji, author, writer}`). A comment is its text, or `{body,
+  put on its comments, by the comment's id (`{emoji, author, writer}`);
+  `edits`, its earlier bodies, newest first, as GitHub's edit history
+  keeps them, a body set adding the one it replaces. A comment is its text, or `{body,
   author, insider, bot, id}`, its id its place from 1 when not given; with
   `scoped-labels: true`, the forge's labels are scoped, as GitLab's. A
   merge request's `threads` are its comments on lines, `{path, line,
