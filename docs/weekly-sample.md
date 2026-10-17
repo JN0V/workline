@@ -1,6 +1,6 @@
 ---
-sources: [internal/sample, internal/forge/forge.go, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 21e91932
+sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
+checked: 1ba2b775
 judged: c9d96e2
 verified: agent:claude-code
 ---
