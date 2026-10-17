@@ -13,8 +13,9 @@ mission: A change is reviewed before it merges — what it breaks found, quoted 
 #         an issue by its number (--input issue=<n>), every spec lens;
 #         `workline review --spec` or `--issue` on a machine.
 # schedule: on the forge, in the gardening line after the product owner
-#         (opt-in): the issue it refined that waits on a spec review, one
-#         a run; ready is held while an important finding is open (#128).
+#         (opt-in): the issues it refined that wait on a spec review, up
+#         to specs-per-run a run (#433); ready is held while an important
+#         finding is open (#128).
 events: [review, merge-request, spec, schedule]
 
 requires: [git]
@@ -143,3 +144,9 @@ settings:
   # open, the product owner answering between them; the next is a
   # question to a person, on the issue, and the reviewer stops reading it.
   spec-rounds: 5
+  # On the forge (#433): the specs a run reads, in the backlog's order,
+  # each its own lens call, comment and record; the rest wait for the next
+  # run, said. Five at the dearest cost measured (about 41k tokens a spec,
+  # three important findings judged) spend about 205k, within
+  # ai-max-tokens; past it, the specs after are not read, said. 1 to 20.
+  specs-per-run: 5

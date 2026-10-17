@@ -1,0 +1,40 @@
+case: reviewer/spec-question-to-a-person-takes-no-place
+about: "On the forge (#433), an issue whose rounds are spent is put to a person in the same run, no agent asked for it: it takes none of the specs-per-run places, which go to the specs read; the rest wait, said."
+given:
+  repo: reviewed
+  env: {WORKLINE_JUDGE: "fake:$FIXTURES/agents/judge-yes.yaml"}
+  config: {roles: {reviewer: {settings: {specs-per-run: 1}}}}
+  forge:
+    issues:
+      - id: 2
+        title: The median of no values
+        body: "## Need\n\nMedian gives 0 for an empty list.\n\n## Verification\n\nA test of Median on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments:
+          - "```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"
+          - "**workline reviewer**, its spec — 1 findings on the spec.\n\n| | | Where | Finding |\n|---|---|---|---|\n| warns | ambiguous | `#2:3` | Important: Median of what |\n\n<!-- workline:spec-review body=000000000000 round=5 open=1 in=Need -->\n\n<!-- workline:sticky=reviewer/spec -->"
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list, and the README tells the users.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: [calc/calc.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 6
+        title: Every row exported
+        body: "## Need\n\nEvery row exported.\n\n## Verification\n\nA test writes three rows.\n\n## Validation\n\nAnn opens a known day.\n\n## Scope\n\nsrc/export/csv.go"
+        labels: [workline:to-refine]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-spec-out-of-scope"}
+expect:
+  status: pass
+  calls: [{task: part, for: 1-lenses}, {task: judge, for: judge/01}]
+  findings:
+    - {rule: spec-rounds-spent, where: "#2"}
+    - {rule: out-of-scope, where: "#4:3", message: "verified"}
+    - {rule: spec-waits, message: "(specs-per-run 1): #6"}
+  summary: "#2: 1 important finding still open after 5 rounds: put to a person"
+  forge:
+    issues:
+      - {id: 2, comments: 2, comment-contains: ["**Question for a person**", "Median of what", "round=5 open=1 in=Need stopped -->"]}
+      - {id: 4, comments: 2, comment-contains: ["**Holds it from ready**", "round=1 open=1 in=Need -->"], comment-lacks: "#2"}
+      - {id: 6, comments: 1}

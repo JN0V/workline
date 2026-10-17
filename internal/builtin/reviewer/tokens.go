@@ -15,7 +15,8 @@ const tokensSpent = "the run spent its ai-max-tokens"
 
 // spent is what each call of the run used, as the engine kept it
 // (out/calls.jsonl): a lens's part, or a judge's question, each told by the
-// lenses it was for (#147).
+// lenses it was for (#147). One spec of several a run reads: its own calls
+// only, its parts by their names, its judges by their questions (#433).
 func spent(runDir string, st state, c candidates) []Spent {
 	f, err := os.Open(filepath.Join(runDir, "out", "calls.jsonl"))
 	if err != nil {
@@ -47,10 +48,19 @@ func spent(runDir string, st state, c candidates) []Spent {
 			continue
 		}
 		s := Spent{For: call.For, Model: call.Model, TokensIn: call.TokensIn, TokensOut: call.TokensOut}
+		name, mine := call.For, true
+		if st.Part != "" {
+			name, mine = strings.CutPrefix(call.For, st.Part+"-")
+		}
 		if key, ok := strings.CutPrefix(call.For, "judge/"); ok {
-			f := judged[key]
+			f, asked := judged[key]
+			if st.Part != "" && !asked {
+				continue // another spec's judge
+			}
 			s.Lenses, s.Where = f.Lens, f.Where
-		} else if _, part, _ := strings.Cut(call.For, "-"); part == alone || !st.Together {
+		} else if !mine {
+			continue // another spec's part
+		} else if _, part, _ := strings.Cut(name, "-"); part == alone || !st.Together {
 			s.Lenses = part
 		} else {
 			s.Lenses = strings.Join(st.Lenses, ", ")
