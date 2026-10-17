@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: 1a0ca6ec
+checked: f3c0fa16
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -112,7 +112,10 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
   to the same end
   ([ADR-0014, step 4](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)).
 - Contradicted and supported by no other part: wrong.
-- Contradicted and supported by another: a conflict.
+- Contradicted, and another part supports some of the same words: a
+  conflict. A support of other words on the same lines disputes nothing:
+  a sentence spans lines
+  ([#440](https://github.com/JN0V/workline/issues/440)).
 - Partial: to be read together — unless another part supports the same
   lines, which settles them.
 - A support quoted from a code comment only is no support

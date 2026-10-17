@@ -12,13 +12,15 @@ import (
 
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
+	"github.com/JN0V/workline/internal/role"
 )
 
 // The merge policy's `normal` level (ADR-0042, amended): workline's own
 // routine merge requests — as the forge says it: opened and pushed by the
 // App, its commits and pages workline's — merge with no person's yes, the
-// line passed on the head. Each is recorded on it; a revert of one sends
-// its kind back to a person's yes (demote.go).
+// line passed on the head; a kind of role.MergeAlone (`reader`) only once
+// the project lets it. Each is recorded on it; a revert of one sends its
+// kind back to a person's yes (demote.go).
 
 // MergeNormal is the merge policy's level where workline's own routine
 // merge requests need no person's yes (role.MergeLevels).
@@ -30,27 +32,37 @@ const (
 	kindRecords = "records" // only the lines recording when docs were read
 	kindDerived = "derived" // derived blocks as their commands give them, and records
 	kindDocs    = "docs"    // doc pages a role wrote
+	kindReader  = "reader"  // pages an agent read for their reader, recorded read (`reader:`), reworded
 	kindAll     = "all"     // every kind: a revert that names nothing workline can find
 )
 
 // RoutineKinds are the kinds, from the narrowest.
-var RoutineKinds = []string{kindRecords, kindDerived, kindDocs}
+var RoutineKinds = []string{kindRecords, kindDerived, kindDocs, kindReader}
 
 // kindSays says what a kind's change is, for a person.
 var kindSays = map[string]string{
 	kindRecords: "it only records when docs were read",
 	kindDerived: "it regenerates derived blocks, as their commands give them",
 	kindDocs:    "it changes doc pages a role wrote",
+	kindReader:  "it rewords pages an agent read for their reader",
 }
 
 // normal is what `normal` reads once a run: the App workline's token writes
 // as and the name its jobs commit with ("" a person's token: nothing is
-// workline's own), the pages agents are told to read, and the kinds
-// waiting for a person's yes again, each with the issue that keeps it.
+// workline's own), the pages agents are told to read, the kinds of
+// role.MergeAlone the project lets merge alone, and the kinds waiting for
+// a person's yes again, each with the issue that keeps it.
 type normal struct {
 	app, committer string
 	steers         func(path string) bool
+	alone          []string
 	demoted        map[string]string
+}
+
+// asked says whether a kind waits for a person's yes until the project
+// lets it merge alone (`merge.alone`), and has not.
+func (n *normal) asked(kind string) bool {
+	return slices.Contains(role.MergeAlone, kind) && !slices.Contains(n.alone, kind)
 }
 
 // routineCandidate says whether a merge request may be workline's own
@@ -203,9 +215,11 @@ func notAllowed(repo, baseTip, tip string, isDoc, steers func(string) bool) (str
 }
 
 // routineKind is the kind of the branch's change since it left base:
-// records when it changes only the lines recording when docs were read;
-// derived when it changes derived blocks besides, and regenerated says
-// each reads what its command gives on tip; docs else.
+// reader when it records a page read for its reader — a `reader:` line of
+// a doc's header written —, whatever else it changes; records when it
+// changes only the lines recording when docs were read; derived when it
+// changes derived blocks besides, and regenerated says each reads what its
+// command gives on tip; docs else.
 func routineKind(repo, baseTip, tip string, regenerated func(docs []string) bool) (string, error) {
 	from, err := git(repo, nil, "merge-base", baseTip, tip)
 	if err != nil {
@@ -217,6 +231,15 @@ func routineKind(repo, baseTip, tip string, regenerated func(docs []string) bool
 	}
 	var blocks []string
 	parts := strings.Split(strings.TrimSuffix(changes, "\x00"), "\x00")
+	for i := 0; i+1 < len(parts); i += 2 {
+		if parts[i] == "D" {
+			continue
+		}
+		was, _ := blob(repo, from, parts[i+1])
+		if now, ok := blob(repo, tip, parts[i+1]); ok && readMark(now) != "" && readMark(now) != readMark(was) {
+			return kindReader, nil
+		}
+	}
 	for i := 0; i+1 < len(parts); i += 2 {
 		if parts[i] != "M" {
 			return kindDocs, nil
@@ -241,6 +264,36 @@ func routineKind(repo, baseTip, tip string, regenerated func(docs []string) bool
 		return kindDerived, nil
 	}
 	return kindDocs, nil // derived blocks not as their commands give them
+}
+
+// readerKey is the header line the documentalist's reader task writes on
+// each page it had an agent read: the hash of the body read.
+var readerKey = regexp.MustCompile(`^reader:\s*\S+\s*$`)
+
+// readMark is a doc's `reader:` line, its header read as unrecorded reads
+// it; "" when it holds none, or has no header closed.
+func readMark(doc string) string {
+	lines := strings.Split(doc, "\n")
+	end := ""
+	switch {
+	case len(lines) > 0 && lines[0] == "---":
+		end = "---"
+	case len(lines) > 0 && strings.TrimSpace(lines[0]) == "<!-- workline":
+		end = "-->"
+	default:
+		return ""
+	}
+	mark := ""
+	for _, l := range lines[1:] {
+		l = strings.TrimSpace(l)
+		switch {
+		case l == end:
+			return mark
+		case readerKey.MatchString(l):
+			mark = l
+		}
+	}
+	return ""
 }
 
 // underived is a doc with its derived blocks emptied, as the documentalist
@@ -355,6 +408,17 @@ func weighRoutine(f forge.Forge, m forge.Merger, o FollowOptions, w weighed, n *
 	if err != nil {
 		return nil, err
 	}
+	if n.asked(kind) {
+		// Said once on it, where a person reviewing looks: how to accept
+		// it, and how to let its kind merge alone.
+		t := forge.Target{Kind: "merge-request", ID: mr.ID}
+		body := fmt.Sprintf("**Waiting for a person's yes**: this is workline's own %s merge request — %s. The project's merge policy is `normal`, but this kind merges with no person's yes only once the project lets it.\n\n- To accept this one, put the label `%s`.\n- To let workline's %s merge requests merge alone, add the kind to the policy in `.workline/config.yaml`: `merge: {autonomy: normal, alone: [%s]}`.",
+			kind, kindSays[kind], backlog.AcceptedLabel(f), kind, kind)
+		if err := f.Comment(t, body, forge.Marker("merge-waits="+kind)); err != nil {
+			return nil, err
+		}
+		return waits("", fmt.Sprintf("workline's own %s (%s), which merges with no person's yes only once the project lets it, `merge: {autonomy: normal, alone: [%s]}`", kind, kindSays[kind], kind))
+	}
 	issue, held := n.demoted[kind]
 	if all, ok := n.demoted[kindAll]; ok && !held {
 		issue, held = all, true
@@ -450,13 +514,18 @@ func ownNote(notes []forge.Note, key, app string) (string, bool) {
 }
 
 // alone sums up, for the run's summary, what merges with no person's yes
-// at `normal`, and what waits again since a revert.
+// at `normal`, what waits again since a revert, and what waits until the
+// project lets it merge alone.
 func alone(n *normal) string {
 	if n.app == "" {
 		return "with no person's yes: none, the token is no App's"
 	}
-	var free, held []string
+	var free, held, asked []string
 	for _, kind := range RoutineKinds {
+		if n.asked(kind) {
+			asked = append(asked, kind)
+			continue
+		}
 		issue, ok := n.demoted[kind]
 		if all, every := n.demoted[kindAll]; every && !ok {
 			issue, ok = all, true
@@ -475,6 +544,9 @@ func alone(n *normal) string {
 	}
 	if len(held) > 0 {
 		s += "; waiting for a person's yes again since a revert: " + strings.Join(held, ", ")
+	}
+	if len(asked) > 0 {
+		s += "; only with a person's yes, until `merge.alone` lists them: " + strings.Join(asked, ", ")
 	}
 	return s
 }

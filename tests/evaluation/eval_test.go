@@ -574,9 +574,17 @@ func sh(dir string, env []string, script string) error {
 }
 
 // hermetic keeps the machine's git config and hooks out, as the conformance
-// suite does; the agent's own login stays, since it is what is evaluated.
+// suite does, and the CI the checks' own tests may run in: a case is a run
+// on a person's machine, where the local forge keeps what a role opens
+// (#439). The agent's own login stays, since it is what is evaluated.
 func hermetic() []string {
-	return append(os.Environ(),
+	var env []string
+	for _, kv := range os.Environ() {
+		if name, _, _ := strings.Cut(kv, "="); name != "CI" && name != "GITHUB_ACTIONS" && name != "GITLAB_CI" {
+			env = append(env, kv)
+		}
+	}
+	return append(env,
 		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1",
 		"GIT_AUTHOR_NAME=Fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid",
 		"GIT_COMMITTER_NAME=Fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid",

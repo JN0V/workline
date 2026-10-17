@@ -1,0 +1,21 @@
+# docs/tech/service.md judged in parts, in the `service` fixture once the
+# default connections went to 250 (#440): the part holding config.go
+# contradicts "At most 100 requests are served at once", on line 16; the
+# part holding server.go supports the words after it, on lines 16-17: the
+# limit is there, and the 503. They share a line, not a word. Then the fix,
+# declined, so only the task it was given is graded.
+calls:
+  - - claim:
+        lines: "16"
+        status: contradicted
+        quote: "At most 100 requests are served at once"
+        source: {path: src/service/config.go, lines: "8", quote: "DefaultMaxConnections = 250"}
+        why: "the default is 250"
+  - - claim:
+        lines: "16-17"
+        status: supported
+        quote: "past that, the service answers `503 Service Unavailable`"
+        source: {path: src/service/server.go, lines: "11", quote: "slots := make(chan struct{}, c.MaxConnections)"}
+  - []
+  - []
+  - - note: "Left to a person."
