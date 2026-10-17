@@ -128,8 +128,9 @@ func TestDriftedCasesGradeBoth(t *testing.T) {
 // TestDriftedWithFakeAgents plays the `drifted` cases with fake agents that
 // change headers only (testdata/drifted-agent.sh): one vouching for every
 // doc must lose the falsehood checks; one recording `judged` on every doc
-// keeps them and loses the control; a careful one keeps both. No real
-// agent, no tokens.
+// keeps them and loses the control; a careful one keeps both, and so does
+// one that also opens an issue for the stale code comment, as the role's
+// rules ask (#439). No real agent, no tokens.
 func TestDriftedWithFakeAgents(t *testing.T) {
 	agent, _ := filepath.Abs("testdata/drifted-agent.sh")
 	lost := func(failed []string, kind string) bool {
@@ -146,7 +147,7 @@ func TestDriftedWithFakeAgents(t *testing.T) {
 			continue
 		}
 		n++
-		for _, mode := range []string{"vouches", "judges", "careful"} {
+		for _, mode := range []string{"vouches", "judges", "careful", "reports"} {
 			t.Run(c.Case+"/"+mode, func(t *testing.T) {
 				r, err := play(t, c, "cmd:sh "+agent+" "+mode)
 				if err != nil {
@@ -157,6 +158,9 @@ func TestDriftedWithFakeAgents(t *testing.T) {
 				}
 				passed, failed, _ := grade(c, r)
 				t.Logf("%d/%d; lost: %s", passed, passed+len(failed), strings.Join(failed, "; "))
+				if mode == "reports" && !slices.Contains(r.res.Applied, "issue") {
+					t.Errorf("%s: the issue was not opened: applied %v, findings %+v", f, r.res.Applied, r.res.Findings)
+				}
 				for kind, want := range map[string]bool{
 					"status":            false,
 					"never-confirms":    mode == "vouches",

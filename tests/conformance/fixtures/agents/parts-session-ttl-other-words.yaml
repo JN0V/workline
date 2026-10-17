@@ -1,0 +1,21 @@
+# docs/tech/service.md judged in parts, in the `service` fixture once the
+# store keeps a session twelve hours whatever the configuration (#440): the
+# part holding config.go supports "24 hours by default", on line 23; the
+# part holding store.go contradicts "Each one lasts the configured session
+# TTL", on lines 22-23. They share a line, not a word. Then the fix,
+# declined, so only the task it was given is graded.
+calls:
+  - - claim:
+        lines: "23"
+        status: supported
+        quote: "24 hours by default"
+        source: {path: src/service/config.go, lines: "10", quote: "DefaultSessionTTL = 24 * time.Hour"}
+  - []
+  - - claim:
+        lines: "22-23"
+        status: contradicted
+        quote: "Each one lasts the configured session TTL"
+        source: {path: src/service/store.go, lines: "17", quote: "s := &Store{ttl: 12 * time.Hour, sessions: map[string]time.Time{}}"}
+        why: "the store keeps a session twelve hours, whatever the configuration"
+  - []
+  - - note: "Left to a person."
