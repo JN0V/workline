@@ -2,11 +2,11 @@
 
 Part of [the product owner](../README.md). Proposed by
 [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-built in parts ([#435](https://github.com/JN0V/workline/issues/435)): a
-draft that repeats is left out today
-([writing an issue](writing.md#each-thing-said-once)); the rest is not
-built yet. Below, the same issues under the proposed names, each thing
-said once.
+built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
+each thing said once is built, under today's names
+([writing an issue](writing.md#each-thing-said-once)); the names, a bug's
+steps and the kind are not yet. Below, the same issues under the
+proposed names, each thing said once.
 
 | Today | Proposed |
 |---|---|

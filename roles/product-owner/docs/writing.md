@@ -1,6 +1,6 @@
 ---
-sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/repeat.go, internal/work/work.go]
-checked: 436a9c29
+sources: [roles/product-owner/instruction.md, internal/backlog/backlog.go, internal/backlog/plain.go, internal/backlog/repeat.go, internal/work/work.go]
+checked: 1b93a955
 verified: agent:claude-code
 ---
 # Writing an issue a person reads
@@ -22,6 +22,8 @@ first, the cause folded.
   ([what ready means](../../../docs/spec/backlog-acts/refine.md)).
 - **Example and Steps to reproduce are not**, nor any other heading you
   add: kept as they are.
+- **Your text on top, with no Need heading, is the Need**: the product
+  owner drafts no Need saying it again.
 - The product owner adds a missing section where this layout puts it,
   never moving yours, and the line between the two parts.
 
@@ -111,33 +113,29 @@ Users who exclude a folder with a trailing slash still upload it:
 `matchExclude` in `internal/filter/glob.go`.
 ```
 
-## Text a role wrote
-
-What an import or another role opened an issue with, above its sections,
-is the role's until a person edits it:
-
-- **Rewritten in plain words**, the problem first, one real case, at most
-  100 words; what only a builder needs — the code, a path, the fix —
-  folded in `<details>` at its end.
-- **Kept**: the line saying where it comes from, the hidden markers.
-- **Who decides**: the engine, from the digest it kept when the issue was
-  opened, never the agent. Edited by you, the text is yours: never
-  rewritten. Rewritten once, again only when your comment asks.
-- **Your level decides how**: written at `normal`, proposed at
-  `cautious`, like the drafts.
-
 ## Each thing said once
 
 A problem said three times reads as three problems
 ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
 amended; [worked case](proposed-headings.md#each-thing-said-once)):
 
-- **An example or steps that say again what is above them are not
-  written**: past `repeated-percent-max` ([settings](settings.md)), 40%
-  of their words already in the text on top and the Need.
-- **Validation is never measured**: it restates the case by design.
+- **A role's text on top becomes the Need draft**: what an import or
+  another role opened the issue with, rewritten in plain words, then
+  taken from the top. The line saying where it comes from, and the
+  hidden markers, stay.
+- **Your text on top is the Need**, when no Need heading follows: the
+  product owner adds Validation and the builder's part, never a Need
+  restating it.
+- **A draft that says again what is above it is not written**: past
+  `repeated-percent-max` ([settings](settings.md)), 40% of its words
+  already said. Validation is never measured: it restates the case.
 - **What you said yes to is written whole**: a proposal you accepted, a
   text you agreed to.
+- **Who decides whose text it is**: the engine, from the digest it kept
+  when the issue was opened, never the agent. Edited by you, the text
+  is yours: never taken.
+- **Your level decides how**: written at `normal`, proposed at
+  `cautious`, like the drafts.
 
 ## What the product owner says it changed
 
@@ -145,8 +143,8 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
   Changed: —. See the issue's edit history."
 - **Changed** lists only its own sections it rewrote — a draft, or a text
   as it wrote it; it never changes a sentence of yours.
-- **Rewrote: the description, in plain words** when it rewrote a role's
-  text on top.
+- **Rewrote: the text on top as the Need, in plain words** when it took
+  a role's text on top into the Need.
 - **Not written: the Example, which said again what is above it** when
   it left a draft out.
 - **The text before** is in the forge's edit history: "edited" above the
@@ -156,7 +154,7 @@ amended; [worked case](proposed-headings.md#each-thing-said-once)):
 
 ## Proposed next
 
-New names for these sections, a role's text on top becoming the Need, a
-bug readied only with its steps, and the kind set by the role are
-proposed, not built: [the proposed headings](proposed-headings.md),
+New names for these sections, a bug readied only with its steps, and
+the kind set by the role are proposed, not built:
+[the proposed headings](proposed-headings.md),
 [#435](https://github.com/JN0V/workline/issues/435).

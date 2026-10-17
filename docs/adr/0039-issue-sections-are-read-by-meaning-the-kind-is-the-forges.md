@@ -1,8 +1,8 @@
 # ADR-0039: Issue sections take established names, read by meaning; a bug waits for its steps; the role sets the kind
 
 - **Status:** proposed — built in parts ([#435](https://github.com/JN0V/workline/issues/435)):
-  piece 1 and the amendment's repeat rule built; the question at the end
-  settled on 2026-10-17
+  piece 1 and the amendment built; the question at the end settled on
+  2026-10-17
 - **Date:** 2026-10-10, revised 2026-10-11, amended 2026-10-11 (below)
 - **Builds on:** [ADR-0018](0018-the-product-owner.md) (Need and
   Validation a person's), [ADR-0038](0038-the-product-owner-proposes-on-the-issue-a-person-answers-there.md)

@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:documentalist
-checked: 18109269
+checked: 1b93a955
 judged: b5899f5
 status: draft
 ---
@@ -96,8 +96,8 @@ refuses. The catalogue is closed and belongs to the engine:
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
-| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts, a real example or a bug's steps to reproduce as drafts too, never required, left out when they say again what is above them (ADR-0039, amended) — in the reader's order, never rewriting one there; on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
-| `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
+| `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts, a real example or a bug's steps to reproduce as drafts too, never required — in the reader's order, never rewriting one there; a role's text on top taken into the Need draft, a draft saying again what is above it left out (ADR-0039, amended); on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
+| `ready` | move an issue to `ready`, once the engine finds its four sections there — a person's text on top standing for a Need — and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |
 | `unready` | move a ready issue back to refine (`workline:ready` off, `workline:to-refine` on), the issue told why; always proposed, done once a person accepts it (docs/spec/backlog-acts.md, "Refining to ready"; ADR-0032) | forge |
 | `ask` | ask an issue's reporter what is missing; again only after an answer, never the same question, three rounds then a person, on the issue (ADR-0021) | forge |
 | `split` | break an issue too big to be one need into 2 to 6 issues, each with its four sections, opened through the one way and linked to it — a sub-issue, a GitLab task, or a task list in its body; never split twice (docs/spec/backlog-acts.md, "Splitting") | forge |

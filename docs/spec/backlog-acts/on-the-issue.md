@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/ledger.go, internal/backlog/say.go, internal/report/summary.go, internal/engine/backlog.go]
 status: draft
-checked: 436a9c29
+checked: 1b93a955
 verified: agent:claude-code
 ---
 # On the issue
@@ -16,8 +16,10 @@ state folded under it (`backlog.FormatState`):
 - what the role did there on the last day it acted, a line an act — "Accepted by @x"
   when it was a person's yes; a refine says what it wrote in one line,
   "Added: Verification, Scope. Changed: —. See the issue's edit history."
-  (`backlog.refined`), then "Not written: the Example, which said again
-  what is above it." for each draft it left out (ADR-0039, amended): Changed, the role's own sections it rewrote — a draft, or a text as it wrote it — it never
+  (`backlog.refined`), then "Rewrote: the text on top as the Need, in
+  plain words." when it took a role's text there into the Need, and
+  "Not written: the Example, which said again what is above it." for
+  each draft it left out (ADR-0039, amended): Changed, the role's own sections it rewrote — a draft, or a text as it wrote it — it never
   changes a person's sentence, so nothing of theirs is quoted, on GitLab's
   Free plan either, which keeps no text of a description's versions; the
   text before is in the forge's edit history, which no forge links to;

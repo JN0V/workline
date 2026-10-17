@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: 436a9c29
+checked: 1b93a955
 verified: agent:claude-code
 ---
 # The issue's state
@@ -27,7 +27,7 @@ sections:                                # its Need and Scope as last read or wr
   Scope: WriteRows in src/export/csv.go.
 wrote: {Verification: cb1c26c09a46}      # the sections the role wrote, a digest of each text (A spec read before ready); Description, the text a role opened it with
 answered: 3f9a1c0e2b7d                   # the review of its spec last given to the agent, by the body it read
-plain: 9b0e7d1c2a44                      # its description as the role rewrote it in plain words (Refining to ready)
+plain: 9b0e7d1c2a44                      # its description as an earlier engine rewrote it in plain words: still the role's (Refining to ready)
 deleted: [Validation]                    # sections the role wrote and a person deleted: never written again
 proposed:                                # the acts proposed on it, each as decided, since a day (On the issue)
   - {act: rename, line: 'Rename #9 to …', since: '2026-10-08', proposal: {do: rename, issue: 9, title: …}}

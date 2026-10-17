@@ -24,7 +24,8 @@ hold:
 
 1. **Nothing buildable in Missing**: met once
    [ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)
-   is built (in parts, [#435](https://github.com/JN0V/workline/issues/435)). Missing holds only that decision and
+   is built (in parts, [#435](https://github.com/JN0V/workline/issues/435):
+   two built). Missing holds only that decision and
    [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
    next to build; the rest are tries on real use, or parked as issues.
 2. **The main issue validated on real use**: open. The trial of
@@ -72,12 +73,16 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `refine-writes-the-persons-part-first`,
   `draft-above-the-line-stays-a-draft`, routing's
   `item-ready-heading-twice`.
-- **What no person wrote, in plain words**: `description-*`,
+- **What no person wrote, in plain words**:
   `level-cautious-proposes-example-and-steps`, `question-written-once`,
   `closings-capped`.
-- **A draft that repeats left out**
+- **Each thing said once**
   ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
-  amended): `each-thing-said-once`, `repeated-percent-max-is-a-setting`.
+  amended): a role's text on top taken into the Need draft,
+  `description-*`; a draft repeating what is above it left out,
+  `each-thing-said-once`, `repeated-percent-max-is-a-setting`; a
+  person's text on top read as the Need,
+  `ready-reads-a-persons-text-on-top`.
 - **Refining, the reporter asked**: `refine-*`, `answer-read-*`,
   `ask-the-reporter-once`, `same-question-*`, `asked-before-*`,
   `rounds-capped-then-person`, `ready-checked-by-the-engine`; an
@@ -129,14 +134,13 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
 
 ## Missing, in the order to build it
 
-1. **Issue sections and kinds, proposed**
+1. **Issue sections and kinds, in parts**
    ([ADR-0039](../../../docs/adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md),
    [examples](proposed-headings.md),
    [#435](https://github.com/JN0V/workline/issues/435)): established
-   section names, a role's text on top as the Need, a bug readied only
-   with its steps, the kind label set by the role. Built: sections read
-   by meaning; a draft that repeats left out, not tried with a real
-   agent.
+   section names, a bug readied only with its steps, the kind label set
+   by the role. Built: sections read by meaning; each thing said once,
+   not tried live with a real agent.
 2. **Priority and effort where the forge keeps them, proposed**
    ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
    [examples](priority-and-effort.md)): six steps, conformance first, then
@@ -153,7 +157,8 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
      agent;
    - **issues a person reads**: an Example written by a real agent; on
      GitLab;
-   - **what no person wrote**, rewritten by a real agent, live;
+   - **what no person wrote**, a role's text on top taken into the Need
+     by a real agent, and a repeat left out, on a real night;
    - **refining**: a real outsider's issue, a reporter's own `agreed`, the
      gardening template on GitLab with a release holding this;
    - **autonomy**: a real agent's rename undone, `ready` taken off and a

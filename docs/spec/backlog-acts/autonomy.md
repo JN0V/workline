@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/autonomy.go, roles/product-owner/role.yaml, internal/backlog/backlog.go, internal/builtin/productowner/productowner.go]
 status: draft
-checked: 436a9c29
+checked: 1b93a955
 verified: agent:claude-code
 ---
 # Autonomy and caps
