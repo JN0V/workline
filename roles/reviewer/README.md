@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: f094fd52
+checked: 7fcb4b85
 verified: agent:claude-code
 ---
 # Reviewer
@@ -142,6 +142,7 @@ Under `roles: {reviewer: {settings: …}}` in `.workline/config.yaml`
 | `diff-alone` | `false` | `true`: one more call, given the change only |
 | `spec-lenses` | `[ambiguous, unverifiable, out-of-scope, contradicted]` | the lenses a spec is read through |
 | `spec-rounds` | `5` | on the forge: reviews in a row leaving a finding open, then a question to a person (1 to 20) |
+| `specs-per-run` | `5` | on the forge: the specs a night reads, the rest next night (1 to 20; [a spec](docs/spec.md#on-the-forge)) |
 | `comment-block-max` | `8` | lines of one added comment (`long-comment`, a warning) |
 | `story-words` | `used to`, `the bug was`, `previously` | a comment telling the code's history |
 | `ai-findings` | `warn` | `block`: a verified important finding blocks; by lens, `{correctness: block}` (below) |

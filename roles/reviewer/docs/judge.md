@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: f094fd52
+checked: 7fcb4b85
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -169,7 +169,8 @@ comment hides a line for each.
   a run spends what it uses.
 - **Not whole**: a lens not asked, or a finding not judged
   (`review-not-whole`), leaves the commits unrecorded, reviewed again next
-  run.
+  run. Several specs a run: those after the cap are not read, each said
+  ([a spec on the forge](spec.md#on-the-forge)).
 - **Said**: the summary gives the tokens used against the cap; each
   call's, by lens and by judged finding, is in `out/review.json`.
 - **A call**: `context.budget`, 100000 tokens, estimated 711 + 0.82 a

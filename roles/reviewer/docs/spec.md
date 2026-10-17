@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: f094fd52
+checked: 7fcb4b85
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -56,9 +56,17 @@ routing:
   events: {schedule: [documentalist, product-owner, reviewer]}
 ```
 
-- **Which issue**: one a run, the first in the backlog's order the product
-  owner keeps (its state comment), not `workline:ready`, its four sections
-  written (drafts too), its body not read as it is. None: no agent asked.
+- **Which issues**: those the product owner keeps (its state comment),
+  not `workline:ready`, their four sections written (drafts too), their
+  body not read as it is. None: no agent asked.
+- **How many**: up to `specs-per-run` a run (5), in the backlog's order
+  ([#433](https://github.com/JN0V/workline/issues/433)):
+  - each read as one alone: its lens call, its judges, its caps
+    (`findings-max`, `questions-max`), its comment;
+  - the rest wait, named in one finding (`spec-waits`), and come first
+    at the next run unless the backlog puts another before them;
+  - the run's tokens spent, the specs after are not read: nothing
+    written on them, each said (`spec-not-read`), read at the next run.
 - **What it writes**: one comment on the issue, edited each review:
   - what holds it from ready, the findings, the questions for a person;
   - a hidden record (`workline:spec-review`): the body's digest, the
@@ -73,9 +81,24 @@ routing:
 - **The answer**: the product owner's next refine rewrites the sections
   the findings lie in that are its own; a person's, it asks the reporter.
   The body changed, the reviewer reads it again: one round more.
+- **In CI**: judged, then applied; the reviewer reads what an earlier run
+  refined, so a round takes two nights. `forge-writes: false` writes no
+  comment: ready then stays held, `spec-not-reviewed`.
+- **Without AI**: nothing read, nothing written, each spec said
+  (`not-reviewed`); ready held. The sixth round's question (below) needs
+  no agent: written all the same.
+- **Its cost**: a spec 7k to 37k tokens in, judges included; five a night
+  stay within `ai-max-tokens`
+  ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).
+
+## Rounds, and a spec not settled
+
+How a spec's reviews on the forge end, or wait:
+
 - **Five rounds** (`spec-rounds`): reviews in a row that leave a finding
-  open. The sixth asks no agent: the comment puts a question to a person,
-  and the reviewer stops reading it. The person can:
+  open. The sixth asks no agent, nor takes a place of `specs-per-run`:
+  the comment puts a question to a person, and the reviewer stops
+  reading it. The person can:
   - accept it as it reads (`workline:accepted`);
   - settle it and set `workline:ready`;
   - or delete the comment, for five rounds more.
@@ -89,8 +112,3 @@ routing:
   - Said each run (`spec-record-unread`), naming the issue and the line.
   - Released when a person deletes the comment (read anew, round 1) or
     accepts the issue (`workline:accepted`).
-- **In CI**: judged, then applied; the reviewer reads what an earlier run
-  refined, so a round takes two nights. `forge-writes: false` writes no
-  comment: ready then stays held, `spec-not-reviewed`.
-- **Without AI**: nothing read, nothing written; ready held. The sixth
-  round's question needs no agent.
