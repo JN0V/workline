@@ -4,7 +4,7 @@ given: {workline-at: 2c0e022}
 run: {role: documentalist, event: schedule}
 grade:
   - {status: pass}
-  - {agent-calls-max: 2}
+  - {agent-calls-max: 3}   # the condense, asked again once if refused; then the reader's call, every run here (#417)
   - {lines-max: {docs/spec/role-contract.md: 200}}
   - {new-files-min: 1}
   - {judge: "Does every rule the role contract stated before still hold, in it or in a doc it links to?"}
