@@ -41,10 +41,13 @@ hold:
    2026-10-17, at be99f444, after the guard of
    [#451](https://github.com/JN0V/workline/pull/451)
    ([the documentalist, measured](../../../docs/research/documentalist-measured.md#after-the-guard-2026-10-17-afternoon)).
-   Left: `condenses-the-role-contract`, two runs graded over its 200
-   lines because the evaluation counts the doc's header
-   ([#454](https://github.com/JN0V/workline/issues/454)), its judge never
-   asked; `stays-on-the-task`, not run (about 68k tokens in).
+   The last two, that evening at 1f81fa73
+   ([measured](../../../docs/research/documentalist-measured.md#the-last-two-cases-in-the-evening)):
+   `condenses-the-role-contract` 4 runs of 5 full, its judge asked;
+   `stays-on-the-task` 0 of 5, 6 calls each for a cap of 2, a merge
+   request judging a large doc in parts since
+   [#381](https://github.com/JN0V/workline/pull/381)
+   ([#458](https://github.com/JN0V/workline/issues/458)).
 
 ## Built
 
@@ -159,10 +162,11 @@ its evaluation in
 
 ## Missing, in the order it matters
 
-1. **The measure's last two cases**: `condenses-the-role-contract` again,
-   its judge asked, once the evaluation counts a doc's lines as the
-   engine does ([#454](https://github.com/JN0V/workline/issues/454));
-   `stays-on-the-task`, five runs, about 68k tokens in.
+1. **The measure's last two cases**: `stays-on-the-task`, once a person
+   decides whether a merge request judges a doc in parts
+   ([#458](https://github.com/JN0V/workline/issues/458));
+   `condenses-the-role-contract` again, its fifth run 3 calls for a cap
+   of 2: a condense asked again, beside the reader's call.
 2. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
 3. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch

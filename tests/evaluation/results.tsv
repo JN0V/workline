@@ -541,3 +541,13 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-17T15:18:13Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	2	8305	2137	0.0740	28			
 2026-10-17T15:18:25Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4714	817	0.0213	12			
 2026-10-17T15:18:40Z	be99f444	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/splits-a-card-too-long	4/4	1	4713	871	0.0211	16			
+2026-10-17T15:59:36Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	11719	0.2070	104		claude-sonnet-5-5 (context)	
+2026-10-17T16:01:31Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	12969	0.2394	115		claude-sonnet-5-5 (context)	
+2026-10-17T16:04:32Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	4/5	3	31861	18560	0.4238	181	agent-calls-max: 3 calls	claude-sonnet-5-5 (context)	
+2026-10-17T16:06:01Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	10087	0.1815	89		claude-sonnet-5-5 (context)	
+2026-10-17T16:07:32Z	1f81fa73	claude	claude-opus-5-5>claude-sonnet-5-5	medium	documentalist/condenses-the-role-contract	5/5	2	21578	10619	0.1848	91		claude-sonnet-5-5 (context)	
+2026-10-17T16:08:46Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	103245	9472	0.4545	73	agent-calls-max: 6 calls		
+2026-10-17T16:09:46Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	102462	7901	0.1261	60	agent-calls-max: 6 calls		
+2026-10-17T16:11:01Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	103089	9789	0.1475	74	agent-calls-max: 6 calls		
+2026-10-17T16:11:55Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	103611	6549	0.1172	54	agent-calls-max: 6 calls		
+2026-10-17T16:13:15Z	1f81fa73	claude	claude-sonnet-5-5	medium	documentalist/stays-on-the-task	3/4	6	102324	10526	0.1518	80	agent-calls-max: 6 calls		
