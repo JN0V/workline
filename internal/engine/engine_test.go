@@ -176,3 +176,23 @@ func TestJudgeAskedAgain(t *testing.T) {
 		t.Error("once answered, nothing is asked again")
 	}
 }
+
+// A note is said as a person reads it: a documentalist's {doc, text} with
+// its docs before its words (#449), any other value as it reads.
+func TestNoteText(t *testing.T) {
+	for _, c := range []struct {
+		note any
+		want string
+	}{
+		{"  a message for a person \n", "a message for a person"},
+		{map[string]any{"doc": "docs/a.md", "text": "Kept, not confirmed."}, "docs/a.md: Kept, not confirmed."},
+		{map[string]any{"doc": []any{"docs/a.md", "docs/b.md"}, "text": "Kept."}, "docs/a.md, docs/b.md: Kept."},
+		{map[string]any{"text": "No doc named."}, "No doc named."},
+		{map[string]any{"doc": "docs/a.md", "text": 33}, "docs/a.md: 33"},
+		{map[string]any{"doc": "docs/a.md", "text": ""}, "docs/a.md:"},
+	} {
+		if got := noteText(c.note); got != c.want {
+			t.Errorf("noteText(%v) = %q, want %q", c.note, got, c.want)
+		}
+	}
+}

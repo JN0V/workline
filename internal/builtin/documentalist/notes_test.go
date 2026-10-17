@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/verdict"
 )
 
 // A note names its doc in `doc`, or, given as text, by the doc's path or an
@@ -32,6 +33,10 @@ func TestDoubtedDocs(t *testing.T) {
 		{"in doc, its text naming another", note(map[string]any{"doc": "./docs/clock/status.md", "text": "events.md says the same."}), []string{"docs/clock/status.md"}},
 		{"in doc, a list", note(map[string]any{"doc": []any{"docs/clock/status.md", "docs/net/README.md"}, "text": "Kept."}), []string{"docs/clock/status.md", "docs/net/README.md"}},
 		{"in doc, a doc not put before the agent", note(map[string]any{"doc": "docs/clock/tried.md", "text": "A record."}), nil},
+		{"in doc, an end of its path", note(map[string]any{"doc": "status.md", "text": "Kept."}), []string{"docs/clock/status.md"}},
+		{"in doc, a path written wrong: its text read", note(map[string]any{"doc": "doc/clock/status.md", "text": "In status.md the count is kept."}), []string{"docs/clock/status.md"}},
+		{"in doc, an end two docs share: its text read", note(map[string]any{"doc": "README.md", "text": "clock/README.md: kept."}), []string{"docs/clock/README.md"}},
+		{"in doc, a text not a string", note(map[string]any{"doc": "docs/clock/status.md", "text": 33}), []string{"docs/clock/status.md"}},
 		{"the engine's own mark", note(map[string]any{"own": true, "reader-read": true}), nil},
 	} {
 		got := doubtedDocs([]intent.Intention{c.note, {Kind: "patch", Value: "status.md"}}, judged)
@@ -42,6 +47,28 @@ func TestDoubtedDocs(t *testing.T) {
 		sort.Strings(docs)
 		if !reflect.DeepEqual(docs, c.want) {
 			t.Errorf("%s: doubted %v, want %v", c.name, docs, c.want)
+		}
+	}
+}
+
+// A doc whose fix had only its move of `checked` withheld over its note is
+// said doubted; one with a place of its fix refused too is fixed in part.
+func TestOnlyDoubted(t *testing.T) {
+	doubt := verdict.Finding{Rule: "checked-over-note", Where: "docs/a.md"}
+	place := verdict.Finding{Rule: "removal-uncited", Where: "docs/a.md"}
+	other := verdict.Finding{Rule: "removal-uncited", Where: "docs/b.md"}
+	for _, c := range []struct {
+		name     string
+		withheld []verdict.Finding
+		want     bool
+	}{
+		{"its note alone", []verdict.Finding{doubt, other}, true},
+		{"its note and a place", []verdict.Finding{place, doubt}, false},
+		{"a place alone", []verdict.Finding{place}, false},
+		{"nothing withheld of it", []verdict.Finding{other}, false},
+	} {
+		if got := onlyDoubted(c.withheld, "docs/a.md"); got != c.want {
+			t.Errorf("%s: onlyDoubted = %v, want %v", c.name, got, c.want)
 		}
 	}
 }

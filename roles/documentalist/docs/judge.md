@@ -97,8 +97,8 @@ the reader task by [its own](reader.md#what-the-engine-checks).
   `checked`. *Withheld*: the move of `checked`.
 - **A doc the answer's own note doubts** (`checked-over-note`,
   [#449](https://github.com/JN0V/workline/issues/449)): a note names its
-  doc in `doc`, or in its text by path or by a file name no other doc of
-  the task shares. *Withheld*: the move of `checked`, the note quoted.
+  doc in `doc`, else in its text, by path or by a file name no other doc
+  of the task shares. *Withheld*: the move of `checked`, the note quoted.
 
 ## What holds is applied
 

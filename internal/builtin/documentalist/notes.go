@@ -1,6 +1,7 @@
 package documentalist
 
 import (
+	"fmt"
 	"path"
 	"regexp"
 	"sort"
@@ -21,12 +22,14 @@ import (
 
 // doubtedDocs are the docs put before the agent that a note of its answer
 // names, each with the words of the notes naming it. A note names its doc in
-// `doc` ({doc, text}); one given as text names every doc of the task whose
-// path, or an end of it no other doc of the task shares (`status.md`), it
-// holds, as the run on `drifted` wrote "In status.md, …".
+// `doc` ({doc, text}): its path, or an end of it no other doc of the task
+// shares (`status.md`). One given as text, or whose `doc` names no doc of
+// the task, names every doc of the task whose path, or such an end, its
+// text holds, as the run on `drifted` wrote "In status.md, …": a doubt is
+// never lost to a path written wrong.
 func doubtedDocs(intents []intent.Intention, judged map[string]map[string]string) map[string][]string {
 	out := map[string][]string{}
-	var ends map[string][]string // an end of a doc's path -> the docs of the task ending so
+	ends := pathEnds(judged) // an end of a doc's path -> the docs of the task ending so
 	for _, in := range intents {
 		if in.Kind != "note" {
 			continue
@@ -36,16 +39,12 @@ func doubtedDocs(intents []intent.Intention, judged map[string]map[string]string
 			continue
 		}
 		var named []string
-		if docs != nil {
-			for _, d := range docs {
-				if _, asked := judged[d]; asked {
-					named = append(named, d)
-				}
+		for _, d := range docs {
+			if p := ends[d]; len(p) == 1 && !contains(named, p[0]) {
+				named = append(named, p[0])
 			}
-		} else {
-			if ends == nil {
-				ends = pathEnds(judged)
-			}
+		}
+		if len(named) == 0 {
 			named = namedIn(text, ends)
 		}
 		for _, d := range named {
@@ -68,7 +67,9 @@ func noteOf(v any) (text string, docs []string, ok bool) {
 		if own, _ := n["own"].(bool); own {
 			return "", nil, false
 		}
-		text, _ = n["text"].(string)
+		if t, has := n["text"]; has && t != nil {
+			text = fmt.Sprint(t) // a text YAML read as a number or a list, as it reads
+		}
 		var raw []any
 		switch d := n["doc"].(type) {
 		case string:

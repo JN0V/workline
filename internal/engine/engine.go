@@ -2075,10 +2075,11 @@ func noteText(v any) string {
 	if !ok {
 		return strings.TrimSpace(fmt.Sprint(v))
 	}
-	text, ok := m["text"].(string)
+	t, ok := m["text"]
 	if !ok {
-		return strings.TrimSpace(fmt.Sprint(v))
+		return strings.TrimSpace(fmt.Sprint(v)) // not a {doc, text} note
 	}
+	text := fmt.Sprint(t) // a text YAML read as a number or a list, as it reads
 	var docs []string
 	switch d := m["doc"].(type) {
 	case string:
@@ -2093,7 +2094,7 @@ func noteText(v any) string {
 	if len(docs) == 0 {
 		return strings.TrimSpace(text)
 	}
-	return strings.Join(docs, ", ") + ": " + strings.TrimSpace(text)
+	return strings.TrimSpace(strings.Join(docs, ", ") + ": " + strings.TrimSpace(text))
 }
 
 func (a *applier) needForge(kind string) error {
