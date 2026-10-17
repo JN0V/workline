@@ -479,6 +479,7 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 	}
 	m.about = "The issue as it reads now, and its comments up to that day: its record, from an engine before ADR-0046, does not say the text the product owner read."
 	a.older = a.Commit == ""
+	var now *forge.Issue // the issue as it reads now, beside the text a refine read: what it wrote
 	if a.Body != "" {
 		var versions func() ([]string, error)
 		if e, ok := rd.o.Forge.(forge.Edited); ok {
@@ -488,14 +489,24 @@ func (rd *reader) issueAct(a *Act, m *material, kind string) string {
 		if why != "" {
 			return fmt.Sprintf("the text the product owner read (body %s) is %s", a.Body, strings.ReplaceAll(why, "the issue's", a.Ref+"'s"))
 		}
-		is.Body = body
 		m.about = "The issue as the product owner read it, its body unchanged since, and its comments up to that day."
 		if edited {
 			m.about = "The issue as the product owner read it, its body as the forge's edit history keeps it, and its comments up to that day."
+			if kind == "refine" {
+				m.about += fmt.Sprintf(" %s now is the issue as it reads today: the sections the refine wrote, and any edit since.", a.Ref)
+				n := *is
+				now = &n
+			}
 		}
+		is.Body = body
 	}
 	m.author, m.acted = actedBy(a.Acted)
 	m.items = append(m.items, issueItem(is))
+	if now != nil {
+		it := issueItem(now)
+		it.name += " now"
+		m.items = append(m.items, it)
+	}
 	k := 0
 	for _, n := range notes {
 		if strings.Contains(n.Body, "<!-- workline:sticky="+productOwner+"/") {
