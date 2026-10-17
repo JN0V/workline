@@ -145,16 +145,16 @@ its measure in
   `judge-shown-the-change-near-the-cause`,
   `tests-judge-reads-tests-up-to-a-cap`,
   `review-says-the-tokens-of-each-call`, `budget-spent-*`.
+- **A change too large for one call, in parts**, past `parts-max` no
+  lens asked ([#446](https://github.com/JN0V/workline/issues/446)): `change-*`.
 - **A spec, on a machine and on the forge**: `spec-*`.
 - **Spec review on workline**, on since 2026-10-17, after the product
-  owner's trial: the reviewer after it in the `schedule` line of
-  workline's `.workline/config.yaml`, up to 5 specs a night
-  (`specs-per-run`, below); a night's cost estimated offline in its pull
-  request ([#424](https://github.com/JN0V/workline/pull/424)).
+  owner's trial: the reviewer after it in workline's `schedule` line,
+  up to 5 specs a night (`specs-per-run`); a night's cost estimated
+  offline in [#424](https://github.com/JN0V/workline/pull/424).
 - **Several specs a night** on the forge, `specs-per-run` (5), the rest
   the next night; measured with no model on workline's 10 waiting, two
-  nights instead of ten
-  ([#433](https://github.com/JN0V/workline/issues/433)):
+  nights instead of ten ([#433](https://github.com/JN0V/workline/issues/433)):
   `spec-several-read-in-one-run`, `spec-rest-read-at-the-next-run`,
   `spec-tokens-spent-later-specs-wait`,
   `spec-question-to-a-person-takes-no-place`,
@@ -196,5 +196,5 @@ its measure in
 5. **Tries on real use**: a draft marked ready, a run on ready a rule
    held, GitLab (the job token reading the notes, the next pipeline), a
    block standing on a forge, an issue outside the change written by a
-   real agent; every lens on ready tried on
+   real agent, a change read in parts; every lens on ready tried on
    [#307](https://github.com/JN0V/workline/pull/307). No issue yet.
