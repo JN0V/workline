@@ -1,6 +1,7 @@
 package documentalist
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -15,6 +16,38 @@ func claimOf(t *testing.T, part int, text string) claim {
 	}
 	c.part = part
 	return c
+}
+
+// Two claims speak of the same words when their quotes overlap where they
+// stand in the doc, not when their lines merely do (#440): a sentence spans
+// lines, and the words beside it are another passage.
+func TestSameWordsNotSameLines(t *testing.T) {
+	doc := "# Service\n" +
+		"At most 100 requests are served at once; past that, the service answers\n" +
+		"`503 Service Unavailable` rather than queueing them; the service logs it. Each\n" +
+		"one lasts the configured session TTL, 24 hours by default.\n"
+	at := func(lines, quote string) claim {
+		return claimOf(t, 0, fmt.Sprintf("{lines: %q, status: supported, quote: %q}", lines, quote))
+	}
+	for _, tc := range []struct {
+		a, b claim
+		same bool
+	}{
+		{at("2", "At most 100 requests are served at once"), at("2-3", "past that, the service answers `503 Service Unavailable`"), false},
+		{at("2", "At most 100 requests are served at once"), at("2-3", "served at once; past that"), true},
+		{at("3-4", "Each one lasts the configured session TTL"), at("4", "24 hours by default"), false},
+		{at("3-4", "Each one lasts the configured session TTL"), at("4", "the configured session TTL, 24 hours"), true},
+		{at("3", "the service logs it"), at("2-3", "the service"), true}, // there twice: the second place counts
+		{at("2", "not in the doc"), at("2", "At most 100"), true},        // a quote not placed: the lines decide
+		{at("2", "not in the doc"), at("4", "24 hours by default"), false},
+	} {
+		if got := sameWords(doc, tc.a, tc.b); got != tc.same {
+			t.Errorf("%q (%s) and %q (%s): same words %v, want %v", tc.a.Quote, tc.a.Lines, tc.b.Quote, tc.b.Lines, got, tc.same)
+		}
+		if got := sameWords(doc, tc.b, tc.a); got != tc.same {
+			t.Errorf("%q and %q, the other way round: same words %v, want %v", tc.b.Quote, tc.a.Quote, got, tc.same)
+		}
+	}
 }
 
 func TestQuotedAtIgnoresWhitespaceOnly(t *testing.T) {
@@ -43,7 +76,8 @@ func TestLineRangeReadsNumbersAndRanges(t *testing.T) {
 	}
 }
 
-// The parts' claims are put together by the doc's lines: contradicted and
+// The parts' claims are put together by the doc's words (here, quotes the
+// doc does not hold: by its lines, TestSameWordsNotSameLines): contradicted and
 // supported by no other part is wrong; supported by another part, a
 // conflict; partial, to be read together; supported alone, nothing to fix.
 func TestFixEntryPutsClaimsTogether(t *testing.T) {
