@@ -146,6 +146,11 @@ its measure in
   `tests-judge-reads-tests-up-to-a-cap`,
   `review-says-the-tokens-of-each-call`, `budget-spent-*`.
 - **A spec, on a machine and on the forge**: `spec-*`.
+- **Spec review on workline**, on since 2026-10-17, after the product
+  owner's trial: the reviewer after it in the `schedule` line of
+  workline's `.workline/config.yaml`, up to 5 specs a night
+  (`specs-per-run`, below); a night's cost estimated offline in its pull
+  request ([#424](https://github.com/JN0V/workline/pull/424)).
 - **Several specs a night** on the forge, `specs-per-run` (5), the rest
   the next night; measured with no model on workline's 10 waiting, two
   nights instead of ten
@@ -177,9 +182,11 @@ its measure in
    the finder floor's worth, a decision for a person (no case plants
    one), one lens a push whichever lens is in turn, the cheaper push over
    five runs. No issue yet.
-2. **Spec review on workline**, turned on after the product owner's trial
-   (2026-10-16); then more specs measured, the product owner's real answer
-   read again, on GitLab and in CI. No issue yet.
+2. **Spec review measured on real use**: first, the code a spec names
+   read right, not functions picked from plain words
+   ([#425](https://github.com/JN0V/workline/issues/425)); then more
+   specs, the product owner's real answer read again, on GitLab and in CI
+   (a round over two nights). No issue yet for these.
 3. **The tests lens outside the change**: untested code the change did not
    touch. Waits for the inspector's static-analysis results
    ([#202](https://github.com/JN0V/workline/issues/202)); decided then.
