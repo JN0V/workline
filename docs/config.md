@@ -1,6 +1,6 @@
 ---
 sources: [internal/role/config.go, internal/role/role.go, cmd/workline, internal/engine/engine.go, internal/forge/gitlab.go, internal/hooks]
-checked: 4725e7e3
+checked: 4bc19939
 judged: e343388
 verified: agent:documentalist
 reader: 02114d783860
