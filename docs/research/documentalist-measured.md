@@ -132,7 +132,8 @@ engine.
   a run here; the weekly timer's runs of the same cases, 19,785 to 21,589
   (10-04, 10-11); 10-01's runs, launched from an agent session as these
   were, 35,892 to 39,934. `stays-on-the-task` alike: 22.7k on 10-01,
-  13.2k to 13.5k weekly. Not explained here.
+  13.2k to 13.5k weekly. The editor's session variable doubled them
+  ([claude-session-env.md](claude-session-env.md)).
 - **A budget built on the weekly rows** is half what a run from a
   session spends: at today's rate, the whole plan would have taken about
   1.4M tokens in, not 1M.
