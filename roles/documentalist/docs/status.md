@@ -21,16 +21,24 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. The docs to split are still
-   to do.
+1. **Nothing buildable in Missing**: open. Two items are buildable: no
+   commit on a person's pull request for a doc only read
+   ([#463](https://github.com/JN0V/workline/issues/463)), and a doc
+   judged on its change alone read whole at night, later
+   ([#462](https://github.com/JN0V/workline/issues/462)). DomoticsCore's
+   docs to split are done
+   ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211)).
    [#120](https://github.com/JN0V/workline/issues/120) is fixed in its
    simple version (Built: a doc judged on its diff);
    [#121](https://github.com/JN0V/workline/issues/121) too (Built: code
    examples said unverified, or checked by the project's command), a
    model reading them parked
    ([#353](https://github.com/JN0V/workline/issues/353)).
-2. **The main issue validated on real use**: open. No issue of the role
-   holds a Validation section the maintainer has signed.
+2. **The main issue validated on real use**: open.
+   [#464](https://github.com/JN0V/workline/issues/464) holds the
+   Validation: a merge request, a night's gardening, and nothing false
+   landing in two weeks on two repositories. The maintainer signs it
+   after those weeks.
 3. **AI verdicts measured**: **met** (2026-10-17). Step 4 of
    [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
    holds, at the third run, on the held-out set: the bars and runs in
@@ -124,7 +132,10 @@ its evaluation in
   `judged-in-parts-same-words-disputed`; a quote a part judged partial
   is no proof a passage is wrong, DomoticsCore's run replayed
   ([#467](https://github.com/JN0V/workline/issues/467)):
-  `judged-in-parts-partial-quote-is-no-proof`.
+  `judged-in-parts-partial-quote-is-no-proof`. On DomoticsCore, the six
+  docs needing more than 8 parts were split or narrowed to 8 or fewer
+  ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211),
+  2026-10-17).
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
   `token-cap-ends-the-run`.
 - **`checked` earned by what was read**: `checked-unread-refused`,
@@ -167,17 +178,16 @@ its evaluation in
 
 1. **The weekly sample's first weeks**, watched
    ([#155](https://github.com/JN0V/workline/issues/155)).
-2. **DomoticsCore's docs needing more than 8 parts**: two narrowed (branch
-   `docs/narrow-wide-sources`, not pushed); four to split
-   (`reference/eventbus-architecture.md`,
-   `components/core/project-context.md`,
-   `architecture/component-configuration-pattern.md`,
-   `components/webui/project-context.md`). No issue yet.
+2. **No commit on a person's pull request for a doc only read**: of the
+   42 commits it pushed to people's pull requests on workline, 41 only
+   moved `judged`, `verified` or `judged-in-parts`
+   ([#463](https://github.com/JN0V/workline/issues/463)).
 3. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
 4. **The agent reads**: a doc judged on its diff against the code as it
-   is now, a read each night (no issue yet).
+   is now, a read each night; buildable later
+   ([#462](https://github.com/JN0V/workline/issues/462)).
 5. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.
