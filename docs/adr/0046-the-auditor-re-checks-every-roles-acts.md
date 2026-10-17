@@ -278,6 +278,20 @@ The product owner's row (2026-10-17), where this decision was silent:
   `weekly-sample` setting is no longer read, and said; its former
   tracking issue, still open, is told where the weeks went, and closed.
 
+The documentalist's row (2026-10-17, [#466]):
+
+- **A squash mixes its commits' acts**: the commit a merge request
+  became may move a `checked` a person moved and set the
+  `verified: agent:documentalist` the documentalist wrote while only
+  judging the doc. With the head read, its commit that moved that
+  `checked` says whose the move was, and its `Workline-Model` who
+  vouched; the act stays the squash commit's, its earlier `checked` the
+  one `main` had. W41's six docs and W42's four so far were a person's
+  coding agent's moves: none is drawn now.
+- **No head** (no forge): the squash commit is read alone, as before,
+  and a `checked` naming a commit gone from `main` says to give the
+  forge.
+
 [#89]: https://github.com/JN0V/workline/issues/89
 [#108]: https://github.com/JN0V/workline/issues/108
 [#136]: https://github.com/JN0V/workline/pull/136
@@ -285,6 +299,7 @@ The product owner's row (2026-10-17), where this decision was silent:
 [#205]: https://github.com/JN0V/workline/issues/205
 [#276]: https://github.com/JN0V/workline/issues/276
 [#362]: https://github.com/JN0V/workline/issues/362
+[#466]: https://github.com/JN0V/workline/issues/466
 [ADR-0005]: 0005-independence-takes-the-best-level-available.md
 [ADR-0014]: 0014-checked-is-earned-by-what-was-read.md
 [ADR-0015]: 0015-the-weekly-sample-is-written-on-the-forge.md
