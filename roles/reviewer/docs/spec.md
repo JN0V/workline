@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: 7fcb4b85
+checked: 3fc58797
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -87,6 +87,8 @@ routing:
 - **Without AI**: nothing read, nothing written, each spec said
   (`not-reviewed`); ready held. The sixth round's question (below) needs
   no agent: written all the same.
+- **An agent out of reach**: the run is blocked-external and writes
+  nothing, that question included; said, it waits for the next run.
 - **Its cost**: a spec 7k to 37k tokens in, judges included; five a night
   stay within `ai-max-tokens`
   ([measured](../../../docs/research/code-review.md#the-reviewers-cost-measured)).

@@ -153,7 +153,8 @@ its measure in
   `spec-several-read-in-one-run`, `spec-rest-read-at-the-next-run`,
   `spec-tokens-spent-later-specs-wait`,
   `spec-question-to-a-person-takes-no-place`,
-  `spec-without-ai-questions-still-asked`.
+  `spec-without-ai-questions-still-asked`,
+  `spec-agent-unreachable-questions-wait`.
 - **A record that does not read is said**: `spec-record-unread-*`,
   `record-unread-reviews-every-commit-again`.
 - **An issue outside the change**, opened the one way every role shares,
