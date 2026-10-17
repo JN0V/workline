@@ -1479,18 +1479,27 @@ func (p *Plan) checkRefining(f forge.Backlog, repo, role string, c *Proposal) (r
 // plain decides whether a refine takes the issue's text on top into the
 // Need it drafts (ADR-0039, amended): a role's text no person edited
 // (RolesTop), never on an outsider's issue proposed in a comment. A
-// description given apart, as an earlier engine asked, is left out, said.
+// proposal a person said yes to is done as they read it: taken only if it
+// said so, and the text still the role's. A description given apart, as
+// an earlier engine asked, is left out, said.
 func (p *Plan) plain(is forge.Issue, st *State, c *Proposal) {
 	if strings.TrimSpace(c.Description) != "" {
 		c.Description = ""
 		p.Findings = append(p.Findings, verdict.Finding{Rule: "description-kept", Level: "info", Where: c.where(),
 			Message: fmt.Sprintf("its description is left as it is: a role's text on top is taken into the %s it drafts, never rewritten apart", work.Name(work.Need))})
 	}
+	said := c.Lift
 	c.Lift = false
 	if strings.TrimSpace(c.Need) != "" && !c.ToReporter {
-		c.Lift, _ = RolesTop(is, st)
+		roles, _ := RolesTop(is, st)
+		c.Lift = roles && (said || !yes(*c))
 	}
 }
+
+// yes says whether a refine is a person's yes to what was proposed: a
+// label accepting it (Ticked), or the reporter's reply agreeing (Agreed).
+// Its drafts are written as they read them.
+func yes(c Proposal) bool { return c.Ticked != "" || c.Agreed != "" }
 
 // repeats leaves out each draft of a refine that says again what is above
 // it (ADR-0039, amended): a Need draft over a person's text on top; an
@@ -1498,8 +1507,11 @@ func (p *Plan) plain(is forge.Issue, st *State, c *Proposal) {
 // — the text on top, unless taken into the Need, and the Need. Past the
 // role's repeated-percent-max, not written, said on the issue. How a
 // person accepts it restates the case by design: never compared. A
-// person's text is only read.
+// person's text is only read, and what they said yes to written whole.
 func (p *Plan) repeats(is forge.Issue, st *State, c *Proposal) {
+	if yes(*c) {
+		return // measured when proposed: what a person said yes to is written whole
+	}
 	limit := p.config.RepeatedPercent
 	if limit <= 0 {
 		limit = RepeatedPercentMax
