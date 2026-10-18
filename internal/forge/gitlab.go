@@ -1369,8 +1369,10 @@ func (g *gitlab) graphql(query string, vars map[string]any, v any) (bool, error)
 		return false, err
 	}
 	payload, _ := json.Marshal(map[string]any{"query": query, "variables": vars})
-	// A query only reads, though sent as a POST; a mutation writes.
-	read := strings.HasPrefix(strings.TrimSpace(query), "query")
+	// A query only reads, though sent as a POST, its shorthand `{…}` too;
+	// a mutation, or anything else, writes.
+	q := strings.TrimSpace(query)
+	read := strings.HasPrefix(q, "query") || strings.HasPrefix(q, "{")
 	a, err := g.send("POST", strings.TrimSuffix(g.base, "/v4")+"/graphql", "application/json", payload, read)
 	if err != nil {
 		return false, err
