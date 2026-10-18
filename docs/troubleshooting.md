@@ -1,6 +1,6 @@
 ---
 sources: [internal/doctor/doctor.go, internal/doctor/conversations.go, internal/hooks/hooks.go, cmd/workline/main.go, cmd/workline/cli.go, internal/forge/local.go]
-checked: 4a1dedce
+checked: 2c37f9e3
 verified: agent:claude-code
 ---
 # Troubleshooting
@@ -45,6 +45,16 @@ tokens — and `--json` prints every finding.
 |---|---|
 | exit 64 and the usage | the command was misused, named on the first line: a missing `<role>` or `<event>`, an unknown option, a bad value; `workline <command> --help` shows its options |
 | `.workline/config.yaml: line N: …` | a key the engine does not know, a retired role, or a value YAML reads otherwise than written: it blocks rather than be ignored |
+
+## A language no tool reads
+
+- `language-gaps`: no tool reads one kind of it (lint, types, security,
+  dependencies); doctor names the tool and the gate check to add
+  ([languages](languages.md)). A warning: nothing blocks on it.
+- **A tool your CI runs is not seen**: a script of your own runs it.
+  Name it in a gate check.
+- **Vendored or generated code is counted**: mark its folder
+  `linguist-vendored` or `linguist-generated` in `.gitattributes`.
 
 ## Docs suspect, gardening paused
 

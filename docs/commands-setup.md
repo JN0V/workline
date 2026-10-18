@@ -58,6 +58,9 @@ changes nothing.
 - In this repository: which hooks git runs there, whether the
   documentalist runs before a push, how many docs declare their sources,
   which files read as docs it does not read.
+- For each language the repository holds: which tools read it (lint,
+  types, security, dependencies), which it lacks, and the gate check to
+  add; a warning, never an error ([languages](languages.md)).
 - On GitHub: whether the default branch requires every conversation
   resolved before a merge, and how workline's findings reach pull
   requests ([#412](https://github.com/JN0V/workline/issues/412)). A rule

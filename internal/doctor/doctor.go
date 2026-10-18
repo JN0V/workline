@@ -255,7 +255,14 @@ func repository(r *Report, o Options) {
 			Message: "this clone is shallow: a doc checked against a commit it lacks cannot be judged, and the release cannot find the last one",
 			Fix:     "git fetch --unshallow   # in CI: actions/checkout's `fetch-depth: 0`, GitLab's `GIT_DEPTH: 0`"})
 	}
+	docs(r, o, cfg)
+	languages(r, o)
+}
 
+// docs says how many docs declare their sources, and which files read as
+// docs the documentalist does not read.
+func docs(r *Report, o Options, cfg *role.ProjectConfig) {
+	where := o.Repo
 	d, err := role.Load(o.RolesDir, "documentalist")
 	if err != nil {
 		r.add(Check{Area: "repository", Rule: "roles-unreadable", Where: o.RolesDir, Level: Error, Message: err.Error()})
