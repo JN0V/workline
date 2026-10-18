@@ -338,10 +338,10 @@ func fenced(text string) string {
 var pathWord = regexp.MustCompile(`[\w.\-/]+`)
 
 // namedCode is what a spec names of the repository's code, as it reads at
-// head: the files it names, whole, then the functions it names that those
-// do not hold, whole, up to limit lines all together, the rest named; ""
-// when it names none (#128). Found as a judge's code is (#127), with no
-// build.
+// head: the files it names, whole, then the functions it writes as code
+// (namedIn) that the files shown do not hold, whole, those of a file cut
+// first, up to limit lines all together, the rest named; "" when it names
+// none (#128, #425). Found as a judge's code is (#127), with no build.
 func namedCode(repo, head, text string, limit int) string {
 	out, err := git(repo, "ls-tree", "-r", "--name-only", head)
 	if err != nil {
@@ -359,12 +359,12 @@ func namedCode(repo, head, text string, limit int) string {
 		}
 	}
 	r := &reacher{repo: repo, head: head, files: map[string][]string{}}
-	names, weak := namedIn(text)
-	names = append(names, weak...)
+	names, _, _ := namedIn(text) // a capitalised word is English as often as a name (#425)
 	found := r.defs(names, nil)
 	var b strings.Builder
 	left := limit
 	var cut, many []string
+	whole := map[string]bool{}
 	for _, f := range files {
 		lines := r.lines(f)
 		if len(lines) > left {
@@ -372,12 +372,17 @@ func namedCode(repo, head, text string, limit int) string {
 			continue
 		}
 		left -= len(lines)
+		whole[f] = true
 		fmt.Fprintf(&b, "\n### %s\n\n%s", f, fenced(strings.Join(lines, "\n")))
 	}
 	shown := 0
 	for _, n := range names {
-		ds := found[n]
-		ds = slices.DeleteFunc(slices.Clone(ds), func(d fn) bool { return slices.Contains(files, d.file) })
+		ds := slices.DeleteFunc(slices.Clone(found[n]), func(d fn) bool { return whole[d.file] })
+		// A file named but cut past the limit: its functions the spec
+		// names shown, before those of the same name elsewhere (#425).
+		if in := slices.DeleteFunc(slices.Clone(ds), func(d fn) bool { return !slices.Contains(files, d.file) }); len(in) > 0 {
+			ds = in
+		}
 		switch {
 		case len(ds) == 0:
 			continue

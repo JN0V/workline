@@ -174,11 +174,16 @@ func TestSettleDoc(t *testing.T) {
 }
 
 // Only doc pages make a commit workline's own on its trailer's word: a
-// role's prompt, a tool's folder, a file steering agents never do.
+// role's prompt, a tool's folder, a file steering agents never do; a
+// role's pages for people, its README and docs/, do (#476).
 func TestDocPage(t *testing.T) {
 	for path, want := range map[string]bool{
-		"docs/tech/auth.md": true, "README.md": true, "roles/reviewer/README.md": false,
+		"docs/tech/auth.md": true, "README.md": true, "roles/reviewer/README.md": true,
+		"roles/documentalist/docs/push.md": true, "roles/reviewer/docs/lenses/x.md": true,
 		"roles/reviewer/instruction.md": false, "roles/reviewer/lenses/correctness.md": false,
+		"roles/reviewer/persona.md": false, "roles/documentalist/knowledge/doc-model.md": false,
+		"roles/auditor/kinds/split.md": false, "roles/x/skills/s/SKILL.md": false, "roles/notes.md": false,
+		"roles/x/docs/roles/y/persona.md": false, "roles/x/docs/AGENTS.md": false,
 		".workline/roles/committer/policy.md": false, ".github/copilot-instructions.md": false,
 		"AGENTS.md": false, "sub/CLAUDE.md": false, "docs/x.go": false,
 	} {
