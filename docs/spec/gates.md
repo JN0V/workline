@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate, internal/line, internal/linters/check.go]
-checked: 2a1d3636
+checked: 2c2c4d3a
 ---
 # Gates — v1 (draft)
 
@@ -48,8 +48,9 @@ gates:
 - `timeout` caps a check's run (`10m` unless set); `new`, `base-timeout`
   and `config` say how a merge request's new findings are told (below).
 - `enforce` names a check by its id, or a rule (`suppression-added`); `warn`
-  before `block` works as in the role contract. Baselines with expiry dates
-  are not built yet, there or here.
+  before `block` works as in the role contract. A check `off` that did not
+  run is still said, as a warning. Baselines with expiry dates are not
+  built yet, there or here.
 - `workline doctor` counts the tool a check runs as reading its languages,
   and names the check to add for a language none reads
   ([languages](../languages.md)).
@@ -92,7 +93,8 @@ On `schedule` and `release`, and with `workline gate`, every finding counts.
 ### Told by the tool, suppressions, errors
 
 - **Every check is given the merge base** in `WORKLINE_BASE`, an `exit`
-  check too: its command may tell the new findings itself.
+  check too: its command may tell the new findings itself. Where every
+  finding counts, `WORKLINE_BASE` is empty.
 - **Or the tool tells them**, `new: tool`: the SARIF check runs once, what
   it reports counts. `golangci-lint run
   ${WORKLINE_BASE:+--new-from-merge-base=$WORKLINE_BASE}`, Semgrep's
