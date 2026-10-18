@@ -1,8 +1,8 @@
 ---
-sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: 178672f7
+sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
+checked: 4a1dedce
 judged: f70db89
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Documentalist — the checks
 
@@ -13,9 +13,10 @@ or weekly (`schedule`).
 
 ## Prepare (`pre`, no AI)
 
-Twelve checks, each below. Not built yet: style (vale). With an agent,
-gardening also reads the pages the reader checks flag
-([pages read for their reader](reader.md)).
+Twelve checks. Six read a doc against the code it describes, below. Six
+read the docs alone ([the checks on the docs alone](checks-docs.md)):
+budgets, duplicates, links, superseded decisions, docs not read, docs for
+their reader. Not built yet: style (vale).
 
 ### Suspects
 
@@ -39,36 +40,6 @@ rendering shows, or in a frontmatter the doc has.
   nor passed.
 - **The chain is followed**: a suspect technical section makes the product
   docs depending on it suspect too.
-
-### Budgets
-
-- Lines per doc (its body: the header records who checked it, it says
-  nothing), per folder, and of the agents' entry points at the root
-  (`AGENTS.md`, `CLAUDE.md`).
-- Words per section (its own text, up to the next heading).
-- Card size, min and max: too small is fragmentation.
-
-### Duplicates
-
-Paragraphs of at least `min-words` words compared by their three-word
-sequences; `similarity` 0.85 catches a passage copied and then lightly
-edited.
-
-### Links
-
-- Every link to a file of the repository, and to a heading in it, must
-  lead somewhere.
-  - A heading's anchor is GitHub's, whatever the forge: its shown text
-    lowercased, punctuation dropped (en and em dash too), spaces made
-    hyphens, a repeat numbered `-1`, `-2`. GitLab documents the same rule.
-- Links to other sites need the network, and break with no change to the
-  repository: on `schedule` only, [lychee](https://lychee.cli.rs) checks
-  them, with its own `lychee.toml` and `.lycheeignore` if the project has
-  them.
-  - A link answered by an HTTP error is `external-link-broken`, at its
-    line; one not reached (no network, a timeout) is only counted.
-  - Otherwise, or without lychee, they are counted and said to be
-    unchecked (`links-not-checked`).
 
 ### Identifiers gone
 
@@ -96,22 +67,6 @@ The text between `<!-- workline:derive name -->` and
   ([ADR-0027](../../../docs/adr/0027-derived-blocks-are-regenerated-on-the-default-branch.md)).
 - Commands live in the config, which only people change, never in a doc;
   they run wherever the line runs, CI included.
-
-### Superseded decisions
-
-A doc citing a superseded decision record, by a link to its file or by its
-number (`ADR-0003`), without naming what replaced it (`cites-superseded`),
-as coherence does.
-
-- **Records**: the numbered files (`0007-…`, `adr001-…`) of a folder named
-  `adr`, `adrs`, `adr-…`, `decisions`, `architecture-decisions`,
-  `decision-records` or `decision-log`, and the files of the project's
-  `decisions` globs.
-- **Superseded**: its status says so — the frontmatter's `status`, a
-  `Status:` line, or the paragraph under a `Status` heading (adr-tools) —
-  or another record's frontmatter `supersedes` it (MADR). What replaced it
-  is the record its status names.
-- Records themselves are history, and may cite it.
 
 ### Code no doc describes
 
@@ -163,46 +118,6 @@ Why (step 4): on DomoticsCore, a C++ project the role runs on in CI
 ([tried for real](tried.md)), "`OTA.cpp` line count (607)" went unreported,
 and its right fix was refused for want of a claim; an OTA table's total,
 unreported, was withdrawn by the agent for want of a claim.
-
-### Docs not read
-
-On `schedule` and `init`, one finding (`docs-not-read`) counts the files
-that read as docs and that the role does not read, a few of each kind.
-`workline doctor` says the same.
-
-- **Counted**: `.rst`, `.mdx`, `.adoc`, a `.txt` under a `docs` or `doc`
-  folder, a README outside the `docs` globs (package READMEs). Left out:
-  test folders, fixtures, dependencies, hidden folders, `requirements.txt`.
-- **How to include them**: a README is Markdown, read once a glob in `docs`
-  takes it (`"**/README.md"`); the other formats are not read yet, no
-  header form being settled for them.
-
-### Docs for their reader
-
-On `schedule` only
-([#193](https://github.com/JN0V/workline/issues/193)), whether user pages
-serve their reader. User pages: the docs matching `reader.pages`, but
-`reader.skip` (specs) and the records (decisions, research, history). One
-finding a page, with its lines:
-
-- `reference-unlinked`: a decision (`ADR-12`), a doc of the repository or
-  an issue (`#128`) named as plain text. Left alone: a name in a code span
-  (an example) or an HTML comment; a link's definition
-  (`[x]: docs/x.md`) is a link.
-- `paragraph-too-long`: a paragraph, or a list item, over
-  `reader.paragraph-words` (80).
-- `cell-too-long`: a table cell over `reader.cell-words` (30).
-- `flow-without-diagram`: a page of `reader.flow`, or with a heading
-  holding one of `reader.flow-headings` ("how it works"; as words, any spacing or
-  case, in the docs' language), with no diagram (a Mermaid, PlantUML,
-  Graphviz or D2 block, or an image).
-- `page-unreachable`: no link reaches it from `reader.navigation`
-  (`README.md`), through user pages; a link to a folder reaches its
-  README, one in an HTML comment nothing. With no such entry,
-  `navigation-missing` says so.
-
-Borrowed from Vale and Sphinx, without running them:
-[research](../../../docs/research/documentalist.md#docs-for-their-reader-2026-10-07).
 
 ## Levels
 
