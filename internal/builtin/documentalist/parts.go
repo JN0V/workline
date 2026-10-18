@@ -881,6 +881,28 @@ func restInParts(docs map[string]*suspectDoc, repo string, s Settings) error {
 	return nil
 }
 
+// readLongestAgoFirst puts first the docs read longest ago against all
+// their sources: by the later of their `checked` and `judged-in-parts`, as
+// commit times, a commit this clone lacks counting as never; the path
+// tells the rest apart. A night's caps take the first: those past them wait
+// for the next nights, and a doc read last night goes behind them, rather
+// than the first by name each night its sources change (#462).
+func readLongestAgoFirst(docs []*suspectDoc, repo string) {
+	at := map[*suspectDoc]int64{}
+	for _, sd := range docs {
+		for _, c := range []string{sd.doc.Checked[""], sd.doc.JudgedInParts} {
+			if c == "" {
+				continue
+			}
+			out, err := git(repo, "log", "-1", "--format=%ct", c+"^{commit}", "--")
+			if n, perr := strconv.ParseInt(strings.TrimSpace(out), 10, 64); err == nil && perr == nil && n > at[sd] {
+				at[sd] = n
+			}
+		}
+	}
+	sort.SliceStable(docs, func(i, j int) bool { return at[docs[i]] < at[docs[j]] })
+}
+
 // holdJudgedInParts keeps from the agent the docs judged in parts, or
 // judged whole without being vouched for, whose sources did not change
 // since, saying so. A doc gardening reads in parts is not held by a

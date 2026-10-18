@@ -1117,6 +1117,7 @@ func Pre(runDir, repo string) int {
 				cands = append(cands, sd)
 			}
 		}
+		readLongestAgoFirst(cands, repo)
 		t, j, fb, ip, err := partsFor(runDir, repo, cands, s, &partsAsked, &findings)
 		if err != nil {
 			return err
