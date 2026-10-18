@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: f649b75f
+checked: a9762f04
 judged: b5899f5
 status: draft
 ---
@@ -95,6 +95,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `skip` | when importing, an item of the file not opened, by its lines, and why: `done` (the words that say so quoted), `held` (the issue that holds it) or `not-item` (why); the engine checks the reason and puts it in the import's map (docs/spec/backlog-acts.md, "The map"; ADR-0030) | never: kept in `out/skips.yaml`, read by the import |
 | `milestone` | put an issue in a release's milestone, created if none is open (docs/spec/backlog-acts.md) | forge |
 | `order` | set an issue's priority, one label of `workline:priority/1` (the most pressing) to `/4`, or of the family the project keeps it in, its settings asking; a priority a person set is kept (docs/spec/backlog-acts.md, "Ordering") | forge |
+| `effort` | the engine's, split from an `order` carrying `effort: 1` to `3` (Low, hours, to High, weeks): set once, only where empty, on code the run read (docs/spec/backlog-acts.md, "Ordering") | forge |
 | `sources` | name the code an issue is about, a line of it quoted; the issue is read again with it (docs/spec/backlog-acts.md) | forge |
 | `refine` | add the sections an issue lacks — Scope and its files, Verification, Need and Validation as drafts, a real example or a bug's steps to reproduce as drafts too, never required — in the reader's order, never rewriting one there; on an outsider's issue, proposed to its reporter in a comment until a person agrees (docs/spec/backlog-acts.md, "Refining to ready") | forge |
 | `ready` | move an issue to `ready`, once the engine finds its four sections there and none a draft — or the drafts accepted with the label `workline:accepted`; an outsider's is proposed, unless accepted | forge |

@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/builtin/productowner, internal/backlog, internal/sample/acts.go]
-checked: fbf66fcf
+checked: a9762f04
 verified: agent:claude-code
 ---
 # Product owner — what it writes
@@ -59,6 +59,8 @@ read-only, grouped, one line an issue linked to its page:
 
 - **done alone**, **done, as a person accepted**: what it did alone, and
   on your yes;
+- **set to Urgent, to check**: each Urgent it set, where the project's
+  priorities are its settings' ([priority and effort](priority-and-effort.md));
 - **proposed, waiting on a person**: what waits on you;
 - **left to a person**, **set aside by a person**: the rounds spent, your
   "not now" — or your comment brought it back and asked for nothing more;

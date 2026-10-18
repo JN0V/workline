@@ -1,8 +1,8 @@
 ---
 type: reference
-sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
+sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: f649b75f
+checked: a9762f04
 verified: agent:claude-code
 ---
 # Milestones and ordering
@@ -93,3 +93,37 @@ job finds where the axis is kept anew and reads the issue again —; one
 found then is said, "(found when applying)". With another
 family than workline's own read, the role's texts say the label beside
 the level: "priority 1 (P0)".
+
+### The effort, set once
+
+```yaml
+- order: {issue: 12, priority: 2, effort: 1, why: "one loop to fix, every report loses rows"}
+```
+
+With either setting set, the agent is told (the task's "Priority and
+effort"): each value is set once, only where the issue has none; an
+effort is 1 Low (hours), 2 Medium (days) or 3 High (weeks), written in
+the issue's order, the priority left out when it has one.
+
+- **Two acts**: the engine splits an order carrying an effort into an
+  `order` and an `effort` (`splitEffort`), each with its own mode, cap,
+  undo and record in the issue's state (`effort: 1`). The kind `effort`
+  is the engine's, never in the agent's output contract; it is `off` by
+  default, `max` 10 a run, 20 at `enterprising`, and counts toward
+  `moved-percent-max`.
+- **Dropped, said**: a level outside 1 to 3 (`effort-level`); the setting
+  `effort` unset (`effort-nowhere`); an issue whose code the run did not
+  give the agent, all the files it names (`effort-unread`, `pre` lists
+  them in `in/code-read`); a value elsewhere or a level no label carries
+  (`effort-elsewhere`, `effort-no-label`).
+- **Never written over**: an effort the role did not set is a person's
+  (`effort-kept`); one it set is never estimated again, changed or
+  cleared since included (`effort-once`). With a setting set, the same
+  holds for a priority the role set (`priority-once`); a person's change
+  of either counts as an act undone (ADR-0038).
+- **Read again when applied**: a value the issue gained since the plan
+  read it is a person's (`priority-changed`, `effort-changed`).
+- **Said apart**: each Urgent the role set (`urgent-set`), for a person
+  to check at once; past 10 values the role set on an axis, one over 60%
+  of them (`estimates-stuck`): "Effort: Medium on 10 of the 11 issues the
+  role estimated."

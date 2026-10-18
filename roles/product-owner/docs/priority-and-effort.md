@@ -4,12 +4,14 @@ Part of [the product owner](../README.md). Proposed by
 [ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
 built a step at a time ([status](status.md#missing-in-the-order-to-build-it)):
 
-- **Built, off by default**: the names below read, and where each value
-  is kept found when the settings ask
-  ([`priority`, `effort`](settings.md#priority-and-effort)).
-- **Not built yet**: the effort estimated, the grid, Next's cells,
-  GitHub's fields, GitLab's weight. Unset, with `order` on, the role sets
-  its own labels `workline:priority/1` to `/4`.
+- **Built, off by default**: the names below read; where each value is
+  kept found when the settings ask
+  ([`priority`, `effort`](settings.md#priority-and-effort)); the effort
+  estimated, each value set once; the grid's order, Next's cells, the
+  Urgents said apart, estimates stuck on one value said.
+- **Not built yet**: GitHub's fields, GitLab's weight, workline's labels
+  renamed. Unset, with `order` on, the role sets its own labels
+  `workline:priority/1` to `/4`.
 
 Below, what the proposal does on real cases.
 

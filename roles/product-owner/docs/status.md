@@ -92,7 +92,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   `slipped-*`, `summary-next-milestones-by-due-date`.
 - **Where priority and effort are kept**, off by default
   ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
-  step 2): `priority-*`.
+  step 2): `priority-*`; the effort and the grid (step 3): `effort-*`,
+  `grid-next-says-each-cell`, `estimates-stuck-said`, the reviewer's
+  `spec-read-in-the-owners-order`.
 - **A backlog file imported**, mapped item by item, judged then applied
   apart: backlog's `import-*`.
 - **One way for every role to open an issue**: backlog's `issue-*`,
@@ -147,9 +149,13 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
      the settings ask (`priority`, `effort`); the forge's words created,
      ranked on GitLab; a value in two places writes nothing. Tried on the
      GitLab sandbox, judged and not applied (its pull request's Tried).
-     The reviewer still orders the specs it reads by workline's own
-     labels: it does not read the role's settings.
-   - **Next**: step 3, the effort and the grid.
+   - **Step 3 built, off by default**: the effort estimated beside the
+     priority (the act `effort`, off), each value set once, only where
+     empty, read again when applied; the grid's order and Next's cells,
+     the Urgents said apart, estimates stuck on one value said, with the
+     settings; the reviewer reads the specs in that order.
+   - **Next**: step 4, GitHub's Priority and Effort fields, live on a new
+     jn0v-lab repository.
 3. **Tries on real use**, nothing to build (no issue yet):
    - **answers on the issue**: the trial, measured (To leave beta, 2); a
      real agent's revision after a comment; an outsider's and a bot's

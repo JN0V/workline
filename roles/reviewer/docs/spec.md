@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: abbf8068
+checked: a9762f04
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -80,7 +80,9 @@ routing:
   not `workline:ready`, their four sections written (drafts too), their
   body not read as it is. None: no agent asked.
 - **How many**: up to `specs-per-run` a run (5), in the backlog's order
-  ([#433](https://github.com/JN0V/workline/issues/433)):
+  ([#433](https://github.com/JN0V/workline/issues/433)), its priorities
+  read where the product owner's settings say the project keeps them
+  ([settings](../../product-owner/docs/settings.md#priority-and-effort)):
   - each read as one alone: its lens call, its judges, its caps
     (`findings-max`, `questions-max`), its comment;
   - the rest wait, named in one finding (`spec-waits`), and come first
