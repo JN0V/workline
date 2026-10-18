@@ -712,18 +712,14 @@ func quotedAt(content string, r lineRange, quote string) bool {
 	return strings.Contains(strings.Join(strings.Fields(strings.Join(lines[r.from-1:r.to], " ")), " "), q)
 }
 
-// placeQuote finds a part's quote where it stands: at the lines r cites,
-// whitespace aside, or running across the line break into them from the
-// line before or out of them into the line after — a sentence often starts
-// at the end of the line before a part's range (#482: "Each" ending line
-// 22 of a quote cited at 23-24 dropped the claim saying what was wrong, 3
-// runs in 10). It returns the lines the quote stands on, r widened by one
-// line at most either way, never past lo and hi (a part's share of a
-// source). A one-line margin is safe: the quote must still read word for
-// word in the doc and hold words of the lines cited, so it names the words
-// the part read, now placed where they are; a quote wholly outside them,
-// or two lines away, is still not there. What the claim then says is
-// judged as any claim, on the lines it stands on.
+// placeQuote finds a quote at the lines r cites, whitespace aside, or
+// running across the line break into them from the line before or after:
+// a sentence often starts on the line before (#482). It returns the lines
+// the quote stands on, r widened by one line at most, never past lo and hi
+// (a part's share). Safe: the quote must read word for word and hold words
+// of the lines cited, so it names what the part read; a quote wholly
+// beside them, or two lines away, is not there. Its claim is judged as any
+// other, on those lines.
 func placeQuote(content string, r lineRange, quote string, lo, hi int) (lineRange, bool) {
 	if quotedAt(content, r, quote) {
 		return r, true
