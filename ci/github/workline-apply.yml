@@ -56,7 +56,7 @@ on:
 permissions: {}
 
 env:
-  WORKLINE_VERSION: v0.32.0          # a release of workline: update it to take a newer one (x-release-please-version)
+  WORKLINE_VERSION: v0.33.0          # a release of workline: update it to take a newer one (x-release-please-version)
 
 jobs:
   apply:
