@@ -97,7 +97,8 @@ func again(read bool, try int, a *answer, err error) (wait time.Duration, note s
 	if a != nil {
 		if after, ok := retryAfter(a.header.Get("Retry-After")); ok {
 			if after > retry.waitMax {
-				return -1, fmt.Sprintf("GitLab asks to wait %d s, longer than workline waits (%d s): not tried again", int(after.Seconds()), int(retry.waitMax.Seconds()))
+				return -1, fmt.Sprintf("GitLab asks to wait (Retry-After: %s), longer than workline waits (%d s): not tried again",
+					strings.TrimSpace(a.header.Get("Retry-After")), int(retry.waitMax.Seconds()))
 			}
 			wait = after
 		}
@@ -133,14 +134,15 @@ func unsent(err error) bool {
 	return errors.As(err, &op) && op.Op == "dial" || strings.Contains(err.Error(), "TLS handshake timeout")
 }
 
-// retryAfter reads a Retry-After header: seconds, or an HTTP date.
+// retryAfter reads a Retry-After header: seconds, or an HTTP date. Seconds
+// past a day are a day: never waited for, and no overflow.
 func retryAfter(v string) (time.Duration, bool) {
 	v = strings.TrimSpace(v)
 	if v == "" {
 		return 0, false
 	}
 	if s, err := strconv.Atoi(v); err == nil {
-		return time.Duration(max(s, 0)) * time.Second, true
+		return time.Duration(min(max(s, 0), 86400)) * time.Second, true
 	}
 	if t, err := http.ParseTime(v); err == nil {
 		return max(time.Until(t), 0).Round(time.Second), true

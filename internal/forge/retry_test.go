@@ -33,7 +33,8 @@ func TestRetryNotWaited(t *testing.T) {
 		after  string
 		says   string
 	}{
-		{429, "3600", "GitLab asks to wait 3600 s, longer than workline waits (60 s): not tried again"},
+		{429, "3600", "GitLab asks to wait (Retry-After: 3600), longer than workline waits (60 s): not tried again"},
+		{429, "99999999999", "GitLab asks to wait (Retry-After: 99999999999), longer than workline waits (60 s): not tried again"},
 		{501, "", "501 Not Implemented"},
 	} {
 		calls := 0
