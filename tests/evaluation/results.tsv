@@ -566,3 +566,8 @@ date	workline	agent	models	effort	case	score	agent calls	tokens in	tokens out	co
 2026-10-18T13:49:41Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29542	6038	0.0905	49			
 2026-10-18T13:50:29Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	30361	5901	0.0924	48	checked-is-head: docs/tech/defaults.md does not record 4fb5fba in `checked`		
 2026-10-18T13:51:14Z	38fac2d1	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29700	5297	0.0837	44			
+2026-10-18T14:49:14Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	28951	4847	0.0928	43	file-lacks: docs/tech/service.md and "lasts the configured session TTL"		
+2026-10-18T14:50:11Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	17/19	6	29282	5978	0.0889	48	file-lacks: docs/tech/service.md and "At most 100"; file-contains: docs/tech/service.md and "250"		
+2026-10-18T14:50:57Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29278	5291	0.0820	45			
+2026-10-18T14:51:43Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	18/19	6	29948	5308	0.0849	45	file-lacks: docs/tech/service.md and "lasts the configured session TTL"		
+2026-10-18T14:52:39Z	d7bd927f	claude	claude-sonnet-5-5	medium	documentalist/finds-planted-defects-in-parts	19/19	6	29584	6602	0.0963	55			
