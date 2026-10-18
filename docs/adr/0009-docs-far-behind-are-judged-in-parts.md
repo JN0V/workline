@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof)
 - **Date:** 2026-09-29
 
 ## Context
@@ -186,3 +186,26 @@ on [#458](https://github.com/JN0V/workline/issues/458#issuecomment-6237581014):
   parts on any event.
 - Nights were not where the cost grew: none on workline asked a part
   from 10-15 to 10-17.
+
+## Amendment (2026-10-17): a partial quote is no proof
+
+A quote a part judged `partial` for a passage, no part finding those
+lines wrong, proves nothing wrong there
+([#467](https://github.com/JN0V/workline/issues/467)):
+
+- **What happened**: on DomoticsCore, three parts called a line partial.
+  The fix cited one of their quotes, a placeholder default, in place of
+  the topic the code adopts, and made a true line false. Its own note
+  said the excerpts did not settle it.
+- **Now**: words the fix takes out on such a quote alone are withheld for
+  a person (`citation-unchecked`), the rest applied; the fix's task says
+  so. A quote standing elsewhere in the code too still counts.
+- **Measured** on every fix after parts kept, DomoticsCore and workline,
+  2026-10-01 to 10-17: 13 fix calls; the fix changed 3 places no part
+  found wrong. The two that took words out each cited the quote a part
+  judged partial, and both took out true words.
+- **The price**: a defect true only across two shares, fixed on such a
+  quote alone, goes to a person; the fix still settles it with any other
+  quote. Words only added still need no claim.
+- "The fix is not asked to act on a share that cannot", above, now holds
+  for what the fix cites, not only for what it is shown.

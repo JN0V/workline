@@ -1655,8 +1655,14 @@ func Post(runDir, repo string) int {
 					return fail(err)
 				}
 			}
+			var partial map[string][]partialCite // what the parts judged partial (#467)
+			if data, err := os.ReadFile(filepath.Join(runDir, "in", partialFile)); err == nil {
+				if err := yaml.Unmarshal(data, &partial); err != nil {
+					return fail(err)
+				}
+			}
 			var j patchJudgement
-			j, err = judgePatches(repo, s, judged, inParts, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
+			j, err = judgePatches(repo, s, judged, inParts, partial, whole, intents, fallback, strings.TrimSpace(string(kind)) == "propagate")
 			refused, patched, partly, judgedFix, reported, withheld = j.refused, j.patched, j.partly, j.fix, j.reported, j.withheld
 			// The patches narrowed to what holds are what the engine applies
 			// (ADR-0014, step 4).

@@ -91,7 +91,9 @@ those to be read together, each with the source lines the parts cited.
 Patch what is wrong, and nothing else: a unified diff with context lines,
 whose hunks cite the doc's lines by the numbers shown here. Leave the header
 as it is — ` + "`checked`" + ` does not move, since nobody read the doc whole. A passage
-the excerpts do not let you settle stays as it is; say so in a note.
+the excerpts do not let you settle stays as it is; say so in a note. The
+source lines a part judged partial for a passage did not settle it: they
+prove nothing wrong there, and a claim quoting only them is refused.
 
 `
 
@@ -156,6 +158,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	}
 	var fixes strings.Builder
 	judged, inParts = map[string]map[string]string{}, map[string]string{}
+	partial := map[string][]partialCite{}
 	for i, sd := range cands {
 		plans, why, err := planParts(sd.doc, repo, s.PartChars)
 		if err != nil {
@@ -218,6 +221,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			return "", nil, nil, nil, err
 		}
 		entry := verdictOf.fixEntry(sd.doc.Path, string(content), repo)
+		partial[sd.doc.Path] = verdictOf.partialCites()
 		summary := fmt.Sprintf("judged in parts at %s: %d parts, %d claims kept", at, len(plans), len(verdictOf.kept))
 		// A support quoted from a comment only is said, and so is the comment
 		// where the code, quoted by another claim, says otherwise (#106).
@@ -257,8 +261,71 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 	}
 	if fixes.Len() > 0 {
 		task = fixTaskHeader + citeTask + fixes.String()
+		// What the parts judged partial, for the judge of the fix (#467).
+		for p, cites := range partial {
+			if _, asked := judged[p]; !asked || len(cites) == 0 {
+				delete(partial, p)
+			}
+		}
+		if len(partial) > 0 {
+			if err := writeYAML(filepath.Join(runDir, "in", partialFile), partial); err != nil {
+				return "", nil, nil, nil, err
+			}
+		}
 	}
 	return task, judged, fallback, inParts, nil
+}
+
+// partialFile holds, for each doc whose fix after parts is asked, where a
+// part judged a passage partial (#467).
+const partialFile = "partial.yaml"
+
+// partialCite is a passage of a doc a part judged partial, no part finding
+// those lines wrong, and the source lines it read them against: the doc's
+// lines and the source's, written as a claim gives them ("12", "12-14").
+type partialCite struct {
+	Lines  string `yaml:"lines"`
+	Path   string `yaml:"path"`
+	Source string `yaml:"source"`
+}
+
+// ranges reads the doc's lines and the source's; ok is false when either
+// cannot be read.
+func (pc partialCite) ranges() (lines, source lineRange, ok bool) {
+	if lines.UnmarshalYAML(&yaml.Node{Value: pc.Lines}) != nil || source.UnmarshalYAML(&yaml.Node{Value: pc.Source}) != nil {
+		return lines, source, false
+	}
+	return lines, source, true
+}
+
+// partialCites are the partial claims of the parts, with a source quoted,
+// on lines no part found anything wrong in: a part read those source lines
+// with its share and found they do not settle the passage. A contradiction
+// on those lines, of the same words or others, leaves them out: its quote
+// may stand among the same source lines.
+func (v *partsVerdict) partialCites() []partialCite {
+	var out []partialCite
+	for _, c := range v.kept {
+		if c.Status != "partial" || c.Source == nil || c.Source.Quote == "" {
+			continue
+		}
+		wrong := false
+		for _, o := range v.kept {
+			wrong = wrong || o.Status == "contradicted" && o.Lines.overlaps(c.Lines)
+		}
+		if !wrong {
+			out = append(out, partialCite{Lines: rangeText(c.Lines), Path: c.Source.Path, Source: rangeText(c.Source.Lines)})
+		}
+	}
+	return out
+}
+
+// rangeText writes a range of lines as a claim gives it: "12" or "12-14".
+func rangeText(r lineRange) string {
+	if r.from == r.to {
+		return strconv.Itoa(r.from)
+	}
+	return fmt.Sprintf("%d-%d", r.from, r.to)
 }
 
 // partsRoom is the room a part leaves for a doc's sources, or why the doc

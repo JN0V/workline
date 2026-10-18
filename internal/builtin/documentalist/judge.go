@@ -473,7 +473,8 @@ func checkedMatches(content string, want map[string]string) bool {
 // judged against, and bringing no new budget, link or duplicate problem. It
 // returns the refusals, and the docs the patches handle.
 // A doc judged in parts (inParts) is fixed with `checked` left where it is:
-// nobody read it whole, so it stays suspect. So is a doc whose sources did
+// nobody read it whole, so it stays suspect; a quote its parts judged
+// partial (partial) is no proof that its words are wrong (#467). So is a doc whose sources did
 // not all go whole into the task (not in whole, ADR-0014): the agent cannot
 // vouch for what it was not given. Nor may `checked` move while the doc
 // states a line count off (ADR-0014, step 2). What the patches accepted do
@@ -489,7 +490,7 @@ func checkedMatches(content string, want map[string]string) bool {
 // one place, and rarely brought the right fix back (ADR-0014, step 4).
 // Only a patch of which no hunk quotes the doc right is asked for again: a
 // misquote is a slip the agent mends at the second answer.
-func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
+func judgePatches(repo string, s Settings, judged map[string]map[string]string, inParts map[string]string, partial map[string][]partialCite, whole map[string]bool, intents []intent.Intention, fallback []intent.Intention, mayGrow bool) (j patchJudgement, err error) {
 	refuse := func(rule, where, msg string) {
 		j.refused = append(j.refused, verdict.Finding{Rule: rule, Where: where, Message: msg})
 	}
@@ -669,6 +670,7 @@ func judgePatches(repo string, s Settings, judged map[string]map[string]string, 
 			if cc, err = newCiteContext(repo, tree.Files); err != nil {
 				return j, err
 			}
+			cc.partial = partial
 			if len(agentDocs) > 1 {
 				j.reported = append(j.reported, cc.attribute(claims, tree.Docs, agentFiles(intents, fallback, tree.Docs, judged))...)
 			}

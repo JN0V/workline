@@ -5,7 +5,8 @@ takes merge requests: docs judged on each one and gardened at night, by
 Claude in CI from a release of workline ([CI](../../../docs/ci.md)),
 fixes committed to the branch and reviewed on the forge. Beta: judging
 docs too large in parts, on by default, ran six nights on DomoticsCore
-and workline; a fix in parts once followed a stale code comment.
+and workline; a fix in parts once followed a stale code comment, and
+once made a true line false, each now refused.
 
 Each try: up to 2026-10-13 in [tried.md](tried.md), an archive; since, in
 its pull request's `## Tried`
@@ -128,8 +129,11 @@ its evaluation in
   ([#440](https://github.com/JN0V/workline/issues/440)):
   `judged-in-parts-other-words-on-the-line-do-not-dispute`,
   `judged-in-parts-support-of-the-next-words-does-not-dispute`,
-  `judged-in-parts-same-words-disputed`. On DomoticsCore, the six docs
-  needing more than 8 parts were split or narrowed to 8 or fewer
+  `judged-in-parts-same-words-disputed`; a quote a part judged partial
+  is no proof a passage is wrong, DomoticsCore's run replayed
+  ([#467](https://github.com/JN0V/workline/issues/467)):
+  `judged-in-parts-partial-quote-is-no-proof`. On DomoticsCore, the six
+  docs needing more than 8 parts were split or narrowed to 8 or fewer
   ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211),
   2026-10-17).
 - **A cap on a run's tokens**: `token-cap-between-parts`, engine's
