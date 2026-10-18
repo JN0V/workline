@@ -96,9 +96,10 @@ func (g *Gate) Validate() []verdict.Finding {
 		case c.New == "rerun" && c.Output == "exit":
 			invalid(c, "an exit code holds no findings to compare at the merge base; the command reads WORKLINE_BASE to tell the new ones itself")
 		}
-		for key, d := range map[string]string{"timeout": c.Timeout, "base-timeout": c.BaseTimeout} {
-			if _, err := time.ParseDuration(d); d != "" && err != nil {
-				invalid(c, fmt.Sprintf("%s %q is not a duration (90s, 10m)", key, d))
+		for _, key := range []string{"timeout", "base-timeout"} {
+			d := map[string]string{"timeout": c.Timeout, "base-timeout": c.BaseTimeout}[key]
+			if v, err := time.ParseDuration(d); d != "" && (err != nil || v <= 0) {
+				invalid(c, fmt.Sprintf("%s %q is not a duration past zero (90s, 10m)", key, d))
 			}
 		}
 	}
