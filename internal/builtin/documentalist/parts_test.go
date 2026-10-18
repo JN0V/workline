@@ -221,7 +221,8 @@ func TestUnsupportedLines(t *testing.T) {
 		"[guide]: https://example.com/guide\n" + // 12
 		"```go\n" + // 13
 		"service.Serve(c)\n" + // 14
-		"```\n" // 15
+		"```\n" + // 15
+		"1.\n" // 16: a list's marker alone states nothing
 	support := func(part int, lines, quote string) claim {
 		return claimOf(t, part, fmt.Sprintf("{lines: %q, status: supported, quote: %q, source: {path: x.go, lines: \"1\", quote: q}}", lines, quote))
 	}

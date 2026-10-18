@@ -275,7 +275,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 			if why == "" {
 				patch = vouch
 				vouched[sd.doc.Path] = at
-				sd.note = "(" + summary + ", nothing found wrong, and every line stating something supported by its sources: `checked` moves to " + at + ")"
+				sd.note = "(" + summary + ", nothing found wrong, and " + checkedMovesTo + at + ")"
 				break
 			}
 			dropSaid = verdictOf.dropped > 0
@@ -321,6 +321,11 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 // partialFile holds, for each doc whose fix after parts is asked, where a
 // part judged a passage partial (#467).
 const partialFile = "partial.yaml"
+
+// checkedMovesTo is what the finding of a doc whose parts vouched for it
+// says, before the commit; post says otherwise when the engine's patch is
+// not applied (#482).
+const checkedMovesTo = "every line stating something supported by its sources: `checked` moves to "
 
 // vouchedFile holds the docs judged in parts whose `checked` the engine's
 // own patch moves, by the commit it moves to (#482).
@@ -1011,7 +1016,7 @@ func unsupported(content string, kept []claim) (lines []int, stating int) {
 	// Offsets as quoteSpans gives them: the doc's words joined by spaces.
 	off, first := 0, true
 	for i, text := range strings.Split(strings.TrimSuffix(content, "\n"), "\n") {
-		n, short := i+1, false
+		n, words, short := i+1, 0, false
 		for k, w := range strings.Fields(text) {
 			if !first {
 				off++
@@ -1019,20 +1024,24 @@ func unsupported(content string, kept []claim) (lines []int, stating int) {
 			first = false
 			from, to := off, off+len(w)
 			off = to
-			if !says[n] || short || !hasWord(w) || k < 2 && listMarker.MatchString(w) {
+			if !says[n] || !hasWord(w) || k < 2 && listMarker.MatchString(w) {
 				continue
 			}
+			words++ // a word stating something: a line of markers alone states nothing
 			quoted := false
 			for _, s := range spans {
 				quoted = quoted || s[0] < to && from < s[1]
 			}
-			short = !quoted
+			short = short || !quoted
+		}
+		if words > 0 {
+			stating++
 		}
 		if short {
 			lines = append(lines, n)
 		}
 	}
-	return lines, len(says)
+	return lines, stating
 }
 
 // clip is a quote as a finding says it: its first 80 characters.

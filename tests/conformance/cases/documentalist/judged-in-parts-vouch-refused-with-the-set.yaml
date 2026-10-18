@@ -1,0 +1,18 @@
+case: documentalist/judged-in-parts-vouch-refused-with-the-set
+about: "With parts-move-checked, a doc whose parts support every line has its `checked` moved by the engine's own patch; when the run's proposals are refused whole — here another doc's fix patching code — that patch goes with them, and the doc stays on the list, its finding saying so, never dropped as if vouched for (#482)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && printf -- '---\\ntype: reference\\nsources: [src/auth/big.go]\\nchecked: HEAD\\n---\\n# The big table\\n\\nThe table starts with b0.\\n' > docs/tech/table.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md docs/tech/table.md && git commit -qam 'docs: confirm the auth docs'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+  config: {roles: {documentalist: {settings: {parts-move-checked: true}}}}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/parts-vouch-beside-a-fix-out-of-bounds.sh"}
+expect:
+  status: pass
+  findings:
+    - {rule: intention-refused}
+    - {rule: suspect, where: docs/tech/auth.md, message: "the proposals were refused whole, so it stays"}
+  files:
+    "docs/tech/auth.md": {lacks: "verified:"}
+    "src/auth/token.go": {lacks: "// tokens"}

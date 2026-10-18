@@ -1701,6 +1701,15 @@ func Post(runDir, repo string) int {
 			return fail(err)
 		}
 	}
+	// Only while the engine's own patch moving it is to be applied: a set
+	// of proposals refused whole takes it out, and the doc stays listed.
+	for p := range vouchedInParts {
+		if !slices.ContainsFunc(intents, func(in intent.Intention) bool {
+			return in.Kind == "patch" && isFallback(in, fallback) && slices.Contains(intent.PatchFiles(in.Value), p)
+		}) {
+			delete(vouchedInParts, p)
+		}
+	}
 	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
@@ -1840,6 +1849,10 @@ func Post(runDir, repo string) int {
 	var kept []verdict.Finding
 	said := map[string]bool{}
 	for _, f := range findings {
+		if i := strings.Index(f.Message, checkedMovesTo); i >= 0 && vouchedInParts[f.Where] == "" {
+			// The engine's patch went with a set of proposals refused whole.
+			f.Message = f.Message[:i] + "every line stating something supported by its sources, but the proposals were refused whole, so it stays: a person reads it whole, then moves `checked`)"
+		}
 		if _, ok := inParts[f.Where]; ok && strings.Contains(f.Message, partsFixAsked) {
 			// What the fix call made of what the parts found, now known.
 			if n := judgedFix.placesSaid(f.Where); n != "" {
