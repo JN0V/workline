@@ -119,3 +119,22 @@ func TestParseClaude(t *testing.T) {
 		}
 	}
 }
+
+// An item holding several keys where one kind goes is refused, the reader
+// told where they go: a lens wrote a finding's `decision` and `cause` as an
+// item of their own (#490, #492) and, told only to send valid YAML, sent
+// it again so.
+func TestProposalsFromSaysWhereKeysGo(t *testing.T) {
+	for _, c := range []struct{ answer, want string }{
+		{"- note: x\n- decision: \"Should it be 0?\"\n  cause: {path: \"#4\", quote: left open}\n",
+			"proposal 2 holds 2 kinds (cause, decision); each holds exactly one: cause and decision are no kind, but keys of a `finding`, written under `- finding:`, indented, beside its other keys"},
+		{"- finding: {title: t}\n  decision: \"Should it be 0?\"\n",
+			"proposal 1 holds 2 kinds (decision, finding); each holds exactly one: decision is no kind, but a key of a `finding`"},
+		{"- comment: hello\n  label: {add: [bug]}\n", "proposal 1 holds 2 kinds (comment, label); each holds exactly one: write each as an item of its own"},
+		{"- note: hello\n  colour: red\n", "colour is no kind, but a key of a proposal, written under its kind, indented, as the answer's shape shows it"},
+	} {
+		if _, _, err := proposalsFrom(c.answer); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%q: %v, want %q", c.answer, err, c.want)
+		}
+	}
+}

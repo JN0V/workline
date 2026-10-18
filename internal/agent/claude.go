@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -201,10 +203,50 @@ func proposalsFrom(answer string) ([]byte, []string, error) {
 	}
 	for i, m := range list {
 		if len(m) != 1 {
-			return nil, nil, fmt.Errorf("proposal %d holds %d kinds; each holds exactly one", i+1, len(m))
+			return nil, nil, fmt.Errorf("proposal %d holds %d kinds (%s); each holds exactly one%s", i+1, len(m), strings.Join(slices.Sorted(maps.Keys(m)), ", "), whereKeysGo(m))
 		}
 	}
 	return []byte(s + "\n"), mended, nil
+}
+
+// whereKeysGo says, of an item holding several keys where one kind goes,
+// where they go. Several kinds: an item each. A key no kind is named by is
+// a key of a proposal, written under its kind, indented: the kind whose
+// shape holds them all is named. A reviewer's lens wrote a finding's
+// `decision` and `cause` as an item of their own (#490, #492) and, asked
+// again only for valid YAML, wrote them so again.
+func whereKeysGo(m map[string]any) string {
+	var keys []string
+	for k := range m {
+		if _, kind := contracts[k]; !kind {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		return ": write each as an item of its own"
+	}
+	slices.Sort(keys)
+	are, them := "is no kind, but a key", "it"
+	if len(keys) > 1 {
+		are, them = "are no kind, but keys", "them"
+	}
+	said := strings.Join(keys[:len(keys)-1], ", ")
+	if said != "" {
+		said += " and "
+	}
+	said += keys[len(keys)-1]
+	var holders []string
+	for kind, shape := range contracts {
+		if !engineOnly[kind] && !slices.ContainsFunc(keys, func(k string) bool {
+			return !regexp.MustCompile(`(^|[{,;\s])` + regexp.QuoteMeta(k) + `:`).MatchString(shape)
+		}) {
+			holders = append(holders, kind)
+		}
+	}
+	if len(holders) == 1 {
+		return fmt.Sprintf(": %s %s of a `%s`, written under `- %s:`, indented, beside its other keys", said, are, holders[0], holders[0])
+	}
+	return fmt.Sprintf(": %s %s of a proposal, written under its kind, indented, as the answer's shape shows %s", said, are, them)
 }
 
 func lastLine(s string) string {
