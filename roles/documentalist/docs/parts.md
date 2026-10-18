@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/parts.go, internal/builtin/documentalist/documentalist.go]
-checked: 30139b53
+checked: a5e57aa5
 verified: agent:claude-code
 ---
 # Documentalist — judged in parts
@@ -118,8 +118,8 @@ The header then sets `checked` and `judged-in-parts` to that commit, and
 `verified: agent:documentalist`: the doc leaves the list for a person,
 and the weekly sample, which cannot read it whole, lists it for a person
 ([weekly sample](../../../docs/weekly-sample.md)). Otherwise the finding
-says what kept it ("no part supports line 14"), or that the run's
-proposals were refused whole, the engine's patch with them.
+says what kept it ("no part supports line 14"), or that the engine's
+patch is not applied: a set of proposals refused whole takes it out.
 
 ## Not judged in parts
 
