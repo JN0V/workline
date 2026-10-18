@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: a9762f04
+checked: 53ef8d2f
 verified: agent:claude-code
 ---
 # Reviewer — the judge, the verdict, the budget
@@ -107,7 +107,8 @@ else whether the quoted code fails:
 When something fails:
 
 - A lens whose answer does not read is asked again once, with what the
-  YAML reader said (`promote-after`).
+  YAML reader said, or where the keys of an item holding several go
+  (`promote-after`).
 - A lens that fails is said (`lens-failed`), the commits left unrecorded.
 - An agent unreachable: `blocked-external`.
 - No agent: the rules alone, the change left for a person (`not-reviewed`).

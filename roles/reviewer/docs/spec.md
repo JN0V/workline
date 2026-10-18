@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/lenses, internal/builtin/reviewer, internal/backlog/spec.go, routing.default.yaml]
-checked: a9762f04
+checked: 53ef8d2f
 verified: agent:claude-code
 ---
 # Reviewer — a spec before it is built
@@ -40,7 +40,8 @@ for code ([a run](run.md)), with lenses of its own.
   spec's author's: the product owner, or the person who wrote it.
 - **The judge, the verdict, the questions** as for code: each important
   finding judged, a no dropped; what the lenses find warns (`ai-findings`,
-  by lens too); an open point only a person settles is a `decision`.
+  by lens too); an open point only a person settles is a finding
+  holding `decision`.
 - **No record** is kept: a spec is read whole each run. Nor a line per
   finding judged: the weekly sample draws a merge request's
   ([the code's](judge.md#every-finding-judged-kept-for-the-weekly-sample)).

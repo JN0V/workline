@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine, internal/intent, internal/role, internal/agent, roles_test.go]
-checked: fac02675
+checked: b3419528
 verified: agent:claude-code
 judged: b530b72
 ---
@@ -237,6 +237,11 @@ token), **apply** (trusted, no AI key).
    slip, not a refusal. The documentalist's `post` passed with no proposal,
    and such a doc was judged again, whole, the next night (DomoticsCore,
    ADR-0014 step 4). The answer not read is kept as `out/unread-answer.txt`.
+   An item holding several keys where one kind goes, or none, is refused
+   so too, the keys named: several kinds, an item each; a key no kind is
+   named by, the role's kind whose shape holds it, under which it goes (a
+   lens wrote a finding's `decision` and `cause` as an item of their own,
+   #493).
    The output contract asks for text holding code, quotes, a backtick, `: `
    or ` #` as a YAML block scalar (`|`), which takes code as it is; the
    request again repeats it (#138). YAML, not JSON: code wrapped in JSON
