@@ -1,0 +1,52 @@
+case: reviewer/spec-fenced-quote-names-no-prose-word
+about: "A spec quoting code in a fenced block, then prose (#425): the fence's backticks pair with none of the prose's, so the prose's plain words, `known` and `change` here, name no function, though the repository defines both; the function its fence calls is shown, the file it names too."
+given:
+  repo: reviewed
+  setup:
+    - |
+      cat > calc/words.go <<'GO'
+      package calc
+
+      // known says whether a value was seen.
+      func known(v int) bool { return v != 0 }
+
+      // change is the difference between two values.
+      func change(a, b int) int { return b - a }
+      GO
+      cat > calc/strict.go <<'GO'
+      package calc
+
+      import "strconv"
+
+      // strict reads a count, its error kept.
+      func strict(s string) (int, error) { return strconv.Atoi(s) }
+      GO
+      git add calc && git commit -qm 'feat: words and a strict read'
+      mkdir -p docs
+      cat > docs/spec-error.md <<'MD'
+      # Parse keeps its error
+
+      At `calc/calc.go:16`:
+
+      ```
+      n, _ := strconv.Atoi(s)
+      ```
+
+      The known change drops the error, so `Parse` reads "x" as 0. What would fix it:
+
+      ```go
+      return strict(s)
+      ```
+
+      ## Verification
+
+      A test of `Parse` on "x" expects an error.
+      MD
+run: {review: [--spec, docs/spec-error.md], ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-lenses/task.md:
+      contains: ["# Lenses: ambiguous, unverifiable, out-of-scope, contradicted\n", "### calc/calc.go\n", "`strict`", "func strict(s string) (int, error)"]
+      not-contains: ["calc/words.go", "func known", "func change"]

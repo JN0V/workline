@@ -76,7 +76,7 @@ func withoutBreak(text string) string {
 	lines := strings.Split(strings.TrimRight(text, " \r\n"), "\n")
 	last, fence := len(lines)-1, ""
 	for _, l := range lines[:last] {
-		fence = fenced(l, fence)
+		fence = Fenced(l, fence)
 	}
 	if fence != "" || !Break(lines[last]) || (last > 0 && strings.TrimSpace(lines[last-1]) != "") {
 		return text
@@ -101,7 +101,7 @@ func Footer(body string) (string, string) {
 	lines := strings.Split(body, "\n")
 	last, fence := -1, ""
 	for i, l := range lines { // the last heading, outside fenced code
-		if fence = fenced(l, fence); fence != "" {
+		if fence = Fenced(l, fence); fence != "" {
 			continue
 		}
 		if _, ok := Heading(l); ok {
@@ -112,7 +112,7 @@ func Footer(body string) (string, string) {
 	fence = ""
 	for i, l := range lines {
 		was := fence
-		if fence = fenced(l, fence); fence != "" || was != "" || i <= last || last < 0 {
+		if fence = Fenced(l, fence); fence != "" || was != "" || i <= last || last < 0 {
 			continue
 		}
 		if Break(l) && strings.TrimSpace(lines[i-1]) == "" {
@@ -154,11 +154,11 @@ var (
 	signature = regexp.MustCompile(`(?i)^\W*generated (?:with|by)\s+\S`)
 )
 
-// fenced is the fence open after line l, given the one open before it:
+// Fenced is the fence open after line l, given the one open before it:
 // "" outside fenced code. As CommonMark: a fence opens with three or more
 // backticks or tildes, an info string after them; it closes on a line of
 // the same character alone, as long as the opening one at least.
-func fenced(l, open string) string {
+func Fenced(l, open string) string {
 	t := strings.TrimSpace(l)
 	if open != "" {
 		if len(t) >= len(open) && strings.Trim(t, open[:1]) == "" {
