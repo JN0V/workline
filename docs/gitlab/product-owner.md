@@ -1,6 +1,6 @@
 <!-- workline
 sources: [internal/forge/gitlab.go]
-checked: ab6ae913
+checked: ef0d27cd
 -->
 # The product owner on GitLab
 

@@ -1,6 +1,6 @@
 <!-- workline
 sources: [internal/forge/retry.go, internal/forge/gitlab.go]
-checked: ab6ae913
+checked: ef0d27cd
 -->
 # A GitLab call that fails for a moment
 
