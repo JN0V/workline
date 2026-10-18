@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 698042ac
+checked: fac02675
 verified: agent:claude-code
 judged: af2d6fb
 ---
@@ -109,7 +109,8 @@ What else a case can give, run and expect, and how each is checked, is in
   issue fields, as a GitHub organisation's, an issue's values in its
   `fields` (`{Priority: High}`), the repository `public: true`, and
   `fields-blind: <why>` a token that reads no value visible to members
-  only. A
+  only; with `weights: true`, its issues carry a weight, as GitLab
+  Premium's, an issue's in its `weight`. A
   merge request's `threads` are its comments on lines, `{path, line,
   body, resolved}`: a review is posted whole, as GitHub's, on the lines
   of the repository's diff from the merge request's `base` (main) to the
@@ -131,7 +132,9 @@ What else a case can give, run and expect, and how each is checked, is in
   over the same file: its `members` (`{username, access_level}`) are the
   project's, what the engine writes is the token user's, a note another
   user wrote refuses an edit (403), an `is_blocked_by` link is refused for
-  its license (403) as on GitLab Free, and GraphQL refuses all. A merge
+  its license (403) as on GitLab Free, and GraphQL refuses all. With
+  `weights`, its issues carry Premium's `weight` key, set by a `PUT`;
+  without, Free's: no key, a weight sent ignored. A merge
   request's diffs are the repository's, from its `base` (main) to its
   `branch` (HEAD); a discussion on a line they do not show, or on a kept
   line without its old one, lands on no line, as on gitlab.com;

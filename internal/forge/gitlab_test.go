@@ -275,6 +275,59 @@ func TestGitLabCanceledPipeline(t *testing.T) {
 	}
 }
 
+// GitLab's weight (ADR-0040): Premium's issues carry the key, null for
+// none, Free's none, an empty project none yet; a weight is read back from
+// GitLab's answer, Free answering 200 without one, as gitlab.com did on
+// 2026-10-18.
+func TestGitLabWeight(t *testing.T) {
+	var premium bool
+	var issues []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(r.URL.EscapedPath(), "/api/v4/projects/group%2Fproj")
+		switch {
+		case r.Method == "GET" && p == "/issues":
+			json.NewEncoder(w).Encode(issues)
+		case r.Method == "PUT" && p == "/issues/9":
+			body, _ := io.ReadAll(r.Body)
+			form, _ := url.ParseQuery(string(body))
+			answer := map[string]any{"iid": 9}
+			if premium {
+				answer["weight"] = json.Number(form.Get("weight"))
+			}
+			json.NewEncoder(w).Encode(answer)
+		default:
+			http.Error(w, `{"message":"404 Not Found"}`, http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("CI_API_V4_URL", srv.URL+"/api/v4")
+	t.Setenv("CI_PROJECT_ID", "")
+	t.Setenv("CI_PROJECT_PATH", "group/proj")
+	t.Setenv("GITLAB_TOKEN", "secret")
+	g := &gitlab{repo: t.TempDir()}
+	for _, c := range []struct {
+		name    string
+		issues  []map[string]any
+		premium bool
+	}{
+		{"empty", nil, false},
+		{"free", []map[string]any{{"iid": 9}}, false},
+		{"premium", []map[string]any{{"iid": 9, "weight": nil}}, true},
+	} {
+		issues, premium = c.issues, c.premium
+		if got, err := g.weights(); err != nil || got != c.premium {
+			t.Errorf("%s: weights %v, %v", c.name, got, err)
+		}
+		err := g.setWeight(9, 3)
+		if c.premium && err != nil {
+			t.Errorf("%s: set: %v", c.name, err)
+		}
+		if !c.premium && (err == nil || !strings.Contains(err.Error(), "kept no weight 3")) {
+			t.Errorf("%s: set: %v; want the weight not kept said", c.name, err)
+		}
+	}
+}
+
 // Outside CI, the instance and the project come from the repository's remote.
 func TestGitLabFromRemote(t *testing.T) {
 	for _, c := range []struct{ remote, api, project string }{

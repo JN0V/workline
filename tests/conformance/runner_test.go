@@ -286,6 +286,7 @@ type itemWant struct {
 	Labels          *[]string           `yaml:"labels"`     // the exact set
 	Reactions       map[string][]string `yaml:"reactions"`  // on its comments, by the comment's id
 	Fields          map[string]string   `yaml:"fields"`     // its values in the issue fields, exactly these, by the field's name
+	Weight          *int                `yaml:"weight"`     // its GitLab weight, -1 for none
 	Threads         *[]threadWant       `yaml:"threads"`    // a merge request's comments on lines, exactly these, in the order posted
 }
 
@@ -1442,11 +1443,15 @@ func compareItem(kind string, wm itemWant, got []map[string]any) []string {
 	if found["rank"] == nil {
 		found["rank"] = 0 // a label not ranked
 	}
+	if found["weight"] == nil {
+		found["weight"] = -1 // no weight
+	}
 	fields := []struct {
 		key  string
 		want any
 	}{{"branch", given(wm.Branch)}, {"base", given(wm.Base)}, {"title", given(wm.Title)},
-		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}, {"rank", given(wm.Rank)}}
+		{"reason", given(wm.Reason)}, {"milestone", given(wm.Milestone)}, {"parent", given(wm.Parent)}, {"rank", given(wm.Rank)},
+		{"weight", given(wm.Weight)}}
 	for _, f := range fields {
 		if f.want != nil && fmt.Sprint(found[f.key]) != fmt.Sprint(f.want) {
 			p = append(p, fmt.Sprintf("forge: %s %v %s = %v, want %v", kind, wm.ID, f.key, found[f.key], f.want))

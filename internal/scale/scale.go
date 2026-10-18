@@ -320,6 +320,19 @@ func WeightOf(l int) int {
 	return 2*l - 1
 }
 
+// WeightFamily is GitLab's weight as a family: each level and the weight
+// written for it, "weight 1" to "weight 5", as the role's texts say it.
+// An issue's weight is read in bands (Weight), never by these names.
+var WeightFamily = weightFamily()
+
+func weightFamily() Family {
+	f := Family{Scale: Effort}
+	for l := 1; l <= Effort.Count(); l++ {
+		f.Labels = append(f.Labels, Label{Name: "weight " + strconv.Itoa(WeightOf(l)), Level: l})
+	}
+	return f
+}
+
 // Own is workline's own priority labels, workline:priority/1, the most
 // pressing, to /4, the most pressing the warmest: the family the role
 // writes until ADR-0040's detection finds a project's.
