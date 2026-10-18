@@ -167,8 +167,9 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
    - **Step 5 built, off by default**: GitLab's weight found for the
      effort where the issues carry one (Premium, Ultimate), read in
      bands, written 1, 3 or 5 and read back, never on a parent; Free
-     keeps the labels. Tried on the GitLab sandbox, Free only (its pull
-     request's Tried); Premium not tried, no project at hand. A
+     keeps the labels. Tried on the GitLab sandbox, Free only
+     ([#488](https://github.com/JN0V/workline/pull/488)'s Tried); Premium
+     not tried, no project at hand. A
      project's own bands ("another scale sets its bands") not built.
    - **Next**: step 6, workline's labels renamed.
 3. **Tries on real use**, nothing to build (no issue yet):
