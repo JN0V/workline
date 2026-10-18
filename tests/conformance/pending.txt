@@ -1,2 +1,5 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
+
+# A quote starting on the line before the lines it cites (#482).
+documentalist/judged-in-parts-quote-from-the-line-before

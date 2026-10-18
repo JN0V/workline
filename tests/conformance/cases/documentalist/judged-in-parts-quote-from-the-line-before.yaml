@@ -1,0 +1,15 @@
+case: documentalist/judged-in-parts-quote-from-the-line-before
+about: "A part's quote that starts on the line before the lines it cites, running across that line break into them, is placed where it stands and kept: a sentence often starts at the end of the line before. The store's contradiction of \"Each one lasts the configured session TTL, 24 hours by default\", cited at lines 23-24 though \"Each\" ends line 22, reaches the fix as lines 22-24, as in runs 1 and 4 of the second measure (#482)."
+given:
+  repo: service
+  config: {roles: {documentalist: {settings: {judge-in-parts: true, parts-always: true, part-chars: 1500}}}}
+  setup:
+    - "sed -i 's/DefaultPort           = 8080/DefaultPort           = 9090/; s/DefaultMaxConnections = 100/DefaultMaxConnections = 250/' src/service/config.go && sed -i 's/keeps each session for the configured session TTL./keeps each session twelve hours, whatever the configuration./; s/ttl: c.SessionTTL,/ttl: 12 * time.Hour,/' src/service/store.go && sed -i 's/VerifyToken/CheckToken/g' src/service/auth.go && git commit -qam 'feat(service): new defaults, fixed session length, rename token check'"
+run: {role: documentalist, event: merge-request, ai: "fake:parts-session-ttl-cited-a-line-late"}
+expect:
+  status: pass
+  agent-calls: 5   # four parts, then the fix
+  no-findings: [{rule: claims-dropped}]
+  run-files:
+    in/task.md:
+      contains: "### Found wrong\n\n- The doc, lines 22-24: \"Each one lasts the configured session TTL, 24 hours by default\""
