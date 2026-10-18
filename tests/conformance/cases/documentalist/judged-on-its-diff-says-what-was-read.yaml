@@ -1,5 +1,5 @@
 case: documentalist/judged-on-its-diff-says-what-was-read
-about: "A doc whose sources are too large to go whole is judged on what changed in them. The agent found nothing wrong there, yet a false claim stands in a passage the change did not touch: the finding, the summary and the gardening merge request say what was read and what was not, never \"nothing found wrong\" of the whole doc (#120)."
+about: "A doc whose sources are too large to go whole is judged on what changed in them. The agent found nothing wrong there, yet a false claim stands in a passage the change did not touch: the finding, the summary and the gardening merge request say what was read and what was not, never \"nothing found wrong\" of the whole doc (#120). With judging in parts off: on, gardening reads such a doc in parts instead (judged-on-its-diff-read-in-parts-at-night, #462)."
 given:
   repo: documented
   setup:
@@ -7,6 +7,7 @@ given:
     - "seq 1 1200 | sed 's|^|// One line of a long comment on tokens, number |' >> src/auth/token.go && printf '// Tokens are signed with RS256.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): explain tokens at length'"
     - "printf '\\n## Signing\\n\\nTokens are signed with HS256.\\n' >> docs/tech/auth.md && C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "printf '\\n// TokenTTL is in seconds.\\n' >> src/auth/token.go && git commit -qam 'docs(auth): say the unit of the lifetime' && git push -q origin main"
+  config: {roles: {documentalist: {settings: {judge-in-parts: false}}}}
   forge: {merge-requests: []}
 run: {role: documentalist, event: schedule, ai: 'cmd:sh "$FIXTURES/agents/judged-only.sh"', open-merge-request: true, summary: true}
 expect:

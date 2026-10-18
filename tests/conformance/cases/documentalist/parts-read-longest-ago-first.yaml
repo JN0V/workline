@@ -1,0 +1,18 @@
+case: documentalist/parts-read-longest-ago-first
+about: "Docs to be judged in parts go in the order they were last read against all their sources, the later of their `checked` and `judged-in-parts`, longest ago first: past the run's cap, a doc read in parts lately waits behind one never read so, though its name comes first, rather than be read again each night its sources change while the others wait (#462)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed 's/^# Authentication/# The token table/' docs/tech/auth.md > docs/tech/table.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md docs/tech/table.md && git commit -qam 'docs: confirm the auth docs'"
+    - "echo 'var one' >> src/auth/big.go && GIT_COMMITTER_DATE=2026-01-05T00:00:00Z git commit -qam 'feat(auth): add a row to the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged-in-parts: $C/\" docs/tech/auth.md && GIT_COMMITTER_DATE=2026-01-05T00:00:00Z git commit -qam 'docs: judge the auth doc in parts'"
+    - "echo 'var two' >> src/auth/big.go && GIT_COMMITTER_DATE=2026-01-06T00:00:00Z git commit -qam 'feat(auth): add another row'"
+  config: {roles: {documentalist: {settings: {parts-max-per-run: 2}}}}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found", no-apply: true}
+expect:
+  status: pass
+  agent-calls: 2   # table.md's two parts
+  findings:
+    - {rule: suspect, where: docs/tech/table.md, message: "2 parts, 0 claims kept, nothing found wrong"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "in a later round: past parts-max-per-run, 2"}
