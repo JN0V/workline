@@ -98,7 +98,7 @@ file only inside comments. A stale comment had won over the code's setting
   and line), kept for the run's verdict, so a person or the committer
   fixes it. *Withheld*: the place resting on it.
 - **In parts too**: a part's support quoted from a comment only is no
-  support ([the parts' claims](tasks.md#reading-the-claims-no-ai)).
+  support ([the parts' claims](parts.md#reading-the-claims-no-ai)).
 - **A type whose comments the engine does not know**: its quote is taken
   as code, and said (`comment-style-unknown`, once a type a run), so a
   comment there passing as evidence is not silent.

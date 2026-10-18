@@ -1,0 +1,19 @@
+case: documentalist/judged-in-parts-a-line-unsupported
+about: "When gardening, a doc too large to go whole is read in parts and nothing is found wrong, but one line stating something no part supports: `checked` stays, the header records the commit it was judged in parts at, the finding says which line, and the doc stays on the list for a person (#482)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && printf '\\n## Sessions\\n\\nSessions last a week.\\n' >> docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+  forge: {issues: []}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/parts-support-line-10.sh"}
+expect:
+  status: pass
+  agent-calls: 2   # two parts; nothing found wrong, no fix asked
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "nothing found wrong. `checked` stays: no part supports line 14"}]
+  files:
+    "docs/tech/auth.md": {contains: "checked: 3bed54d\njudged-in-parts: 5a74f8e\n---\n", lacks: "verified:"}
+  forge:
+    issues:
+      - {id: 2, title: "Docs waiting for a person", body-contains: "- [ ] `docs/tech/auth.md` — "}

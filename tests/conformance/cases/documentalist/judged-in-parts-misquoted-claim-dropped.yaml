@@ -1,5 +1,5 @@
 case: documentalist/judged-in-parts-misquoted-claim-dropped
-about: "A part's claim whose quote is not at the lines it cites is dropped, and said for a person, who reads the doc whole. The doc is recorded as judged in parts all the same: asked again each night, a doc on DomoticsCore and workline cost 0.23M to 0.32M tokens a night to the same end (ADR-0014, step 4); it is judged again when a source changes."
+about: "A part's claim whose quote is not at the lines it cites is dropped, and said for a person, who reads the doc whole, with what was not where (#482). The doc is recorded as judged in parts all the same: asked again each night, a doc on DomoticsCore and workline cost 0.23M to 0.32M tokens a night to the same end (ADR-0014, step 4); it is judged again when a source changes."
 given:
   repo: documented
   setup:
@@ -14,5 +14,6 @@ expect:
   applied: [patch]
   findings:
     - {rule: claims-dropped, where: docs/tech/auth.md, message: "1 claims of its parts"}
-    - {rule: suspect, where: docs/tech/auth.md, message: "some claims were dropped: a person reads it whole"}
+    - {rule: claims-dropped, where: docs/tech/auth.md, message: "(part 1: \"const TokenTTL = 7200\" is not at src/auth/token.go, line 3)"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "`checked` stays: a claim of its parts was dropped, unread"}
   files: {"docs/tech/auth.md": {contains: "judged-in-parts:"}}

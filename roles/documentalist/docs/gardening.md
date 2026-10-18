@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go]
-checked: 6ca89245
+checked: a5e57aa5
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -18,7 +18,7 @@ sources as they are now, in full.
 - The agent confirms it, fixes it, or says with a `note` that the sources
   do not tell.
 - A doc whose sources are too large to be given in full is
-  [judged in parts](tasks.md#judged-in-parts), unless the project turns
+  [judged in parts](parts.md), unless the project turns
   it off; then it stays for a person.
 - One of whose sources cannot be read (a section whose heading is gone)
   stays for a person, the finding saying why: confirming it unread would
@@ -119,7 +119,7 @@ there, not committed
   longer as judged.
 - **Not for a doc read in parts that night**: its sources too large to go
   whole, its record says only what changed was read; it is
-  [read in parts](tasks.md#judged-in-parts) instead
+  [read in parts](parts.md) instead
   ([#462](https://github.com/JN0V/workline/issues/462)).
 - **The cost**: one listing of the merge requests merged since the oldest
   such commit, and one read of the comments of each one a doc points to

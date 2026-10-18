@@ -520,6 +520,14 @@ func movedOnHead(repo string, heads []string, f string, checked map[string]strin
 	return false, nil, nil
 }
 
+// earnedInParts: the doc, as vouched for, records it was judged in parts at
+// the commit its `checked` names, as the documentalist writes it when its
+// parts supported every line stating something (#482).
+func earnedInParts(d *documentalist.Doc) bool {
+	at, checked := d.JudgedInParts, d.Checked[""]
+	return len(d.Checked) == 1 && len(at) >= 7 && len(checked) >= 7 && (strings.HasPrefix(at, checked) || strings.HasPrefix(checked, at))
+}
+
 // verifiedByAgent: the doc's header says the documentalist vouched for it.
 func verifiedByAgent(content string) bool {
 	meta, _ := documentalist.Header(content)
@@ -582,6 +590,12 @@ func (rd *reader) readOne(c candidate) Read {
 	switch {
 	case err != nil:
 		r.Verdict, r.Why = "not-read", err.Error()+missingWords(rd.o.Forge, err)+"; for a person"
+		return r
+	case !fits && earnedInParts(d):
+		// Its parts supported every line stating something (#482): earned,
+		// though no task could read its sources whole, nor can this one.
+		r.Verdict = "not-read"
+		r.Why = fmt.Sprintf("its `checked` was earned once judged in parts (`judged-in-parts` at the same commit): its sources take more than the %d characters the sample reads whole (whole-chars), so it is not read here; for a person to read against them", s.WholeCap())
 		return r
 	case !fits:
 		r.Verdict = "unearned"
