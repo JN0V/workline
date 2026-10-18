@@ -27,7 +27,8 @@ the findings a change adds go, and how
   write token and no agent's ([gates in CI](../gates-in-ci.md)).
 - **`--gates-from <file>`**: the job judging the line reads each gate
   step's verdict there, and runs no gate. One missing from the file, or a
-  file for another range, is a `check-error`.
+  file for other commits than the line judges, however the range spells
+  them, is a `check-error`.
 - **A gate's findings are reported by the job that ran it**: a step read
   from a file adds none to `--sarif` nor `--code-quality`.
 

@@ -1,0 +1,21 @@
+case: gates/line-refuses-gates-of-another-range
+about: >
+  Gates' verdicts read from a job that ran on other commits than the line
+  judges are none of its: each gate is an error, never their verdict.
+given:
+  repo: linted
+  setup:
+    - git checkout -q -b change
+    - |
+      sed -i 's|^\tos.Remove("c.tmp")$|&\n\tos.Remove("d.tmp")|' clean.go && git commit -qam "feat: clean d too"
+  config:
+    routing: {events: {merge-request: ["gate:merge"]}}
+    gates: {merge: {checks: [{id: lint, run: "golangci-lint run --output.sarif.path={out}/lint.sarif", output: sarif, max: {error: 0}}]}}
+run:
+  route: merge-request
+  input: {range: main..change}
+  gates-job: {env: {PATH: "$FIXTURES/bin:$PATH"}, input: {range: "change~1..change~1"}}
+expect:
+  status: block
+  findings: [{rule: check-error, where: merge, message: "the gates ran on"}]
+  no-findings: [{rule: over-threshold}]
