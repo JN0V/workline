@@ -1427,12 +1427,17 @@ func showGates(from engine.FromMergeRequest, file string) ([]verdict.Finding, er
 	g := wlreport.Gates(&r, from.Head)
 	entries := 10 // the reviewer's default
 	if cfg, err := role.LoadProjectConfig(from.Repo); err == nil {
-		// A whole number however it was read: YAML's int, JSON's float.
+		// A whole number from 1, however it was read: YAML's int, JSON's
+		// float; any other value leaves the default.
 		switch n := cfg.Roles["reviewer"].Settings["findings-max"].(type) {
 		case int:
-			entries = max(n, 1)
+			if n >= 1 {
+				entries = n
+			}
 		case int64:
-			entries = max(int(n), 1)
+			if n >= 1 {
+				entries = int(n)
+			}
 		case float64:
 			if n >= 1 && n == float64(int(n)) {
 				entries = int(n)
