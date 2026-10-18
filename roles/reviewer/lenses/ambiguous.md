@@ -16,5 +16,6 @@ something different: a vague adjective or adverb ("fast", "properly",
 "user-friendly"), a loophole ("if possible", "as needed"), an open list
 ("etc.", "and so on"), a pronoun or a term that may name two things, a
 comparative with nothing to compare to. Say both readings in `why`. A
-choice the spec leaves open that only a person can make is a `decision`;
-a detail any builder would settle the same way is nothing.
+choice the spec leaves open that only a person can make is a `finding`
+holding `decision`; a detail any builder would settle the same way is
+nothing.

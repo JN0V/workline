@@ -106,7 +106,8 @@ becomes ready ([below](#every-lens-once-when-it-becomes-ready)).
   (`finding-unfounded`), and its cause the line contradicting it.
 - **What they answer**: `finding`s — lens, severity, title, why, its cause
   quoted, its symptom when elsewhere, a fix; the claims lens's, the claim;
-  a `decision`, the question for a person (step 6).
+  a finding holding `decision`, the question for a person (step 6),
+  never an item of its own.
 - **The diff alone** (`diff-alone`, off,
   [#126](https://github.com/JN0V/workline/issues/126)): a call of its own,
   given the change only (`git diff -U3`, up to `diff-lines-max`), not the
