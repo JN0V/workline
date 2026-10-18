@@ -24,7 +24,8 @@ Report each defect as a `finding`:
 - `decision`, only for what is no defect but a choice a person makes — a
   trade-off, a design choice, a behaviour the issue leaves open: the
   question to put to them, its cause the open point quoted, in the issue
-  or the changed code. What fails is a finding, never a decision.
+  or the changed code. A key of the finding, beside its `cause`, never an
+  item of its own. What fails is a finding with no `decision`.
 
 Read the files given whole, not only the lines the change touches: a
 defect in them the change did not cause — there before it — is reported
