@@ -44,9 +44,11 @@ type Result struct {
 	// Pending lists the runs judged with NoApply, in the line's order: what
 	// `workline apply` is given in the job that holds the write token.
 	Pending []string `json:"pending,omitempty"`
-	// Range: the range the gates alone ran on (Gates.Only), which the
-	// line reading their verdicts checks it judges too.
-	Range string `json:"range,omitempty"`
+	// Range: the range the gates alone ran on (Gates.Only); Commits, its
+	// ends as the commits they were when the gates ran, which the line
+	// reading their verdicts checks it judges too.
+	Range   string `json:"range,omitempty"`
+	Commits string `json:"commits,omitempty"`
 }
 
 // Gates says how a line takes its gate steps: run there, by default. In
@@ -114,6 +116,7 @@ func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only
 	if gates.Only {
 		res.Range = whole["range"]
+		res.Commits, _ = commitsOf(base.Repo, whole["range"])
 	}
 	var notPassed []string // with every step run: those that did not pass, and how
 	considered := 0
@@ -183,7 +186,7 @@ func (g *Gates) step(repo, name, event, rng string) Step {
 	switch {
 	case g.err != nil:
 		return not(fmt.Sprintf("the gates' job left no result to read (%v): it did not run, or ended before writing it", g.err))
-	case !sameRange(repo, g.read.Range, rng):
+	case !g.sameCommits(repo, rng):
 		return not(fmt.Sprintf("the gates ran on %q, this line judges %q", g.read.Range, rng))
 	}
 	for _, s := range g.read.Steps {
@@ -194,30 +197,35 @@ func (g *Gates) step(repo, name, event, rng string) Step {
 	return not(fmt.Sprintf("the gates' job, %s, holds no verdict of it", g.From))
 }
 
-// sameRange says whether two ranges name the same commits, however each
-// spells them: a branch's name or its commit.
-func sameRange(repo, a, b string) bool {
-	if a == b {
-		return true
+// sameCommits says whether the gates ran on the commits the line judges:
+// their range's ends as they were when the gates ran, against this one's
+// now, however each spells them — a branch's name, its commit. A name
+// moved in between is other commits. A result naming no commits is read
+// by its range's words alone.
+func (g *Gates) sameCommits(repo, rng string) bool {
+	if g.read.Commits == "" {
+		return g.read.Range == rng
 	}
-	ends := func(rng string) (string, bool) {
-		var out []string
-		for _, rev := range []string{gitrange.Base(rng), gitrange.Head(rng)} {
-			if rev == "" {
-				out = append(out, "")
-				continue
-			}
-			sha, err := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
-			if err != nil {
-				return "", false
-			}
-			out = append(out, strings.TrimSpace(string(sha)))
+	now, ok := commitsOf(repo, rng)
+	return ok && now == g.read.Commits
+}
+
+// commitsOf is a range's ends as commits, base..head; false when one is
+// no commit here.
+func commitsOf(repo, rng string) (string, bool) {
+	var out []string
+	for _, rev := range []string{gitrange.Base(rng), gitrange.Head(rng)} {
+		if rev == "" {
+			out = append(out, "")
+			continue
 		}
-		return strings.Join(out, ".."), true
+		sha, err := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
+		if err != nil {
+			return "", false
+		}
+		out = append(out, strings.TrimSpace(string(sha)))
 	}
-	x, okA := ends(a)
-	y, okB := ends(b)
-	return okA && okB && x == y
+	return strings.Join(out, ".."), true
 }
 
 // readResult reads a line's result as `--json` printed it.
