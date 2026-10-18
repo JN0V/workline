@@ -1,5 +1,5 @@
 case: documentalist/judged-in-parts-partial-settled-by-another
-about: "A passage one part finds partial — its share does not settle it — and another part supports, quoting the source, is settled: no fix is asked of it. A part that cannot see the source deciding the passage must not lead the fix to rewrite what that source supports (workline #29). The support quoting every word of the doc's one line stating something, `checked` moves (#482)."
+about: "A passage one part finds partial — its share does not settle it — and another part supports, quoting the source, is settled: no fix is asked of it. A part that cannot see the source deciding the passage must not lead the fix to rewrite what that source supports (workline #29)."
 given:
   repo: documented
   setup:
@@ -11,5 +11,5 @@ run: {role: documentalist, event: schedule, ai: "fake:parts-partial-but-supporte
 expect:
   status: pass
   agent-calls: 2
-  no-findings: [{rule: suspect, where: docs/tech/auth.md}]
-  files: {"docs/tech/auth.md": {contains: "checked: 8d4fc13\njudged-in-parts: 8d4fc13\n", lacks: "two hours"}}
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts"}]
+  files: {"docs/tech/auth.md": {contains: "judged-in-parts:", lacks: "two hours"}}

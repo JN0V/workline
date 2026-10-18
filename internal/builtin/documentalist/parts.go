@@ -46,7 +46,31 @@ type partPlan struct {
 	Files []partFile `yaml:"files"`
 }
 
-// partsTaskHeader is what every part asks, before the doc and its share.
+// partsSupported is how a part says a passage is supported; with
+// parts-move-checked, partsSupportedWhole asks it to quote the passage's
+// words whole, which the engine needs to see every line supported (#482).
+const (
+	partsSupported = `- supported: the source says the same; quote both. A comment is not
+  evidence: a support quoted from a comment only counts for nothing.
+`
+	partsSupportedWhole = `- supported: the source says the same; quote both, the doc's words whole:
+  every word of the passage this share supports, not a few of them. The
+  doc is vouched for only when each word of its lines stating something is
+  quoted in a support. A comment is not evidence: a support quoted from a
+  comment only counts for nothing.
+`
+)
+
+// partsHeader is what every part asks, before the doc and its share.
+func partsHeader(s Settings) string {
+	if s.PartsMoveChecked {
+		return strings.Replace(partsTaskHeader, partsSupported, partsSupportedWhole, 1)
+	}
+	return partsTaskHeader
+}
+
+// partsTaskHeader is what every part asks, partsHeader says how it asks
+// for a support.
 const partsTaskHeader = `Kind: part
 
 This doc is too large to be judged whole against its sources, so it is judged
@@ -60,12 +84,7 @@ sources says something about, return one ` + "`claim`" + `:
   source's, with its path and lines; say why they disagree.
 - partial: the source bears on it but does not settle it; say in ` + "`why`" + ` what
   this share leaves out.
-- supported: the source says the same; quote both, the doc's words whole:
-  every word of the passage this share supports, not a few of them. The
-  doc is vouched for only when each word of its lines stating something is
-  quoted in a support. A comment is not evidence: a support quoted from a
-  comment only counts for nothing.
-
+` + partsSupported + `
 Say nothing of a passage this share does not speak to: it is not covered by
 this share, and another part may hold what does. Quote exactly, as the lines
 read, citing the line numbers shown here: a quote not found at the lines it
@@ -192,7 +211,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		if !answered {
 			for k, p := range plans {
-				if err := writePart(runDir, repo, names[k], p); err != nil {
+				if err := writePart(runDir, repo, names[k], p, partsHeader(s)); err != nil {
 					return "", nil, nil, nil, nil, err
 				}
 			}
@@ -222,7 +241,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		if verdictOf.dropped > 0 {
 			*findings = append(*findings, verdict.Finding{Rule: "claims-dropped", Where: sd.doc.Path, Level: "warn",
-				Message: fmt.Sprintf("%d claims of its parts quoted what is not at the lines they cite, or cited what their part did not hold: dropped, never read as an answer", verdictOf.dropped)})
+				Message: fmt.Sprintf("%d claims of its parts quoted what is not at the lines they cite, or cited what their part did not hold: dropped, never read as an answer (%s)", verdictOf.dropped, strings.Join(verdictOf.droppedWhy, "; "))})
 		}
 		at := head[:7]
 		patch, err := judgedInPartsPatch(sd.doc.Path, string(content), at)
@@ -363,7 +382,7 @@ func partsRoom(d *Doc, repo string) (room int, why string, err error) {
 	if err != nil {
 		return 0, "", err
 	}
-	room = taskMaxChars - len(partsTaskHeader) - len(numberedDoc(d.Path, string(content)))
+	room = taskMaxChars - len(partsTaskHeader) - (len(partsSupportedWhole) - len(partsSupported)) - len(numberedDoc(d.Path, string(content)))
 	if room < taskMaxChars/4 {
 		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
 	}
@@ -483,7 +502,7 @@ func numberedPiece(p string, lines []string, from, to int) string {
 }
 
 // writePart writes one part's question, and what it holds, to read its answer.
-func writePart(runDir, repo, name string, p partPlan) error {
+func writePart(runDir, repo, name string, p partPlan, header string) error {
 	dir := filepath.Join(runDir, "in", "parts", name)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -493,7 +512,7 @@ func writePart(runDir, repo, name string, p partPlan) error {
 		return err
 	}
 	var b strings.Builder
-	b.WriteString(partsTaskHeader)
+	b.WriteString(header)
 	b.WriteString(numberedDoc(p.Doc, string(content)))
 	for _, f := range p.Files {
 		text, err := showFile(repo, f.Path)
@@ -586,8 +605,9 @@ func (v *partsVerdict) commentOnly() []claim {
 // partsVerdict is what the parts of one doc said, once their quotes are checked.
 type partsVerdict struct {
 	kept       []claim
-	dropped    int // claims whose quotes are not at the lines they cite
-	unanswered int // parts with no answer
+	dropped    int      // claims whose quotes are not at the lines they cite
+	droppedWhy []string // why, the first few: part, lines and what is not there
+	unanswered int      // parts with no answer
 }
 
 // readParts reads each part's answer and keeps the claims whose quotes are
@@ -609,11 +629,24 @@ func readParts(runDir, repo string, names []string, plans []partPlan) (*partsVer
 		if err != nil {
 			return nil, err
 		}
+		drop := func(why string, args ...any) {
+			v.dropped++
+			if len(v.droppedWhy) < 3 {
+				v.droppedWhy = append(v.droppedWhy, fmt.Sprintf("part %d: ", k+1)+fmt.Sprintf(why, args...))
+			}
+		}
 		for _, a := range answers {
 			data, _ := yaml.Marshal(a.Value)
 			var c claim
-			if a.Kind != "claim" || yaml.Unmarshal(data, &c) != nil || !c.valid() || !quotedAt(string(doc), c.Lines, c.Quote) {
-				v.dropped++
+			switch {
+			case a.Kind != "claim":
+				drop("a %s, not a claim", a.Kind)
+				continue
+			case yaml.Unmarshal(data, &c) != nil || !c.valid():
+				drop("a claim lacking what its status needs")
+				continue
+			case !quotedAt(string(doc), c.Lines, c.Quote):
+				drop("%q is not at the doc's %s", clip(c.Quote), c.Lines)
 				continue
 			}
 			if c.Source != nil {
@@ -625,8 +658,12 @@ func readParts(runDir, repo string, names []string, plans []partPlan) (*partsVer
 				if _, ok := sources[src]; !ok && held {
 					sources[src], _ = showFile(repo, src)
 				}
-				if !held || !quotedAt(sources[src], c.Source.Lines, c.Source.Quote) {
-					v.dropped++
+				if !held {
+					drop("%s, %s, is not in its share", src, c.Source.Lines)
+					continue
+				}
+				if !quotedAt(sources[src], c.Source.Lines, c.Source.Quote) {
+					drop("%q is not at %s, %s", clip(c.Source.Quote), src, c.Source.Lines)
 					continue
 				}
 				c.Source.Path = src
@@ -996,6 +1033,15 @@ func unsupported(content string, kept []claim) (lines []int, stating int) {
 		}
 	}
 	return lines, len(says)
+}
+
+// clip is a quote as a finding says it: its first 80 characters.
+func clip(q string) string {
+	q = strings.Join(strings.Fields(q), " ")
+	if r := []rune(q); len(r) > 80 {
+		return string(r[:79]) + "…"
+	}
+	return q
 }
 
 // hasWord says whether a text holds a letter or a digit.

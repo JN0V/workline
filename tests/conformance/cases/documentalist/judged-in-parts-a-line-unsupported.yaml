@@ -1,11 +1,12 @@
 case: documentalist/judged-in-parts-a-line-unsupported
-about: "When gardening, a doc too large to go whole is read in parts and nothing is found wrong, but one line stating something no part supports: `checked` stays, the header records the commit it was judged in parts at, the finding says which line, and the doc stays on the list for a person (#482)."
+about: "With parts-move-checked, when gardening, a doc too large to go whole is read in parts and nothing is found wrong, but one line stating something no part supports: `checked` stays, the header records the commit it was judged in parts at, the finding says which line, and the doc stays on the list for a person (#482)."
 given:
   repo: documented
   setup:
     - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && printf '\\n## Sessions\\n\\nSessions last a week.\\n' >> docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+  config: {roles: {documentalist: {settings: {parts-move-checked: true}}}}
   forge: {issues: []}
 run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/parts-support-line-10.sh"}
 expect:

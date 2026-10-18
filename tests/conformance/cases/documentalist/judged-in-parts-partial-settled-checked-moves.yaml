@@ -1,0 +1,15 @@
+case: documentalist/judged-in-parts-partial-settled-checked-moves
+about: "With parts-move-checked, a passage one part finds partial and another part supports is settled, not to be read together: that support quoting every word of the doc's one line stating something, `checked` moves (#482). The engine merges `partial` as ADR-0009 does."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "seq 1 3000 | sed 's/^/const b/' > src/auth/big.go && git commit -qam 'refactor(auth): make the big table constant'"
+  config: {roles: {documentalist: {settings: {parts-move-checked: true}}}}
+run: {role: documentalist, event: schedule, ai: "fake:parts-partial-but-supported"}
+expect:
+  status: pass
+  agent-calls: 2   # two parts; nothing to fix
+  no-findings: [{rule: suspect, where: docs/tech/auth.md}]
+  files: {"docs/tech/auth.md": {contains: "checked: 8d4fc13\njudged-in-parts: 8d4fc13\nverified: agent:documentalist\n", lacks: "two hours"}}

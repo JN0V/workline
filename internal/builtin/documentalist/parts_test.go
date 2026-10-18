@@ -306,6 +306,21 @@ func TestVouchFor(t *testing.T) {
 	}
 }
 
+// A part is asked to quote a passage whole only when `checked` may move
+// after parts (#482): off, its task is as it was.
+func TestPartsHeaderAsksWholeQuotesOnlyWhenOn(t *testing.T) {
+	off, on := partsHeader(Settings{}), partsHeader(Settings{PartsMoveChecked: true})
+	if off != partsTaskHeader || strings.Contains(off, "words whole") {
+		t.Errorf("off, the part's task changed:\n%s", off)
+	}
+	if !strings.Contains(on, "the doc's words whole") || strings.Contains(on, partsSupported) {
+		t.Errorf("on, the part is not asked to quote whole:\n%s", on)
+	}
+	if len(on)-len(off) != len(partsSupportedWhole)-len(partsSupported) {
+		t.Errorf("the room a part leaves counts the longer ask: %d more, want %d", len(on)-len(off), len(partsSupportedWhole)-len(partsSupported))
+	}
+}
+
 func TestLinesSaid(t *testing.T) {
 	for _, tc := range []struct {
 		lines []int
