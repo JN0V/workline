@@ -1,0 +1,34 @@
+case: product-owner/priority-placed-again-when-applied
+about: "The job that applies reads the issue again before it writes a priority: one a person gave a priority in another family since the run was judged gets nothing written, said; the others get theirs (ADR-0040, step 2)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: {in: labels, prefix: P}, acts: {order: {mode: act}}}
+  forge:
+    labels:
+      - {id: 1, title: P0, labels: []}
+      - {id: 2, title: P1, labels: []}
+      - {id: 3, title: P2, labels: []}
+      - {id: 4, title: P3, labels: []}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run:
+  role: product-owner
+  event: schedule
+  ai: fake:order-two
+  no-apply: true
+  then: resume
+  between:
+    issues:
+      - {id: 9, labels: [priority/low]}
+expect:
+  findings:
+    - {rule: done, where: "#9", message: "Set #9's priority to 1 (P0)"}
+    - {rule: priority-elsewhere, where: "#9", message: "its priority is in priority/low, not in P0 to P3 where the project keeps it: nothing is written on it, never in two places (found when applying)"}
+  forge:
+    issues:
+      - {id: 9, labels: [priority/low], comment-lacks: "priority:"}
+      - {id: 10, labels: [P1], comment-contains: "priority: 2"}

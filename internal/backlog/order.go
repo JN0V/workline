@@ -67,11 +67,11 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 }
 
 // Placeable says why a priority cannot be written on an issue where the
-// project keeps it (ADR-0040): the issue holds one in another place —
-// never written over, nor mirrored —, or no label of the family carries
-// the level; "" when it can.
-func Placeable(is forge.Issue, l int) (rule, why string) {
-	src := scale.Used.Priority
+// project keeps it, src (ADR-0040): the issue holds one in another place
+// — never written over, nor mirrored —, or no label of the family carries
+// the level; "" when it can. The plan asks it, and the applying job again
+// before it writes.
+func Placeable(src scale.Source, is forge.Issue, l int) (rule, why string) {
 	if there := src.Elsewhere(is.Labels); len(there) > 0 {
 		var here []string
 		for _, n := range is.Labels {

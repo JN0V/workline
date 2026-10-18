@@ -181,6 +181,9 @@ func (a *applier) where() (scale.Scheme, error) {
 // (docs/spec/backlog-acts.md, "Ordering"). Workline's own label is
 // created when missing; the forge's words all at once, ranked where the
 // forge ranks labels; a project's labels are there already (ADR-0040).
+// The issue is read again first: one that holds a priority in another
+// place now, or a family that no longer carries the level, gets nothing
+// written, said.
 func (a *applier) order(c backlog.Proposal) error {
 	where, err := a.where()
 	if err != nil {
@@ -188,10 +191,16 @@ func (a *applier) order(c backlog.Proposal) error {
 	}
 	src, f := where.Priority, a.forge
 	b := f.(forge.Backlog)
-	label, ok := src.Family.Label(c.Priority)
-	if !ok {
-		return fmt.Errorf("#%d: no %s label carries level %d", c.Issue, src.Family.Scale.Axis, c.Priority)
+	is, err := f.Issue(c.Issue)
+	if err != nil {
+		return err
 	}
+	if rule, why := backlog.Placeable(src, *is, c.Priority); rule != "" {
+		a.findings = append(a.findings, verdict.Finding{Rule: rule, Level: "warn", Where: fmt.Sprintf("#%d", c.Issue),
+			Message: why + " (found when applying)"})
+		return nil
+	}
+	label, _ := src.Family.Label(c.Priority)
 	create := []scale.Label{label}
 	if src.Words {
 		create = src.Family.Labels

@@ -1206,7 +1206,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		case c.Do == "order" && !scale.Priority.Valid(c.Priority):
 			return "priority-level", fmt.Sprintf("a priority is a level from 1, the most pressing, to %d", scale.Priority.Count())
 		case c.Do == "order":
-			if rule, why := Placeable(is, c.Priority); rule != "" {
+			if rule, why := Placeable(scale.Used.Priority, is, c.Priority); rule != "" {
 				return rule, why
 			}
 		case c.From != "" && (c.From != is.Milestone || !Released(repo, c.From)):
