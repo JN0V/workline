@@ -115,7 +115,7 @@ Qodana's baseline, a SARIF file giving new, unchanged and absent
 | Semgrep | `--baseline-commit`, and `semgrep ci` on a pull request: runs again on the baseline, in a git worktree, only the files and rules the head matched; drops head matches equal in rule, path (renames followed) and matched lines, counted one for one | "Cross-file analysis is not supported for diff-aware scans" | [CLI](https://docs.semgrep.dev/cli-reference), [CI jobs](https://docs.semgrep.dev/deployment/customize-ci-jobs), [Diff_scan.ml](https://github.com/semgrep/semgrep/blob/31729a1719c6e76ac8d41ec8fb9ab191621ee10f/src/osemgrep/cli_scan/Diff_scan.ml) |
 | ESLint | bulk suppressions (v9.24.0, 2025-04-04): `eslint-suppressions.json` holds "the number of violations for each rule and file", `error` rules only; `--prune-suppressions` | "if more violations are found for the same rule in the same file, ESLint will report **all** of them" | [suppressions](https://eslint.org/docs/latest/use/suppressions), [blog](https://eslint.org/blog/2025/04/introducing-bulk-suppressions/) |
 | Ruff | none: `--add-noqa` or `--add-ignore` writes a comment on each violating line | baselines asked in [ruff#1149](https://github.com/astral-sh/ruff/issues/1149), open | [linter](https://github.com/astral-sh/ruff/blob/main/docs/linter.md) |
-| Trunk | hold-the-line: each modified file linted twice, the upstream in a "shadow" tree, cached, both "using your current linter config"; else a filter on modified lines | post of 2022-03-07; its docs now ask for a login | [blog](https://trunk.io/blog/trunk-check-hold-the-line) |
+| Trunk | hold-the-line: each modified file linted twice, the upstream in a "shadow" tree, cached, both "using your current linter config"; else a filter on modified lines | the post is of 2022-03-07; today's docs say it "only lints your git diffs" | [blog](https://trunk.io/blog/trunk-check-hold-the-line), [docs](https://docs.trunk.io/code-quality/overview/deal-with-existing-issues) |
 
 ## AI triage, measured
 
@@ -145,7 +145,10 @@ the head's config counts none on old code.
 
 ## What this means for workline
 
-Findings for the inspector's ADR, not decisions.
+Findings, not decisions: the maintainer took each in
+[ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md).
+Which tools a project needs, and AI in their place:
+[inspector-coverage.md](inspector-coverage.md).
 
 **(a) Annotations or code scanning alerts, on GitHub.**
 
