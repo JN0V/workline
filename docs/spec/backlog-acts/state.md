@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/opening.go, internal/backlog/acts.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: f3b0df0d
+checked: d38d50b1
 verified: agent:claude-code
 ---
 # The issue's state
