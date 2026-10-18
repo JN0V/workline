@@ -1,6 +1,6 @@
 # ADR-0049: The inspector judges the new findings of the project's own tools
 
-- **Status:** accepted; not built ([the build plan](#build-plan))
+- **Status:** accepted; step 1 built ([the build plan](#build-plan))
 - **Date:** 2026-10-18
 - **Decided by:** the maintainer, on 2026-10-18: the direction a panel of
   four argued (users, principles, prior art, skeptic), and the three
@@ -147,7 +147,10 @@
 
 ## Build plan
 
-1. [#244]'s detection and doctor warning.
+1. [#244]'s detection and doctor warning. Built: the languages are told
+   by trunk-io/plugins' file types, the table its tools are keyed by,
+   with Linguist's `.gitattributes` overrides
+   ([languages](../languages.md)).
 2. The engine's base-versus-head comparison on a merge request;
    thresholds on new findings only.
 3. Posting: annotations plus a summary on GitHub, Code Quality on GitLab.

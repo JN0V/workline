@@ -45,6 +45,9 @@ gates:
   are decided before the gate runs, never while reading the results.
 - `enforce` and `warn` before `block` work as in the role contract; baselines
   with expiry dates are not built yet, there or here.
+- `workline doctor` counts the tool a check runs as reading its languages,
+  and names the check to add for a language none reads
+  ([languages](../languages.md)).
 
 ## Three outcomes, not two
 
