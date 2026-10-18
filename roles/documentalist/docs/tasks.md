@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/parts.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/counts.go, internal/builtin/documentalist/waiting.go]
-checked: 178672f7
+checked: 721c7b37
 verified: agent:claude-code
 ---
 # Documentalist — the agent's tasks
@@ -23,6 +23,9 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   ([ADR-0012](../../../docs/adr/0012-a-doc-is-judged-against-its-sources-whole.md)).
 - A doc far behind, whose changes do not fit: its sources as they are now
   alone, or [in parts](#judged-in-parts) when they do not fit either.
+- Sources that do not fit, though what changed in them does: what changed
+  alone on a merge request; when gardening, [in parts](#judged-in-parts)
+  against them all.
 - The commits its `checked` must name.
 
 ### How many
@@ -98,6 +101,20 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
 - **Why**: judged on each merge request touching its sources, one doc
   cost 6 or 7 calls, 100k to 130k tokens in, a merge request; the
   gardening judges it once.
+- **A doc judged on its change alone**
+  ([#462](https://github.com/JN0V/workline/issues/462)): its sources do
+  not fit a task, what changed in them does. A merge request judges it on
+  that change, which leaves its other claims unread; gardening reads it
+  in parts against all its sources, as they are now.
+  - A `judged` that change earned does not hold it; a `judged-in-parts`
+    since its sources last changed does.
+  - One parts cannot read ([below](#not-judged-in-parts)) is judged on
+    its change, as before.
+  - A record kept for it on a merged merge request is not written: the
+    parts record when it was read
+    ([gardening](gardening.md#records-kept-on-merged-merge-requests)).
+  - What a night then costs:
+    [ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone).
 - `parts-always`, set only to measure, judges in parts on any event.
 
 ### The parts
@@ -173,5 +190,9 @@ Left to a person, saying why:
   found is kept, it is judged again later.
 
 At most `parts-max-per-run` parts (16) are asked in a run; a doc past it
-waits for the next round. A run asking parts asks nothing else.
+waits for the next round. A run asking parts asks nothing else. The docs
+read longest ago go first, by the later of their `checked` and
+`judged-in-parts`: a doc read last night waits behind the others, not
+first by name each night its sources change
+([#462](https://github.com/JN0V/workline/issues/462)).
 

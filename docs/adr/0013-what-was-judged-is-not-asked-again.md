@@ -173,7 +173,8 @@ Not chosen, for now: the agent reading the doc's claims against the code
 as it is now, not only the diff, before saying nothing is wrong. It would
 vouch for more, but would cost a read of each such doc against its sources
 every night one changes. Left as a follow-up; the doc still waits for a
-person, as before.
+person, as before. *(Built 2026-10-18, when gardening, in parts:
+[ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone).)*
 
 ## Amendment (2026-10-14): a doc waits while a merge request holds it
 

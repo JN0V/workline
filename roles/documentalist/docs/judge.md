@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/judge.go, internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/words.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/cite.go, internal/builtin/documentalist/comments.go]
-checked: 178672f7
+checked: 721c7b37
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -131,7 +131,9 @@ one place the engine had already named (step 4). Now:
   was read", then `read:` what the task gave (what changed in a source
   since `checked`, the doc it follows) and `not read:` the rest. Never
   "nothing found wrong" of what was not read
-  ([#120](https://github.com/JN0V/workline/issues/120)).
+  ([#120](https://github.com/JN0V/workline/issues/120)). Gardening reads
+  such a doc [in parts](tasks.md#judged-in-parts) instead, when parts
+  can ([#462](https://github.com/JN0V/workline/issues/462)).
 - A doc judged in parts, once the fix is judged: the places it fixed, or
   that it changed nothing of what the parts found.
 - The gardening pull request (gardening: the scheduled run, nightly or

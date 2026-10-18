@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/dedupe.go, internal/builtin/documentalist/condense.go, internal/builtin/documentalist/mergecard.go, internal/builtin/documentalist/waiting.go]
-checked: 178672f7
+checked: 721c7b37
 verified: agent:claude-code
 ---
 # Documentalist — the gardening tasks
@@ -101,6 +101,10 @@ there, not committed
   ([the merge policy](../../../docs/merge-policy-normal.md)).
 - **Otherwise the doc is judged again**, its finding naming the file no
   longer as judged.
+- **Not for a doc read in parts that night**: its sources too large to go
+  whole, its record says only what changed was read; it is
+  [read in parts](tasks.md#judged-in-parts) instead
+  ([#462](https://github.com/JN0V/workline/issues/462)).
 - **The cost**: one listing of the merge requests merged since the oldest
   such commit, and one read of the comments of each one a doc points to
   ([ADR-0010, amended](../../../docs/adr/0010-docs-judged-on-the-merge-request-and-by-gardening.md#amendment-2026-10-17-the-commit-a-merge-request-became-stands-for-its-record)).

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: 178672f7
+checked: 721c7b37
 verified: agent:claude-code
 ---
 # Documentalist — at the push, the release and the adoption
@@ -42,7 +42,9 @@ took a commit on their branch, 41 of 42 in two weeks
 - **The next push does not judge it again** while the doc and its sources
   stay the same; a change to either has it judged again.
 - **Once merged, gardening writes `judged`** on the default branch
-  ([records](gardening.md#records-kept-on-merged-merge-requests)).
+  ([records](gardening.md#records-kept-on-merged-merge-requests)); for a
+  doc whose sources are too large to go whole, it reads it in parts
+  instead ([#462](https://github.com/JN0V/workline/issues/462)).
 - **A real fix is one commit**, naming the doc: "docs: bring
   docs/tech/auth.md in line with the code". A move of `checked` too.
 - **A fork's merge request** keeps its record too.
