@@ -59,6 +59,10 @@ type Settings struct {
 	JudgeInParts   bool `json:"judge-in-parts"`
 	PartsMax       int  `json:"parts-max"`
 	PartsMaxPerRun int  `json:"parts-max-per-run"`
+	// PartsMoveChecked moves the `checked` of a doc judged in parts when
+	// they found nothing wrong and every line stating something is
+	// supported (#482); off, such a doc waits for a person.
+	PartsMoveChecked bool `json:"parts-move-checked"`
 	// For measuring whole against parts on the same doc (tests/evaluation):
 	// PartsAlways judges in parts even a doc that fits whole, PartChars
 	// caps the sources' share of a part, so that small sources still split.
@@ -1088,6 +1092,7 @@ func Pre(runDir, repo string) int {
 	// `parts-always`, for measuring, judges in parts on any event.
 	partsNow := os.Getenv("WORKLINE_EVENT") == "schedule" || s.PartsAlways
 	inParts := map[string]string{}
+	vouchedInParts := map[string]string{} // of them, those whose `checked` moves (#482)
 	partsAsked := 0
 	var partsFallback []intent.Intention
 	inPartsTask := func(docs map[string]*suspectDoc) error {
@@ -1118,13 +1123,16 @@ func Pre(runDir, repo string) int {
 			}
 		}
 		readLongestAgoFirst(cands, repo)
-		t, j, fb, ip, err := partsFor(runDir, repo, cands, s, &partsAsked, &findings)
+		t, j, fb, ip, vp, err := partsFor(runDir, repo, cands, s, &partsAsked, &findings)
 		if err != nil {
 			return err
 		}
 		task, judged, partsFallback = t, j, append(partsFallback, fb...)
 		for p, at := range ip {
 			inParts[p] = at
+		}
+		for p, at := range vp {
+			vouchedInParts[p] = at
 		}
 		if task != "" {
 			return os.WriteFile(filepath.Join(runDir, "in", "task-kind"), []byte("fix\n"), 0o644)
@@ -1158,6 +1166,7 @@ doc when its reader really gained something to know.
 	if n, err := strconv.Atoi(os.Getenv("WORKLINE_OPEN_MERGE_REQUESTS")); err == nil && gardening &&
 		s.MaxOpenMergeRequests > 0 && n >= s.MaxOpenMergeRequests {
 		task, judged, stale, gardening, inParts, partsFallback, partsAsked = "", nil, nil, false, map[string]string{}, nil, 0
+		vouchedInParts = map[string]string{}
 		os.RemoveAll(filepath.Join(runDir, "in", "parts"))
 		var kept []intent.Intention // derived blocks too would open one more merge request
 		for _, f := range fallback {
@@ -1197,6 +1206,11 @@ doc when its reader really gained something to know.
 	}
 	if len(inParts) > 0 { // their fixes are judged as fixes in parts: `checked` stays
 		if err := writeYAML(filepath.Join(runDir, "in", "in-parts.yaml"), inParts); err != nil {
+			return fail(err)
+		}
+	}
+	if len(vouchedInParts) > 0 { // the engine's own patch moves their `checked` (#482)
+		if err := writeYAML(filepath.Join(runDir, "in", vouchedFile), vouchedInParts); err != nil {
 			return fail(err)
 		}
 	}
@@ -1678,9 +1692,24 @@ func Post(runDir, repo string) int {
 	}
 	var refused, reported, withheld []verdict.Finding
 	var judgedFix *judgedFixes
-	var readerOutcome map[string]string // the pages read for their reader (#256), and what became of each
-	var readerClaims map[string][]claim // what a reader would miss or skip, by page
-	inParts := map[string]string{}      // the docs judged in parts, by the commit they were judged at
+	var readerOutcome map[string]string   // the pages read for their reader (#256), and what became of each
+	var readerClaims map[string][]claim   // what a reader would miss or skip, by page
+	inParts := map[string]string{}        // the docs judged in parts, by the commit they were judged at
+	vouchedInParts := map[string]string{} // of them, those whose `checked` the engine moves (#482)
+	if data, err := os.ReadFile(filepath.Join(runDir, "in", vouchedFile)); err == nil {
+		if err := yaml.Unmarshal(data, &vouchedInParts); err != nil {
+			return fail(err)
+		}
+	}
+	// Only while the engine's own patch moving it is to be applied: a set
+	// of proposals refused whole takes it out, and the doc stays listed.
+	for p := range vouchedInParts {
+		if !slices.ContainsFunc(intents, func(in intent.Intention) bool {
+			return in.Kind == "patch" && isFallback(in, fallback) && slices.Contains(intent.PatchFiles(in.Value), p)
+		}) {
+			delete(vouchedInParts, p)
+		}
+	}
 	patched, partly := map[string]bool{}, map[string]bool{}
 	resolved := map[string]bool{} // "rule where" of budget problems a condense patch resolves
 	var mergedPair []string       // the two docs a duplicates patch merged
@@ -1820,6 +1849,11 @@ func Post(runDir, repo string) int {
 	var kept []verdict.Finding
 	said := map[string]bool{}
 	for _, f := range findings {
+		if i := strings.Index(f.Message, checkedMovesTo); i >= 0 && vouchedInParts[f.Where] == "" {
+			// The engine's patch is not applied: a set of proposals refused
+			// whole takes it out.
+			f.Message = f.Message[:i] + "every line stating something supported by its sources, but the engine's patch moving `checked` is not among what this run applies (a set of proposals refused whole takes it out), so it stays: a person reads it whole, then moves `checked`)"
+		}
 		if _, ok := inParts[f.Where]; ok && strings.Contains(f.Message, partsFixAsked) {
 			// What the fix call made of what the parts found, now known.
 			if n := judgedFix.placesSaid(f.Where); n != "" {
@@ -1840,7 +1874,7 @@ func Post(runDir, repo string) int {
 				}
 			}
 		}
-		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && patched[f.Where] || resolved[f.Rule+" "+f.Where] ||
+		if (f.Rule == "suspect" || f.Rule == "stale" || f.Rule == "due" || f.Rule == "no-sources") && (patched[f.Where] || vouchedInParts[f.Where] != "") || resolved[f.Rule+" "+f.Where] ||
 			f.Rule == "duplicate" && len(mergedPair) == 2 && contains(mergedPair, f.Where) && strings.Contains(f.Message, " "+otherOf(mergedPair, f.Where)+" ") {
 			continue // judged and patched, or condensed, in this run
 		}
@@ -1868,7 +1902,7 @@ func Post(runDir, repo string) int {
 	kept = append(kept, withheld...)
 	kept = append(kept, comments...)
 	if proposedPatch(intents, fallback) || len(fallback) > 0 {
-		outcome := outcomes(judged, inParts, patched, partly, judgedFix, readOf)
+		outcome := outcomes(judged, inParts, vouchedInParts, patched, partly, judgedFix, readOf)
 		if readerOutcome != nil {
 			outcome = readerOutcome
 		}
@@ -2427,7 +2461,7 @@ func notVouched(fixed string, partly bool, read string) string {
 // unverified or checked. readOf says what the task gave of a doc whose
 // sources did not all go whole, and what it did not ("" when they did):
 // nothing is said found wrong of what was not read.
-func outcomes(judged map[string]map[string]string, inParts map[string]string, patched, partly map[string]bool, fix *judgedFixes, readOf func(string) string) map[string]string {
+func outcomes(judged map[string]map[string]string, inParts, vouched map[string]string, patched, partly map[string]bool, fix *judgedFixes, readOf func(string) string) map[string]string {
 	out := map[string]string{}
 	fixed := func(p string) string {
 		if s := fix.placesSaid(p); s != "" {
@@ -2437,6 +2471,8 @@ func outcomes(judged map[string]map[string]string, inParts map[string]string, pa
 	}
 	for p := range inParts {
 		switch f := fixed(p); {
+		case vouched[p] != "":
+			out[p] = "judged in parts, nothing found wrong, every line stating something supported by its sources; `checked` moved"
 		case f != "":
 			out[p] = "judged in parts, " + f + "; `checked` not moved" + fix.examplesOutcome(p)
 		case judged[p] != nil:

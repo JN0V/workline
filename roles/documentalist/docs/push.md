@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
-checked: 721c7b37
+checked: a5e57aa5
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -25,7 +25,7 @@ moves to the commit the task gave.
   docs are reported, left for gardening
   ([ADR-0007](../../../docs/adr/0007-docs-reviewed-after-the-code-before-the-push.md)).
 - One too large to be judged whole is left for the next gardening, which
-  judges it [in parts](tasks.md#judged-in-parts), there as with
+  judges it [in parts](parts.md), there as with
   `workline docs` and at the release
   ([#458](https://github.com/JN0V/workline/issues/458)).
 

@@ -1,0 +1,16 @@
+case: documentalist/judged-in-parts-every-line-supported-turned-off
+about: "A project that turns parts-move-checked off keeps the `checked` of a doc read in parts, even when every line stating something is supported: it waits for a person, as before #482."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+  config: {roles: {documentalist: {settings: {parts-move-checked: false}}}}
+run: {role: documentalist, event: schedule, ai: "cmd:sh $FIXTURES/agents/parts-support-line-10.sh"}
+expect:
+  status: pass
+  agent-calls: 2
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "nothing found wrong. `checked` stays: nobody read it whole against its sources"}]
+  files:
+    "docs/tech/auth.md": {contains: "checked: 845334e\njudged-in-parts: 91523a1\n---\n", lacks: "verified:"}

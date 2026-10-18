@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off, then measured again, on; the shipped engine measured)
 - **Date:** 2026-09-29
 
 ## Context
@@ -257,3 +257,128 @@ they are now ([#462](https://github.com/JN0V/workline/issues/462)):
   `parts-max-per-run`, or turns `judge-in-parts` off.
 - **Past the caps**, a doc waits for a later night, named; one whose
   change no merge request judged is not judged on that change meanwhile.
+
+## Amendment (2026-10-18): `checked` after parts, measured, off
+
+Decided by the maintainer on
+[#482](https://github.com/JN0V/workline/issues/482), option 1: measure,
+then move `checked` when the engine sees every line stating something
+supported — no passage contradicted, partial or uncovered, no claim
+dropped, no note — adopted only if five evaluation runs in parts hold
+[ADR-0014](0014-checked-is-earned-by-what-was-read.md#4-acceptance-written-before-it-is-measured)
+step 4's bars.
+
+- **Built, behind `parts-move-checked`**, off by default. The engine
+  moves `checked`, never the fix, when:
+  - the parts found nothing wrong, in conflict or to be read together; a
+    partial another part's support settles is settled, as the merge
+    above reads it;
+  - no claim was dropped (a part's note is one), no line is uncovered,
+    no source is a doc, which no part reads;
+  - each word of every line stating something is quoted, where it
+    stands, in a part's support from the code. Headings, fences, derived
+    blocks, HTML comments and link definitions state nothing; a code
+    example does. A quote of a few words vouches for those words, so a
+    part is asked to quote a supported passage whole.
+- **Then** `checked` and `judged-in-parts` name that commit, `verified`
+  the documentalist; the doc leaves the list for a person. Otherwise the
+  finding says what kept it ("no part supports line 14").
+- **Measured** on 2026-10-18, engine 38fac2d1, Sonnet 5.5:
+  `finds-planted-defects-in-parts` with a clean control,
+  `docs/tech/defaults.md` (three lines stating something, one source,
+  one part), beside the doc with four defects planted:
+
+  | Run | Score | Tokens in / out | The control | Planted falsehoods |
+  |---|---|---|---|---|
+  | 1 | 19/19 | 29,074 / 5,668 | `checked` moved | none vouched for |
+  | 2 | 17/19 | 28,763 / 4,551 | stays: a claim dropped | none vouched for; one left, the doc unvouched |
+  | 3 | 19/19 | 29,542 / 6,038 | `checked` moved | none vouched for |
+  | 4 | 18/19 | 30,361 / 5,901 | stays: a fix asked, nothing changed | none vouched for |
+  | 5 | 19/19 | 29,700 / 5,297 | `checked` moved | none vouched for |
+
+  147,440 tokens in, the five together: 4.9k a call, as on 10-17 (24.3k
+  for five calls, one doc). Run 2's row says `+changes`: docs edited
+  while it ran, not the engine.
+- **The bars**: no `checked` over a planted falsehood, held in 5 runs of
+  5; the control ends `checked` in every run, not held: 3 of 5. So it
+  stays off.
+- **Why the control stayed**:
+  - run 2: a part's claim was dropped, its quote not at the lines it
+    cited; the finding did not say which. `claims-dropped` now names the
+    part, the quote and where it was looked for.
+  - run 4: a part found the control wanting, and the fix changed
+    nothing. Its last sentence, "A field the configuration sets is kept
+    as it is", is not exact: a field set to zero gets its default. It is
+    rewritten for the next measure.
+- **Next**: five runs again on the control rewritten, about 150k tokens;
+  on by default if the bars hold.
+- **The price, once on**: a doc fixed in parts still waits for a person;
+  a line no code can support (a link, a word about the project) keeps
+  the doc for a person; the weekly sample cannot read such a doc whole,
+  so it lists it for a person
+  ([ADR-0014, amended](0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-18-checked-earned-in-parts)).
+
+## Amendment (2026-10-18): `checked` after parts, measured again, on
+
+The maintainer asked for the measure again on the control made exact
+([#482](https://github.com/JN0V/workline/issues/482)): its last sentence
+taken out, "`Load` gives each field of `Config` left at its zero value
+its default" in its place.
+
+- **Measured** the same day, engine d7bd927f, Sonnet 5.5, five runs
+  under the same guard:
+
+  | Run | Score | Tokens in / out | The control | Planted falsehoods |
+  |---|---|---|---|---|
+  | 1 | 18/19 | 28,951 / 4,847 | `checked` moved | none vouched for; the session TTL left, the doc unvouched |
+  | 2 | 17/19 | 29,282 / 5,978 | `checked` moved | none vouched for; the count left, the doc unvouched |
+  | 3 | 19/19 | 29,278 / 5,291 | `checked` moved | none vouched for |
+  | 4 | 18/19 | 29,948 / 5,308 | `checked` moved | none vouched for; the session TTL left, the doc unvouched |
+  | 5 | 19/19 | 29,584 / 6,602 | `checked` moved | none vouched for |
+
+  147,043 tokens in, the five together.
+- **The bars held**: no `checked` over a planted falsehood, 5 of 5; the
+  control `checked` in every run, 5 of 5. **`parts-move-checked` is on
+  by default**; a project that will not have it turns it off.
+- **To watch**: the fix's recall on the planted doc. All four defects
+  were fixed in 6 runs of these ten, where the eight runs of 10-17, the
+  part not yet asked to quote whole, fixed all four in each. The
+  sentence true only across two sources was left three times, the
+  count once; none was vouched for, the doc staying suspect for a
+  person.
+- **Why the sentence was left, and the fix** (found offline, no tokens):
+  asked to quote a passage whole, the store's part quoted "Each one
+  lasts the configured session TTL, 24 hours by default" and cited lines
+  23-24, but "Each" ends line 22. The quote was not at the lines cited,
+  so the claim saying what was wrong was dropped before the fix, which
+  never saw it: runs 1 and 4 of this measure, by their `claims-dropped`
+  findings; run 2 of the first dropped two claims too, unexplained then.
+  A part's quote is now placed where it stands when it runs across the
+  line break into its range, from the line before or into the line
+  after, one line either way and no more. Replayed with a scripted agent
+  (`judged-in-parts-quote-from-the-line-before`), the claim is kept and
+  reaches the fix as lines 22-24. The count's miss (run 2) is the fix's
+  own patch citing a heading a line off, as before this change.
+
+## Amendment (2026-10-18): the shipped engine, measured
+
+The engine on by default, a part's quote placed one line either side
+(above), had not been measured; the maintainer asked for it. Engine
+3f79e01a, Sonnet 5.5, five runs under the same guard:
+
+| Run | Score | Tokens in / out | The control | Planted falsehoods | All four defects fixed |
+|---|---|---|---|---|---|
+| 1 | 18/19 | 29,379 / 5,186 | `checked` moved | none vouched for | yes |
+| 2 | 19/19 | 29,416 / 5,154 | `checked` moved | none vouched for | yes |
+| 3 | 19/19 | 29,275 / 5,045 | `checked` moved | none vouched for | yes |
+| 4 | 19/19 | 28,409 / 5,020 | `checked` moved | none vouched for | yes |
+| 5 | 19/19 | 29,019 / 5,648 | `checked` moved | none vouched for | yes |
+
+- 145,498 tokens in, the five together; no claim dropped in any run.
+- **The bars held**, 5 of 5 each: it stays on by default.
+- **All four defects fixed in 5 runs of 5**, where the two measures
+  before the placement fixed them in 6 of 10: the session TTL, left
+  three times there by a claim dropped, was fixed in every run.
+- Run 1's point lost is its status: the fix also proposed an issue,
+  which the case's repository, with no forge set, cannot keep. The doc
+  was fixed and graded all the same.

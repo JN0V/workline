@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml]
-checked: 721c7b37
+checked: 7a57c53a
 verified: agent:claude-code
 judged-in-parts: c7e1e98
 ---
@@ -38,7 +38,7 @@ documentalist runs before the release tool tags.
   parts, since its sources last changed, waits for a person and does not
   block.
 - **One too large to be judged whole** blocks until the next gardening
-  judges it [in parts](tasks.md#judged-in-parts), or a person moves
+  judges it [in parts](parts.md), or a person moves
   `checked`.
 - **A shallow clone**, which may lack the tag, blocks (`shallow-clone`).
 - **Each doc due at the release** is `due`, and becomes the `propagate`

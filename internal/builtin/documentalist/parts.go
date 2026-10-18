@@ -6,9 +6,11 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/JN0V/workline/internal/intent"
 	"github.com/JN0V/workline/internal/verdict"
@@ -20,7 +22,9 @@ import (
 // files, and answers with claims about the passages its share speaks to.
 // The engine asks the parts; pre, run again, checks their quotes, puts them
 // together without AI, and asks one last call to fix what they found wrong.
-// `checked` does not move: nobody read the doc whole against its sources.
+// `checked` moves only when the parts found nothing wrong and the engine
+// sees every line stating something supported (vouchFor, #482); a fix
+// never moves it: the agent fixing saw only the parts' excerpts.
 
 // Defaults, when the project sets none.
 const (
@@ -42,7 +46,31 @@ type partPlan struct {
 	Files []partFile `yaml:"files"`
 }
 
-// partsTaskHeader is what every part asks, before the doc and its share.
+// partsSupported is how a part says a passage is supported; with
+// parts-move-checked, partsSupportedWhole asks it to quote the passage's
+// words whole, which the engine needs to see every line supported (#482).
+const (
+	partsSupported = `- supported: the source says the same; quote both. A comment is not
+  evidence: a support quoted from a comment only counts for nothing.
+`
+	partsSupportedWhole = `- supported: the source says the same; quote both, the doc's words whole:
+  every word of the passage this share supports, not a few of them. The
+  doc is vouched for only when each word of its lines stating something is
+  quoted in a support. A comment is not evidence: a support quoted from a
+  comment only counts for nothing.
+`
+)
+
+// partsHeader is what every part asks, before the doc and its share.
+func partsHeader(s Settings) string {
+	if s.PartsMoveChecked {
+		return strings.Replace(partsTaskHeader, partsSupported, partsSupportedWhole, 1)
+	}
+	return partsTaskHeader
+}
+
+// partsTaskHeader is what every part asks, partsHeader says how it asks
+// for a support.
 const partsTaskHeader = `Kind: part
 
 This doc is too large to be judged whole against its sources, so it is judged
@@ -56,9 +84,7 @@ sources says something about, return one ` + "`claim`" + `:
   source's, with its path and lines; say why they disagree.
 - partial: the source bears on it but does not settle it; say in ` + "`why`" + ` what
   this share leaves out.
-- supported: the source says the same; quote both. A comment is not
-  evidence: a support quoted from a comment only counts for nothing.
-
+` + partsSupported + `
 Say nothing of a passage this share does not speak to: it is not covered by
 this share, and another part may hold what does. Quote exactly, as the lines
 read, citing the line numbers shown here: a quote not found at the lines it
@@ -147,22 +173,23 @@ func leftForGardening(docs map[string]*suspectDoc, repo string, s Settings, find
 // the project turned it off. Asked first (no WORKLINE_PARTS), it writes each
 // part's question under in/parts; run again with the parts answered, it puts
 // their claims together, and returns the fix task, the docs it judges, the
-// header each doc gains, and the docs judged in parts, by the commit they
-// were judged at. Each doc's finding says what became of it (sd.note).
-func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, findings *[]verdict.Finding) (task string, judged map[string]map[string]string, fallback []intent.Intention, inParts map[string]string, err error) {
+// header each doc gains, the docs judged in parts, by the commit they were
+// judged at, and those of them whose `checked` moves to it (#482). Each
+// doc's finding says what became of it (sd.note).
+func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, findings *[]verdict.Finding) (task string, judged map[string]map[string]string, fallback []intent.Intention, inParts, vouched map[string]string, err error) {
 	answered := os.Getenv("WORKLINE_PARTS") == "answered"
 	partsMax, perRun := orInt(s.PartsMax, partsMaxDefault), orInt(s.PartsMaxPerRun, partsMaxPerRunDefault)
 	head, err := git(repo, "rev-parse", "HEAD")
 	if err != nil {
-		return "", nil, nil, nil, err
+		return "", nil, nil, nil, nil, err
 	}
 	var fixes strings.Builder
-	judged, inParts = map[string]map[string]string{}, map[string]string{}
+	judged, inParts, vouched = map[string]map[string]string{}, map[string]string{}, map[string]string{}
 	partial := map[string][]partialCite{}
 	for i, sd := range cands {
 		plans, why, err := planParts(sd.doc, repo, s.PartChars)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return "", nil, nil, nil, nil, err
 		}
 		switch {
 		case why != "":
@@ -184,8 +211,8 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		if !answered {
 			for k, p := range plans {
-				if err := writePart(runDir, repo, names[k], p); err != nil {
-					return "", nil, nil, nil, err
+				if err := writePart(runDir, repo, names[k], p, partsHeader(s)); err != nil {
+					return "", nil, nil, nil, nil, err
 				}
 			}
 			sd.note = fmt.Sprintf("(judged in parts: %d parts asked)", len(plans))
@@ -193,7 +220,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		verdictOf, err := readParts(runDir, repo, names, plans)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return "", nil, nil, nil, nil, err
 		}
 		if verdictOf.unanswered == len(plans) && os.Getenv("WORKLINE_AI") == "none" {
 			sd.note = "(too large to be judged whole, and judged in parts only with an agent: a person judges it)"
@@ -205,20 +232,21 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		content, err := os.ReadFile(filepath.Join(repo, sd.doc.Path))
 		if err != nil {
-			return "", nil, nil, nil, err
+			return "", nil, nil, nil, nil, err
 		}
-		if u := uncovered(string(content), verdictOf.kept); u != "" {
+		u := uncovered(string(content), verdictOf.kept)
+		if u != "" {
 			*findings = append(*findings, verdict.Finding{Rule: "uncovered", Where: sd.doc.Path,
 				Message: u + ", which no part of its sources says anything of: renamed or gone from the code, or a source missing from its header; read those lines against the code"})
 		}
 		if verdictOf.dropped > 0 {
 			*findings = append(*findings, verdict.Finding{Rule: "claims-dropped", Where: sd.doc.Path, Level: "warn",
-				Message: fmt.Sprintf("%d claims of its parts quoted what is not at the lines they cite, or cited what their part did not hold: dropped, never read as an answer", verdictOf.dropped)})
+				Message: fmt.Sprintf("%d claims of its parts quoted what is not at the lines they cite, or cited what their part did not hold: dropped, never read as an answer (%s)", verdictOf.dropped, strings.Join(verdictOf.droppedWhy, "; "))})
 		}
 		at := head[:7]
 		patch, err := judgedInPartsPatch(sd.doc.Path, string(content), at)
 		if err != nil {
-			return "", nil, nil, nil, err
+			return "", nil, nil, nil, nil, err
 		}
 		entry := verdictOf.fixEntry(sd.doc.Path, string(content), repo)
 		partial[sd.doc.Path] = verdictOf.partialCites()
@@ -237,7 +265,21 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 				}
 			}
 		}
+		dropSaid := false // what keeps `checked` from moving says the claims dropped
 		switch {
+		case entry == "" && s.PartsMoveChecked:
+			why, vouch, err := vouchFor(sd.doc, string(content), at, u, verdictOf, repo)
+			if err != nil {
+				return "", nil, nil, nil, nil, err
+			}
+			if why == "" {
+				patch = vouch
+				vouched[sd.doc.Path] = at
+				sd.note = "(" + summary + ", nothing found wrong, and " + checkedMovesTo + at + ")"
+				break
+			}
+			dropSaid = verdictOf.dropped > 0
+			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: " + why + ". It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		case entry == "":
 			sd.note = "(" + summary + ", nothing found wrong. `checked` stays: nobody read it whole against its sources. It is not put before an agent again until one of them changes; a person reads it whole, then moves `checked`)"
 		case fixes.Len()+len(entry)+len(fixTaskHeader)+len(citeTask) > taskMaxChars:
@@ -253,7 +295,7 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		// said, for a person. The doc is recorded all the same: asked again
 		// each night, its parts cost as much to the same end (ADR-0014, step
 		// 4: 0.23M to 0.32M tokens a night); a source changing asks again.
-		if verdictOf.dropped > 0 {
+		if verdictOf.dropped > 0 && !dropSaid {
 			sd.note = strings.TrimSuffix(sd.note, ")") + "; but some claims were dropped: a person reads it whole)"
 		}
 		fallback = append(fallback, intent.Intention{Kind: "patch", Value: patch})
@@ -269,16 +311,25 @@ func partsFor(runDir, repo string, cands []*suspectDoc, s Settings, total *int, 
 		}
 		if len(partial) > 0 {
 			if err := writeYAML(filepath.Join(runDir, "in", partialFile), partial); err != nil {
-				return "", nil, nil, nil, err
+				return "", nil, nil, nil, nil, err
 			}
 		}
 	}
-	return task, judged, fallback, inParts, nil
+	return task, judged, fallback, inParts, vouched, nil
 }
 
 // partialFile holds, for each doc whose fix after parts is asked, where a
 // part judged a passage partial (#467).
 const partialFile = "partial.yaml"
+
+// checkedMovesTo is what the finding of a doc whose parts vouched for it
+// says, before the commit; post says otherwise when the engine's patch is
+// not applied (#482).
+const checkedMovesTo = "every line stating something supported by its sources: `checked` moves to "
+
+// vouchedFile holds the docs judged in parts whose `checked` the engine's
+// own patch moves, by the commit it moves to (#482).
+const vouchedFile = "vouched-in-parts.yaml"
 
 // partialCite is a passage of a doc a part judged partial, no part finding
 // those lines wrong, and the source lines it read them against: the doc's
@@ -336,7 +387,7 @@ func partsRoom(d *Doc, repo string) (room int, why string, err error) {
 	if err != nil {
 		return 0, "", err
 	}
-	room = taskMaxChars - len(partsTaskHeader) - len(numberedDoc(d.Path, string(content)))
+	room = taskMaxChars - len(partsTaskHeader) - (len(partsSupportedWhole) - len(partsSupported)) - len(numberedDoc(d.Path, string(content)))
 	if room < taskMaxChars/4 {
 		return 0, "(too large to be judged whole, and too long itself to be judged in parts: it leaves less than a quarter of a task for its sources; condense or split it first — a person judges it until then)", nil
 	}
@@ -456,7 +507,7 @@ func numberedPiece(p string, lines []string, from, to int) string {
 }
 
 // writePart writes one part's question, and what it holds, to read its answer.
-func writePart(runDir, repo, name string, p partPlan) error {
+func writePart(runDir, repo, name string, p partPlan, header string) error {
 	dir := filepath.Join(runDir, "in", "parts", name)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -466,7 +517,7 @@ func writePart(runDir, repo, name string, p partPlan) error {
 		return err
 	}
 	var b strings.Builder
-	b.WriteString(partsTaskHeader)
+	b.WriteString(header)
 	b.WriteString(numberedDoc(p.Doc, string(content)))
 	for _, f := range p.Files {
 		text, err := showFile(repo, f.Path)
@@ -559,8 +610,9 @@ func (v *partsVerdict) commentOnly() []claim {
 // partsVerdict is what the parts of one doc said, once their quotes are checked.
 type partsVerdict struct {
 	kept       []claim
-	dropped    int // claims whose quotes are not at the lines they cite
-	unanswered int // parts with no answer
+	dropped    int      // claims whose quotes are not at the lines they cite
+	droppedWhy []string // why, the first few: part, lines and what is not there
+	unanswered int      // parts with no answer
 }
 
 // readParts reads each part's answer and keeps the claims whose quotes are
@@ -582,26 +634,50 @@ func readParts(runDir, repo string, names []string, plans []partPlan) (*partsVer
 		if err != nil {
 			return nil, err
 		}
+		drop := func(why string, args ...any) {
+			v.dropped++
+			if len(v.droppedWhy) < 3 {
+				v.droppedWhy = append(v.droppedWhy, fmt.Sprintf("part %d: ", k+1)+fmt.Sprintf(why, args...))
+			}
+		}
 		for _, a := range answers {
 			data, _ := yaml.Marshal(a.Value)
 			var c claim
-			if a.Kind != "claim" || yaml.Unmarshal(data, &c) != nil || !c.valid() || !quotedAt(string(doc), c.Lines, c.Quote) {
-				v.dropped++
+			switch {
+			case a.Kind != "claim":
+				drop("a %s, not a claim", a.Kind)
+				continue
+			case yaml.Unmarshal(data, &c) != nil || !c.valid():
+				drop("a claim lacking what its status needs")
 				continue
 			}
+			placed, ok := placeQuote(string(doc), c.Lines, c.Quote, 1, strings.Count(string(doc), "\n")+1)
+			if !ok {
+				drop("%q is not at the doc's %s", clip(c.Quote), c.Lines)
+				continue
+			}
+			c.Lines = placed
 			if c.Source != nil {
 				src := path.Clean(strings.TrimPrefix(c.Source.Path, "./"))
-				held := false
-				for _, f := range plans[k].Files {
-					held = held || f.Path == src && f.From <= c.Source.Lines.from && c.Source.Lines.to <= f.To
+				var share *partFile
+				for i, f := range plans[k].Files {
+					if f.Path == src && f.From <= c.Source.Lines.from && c.Source.Lines.to <= f.To {
+						share = &plans[k].Files[i]
+					}
 				}
-				if _, ok := sources[src]; !ok && held {
-					sources[src], _ = showFile(repo, src)
-				}
-				if !held || !quotedAt(sources[src], c.Source.Lines, c.Source.Quote) {
-					v.dropped++
+				if share == nil {
+					drop("%s, %s, is not in its share", src, c.Source.Lines)
 					continue
 				}
+				if _, ok := sources[src]; !ok {
+					sources[src], _ = showFile(repo, src)
+				}
+				placed, ok := placeQuote(sources[src], c.Source.Lines, c.Source.Quote, share.From, share.To)
+				if !ok {
+					drop("%q is not at %s, %s", clip(c.Source.Quote), src, c.Source.Lines)
+					continue
+				}
+				c.Source.Lines = placed
 				c.Source.Path = src
 				if only, line := commentOnlyAt(src, sources[src], c.Source.Lines, c.Source.Quote); only && c.Status == "supported" {
 					c.comment = fmt.Sprintf("%s:%d", src, line)
@@ -634,6 +710,59 @@ func quotedAt(content string, r lineRange, quote string) bool {
 		return false
 	}
 	return strings.Contains(strings.Join(strings.Fields(strings.Join(lines[r.from-1:r.to], " ")), " "), q)
+}
+
+// placeQuote finds a quote at the lines r cites, whitespace aside, or
+// running across the line break into them from the line before or after:
+// a sentence often starts on the line before (#482). It returns the lines
+// the quote stands on, r widened by one line at most, never past lo and hi
+// (a part's share). Safe: the quote must read word for word and hold words
+// of the lines cited, so it names what the part read; a quote wholly
+// beside them, or two lines away, is not there. Its claim is judged as any
+// other, on those lines.
+func placeQuote(content string, r lineRange, quote string, lo, hi int) (lineRange, bool) {
+	if quotedAt(content, r, quote) {
+		return r, true
+	}
+	lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+	if r.from < 1 || r.to > len(lines) {
+		return r, false
+	}
+	w := lineRange{max(lo, 1, r.from-1), min(hi, len(lines), r.to+1)}
+	if w.from > r.from || w.to < r.to {
+		return r, false
+	}
+	// Each line's words, as offsets in the doc's words joined by spaces.
+	at := make([][2]int, len(lines))
+	off, first := 0, true
+	for i, l := range lines {
+		at[i] = [2]int{off + 1, off + 1}
+		for k, word := range strings.Fields(l) {
+			if !first {
+				off++
+			}
+			first = false
+			if k == 0 {
+				at[i][0] = off
+			}
+			off += len(word)
+			at[i][1] = off
+		}
+	}
+	cited := [2]int{at[r.from-1][0], at[r.to-1][1]}
+	for _, s := range quoteSpans(content, w, quote) {
+		if s[0] >= cited[1] || cited[0] >= s[1] {
+			continue // wholly on the line beside: not a quote of the lines cited
+		}
+		placed := r
+		for n := w.from; n <= w.to; n++ {
+			if at[n-1][0] < s[1] && s[0] < at[n-1][1] {
+				placed.from, placed.to = min(placed.from, n), max(placed.to, n)
+			}
+		}
+		return placed, true
+	}
+	return r, false
 }
 
 // quoteSpans are where quote stands in the lines r cites, as offsets in the
@@ -852,6 +981,196 @@ func judgedInPartsPatch(p, content, at string) (string, error) {
 		}
 	}
 	return fmt.Sprintf("--- a/%s\n+++ b/%s\n@@ -%d,1 +%d,2 @@\n-%s\n+judged-in-parts: %s\n+%s\n", p, p, n, n, lines[n-1], at, lines[n-1]), nil
+}
+
+// vouchFor says what keeps a doc its parts found nothing wrong in from
+// having its `checked` moved (#482), or, when nothing does, the patch moving
+// it to at: no claim dropped (a part's note is one), no line naming the code
+// uncovered, every source a file of code the parts read, and each word of
+// every line stating something quoted, where it stands, in a part's support
+// from the code. The caller asks it only when nothing was found wrong, in
+// conflict or to be read together.
+func vouchFor(d *Doc, content, at, uncovered string, v *partsVerdict, repo string) (why, patch string, err error) {
+	switch {
+	case v.dropped == 1:
+		return "a claim of its parts was dropped, unread", "", nil
+	case v.dropped > 1:
+		return fmt.Sprintf("%d claims of its parts were dropped, unread", v.dropped), "", nil
+	case uncovered != "":
+		return "a line names the code, and no part speaks of it", "", nil
+	}
+	docs, err := docSources(d, repo)
+	if err != nil || len(docs) > 0 {
+		return "its sources hold docs, which no part reads: " + strings.Join(docs, ", "), "", err
+	}
+	lines, stating := unsupported(content, v.kept)
+	switch {
+	case stating == 0:
+		return "no line of it states something a part could support", "", nil
+	case len(lines) > 0:
+		return "no part supports " + linesSaid(lines), "", nil
+	}
+	now, ok := vouched(content, at)
+	if !ok {
+		return "its `checked` is not one commit on one line, which the engine could move", "", nil
+	}
+	patch, err = unifiedDiff(d.Path, content, now, 3)
+	return "", patch, err
+}
+
+// docSources are the files among a doc's sources that are docs: no part
+// reads them, as evidence (planParts), so nothing read them against it.
+func docSources(d *Doc, repo string) ([]string, error) {
+	var out []string
+	for _, src := range d.Sources {
+		_, p, _ := splitSource(src)
+		if strings.HasSuffix(p, ".md") {
+			out = append(out, p)
+			continue
+		}
+		files, err := git(repo, "ls-tree", "-z", "-r", "--name-only", "HEAD", "--", p)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range pathList(files) {
+			if strings.HasSuffix(f, ".md") {
+				out = append(out, f)
+			}
+		}
+	}
+	return out, nil
+}
+
+// listMarker is what opens a list item, a task's box or a quote: it says
+// nothing.
+var listMarker = regexp.MustCompile(`^(?:[-*+>]|\d+[.)]|\[[ xX]\])$`)
+
+// linkDefinition is a line defining a link's target: it says nothing.
+var linkDefinition = regexp.MustCompile(`^\s*\[[^\]]+\]:\s*\S`)
+
+// unsupported are the lines of a doc stating something that some word of
+// is quoted in no part's support from the code, and how many lines state
+// something. A line states something outside the header, a heading, a
+// fence, a derived block, an HTML comment or a link's definition; a code
+// example's lines do. Each of its words holding a letter or a digit must
+// stand within a support's quote, where that quote stands in the doc: a
+// quote of some words of a line vouches for those words, not the line.
+func unsupported(content string, kept []claim) (lines []int, stating int) {
+	var spans [][2]int
+	for _, c := range kept {
+		if c.supports() {
+			spans = append(spans, quoteSpans(content, c.Lines, c.Quote)...)
+		}
+	}
+	derived := derivedLines(content)
+	says := map[int]bool{}
+	for _, l := range scan(content) {
+		t := strings.TrimSpace(l.text)
+		switch {
+		case l.heading > 0, derived[l.n], strings.HasPrefix(t, "```"), strings.HasPrefix(t, "~~~"),
+			strings.HasPrefix(t, "<!--") && strings.HasSuffix(t, "-->"), linkDefinition.MatchString(t), !hasWord(t):
+		default:
+			says[l.n] = true
+		}
+	}
+	// Offsets as quoteSpans gives them: the doc's words joined by spaces.
+	off, first := 0, true
+	for i, text := range strings.Split(strings.TrimSuffix(content, "\n"), "\n") {
+		n, words, short := i+1, 0, false
+		for k, w := range strings.Fields(text) {
+			if !first {
+				off++
+			}
+			first = false
+			from, to := off, off+len(w)
+			off = to
+			if !says[n] || !hasWord(w) || k < 2 && listMarker.MatchString(w) {
+				continue
+			}
+			words++ // a word stating something: a line of markers alone states nothing
+			quoted := false
+			for _, s := range spans {
+				quoted = quoted || s[0] < to && from < s[1]
+			}
+			short = short || !quoted
+		}
+		if words > 0 {
+			stating++
+		}
+		if short {
+			lines = append(lines, n)
+		}
+	}
+	return lines, stating
+}
+
+// clip is a quote as a finding says it: its first 80 characters.
+func clip(q string) string {
+	q = strings.Join(strings.Fields(q), " ")
+	if r := []rune(q); len(r) > 80 {
+		return string(r[:79]) + "…"
+	}
+	return q
+}
+
+// hasWord says whether a text holds a letter or a digit.
+func hasWord(t string) bool {
+	return strings.IndexFunc(t, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }) >= 0
+}
+
+// linesSaid names lines for a person, a run of them as one range: "line
+// 14", "lines 3, 7-9"; past five ranges, how many more.
+func linesSaid(lines []int) string {
+	var ranges []string
+	for i := 0; i < len(lines); {
+		j := i
+		for j+1 < len(lines) && lines[j+1] == lines[j]+1 {
+			j++
+		}
+		ranges = append(ranges, rangeText(lineRange{lines[i], lines[j]}))
+		i = j + 1
+	}
+	more := ""
+	if len(ranges) > 5 {
+		more = fmt.Sprintf(" and %d more", len(ranges)-5)
+		ranges = ranges[:5]
+	}
+	if len(lines) == 1 {
+		return "line " + ranges[0]
+	}
+	return "lines " + strings.Join(ranges, ", ") + more
+}
+
+// vouched is a doc whose parts vouched for it at a commit: `checked` and
+// `judged-in-parts` at it — the latter tells the weekly sample it was
+// earned in parts (#482) — `verified` the documentalist's, and `judged`,
+// a reading short of that, gone. ok is false when its `checked` is not one
+// commit on one line.
+func vouched(content, at string) (string, bool) {
+	_, n := header(content)
+	if n == 0 {
+		return "", false
+	}
+	lines := strings.Split(content, "\n")
+	head := []string{lines[0]}
+	set := false
+	for i := 1; i < n-1; i++ {
+		key, value, _ := strings.Cut(lines[i], ":")
+		switch key {
+		case "checked":
+			if v := strings.TrimSpace(value); v == "" || strings.ContainsAny(v, "{[") || set {
+				return "", false
+			}
+			head, set = append(head, "checked: "+at, "judged-in-parts: "+at, "verified: agent:documentalist"), true
+		case "judged", "judged-in-parts", "verified":
+		default:
+			head = append(head, lines[i])
+		}
+	}
+	if !set {
+		return "", false
+	}
+	return strings.Join(append(head, lines[n-1:]...), "\n"), true
 }
 
 // restInParts has gardening read in parts, against its sources as they are

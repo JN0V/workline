@@ -1,6 +1,6 @@
 ---
 sources: [internal/engine/settle.go, internal/engine/follow.go, roles/documentalist/role.yaml]
-checked: c077e9f1
+checked: 7a57c53a
 verified: agent:claude-code
 ---
 # Documentalist — a pull request in conflict on workline's lines

@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/notes.go, internal/builtin/documentalist/values.go, internal/builtin/documentalist/judge.go, internal/builtin/documentalist/documentalist.go]
-checked: 6ca89245
+checked: a5e57aa5
 verified: agent:claude-code
 ---
 # Documentalist — the judge
@@ -95,6 +95,10 @@ the reader task by [its own](reader.md#what-the-engine-checks).
 - **A line count still off** (`checked-over-count-off`, step 2): the task
   gave the real count; the fix brings it there, with no claim, or leaves
   `checked`. *Withheld*: the move of `checked`.
+- **A doc judged in parts** (`checked-moved-in-parts`): the fix saw only
+  the parts' excerpts; refused. Only the engine moves it, when the parts
+  support every line stating something and `parts-move-checked` is on, as
+  by default ([judged in parts](parts.md#when-checked-moves-after-parts)).
 - **A doc the answer's own note doubts** (`checked-over-note`,
   [#449](https://github.com/JN0V/workline/issues/449)): a note names its
   doc in `doc`, else in its text, by path or by a file name no other doc
@@ -132,7 +136,7 @@ one place the engine had already named (step 4). Now:
   since `checked`, the doc it follows) and `not read:` the rest. Never
   "nothing found wrong" of what was not read
   ([#120](https://github.com/JN0V/workline/issues/120)). Gardening reads
-  such a doc [in parts](tasks.md#judged-in-parts) instead, when parts
+  such a doc [in parts](parts.md) instead, when parts
   can ([#462](https://github.com/JN0V/workline/issues/462)).
 - A doc judged in parts, once the fix is judged: the places it fixed, or
   that it changed nothing of what the parts found.
