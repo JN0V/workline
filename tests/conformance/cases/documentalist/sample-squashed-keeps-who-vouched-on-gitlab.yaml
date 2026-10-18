@@ -1,0 +1,23 @@
+case: documentalist/sample-squashed-keeps-who-vouched-on-gitlab
+about: "On GitLab, a merge commit holding the squash: a doc the documentalist had vouched for on main, vouched for again in the merge request, is the squash commit's act — read from the commit it reached main by, its earlier `checked` the one main had, so a put-back never names a commit gone from main — and keeps who vouched, read on the merge request's head (refs/merge-requests/<iid>/head; ADR-0046). The commit of the head counts once."
+given:
+  repo: vouched
+  setup:
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -q -b ttl && sed -i 's/Tokens last one hour./Tokens last two hours./' src/auth/token.go && GIT_AUTHOR_DATE=2026-01-20T09:00:00Z GIT_COMMITTER_DATE=2026-01-20T09:00:00Z git commit -qam 'docs(auth): say tokens last two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && GIT_AUTHOR_DATE=2026-01-20T10:00:00Z GIT_COMMITTER_DATE=2026-01-20T10:00:00Z git commit -qam 'docs: bring the docs in line with the code' -m \"$(printf 'Workline-Role: documentalist\\nWorkline-Model: fake:same-model')\""
+    - "git push -q origin ttl:refs/merge-requests/7/head && git checkout -q -b squashed main && git merge -q --squash ttl && GIT_AUTHOR_DATE=2026-01-20T11:59:00Z GIT_COMMITTER_DATE=2026-01-20T11:59:00Z git commit -q -m 'docs(auth): say tokens last two hours'"
+    - "git checkout -q main && GIT_AUTHOR_DATE=2026-01-20T12:00:00Z GIT_COMMITTER_DATE=2026-01-20T12:00:00Z git merge -q --no-ff squashed -m \"Merge branch 'ttl' into 'main'\" && git push -q origin main"
+    - "git branch -q -D ttl squashed && git reflog expire --expire=now --all && git gc -q --prune=now"
+  forge:
+    issues: []
+    merge-requests:
+      - {id: 7, title: "Say tokens last two hours", branch: ttl, base: main, labels: [], merged-at: "2026-01-20T12:00:00Z", merged-as: main}
+run: {sample: [--week, 2026-W04, --judge, "fake:same-model"], forge: gitlab}
+expect:
+  status: human
+  agent-calls: 1
+  findings:
+    - {rule: sample-window, message: "1 doc vouched for"}
+    - {rule: sample-not-read, where: docs/tech/auth.md, message: "the judge answered with the model that vouched (same-model)"}
+    - {rule: sample-not-read, where: docs/tech/auth.md, message: "d732aab (!7) at `checked:"}
