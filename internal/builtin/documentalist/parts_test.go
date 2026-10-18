@@ -2,6 +2,8 @@ package documentalist
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -197,5 +199,124 @@ func TestJudgedInPartsPatch(t *testing.T) {
 	got, _ = judgedInPartsPatch("d.md", "---\njudged-in-parts: abc1234\n---\n", "def5678")
 	if !strings.Contains(got, "@@ -2,1 +2,1 @@\n-judged-in-parts: abc1234\n+judged-in-parts: def5678\n") {
 		t.Fatalf("an earlier record is replaced, not added to: %q", got)
+	}
+}
+
+// A line states something unless it is a heading, a fence, a derived
+// block, an HTML comment or a link's definition; it is supported when each
+// of its words is quoted, where it stands, in a part's support from the
+// code (#482). A list's marker says nothing; a code example's lines do.
+func TestUnsupportedLines(t *testing.T) {
+	doc := "---\n" + // 1
+		"sources: [x.go]\n" + // 2
+		"---\n" + // 3
+		"# The service\n" + // 4
+		"\n" + // 5
+		"It listens on port 8080 unless\n" + // 6
+		"the configuration says otherwise.\n" + // 7
+		"- At most 100 requests at once.\n" + // 8
+		"| Field | Default |\n" + // 9
+		"|---|---|\n" + // 10
+		"<!-- a note for writers -->\n" + // 11
+		"[guide]: https://example.com/guide\n" + // 12
+		"```go\n" + // 13
+		"service.Serve(c)\n" + // 14
+		"```\n" // 15
+	support := func(part int, lines, quote string) claim {
+		return claimOf(t, part, fmt.Sprintf("{lines: %q, status: supported, quote: %q, source: {path: x.go, lines: \"1\", quote: q}}", lines, quote))
+	}
+	for _, tc := range []struct {
+		name string
+		kept []claim
+		want string
+	}{
+		{"nothing supported", nil, "[6 7 8 9 14]"},
+		{"every word quoted, in two parts", []claim{
+			support(0, "6-7", "It listens on port 8080 unless the configuration says otherwise."),
+			support(1, "8", "At most 100 requests at once."),
+			support(1, "9", "| Field | Default |"),
+			support(0, "14", "service.Serve(c)"),
+		}, "[]"},
+		{"some words of a line", []claim{
+			support(0, "6-7", "It listens on port 8080 unless the configuration"),
+			support(1, "8", "At most 100 requests at once."),
+			support(1, "9", "Field | Default"),
+			support(0, "14", "service.Serve(c)"),
+		}, "[7]"},
+		{"a range claimed, a few words quoted", []claim{support(0, "6-9", "port 8080")}, "[6 7 8 9 14]"},
+	} {
+		got, stating := unsupported(doc, tc.kept)
+		if fmt.Sprint(got) != tc.want || stating != 5 {
+			t.Errorf("%s: unsupported %v of %d lines stating something, want %s of 5", tc.name, got, stating, tc.want)
+		}
+	}
+	comment := support(0, "8", "At most 100 requests at once.")
+	comment.comment = "x.go:1"
+	if got, _ := unsupported(doc, []claim{comment}); !strings.Contains(fmt.Sprint(got), "8") {
+		t.Errorf("a support quoted from a comment only counts for nothing: %v", got)
+	}
+	derived := "# D\n\n<!-- workline:derive count -->\n12 cases\n<!-- workline:end -->\n"
+	if got, stating := unsupported(derived, nil); len(got) != 0 || stating != 0 {
+		t.Errorf("a derived block states nothing a part must support: %v of %d", got, stating)
+	}
+}
+
+// What keeps a doc its parts found nothing wrong in from having its
+// `checked` moved, each said; nothing, and the patch moves it (#482).
+func TestVouchFor(t *testing.T) {
+	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	repo := t.TempDir()
+	doc := "---\nsources: [x.go]\nchecked: abc1234\njudged: 1111111\nverified: human:alice\n---\n# D\n\nTokens last one hour.\n"
+	for p, content := range map[string]string{"x.go": "package x\n", "notes.md": "# Notes\n", "d.md": doc} {
+		if err := os.WriteFile(filepath.Join(repo, p), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, c := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=T", "-c", "user.email=t@example.invalid", "commit", "-qm", "docs: d"}} {
+		if _, err := git(repo, c...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d := &Doc{Path: "d.md", Sources: []string{"x.go"}}
+	all := &partsVerdict{kept: []claim{claimOf(t, 0, `{lines: "9", status: supported, quote: "Tokens last one hour.", source: {path: x.go, lines: "1", quote: "package x"}}`)}}
+	for _, tc := range []struct {
+		name      string
+		d         *Doc
+		content   string
+		uncovered string
+		v         *partsVerdict
+		why       string
+	}{
+		{"a claim dropped", d, doc, "", &partsVerdict{kept: all.kept, dropped: 1}, "a claim of its parts was dropped"},
+		{"a line naming the code no part speaks of", d, doc, "line 9 names `Refresh`", all, "a line names the code"},
+		{"a source a doc", &Doc{Path: "d.md", Sources: []string{"x.go", "notes.md"}}, doc, "", all, "its sources hold docs, which no part reads: notes.md"},
+		{"a line no part supports", d, doc + "Refresh tokens last a week.\n", "", all, "no part supports line 10"},
+		{"nothing stated", d, "---\nsources: [x.go]\nchecked: abc1234\n---\n# D\n", "", &partsVerdict{}, "no line of it states something"},
+		{"`checked` for several repositories", d, strings.Replace(doc, "checked: abc1234", "checked: {\"\": abc1234, api: def5678}", 1), "", all, "its `checked` is not one commit on one line"},
+	} {
+		why, patch, err := vouchFor(tc.d, tc.content, "fff0000", tc.uncovered, tc.v, repo)
+		if err != nil || why == "" || !strings.Contains(why, tc.why) || patch != "" {
+			t.Errorf("%s: why %q, patch %q, err %v; want why holding %q, no patch", tc.name, why, patch, err, tc.why)
+		}
+	}
+	why, patch, err := vouchFor(d, doc, "fff0000", "", all, repo)
+	want := "-checked: abc1234\n-judged: 1111111\n-verified: human:alice\n+checked: fff0000\n+judged-in-parts: fff0000\n+verified: agent:documentalist\n"
+	if err != nil || why != "" || !strings.Contains(patch, want) {
+		t.Fatalf("every line supported: why %q, err %v, patch:\n%s\nwant it to hold:\n%s", why, err, patch, want)
+	}
+}
+
+func TestLinesSaid(t *testing.T) {
+	for _, tc := range []struct {
+		lines []int
+		want  string
+	}{
+		{[]int{14}, "line 14"},
+		{[]int{3, 7, 8, 9}, "lines 3, 7-9"},
+		{[]int{1, 3, 5, 7, 9, 11, 13}, "lines 1, 3, 5, 7, 9 and 2 more"},
+	} {
+		if got := linesSaid(tc.lines); got != tc.want {
+			t.Errorf("%v: %q, want %q", tc.lines, got, tc.want)
+		}
 	}
 }

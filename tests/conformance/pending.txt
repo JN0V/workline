@@ -1,6 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-
-# A doc read in parts with every line stating something supported (#482).
-documentalist/judged-in-parts-every-line-supported
-documentalist/judged-in-parts-a-line-unsupported

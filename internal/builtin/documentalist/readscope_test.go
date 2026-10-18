@@ -51,7 +51,7 @@ func TestOutcomesSayWhatWasRead(t *testing.T) {
 	judged := map[string]map[string]string{"docs/whole.md": {}, "docs/diff.md": {}, "docs/unrecorded.md": {}}
 	patched := map[string]bool{"docs/whole.md": false, "docs/diff.md": false, "docs/unrecorded.md": false}
 	read := map[string]string{"docs/diff.md": "read: what changed in src/a.go since abc1234; not read: the rest of src/a.go", "docs/unrecorded.md": readUnrecorded}
-	got := outcomes(judged, nil, patched, map[string]bool{}, nil, func(p string) string { return read[p] })
+	got := outcomes(judged, nil, nil, patched, map[string]bool{}, nil, func(p string) string { return read[p] })
 	if got["docs/whole.md"] != "nothing found wrong, `judged` recorded, `checked` not moved" {
 		t.Errorf("whole: %q", got["docs/whole.md"])
 	}

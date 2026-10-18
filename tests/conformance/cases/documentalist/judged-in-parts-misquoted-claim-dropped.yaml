@@ -14,5 +14,5 @@ expect:
   applied: [patch]
   findings:
     - {rule: claims-dropped, where: docs/tech/auth.md, message: "1 claims of its parts"}
-    - {rule: suspect, where: docs/tech/auth.md, message: "some claims were dropped: a person reads it whole"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "`checked` stays: a claim of its parts was dropped, unread"}
   files: {"docs/tech/auth.md": {contains: "judged-in-parts:"}}
