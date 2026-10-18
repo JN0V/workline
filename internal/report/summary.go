@@ -201,7 +201,7 @@ var groups = []group{
 
 // plain are a backlog's findings on no one issue, said without their
 // rule's name: the message says it all.
-var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed", "values-where", "level-unknown", "next-unestimated", "estimates-stuck"}
+var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed", "values-where", "level-unknown", "next-unestimated", "estimates-stuck", "values-hidden"}
 
 // heldBack are the reasons the engine did not do, or only proposed, an act
 // the product owner's agent wrote (internal/backlog): said in plain words,
@@ -210,7 +210,7 @@ var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-re
 	"already-proposed", "asked-before", "question-left-out", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
 	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
 	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
-	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "title-kept",
+	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "priority-blind", "effort-blind", "priority-hidden", "effort-hidden", "title-kept",
 	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
 	"parent-accepted-by-a-person", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
 	"undepend-gone", "unready-not-ready", "milestone-title", "not-slipped", "exempt", "announced", "obsolete-kept",

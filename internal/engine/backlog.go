@@ -247,7 +247,7 @@ func (a *applier) level(c backlog.Proposal) error {
 	}
 	axis := src.Family.Scale.Axis
 	rule, why := backlog.Placeable(src, *is, l)
-	if now := src.Family.Levels(is.Labels); rule == "" && !(len(now) == 0 && c.Had == 0) && !(len(now) == 1 && now[0] == c.Had) {
+	if now := src.Read(is.Labels, is.Fields); rule == "" && !(len(now) == 0 && c.Had == 0) && !(len(now) == 1 && now[0] == c.Had) {
 		rule, why = axis+"-changed", fmt.Sprintf("its %s changed since the run read it: a person's, kept", axis)
 	}
 	if rule != "" {
@@ -256,25 +256,32 @@ func (a *applier) level(c backlog.Proposal) error {
 		return nil
 	}
 	label, _ := src.Family.Label(l)
-	create := []scale.Label{label}
-	if src.Words {
-		create = src.Family.Labels
-	}
-	for _, x := range create {
-		if x.Color == "" || a.ensured[x.Name] {
-			continue
-		}
-		if err := forge.EnsureRankedLabel(b, x.Name, x.Color, x.Describe(strings.ReplaceAll(a.role, "-", " ")), x.Rank); err != nil {
+	t := forge.Target{Kind: "issue", ID: c.Issue}
+	if src.InField() {
+		// The forge's own field, by the option's name (ADR-0040).
+		if err := forge.SetField(f, c.Issue, forge.Field{ID: src.Field.ID, Name: src.Field.Name}, label.Name); err != nil {
 			return err
 		}
-		if a.ensured == nil {
-			a.ensured = map[string]bool{}
+	} else {
+		create := []scale.Label{label}
+		if src.Words {
+			create = src.Family.Labels
 		}
-		a.ensured[x.Name] = true
-	}
-	t := forge.Target{Kind: "issue", ID: c.Issue}
-	if err := f.Label(t, []string{label.Name}, src.Family.Others(l)); err != nil {
-		return err
+		for _, x := range create {
+			if x.Color == "" || a.ensured[x.Name] {
+				continue
+			}
+			if err := forge.EnsureRankedLabel(b, x.Name, x.Color, x.Describe(strings.ReplaceAll(a.role, "-", " ")), x.Rank); err != nil {
+				return err
+			}
+			if a.ensured == nil {
+				a.ensured = map[string]bool{}
+			}
+			a.ensured[x.Name] = true
+		}
+		if err := f.Label(t, []string{label.Name}, src.Family.Others(l)); err != nil {
+			return err
+		}
 	}
 	comments, err := b.Comments(t)
 	if err != nil {
@@ -283,6 +290,9 @@ func (a *applier) level(c backlog.Proposal) error {
 	st, _, err := backlog.ReadState(comments, a.role)
 	if err != nil {
 		return fmt.Errorf("#%d: its state comment: %w", t.ID, err)
+	}
+	if src.Hidden() {
+		l = backlog.HiddenLevel // set by the role, its value never shown on a public issue
 	}
 	if c.Do == "effort" {
 		st.Effort = l

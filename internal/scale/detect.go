@@ -21,6 +21,7 @@ import (
 const (
 	InAuto   = "auto"
 	InLabels = "labels"
+	InField  = "field"
 )
 
 // Setting is where a project's settings say it keeps an axis. Unset (In
@@ -28,6 +29,7 @@ const (
 type Setting struct {
 	In     string
 	Prefix string         // with In "labels": the family's prefix
+	Field  string         // with In "field": the issue field's name
 	Names  map[string]int // a label's name, of the family read, to the level the settings give it
 }
 
@@ -35,8 +37,9 @@ type Setting struct {
 func (s Setting) Set() bool { return s.In != "" }
 
 // ReadSetting reads an axis's setting: unset, `auto`, or a map — `in`
-// (auto or labels), `prefix` with labels, `names` mapping a label of
-// the family to a level. Anything else is an error, never read as unset.
+// (auto, labels or field), `prefix` with labels, `name` with field,
+// `names` mapping a label of the family to a level. Anything else is an
+// error, never read as unset.
 func ReadSetting(s Scale, v any) (Setting, error) {
 	bad := func(format string, a ...any) (Setting, error) {
 		return Setting{}, fmt.Errorf("%s: "+format, append([]any{s.Axis}, a...)...)
@@ -46,7 +49,7 @@ func ReadSetting(s Scale, v any) (Setting, error) {
 		return Setting{}, nil
 	case string:
 		if v != InAuto {
-			return bad("%q is not %s, nor {in: %s, prefix: …}", v, InAuto, InLabels)
+			return bad("%q is not %s, nor {in: %s, prefix: …}, nor {in: %s, name: …}", v, InAuto, InLabels, InField)
 		}
 		return Setting{In: InAuto}, nil
 	case map[string]any:
@@ -55,8 +58,8 @@ func ReadSetting(s Scale, v any) (Setting, error) {
 			switch k {
 			case "in":
 				in, _ := v[k].(string)
-				if in != InAuto && in != InLabels {
-					return bad("in: %v is not one of %s, %s", v[k], InAuto, InLabels)
+				if in != InAuto && in != InLabels && in != InField {
+					return bad("in: %v is not one of %s, %s, %s", v[k], InAuto, InLabels, InField)
 				}
 				set.In = in
 			case "prefix":
@@ -65,6 +68,12 @@ func ReadSetting(s Scale, v any) (Setting, error) {
 					return bad("prefix: %v is not the start of a label's name", v[k])
 				}
 				set.Prefix = p
+			case "name":
+				n, _ := v[k].(string)
+				if strings.TrimSpace(n) == "" {
+					return bad("name: %v is not a field's name", v[k])
+				}
+				set.Field = strings.TrimSpace(n)
 			case "names":
 				m, ok := v[k].(map[string]any)
 				if !ok {
@@ -80,20 +89,37 @@ func ReadSetting(s Scale, v any) (Setting, error) {
 					set.Names[name] = l
 				}
 			default:
-				return bad("%s is not a key it reads (in, prefix, names)", k)
+				return bad("%s is not a key it reads (in, prefix, name, names)", k)
 			}
 		}
 		switch {
 		case set.In == "":
-			return bad("in is missing: %s or %s", InAuto, InLabels)
+			return bad("in is missing: %s, %s or %s", InAuto, InLabels, InField)
 		case set.In == InLabels && set.Prefix == "":
 			return bad("in: %s names its family by a prefix, missing", InLabels)
-		case set.In == InAuto && set.Prefix != "":
-			return bad("a prefix names a family: in: %s, not %s", InLabels, InAuto)
+		case set.In == InField && set.Field == "":
+			return bad("in: %s names its field by a name, missing", InField)
+		case set.In != InLabels && set.Prefix != "":
+			return bad("a prefix names a family of labels: in: %s, not %s", InLabels, set.In)
+		case set.In != InField && set.Field != "":
+			return bad("a name names a field: in: %s, not %s", InField, set.In)
 		}
 		return set, nil
 	}
-	return bad("%v is not %s, nor {in: %s, prefix: …}", v, InAuto, InLabels)
+	return bad("%v is not %s, nor {in: %s, prefix: …}, nor {in: %s, name: …}", v, InAuto, InLabels, InField)
+}
+
+// Field is a single-select issue field of the forge an axis may be kept
+// in (ADR-0040): its options as its owner arranged them; Hidden, its
+// values visible to the organisation's members only on a public
+// repository, or a visibility not read; Blind, why this token reads no
+// hidden value, "" when it does.
+type Field struct {
+	ID      int64
+	Name    string
+	Options []string
+	Hidden  bool
+	Blind   string
 }
 
 // Source is where the engine reads and writes an axis on a project.
@@ -111,11 +137,37 @@ type Source struct {
 	// Unknown names the labels of the family no table knows, nor the
 	// settings map: read as none, said once.
 	Unknown error
+	// Field: the issue field the axis is kept in, its Family its options;
+	// "" when it is kept in labels. OtherField, a field of the axis the
+	// project has beside the labels read: a value there is elsewhere.
+	Field      Field
+	OtherField string
 }
 
-// Elsewhere are an issue's labels carrying the axis outside its source:
-// a value there is never written over, nor mirrored (ADR-0040).
-func (s Source) Elsewhere(labels []string) []string {
+// InField says whether the axis is kept in an issue field.
+func (s Source) InField() bool { return s.Field.Name != "" }
+
+// Hidden says whether the axis's values are visible to the organisation's
+// members only, on a public repository: never shown in the role's
+// comment, its state, nor the job's summary (ADR-0040).
+func (s Source) Hidden() bool { return s.Field.Hidden }
+
+// Read are the levels an issue carries on the axis: its field's value,
+// or its labels of the family.
+func (s Source) Read(labels []string, fields map[string]string) []int {
+	if !s.InField() {
+		return s.Family.Levels(labels)
+	}
+	if l := s.Family.Of(fields[s.Field.Name]); l > 0 {
+		return []int{l}
+	}
+	return nil
+}
+
+// Elsewhere are where an issue carries the axis outside its source — its
+// labels of another family, or a field beside them —: a value there is
+// never written over, nor mirrored (ADR-0040).
+func (s Source) Elsewhere(labels []string, fields map[string]string) []string {
 	var out []string
 	for _, f := range s.Others {
 		for _, n := range labels {
@@ -123,6 +175,9 @@ func (s Source) Elsewhere(labels []string) []string {
 				out = append(out, n)
 			}
 		}
+	}
+	if s.OtherField != "" && fields[s.OtherField] != "" {
+		out = append(out, "the field "+s.OtherField)
 	}
 	return out
 }
@@ -192,13 +247,14 @@ var ownSaid = "labels " + Own.Span() + ", workline's own"
 
 // Detect finds where a project keeps an axis (ADR-0040, "Where the values
 // live"), with no agent. labels are the project's, open those on its open
-// issues; scoped says the forge's labels are GitLab's. Unset, as before
-// the detection (Before). Else the setting's family; else the project's
-// own family, two values or more and one on an open issue; else
-// workline's own priority labels, one on an open issue; else the forge's
-// words. A setting naming a family the project lacks is an error: the run
-// stops, never reading another.
-func Detect(s Scale, set Setting, labels, open []string, scoped bool) (Source, error) {
+// issues; scoped says the forge's labels are GitLab's; fields, its issue
+// fields. Unset, as before the detection (Before). Else the setting's
+// field or family; else the forge's own field named as the axis, Priority
+// or Effort; else the project's own family, two values or more and one on
+// an open issue; else workline's own priority labels, one on an open
+// issue; else the forge's words. A setting naming a field or a family the
+// project lacks is an error: the run stops, never reading another.
+func Detect(s Scale, set Setting, labels, open []string, scoped bool, fields []Field) (Source, error) {
 	if !set.Set() {
 		if s.Axis == Priority.Axis {
 			return Before.Priority, nil
@@ -215,12 +271,37 @@ func Detect(s Scale, set Setting, labels, open []string, scoped bool) (Source, e
 	theWords := func(f Family) bool {
 		return f.Prefix == words.Prefix && !slices.ContainsFunc(f.Labels, func(l Label) bool { return words.Of(l.Name) == 0 })
 	}
+	// A field, read by its options' names, never their places.
+	field := func(name string) (Field, bool) {
+		i := slices.IndexFunc(fields, func(f Field) bool { return strings.EqualFold(f.Name, name) })
+		if i < 0 {
+			return Field{}, false
+		}
+		return fields[i], true
+	}
+	fromField := func(f Field, how string) Source {
+		fam, err := Options(s, f.Options)
+		said := "the field " + f.Name + how
+		if f.Hidden {
+			said += ", its values visible to organization members only: never shown"
+		}
+		return Source{Family: fam, Field: f, Said: said, Unknown: err}
+	}
 	var src Source
 	candidates := slices.Clone(families[s.Axis])
 	if s.Axis == Priority.Axis {
 		candidates = append(candidates, Own.Prefix)
 	}
-	if set.In == InLabels {
+	native, hasNative := field(s.Axis)
+	nativeLevels, _ := Options(s, native.Options)
+	switch {
+	case set.In == InField:
+		f, ok := field(set.Field)
+		if !ok {
+			return Source{}, fmt.Errorf("%s: the settings name the field %s, and the project has none: name a field it has, or auto", s.Axis, set.Field)
+		}
+		src = fromField(f, ", as the settings say")
+	case set.In == InLabels:
 		f, err := read(set.Prefix)
 		if len(f.Labels) == 0 {
 			return Source{}, fmt.Errorf("%s: the settings name the labels %s*, and the project has none that names a level: name a family it has, or auto", s.Axis, set.Prefix)
@@ -229,7 +310,10 @@ func Detect(s Scale, set Setting, labels, open []string, scoped bool) (Source, e
 		if !slices.Contains(candidates, set.Prefix) {
 			candidates = append(candidates, set.Prefix)
 		}
-	} else {
+	case hasNative && len(nativeLevels.Labels) > 0:
+		// The forge's own field, Priority or Effort, before any label.
+		src = fromField(native, "")
+	default:
 		for _, p := range candidates {
 			f, err := read(p)
 			own := p == Own.Prefix
@@ -243,6 +327,7 @@ func Detect(s Scale, set Setting, labels, open []string, scoped bool) (Source, e
 		}
 	}
 	switch {
+	case src.InField():
 	case src.Family.Scale.Axis == "":
 		src = Source{Family: words, Words: true, Said: "labels " + words.Span() + ", created when first set"}
 		if slices.ContainsFunc(words.Labels, func(l Label) bool { return slices.Contains(labels, l.Name) }) {
@@ -253,12 +338,15 @@ func Detect(s Scale, set Setting, labels, open []string, scoped bool) (Source, e
 		src.Said = "labels " + words.Span() + ", created"
 	}
 	for _, p := range candidates {
-		if p == src.Family.Prefix {
+		if p == src.Family.Prefix && !src.InField() {
 			continue
 		}
 		if f, _ := read(p); len(f.Labels) > 0 {
 			src.Others = append(src.Others, f)
 		}
+	}
+	if !src.InField() && hasNative {
+		src.OtherField = native.Name
 	}
 	return src, nil
 }

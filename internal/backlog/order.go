@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,22 +14,31 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// PriorityLabels lists the levels an issue's priority labels give, read
-// by name where the project keeps them (scale.Used), in the order of its
-// labels; more than one is a person's doing.
-func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Family.Levels(is.Labels) }
+// PriorityLabels lists the levels an issue's priority gives, read by name
+// where the project keeps it (scale.Used) — its labels, or its field —;
+// more than one is a person's doing.
+func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Read(is.Labels, is.Fields) }
 
-// Priority is an issue's level, the most pressing of its labels; 0 when
-// it has none.
-func Priority(is forge.Issue) int { return scale.Used.Priority.Family.First(is.Labels) }
+// Priority is an issue's level, the most pressing it carries; 0 when it
+// has none.
+func Priority(is forge.Issue) int { return first(PriorityLabels(is)) }
 
-// EffortLabels lists the levels an issue's effort labels give, where the
-// project keeps them; none while it keeps none (ADR-0040).
-func EffortLabels(is forge.Issue) []int { return scale.Used.Effort.Family.Levels(is.Labels) }
+// EffortLabels lists the levels an issue's effort gives, where the
+// project keeps it; none while it keeps none (ADR-0040).
+func EffortLabels(is forge.Issue) []int { return scale.Used.Effort.Read(is.Labels, is.Fields) }
 
-// Effort is an issue's effort, the lightest of its labels; 0 when it has
+// Effort is an issue's effort, the lightest it carries; 0 when it has
 // none, or the project keeps none.
-func Effort(is forge.Issue) int { return scale.Used.Effort.Family.First(is.Labels) }
+func Effort(is forge.Issue) int { return first(EffortLabels(is)) }
+
+// first is the lowest of levels, the first in the order's direction; 0
+// for none.
+func first(levels []int) int {
+	if len(levels) == 0 {
+		return 0
+	}
+	return slices.Min(levels)
+}
 
 // Where reads where the project keeps each axis (ADR-0040, "Where the
 // values live"), with no agent, as its settings ask; unset, as before
@@ -48,6 +58,21 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 	for _, is := range open {
 		on = append(on, is.Labels...)
 	}
+	// The forge's issue fields, GitHub's: a value visible to members only
+	// on a public repository is hidden, a visibility not read counting as
+	// hidden; a token that reads none of them is said blind (ADR-0040).
+	fs, err := forge.IssueFields(f)
+	if err != nil {
+		return scale.Before, nil, err
+	}
+	var fields []scale.Field
+	for _, x := range fs.List {
+		sf := scale.Field{ID: x.ID, Name: x.Name, Options: x.Options, Hidden: !x.Public && fs.Public}
+		if !x.Public {
+			sf.Blind = fs.Blind
+		}
+		fields = append(fields, sf)
+	}
 	s := scale.Scheme{Detected: true}
 	var said []string
 	var unknown []verdict.Finding
@@ -56,7 +81,7 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 		set   scale.Setting
 		to    *scale.Source
 	}{{scale.Priority, cfg.Priority, &s.Priority}, {scale.Effort, cfg.Effort, &s.Effort}} {
-		src, err := scale.Detect(a.scale, a.set, labels, on, forge.ScopedLabels(f))
+		src, err := scale.Detect(a.scale, a.set, labels, on, forge.ScopedLabels(f), fields)
 		if err != nil {
 			return scale.Before, nil, err
 		}
@@ -64,6 +89,9 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 		where := src.Said
 		if where == "" {
 			where = "read nowhere, its setting unset"
+		}
+		if src.Field.Blind != "" {
+			where += " — " + src.Field.Blind + ": nothing written there"
 		}
 		said = append(said, strings.ToUpper(a.scale.Axis[:1])+a.scale.Axis[1:]+": "+where+".")
 		if src.Unknown != nil {
@@ -74,30 +102,45 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 	return s, append([]verdict.Finding{{Rule: "values-where", Level: "info", Message: strings.Join(said, " ")}}, unknown...), nil
 }
 
-// Placeable says why a priority cannot be written on an issue where the
-// project keeps it, src (ADR-0040): the issue holds one in another place
-// — never written over, nor mirrored —, or no label of the family carries
-// the level; "" when it can. The plan asks it, and the applying job again
-// before it writes.
+// Placeable says why a priority or an effort cannot be written on an
+// issue where the project keeps it, src (ADR-0040): a token that reads
+// none of the field's values, never read as empty; a value in another
+// place — never written over, nor mirrored —; no label of the family, nor
+// option of the field, carrying the level; "" when it can. The plan asks
+// it, and the applying job again before it writes.
 func Placeable(src scale.Source, is forge.Issue, l int) (rule, why string) {
 	axis := src.Family.Scale.Axis
-	if there := src.Elsewhere(is.Labels); len(there) > 0 {
+	where := src.Family.Span()
+	if src.InField() {
+		where = "the field " + src.Field.Name
+	}
+	if src.Field.Blind != "" {
+		return axis + "-blind", fmt.Sprintf("%s: its values are never read as empty, and nothing is written in %s", src.Field.Blind, where)
+	}
+	if there := src.Elsewhere(is.Labels, is.Fields); len(there) > 0 {
 		var here []string
 		for _, n := range is.Labels {
-			if src.Family.Of(n) > 0 {
+			if src.Family.Of(n) > 0 && !src.InField() {
 				here = append(here, n)
 			}
+		}
+		if len(src.Read(is.Labels, is.Fields)) > 0 && src.InField() {
+			here = append(here, where)
 		}
 		if len(here) > 0 {
 			return axis + "-elsewhere", fmt.Sprintf("its %s is in two places, %s and %s: nothing is written on it; a person keeps one",
 				axis, strings.Join(here, ", "), strings.Join(there, ", "))
 		}
 		return axis + "-elsewhere", fmt.Sprintf("its %s is in %s, not in %s where the project keeps it: nothing is written on it, never in two places",
-			axis, strings.Join(there, ", "), src.Family.Span())
+			axis, strings.Join(there, ", "), where)
 	}
 	if _, ok := src.Family.Label(l); !ok {
-		return axis + "-no-label", fmt.Sprintf("no label of %s carries %s: a person creates one, or maps one to it under `names` in the settings",
-			src.Family.Span(), src.Family.Scale.Name(l))
+		what := "no label of " + where
+		if src.InField() {
+			what = "no option of " + where
+		}
+		return axis + "-no-label", fmt.Sprintf("%s carries %s: a person creates one, or maps one to it under `names` in the settings",
+			what, src.Family.Scale.Name(l))
 	}
 	return "", ""
 }

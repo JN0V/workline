@@ -1,0 +1,31 @@
+case: product-owner/field-priority-and-effort-written
+about: "On a forge with its own Priority and Effort issue fields, as a GitHub organisation's, `auto` finds them before any label and writes each value there, by its option's name — Effort's options listed High first read by name —; no label is created; a person's value in a field is kept (ADR-0040, step 4)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, priority: auto, effort: auto, acts: {order: {mode: act}, effort: {mode: act}}}
+  forge:
+    issue-fields:
+      - {id: 47714576, name: Priority, options: [Urgent, High, Medium, Low], public: true}
+      - {id: 47714579, name: Effort, options: [High, Medium, Low], public: true}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", labels: [], fields: {Priority: Low}, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort}
+expect:
+  findings:
+    - {rule: values-where, message: "Priority: the field Priority. Effort: the field Effort."}
+    - {rule: done, where: "#9", message: "Set #9's priority to 1 (Urgent)"}
+    - {rule: done, where: "#9", message: "Set #9's effort to Low (Low)"}
+    - {rule: priority-kept, where: "#11", message: "its priority was set by a person"}
+    - {rule: done, where: "#11", message: "Set #11's effort to Medium (Medium)"}
+  forge:
+    issues:
+      - {id: 9, labels: [bug], fields: {Priority: Urgent, Effort: Low}, comment-contains: ["priority: 1", "effort: 1"]}
+      - {id: 10, labels: [], fields: {Effort: High}}
+      - {id: 11, labels: [], fields: {Priority: Low, Effort: Medium}}
+    labels:
+      - {id: 1, absent: true}

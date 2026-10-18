@@ -49,6 +49,9 @@ func (p *Plan) recordDone(c Proposal) {
 	if !slices.Contains(undoable, c.Do) || c.Ticked != "" || c.From != "" {
 		return
 	}
+	if src, ok := axisOf(c); ok && src.Hidden() {
+		return // its values would show in the issue's state: not watched (ADR-0040)
+	}
 	is := p.issues[c.Issue]
 	d := Done{Issue: c.Issue, Act: c.Do, Level: p.config.Level}
 	switch c.Do {
