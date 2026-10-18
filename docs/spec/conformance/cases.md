@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: ab6ae913
+checked: 07029f11
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -72,6 +72,11 @@ saying so.
 - `open-merge-request: true` or `push-to-merge-request: true` — put what the
   patches write on a merge request;
 - `reports: true` — also write the findings as SARIF and Code Quality;
+- `gates-only: true` — the route runs the event's gates alone
+  (`--gates-only`); `gates-job: {env}` — a run of the gates alone first,
+  with these variables, whose result the route reads (`--gates-from`), as
+  CI's judge reads the gates' job; `gates-from: <file>` — read from that
+  file instead, by the case's folder;
 - `summary: true` — also write `--summary`, Markdown and HTML, and give the
   same files to the `apply` or `sample --apply` that follows;
 - `scope` — the run's scope, as a ready work item would give it;
@@ -88,7 +93,9 @@ saying so.
   edits to the forge given in `between` (`{issues: [{id: 4, body: …}]}`:
   each item, by kind and id, takes the fields given): what one run
   records, the next reads back. Both runs' agent calls, calls and findings
-  are counted together, the rest is the second's;
+  are counted together, the rest is the second's; `again-after`, commands
+  run in the repository before the second run (a second push), the first
+  run's Code Quality report kept for `code-quality-kept`;
 - `then: judged-twice` and `then: applied-between` — a push landing before
   the run is applied ([#375](https://github.com/JN0V/workline/issues/375)):
   the commands in `pushed` run, the same run judges the new head, and both
@@ -174,7 +181,8 @@ saying so.
 - `notes` — texts the agent's notes must hold, all rounds together.
 - `sarif` / `code-quality` / `left-out` — with `reports`, results each report
   must hold, and the places neither may name; `sarif-lacks`, rules no
-  SARIF result may have.
+  SARIF result may have; `code-quality-kept`, with `again-after`, each
+  fingerprint of the first run's Code Quality report in the second's.
 - `summary-file` / `summary-html` — with `summary`, texts the Markdown and
   the HTML summary must hold, in this order; with `cli`, the Markdown in
   `workline-summary.md`.

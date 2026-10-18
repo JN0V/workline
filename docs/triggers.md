@@ -1,6 +1,6 @@
 ---
 sources: [cmd/workline, internal/line, internal/hooks, internal/forge/gitlab.go, ci/gitlab/workline.gitlab-ci.yml, ci/github/workline.yml, ci/github/workline-gardening.yml, ci/github/workline-sample.yml, routing.default.yaml]
-checked: 2a1d3636
+checked: 07029f11
 verified: agent:claude-code
 reader: 2de353fab113
 ---
@@ -43,7 +43,11 @@ Each event that writes runs in two jobs
   the `--json` result from the first job to the second, at the same path;
 - where the merge request's code can change the first job (a GitHub pull
   request's own run), the second runs from the base: `--from-merge-request
-  <n> --head <sha>` ([more](commands.md#workline-apply)).
+  <n> --head <sha>` ([more](commands.md#workline-apply));
+- the gates run first, in a job with no write token and no AI key:
+  `route <event> --gates-only --json > gates.json`, which the judge reads
+  (`--gates-from gates.json`); with `--code-quality`, what they add
+  ([gates in CI](gates-in-ci.md)).
 
 `$ai` below is your choice of agent: `none`, `claude`, `cmd:<command>`
 ([usage](usage.md)).
@@ -132,8 +136,8 @@ one issue, the level the product owner's acts suggest among it
 ### Your own scanners
 
 `--sarif <file>` beside `--code-quality` writes the findings for GitHub's
-code scanning, on a merge request not the documentalist's nor the
-reviewer's ([#412](https://github.com/JN0V/workline/issues/412)).
+code scanning, on a merge request not the documentalist's, the
+reviewer's nor the gates' ([#412](https://github.com/JN0V/workline/issues/412)).
 `gate:<name>` steps, or `workline gate <name>`, run your own scanners; on
 a merge request given its `range`, only the findings the change adds count
 ([new findings](spec/gates.md#on-a-merge-request-the-findings-the-change-adds)).

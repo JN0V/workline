@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, .github/workflows/workline.yml, .github/workflows/workline-apply.yml, .github/workflows/workline-gardening.yml, .github/workflows/workline-sample.yml, .github/workflows/release.yml, .github/workflows/release-please.yml, release-please-config.json, .goreleaser.yaml, cmd/workline]
-checked: e2580728
+checked: 07029f11
 judged: eb7fc7c
 verified: agent:claude-code
 reader: fe1505d43360
@@ -10,6 +10,7 @@ reader: fe1505d43360
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 400}}}%%
 flowchart LR
+  gates["<b>Pull request</b><br/>gates: no secret"]
   subgraph reads["The AI key, read rights"]
     judge["<b>Pull request</b><br/>judge"]
     garden["<b>Nightly or weekly</b><br/>gardening: judge"]
@@ -24,6 +25,7 @@ flowchart LR
     swrite["sample: write"]
     iapply["import: apply"]
   end
+  gates --> judge
   judge --> apply
   judge -- "a fork's" --> fork
   garden --> gapply
@@ -42,7 +44,8 @@ write run the default branch's workflow, never a pull request's own
 1. **Copy the workflows** into `.github/workflows/`:
    - [workline.yml](../ci/github/workline.yml): `judge` on each pull
      request, its own run: no write token; it warns when no workflow
-     applies what it proposed.
+     applies what it proposed. Before it, `gates` runs your gates alone:
+     add the install of their tools there ([gates in CI](gates-in-ci.md)).
    - [workline-apply.yml](../ci/github/workline-apply.yml), from the
      default branch:
      - `apply` after each `judge`, the fixes committed to the pull

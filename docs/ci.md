@@ -1,6 +1,6 @@
 ---
 sources: [ci/github, ci/gitlab, ci/forgejo/workline-forge.sh, roles/product-owner/role.yaml, cmd/workline]
-checked: a9762f04
+checked: 07029f11
 judged: a8574a5
 verified: agent:claude-code
 reader: 8aab3bd261d9
@@ -36,6 +36,9 @@ then one that applies, with the write token and no AI key
 | gardening | nightly while a backlog is caught up, then weekly | the `schedule` line | one merge request a task ([ADR-0006](adr/0006-gardening-opens-one-merge-request-per-task.md)); then those the branch moved under, rebuilt or closed ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md#amendment-2026-10-12-gardenings-merge-requests-follow-too-or-are-closed)) |
 | sample | weekly | the docs and acts drawn | an issue comment, a merge request |
 | import | by hand | a file's items | the issues |
+
+- **The gates run first, alone**, with no write token and no AI key
+  ([gates in CI](gates-in-ci.md)).
 
 - **A judge that fails still hands over**: the applying job runs whatever
   the judge's outcome, and the pipeline fails by the judge's. It applies
@@ -111,9 +114,10 @@ conversation to resolve but the reviewer's comments
 ([ADR-0047](adr/0047-findings-on-a-merge-request-open-no-conversation.md)):
 
 - **GitHub**: the documentalist's as the annotations of the check
-  `workline findings`; code scanning keeps the gates' and the
-  committer's.
-- **GitLab**: the Code Quality report, a report, not a thread.
+  `workline findings`; code scanning keeps the committer's. The gates'
+  are in their job's summary ([gates in CI](gates-in-ci.md)).
+- **GitLab**: the Code Quality report, a report, not a thread; the gates'
+  job writes its own.
 - `workline doctor` says whether merging requires every conversation
   resolved.
 

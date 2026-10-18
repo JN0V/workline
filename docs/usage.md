@@ -1,8 +1,8 @@
 ---
 sources: [cmd/workline, internal/role/config.go, internal/engine/engine.go, internal/hooks, internal/agent/claude.go, internal/agent/command.go]
-checked: 2a1d3636
+checked: 07029f11
 judged: b5899f5
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Using workline
 
@@ -60,8 +60,9 @@ Each in detail: [the commands](commands.md), and
 | `--push-to-merge-request` | commits what the patches write to the merge request's branch ([below](#writing-to-a-merge-request)) |
 | `--open-merge-request` | puts what the patches write in a merge request of its own ([below](#writing-to-a-merge-request)) |
 | `--roles <dir>` | a folder of roles used instead of the shipped ones |
-| `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's and the reviewer's ([role outcome](spec/role-outcome.md)) |
+| `--sarif <file>` / `--code-quality <file>` | also write the findings for GitHub's code scanning (SARIF) or GitLab's Code Quality; `route`: every step's; on a merge request, the SARIF without the documentalist's, the reviewer's nor the gates' ([role outcome](spec/role-outcome.md)) |
 | `--summary <file>` | also add what a CI job's page shows ([below](#the-jobs-summary)) |
+| `--gates-only` / `--gates-from <file>` | `route` only: run the event's gates alone, for a CI job of their own; or read their verdicts from that run's result ([gates in CI](gates-in-ci.md)) |
 | `--verdict <file>` | `route` only: also write the line's verdict on the head it judged, for the [merge policy](merge-policy.md); `--verdict-head <commit>`, the head when the commit judged is a merge result |
 | `--json` | print the result as JSON ([below](#the-jobs-summary)) |
 
