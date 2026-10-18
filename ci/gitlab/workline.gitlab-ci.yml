@@ -7,7 +7,11 @@
 # The project's routing decides what runs on a merge request (.workline/config.yaml,
 # `routing:`; by default the committer, then the documentalist).
 #
-# Two jobs, two trust zones (docs/research/server-side.md):
+# Two jobs, two trust zones (docs/research/server-side.md), the gates first:
+#   gates  runs the project's gates alone (`gate:<name>`; the first release
+#          after v0.35.0), their tools the merge request's code: what they
+#          add is its Code Quality report, their verdicts judge's to read
+#          (ADR-0049). Install their tools in its before_script.
 #   judge  runs the line, no write token, stops before applying (--no-apply).
 #          With the variable CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`, a
 #          Claude subscription; masked), Claude judges; without it, the docs
@@ -90,9 +94,43 @@ variables:
     - workline version
     - git fetch --quiet origin $CI_MERGE_REQUEST_DIFF_BASE_SHA || true
 
+# The gates alone, before the judge. GitLab gives every job the project's
+# variables: this one unsets the agent's token and the project bot's
+# before the gates run, though whoever may push a branch can read them
+# from a pipeline they change (ADR-0044); a fork's merge request runs in
+# the fork, which has neither. The judge runs after it, whatever its
+# verdict: the line reads it, and errs on a gate it does not hold.
+workline:gates:
+  extends: .workline
+  stage: test
+  interruptible: true
+  script:
+    - unset CLAUDE_CODE_OAUTH_TOKEN WORKLINE_GITLAB_TOKEN GITLAB_TOKEN
+    - status=0
+    - >
+      workline route merge-request --gates-only --forge none
+      --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA
+      --code-quality gl-code-quality-gates.json --summary gates-summary.md --summary gates-summary.html
+      --json > gates.json || status=$?
+    - exit $status
+  # Its summary named its own: the judge, given this job's artifacts,
+  # writes workline-summary.md afresh.
+  after_script:
+    - '[ ! -s gates-summary.md ] || cat gates-summary.md'
+    - printf '{"workline":[{"external_link":{"label":"workline gates","url":"%s/artifacts/file/gates-summary.html"}}]}\n' "$CI_JOB_URL" > workline-annotations.json
+  artifacts:
+    when: always
+    paths: [gates.json, gates-summary.html, gates-summary.md]
+    reports: {codequality: gl-code-quality-gates.json, annotations: workline-annotations.json}
+    expire_in: 1 day
+
 workline:judge:
   extends: .workline
   stage: test
+  needs: [workline:gates]
+  rules:                            # also when the gates did not pass: the line reads their verdict
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
   # One pipeline per merge request (#359): a push cancels the one still
   # judging the head before, with GitLab's "Auto-cancel redundant
   # pipelines" on (docs/ci-gitlab.md). The jobs that write are not
@@ -110,7 +148,7 @@ workline:judge:
       workline route merge-request --ai "$ai" --no-apply --push-to-merge-request
       --forge gitlab --target merge-request:$CI_MERGE_REQUEST_IID --branch "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
       --input range=$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA $lenses ${draft:+--input draft=$draft}
-      --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
+      --gates-from gates.json --code-quality gl-code-quality.json --summary workline-summary.md --summary workline-summary.html
       --verdict workline-verdict.json --verdict-head "${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}" --json > line.json || status=$?
     - exit $status
   # An agent out of reach (3) warns, not taken for the change's fault: a
