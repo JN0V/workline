@@ -21,6 +21,8 @@ import (
 	"github.com/JN0V/workline/internal/backlog"
 	"github.com/JN0V/workline/internal/forge"
 	"github.com/JN0V/workline/internal/intent"
+	"github.com/JN0V/workline/internal/role"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -40,16 +42,54 @@ type waiting struct {
 	before string // the reviewer's comment as it reads, its findings carried to a person
 }
 
+// keepersOrder reads the backlog's order as the product owner does
+// (ADR-0040): priority and effort where its settings say the project
+// keeps them, unset as before. A setting that does not read, or a family
+// the project lacks, is said, and workline's own labels read: the order
+// only says which spec is read first.
+func keepersOrder(repo string, f forge.Backlog, open []forge.Issue) (*verdict.Finding, error) {
+	said := func(err error) *verdict.Finding {
+		return &verdict.Finding{Rule: "spec-order", Level: "info",
+			Message: "the specs are read in workline's own priority order: the product owner's priority and effort settings do not read (" + err.Error() + ")"}
+	}
+	c, err := role.LoadProjectConfig(repo)
+	if err != nil {
+		return said(err), nil
+	}
+	var cfg backlog.Config
+	settings := c.Roles[keeper].Settings
+	if cfg.Priority, err = scale.ReadSetting(scale.Priority, settings[scale.Priority.Axis]); err != nil {
+		return said(err), nil
+	}
+	if cfg.Effort, err = scale.ReadSetting(scale.Effort, settings[scale.Effort.Axis]); err != nil {
+		return said(err), nil
+	}
+	scheme, _, err := backlog.Where(f, cfg, open)
+	if errors.Is(err, forge.ErrUnreachable) {
+		return nil, err
+	}
+	if err != nil {
+		return said(err), nil
+	}
+	scale.Use(scheme)
+	return nil, nil
+}
+
 // waitingSpecs finds, in the backlog's order, the issues whose spec waits
 // on a review: kept by the product owner, not ready, their four sections
 // written (drafts too), their body not read as it is, their rounds not
 // stopped. One whose record does not read is passed over and said (#302):
 // read again as round 1, it cost an agent call a night, and the issues
 // after it waited.
-func waitingSpecs(f forge.Backlog) (ws []waiting, unread []verdict.Finding, err error) {
+func waitingSpecs(repo string, f forge.Backlog) (ws []waiting, unread []verdict.Finding, err error) {
 	open, err := f.Issues()
 	if err != nil {
 		return nil, nil, err
+	}
+	if said, err := keepersOrder(repo, f, open); err != nil {
+		return nil, nil, err
+	} else if said != nil {
+		unread = append(unread, *said)
 	}
 	backlog.Order(open)
 	for _, is := range open {
@@ -123,7 +163,7 @@ func specOnForge(runDir, repo string, s Settings) (queue, int, bool) {
 		return q, final(runDir, Review{Subject: "spec", Status: verdict.Pass, Summary: "no forge: no refined issue to read",
 			Findings: []verdict.Finding{{Rule: "no-forge", Level: "warn", Message: "on " + gardening + ", the reviewer reads the issues the product owner refined; " + forge.Missing}}}), false
 	}
-	ws, unread, err := waitingSpecs(b)
+	ws, unread, err := waitingSpecs(repo, b)
 	if errors.Is(err, forge.ErrUnreachable) {
 		fmt.Fprintln(os.Stderr, err)
 		return q, exitExternal, false

@@ -1,0 +1,27 @@
+case: reviewer/spec-read-in-the-owners-order
+about: "The specs waiting are read in the backlog's order as the product owner reads it: with its `priority` setting, the project's own labels order them — P0 first, though its number comes last — and the one past specs-per-run waits (ADR-0040)."
+given:
+  repo: reviewed
+  config: {roles: {reviewer: {settings: {specs-per-run: 1}}, product-owner: {settings: {priority: auto}}}}
+  forge:
+    issues:
+      - id: 4
+        title: The mean of no values
+        body: "## Need\n\nAverage gives 0 for an empty list.\n\n## Verification\n\nA test of Average on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine, P2]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+      - id: 8
+        title: The sum of no values
+        body: "## Need\n\nThe sum of no values is 0.\n\n## Verification\n\nA test of Sum on [] expects 0.\n\n## Validation\n\nThe maintainer reads the test.\n\n## Scope\n\ncalc/calc.go\n"
+        labels: [workline:to-refine, P0]
+        comments: ["```yaml\nsources: []\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]
+    merge-requests: []
+run: {role: reviewer, event: schedule, ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  findings: [{rule: spec-waits, message: "(specs-per-run 1): #4"}]
+  forge:
+    issues:
+      - {id: 8, comments: 2, comment-contains: "round=1 open=0 in= -->"}
+      - {id: 4, comments: 1}
