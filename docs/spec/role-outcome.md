@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/engine, internal/intent, internal/role, internal/agent, internal/verdict, internal/report]
 verified: agent:claude-code
-checked: fac02675
+checked: 53ef8d2f
 judged: b5899f5
 status: draft
 ---
@@ -107,7 +107,7 @@ refuses. The catalogue is closed and belongs to the engine:
 | `undepend` | take off a link the role set (`blocked-by`), its blocker still open: always proposed to a person; a closed blocker's link the engine takes off itself, a person's never (ADR-0028) | forge |
 | `handoff` | name the next role and why | engine |
 | `note` | a message for the human, nothing else; the documentalist's may name the doc it is about, `{doc, text}`: a doc a note names is not vouched for in that answer (roles/documentalist/docs/judge.md, "Moving `checked`") | report |
-| `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, claim}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
+| `finding` | a lens's answer (role contract, "In parts"): `{lens, severity, title, why, cause: {path, quote}, symptom, fix, seen, claim, decision}`, `severity` `important` or `nit`, `lens` the one that found it, read when the lenses are asked together; `claim` the author's words a lens that `cites: claim` quotes; `decision` the question for a person, for a choice that is no defect, a key of the finding, never an item of its own; a cause's `path` `#4` for the issue the change closes; the engine finds each quote again, and tells the change's from the rest by where the cause lies (ADR-0020) | never: read by the reviewer's `pre` |
 | `claim` | a part's answer about a passage of the question (role contract, "In parts"): `{lines, status, quote, source: {path, lines, quote}, why}`, `status` one of `contradicted`, `partial`, `supported`; or, beside a `patch`, why it takes words out | never: read by `pre`, which puts the parts' claims together, or by `post` |
 | `read` | a judge's ask, when its question lets it read (role contract, "A judge that reads"; ADR-0045): `{path, lines}`, `{name}` or `{grep}`, each with `why`, in place of its verdict | never: served by `pre`, at the commit judged, and the judge asked again |
 | `quote` | the lines a judge's no rests on, `{path, text}`, beside its note | never: found again by `pre` before a finding is dropped |

@@ -1,6 +1,6 @@
 ---
 sources: [roles/reviewer/role.yaml, roles/reviewer/instruction.md, roles/reviewer/policy.md, roles/reviewer/lenses, internal/builtin/reviewer]
-checked: a9762f04
+checked: 53ef8d2f
 verified: agent:claude-code
 ---
 # Reviewer — a run on code
