@@ -504,12 +504,12 @@ func namedIn(text string) (code, capital, weak []string) {
 	}
 	text, spans, blocks := markdownCode(text)
 	for _, s := range spans {
-		for _, w := range codeWords(s) {
+		for _, w := range codeWords(s, false) {
 			add(&code, w.name)
 		}
 	}
 	for _, s := range blocks {
-		for _, w := range codeWords(s) {
+		for _, w := range codeWords(s, true) {
 			if w.call || strings.ToLower(w.name) != w.name || strings.Contains(w.name, "_") {
 				add(&code, w.name)
 			}
@@ -632,18 +632,19 @@ type codeWord struct {
 var identRe = regexp.MustCompile(`^[A-Za-z_]\w*$`)
 
 // codeWords are the words of some code that may name a function: each part
-// of `a.b`, the last one called when a parenthesis follows. A path, a
-// file's name, and a word holding `-` (a flag, `--all`; a key,
-// `code-lines-max`) name none.
-func codeWords(code string) []codeWord {
+// of `a.b`, of `a-b` in a fenced block (a subtraction there as often as a
+// key), the last one called when a parenthesis follows. Not called, a path,
+// a file's name, a flag (`--all`) and, in a span, a key (`code-lines-max`)
+// name none.
+func codeWords(code string, block bool) []codeWord {
 	var out []codeWord
 	for _, m := range pathWord.FindAllStringIndex(code, -1) {
 		t := strings.TrimRight(code[m[0]:m[1]], ".")
-		if aPath(t) || strings.Contains(t, "-") {
+		call := strings.HasPrefix(strings.TrimLeft(code[m[1]:], " \t"), "(")
+		if !call && (aPath(t) || strings.HasPrefix(t, "-") || (!block && strings.Contains(t, "-"))) {
 			continue
 		}
-		call := strings.HasPrefix(strings.TrimLeft(code[m[1]:], " \t"), "(")
-		parts := strings.Split(t, ".")
+		parts := strings.FieldsFunc(t, func(r rune) bool { return r == '.' || r == '-' || r == '/' })
 		for k, w := range parts {
 			if identRe.MatchString(w) {
 				out = append(out, codeWord{w, call && k == len(parts)-1})
