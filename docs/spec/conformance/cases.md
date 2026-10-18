@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: fac02675
+checked: ab6ae913
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -28,7 +28,10 @@ a `PATH` without a tool, or with a fake one first. `engine-tags` runs the
 case on an engine built from this source with those Go build tags, a
 change only the tests make: `workline_alias` gives how a person accepts a
 need a new heading, written first, the shipped one still read
-([ADR-0039](../../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md)).
+([ADR-0039](../../adr/0039-issue-sections-are-read-by-meaning-the-kind-is-the-forges.md));
+`workline_quick` gives a GitLab call 2 s, not 60, and tries it again
+10 ms after, not 2 s, so a case on a call that stalls lasts seconds
+([a call tried again](../../gitlab/calls.md)).
 Such a case does not run on an engine `WORKLINE_ENGINE` names: it fails,
 saying so.
 

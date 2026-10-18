@@ -1,0 +1,16 @@
+case: forge/gitlab-5xx-read-tried-again
+about: "A GitLab read answered with a 5xx is tried again after a pause: the open issues answered 502 once, the run reads them the second time and passes (#489)."
+given:
+  repo: backlog
+  engine-tags: [workline_quick]
+  forge:
+    faults:
+      - {path: /issues, status: 502, times: 1}
+    issues:
+      - {id: 20, title: "Export in JSON", body: "Add a JSON export.", labels: [workline:ready], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, forge: gitlab, summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: forge-unreachable}]
+  summary-file:
+    - "- **next to build** (1)\n  - #20: Export in JSON"

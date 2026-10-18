@@ -488,12 +488,14 @@ func runCase(t *testing.T, c *caseFile) []string {
 	if c.Run.Forge != "" {
 		forgeSpec = c.Run.Forge
 	}
+	var mock *gitlabMock
 	if c.Run.Forge == "gitlab" {
 		// GitLab's REST API, simulated over the same file (gitlab_test.go).
 		if forgeFile == "" {
 			return []string{"run.forge gitlab needs given.forge"}
 		}
-		srv := httptest.NewServer(&gitlabMock{file: forgeFile, repo: repo})
+		mock = &gitlabMock{file: forgeFile, repo: repo}
+		srv := httptest.NewServer(mock)
 		defer srv.Close()
 		env = append(env, "CI_API_V4_URL="+srv.URL+"/api/v4", "CI_PROJECT_ID=1", "CI_PROJECT_PATH=", "GITLAB_TOKEN=conformance")
 	}
@@ -760,6 +762,9 @@ func runCase(t *testing.T, c *caseFile) []string {
 		r = r2
 	}
 	problems := compare(c, &r, repo)
+	if mock != nil {
+		problems = append(problems, mock.unmet()...)
+	}
 	for b, before := range tips {
 		if out, _ := exec.Command("git", "-C", repo, "ls-remote", "origin", "refs/heads/"+b).Output(); string(out) != before {
 			problems = append(problems, fmt.Sprintf("origin's %s moved: %q, was %q", b, out, before))

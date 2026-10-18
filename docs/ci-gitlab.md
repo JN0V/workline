@@ -1,6 +1,6 @@
 ---
 sources: [ci/gitlab/workline.gitlab-ci.yml, internal/forge/gitlab.go, cmd/workline, Dockerfile]
-checked: fac02675
+checked: ef0d27cd
 judged: cd97f28
 verified: agent:claude-code
 reader: 9799dcaf51f3
@@ -148,7 +148,8 @@ a cron off the hour (`13 17 * * *`) was listed as due at 18:00 and ran at
   - A merge request the reviewer holds still gets its comment
     ([#226](https://github.com/JN0V/workline/issues/226)).
   - An agent out of reach (3) warns (`allow_failure: {exit_codes: [3]}`),
-    as on GitHub: a person judges what it would have.
+    as on GitHub: a person judges what it would have; a GitLab call is
+    tried again first ([which](gitlab/calls.md)).
 - **`workline:follow`**, each push to the default branch, its bot's token,
   no agent: the documentalist's release merge request rebuilt on the new
   tip ([ADR-0034](adr/0034-the-release-fix-follows-its-base.md)); when set,

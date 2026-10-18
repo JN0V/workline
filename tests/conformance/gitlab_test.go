@@ -1,6 +1,7 @@
 package conformance
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,9 +32,35 @@ import (
 // branch (HEAD), as GitLab computes it; a discussion on a line it does not
 // show, or a kept line without its old one, is taken on no line, as
 // gitlab.com does (#277).
+// Its `faults` fail calls for a moment (gitlabFault); a fault no call
+// met fails the case, which would prove nothing (unmet).
 type gitlabMock struct {
 	file, repo string
 	mu         sync.Mutex
+	met        map[int]*faultMet // by the fault's place in faults
+}
+
+// gitlabFault fails the calls of a method on a path for a moment: they
+// get no answer until the engine gives up (`stall`), or a status (`status`:
+// 500, 502, 503, 429), with `retry-after` seconds. `skip` calls are
+// answered first; then `times` fail (0: all), then they are answered. A
+// call sooner than the retry-after asked gets the status again, uncounted.
+// A write stalled is taken all the same, answered too late.
+type gitlabFault struct {
+	Method     string `json:"method,omitempty"` // GET when not given
+	Path       string `json:"path"`             // the project's, as /issues/9/notes
+	Stall      bool   `json:"stall,omitempty"`
+	Status     int    `json:"status,omitempty"`
+	RetryAfter int    `json:"retry-after,omitempty"`
+	Skip       int    `json:"skip,omitempty"`
+	Times      int    `json:"times,omitempty"`
+}
+
+// faultMet is what a fault met: the calls it saw, those it failed, when
+// it last failed one.
+type faultMet struct {
+	calls, failed int
+	at            time.Time
 }
 
 type gitlabState struct {
@@ -44,7 +71,8 @@ type gitlabState struct {
 	} `json:"members,omitempty"`
 	// Bots are the users the users API says are bots (`bot`), a service
 	// account's among them; a merge request's author is user 1000 + its id.
-	Bots []string `json:"bots,omitempty"`
+	Bots   []string      `json:"bots,omitempty"`
+	Faults []gitlabFault `json:"faults,omitempty"`
 }
 
 var (
@@ -62,32 +90,98 @@ var (
 const tokenUser = "workline-bot"
 
 func (m *gitlabMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	answer, status, f := m.answer(r)
+	if f != nil && f.Stall {
+		// No answer until the engine gives up: it closes the connection.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(time.Minute):
+		}
+		return
+	}
+	if f != nil && f.RetryAfter > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(f.RetryAfter))
+	}
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(answer)
+}
+
+// answer answers a call over the forge file, or the fault it meets: a
+// status fault's status, or a stall's answer, never sent, its write taken.
+func (m *gitlabMock) answer(r *http.Request) (any, int, *gitlabFault) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if r.URL.Path == "/api/graphql" {
-		fmt.Fprint(w, `{"errors": [{"message": "not simulated"}]}`)
-		return
+		return map[string]any{"errors": []map[string]any{{"message": "not simulated"}}}, 200, nil
 	}
 	data, err := os.ReadFile(m.file)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return map[string]any{"message": err.Error()}, http.StatusInternalServerError, nil
 	}
 	var s gitlabState
 	if err := json.Unmarshal(data, &s); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return map[string]any{"message": err.Error()}, http.StatusInternalServerError, nil
 	}
 	body, _ := io.ReadAll(r.Body)
 	form, _ := url.ParseQuery(string(body))
 	p := strings.TrimPrefix(r.URL.Path, "/api/v4/projects/1")
+	f := m.fault(s.Faults, r.Method, p)
+	if f != nil && !f.Stall {
+		return map[string]any{"message": http.StatusText(f.Status)}, f.Status, f
+	}
 	answer, status := m.serve(&s, r.Method, p, r.URL.Query(), form)
 	if r.Method != "GET" && status < 300 {
 		out, _ := json.MarshalIndent(s, "", "  ")
 		os.WriteFile(m.file, out, 0o644)
 	}
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(answer)
+	return answer, status, f
+}
+
+// fault is the fault a call meets, nil for none; it counts what each
+// fault met.
+func (m *gitlabMock) fault(faults []gitlabFault, method, p string) *gitlabFault {
+	if m.met == nil {
+		m.met = map[int]*faultMet{}
+	}
+	for i, f := range faults {
+		if f.Path != p || cmp.Or(f.Method, "GET") != method {
+			continue
+		}
+		if m.met[i] == nil {
+			m.met[i] = &faultMet{}
+		}
+		met := m.met[i]
+		if met.failed > 0 && f.RetryAfter > 0 && time.Since(met.at) < time.Duration(f.RetryAfter)*time.Second {
+			return &f // sooner than asked: refused again, uncounted
+		}
+		met.calls++
+		if met.calls <= f.Skip || f.Times > 0 && met.failed >= f.Times {
+			return nil
+		}
+		met.failed++
+		met.at = time.Now()
+		return &f
+	}
+	return nil
+}
+
+// unmet names the faults no call met: a case giving one proves nothing
+// of it.
+func (m *gitlabMock) unmet() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var s gitlabState
+	data, _ := os.ReadFile(m.file)
+	if err := json.Unmarshal(data, &s); err != nil {
+		return []string{"the simulated GitLab's file: " + err.Error()}
+	}
+	var out []string
+	for i, f := range s.Faults {
+		if m.met[i] == nil || m.met[i].failed == 0 {
+			out = append(out, fmt.Sprintf("faults[%d] (%s %s) met no call: the case proves nothing of it", i, cmp.Or(f.Method, "GET"), f.Path))
+		}
+	}
+	return out
 }
 
 func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values) (any, int) {
@@ -300,6 +394,7 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 				c.ID = strconv.Itoa(n)
 			}
 			it.Comments = append(it.Comments, c)
+			it.Posted++ // each mails the issue's followers
 			return map[string]any{"id": n}, 201
 		case method == "PUT":
 			n, _ := strconv.Atoi(sm[3])
