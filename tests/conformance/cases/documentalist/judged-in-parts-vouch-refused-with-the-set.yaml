@@ -12,7 +12,7 @@ expect:
   status: pass
   findings:
     - {rule: intention-refused}
-    - {rule: suspect, where: docs/tech/auth.md, message: "the proposals were refused whole, so it stays"}
+    - {rule: suspect, where: docs/tech/auth.md, message: "the engine's patch moving `checked` is not among what this run applies"}
   files:
     "docs/tech/auth.md": {lacks: "verified:"}
     "src/auth/token.go": {lacks: "// tokens"}

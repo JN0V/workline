@@ -1850,8 +1850,9 @@ func Post(runDir, repo string) int {
 	said := map[string]bool{}
 	for _, f := range findings {
 		if i := strings.Index(f.Message, checkedMovesTo); i >= 0 && vouchedInParts[f.Where] == "" {
-			// The engine's patch went with a set of proposals refused whole.
-			f.Message = f.Message[:i] + "every line stating something supported by its sources, but the proposals were refused whole, so it stays: a person reads it whole, then moves `checked`)"
+			// The engine's patch is not applied: a set of proposals refused
+			// whole takes it out.
+			f.Message = f.Message[:i] + "every line stating something supported by its sources, but the engine's patch moving `checked` is not among what this run applies (a set of proposals refused whole takes it out), so it stays: a person reads it whole, then moves `checked`)"
 		}
 		if _, ok := inParts[f.Where]; ok && strings.Contains(f.Message, partsFixAsked) {
 			// What the fix call made of what the parts found, now known.
