@@ -70,8 +70,10 @@ reported as advisory. The verdict comes from the rules either way.
 
 A gate gives the same verdict as a role (`--json`), with the findings of every
 check, and keeps each check's output under `.git/workline/gates/`. *Not built
-yet:* merging the SARIF outputs and posting them on the merge request
-(reviewdog-style), on GitHub and GitLab alike.
+yet* ([ADR-0049](../adr/0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)):
+on a merge request, the thresholds read only the findings the change adds,
+each tool rerun at the merge base; they are posted as a check's annotations
+and one summary on GitHub, as Code Quality on GitLab.
 
 ## Protection
 
