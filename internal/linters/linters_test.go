@@ -149,6 +149,28 @@ func TestWhatTheProjectRunsCounts(t *testing.T) {
 	}
 }
 
+func TestInstallsAndNamesRunNothing(t *testing.T) {
+	got := read(t, map[string]string{
+		"deploy.sh":  "echo\n",
+		"Dockerfile": "FROM scratch\n",
+		"main.go":    "package main\n",
+		".github/workflows/lint.yml": "jobs:\n  lint:\n    steps:\n" +
+			"      - name: Lint with yamllint\n" +
+			"      - run: pip install yamllint && echo hadolint\n" +
+			"      - run: |\n" +
+			"          curl -sSfLO https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck.tar.xz\n" +
+			"          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1 && golangci-lint run\n",
+	})
+	for _, name := range []string{"yaml", "shell", "docker"} {
+		if l := got[name]; len(l.Running[Lint]) != 0 {
+			t.Errorf("%s: a step's name, an install, a download or an echo runs nothing: %+v", name, l.Running)
+		}
+	}
+	if s := got["go"].Running[Lint]; len(s) != 1 || s[0].Tool != "golangci-lint" {
+		t.Errorf("go: the command after the install runs: %+v", got["go"].Running)
+	}
+}
+
 func TestGateChecksCountFirst(t *testing.T) {
 	got := read(t, map[string]string{
 		"main.go":                  "package main\n",

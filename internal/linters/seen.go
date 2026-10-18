@@ -24,9 +24,38 @@ var ranBy = []string{
 	"Makefile", "makefile", "GNUmakefile", "justfile", "Justfile", "Taskfile.yml", "Taskfile.yaml",
 }
 
-// comment is a comment of YAML, a Makefile or shell: from a # at the
-// start of a line or after a space.
-var comment = regexp.MustCompile(`(?m)(^|\s)#.*$`)
+var (
+	// comment is a comment of YAML, a Makefile or shell: from a # at the
+	// start of a line or after a space.
+	comment = regexp.MustCompile(`(?m)(^|\s)#.*$`)
+	// separator splits a line into its commands.
+	separator = regexp.MustCompile(`&&|\|\||;|\|`)
+	// lead is what comes before a command: a list's dash, a key
+	// (`run:`, `script:`), make's @.
+	lead = regexp.MustCompile(`^[\s@-]*(?:([A-Za-z_-]+):\s+)?[\s-]*`)
+	// prose are the keys whose value is words, not a command.
+	prose = map[string]bool{"name": true, "description": true, "title": true}
+	// notARun is a command that names a tool without running it: an
+	// install, a download, a file moved, a word printed.
+	notARun = regexp.MustCompile(`^(?:sudo\s+)?(?:(?:pip3?|pipx|uv(?:\s+pip|\s+tool)?|npm|pnpm|yarn|bun|go|cargo|brew|apt-get|apt|gem|apk|dnf|yum|choco|scoop|mise|asdf|aqua|conda|poetry)\s+(?:install|add|get|use|i)\b|(?:curl|wget|install|chmod|mv|cp|ln|tar|unzip|rm|echo|printf)\b)`)
+)
+
+// runs is a text's commands that run something: comments, installs,
+// downloads and printed words left out.
+func runs(text string) string {
+	var kept []string
+	for _, line := range strings.Split(comment.ReplaceAllString(text, "$1"), "\n") {
+		if m := lead.FindStringSubmatch(line); prose[m[1]] {
+			continue // name: Lint with shellcheck
+		}
+		for _, c := range separator.Split(line, -1) {
+			if c = lead.ReplaceAllString(c, ""); c != "" && !notARun.MatchString(c) {
+				kept = append(kept, c)
+			}
+		}
+	}
+	return strings.Join(kept, "\n")
+}
 
 // running says, for each tool the project runs, where it was found:
 // the files above, package.json's scripts, and the gate checks of
@@ -46,7 +75,7 @@ func running(repo string, k *known) map[string][]string {
 				continue
 			}
 			rel, _ := filepath.Rel(repo, m)
-			texts = append(texts, text{filepath.ToSlash(rel), comment.ReplaceAllString(string(data), "$1")})
+			texts = append(texts, text{filepath.ToSlash(rel), runs(string(data))})
 		}
 	}
 	if data, err := os.ReadFile(filepath.Join(repo, "package.json")); err == nil {
@@ -59,7 +88,7 @@ func running(repo string, k *known) map[string][]string {
 				lines = append(lines, s)
 			}
 			sort.Strings(lines)
-			texts = append(texts, text{"package.json", strings.Join(lines, "\n")})
+			texts = append(texts, text{"package.json", runs(strings.Join(lines, "\n"))})
 		}
 	}
 	if data, err := os.ReadFile(filepath.Join(repo, ".workline", "config.yaml")); err == nil {
@@ -82,21 +111,21 @@ func running(repo string, k *known) map[string][]string {
 				for _, c := range cfg.Gates[n].Checks {
 					lines = append(lines, c.Run)
 				}
-				gates = append(gates, text{".workline/config.yaml, gate " + n, strings.Join(lines, "\n")})
+				gates = append(gates, text{".workline/config.yaml, gate " + n, runs(strings.Join(lines, "\n"))})
 			}
 			texts = append(gates, texts...)
 		}
 	}
-	runs := map[string][]string{}
+	found := map[string][]string{}
 	for _, x := range k.tools {
 		for _, t := range texts {
 			for _, re := range k.seen[x.Name] {
 				if re.MatchString(t.body) {
-					runs[x.Name] = append(runs[x.Name], t.where)
+					found[x.Name] = append(found[x.Name], t.where)
 					break
 				}
 			}
 		}
 	}
-	return runs
+	return found
 }

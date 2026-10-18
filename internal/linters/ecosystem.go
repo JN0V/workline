@@ -25,7 +25,8 @@ var ecosystem = []Tool{
 
 // correct sets the kinds trunk's table cannot say, having none for
 // types: a type checker reads types, not lint; a linter that loads the
-// code typed reads both.
+// code typed reads both. Brakeman, a security scanner, trunk files as a
+// linter.
 func correct(x Tool) Tool {
 	reads := map[string][]string{}
 	for k, v := range x.Reads {
@@ -34,6 +35,9 @@ func correct(x Tool) Tool {
 	switch x.Name {
 	case "mypy", "pyright", "ty":
 		reads[Types] = reads[Lint]
+		delete(reads, Lint)
+	case "brakeman":
+		reads[Security] = reads[Lint]
 		delete(reads, Lint)
 	case "golangci-lint", "clippy":
 		reads[Types] = slices.Clone(reads[Lint])
