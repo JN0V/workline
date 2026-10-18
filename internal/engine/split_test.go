@@ -41,4 +41,11 @@ func TestSplitEffort(t *testing.T) {
 	if e := out[2].Value.(map[string]any); e["effort"] != 3 || e["issue"] != 10 {
 		t.Errorf("an effort by name: %v", e)
 	}
+	// What reads as no level is refused as one, never cut nor guessed.
+	for _, v := range []any{1.9, "big", true} {
+		got := splitEffort([]intent.Intention{{Kind: "order", Value: map[string]any{"issue": 9, "effort": v}}})
+		if e := got[len(got)-1].Value.(map[string]any); e["effort"] != 0 {
+			t.Errorf("effort %v read as %v, want none", v, e["effort"])
+		}
+	}
 }

@@ -188,12 +188,14 @@ func splitEffort(in []intent.Intention) []intent.Intention {
 			out = append(out, i)
 			continue
 		}
-		level := 0
+		level := 0 // none read: refused as no level (effort-level)
 		switch v := e.(type) {
 		case int:
 			level = v
 		case float64:
-			level = int(v)
+			if v == float64(int(v)) {
+				level = int(v) // 1.9 is no level, never cut to 1
+			}
 		case string:
 			if l, ok := scale.Effort.Word(v); ok {
 				level = l
@@ -245,7 +247,7 @@ func (a *applier) level(c backlog.Proposal) error {
 	}
 	axis := src.Family.Scale.Axis
 	rule, why := backlog.Placeable(src, *is, l)
-	if was := src.Family.First(is.Labels); rule == "" && was != c.Had {
+	if now := src.Family.Levels(is.Labels); rule == "" && !(len(now) == 0 && c.Had == 0) && !(len(now) == 1 && now[0] == c.Had) {
 		rule, why = axis+"-changed", fmt.Sprintf("its %s changed since the run read it: a person's, kept", axis)
 	}
 	if rule != "" {
