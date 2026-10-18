@@ -1,15 +1,10 @@
 // Command gen writes trunk.json, the extract of trunk-io/plugins (MIT)
-// the package reads: the file types, and for each linter the types it
-// reads by kind, when trunk suggests it, its configs, the version trunk
-// tested and the command a gate check runs. It is regenerated, never
-// edited by hand (ADR-0049): `go generate ./internal/linters` reads the
-// commit pinned there; moving it is a pull request of its own.
+// internal/linters reads, regenerated, never edited (docs/languages.md):
 //
-//	go run ./gen -commit <sha> [-from <a checkout of trunk-io/plugins>]
+//	go run ./gen -commit <sha> [-from <a checkout of that commit>]
 //
-// Left out: formatters (their fixes are applied, not counted), tools
-// that read every file (secrets, spelling: security's, #204), deprecated
-// linters, and the file types told by their content (CloudFormation).
+// Left out: formatters, tools that read every file, deprecated linters,
+// file types told by their content.
 package main
 
 import (
@@ -133,12 +128,32 @@ func main() {
 		os.Exit(1)
 	}
 	t.Source = "https://github.com/trunk-io/plugins/tree/" + *commit
-	data, _ := json.MarshalIndent(t, "", " ")
-	if err := os.WriteFile(*out, append(data, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(*out, write(t), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "gen:", err)
 		os.Exit(1)
 	}
 	fmt.Printf("gen: %d file types, %d tools, from %s\n", len(t.Types), len(t.Tools), t.Source)
+}
+
+// write is the table as JSON, a type or a tool a line: a refresh's diff
+// shows what changed, tool by tool.
+func write(t *table) []byte {
+	line := func(v any) string {
+		data, _ := json.Marshal(v)
+		return string(data)
+	}
+	var types, tools []string
+	for _, x := range t.Types {
+		types = append(types, "  "+line(x))
+	}
+	for _, x := range t.Tools {
+		tools = append(tools, "  "+line(x))
+	}
+	return []byte("{\n" +
+		` "source": ` + line(t.Source) + ",\n" +
+		` "licence": ` + line(t.Licence) + ",\n" +
+		" \"types\": [\n" + strings.Join(types, ",\n") + "\n ],\n" +
+		" \"tools\": [\n" + strings.Join(tools, ",\n") + "\n ]\n}\n")
 }
 
 // read returns LICENSE and each linters/**/plugin.yaml, by path from the
