@@ -1,0 +1,29 @@
+case: product-owner/weight-and-label-two-places
+about: "With the effort kept in GitLab's weight, an effort label is another place: an issue holding one, alone or beside a weight, gets nothing written — never two values, nor a copy —; an issue holding neither gets its weight (ADR-0040, step 5)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, effort: auto, acts: {effort: {mode: act}}}
+  forge:
+    weights: true
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: ["effort::low"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: ["effort::high"], weight: 3, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: values-where, message: "Effort: GitLab's weight."}
+    - {rule: effort-elsewhere, where: "#9", message: "its effort is in effort::low, not in GitLab's weight where the project keeps it"}
+    - {rule: effort-elsewhere, where: "#10", message: "its effort is in two places, GitLab's weight and effort::high"}
+    - {rule: done, where: "#11", message: "Set #11's effort to Medium (weight 3)"}
+  forge:
+    issues:
+      - {id: 9, labels: ["effort::low"], weight: -1}
+      - {id: 10, labels: ["effort::high"], weight: 3}
+      - {id: 11, labels: [], weight: 3}
