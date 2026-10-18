@@ -1,6 +1,6 @@
 ---
 sources: [roles/documentalist/role.yaml, internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/kept.go, routing.default.yaml]
-checked: 4a1dedce
+checked: 6ca89245
 judged: f70db89
 verified: agent:claude-code
 ---
@@ -85,7 +85,7 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
 | `ai-max-calls` | `10` | suspect docs per call |
 | `ai-max-tokens` | `0` (no cap) | tokens one run may spend, all calls together |
 | `whole-chars` | `20000` | characters of sources a doc may take to be judged whole; 25000 at most, its task fitting the context budget |
-| `judge-in-parts` | `true` | when gardening, judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)); a merge request leaves it for the next gardening; `false`: such docs go to a person |
+| `judge-in-parts` | `true` | when gardening, judge a doc too large in parts ([ADR-0009](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)), and one a merge request judged on its change alone; a merge request leaves it for the next gardening; `false`: such docs go to a person |
 | `parts-max`, `parts-max-per-run` | `8`, `16` | parts a doc, parts a run: what bounds a night's tokens in parts |
 | `sample` | unset | `{judge, at-least, after, ai-max-tokens, panel}` for `workline sample` ([ci.md](../../docs/ci.md#the-weekly-sample)) |
 
@@ -124,7 +124,10 @@ Under `roles: {documentalist: {settings: …}}` in `.workline/config.yaml`
   large, judged in parts, 130k to 250k
   ([measured](https://github.com/JN0V/workline/issues/82#issuecomment-6163487736)),
   when gardening, never on a merge request
-  ([#458](https://github.com/JN0V/workline/issues/458)).
+  ([#458](https://github.com/JN0V/workline/issues/458)); so is a doc a
+  merge request judged on its change alone, a night spending what its
+  caps allow
+  ([measured](../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-a-doc-judged-on-its-change-alone)).
 - Condensing and splitting ask a frontier model (`model.tasks`).
 - Reading pages for their reader: about 36k tokens a run on workline, 3
   pages ([measured](docs/reader.md#cost)).

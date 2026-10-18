@@ -507,7 +507,9 @@ func recordsMerged(repo string, suspects map[string]*suspectDoc) ([]fromMerged, 
 	oldest, oldestAt := "", int64(0)
 	for _, p := range sortedDocs(suspects) {
 		sd := suspects[p]
-		if sd.note != "" {
+		// A doc read in parts tonight: the record of a change read alone
+		// would hold it from them (#462).
+		if sd.note != "" || sd.rest {
 			continue
 		}
 		paths, local := docPaths(sd.doc)

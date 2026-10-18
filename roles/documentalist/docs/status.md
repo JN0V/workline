@@ -1,4 +1,4 @@
-# Documentalist — where it stands (2026-10-17)
+# Documentalist — where it stands (2026-10-18)
 
 **In one line:** usable every day on a GitHub or GitLab repository that
 takes merge requests: docs judged on each one and gardened at night, by
@@ -21,9 +21,11 @@ Beta until the three criteria of
 [ADR-0036](../../../docs/adr/0036-a-roles-status-is-earned-by-written-criteria.md)
 hold:
 
-1. **Nothing buildable in Missing**: open. One item is buildable: a doc
-   judged on its change alone read whole at night, later
-   ([#462](https://github.com/JN0V/workline/issues/462)). No commit on a
+1. **Nothing buildable in Missing**: **met** (2026-10-18). A doc judged
+   on its change alone is read in parts at night (Built:
+   [#462](https://github.com/JN0V/workline/issues/462)); moving its
+   `checked` then waits for the maintainer's decision
+   ([#482](https://github.com/JN0V/workline/issues/482)). No commit on a
    person's pull request for a doc only read is built (Built:
    [#463](https://github.com/JN0V/workline/issues/463)). DomoticsCore's
    docs to split are done
@@ -139,7 +141,14 @@ its evaluation in
   `judged-in-parts-same-words-disputed`; a quote a part judged partial
   is no proof a passage is wrong, DomoticsCore's run replayed
   ([#467](https://github.com/JN0V/workline/issues/467)):
-  `judged-in-parts-partial-quote-is-no-proof`. On DomoticsCore, the six
+  `judged-in-parts-partial-quote-is-no-proof`; a doc a merge request
+  judged on its change alone, its sources too large, read in parts at
+  night, the docs read longest ago first
+  ([#462](https://github.com/JN0V/workline/issues/462)):
+  `judged-on-its-diff-read-in-parts-*`,
+  `judged-on-its-diff-too-wide-for-parts-not-asked-again`,
+  `judged-kept-read-in-parts-not-recorded`,
+  `parts-read-longest-ago-first`. On DomoticsCore, the six
   docs needing more than 8 parts were split or narrowed to 8 or fewer
   ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211),
   2026-10-17).
@@ -191,9 +200,12 @@ its evaluation in
 3. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-4. **The agent reads**: a doc judged on its diff against the code as it
-   is now, a read each night; buildable later
-   ([#462](https://github.com/JN0V/workline/issues/462)).
+4. **A doc read in parts, nothing found wrong**, still waits for a
+   person: moving its `checked` amends
+   [ADR-0009](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md)
+   and [ADR-0014](../../../docs/adr/0014-checked-is-earned-by-what-was-read.md),
+   the maintainer's decision
+   ([#482](https://github.com/JN0V/workline/issues/482)).
 5. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first
    nightly's two faults, with a second task's tokens. No issue yet.

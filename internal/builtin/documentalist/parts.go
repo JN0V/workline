@@ -854,16 +854,66 @@ func judgedInPartsPatch(p, content, at string) (string, error) {
 	return fmt.Sprintf("--- a/%s\n+++ b/%s\n@@ -%d,1 +%d,2 @@\n-%s\n+judged-in-parts: %s\n+%s\n", p, p, n, n, lines[n-1], at, lines[n-1]), nil
 }
 
+// restInParts has gardening read in parts, against its sources as they are
+// now, a doc whose sources do not fit a task whole though what changed in
+// them does (#462). Judged on that change alone, its other claims go unread,
+// and its `judged` keeps them so until a source changes: on DomoticsCore,
+// five claims outside every diff were false. A doc judged in parts since
+// its sources last changed waits, as any; one no part could judge — too
+// long itself, a source in another repository, past parts-max, no code
+// among its sources — is judged on what changed, as before.
+func restInParts(docs map[string]*suspectDoc, repo string, s Settings) error {
+	partsMax := orInt(s.PartsMax, partsMaxDefault)
+	for _, p := range sortedDocs(docs) {
+		sd := docs[p]
+		if !sd.overWhole || sd.tooLarge || sd.note != "" || held(sd.doc, sd.doc.JudgedInParts, repo) {
+			continue
+		}
+		plans, why, err := planParts(sd.doc, repo, s.PartChars)
+		if err != nil {
+			return err
+		}
+		if why != "" || len(plans) == 0 || len(plans) > partsMax {
+			continue
+		}
+		sd.tooLarge, sd.rest, sd.evidence, sd.read = true, true, nil, nil
+	}
+	return nil
+}
+
+// readLongestAgoFirst puts first the docs read longest ago against all
+// their sources: by the later of their `checked` and `judged-in-parts`, as
+// commit times, a commit this clone lacks counting as never; the path
+// tells the rest apart. A night's caps take the first: those past them wait
+// for the next nights, and a doc read last night goes behind them, rather
+// than the first by name each night its sources change (#462).
+func readLongestAgoFirst(docs []*suspectDoc, repo string) {
+	at := map[*suspectDoc]int64{}
+	for _, sd := range docs {
+		for _, c := range []string{sd.doc.Checked[""], sd.doc.JudgedInParts} {
+			if c == "" {
+				continue
+			}
+			out, err := git(repo, "log", "-1", "--format=%ct", c+"^{commit}", "--")
+			if n, perr := strconv.ParseInt(strings.TrimSpace(out), 10, 64); err == nil && perr == nil && n > at[sd] {
+				at[sd] = n
+			}
+		}
+	}
+	sort.SliceStable(docs, func(i, j int) bool { return at[docs[i]] < at[docs[j]] })
+}
+
 // holdJudgedInParts keeps from the agent the docs judged in parts, or
 // judged whole without being vouched for, whose sources did not change
-// since, saying so.
+// since, saying so. A doc gardening reads in parts is not held by a
+// `judged` its change alone earned (#462).
 func holdJudgedInParts(docs map[string]*suspectDoc, repo string) {
 	for _, sd := range docs {
 		switch {
 		case sd.note != "":
 		case held(sd.doc, sd.doc.JudgedInParts, repo):
 			sd.note = fmt.Sprintf("(judged in parts at %s, its sources unchanged since: not put before an agent again until one changes; a person reads it whole against them, then moves `checked`)", sd.doc.JudgedInParts)
-		case held(sd.doc, sd.doc.Judged, repo):
+		case !sd.rest && held(sd.doc, sd.doc.Judged, repo):
 			sd.note = fmt.Sprintf("(judged at %s, but the agent could not vouch for every sentence — its note said what; its sources unchanged since: not put before an agent again until one changes; a person reads it against them, then moves `checked`)", sd.doc.Judged)
 		}
 	}
