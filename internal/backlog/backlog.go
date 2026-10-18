@@ -22,6 +22,32 @@ import (
 	"github.com/JN0V/workline/internal/work"
 )
 
+// HiddenLevel is the level an issue's state records for a value the role
+// set in a field visible to organization members only, on a public
+// repository: set, never shown (ADR-0040).
+const HiddenLevel = -1
+
+// axisOf is where the project keeps what an act sets: a priority (order)
+// or an effort; false for another act.
+func axisOf(c Proposal) (scale.Source, bool) {
+	switch c.Do {
+	case "order":
+		return scale.Used.Priority, true
+	case "effort":
+		return scale.Used.Effort, true
+	}
+	return scale.Source{}, false
+}
+
+// onceSaid says a level the role set, as say does; one recorded hidden,
+// never shown.
+func onceSaid(l int, say func(int) string) string {
+	if l == HiddenLevel {
+		return scale.HiddenSaid
+	}
+	return say(l)
+}
+
 // Modes of an act.
 const (
 	Act     = "act"
@@ -37,7 +63,7 @@ type State struct {
 	Comments  int      `yaml:"comments,omitempty"` // people's comments when it was last read
 	Body      string   `yaml:"body,omitempty"`     // a digest of its body, when the role last read or wrote it
 	Priority  int      `yaml:"priority,omitempty"` // the priority the role last set: another on the issue is a person's
-	Effort    int      `yaml:"effort,omitempty"`   // the effort the role set, once: another on the issue is a person's (ADR-0040)
+	Effort    int      `yaml:"effort,omitempty"`   // the effort the role set, once: another on the issue is a person's (ADR-0040); HiddenLevel, one never shown
 	Title     string   `yaml:"title,omitempty"`    // the title the role last set: another on the issue is a person's
 	Split     []int    `yaml:"split,omitempty"`    // the children the role split it into: it is not split again
 	// After are the blockers the role's split set on each child, among
@@ -881,6 +907,14 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 						Message: fmt.Sprintf("its %s and %s are proposed on the issue, not written in it: the role is set to propose them (autonomy cautious, or acts.refine.drafts)", work.Name(work.Need), work.Name(work.Validation))})
 				}
 			}
+			if src, ok := axisOf(c); ok && src.Hidden() && d.Mode == Propose {
+				// A proposal shows its value on the issue, and its state
+				// keeps it: one visible to organization members only is
+				// never proposed on a public repository (ADR-0040).
+				d.Mode, d.Capped = Off, false
+				p.Findings = append(p.Findings, verdict.Finding{Rule: src.Family.Scale.Axis + "-hidden", Where: c.where(),
+					Message: "proposing it would show on the issue a value visible to organization members only: nothing proposed; turn the act to `act`, or set it yourself"})
+			}
 			if d.Mode == Act {
 				done[c.Kind()]++
 				if c.Do == "refine" && !c.ToReporter {
@@ -929,7 +963,7 @@ func (p *Plan) summary() {
 		case d.Mode == Act:
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "done", Level: "info", Where: d.Act.where(),
 				Message: strings.TrimSpace(describe(d.Act, "Closed"))})
-			if d.Act.Do == "order" && d.Act.Priority == 1 && scale.Used.Detected {
+			if d.Act.Do == "order" && d.Act.Priority == 1 && scale.Used.Detected && !scale.Used.Priority.Hidden() {
 				// Urgent is set like any level, said apart for a person to
 				// see at once (ADR-0040).
 				p.Findings = append(p.Findings, verdict.Finding{Rule: "urgent-set", Level: "info", Where: d.Act.where(),
@@ -1286,12 +1320,13 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "order" {
 		set := PriorityLabels(p.issues[c.Issue])
 		switch {
-		case !(len(set) == 0 && st.Priority == 0) && !(len(set) == 1 && set[0] == st.Priority):
-			return "priority-kept", "its priority was set by a person (a label the role did not set, or took off): it is kept"
 		case scale.Used.Detected && st.Priority != 0:
 			// Set once, never estimated again, so Next does not move on a
-			// night its issues did not (ADR-0040).
-			return "priority-once", fmt.Sprintf("the role set its priority once already (%s): never estimated again", scale.Said(st.Priority))
+			// night its issues did not (ADR-0040); a person's change or
+			// clearing since stands.
+			return "priority-once", fmt.Sprintf("the role set its priority once already (%s): never estimated again; a person's change or clearing stands", onceSaid(st.Priority, scale.Said))
+		case !(len(set) == 0 && st.Priority == 0) && !(len(set) == 1 && set[0] == st.Priority):
+			return "priority-kept", "its priority was set by a person (a value the role did not set, or took off): it is kept"
 		case len(set) == 1 && set[0] == c.Priority:
 			return "priority-same", fmt.Sprintf("it has %s already", scale.Said(c.Priority))
 		}
@@ -1301,7 +1336,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		// role's they changed or cleared, stands (ADR-0040).
 		switch set := EffortLabels(p.issues[c.Issue]); {
 		case st.Effort != 0:
-			return "effort-once", fmt.Sprintf("the role estimated its effort once already (%s): never again; a person's change or clearing stands", scale.Effort.Name(st.Effort))
+			return "effort-once", fmt.Sprintf("the role estimated its effort once already (%s): never again; a person's change or clearing stands", onceSaid(st.Effort, scale.Effort.Name))
 		case len(set) > 0:
 			return "effort-kept", "its effort was set by a person: it is kept"
 		}

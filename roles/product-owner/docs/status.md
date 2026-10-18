@@ -94,7 +94,7 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
   ([ADR-0040](../../../docs/adr/0040-priority-and-effort-are-the-forges-the-product-owner-estimates-them.md),
   step 2): `priority-*`; the effort and the grid (step 3): `effort-*`,
   `grid-next-says-each-cell`, `estimates-stuck-said`, the reviewer's
-  `spec-read-in-the-owners-order`.
+  `spec-read-in-the-owners-order`; GitHub's fields (step 4): `field-*`.
 - **A backlog file imported**, mapped item by item, judged then applied
   apart: backlog's `import-*`.
 - **One way for every role to open an issue**: backlog's `issue-*`,
@@ -154,8 +154,16 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
      empty, read again when applied; the grid's order and Next's cells,
      the Urgents said apart, estimates stuck on one value said, with the
      settings; the reviewer reads the specs in that order.
-   - **Next**: step 4, GitHub's Priority and Effort fields, live on a new
-     jn0v-lab repository.
+   - **Step 4 built, off by default**: GitHub's Priority and Effort
+     fields found before any label, read and written by option name;
+     members-only values on a public repository never shown nor
+     proposed; a token not shown to read them writes nothing there. Tried
+     live on [jn0v-lab/workline-priority-try](https://github.com/jn0v-lab/workline-priority-try)
+     with a member's token (its pull request's Tried); the job's own
+     token and an App's not tried: the first needs a token with the
+     `workflow` scope to add a workflow there, the second the App
+     installed on jn0v-lab.
+   - **Next**: step 5, GitLab's `weight`.
 3. **Tries on real use**, nothing to build (no issue yet):
    - **answers on the issue**: the trial, measured (To leave beta, 2); a
      real agent's revision after a comment; an outsider's and a bot's

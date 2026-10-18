@@ -8,10 +8,11 @@ built a step at a time ([status](status.md#missing-in-the-order-to-build-it)):
   kept found when the settings ask
   ([`priority`, `effort`](settings.md#priority-and-effort)); the effort
   estimated, each value set once; the grid's order, Next's cells, the
-  Urgents said apart, estimates stuck on one value said.
-- **Not built yet**: GitHub's fields, GitLab's weight, workline's labels
-  renamed. Unset, with `order` on, the role sets its own labels
-  `workline:priority/1` to `/4`.
+  Urgents said apart, estimates stuck on one value said; GitHub's
+  Priority and Effort fields, their members-only values never shown.
+- **Not built yet**: GitLab's weight, workline's labels renamed. Unset,
+  with `order` on, the role sets its own labels `workline:priority/1` to
+  `/4`.
 
 Below, what the proposal does on real cases.
 

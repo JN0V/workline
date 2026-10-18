@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: f3b0df0d
+checked: 698042ac
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -31,6 +31,10 @@ When the product owner pauses, or an issue gets nothing. Part of
   `effort-unread`, the issue names no file, or its code did not fit the
   run's budget: name its files in its Scope. `effort-once`: the role
   estimates each issue once; a person's change stands.
+- GitHub's fields visible to organization members only:
+  `priority-blind`, the token is the job's own, an App's, or no member's:
+  run with a member's token; `priority-hidden`, the act is set to propose,
+  and a proposal would show the value: turn it to `act`.
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - `autonomy: cautious` notes and proposes: see the issues bearing
   `workline:proposed`.

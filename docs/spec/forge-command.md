@@ -1,6 +1,6 @@
 ---
 sources: [internal/forge/command.go, internal/forge/forge.go, ci/forgejo]
-checked: 432aeef8
+checked: 698042ac
 verified: agent:claude-code
 ---
 # A forge plugged by a command — v1 (draft)
@@ -113,7 +113,8 @@ command, every week left unanswered. Nor one reading an issue's edit
 history: a product owner's act whose issue changed since is not read
 through a command (ADR-0046). Nor one listing the project's labels: where
 a project keeps its priorities is found from the labels on its open
-issues, and a label is created unranked (ADR-0040).
+issues, and a label is created unranked (ADR-0040); nor its issue fields:
+a plugged forge keeps priorities in labels only.
 
 ## What stays with the engine
 

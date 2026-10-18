@@ -43,6 +43,50 @@ type Issue struct {
 	// sub-issues, GitLab's tasks), open or closed, as Issues gives them; a
 	// task list under "## Sub-issues" in its body says the rest (ADR-0029).
 	Children []int `json:"children,omitempty"`
+	// Fields are its values in the forge's single-select issue fields,
+	// by the field's name — GitHub's Priority and Effort (ADR-0040) —, as
+	// the token reads them: a value it may not see is absent.
+	Fields map[string]string `json:"fields,omitempty"`
+}
+
+// Field is a single-select issue field of the forge (ADR-0040): its id,
+// name and options, as its owner arranged them, and whether its values
+// are public; GitHub's are an organisation's.
+type Field struct {
+	ID      int64    `json:"id"`
+	Name    string   `json:"name"`
+	Options []string `json:"options"`
+	Public  bool     `json:"public,omitempty"`
+}
+
+// Fields is what a forge says of its issue fields: each single-select
+// one; whether the repository is public; and, for a value visible to the
+// organisation's members only, whether this token reads it — Blind says
+// why not, "" when it does.
+type Fields struct {
+	List   []Field
+	Public bool
+	Blind  string
+}
+
+// IssueFields reads f's single-select issue fields; none, with no error,
+// on a forge or a repository that has none (a GitHub user's).
+func IssueFields(f any) (Fields, error) {
+	if l, ok := f.(interface{ issueFields() (Fields, error) }); ok {
+		return l.issueFields()
+	}
+	return Fields{}, nil
+}
+
+// SetField sets an issue's value in a single-select field, by the
+// option's name; a forge without fields answers an error.
+func SetField(f any, issue int, field Field, option string) error {
+	if s, ok := f.(interface {
+		setField(issue int, field Field, option string) error
+	}); ok {
+		return s.setField(issue, field, option)
+	}
+	return fmt.Errorf("this forge keeps no issue fields: %s not set on #%d", field.Name, issue)
 }
 
 // Milestone is an open milestone: its title, and its due date when it has

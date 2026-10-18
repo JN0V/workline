@@ -545,6 +545,10 @@ func Pre(runDir, repo string) int {
 		// stuck on one level, said (ADR-0040).
 		findings = append(findings, unestimated(open, report, isOpen)...)
 		findings = append(findings, stuck(ledger.States, isOpen)...)
+		if scale.Used.Priority.Hidden() || scale.Used.Effort.Hidden() {
+			findings = append(findings, verdict.Finding{Rule: "values-hidden", Level: "info",
+				Message: "Values hidden: the fields are visible to organization members only, and this repository is public."})
+		}
 	}
 	// What waits on a person (ADR-0031), with no agent: a reporter's
 	// answer, from the day of the last round; a ready issue nothing
@@ -1079,14 +1083,14 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 	}
 	if set := backlog.PriorityLabels(is); len(set) > 0 {
 		whose := ""
-		if len(set) != 1 || set[0] != st.Priority {
+		if st.Priority != backlog.HiddenLevel && (len(set) != 1 || set[0] != st.Priority) {
 			whose = " (a person's: kept)"
 		}
 		fmt.Fprintf(b, "Priority: %s%s\n", scale.Value(backlog.Priority(is)), whose)
 	}
 	if set := backlog.EffortLabels(is); len(set) > 0 {
 		whose := ""
-		if len(set) != 1 || set[0] != st.Effort {
+		if st.Effort != backlog.HiddenLevel && (len(set) != 1 || set[0] != st.Effort) {
 			whose = " (a person's: kept)"
 		}
 		fmt.Fprintf(b, "Effort: %s%s\n", scale.EffortValue(backlog.Effort(is)), whose)
@@ -1240,6 +1244,9 @@ func placed(is forge.Issue) string {
 		out = append(out, "milestone "+is.Milestone)
 	}
 	switch n := backlog.Priority(is); {
+	case scale.Used.Priority.Hidden() || scale.Used.Effort.Hidden():
+		// Visible to organization members only, on a public repository:
+		// the order kept, the values never shown (ADR-0040).
 	case scale.Used.Detected && scale.Used.Effort.Said == "":
 		// No effort kept anywhere: its priority by name, or none said.
 		out = append(out, scale.PriorityName(n))

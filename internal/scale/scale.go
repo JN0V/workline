@@ -365,6 +365,9 @@ func Value(l int) string {
 	if !Priority.Valid(l) {
 		return "none"
 	}
+	if Used.Priority.Hidden() {
+		return HiddenSaid // visible to organization members only: never shown (ADR-0040)
+	}
 	if f := Used.Priority.Family; f.Prefix != Own.Prefix {
 		if label, ok := f.Label(l); ok {
 			return fmt.Sprintf("%d (%s)", l, label.Name)
@@ -373,11 +376,18 @@ func Value(l int) string {
 	return strconv.Itoa(l)
 }
 
+// HiddenSaid says a value visible to an organisation's members only, on a
+// public repository: set, never shown (ADR-0040).
+const HiddenSaid = "a level hidden here"
+
 // Said is a priority level in a sentence: "priority 2"; "no priority" for
 // none.
 func Said(l int) string {
 	if !Priority.Valid(l) {
 		return "no priority"
+	}
+	if Used.Priority.Hidden() {
+		return "a priority hidden here"
 	}
 	return "priority " + Value(l)
 }
@@ -388,6 +398,9 @@ func Said(l int) string {
 func EffortValue(l int) string {
 	if !Effort.Valid(l) {
 		return "not estimated"
+	}
+	if Used.Effort.Hidden() {
+		return HiddenSaid
 	}
 	if label, ok := Used.Effort.Family.Label(l); ok {
 		return fmt.Sprintf("%s (%s)", Effort.Name(l), label.Name)
