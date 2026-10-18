@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -241,17 +240,17 @@ func whereKeysGo(m map[string]any, kinds []string) string {
 		said += " and "
 	}
 	said += keys[len(keys)-1]
-	keyed := make([]*regexp.Regexp, len(keys))
-	for i, k := range keys {
-		keyed[i] = regexp.MustCompile(`(^|[{,;\s])` + regexp.QuoteMeta(k) + `:`)
-	}
 	if len(kinds) == 0 {
 		kinds = slices.Collect(maps.Keys(contracts))
 	}
 	var holders []string
 	for _, kind := range kinds {
 		shape, ok := contracts[kind]
-		if ok && !engineOnly[kind] && !slices.ContainsFunc(keyed, func(re *regexp.Regexp) bool { return !re.MatchString(shape) }) {
+		if !ok || engineOnly[kind] {
+			continue
+		}
+		top := shapeKeys(shape)
+		if !slices.ContainsFunc(keys, func(k string) bool { return !top[k] }) {
 			holders = append(holders, kind)
 		}
 	}
@@ -259,6 +258,39 @@ func whereKeysGo(m map[string]any, kinds []string) string {
 		return fmt.Sprintf(": %s %s of a `%s`, written under `- %s:`, indented, beside its other keys", said, are, holders[0], holders[0])
 	}
 	return fmt.Sprintf(": %s %s of a proposal, written under its kind, indented, as the answer's shape shows %s", said, are, them)
+}
+
+// shapeKeys are the keys a kind's shape names at its top: those of its
+// map, and those its comment adds (a finding's `decision`); not those of a
+// map inside it (a cause's `path`, which goes under the cause), nor words
+// in a quoted text.
+func shapeKeys(shape string) map[string]bool {
+	keys := map[string]bool{}
+	depth, quoted, from := 0, false, -1
+	for i := 0; i < len(shape); i++ {
+		c := shape[i]
+		switch {
+		case quoted:
+			quoted = c != '"'
+			continue
+		case c == '"':
+			quoted = true
+		case c == '{' || c == '[':
+			depth++
+		case c == '}' || c == ']':
+			depth--
+		case c == ':' && from >= 0 && depth <= 1:
+			keys[shape[from:i]] = true
+		}
+		word := c == '-' || c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
+		switch {
+		case !word:
+			from = -1
+		case from < 0:
+			from = i
+		}
+	}
+	return keys
 }
 
 func lastLine(s string) string {

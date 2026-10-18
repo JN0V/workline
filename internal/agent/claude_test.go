@@ -134,6 +134,9 @@ func TestProposalsFromSaysWhereKeysGo(t *testing.T) {
 		{"- note: hello\n  colour: red\n", "colour is no kind, but a key of a proposal, written under its kind, indented, as the answer's shape shows it"},
 		{"- note: hello\n  why: because\n", "why is no kind, but a key of a proposal, written under its kind"}, // a key of many kinds
 		{"- {}\n", "proposal 1 holds no kind; each holds exactly one"},
+		// A cause's key beside its finding goes under the cause, not beside
+		// the finding's keys: no finding named.
+		{"- finding: {title: t}\n  path: a.go\n", "path is no kind, but a key of a proposal, written under its kind"},
 	} {
 		if _, _, err := proposalsFrom(c.answer); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("%q: %v, want %q", c.answer, err, c.want)
@@ -148,5 +151,27 @@ func TestProposalsFromSaysWhereKeysGo(t *testing.T) {
 	}
 	if _, _, err := proposalsFrom(answer, "finding", "note"); err == nil || !strings.Contains(err.Error(), "under `- finding:`") {
 		t.Errorf("a role writing findings: %v", err)
+	}
+	if _, _, err := proposalsFrom("- finding: {title: t}\n  path: a.go\n", "finding"); err == nil || strings.Contains(err.Error(), "`finding`") {
+		t.Errorf("a cause's key told to go beside the finding's: %v", err)
+	}
+}
+
+// The keys of a shape's top, its comment's included; not a nested map's,
+// nor a word in a quoted text.
+func TestShapeKeys(t *testing.T) {
+	top := shapeKeys(contracts["finding"])
+	for _, k := range []string{"lens", "severity", "title", "why", "cause", "symptom", "fix", "seen", "claim", "decision"} {
+		if !top[k] {
+			t.Errorf("%s is a finding's key", k)
+		}
+	}
+	for _, k := range []string{"path", "quote", "line", "words"} {
+		if top[k] {
+			t.Errorf("%s is no key at a finding's top", k)
+		}
+	}
+	if keys := shapeKeys(`- refine: {issue: 12, need: "one line: who needs what"}`); keys["line"] || !keys["need"] {
+		t.Errorf("a word in a quoted text read as a key: %v", keys)
 	}
 }
