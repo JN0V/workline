@@ -34,8 +34,10 @@ type FakeState struct {
 	IssueFields []Field `json:"issue-fields,omitempty"`
 	Public      bool    `json:"public,omitempty"`
 	Blind       string  `json:"fields-blind,omitempty"`
-	FailOnWrite int     `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
-	Writes      int     `json:"writes"`
+	// Weights: its issues carry a weight, as GitLab Premium's (ADR-0040).
+	Weights     bool `json:"weights,omitempty"`
+	FailOnWrite int  `json:"fail-on-write,omitempty"` // the write that fails, counting from 1
+	Writes      int  `json:"writes"`
 	// ReviewRefused: the forge refuses every comment on a line, as a
 	// token that may not review does, with this reason (HTTP 403).
 	ReviewRefused string `json:"review-refused,omitempty"`
@@ -148,6 +150,8 @@ type FakeItem struct {
 	// Fields: an issue's values in the forge's issue fields, by name
 	// (GitHub's, ADR-0040).
 	Fields map[string]string `json:"fields,omitempty"`
+	// Weight: an issue's GitLab weight, with weights; none when absent.
+	Weight *int `json:"weight,omitempty"`
 }
 
 // FakePush is a push to a merge request's branch: the head, a revision
@@ -241,7 +245,7 @@ func (f *Fake) Issue(id int) (*Issue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields}, nil
+	return &Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Closed: it.Closed, Author: it.Author, Insider: it.Insider, Fields: it.Fields, Weight: it.Weight}, nil
 }
 
 func (f *Fake) Issues() ([]Issue, error) {
@@ -258,7 +262,7 @@ func (f *Fake) Issues() ([]Issue, error) {
 					children = append(children, c.ID)
 				}
 			}
-			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children, Fields: it.Fields})
+			out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, BlockedBy: it.BlockedBy, Children: children, Fields: it.Fields, Weight: it.Weight})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
@@ -272,7 +276,7 @@ func (f *Fake) AllIssues() ([]Issue, error) {
 	}
 	var out []Issue
 	for _, it := range s.Issues {
-		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason, Fields: it.Fields})
+		out = append(out, Issue{ID: it.ID, Title: it.Title, Body: it.Body, Labels: it.Labels, Milestone: it.Milestone, MilestoneDue: s.MilestoneDue[it.Milestone], Author: it.Author, Insider: it.Insider, Closed: it.Closed, Reason: it.Reason, Fields: it.Fields, Weight: it.Weight})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
@@ -659,6 +663,28 @@ func (f *Fake) setField(issue int, field Field, option string) error {
 			it.Fields = map[string]string{}
 		}
 		it.Fields[s.IssueFields[i].Name] = option
+		return nil
+	})
+}
+
+// weights: whether the file's issues carry a weight, as GitLab Premium's.
+func (f *Fake) weights() (bool, error) {
+	s, err := f.load()
+	return err == nil && s.Weights, err
+}
+
+// setWeight: an issue's weight, where the file keeps weights; refused
+// elsewhere, as a forge that keeps none.
+func (f *Fake) setWeight(issue, weight int) error {
+	return f.write(func(s *FakeState) error {
+		if !s.Weights {
+			return fmt.Errorf("this forge keeps no weight: none set on #%d", issue)
+		}
+		it, err := s.item(Target{Kind: "issue", ID: issue})
+		if err != nil {
+			return err
+		}
+		it.Weight = &weight
 		return nil
 	})
 }

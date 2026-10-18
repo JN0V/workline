@@ -9,10 +9,10 @@ built a step at a time ([status](status.md#missing-in-the-order-to-build-it)):
   ([`priority`, `effort`](settings.md#priority-and-effort)); the effort
   estimated, each value set once; the grid's order, Next's cells, the
   Urgents said apart, estimates stuck on one value said; GitHub's
-  Priority and Effort fields, their members-only values never shown.
-- **Not built yet**: GitLab's weight, workline's labels renamed. Unset,
-  with `order` on, the role sets its own labels `workline:priority/1` to
-  `/4`.
+  Priority and Effort fields, their members-only values never shown;
+  GitLab's weight, never a parent's.
+- **Not built yet**: workline's labels renamed. Unset, with `order` on,
+  the role sets its own labels `workline:priority/1` to `/4`.
 
 Below, what the proposal does on real cases.
 
@@ -48,16 +48,19 @@ option sits in a list.
 
 - **A name no table knows** is mapped in the project's settings.
 - **GitLab's weight**, when the role writes it: 1, 3 or 5, values found
-  on both common point scales (1, 2, 3, 5, 8, and 1 to 5).
+  on both common point scales (1, 2, 3, 5, 8, and 1 to 5). Never read
+  nor written on a parent: GitLab sums its parts' weights. Premium and
+  Ultimate only:
+  on Free, the effort goes in `effort::low` to `::high`.
 
 ## Where the values were found
 
-Said once in the night's summary, for example, the first two built:
+Said once in the night's summary, for example:
 
 ```markdown
 Priority: labels priority/*, created. Effort: labels effort/*, created when first set.
 Priority: labels P0 to P3, the project's. Effort: read nowhere, its setting unset.
-Priority: GitHub's field Priority. Effort: GitHub's field Effort.
+Priority: the field Priority. Effort: the field Effort.
 Priority: labels priority::*, created. Effort: GitLab's weight.
 ```
 

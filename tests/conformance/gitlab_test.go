@@ -25,6 +25,8 @@ import (
 // engine writes is written by "workline-bot", the token's user. GraphQL
 // refuses all: a split's children are listed in the parent's body. Its
 // issue links are GitLab Free's: is_blocked_by refused, for its license.
+// With `weights`, its issues carry Premium's `weight` key, written by a
+// PUT; without, Free's: no key, a weight sent ignored.
 // A merge request's diff is the repository's, from its base (main) to its
 // branch (HEAD), as GitLab computes it; a discussion on a line it does not
 // show, or a kept line without its old one, is taken on no line, as
@@ -112,6 +114,9 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 			"author": user(it.Author), "issue_type": "issue"}
 		if it.Milestone != "" {
 			v["milestone"] = map[string]any{"title": it.Milestone}
+		}
+		if s.Weights {
+			v["weight"] = it.Weight // Premium's key, null for none; Free's payload has none
 		}
 		return v
 	}
@@ -237,6 +242,11 @@ func (m *gitlabMock) serve(s *gitlabState, method, p string, q, form url.Values)
 				if n >= 1 && n <= len(s.Milestones) {
 					it.Milestone = s.Milestones[n-1]
 				}
+			}
+			if v, ok := form["weight"]; ok && s.Weights {
+				// Premium's; Free ignores the key, its answer holding none.
+				n, _ := strconv.Atoi(v[0])
+				it.Weight = &n
 			}
 		}
 		return asIssue(*it), 200

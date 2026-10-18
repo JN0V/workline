@@ -210,6 +210,14 @@ a public test repository of the organisation, its Priority and Effort
   maintainer's has none); an App's, as workline's App is private to a
   user's account and cannot be installed on the organisation.
 
+On gitlab.com/JN0V/workline-sandbox, a GitLab Free project, for step 5:
+
+- **No key**: none of its 22 open issues' JSON carries `weight`, in the
+  listing or a single issue.
+- **A weight sent is ignored**: `PUT …/issues/31` with `weight=3` answers
+  200, the issue without a `weight` key; only its `updated_at` moved, no
+  note added. A write is told kept only by reading it back.
+
 ## What to borrow, and what is missing
 
 - **Borrowed**: GitHub's fields and their levels; GitLab's ranked
@@ -228,3 +236,6 @@ a public test repository of the organisation, its Priority and Effort
   notify; whether a field's write notifies anyone.
 - Which Projects templates create Priority, Size or Estimate; Shortcut's
   default estimate values (its help pages redirect).
+- GitLab Premium's weight live: the `weight` key on a listing, a `PUT`
+  read back, and whether a parent's REST `weight` is its own or its
+  parts' sum (no Premium project at hand).

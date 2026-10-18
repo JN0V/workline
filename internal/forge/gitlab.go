@@ -253,6 +253,7 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 		Author      struct {
 			Username string `json:"username"`
 		} `json:"author"`
+		Weight *int `json:"weight"` // Premium's, Ultimate's
 	}
 	if err := decode(out, &v); err != nil {
 		return nil, err
@@ -262,7 +263,46 @@ func (g *gitlab) Issue(id int) (*Issue, error) {
 	}
 	in, err := g.insider(v.Author.Username)
 	return &Issue{ID: v.IID, Title: v.Title, Body: v.Description, Labels: v.Labels, Closed: v.State == "closed",
-		Author: v.Author.Username, Insider: in}, err
+		Author: v.Author.Username, Insider: in, Weight: v.Weight}, err
+}
+
+// weights says whether the project's issues carry a weight: GitLab
+// Premium's and Ultimate's payloads hold a `weight` key, null for none;
+// Free's hold none (docs/research/priority-and-weight.md). A project with
+// no issue keeps none yet.
+func (g *gitlab) weights() (bool, error) {
+	out, err := g.api("projects/:id/issues?per_page=1")
+	if err != nil {
+		return false, err
+	}
+	var v []map[string]json.RawMessage
+	if err := decode(out, &v); err != nil {
+		return false, err
+	}
+	if len(v) == 0 {
+		return false, nil
+	}
+	_, ok := v[0]["weight"]
+	return ok, nil
+}
+
+// setWeight sets an issue's weight, read back from GitLab's answer: Free
+// ignores the key, its answer holding none (ADR-0040, "Writes").
+func (g *gitlab) setWeight(issue, weight int) error {
+	out, err := g.api("-X", "PUT", path(Target{Kind: "issue", ID: issue}), "-f", "weight="+strconv.Itoa(weight))
+	if err != nil {
+		return err
+	}
+	var v struct {
+		Weight *int `json:"weight"`
+	}
+	if err := decode(out, &v); err != nil {
+		return err
+	}
+	if v.Weight == nil || *v.Weight != weight {
+		return fmt.Errorf("#%d: GitLab kept no weight %d (its weight is Premium's and Ultimate's)", issue, weight)
+	}
+	return nil
 }
 
 // pages decodes the arrays a paginated call prints, one a page.
@@ -300,7 +340,8 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		Author struct {
 			Username string `json:"username"`
 		} `json:"author"`
-		State string `json:"state"`
+		State  string `json:"state"`
+		Weight *int   `json:"weight"` // Premium's, Ultimate's
 	}](out)
 	var all []Issue
 	for _, f := range found {
@@ -313,7 +354,7 @@ func (g *gitlab) issues(state string) ([]Issue, error) {
 		if err != nil {
 			return nil, err
 		}
-		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Insider: in, Closed: f.State == "closed"}
+		is := Issue{ID: f.IID, Title: f.Title, Body: f.Description, Labels: f.Labels, Author: f.Author.Username, Insider: in, Closed: f.State == "closed", Weight: f.Weight}
 		if f.Milestone != nil {
 			is.Milestone, is.MilestoneDue = f.Milestone.Title, f.Milestone.Due
 		}

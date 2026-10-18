@@ -247,7 +247,7 @@ func (a *applier) level(c backlog.Proposal) error {
 	}
 	axis := src.Family.Scale.Axis
 	rule, why := backlog.Placeable(src, *is, l)
-	if now := src.Read(is.Labels, is.Fields); rule == "" && !(len(now) == 0 && c.Had == 0) && !(len(now) == 1 && now[0] == c.Had) {
+	if now := src.Read(backlog.On(*is)); rule == "" && !(len(now) == 0 && c.Had == 0) && !(len(now) == 1 && now[0] == c.Had) {
 		rule, why = axis+"-changed", fmt.Sprintf("its %s changed since the run read it: a person's, kept", axis)
 	}
 	if rule != "" {
@@ -257,12 +257,18 @@ func (a *applier) level(c backlog.Proposal) error {
 	}
 	label, _ := src.Family.Label(l)
 	t := forge.Target{Kind: "issue", ID: c.Issue}
-	if src.InField() {
+	switch {
+	case src.Weight:
+		// GitLab's weight: 1, 3 or 5, read back (ADR-0040).
+		if err := forge.SetWeight(f, c.Issue, scale.WeightOf(l)); err != nil {
+			return err
+		}
+	case src.InField():
 		// The forge's own field, by the option's name (ADR-0040).
 		if err := forge.SetField(f, c.Issue, forge.Field{ID: src.Field.ID, Name: src.Field.Name}, label.Name); err != nil {
 			return err
 		}
-	} else {
+	default:
 		create := []scale.Label{label}
 		if src.Words {
 			create = src.Family.Labels
