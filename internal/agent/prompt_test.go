@@ -30,7 +30,7 @@ func TestPromptAsksForBlockScalars(t *testing.T) {
 // on DomoticsCore for that.
 func TestEveryIntentionHasItsShape(t *testing.T) {
 	for kind := range intent.Catalogue {
-		if contracts[kind] == "" {
+		if contracts[kind] == "" && !engineOnly[kind] {
 			t.Errorf("%s: no shape in the output contract (contracts, prompt.go)", kind)
 		}
 	}

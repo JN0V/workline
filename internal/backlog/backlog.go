@@ -37,6 +37,7 @@ type State struct {
 	Comments  int      `yaml:"comments,omitempty"` // people's comments when it was last read
 	Body      string   `yaml:"body,omitempty"`     // a digest of its body, when the role last read or wrote it
 	Priority  int      `yaml:"priority,omitempty"` // the priority the role last set: another on the issue is a person's
+	Effort    int      `yaml:"effort,omitempty"`   // the effort the role set, once: another on the issue is a person's (ADR-0040)
 	Title     string   `yaml:"title,omitempty"`    // the title the role last set: another on the issue is a person's
 	Split     []int    `yaml:"split,omitempty"`    // the children the role split it into: it is not split again
 	// After are the blockers the role's split set on each child, among
@@ -135,6 +136,7 @@ func FormatState(s State) string {
 		Comments  int               `yaml:"comments,omitempty"`
 		Body      string            `yaml:"body,omitempty"`
 		Priority  int               `yaml:"priority,omitempty"`
+		Effort    int               `yaml:"effort,omitempty"`
 		Title     string            `yaml:"title,omitempty"`
 		Split     []int             `yaml:"split,flow,omitempty"`
 		After     map[int][]int     `yaml:"after,flow,omitempty"`
@@ -154,7 +156,7 @@ func FormatState(s State) string {
 		Heard     *int              `yaml:"heard,omitempty"`
 		Revisions int               `yaml:"revisions,omitempty"`
 		Rules     int               `yaml:"rules,omitempty"`
-	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
+	}{s.Sources, s.Confirmed, s.Judged, s.Comments, s.Body, s.Priority, s.Effort, s.Title, s.Split, s.After, s.Kept, s.Sections, s.Wrote, s.Answered, s.Plain, s.Deleted,
 		s.Proposed, s.Done, s.Undone, s.Did, s.Closed, s.Label, s.Aside, s.Heard, s.Revisions, s.Rules})
 	// A fence in a text the agent wrote must not end the block: the block's
 	// is longer than any run of backticks in it.
@@ -437,6 +439,11 @@ type Proposal struct {
 	Priority int    `yaml:"priority,omitempty"`
 	From     string `yaml:"from,omitempty"`
 	Before   string `yaml:"before,omitempty"`
+	// Effort: the effort set (1 to 3, ADR-0040); Had, the engine's, the
+	// level the act's axis held as the plan read it: one changed since is
+	// a person's, and the act is dropped when applied.
+	Effort int `yaml:"effort,omitempty"`
+	Had    int `yaml:"had,omitempty"`
 	// Obsolete (ADR-0024): Announced, on the engine's closing, the day of
 	// the announcement it follows; Announce and Until, the engine's, that
 	// this act announces rather than closes, and the day from which it may
@@ -496,7 +503,7 @@ func (c Proposal) key() string {
 }
 
 // Kinds are the intentions that are acts on the backlog.
-var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "refine", "ready", "unready", "ask", "split", "rename", "depend", "undepend"}
+var Kinds = []string{"open", "close", "keep", "sources", "milestone", "order", "effort", "refine", "ready", "unready", "ask", "split", "rename", "depend", "undepend"}
 
 // theirs are the acts an outsider's issue is proposed for, not done: it is
 // theirs (ADR-0018).
@@ -504,7 +511,7 @@ var theirs = map[string]string{"ready": "moving it to ready", "split": "splittin
 
 // moves are the acts that move an issue in the backlog's order: capped
 // together, at a share of the open issues a run (ADR-0018).
-var moves = []string{"milestone", "order"}
+var moves = []string{"milestone", "order", "effort"}
 
 // Decision is what becomes of one act.
 type Decision struct {
@@ -711,7 +718,7 @@ func Decide(f forge.Backlog, repo, role string, cfg Config, closes map[int]Propo
 				continue
 			}
 		}
-		if (c.Do == "ready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
+		if (c.Do == "ready" || c.Do == "keep" || c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "split" || c.Do == "rename" || p.ticked[c.key()]) && decided[c.key()] {
 			p.Decisions = append(p.Decisions, Decision{Index: i, Mode: Off, Act: c}) // the engine's own and the agent's: one
 			if c.Do == "split" || c.Do == "rename" {
 				// Both checked against the state before either is applied:
@@ -922,6 +929,12 @@ func (p *Plan) summary() {
 		case d.Mode == Act:
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "done", Level: "info", Where: d.Act.where(),
 				Message: strings.TrimSpace(describe(d.Act, "Closed"))})
+			if d.Act.Do == "order" && d.Act.Priority == 1 && scale.Used.Detected {
+				// Urgent is set like any level, said apart for a person to
+				// see at once (ADR-0040).
+				p.Findings = append(p.Findings, verdict.Finding{Rule: "urgent-set", Level: "info", Where: d.Act.where(),
+					Message: p.issues[d.Act.Issue].Title})
+			}
 		case d.Mode == Propose:
 			p.Findings = append(p.Findings, verdict.Finding{Rule: "proposed", Level: "info", Where: d.Act.where(),
 				Message: strings.TrimSpace(offer(d.Act))})
@@ -1194,7 +1207,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 			return "unready-not-ready", fmt.Sprintf("#%d is not %s: nothing to move back", c.Issue, LabelReady)
 		}
 	}
-	if c.Do == "milestone" || c.Do == "order" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" {
 		// Ordering says nothing of an issue's truth: no quote, its state
 		// readable all the same.
 		is, ok := p.issues[c.Issue]
@@ -1203,9 +1216,25 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		}
 		c.Before = Before(is)
 		switch {
+		case c.Do == "effort":
+			// An effort is estimated only on code this run read (ADR-0040),
+			// where the project keeps it.
+			c.Had, c.Before = Effort(is), scale.EffortValue(Effort(is))
+			switch {
+			case !scale.Effort.Valid(c.Effort):
+				return "effort-level", fmt.Sprintf("an effort is a level from 1, the lightest (hours), to %d (weeks)", scale.Effort.Count())
+			case !scale.Used.Detected || scale.Used.Effort.Said == "":
+				return "effort-nowhere", "the setting `effort` is unset: where the project keeps an effort is not known"
+			case c.Ticked == "" && !slices.Contains(p.config.CodeRead, c.Issue):
+				return "effort-unread", "its code was not read in this run: an effort is estimated only on the code it names"
+			}
+			if rule, why := Placeable(scale.Used.Effort, is, c.Effort); rule != "" {
+				return rule, why
+			}
 		case c.Do == "order" && !scale.Priority.Valid(c.Priority):
 			return "priority-level", fmt.Sprintf("a priority is a level from 1, the most pressing, to %d", scale.Priority.Count())
 		case c.Do == "order":
+			c.Had = Priority(is)
 			if rule, why := Placeable(scale.Used.Priority, is, c.Priority); rule != "" {
 				return rule, why
 			}
@@ -1259,8 +1288,22 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 		switch {
 		case !(len(set) == 0 && st.Priority == 0) && !(len(set) == 1 && set[0] == st.Priority):
 			return "priority-kept", "its priority was set by a person (a label the role did not set, or took off): it is kept"
+		case scale.Used.Detected && st.Priority != 0:
+			// Set once, never estimated again, so Next does not move on a
+			// night its issues did not (ADR-0040).
+			return "priority-once", fmt.Sprintf("the role set its priority once already (%s): never estimated again", scale.Said(st.Priority))
 		case len(set) == 1 && set[0] == c.Priority:
 			return "priority-same", fmt.Sprintf("it has %s already", scale.Said(c.Priority))
+		}
+	}
+	if c.Do == "effort" {
+		// Only an empty value is written, once: a person's value, or the
+		// role's they changed or cleared, stands (ADR-0040).
+		switch set := EffortLabels(p.issues[c.Issue]); {
+		case st.Effort != 0:
+			return "effort-once", fmt.Sprintf("the role estimated its effort once already (%s): never again; a person's change or clearing stands", scale.Effort.Name(st.Effort))
+		case len(set) > 0:
+			return "effort-kept", "its effort was set by a person: it is kept"
 		}
 	}
 	if c.Do == "ready" && p.config.SpecReview {
@@ -1295,7 +1338,7 @@ func (p *Plan) check(f forge.Backlog, repo, role string, c *Proposal) (rule, why
 	if c.Do == "keep" {
 		return p.checkKeep(f, repo, role, st, c)
 	}
-	if c.Do == "milestone" || c.Do == "order" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
+	if c.Do == "milestone" || c.Do == "order" || c.Do == "effort" || c.Do == "refine" || c.Do == "ready" || c.Do == "unready" || c.Do == "ask" || c.Do == "split" || c.Do == "rename" || c.Do == "depend" || c.Do == "undepend" {
 		return "", "" // writing a plan or asking says nothing of the issue's truth: no quote
 	}
 	if c.Quote == nil || strings.TrimSpace(c.Quote.Text) == "" {
@@ -2451,6 +2494,9 @@ func describe(c Proposal, verb string) string {
 	}
 	if c.Do == "order" {
 		return fmt.Sprintf("Set #%d's priority to %s (was: %s): %s", c.Issue, scale.Value(c.Priority), c.Before, strings.TrimSpace(c.Why))
+	}
+	if c.Do == "effort" {
+		return fmt.Sprintf("Set #%d's effort to %s (was: %s): %s", c.Issue, scale.EffortValue(c.Effort), c.Before, strings.TrimSpace(c.Why))
 	}
 	done := verb != "Close"
 	if !done && c.Spent {

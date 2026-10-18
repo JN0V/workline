@@ -16,4 +16,4 @@ expect:
   agent-calls: 0
   no-findings:
     - {rule: level-unknown}
-  summary-file: ["- **next to build** (3)\n  - [#14](https://forge.example/issues/14): Export in JSON — priority 2 (priority/important-soon)\n  - [#12](https://forge.example/issues/12): Quote commas in exported cells — priority 4 (priority/awaiting-more-evidence)\n  - [#13](https://forge.example/issues/13): Keep the last row in the CSV export\n"]
+  summary-file: ["- **next to build** (3)\n  - [#14](https://forge.example/issues/14): Export in JSON — High\n  - [#12](https://forge.example/issues/12): Quote commas in exported cells — Low\n  - [#13](https://forge.example/issues/13): Keep the last row in the CSV export — no priority\n"]

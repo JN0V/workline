@@ -1,0 +1,4 @@
+- order: {issue: 9, priority: 1, effort: 1, why: "Rows lost hurt every report; one loop to fix."}
+- order: {issue: 10, effort: 3, why: "The exporter is rewritten whole."}
+- order: {issue: 11, priority: 3, effort: Medium, why: "A day's work, for later."}
+- order: {issue: 12, priority: 2, effort: 2, why: "Next after the lost rows."}

@@ -339,6 +339,10 @@ func own() Family {
 type Scheme struct {
 	Priority Source
 	Effort   Source
+	// Detected: the project's settings asked where it keeps them
+	// (ADR-0040): each value is then set once, only where empty, and Next
+	// shows each issue's cell of the grid.
+	Detected bool
 }
 
 // Before is the scheme before ADR-0040's detection, a project's setting
@@ -376,4 +380,74 @@ func Said(l int) string {
 		return "no priority"
 	}
 	return "priority " + Value(l)
+}
+
+// EffortValue is an effort level as the role's texts say it: its name,
+// and the label that carries it ("Low (effort/small)"); "not estimated"
+// for none.
+func EffortValue(l int) string {
+	if !Effort.Valid(l) {
+		return "not estimated"
+	}
+	if label, ok := Used.Effort.Family.Label(l); ok {
+		return fmt.Sprintf("%s (%s)", Effort.Name(l), label.Name)
+	}
+	return Effort.Name(l)
+}
+
+// EffortAnchor is what an effort level means to build: hours, days,
+// weeks; "" for none.
+func EffortAnchor(l int) string {
+	if !Effort.Valid(l) {
+		return ""
+	}
+	return anchors[l-1]
+}
+
+// cells name four corners of the value-vs-effort grid (ADR-0040, "The
+// order"), by priority then effort level.
+var cells = map[[2]int]string{{2, 1}: "quick win", {2, 3}: "big bet", {4, 1}: "fill-in", {4, 3}: "time sink"}
+
+// PriorityName is a priority level by its name; "no priority" for none.
+func PriorityName(l int) string {
+	if !Priority.Valid(l) {
+		return "no priority"
+	}
+	return Priority.Name(l)
+}
+
+// Cell is an issue's place in the value-vs-effort grid, as Next says it:
+// "High · Effort Low → quick win"; a value missing said so, "no
+// priority, effort not estimated".
+func Cell(p, e int) string {
+	prio, eff := PriorityName(p), "effort not estimated"
+	if Effort.Valid(e) {
+		eff = "Effort " + Effort.Name(e)
+	}
+	if !Priority.Valid(p) && !Effort.Valid(e) {
+		return prio + ", " + eff
+	}
+	if name, ok := cells[[2]int{p, e}]; ok {
+		return prio + " · " + eff + " → " + name
+	}
+	return prio + " · " + eff
+}
+
+// Stuck says an axis's estimates stuck on one value (ADR-0040): past 10
+// values set, one over 60% of them, said "Medium on 8 of the 11"; "" when
+// not.
+func Stuck(s Scale, levels []int) string {
+	if len(levels) <= 10 {
+		return ""
+	}
+	count := map[int]int{}
+	for _, l := range levels {
+		count[l]++
+	}
+	for l := 1; l <= s.Count(); l++ {
+		if count[l]*100 > 60*len(levels) {
+			return fmt.Sprintf("%s on %d of the %d", s.Name(l), count[l], len(levels))
+		}
+	}
+	return ""
 }

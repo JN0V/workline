@@ -17,4 +17,4 @@ expect:
   findings:
     - {rule: values-where, message: "Priority: labels priority/*, the project's."}
     - {rule: level-unknown, message: "\"priority/awaiting-more-evidence\" names no level"}
-  summary-file: ["- **next to build** (3)\n  - [#14](https://forge.example/issues/14): Export in JSON — priority 1 (priority/critical-urgent)\n  - [#13](https://forge.example/issues/13): Keep the last row in the CSV export — priority 4 (priority/backlog)\n  - [#12](https://forge.example/issues/12): Quote commas in exported cells\n"]
+  summary-file: ["- **next to build** (3)\n  - [#14](https://forge.example/issues/14): Export in JSON — Urgent\n  - [#13](https://forge.example/issues/13): Keep the last row in the CSV export — Low\n  - [#12](https://forge.example/issues/12): Quote commas in exported cells — no priority\n"]

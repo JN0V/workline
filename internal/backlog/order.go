@@ -22,6 +22,14 @@ func PriorityLabels(is forge.Issue) []int { return scale.Used.Priority.Family.Le
 // it has none.
 func Priority(is forge.Issue) int { return scale.Used.Priority.Family.First(is.Labels) }
 
+// EffortLabels lists the levels an issue's effort labels give, where the
+// project keeps them; none while it keeps none (ADR-0040).
+func EffortLabels(is forge.Issue) []int { return scale.Used.Effort.Family.Levels(is.Labels) }
+
+// Effort is an issue's effort, the lightest of its labels; 0 when it has
+// none, or the project keeps none.
+func Effort(is forge.Issue) int { return scale.Used.Effort.Family.First(is.Labels) }
+
 // Where reads where the project keeps each axis (ADR-0040, "Where the
 // values live"), with no agent, as its settings ask; unset, as before
 // (scale.Before), nothing read of the forge. With it, what the run says
@@ -40,7 +48,7 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 	for _, is := range open {
 		on = append(on, is.Labels...)
 	}
-	var s scale.Scheme
+	s := scale.Scheme{Detected: true}
 	var said []string
 	var unknown []verdict.Finding
 	for _, a := range []struct {
@@ -72,6 +80,7 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 // the level; "" when it can. The plan asks it, and the applying job again
 // before it writes.
 func Placeable(src scale.Source, is forge.Issue, l int) (rule, why string) {
+	axis := src.Family.Scale.Axis
 	if there := src.Elsewhere(is.Labels); len(there) > 0 {
 		var here []string
 		for _, n := range is.Labels {
@@ -80,15 +89,15 @@ func Placeable(src scale.Source, is forge.Issue, l int) (rule, why string) {
 			}
 		}
 		if len(here) > 0 {
-			return "priority-elsewhere", fmt.Sprintf("its priority is in two places, %s and %s: nothing is written on it; a person keeps one",
-				strings.Join(here, ", "), strings.Join(there, ", "))
+			return axis + "-elsewhere", fmt.Sprintf("its %s is in two places, %s and %s: nothing is written on it; a person keeps one",
+				axis, strings.Join(here, ", "), strings.Join(there, ", "))
 		}
-		return "priority-elsewhere", fmt.Sprintf("its priority is in %s, not in %s where the project keeps it: nothing is written on it, never in two places",
-			strings.Join(there, ", "), src.Family.Span())
+		return axis + "-elsewhere", fmt.Sprintf("its %s is in %s, not in %s where the project keeps it: nothing is written on it, never in two places",
+			axis, strings.Join(there, ", "), src.Family.Span())
 	}
 	if _, ok := src.Family.Label(l); !ok {
-		return "priority-no-label", fmt.Sprintf("no label of %s carries %s: a person creates one, or maps one to it under `names` in the settings",
-			src.Family.Span(), scale.Priority.Name(l))
+		return axis + "-no-label", fmt.Sprintf("no label of %s carries %s: a person creates one, or maps one to it under `names` in the settings",
+			src.Family.Span(), src.Family.Scale.Name(l))
 	}
 	return "", ""
 }
@@ -168,7 +177,7 @@ func CompareMilestones(a, b string) int {
 // the nearest milestone first — by its due date, then its title
 // (CompareDue) —, an issue in none after every one in one; then the
 // priority, an issue with none after the last (scale.Priority.Rank); then
-// the lowest number.
+// the effort, the lightest first, none as Medium; then the lowest number.
 func Less(a, b forge.Issue) bool {
 	switch {
 	case a.Milestone != b.Milestone && (a.Milestone == "" || b.Milestone == ""):
@@ -181,6 +190,12 @@ func Less(a, b forge.Issue) bool {
 	pa, pb := scale.Priority.Rank(Priority(a)), scale.Priority.Rank(Priority(b))
 	if pa != pb {
 		return pa < pb
+	}
+	// Then the effort, the lightest first, none as Medium: never a score,
+	// so a noisy effort never carries an issue across priorities
+	// (ADR-0040, the value-vs-effort grid).
+	if ea, eb := scale.Effort.Rank(Effort(a)), scale.Effort.Rank(Effort(b)); ea != eb {
+		return ea < eb
 	}
 	return a.ID < b.ID
 }

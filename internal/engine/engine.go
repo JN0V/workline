@@ -648,6 +648,7 @@ func run(o Options, res *Result) error {
 		}
 	}
 	intents = slices.DeleteFunc(intents, func(i intent.Intention) bool { return i.Kind == "claim" || i.Kind == "skip" })
+	intents = splitEffort(intents)
 	intent.SortForApply(intents)
 	if err := intent.Write(filepath.Join(runDir, "out", "intentions.yaml"), intents); err != nil {
 		return err
@@ -2282,12 +2283,12 @@ func (a *applier) apply(in intent.Intention) error {
 			return nil
 		}
 		return a.forge.(forge.Backlog).SetMilestone(d.Act.Issue, strings.TrimSpace(d.Act.Milestone))
-	case "order":
+	case "order", "effort":
 		d := a.plan.Decision(a.index)
 		if d == nil || d.Mode != backlog.Act {
 			return nil
 		}
-		return a.order(d.Act)
+		return a.level(d.Act)
 	case "sources":
 		// The code the issue is about, named: its state gets them, and the
 		// issue is read again, with them, at the next run.

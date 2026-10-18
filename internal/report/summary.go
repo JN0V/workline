@@ -12,6 +12,7 @@ import (
 	"github.com/JN0V/workline/internal/engine"
 	"github.com/JN0V/workline/internal/line"
 	"github.com/JN0V/workline/internal/sample"
+	"github.com/JN0V/workline/internal/scale"
 	"github.com/JN0V/workline/internal/verdict"
 )
 
@@ -188,6 +189,7 @@ type group struct {
 var groups = []group{
 	{[]string{"done"}, "done alone", "to do alone, once applied", false},
 	{[]string{"done-as-accepted"}, "done, as a person accepted", "to do, as a person accepted", false},
+	{[]string{"urgent-set"}, "set to " + scale.Priority.Name(1) + ", to check", "to set to " + scale.Priority.Name(1) + ", to check", false},
 	{[]string{"proposed"}, "proposed, waiting on a person", "to propose, once applied", true},
 	{[]string{"left-to-a-person", "asks-spent", "spec-rounds-spent"}, "left to a person, its rounds spent", "left to a person, its rounds spent", true},
 	{[]string{"nothing-proposed", "scope-without-files", "sources-unknown"}, "read, left incomplete: yours to complete, or to leave", "read, left incomplete: yours to complete, or to leave", false},
@@ -199,7 +201,7 @@ var groups = []group{
 
 // plain are a backlog's findings on no one issue, said without their
 // rule's name: the message says it all.
-var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed", "values-where", "level-unknown"}
+var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unread", "report-closed", "values-where", "level-unknown", "next-unestimated", "estimates-stuck"}
 
 // heldBack are the reasons the engine did not do, or only proposed, an act
 // the product owner's agent wrote (internal/backlog): said in plain words,
@@ -207,7 +209,8 @@ var plain = []string{"proposals-waiting", "demoted", "setting-gone", "plan-unrea
 var heldBack = []string{"no-quote", "nothing-to-refine", "section-kept", "not-ready", "ask-empty", "already-asked",
 	"already-proposed", "asked-before", "question-left-out", "not-agreed", "not-accepted", "close-reason", "already-open", "once-a-run", "act-cap",
 	"moved-cap", "drafts-proposed", "undone-here", "outsider-evidence", "reporter-outside",
-	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "title-kept",
+	"spec-not-reviewed", "spec-findings-open", "priority-level", "priority-kept", "priority-same", "priority-elsewhere", "priority-no-label", "priority-once", "priority-changed",
+	"effort-level", "effort-nowhere", "effort-unread", "effort-elsewhere", "effort-no-label", "effort-kept", "effort-once", "effort-changed", "title-kept",
 	"title-same", "rename-title", "split-size", "split-title", "split-sections", "split-after", "already-split",
 	"parent-accepted-by-a-person", "depend-issue", "depend-same", "depend-cycle", "undepend-issue", "undepend-theirs",
 	"undepend-gone", "unready-not-ready", "milestone-title", "not-slipped", "exempt", "announced", "obsolete-kept",
