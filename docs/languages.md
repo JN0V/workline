@@ -1,6 +1,6 @@
 ---
 sources: [internal/linters, internal/doctor/languages.go]
-checked: 03853725
+checked: c3ba67b5
 ---
 # Languages and the tools that read them
 
@@ -56,8 +56,9 @@ A tool runs when the project names it in:
 - its hooks: `.pre-commit-config.yaml`, lefthook, husky;
 - `Makefile`, `justfile`, `Taskfile.yml`, the scripts of `package.json`.
 
-A tool named only in a comment does not count. A tool run by a script of
-your own is not seen: name it in a gate check.
+A tool named only in a comment, a step's name, an install
+(`pip install ruff`), a download or an `echo` does not count. A tool run
+by a script of your own is not seen: name it in a gate check.
 
 ## What is suggested, in order
 
@@ -105,6 +106,6 @@ routing:
   request of its own.
 - **Left out**: formatters, tools that read every file (secrets,
   spelling), file types told by their content (CloudFormation).
-- **Kept by workline**: the language's own toolchain, and the type
-  checkers trunk files as linters (mypy, pyright), in
+- **Kept by workline**: the language's own toolchain, and the kinds trunk
+  files otherwise (mypy and pyright check types, brakeman security), in
   `internal/linters/ecosystem.go`.
