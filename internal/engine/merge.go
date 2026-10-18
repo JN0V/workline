@@ -267,21 +267,34 @@ func OwnCommit(repo, commit, base string) string {
 var agentFiles = []string{"agents.md", "claude.md", "gemini.md", "copilot-instructions.md"}
 
 // docPage says whether a path is a doc page the roles write: Markdown, not
-// a role's facet (roles/, prompts the engine embeds), not under a tool's
-// folder (.workline, .github, .claude, .cursor), not a file that steers
-// agents (AGENTS.md, CLAUDE.md…).
+// under a tool's folder (.workline, .github, .claude, .cursor), not a file
+// that steers agents (AGENTS.md, CLAUDE.md…), and in a role's folder only
+// a page for people (rolePage), never a facet the engine gives the agent.
 func docPage(path string) bool {
 	lower := strings.ToLower(path)
 	if !strings.HasSuffix(lower, ".md") {
 		return false
 	}
 	parts := strings.Split(lower, "/")
-	for _, p := range parts[:len(parts)-1] {
-		if p == "roles" || p == ".workline" || p == ".github" || p == ".claude" || p == ".cursor" {
+	for i, p := range parts[:len(parts)-1] {
+		switch p {
+		case ".workline", ".github", ".claude", ".cursor":
 			return false
+		case "roles":
+			if !rolePage(parts[i+1:]) {
+				return false
+			}
 		}
 	}
 	return !slices.Contains(agentFiles, parts[len(parts)-1])
+}
+
+// rolePage says whether a path in a role's folder, `roles/<name>/…`, is
+// one of its pages for people, never loaded for an agent (the role
+// contract's layout): its README.md, a page under its docs/. Its facets —
+// persona, knowledge, instruction, policy, lenses, kinds, skills — are not.
+func rolePage(rest []string) bool {
+	return len(rest) == 2 && rest[1] == "readme.md" || len(rest) > 2 && rest[1] == "docs"
 }
 
 // OwnMerge says whether a merge commit is one `follow` makes: its second
