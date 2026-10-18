@@ -1,0 +1,13 @@
+case: setup/doctor-language-vendored-skipped
+about: "Vendored and generated code is left out: shell under vendor/ and node_modules/, and shell .gitattributes marks linguist-generated, is never said to lack a linter; how many files were left out is said (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - "mkdir -p vendor/lib node_modules/x gen && printf 'echo a\\n' > vendor/lib/a.sh && printf 'echo b\\n' > node_modules/x/b.sh && printf 'echo c\\n' > gen/c.sh && printf 'gen/** linguist-generated\\n' > .gitattributes && git add -f vendor node_modules gen .gitattributes && git commit -qm 'chore: vendored and generated code'"
+run: {doctor: true}
+expect:
+  status: pass
+  checks:
+    - {rule: languages, level: ok, message: "3 vendored or generated files left out"}
+  no-findings:
+    - {rule: language-gaps, where: shell}

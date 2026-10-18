@@ -1,0 +1,21 @@
+case: setup/doctor-language-without-linter
+about: "A repository holding Go and shell, whose only gate check runs golangci-lint, is warned that no linter reads its shell, naming shellcheck and the gate check to add; Go is read, by the gate. A file with no extension is told by its #! line. A warning, never a failure, and the same with no agent (#244, ADR-0049)."
+given:
+  repo: basic
+  env: {WORKLINE_AI: none}
+  config:
+    gates:
+      lint:
+        checks:
+          - {id: golangci-lint, run: golangci-lint run, output: exit}
+  setup:
+    - "mkdir -p tools && printf '#!/usr/bin/env bash\\necho release\\n' > tools/release && printf 'echo deploy\\n' > deploy.sh && git add tools deploy.sh && git commit -qm 'build: release and deploy scripts'"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: language-gaps, where: shell, level: warn, message: "shell (deploy.sh, tools/release): lint by nothing: shellcheck", fix: "{id: shellcheck, run: \"git ls-files -z -- '*.bash' '*.sh' | xargs -0 -r shellcheck\", output: exit}"}
+  checks:
+    - {rule: language-covered, where: go, level: ok, message: "lint and types by golangci-lint (.workline/config.yaml, gate lint)"}
+  no-findings:
+    - {rule: language-gaps, where: go}

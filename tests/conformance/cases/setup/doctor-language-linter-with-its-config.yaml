@@ -1,0 +1,11 @@
+case: setup/doctor-language-linter-with-its-config
+about: "With its config there and nothing running it, the project-dependent linter is suggested first: JavaScript holding an eslint.config.js is warned, ESLint named configured, and the gate check runs ESLint as it is, with no config of workline's (ADR-0049)."
+given:
+  repo: basic
+  setup:
+    - "printf 'console.log(1)\\n' > app.js && printf 'export default [];\\n' > eslint.config.js && git add app.js eslint.config.js && git commit -qm 'feat: an app, linted'"
+run: {doctor: true}
+expect:
+  status: pass
+  findings:
+    - {rule: language-gaps, where: javascript, level: warn, message: "(configured in eslint.config.js)", fix: "| xargs -0 -r eslint\", output: exit}"}
