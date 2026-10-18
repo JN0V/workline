@@ -2,6 +2,7 @@
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/adopt.go, internal/builtin/documentalist/byname.go]
 checked: 178672f7
 verified: agent:claude-code
+judged-in-parts: c7e1e98
 ---
 # Documentalist — at the push, the release and the adoption
 
