@@ -1,8 +1,8 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: 178672f7
+checked: 4a1dedce
 judged: f70db89
-verified: agent:documentalist
+verified: agent:claude-code
 ---
 # Documentalist — the checks
 

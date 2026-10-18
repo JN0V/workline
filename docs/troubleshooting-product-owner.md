@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: 178672f7
+checked: 4a1dedce
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
