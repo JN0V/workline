@@ -2,7 +2,7 @@
 sources: [tests/conformance/runner_test.go, tests/evaluation]
 checked: 62233382
 verified: agent:claude-code
-judged: af2d6fb
+judged: ae14474
 ---
 # Conformance — v1 (draft)
 
