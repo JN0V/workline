@@ -1,6 +1,6 @@
 ---
 sources: [internal/linters, internal/doctor/languages.go]
-checked: c3ba67b5
+checked: 9dfe0814
 ---
 # Languages and the tools that read them
 
@@ -26,6 +26,9 @@ read it, which it lacks, and the gate check to add
   (`Dockerfile`), else their `#!` line (`#!/usr/bin/env bash`).
 - **One line a language**; a file can count twice: a workflow is YAML
   and a GitHub workflow.
+- **Infrastructure is told by its content too**: a Kubernetes manifest
+  holds `apiVersion` and `kind`, a CloudFormation template
+  `AWSTemplateFormatVersion`; a Helm chart is its `Chart.yaml`.
 - **Vendored and generated code is left out**: what `.gitattributes`
   marks `linguist-vendored` or `linguist-generated`, as GitHub reads it,
   and the folders `vendor/`, `node_modules/`, `.pio/`, `third_party/`.
@@ -38,6 +41,12 @@ Each language is read for **lint**, **types**, **security** and
 **dependencies**; lockfiles (`go.sum`, `package-lock.json`) are a line of
 their own. Formatters are not counted: their fixes are applied, not
 reported.
+
+An infrastructure scanner (checkov, trivy) reads infrastructure only:
+Terraform, Dockerfiles, Kubernetes manifests, CloudFormation, Helm
+charts. It is never suggested for a plain YAML or JSON config: the
+scanners' recipes are the security role's
+([#204](https://github.com/JN0V/workline/issues/204)).
 
 | Doctor says | Means |
 |---|---|
@@ -56,9 +65,18 @@ A tool runs when the project names it in:
 - its hooks: `.pre-commit-config.yaml`, lefthook, husky;
 - `Makefile`, `justfile`, `Taskfile.yml`, the scripts of `package.json`.
 
-A tool named only in a comment, a step's name, an install
-(`pip install ruff`), a download or an `echo` does not count. A tool run
-by a script of your own is not seen: name it in a gate check.
+How it is read:
+
+- **A YAML file as YAML**: only the values of its command keys (`run`,
+  `uses`, `script`, `entry`, `cmds`…; a pre-commit hook's `id`), in
+  block, quoted or flow style. A step's `name` is not a command.
+- **Each command as shell**: quotes kept together, split on `;`, `&&`,
+  `|` and new lines, comments left out.
+- **Not a run**: an install (`python -m pip install ruff`,
+  `sudo apt-get -y install shellcheck`), a download, a file moved, an
+  `echo`.
+- **Not seen**: a tool run by a script of your own. Name it in a gate
+  check.
 
 ## What is suggested, in order
 
@@ -105,7 +123,10 @@ routing:
   the commit pinned in `internal/linters/linters.go`. Moving it is a pull
   request of its own.
 - **Left out**: formatters, tools that read every file (secrets,
-  spelling), file types told by their content (CloudFormation).
-- **Kept by workline**: the language's own toolchain, and the kinds trunk
-  files otherwise (mypy and pyright check types, brakeman security), in
-  `internal/linters/ecosystem.go`.
+  spelling).
+- **Kept by workline**, in `internal/linters/ecosystem.go`:
+  - the language's own toolchain;
+  - the Kubernetes and Helm file types, which trunk-io/plugins lacks;
+  - the kinds trunk files otherwise: mypy and pyright check types,
+    brakeman is a security scanner, checkov and trivy read
+    infrastructure only.
