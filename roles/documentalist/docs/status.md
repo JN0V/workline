@@ -24,7 +24,7 @@ hold:
 1. **Nothing buildable in Missing**: **met** (2026-10-18). A doc judged
    on its change alone is read in parts at night (Built:
    [#462](https://github.com/JN0V/workline/issues/462)); moving its
-   `checked` is built, off by default, its bars not held yet
+   `checked` is built, on since its bars held at the second measure
    ([#482](https://github.com/JN0V/workline/issues/482)). No commit on a
    person's pull request for a doc only read is built (Built:
    [#463](https://github.com/JN0V/workline/issues/463)). DomoticsCore's
@@ -149,13 +149,15 @@ its evaluation in
   `judged-on-its-diff-too-wide-for-parts-not-asked-again`,
   `judged-kept-read-in-parts-not-recorded`,
   `parts-read-longest-ago-first`; `checked` moved after parts when every
-  line stating something is supported, behind `parts-move-checked`, off:
-  five runs held no falsehood vouched for, the control vouched in 3
+  line stating something is supported, `parts-move-checked`, on: five
+  runs held no falsehood vouched for, the control made exact vouched for
+  in every one (the first five, 3)
   ([#482](https://github.com/JN0V/workline/issues/482),
   [tried](https://github.com/JN0V/workline/pull/490)):
   `judged-in-parts-every-line-supported*`,
   `judged-in-parts-a-line-unsupported`,
-  `judged-in-parts-partial-settled-checked-moves`,
+  `judged-in-parts-partial-settled-by-another`,
+  `judged-in-parts-vouch-refused-with-the-set`,
   `sample-vouched-in-parts-for-a-person`. On DomoticsCore, the six
   docs needing more than 8 parts were split or narrowed to 8 or fewer
   ([DomoticsCore #211](https://github.com/JN0V/DomoticsCore/pull/211),
@@ -208,10 +210,11 @@ its evaluation in
 3. **workline's own docs far behind**, gardened nightly in parts since
    [#27](https://github.com/JN0V/workline/issues/27), to watch. No issue
    yet.
-4. **A doc read in parts, nothing found wrong**, still waits for a
-   person by default: `parts-move-checked` is built, off until five runs
-   on the control made exact hold the bars, about 150k tokens
-   ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-off);
+4. **A doc read in parts, to watch**: it no longer waits for a person
+   when its parts support every line (`parts-move-checked`, on). How
+   often real docs earn it; the fix's recall on the planted doc, all four
+   defects fixed in 6 runs of 10, none vouched for
+   ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on);
    [#482](https://github.com/JN0V/workline/issues/482)).
 5. **To watch**: Sonnet citing lines a line off in long docs (now placed
    by their quote); a partial claim settled by another part; the first

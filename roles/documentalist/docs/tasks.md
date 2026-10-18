@@ -65,9 +65,10 @@ pages the reader checks flag: [gardening](gardening.md). Part of [the documental
   (`checked-over-count-off`), so the fix brings it to that count or leaves
   `checked`. That change needs no claim, the task says: the engine's count
   is the evidence, and a count is not words a file holds, to be quoted.
-- **In parts**: a fix never moves it; the engine does, if the project
-  turns `parts-move-checked` on
-  ([judged in parts](parts.md#checked-moved-after-parts-if-the-project-says-so)).
+- **In parts**: a fix never moves it; the engine does when the parts
+  support every line stating something, unless the project turns
+  `parts-move-checked` off
+  ([judged in parts](parts.md#when-checked-moves-after-parts)).
 
 ### Every word removed is cited
 

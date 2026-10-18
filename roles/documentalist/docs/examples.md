@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/examples.go, internal/builtin/documentalist/judge.go, roles/documentalist/role.yaml]
-checked: 9a5b81df
+checked: 7a57c53a
 verified: agent:claude-code
 ---
 # Documentalist — the code examples a fix writes

@@ -5,7 +5,7 @@
   developer; adversarial, verification-gap and edge-case lenses);
   amended 2026-10-01 (who confirms a verdict), 2026-10-02 (where the
   weekly sample is written: ADR-0015), 2026-10-15 (what step 3 left),
-  2026-10-18 (`checked` earned in parts, measured, off)
+  2026-10-18 (`checked` earned in parts, measured, off, then on)
 - **Date:** 2026-10-01
 - **Amends:** ADR-0012 (a doc judged against its sources whole), ADR-0013
   (`judged`)
@@ -205,6 +205,16 @@ adopted only if five evaluation runs in parts hold step 4's bars.
   - tokens: 4.9k a call, as before.
 - **So not adopted yet**: `parts-move-checked` is off by default; a
   project may turn it on. Measured again once the control is exact.
+- **Measured again** the same day, the control made exact
+  ([ADR-0009, amended](0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on)):
+  - no `checked` moved over a planted falsehood: **held**, 5 of 5;
+  - the clean control ends `checked` in every run: **held**, 5 of 5;
+  - no true claim removed: held; the four defects fixed in 2 runs of 5,
+    one left in each of the others, its doc unvouched;
+  - tokens: 4.9k a call, as before.
+- **Adopted**: `parts-move-checked` is on by default. The fix's recall
+  on the planted doc is to watch: all four defects fixed in 6 runs of the
+  ten, where the eight runs of 10-17 fixed them all.
 - **The weekly sample** reads a doc whole, which a doc earned in parts
   cannot be: its `judged-in-parts` at its `checked` says so, and it is
   listed for a person, never called unearned nor put back.

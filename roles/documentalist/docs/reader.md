@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/readertask.go, internal/builtin/documentalist/reader.go, internal/builtin/documentalist/documentalist.go, roles/documentalist/role.yaml, internal/engine/routine.go]
-checked: a5e57aa5
+checked: 7a57c53a
 verified: agent:claude-code
 ---
 # Documentalist — pages read for their reader

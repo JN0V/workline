@@ -89,8 +89,8 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
   - Measured on every fix after parts kept, 2026-10-01 to 10-17: the two
     such removals both took out true words.
 - The header records the commit it was judged in parts at,
-  `judged-in-parts`, found wrong or not, and the doc stays suspect, saying
-  so: nobody read it whole.
+  `judged-in-parts`, found wrong or not, and a doc fixed stays suspect,
+  saying so: the fix saw only the parts' excerpts.
 - It is not put before an agent again until one of its sources changes
   after that commit; a person clears it by reading it whole and moving
   `checked`.
@@ -98,12 +98,13 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
   its own, `workline/documentalist/fix-<first doc>`; the doc waits while
   it is open ([gardening](gardening.md#one-merge-request-per-task)).
 
-## `checked` moved after parts, if the project says so
+## When `checked` moves after parts
 
-`parts-move-checked: true`, off by default: five evaluation runs did not
-hold the bars it was to be adopted on
-([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-off);
-[#482](https://github.com/JN0V/workline/issues/482)). On, the engine
+On by default since five evaluation runs held the bars it was to be
+adopted on
+([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on);
+[#482](https://github.com/JN0V/workline/issues/482));
+`parts-move-checked: false` leaves every such doc to a person. The engine
 moves `checked`, never the fix, when the parts found nothing wrong, in
 conflict or to be read together, and:
 

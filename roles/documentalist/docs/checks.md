@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/documentalist.go, internal/builtin/documentalist/identifiers.go, internal/builtin/documentalist/derive.go, internal/builtin/documentalist/freshness.go, internal/builtin/documentalist/counts.go, roles/documentalist/role.yaml]
-checked: a5e57aa5
+checked: 7a57c53a
 judged: f70db89
 verified: agent:claude-code
 ---

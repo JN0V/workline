@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/hygiene.go, internal/builtin/documentalist/external.go, internal/builtin/documentalist/adr.go, internal/builtin/documentalist/unread.go, internal/builtin/documentalist/reader.go, roles/documentalist/role.yaml]
-checked: 9a5b81df
+checked: 7a57c53a
 verified: agent:claude-code
 ---
 # Documentalist — the checks on the docs alone

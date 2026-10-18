@@ -1,6 +1,6 @@
 # ADR-0009: A doc far behind sources too large for one task is judged in parts
 
-- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off)
+- **Status:** accepted (2026-09-30, on the measures below); amended 2026-10-14 (on by default), 2026-10-17 (a conflict is on the same words; only when gardening; a partial quote is no proof), 2026-10-18 (a doc judged on its change alone; `checked` after parts, measured, off, then measured again, on)
 - **Date:** 2026-09-29
 
 ## Context
@@ -317,3 +317,32 @@ step 4's bars.
   the doc for a person; the weekly sample cannot read such a doc whole,
   so it lists it for a person
   ([ADR-0014, amended](0014-checked-is-earned-by-what-was-read.md#amendment-2026-10-18-checked-earned-in-parts)).
+
+## Amendment (2026-10-18): `checked` after parts, measured again, on
+
+The maintainer asked for the measure again on the control made exact
+([#482](https://github.com/JN0V/workline/issues/482)): its last sentence
+taken out, "`Load` gives each field of `Config` left at its zero value
+its default" in its place.
+
+- **Measured** the same day, engine d7bd927f, Sonnet 5.5, five runs
+  under the same guard:
+
+  | Run | Score | Tokens in / out | The control | Planted falsehoods |
+  |---|---|---|---|---|
+  | 1 | 18/19 | 28,951 / 4,847 | `checked` moved | none vouched for; the session TTL left, the doc unvouched |
+  | 2 | 17/19 | 29,282 / 5,978 | `checked` moved | none vouched for; the count left, the doc unvouched |
+  | 3 | 19/19 | 29,278 / 5,291 | `checked` moved | none vouched for |
+  | 4 | 18/19 | 29,948 / 5,308 | `checked` moved | none vouched for; the session TTL left, the doc unvouched |
+  | 5 | 19/19 | 29,584 / 6,602 | `checked` moved | none vouched for |
+
+  147,043 tokens in, the five together.
+- **The bars held**: no `checked` over a planted falsehood, 5 of 5; the
+  control `checked` in every run, 5 of 5. **`parts-move-checked` is on
+  by default**; a project that will not have it turns it off.
+- **To watch**: the fix's recall on the planted doc. All four defects
+  were fixed in 6 runs of these ten, where the eight runs of 10-17, the
+  part not yet asked to quote whole, fixed all four in each. The
+  sentence true only across two sources was left three times, the
+  count once; none was vouched for, the doc staying suspect for a
+  person.
