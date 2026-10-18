@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -144,56 +143,44 @@ func (g *gitlab) api(args ...string) ([]byte, error) {
 		}
 	}
 	next := g.base + "/" + strings.Replace(path, ":id", g.project, 1)
+	var body []byte
+	var contentType string
+	if len(form) > 0 {
+		body, contentType = []byte(form.Encode()), "application/x-www-form-urlencoded"
+	}
 	var all []byte
 	for next != "" {
-		var body io.Reader
-		if len(form) > 0 {
-			body = strings.NewReader(form.Encode())
-		}
-		req, err := http.NewRequest(method, next, body)
+		a, err := g.send(method, next, contentType, body, method == "GET")
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set(g.header, g.token)
-		if body != nil {
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		}
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrUnreachable, err)
-		}
-		data, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrUnreachable, err)
-		}
+		data := strings.TrimSpace(string(a.data))
 		switch {
-		case resp.StatusCode == http.StatusNotFound:
+		case a.code == http.StatusNotFound:
 			return nil, fmt.Errorf("%w: %s %s", errNotFound, method, path)
-		case resp.StatusCode == http.StatusForbidden, resp.StatusCode == http.StatusUnauthorized && method != "GET":
-			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s (the token's role or scope does not allow it)", errForbidden, method, path, resp.Status, strings.TrimSpace(string(data)))
-		case resp.StatusCode == http.StatusBadRequest, resp.StatusCode == http.StatusUnprocessableEntity,
+		case a.code == http.StatusForbidden, a.code == http.StatusUnauthorized && method != "GET":
+			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s (the token's role or scope does not allow it)", errForbidden, method, path, a.status, data)
+		case a.code == http.StatusBadRequest, a.code == http.StatusUnprocessableEntity,
 			// The merge API's: a merge request it cannot merge, nor set to
 			// (405, 406), a head that moved (409).
-			resp.StatusCode == http.StatusMethodNotAllowed, resp.StatusCode == http.StatusNotAcceptable, resp.StatusCode == http.StatusConflict:
-			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, resp.Status, strings.TrimSpace(string(data)))
-		case resp.StatusCode >= 300:
-			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", ErrUnreachable, method, path, resp.Status, strings.TrimSpace(string(data)))
+			a.code == http.StatusMethodNotAllowed, a.code == http.StatusNotAcceptable, a.code == http.StatusConflict:
+			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s", errRefused, method, path, a.status, data)
+		case a.code >= 300:
+			return nil, fmt.Errorf("%w: GitLab %s %s: %s %s%s", ErrUnreachable, method, path, a.status, data, aside(a.note))
 		}
-		all = append(all, data...)
-		next = ""
-		if page := resp.Header.Get("X-Next-Page"); paginate && page != "" {
-			u, _ := url.Parse(req.URL.String())
-			q := u.Query()
-			q.Set("page", page)
-			u.RawQuery = q.Encode()
-			next = u.String()
+		all = append(all, a.data...)
+		page := a.header.Get("X-Next-Page")
+		if !paginate || page == "" {
+			break
 		}
+		u, _ := url.Parse(next)
+		q := u.Query()
+		q.Set("page", page)
+		u.RawQuery = q.Encode()
+		next = u.String()
 	}
 	return all, nil
 }
-
-var httpClient = &http.Client{Timeout: 60 * time.Second}
 
 // gitRemote is the URL of the repository's origin, or "".
 func gitRemote(repo string) string {
@@ -1382,29 +1369,22 @@ func (g *gitlab) graphql(query string, vars map[string]any, v any) (bool, error)
 		return false, err
 	}
 	payload, _ := json.Marshal(map[string]any{"query": query, "variables": vars})
-	req, err := http.NewRequest("POST", strings.TrimSuffix(g.base, "/v4")+"/graphql", bytes.NewReader(payload))
+	// A query only reads, though sent as a POST, its shorthand `{…}` too;
+	// a mutation, or anything else, writes.
+	q := strings.TrimSpace(query)
+	read := strings.HasPrefix(q, "query") || strings.HasPrefix(q, "{")
+	a, err := g.send("POST", strings.TrimSuffix(g.base, "/v4")+"/graphql", "application/json", payload, read)
 	if err != nil {
 		return false, err
 	}
-	req.Header.Set(g.header, g.token)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("%w: %v", ErrUnreachable, err)
-	}
-	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf("%w: %v", ErrUnreachable, err)
-	}
-	if resp.StatusCode >= 300 {
-		return false, fmt.Errorf("%w: GitLab GraphQL: %s %s", ErrUnreachable, resp.Status, strings.TrimSpace(string(data)))
+	if a.code >= 300 {
+		return false, fmt.Errorf("%w: GitLab GraphQL: %s %s%s", ErrUnreachable, a.status, strings.TrimSpace(string(a.data)), aside(a.note))
 	}
 	var answer struct {
 		Data   json.RawMessage `json:"data"`
 		Errors []any           `json:"errors"`
 	}
-	if err := decode(data, &answer); err != nil {
+	if err := decode(a.data, &answer); err != nil {
 		return false, err
 	}
 	if len(answer.Errors) > 0 || len(answer.Data) == 0 || string(answer.Data) == "null" {

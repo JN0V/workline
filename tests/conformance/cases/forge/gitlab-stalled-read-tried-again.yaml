@@ -1,0 +1,26 @@
+case: forge/gitlab-stalled-read-tried-again
+about: "A GitLab read that gets no answer in time is tried again after a pause: an issue's notes stalled once while the product owner plans, judged and not applied, the plan is read all the same, never `plan-unread` (#489)."
+given:
+  repo: backlog
+  engine-tags: [workline_quick]
+  forge:
+    faults:
+      - {path: /issues/12/notes, stall: true, skip: 1, times: 1}
+    issues:
+      - {id: 7, title: "Export drops the last row", body: "Every CSV file: the export drops the last row.", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "bug", body: "The export loses the last row.", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Export fixes", body: "The export drops its last row, and a comma splits a cell.", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Rows lost", body: "WriteRows loses rows.", author: ann, labels: [], comments: ["```yaml\nsources: [README.md]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Last row missing in CSV", body: "In my CSV export the last row is missing.", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+    members:
+      - {username: ann, access_level: 30}
+  config:
+    roles:
+      product-owner:
+        settings: {autonomy: cautious}
+run: {role: product-owner, event: schedule, ai: fake:level-acts, forge: gitlab, no-apply: true, summary: true}
+expect:
+  status: pass
+  no-findings: [{rule: plan-unread}, {rule: forge-unreachable}]
+  summary-file:
+    - "**pass** — judged, not applied (issues: 1 to do alone, 1 to propose to a person); apply with"

@@ -141,7 +141,13 @@ What else a case can give, run and expect, and how each is checked, is in
   `review-refused` refuses every discussion (403). Its merge API sets a
   merge request to merge when its pipeline succeeds, at its head only
   (409 otherwise), says when in a system note, and cancels it; its
-  versions are its `pushes`.
+  versions are its `pushes`. Its `faults` fail calls for a moment
+  (`{method, path, stall, status, retry-after, skip, times}`): a call on
+  the project's `path` (`/issues/9/notes`) gets no answer until the
+  engine gives up (`stall`, a write taken all the same), or the `status`;
+  `skip` calls are answered first, then `times` fail (all, without), and
+  a call sooner than its `retry-after` is refused again. A fault no call
+  met fails the case. A note posted counts in `posted`.
 
 ## Evaluation
 
