@@ -1,0 +1,27 @@
+case: reviewer/spec-long-file-named-its-function-shown
+about: "A spec naming a file past code-lines-max and a function in it (#425): the file is named as cut, and the function is shown all the same, not dropped as if the file had been."
+given:
+  repo: reviewed
+  setup:
+    - |
+      mkdir -p docs
+      cat > docs/spec-parse.md <<'MD'
+      # Parse keeps its error
+
+      ## Need
+
+      `Parse` reads "x" as 0: it should return the error.
+
+      ## Scope
+
+      `Parse` in `calc/calc.go`.
+      MD
+  config: {roles: {reviewer: {settings: {code-lines-max: 10}}}}   # calc/calc.go holds 18 lines
+run: {review: [--spec, docs/spec-parse.md], ai: "fake:review-nothing"}
+expect:
+  status: pass
+  agent-calls: 1
+  run-files:
+    in/parts/1-lenses/task.md:
+      contains: ["### calc/calc.go, lines 14 to 18: `Parse`", "func Parse(s string) int {", "Not shown, past 10 lines: calc/calc.go."]
+      not-contains: "func Average"
