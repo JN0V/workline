@@ -192,6 +192,10 @@ func TestStuck(t *testing.T) {
 	if got := Stuck(Effort, append(ten, 3)); got != "Medium on 10 of the 11" {
 		t.Errorf("eleven: %q", got)
 	}
+	// Exactly 60% is not over it: 9 of 15.
+	if got := Stuck(Effort, []int{2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 3, 3, 3}); got != "" {
+		t.Errorf("60%%: %q", got)
+	}
 	spread := []int{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3}
 	if got := Stuck(Effort, spread); got != "" {
 		t.Errorf("spread: %q", got)
