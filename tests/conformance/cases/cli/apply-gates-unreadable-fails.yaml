@@ -1,0 +1,7 @@
+case: cli/apply-gates-unreadable-fails
+about: "A gates' result that cannot be read fails the applying job, said, never shown as nothing found."
+given: {repo: basic}
+run: {cli: [apply, --gates, no-such-gates.json, --from-merge-request, "1", --head, abc1234, --forge, none]}
+expect:
+  exit: 1
+  stderr: ["no-such-gates.json"]

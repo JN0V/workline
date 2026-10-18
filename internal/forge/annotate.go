@@ -167,7 +167,8 @@ func (g *github) Conversations(branch string) (Conversations, error) {
 }
 
 // Annotate keeps the check on head, neutral, as GitHub does; refused
-// whole when the forge refuses checks.
+// whole when the forge refuses checks. Its page is the check's rank among
+// all the forge keeps, as a check run's id: a new one for each write.
 func (f *Fake) Annotate(head, name, title, summary string, notes []Annotation) (string, error) {
 	if s, err := f.load(); err != nil || s.ChecksRefused != "" {
 		if err == nil {

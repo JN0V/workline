@@ -1427,8 +1427,16 @@ func showGates(from engine.FromMergeRequest, file string) ([]verdict.Finding, er
 	g := wlreport.Gates(&r, from.Head)
 	entries := 10 // the reviewer's default
 	if cfg, err := role.LoadProjectConfig(from.Repo); err == nil {
-		if n, ok := cfg.Roles["reviewer"].Settings["findings-max"].(int); ok && n > 0 {
-			entries = n
+		// A whole number however it was read: YAML's int, JSON's float.
+		switch n := cfg.Roles["reviewer"].Settings["findings-max"].(type) {
+		case int:
+			entries = max(n, 1)
+		case int64:
+			entries = max(int(n), 1)
+		case float64:
+			if n >= 1 && n == float64(int(n)) {
+				entries = int(n)
+			}
 		}
 	}
 	return engine.ShowGates(from, engine.GatesToShow{Notes: g.Notes, Title: g.Title(), Summary: g.Summary(),
