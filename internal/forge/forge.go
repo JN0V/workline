@@ -47,6 +47,9 @@ type Issue struct {
 	// by the field's name — GitHub's Priority and Effort (ADR-0040) —, as
 	// the token reads them: a value it may not see is absent.
 	Fields map[string]string `json:"fields,omitempty"`
+	// Weight is its GitLab weight, a whole number (Premium, Ultimate,
+	// ADR-0040); nil when it has none, or the forge keeps none.
+	Weight *int `json:"weight,omitempty"`
 }
 
 // Field is a single-select issue field of the forge (ADR-0040): its id,
@@ -87,6 +90,25 @@ func SetField(f any, issue int, field Field, option string) error {
 		return s.setField(issue, field, option)
 	}
 	return fmt.Errorf("this forge keeps no issue fields: %s not set on #%d", field.Name, issue)
+}
+
+// Weights says whether f keeps a weight on issues: GitLab Premium and
+// Ultimate do, their issues' payloads carrying a `weight` key, Free's
+// none (ADR-0040); false, with no error, on a forge that has none.
+func Weights(f any) (bool, error) {
+	if w, ok := f.(interface{ weights() (bool, error) }); ok {
+		return w.weights()
+	}
+	return false, nil
+}
+
+// SetWeight sets an issue's weight, read back: a forge that keeps none,
+// or does not keep the one sent, answers an error.
+func SetWeight(f any, issue, weight int) error {
+	if s, ok := f.(interface{ setWeight(issue, weight int) error }); ok {
+		return s.setWeight(issue, weight)
+	}
+	return fmt.Errorf("this forge keeps no weight: none set on #%d", issue)
 }
 
 // Milestone is an open milestone: its title, and its due date when it has

@@ -1,0 +1,39 @@
+case: product-owner/weight-read-in-bands
+about: "GitLab's weight is read in bands: 0 or 1 Low, 2 or 3 Medium, 4 or more High, none read as Medium; Next goes by the grid, each cell named, and the weight a person wrote stands as it is (ADR-0040, step 5)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {next-max: 10, priority: auto, effort: auto}
+  forge:
+    weights: true
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 20, title: "Rewrite the importer", body: "The importer is rewritten.", author: ann, labels: [workline:ready, "priority::2"], weight: 4, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 21, title: "Export a month", body: "A month exported at once.", author: ann, labels: [workline:ready, "priority::2"], weight: 1, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 22, title: "Retry a failed upload", body: "An upload is tried again.", author: ann, labels: [workline:ready, "priority::2"], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 23, title: "A typo in the help", body: "The help has a typo.", author: ann, labels: [workline:ready, "priority::2"], weight: 0, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 24, title: "Dark mode", body: "A dark theme.", author: ann, labels: [workline:ready, "priority::2"], weight: 2, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 25, title: "Resume a download", body: "A download goes on.", author: ann, labels: [workline:ready, "priority::2"], weight: 3, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 26, title: "Sync two devices", body: "Two devices share a list.", author: ann, labels: [workline:ready, "priority::2"], weight: 8, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\njudged: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: none, forge: gitlab, summary: true}
+expect:
+  agent-calls: 0
+  findings:
+    - {rule: values-where, message: "Priority: labels priority::*, created. Effort: GitLab's weight."}
+    - {rule: next-unestimated, message: "1 of 7 ready issues have no effort, read as Medium."}
+  summary-file:
+    - "Export a month — High · Effort Low → quick win"
+    - "A typo in the help — High · Effort Low → quick win"
+    - "Retry a failed upload — High · effort not estimated"
+    - "Dark mode — High · Effort Medium"
+    - "Resume a download — High · Effort Medium"
+    - "Rewrite the importer — High · Effort High → big bet"
+    - "Sync two devices — High · Effort High → big bet"
+  forge:
+    issues:
+      - {id: 20, weight: 4}
+      - {id: 23, weight: 0}
+      - {id: 26, weight: 8}

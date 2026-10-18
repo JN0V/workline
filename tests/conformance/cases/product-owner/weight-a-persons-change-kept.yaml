@@ -1,0 +1,31 @@
+case: product-owner/weight-a-persons-change-kept
+about: "In GitLab's weight, each effort is written once, only where empty: a weight a person wrote, 0 included, is kept; one the role wrote, then a person changed or cleared, is never written again (ADR-0040, step 5)."
+given:
+  repo: backlog
+  config:
+    roles:
+      product-owner:
+        settings: {moved-percent-max: 100, effort: auto, acts: {effort: {mode: act}}}
+  forge:
+    weights: true
+    members:
+      - {username: ann, access_level: 30}
+    issues:
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], weight: 0, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], weight: 2, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 1\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\neffort: 2\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 12, title: "Export to JSON", body: "Add a JSON export.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
+expect:
+  status: pass
+  findings:
+    - {rule: effort-kept, where: "#9", message: "its effort was set by a person"}
+    - {rule: effort-once, where: "#10", message: "the role estimated its effort once already (Low)"}
+    - {rule: effort-once, where: "#11", message: "a person's change or clearing stands"}
+    - {rule: done, where: "#12", message: "Set #12's effort to Medium (weight 3)"}
+  forge:
+    issues:
+      - {id: 9, weight: 0}
+      - {id: 10, weight: 2}
+      - {id: 11, weight: -1}
+      - {id: 12, weight: 3}

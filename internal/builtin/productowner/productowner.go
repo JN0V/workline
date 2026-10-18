@@ -1093,7 +1093,15 @@ func writeIssue(b *strings.Builder, role string, rounds int, is forge.Issue, st 
 		if st.Effort != backlog.HiddenLevel && (len(set) != 1 || set[0] != st.Effort) {
 			whose = " (a person's: kept)"
 		}
-		fmt.Fprintf(b, "Effort: %s%s\n", scale.EffortValue(backlog.Effort(is)), whose)
+		value := scale.EffortValue(backlog.Effort(is))
+		if scale.Used.Effort.Weight {
+			// The weight the issue holds, a person's 2 as it is.
+			value = fmt.Sprintf("%s (weight %d)", scale.Effort.Name(backlog.Effort(is)), *is.Weight)
+		}
+		fmt.Fprintf(b, "Effort: %s%s\n", value, whose)
+	} else if scale.Used.Effort.Weight && len(backlog.Parts(is)) > 0 {
+		// GitLab sums a parent's weight from its parts' (ADR-0040).
+		b.WriteString("Effort: not estimated here: a parent, GitLab sums its parts' weights\n")
 	}
 	if by := backlog.OpenedBy(is.Body); by != "" {
 		// A role's finding, opened through the one way (ADR-0018): the
