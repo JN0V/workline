@@ -216,29 +216,25 @@ A doc whose sources do not fit a task whole, though what changed in them
 does, is **read in parts when gardening**, against all its sources as
 they are now ([#462](https://github.com/JN0V/workline/issues/462)):
 
-- **What happened**: such a doc was judged on what changed alone. Its
-  `judged` then kept it from an agent until a source changed, and only
-  the new change was read. On DomoticsCore, 2026-10-04, OTA's
-  project-context doc: nothing wrong in what changed, five claims outside
-  it false ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12-what-a-docs-judged-vouches-for)).
+- **What happened**: judged on what changed alone, its `judged` kept it
+  from an agent until a source changed. On DomoticsCore, 2026-10-04, five
+  claims outside the change were false
+  ([ADR-0013, amended](0013-what-was-judged-is-not-asked-again.md#amendment-2026-10-12-what-a-docs-judged-vouches-for)).
 - **Now**: a merge request still judges it on its change. Gardening reads
   it in parts: a `judged` its change earned does not hold it, a
   `judged-in-parts` since its sources last changed does. A record kept on
   a merged merge request is not written for it: the parts record when it
   was read.
-- **Not in parts**, judged on its change and held by its `judged` as
-  before: a doc too long itself, sources in another repository, past
-  `parts-max`, no code among its sources.
+- **Not in parts**, judged on its change as before: a doc too long
+  itself, sources in another repository, past `parts-max`, no code among
+  its sources.
 - **`checked` does not move**, as for any doc in parts; whether it may is
   [#482](https://github.com/JN0V/workline/issues/482).
 - **The night's caps hold**: `parts-max-per-run` a round,
   `ai-max-tokens` the run. The docs read longest ago go first, by the
-  later of `checked` and `judged-in-parts`, so a doc read last night
-  waits behind the others, not first by name each night its sources
-  change.
+  later of `checked` and `judged-in-parts`, not the first by name.
 - **Measured** with a recording agent, no tokens: CI's night on copies,
-  proposals only, no merge request open, each part's tokens estimated
-  at 711 + 0.82 a character. Uncapped, what each night would ask in
+  tokens estimated at 711 + 0.82 a character. Uncapped, what each night would ask in
   parts, as if no night before it had read a doc, docs / parts / tokens
   in:
 
