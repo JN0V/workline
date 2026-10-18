@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 07029f11
+checked: 6ac16e6d
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -73,8 +73,8 @@ saying so.
   patches write on a merge request;
 - `reports: true` — also write the findings as SARIF and Code Quality;
 - `gates-only: true` — the route runs the event's gates alone
-  (`--gates-only`); `gates-job: {env}` — a run of the gates alone first,
-  with these variables, whose result the route reads (`--gates-from`), as
+  (`--gates-only`); `gates-job: {env, input}` — a run of the gates alone
+  first, with these variables and inputs, whose result the route reads (`--gates-from`), as
   CI's judge reads the gates' job; `gates-from: <file>` — read from that
   file instead, by the case's folder;
 - `summary: true` — also write `--summary`, Markdown and HTML, and give the

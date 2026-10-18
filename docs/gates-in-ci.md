@@ -1,6 +1,6 @@
 ---
 sources: [ci/github/workline.yml, ci/gitlab/workline.gitlab-ci.yml, internal/line]
-checked: 07029f11
+checked: 6ac16e6d
 verified: agent:claude-code
 ---
 # Gates in CI
