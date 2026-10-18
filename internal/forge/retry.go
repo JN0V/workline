@@ -13,20 +13,11 @@ import (
 	"time"
 )
 
-// A call to GitLab's API that fails for a moment is tried again, by the
-// rules of GitLab's own Go client (go-retryablehttp's), stricter on
-// writes (docs/gitlab/calls.md):
-//
-//   - a read, on no answer — a timeout, a connection dropped or refused —,
-//     a 5xx but 501, or a 429;
-//   - a write, only when GitLab certainly did not take it: it could not be
-//     sent (no connection made), or GitLab refused it for the rate (429).
-//
-// A write answered late, or with a 5xx, may have been taken: it is not
-// sent twice, which could add a note twice; its failure says so, and
-// `workline apply` does what is left, its writes replayed without
-// duplicates. A host that does not exist, or a certificate refused, is
-// not tried again: it stays wrong.
+// A GitLab call that fails for a moment is tried again: a read on no
+// answer, a 5xx but 501 or a 429; a write only when GitLab certainly did
+// not take it (no connection made, or a 429). A write answered late or
+// with a 5xx is not sent twice: its failure says so. Why, and what is
+// borrowed from GitLab's own client: docs/gitlab/calls.md.
 
 // retry is how a call is tried again: tries in all, the pause after the
 // first (doubled after each), the longest Retry-After waited for.

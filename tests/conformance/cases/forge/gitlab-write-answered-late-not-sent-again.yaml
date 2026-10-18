@@ -1,5 +1,5 @@
 case: forge/gitlab-write-answered-late-not-sent-again
-about: "A GitLab write answered too late may have been taken: it is not sent again, which would add a note twice; the run says so, blocked-external, and the apply run later does what is left (#489)."
+about: "A GitLab write answered too late may have been taken: it is not sent again, which would add a note twice; the run says so, blocked-external, to run again later (#489)."
 given:
   repo: backlog
   engine-tags: [workline_quick]
