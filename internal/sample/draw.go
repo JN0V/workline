@@ -368,15 +368,30 @@ func hasValue(list, v string) bool {
 type heads struct {
 	merged []forge.MergeRequest // merged in the window
 	own    []string             // the heads' commits the branch does not hold, newest first
-	in     map[string]string    // such a commit → its merge request, as the forge names it
+	in     map[string]string    // such a commit, or one a squash made of them → its merge request, as the forge names it
 	squash map[string]bool      // the commits merge requests read on their heads became: their heads stand for them
+	of     map[string][]string  // such a commit → its head's commits the branch does not hold, newest first
 	unread []string             // why some could not be read
+}
+
+func newHeads() *heads {
+	return &heads{in: map[string]string{}, squash: map[string]bool{}, of: map[string][]string{}}
+}
+
+// squashOf is the commit a merge request reached the branch by, from the
+// one the forge says it became: that commit, or the squash a merge commit
+// holds (GitLab, squashing with a merge commit: its second parent).
+func squashOf(repo, as string) string {
+	if p, err := git(repo, "rev-parse", "-q", "--verify", as+"^2"); err == nil && p != "" {
+		return p
+	}
+	return as
 }
 
 // mergedIn lists the merge requests merged in the window base..tip — the
 // commit each became is in it — and fetches their heads.
 func mergedIn(repo string, f forge.Forge, since time.Time, base, tip, after string) (*heads, error) {
-	h := &heads{in: map[string]string{}, squash: map[string]bool{}}
+	h := newHeads()
 	lister, ok := f.(forge.Merged)
 	if !ok || tip == "" {
 		return h, nil
@@ -441,7 +456,10 @@ func mergedIn(repo string, f forge.Forge, since time.Time, base, tip, after stri
 			return h, err
 		}
 		if list != "" {
-			h.squash[m.MergedAs] = true
+			as := squashOf(repo, m.MergedAs)
+			h.squash[as] = true
+			h.of[as] = strings.Fields(list)
+			h.in[as] = forge.MergeRef(f, m.ID)
 		}
 		for _, c := range strings.Fields(list) {
 			if !seen[c] {

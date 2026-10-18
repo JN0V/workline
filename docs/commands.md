@@ -163,7 +163,7 @@ kind has any, drawn the same on a rerun.
 - **A cap**: `sample.ai-max-tokens`, 400,000 by default; each role's first
   act read before any second, the rest listed unread.
 - **A squash**: each merge request's head is fetched from the forge's ref
-  for it; a `checked` naming one of its commits is read there.
+  for it, to read the commit a `checked` names and who moved it there.
 - **Writes nothing**; `--out <file>` keeps the result.
 - **`workline sample --apply <file> --forge <forge>`** (default: the
   project's `forge`), with no agent:

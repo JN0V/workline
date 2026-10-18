@@ -2,6 +2,7 @@ package documentalist
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -87,6 +88,10 @@ func (s Settings) WholeCap() int { return wholeChars(s) }
 // Header is a doc's header, as written, and how many lines it takes.
 func Header(content string) (meta string, lines int) { return header(content) }
 
+// ErrNotInClone is a `checked` naming a commit the clone does not have: a
+// squash may have left it off the branch (ADR-0046).
+var ErrNotInClone = errors.New("a commit this clone does not have")
+
 // at reads each repository a doc's sources are in at the commit its
 // `checked` names there.
 func at(repo string, d *Doc) (*places, error) {
@@ -107,7 +112,7 @@ func at(repo string, d *Doc) (*places, error) {
 			return nil, err
 		}
 		if _, err := git(where.dir, "cat-file", "-e", commit+"^{commit}"); err != nil {
-			return nil, fmt.Errorf("`checked` names %s, a commit this clone does not have", commit)
+			return nil, fmt.Errorf("`checked` names %s, %w", commit, ErrNotInClone)
 		}
 		pl.known[name] = place{where.dir, commit}
 	}
