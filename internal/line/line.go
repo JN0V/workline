@@ -183,7 +183,7 @@ func (g *Gates) step(repo, name, event, rng string) Step {
 	switch {
 	case g.err != nil:
 		return not(fmt.Sprintf("the gates' job left no result to read (%v): it did not run, or ended before writing it", g.err))
-	case g.read.Range != rng:
+	case !sameRange(repo, g.read.Range, rng):
 		return not(fmt.Sprintf("the gates ran on %q, this line judges %q", g.read.Range, rng))
 	}
 	for _, s := range g.read.Steps {
@@ -192,6 +192,32 @@ func (g *Gates) step(repo, name, event, rng string) Step {
 		}
 	}
 	return not(fmt.Sprintf("the gates' job, %s, holds no verdict of it", g.From))
+}
+
+// sameRange says whether two ranges name the same commits, however each
+// spells them: a branch's name or its commit.
+func sameRange(repo, a, b string) bool {
+	if a == b {
+		return true
+	}
+	ends := func(rng string) (string, bool) {
+		var out []string
+		for _, rev := range []string{gitrange.Base(rng), gitrange.Head(rng)} {
+			if rev == "" {
+				out = append(out, "")
+				continue
+			}
+			sha, err := exec.Command("git", "-C", repo, "rev-parse", "--verify", "-q", rev+"^{commit}").Output()
+			if err != nil {
+				return "", false
+			}
+			out = append(out, strings.TrimSpace(string(sha)))
+		}
+		return strings.Join(out, ".."), true
+	}
+	x, okA := ends(a)
+	y, okB := ends(b)
+	return okA && okB && x == y
 }
 
 // readResult reads a line's result as `--json` printed it.
