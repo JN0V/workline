@@ -1,6 +1,2 @@
 # Cases the engine does not pass yet. The suite runs them anyway and fails
 # if one starts passing while still listed here.
-documentalist/judged-on-its-diff-read-in-parts-at-night
-documentalist/judged-on-its-diff-read-in-parts-nothing-found
-documentalist/judged-on-its-diff-read-in-parts-capped-a-night
-documentalist/judged-kept-read-in-parts-not-recorded

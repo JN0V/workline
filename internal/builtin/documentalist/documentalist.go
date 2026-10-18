@@ -542,6 +542,10 @@ type suspectDoc struct {
 	read   []sourceRead
 	shown  int  // lines of evidence shown so far, within docEvidenceLines
 	capped bool // more changed than docEvidenceLines shows
+	// overWhole: what changed in its sources fits a task, they do not, as
+	// they are now; rest: so read in parts when gardening, not judged on
+	// what changed alone, which leaves the rest unread (#462).
+	overWhole, rest bool
 	// note says what became of a doc judged in parts, or why it was not:
 	// such a doc is not put in a task of its own.
 	note     string
@@ -837,10 +841,12 @@ func Pre(runDir, repo string) int {
 				// not only what changed in them (ADR-0012): beside the diffs,
 				// when they fit. One that cannot be read leaves it judged on
 				// the diffs, so `checked` cannot move (#239).
-				if now, err := sourcesNow(sd.doc, pl, wholeChars(s)); err == nil && len(now) > 0 {
+				now, err := sourcesNow(sd.doc, pl, wholeChars(s))
+				if err == nil && len(now) > 0 {
 					sd.evidence = append(sd.evidence, append([]string{"Its sources as they are now, in full, beside what changed: judge each sentence of the doc against them, not only the lines that changed."}, now...)...)
 					sd.whole = true
 				}
+				sd.overWhole = err == errTooLarge
 				continue
 			}
 			now, err := sourcesNow(sd.doc, pl, wholeChars(s))
@@ -854,6 +860,13 @@ func Pre(runDir, repo string) int {
 			}
 			sd.evidence = append([]string{"More changed in its sources since it was checked than a task can show. Here they are as they are now, in full: judge each sentence of the doc against them."}, now...)
 			sd.whole, sd.read = len(now) > 0, nil // what changed is no longer shown
+		}
+	}
+	// When gardening, a doc whose sources do not fit whole is read in parts
+	// against them, not judged on what changed alone (#462).
+	if os.Getenv("WORKLINE_EVENT") == "schedule" && s.JudgeInParts {
+		if err := restInParts(suspects, repo, s); err != nil {
+			return fail(err)
 		}
 	}
 	holdJudgedInParts(suspects, repo)

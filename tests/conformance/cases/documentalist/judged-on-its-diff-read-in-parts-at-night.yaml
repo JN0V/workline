@@ -7,12 +7,14 @@ given:
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
     - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
     - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc on what changed'"
-run: {role: documentalist, event: schedule, ai: "fake:parts-contradiction"}
+run: {role: documentalist, event: schedule, ai: "fake:parts-contradiction-judged"}
 expect:
   status: pass
   agent-calls: 3   # two parts, then the fix
   applied: [patch, patch]   # the agent's fix, then the header the role records
-  findings: [{rule: suspect, where: docs/tech/auth.md, message: "2 parts, 1 claims kept"}]
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts at 8f204ae: 2 parts, 1 claims kept"}]
   no-findings: [{rule: suspect, where: docs/tech/auth.md, message: "not read"}]
+  # The fix; `checked` and `judged` as the setup left them; the commit it
+  # was judged in parts at.
   files:
-    "docs/tech/auth.md": {contains: "judged-in-parts: "}
+    "docs/tech/auth.md": {contains: "checked: a832077\njudged: 706e295\njudged-in-parts: 8f204ae\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last two hours.\n"}

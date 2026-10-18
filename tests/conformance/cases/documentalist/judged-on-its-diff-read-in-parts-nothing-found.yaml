@@ -11,7 +11,7 @@ expect:
   status: pass
   agent-calls: 2   # two parts; nothing found, no fix asked
   applied: [patch]   # the header the role records
-  findings: [{rule: suspect, where: docs/tech/auth.md, message: "2 parts, 0 claims kept, nothing found wrong. `checked` stays"}]
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts at 91523a1: 2 parts, 0 claims kept, nothing found wrong. `checked` stays"}]
   no-findings: [{rule: suspect, where: docs/tech/auth.md, message: "not read"}]
   files:
-    "docs/tech/auth.md": {contains: "judged-in-parts: "}
+    "docs/tech/auth.md": {contains: "checked: 845334e\njudged-in-parts: 91523a1\n---\n# Authentication\n\n## Token refresh\n\nAccess tokens last one hour.\n"}
