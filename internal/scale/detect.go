@@ -350,7 +350,10 @@ func Detect(s Scale, set Setting, labels, open []string, scoped bool, fields []F
 	weight := Source{Family: WeightFamily, Weight: true, Said: WeightSaid}
 	switch {
 	case set.In == InWeight:
-		if !weights {
+		switch {
+		case s.Axis != Effort.Axis:
+			return Source{}, fmt.Errorf("%s: %s keeps an effort, never a %s", s.Axis, WeightSaid, s.Axis)
+		case !weights:
 			return Source{}, fmt.Errorf("%s: the settings name %s, and its issues carry none (GitLab Premium and Ultimate keep one): name a family of labels, or auto", s.Axis, WeightSaid)
 		}
 		src = weight

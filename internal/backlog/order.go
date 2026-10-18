@@ -15,9 +15,14 @@ import (
 )
 
 // On is what an issue carries where an axis may be kept: its labels, its
-// fields' values, its weight.
+// fields' values, its weight — never a parent's, GitLab's sum of its
+// parts', no effort of its own (ADR-0040).
 func On(is forge.Issue) scale.On {
-	return scale.On{Labels: is.Labels, Fields: is.Fields, Weight: is.Weight}
+	on := scale.On{Labels: is.Labels, Fields: is.Fields, Weight: is.Weight}
+	if is.Weight != nil && len(Parts(is)) > 0 {
+		on.Weight = nil
+	}
+	return on
 }
 
 // PriorityLabels lists the levels an issue's priority gives, read by name
@@ -72,10 +77,13 @@ func Where(f forge.Backlog, cfg Config, open []forge.Issue) (scale.Scheme, []ver
 	if err != nil {
 		return scale.Before, nil, err
 	}
-	// GitLab's weight, Premium's and Ultimate's: their issues carry the key.
-	weights, err := forge.Weights(f)
-	if err != nil {
-		return scale.Before, nil, err
+	// GitLab's weight, Premium's and Ultimate's: their issues carry the
+	// key; asked only where the effort is looked for.
+	weights := false
+	if cfg.Effort.Set() {
+		if weights, err = forge.Weights(f); err != nil {
+			return scale.Before, nil, err
+		}
 	}
 	var fields []scale.Field
 	for _, x := range fs.List {

@@ -301,4 +301,7 @@ func TestDetectWeight(t *testing.T) {
 	if _, err := ReadSetting(Priority, map[string]any{"in": "weight"}); err == nil {
 		t.Error("a priority in the weight read")
 	}
+	if _, err := Detect(Priority, Setting{In: InWeight}, nil, nil, true, nil, true); err == nil {
+		t.Error("a priority kept in the weight")
+	}
 }

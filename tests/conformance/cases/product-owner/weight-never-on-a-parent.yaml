@@ -1,5 +1,5 @@
 case: product-owner/weight-never-on-a-parent
-about: "GitLab sums a parent's weight from its parts': the role never writes a parent's weight — the agent told, an effort proposed for it dropped and said — and writes its parts' (ADR-0040, step 5)."
+about: "GitLab sums a parent's weight from its parts': the role never reads a parent's weight as its effort, nor writes one — the agent told, an effort proposed for it dropped and said — and writes its parts' (ADR-0040, step 5)."
 given:
   repo: backlog
   config:
@@ -11,7 +11,7 @@ given:
     members:
       - {username: ann, access_level: 30}
     issues:
-      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go\n\n## Sub-issues\n\n- [ ] #10\n- [ ] #11", author: ann, labels: [bug], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
+      - {id: 9, title: "Rows lost", body: "Some rows are lost.\n\n## Scope\n\nsrc/export/csv.go\n\n## Sub-issues\n\n- [ ] #10\n- [ ] #11", author: ann, labels: [bug], weight: 8, comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 10, title: "Slow export", body: "The export is slow.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
       - {id: 11, title: "Quote commas", body: "A comma splits a cell.\n\n## Scope\n\nsrc/export/csv.go", author: ann, labels: [], comments: ["```yaml\nsources: [src/export/csv.go]\nconfirmed: d8c4dff\n```\n\n<!-- workline:sticky=product-owner/state -->"]}
 run: {role: product-owner, event: schedule, ai: fake:order-effort, forge: gitlab}
@@ -23,9 +23,9 @@ expect:
     - {rule: done, where: "#10", message: "Set #10's effort to High (weight 5)"}
     - {rule: done, where: "#11", message: "Set #11's effort to Medium (weight 3)"}
   run-files:
-    in/task.md: {contains: ["Effort: not estimated here: a parent, GitLab sums its parts' weights\n"]}
+    in/task.md: {contains: ["Effort: not estimated here: a parent, GitLab sums its parts' weights\n"], not-contains: ["(weight 8)"]}
   forge:
     issues:
-      - {id: 9, labels: [bug, "priority::1"], weight: -1, comment-lacks: "effort:"}
+      - {id: 9, labels: [bug, "priority::1"], weight: 8, comment-lacks: "effort:"}
       - {id: 10, weight: 5}
       - {id: 11, labels: ["priority::3"], weight: 3}
