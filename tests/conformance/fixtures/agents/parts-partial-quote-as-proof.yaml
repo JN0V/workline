@@ -1,0 +1,69 @@
+# docs/tech/service.md in parts, the `service` fixture, the default log
+# level now `warn`: DomoticsCore's shape (#467). The config and store parts
+# each call the session line partial; the fix puts the 24-hour default in
+# place of "the configured session TTL", citing the config part's quote.
+# Beside it, right: the log level a part found wrong, a word only added.
+calls:
+  - - claim:
+        lines: "12"
+        status: contradicted
+        quote: "It logs at the `info` level by default."
+        source: {path: src/service/config.go, lines: "11", quote: 'DefaultLogLevel       = "warn"'}
+        why: "the default log level is warn"
+    - claim:
+        lines: "16"
+        status: partial
+        quote: "At most 100 requests are served at once"
+        source: {path: src/service/config.go, lines: "8", quote: "DefaultMaxConnections = 100"}
+        why: "100 is the default; the configuration may set another"
+    - claim:
+        lines: "23"
+        status: partial
+        quote: "the configured session TTL, 24 hours by default"
+        source: {path: src/service/config.go, lines: "10", quote: "DefaultSessionTTL     = 24 * time.Hour"}
+        why: "Load gives 24 hours when the configuration leaves the TTL unset; this share does not show what the store keeps"
+  - - claim:
+        lines: "16"
+        status: partial
+        quote: "At most 100 requests are served at once"
+        source: {path: src/service/server.go, lines: "11", quote: "slots := make(chan struct{}, c.MaxConnections)"}
+        why: "the cap is the configured MaxConnections; its default is not in this share"
+  - - claim:
+        lines: "22-23"
+        status: partial
+        quote: "Each one lasts the configured session TTL"
+        source: {path: src/service/store.go, lines: "17", quote: "s := &Store{ttl: c.SessionTTL, sessions: map[string]time.Time{}}"}
+        why: "the store keeps the TTL it is given; this share does not show its default"
+  - []
+  - - patch: |
+        --- a/docs/tech/service.md
+        +++ b/docs/tech/service.md
+        @@ -10,16 +10,16 @@
+         The service reads its configuration when it starts, and fills what is left
+         unset with defaults. It listens on every interface, on port 8080 unless the
+        -configuration says otherwise. It logs at the `info` level by default.
+        +configuration says otherwise. It logs at the `warn` level by default.
+
+         ## Connections
+
+        -At most 100 requests are served at once; past that, the service answers
+        +By default, at most 100 requests are served at once; past that, the service answers
+         `503 Service Unavailable` rather than queueing them. A request whose body is
+         not read within 30 seconds is dropped.
+
+         ## Sessions
+
+         Sessions are kept in memory, so they are lost when the service stops. Each
+        -one lasts the configured session TTL, 24 hours by default, and is renewed
+        +one lasts 24 hours, and is renewed
+         each time the user comes back. Expired sessions are dropped every ten
+         minutes.
+    - claim:
+        lines: "12"
+        status: contradicted
+        source: {path: src/service/config.go, quote: 'DefaultLogLevel       = "warn"'}
+    - claim:
+        lines: "23"
+        status: contradicted
+        source: {path: src/service/config.go, quote: "DefaultSessionTTL     = 24 * time.Hour"}
+    - note: "Line 23: the excerpts do not show whether the store is given another TTL."

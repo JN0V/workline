@@ -258,6 +258,9 @@ type citeContext struct {
 	// unknownSaid are the file types whose comments the engine does not
 	// know, already reported this run: once a type.
 	unknownSaid map[string]bool
+	// partial is, for each doc judged in parts, where a part judged a
+	// passage partial and the source lines it read (#467).
+	partial map[string][]partialCite
 }
 
 // evidence is what one claim shows: "" when it is evidence, else why not;
@@ -316,12 +319,97 @@ func (cc *citeContext) check(c citeClaim, d *Doc, b citedBlock) citeCheck {
 		case !inCodeToo:
 			return citeCheck{why: fmt.Sprintf("%q is a comment (%s:%d), not the code", c.Source.Quote, p, line), comment: fmt.Sprintf("%s:%d", p, line)}
 		}
+		if why := cc.partialOnly(d.Path, p, content, c.Source.Quote, b); why != "" {
+			return citeCheck{why: why}
+		}
 		if st, kind := styleOf(p, content); !st.known {
 			return citeCheck{ok: true, unknown: kind, unknownPath: p}
 		}
 		return citeCheck{ok: true}
 	}
 	return citeCheck{why: fmt.Sprintf("status %q cites nothing: a claim beside a patch is `contradicted`, with a source, or `gone`, with a name", c.Status)}
+}
+
+// partialOnly says why a quote is no proof that the words a fix takes out
+// of a doc judged in parts are wrong: every place it stands in the code is
+// among the source lines a part read with its share and judged partial for
+// those lines of the doc, no part finding those lines wrong. That part saw
+// the quote and found it does not settle them. On DomoticsCore, three parts
+// called a line partial; the fix cited one of their quotes, a placeholder
+// topic, in place of the will topic the code adopts, and made the line
+// false (#467). "" when the quote may stand as proof.
+func (cc *citeContext) partialOnly(docPath, p, content, quote string, b citedBlock) string {
+	at := lineRange{from: b.from, to: max(b.from, b.to)}
+	var read []lineRange
+	for _, pc := range cc.partial[docPath] {
+		if lines, src, ok := pc.ranges(); ok && pc.Path == p && lines.overlaps(at) {
+			read = append(read, src)
+		}
+	}
+	if len(read) == 0 {
+		return ""
+	}
+	stands := quoteLines(p, content, quote)
+	if len(stands) == 0 {
+		return ""
+	}
+	var where []string
+	for _, s := range stands {
+		in := false
+		for _, r := range read {
+			in = in || r.covers(s)
+		}
+		if !in {
+			return ""
+		}
+		where = append(where, s.String())
+	}
+	return fmt.Sprintf("%q stands only at %s, %s, which a part read with its share and judged partial for these words: it does not settle them, so it is no proof they are wrong", quote, p, strings.Join(where, ", "))
+}
+
+// quoteLines are the lines spanned by each place a quote stands in a file,
+// whitespace aside, but for a place wholly in a comment.
+func quoteLines(p, content, quote string) []lineRange {
+	q := strings.Join(strings.Fields(quote), " ")
+	if q == "" {
+		return nil
+	}
+	mask := commentMask(p, content)
+	var norm []byte
+	var inComment []bool
+	var lineOf []int
+	ln, space := 1, true
+	for i := 0; i < len(content); i++ {
+		c := content[i]
+		if c == '\n' || c == ' ' || c == '\t' || c == '\r' {
+			if !space {
+				norm, inComment, lineOf = append(norm, ' '), append(inComment, true), append(lineOf, ln)
+				space = true
+			}
+			if c == '\n' {
+				ln++
+			}
+			continue
+		}
+		space = false
+		norm, inComment, lineOf = append(norm, c), append(inComment, mask[i]), append(lineOf, ln)
+	}
+	s := string(norm)
+	var out []lineRange
+	for from := 0; ; {
+		i := strings.Index(s[from:], q)
+		if i < 0 {
+			return out
+		}
+		i += from
+		for j := i; j < i+len(q); j++ {
+			if !inComment[j] {
+				out = append(out, lineRange{from: lineOf[i], to: lineOf[i+len(q)-1]})
+				break
+			}
+		}
+		from = i + 1
+	}
 }
 
 // source returns a file under one of the doc's sources, as it is now; for
