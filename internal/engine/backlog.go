@@ -176,14 +176,11 @@ func (a *applier) where() (scale.Scheme, error) {
 }
 
 // order sets an issue's one priority label where the project keeps it,
-// the family's others taken off, and records it in the issue's state: a
-// priority other than the one recorded is a person's
-// (docs/spec/backlog-acts.md, "Ordering"). Workline's own label is
-// created when missing; the forge's words all at once, ranked where the
-// forge ranks labels; a project's labels are there already (ADR-0040).
-// The issue is read again first: one that holds a priority in another
-// place now, or a family that no longer carries the level, gets nothing
-// written, said.
+// the family's others taken off, and records it in the issue's state
+// (docs/spec/backlog-acts/order.md, "Ordering"): workline's own label
+// created when missing, the forge's words all at once and ranked, a
+// project's labels used as they are. The issue is read again first: one
+// whose priority can no longer be placed gets nothing written, said.
 func (a *applier) order(c backlog.Proposal) error {
 	where, err := a.where()
 	if err != nil {
