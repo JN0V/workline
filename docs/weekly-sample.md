@@ -1,6 +1,6 @@
 ---
 sources: [internal/sample, internal/builtin/documentalist/sample.go, ci/github/workline-sample.yml, ci/gitlab/workline.gitlab-ci.yml, roles/auditor, roles/product-owner/role.yaml]
-checked: 55fce2ad
+checked: 7a8c0d5e
 judged: c9d96e2
 verified: agent:claude-code
 ---
@@ -41,6 +41,12 @@ roles:
   beside it —, and the code at the commit it read. A text gone from the
   forge is not read, for you: GitLab keeps no edit history. An act
   recorded before this record is read as its issue reads now, and named.
+- **A squash**: a merge request's commits are read on its head, which
+  the forge keeps (GitHub's `refs/pull/<n>/head`, GitLab's
+  `refs/merge-requests/<iid>/head`). The commit there that moved a doc's
+  `checked` says whose the move was, and which model vouched: a person's
+  move is not drawn. With no forge, a `checked` naming one of those
+  commits is not read, and the reason says to give one (`--forge`).
 - **A dispute**: a verdict against the act goes to three judges, Claude's
   three models by default (`sample: {panel: […]}`), each choosing between
   the two readings, not told whose; the majority settles it.

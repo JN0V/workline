@@ -245,7 +245,7 @@ func report(res *Result, falseOnes, moved []Read, mr int) string {
 		if r.Judge != "" {
 			judgeWords = fmt.Sprintf("`%s`, %s", r.Judge, r.Independence)
 		}
-		fmt.Fprintf(&b, "| %d | %s | %s | %s | **%s** | %s | %s |\n", i+1, r.Doc, r.Commit, checkedWords(r.Checked), r.Verdict, judgeWords, cell(r.Panel.Words()))
+		fmt.Fprintf(&b, "| %d | %s | %s | %s | **%s** | %s | %s |\n", i+1, r.Doc, r.where(), checkedWords(r.Checked), r.Verdict, judgeWords, cell(r.Panel.Words()))
 	}
 	b.WriteString("\n")
 	for _, r := range res.Reads {
