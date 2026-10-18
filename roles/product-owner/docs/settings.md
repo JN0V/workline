@@ -1,6 +1,6 @@
 ---
 sources: [roles/product-owner/role.yaml, internal/backlog/autonomy.go, internal/backlog/ledger.go, internal/sample/acts.go, internal/scale/detect.go]
-checked: fac02675
+checked: 7fd48f92
 verified: agent:claude-code
 ---
 # Product owner — settings
@@ -101,7 +101,7 @@ labels, and no effort read.
   job's own or an App's, writes nothing there
   ([why](../../../docs/research/priority-and-weight.md#checked-live-2026-10-18)).
 - **GitLab's weight**: read 0–1 Low, 2–3 Medium, 4 or more High; written
-  1, 3 or 5; never on a parent, whose weight GitLab sums from its parts'.
+  1, 3 or 5; never a parent's, which GitLab sums from its parts'.
 - **Set once, only where empty**: a value a person set stays; one the
   role set and a person changed or cleared is never written again.
 - **The order** goes by the priority, then the effort, the lightest

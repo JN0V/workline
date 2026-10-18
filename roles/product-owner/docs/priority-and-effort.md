@@ -48,8 +48,9 @@ option sits in a list.
 
 - **A name no table knows** is mapped in the project's settings.
 - **GitLab's weight**, when the role writes it: 1, 3 or 5, values found
-  on both common point scales (1, 2, 3, 5, 8, and 1 to 5). Never on a
-  parent: GitLab sums its parts' weights. Premium and Ultimate only:
+  on both common point scales (1, 2, 3, 5, 8, and 1 to 5). Never read
+  nor written on a parent: GitLab sums its parts' weights. Premium and
+  Ultimate only:
   on Free, the effort goes in `effort::low` to `::high`.
 
 ## Where the values were found

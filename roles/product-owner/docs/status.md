@@ -166,7 +166,7 @@ in [tests/evaluation/cases/product-owner](../../../tests/evaluation/cases/produc
      installed on jn0v-lab.
    - **Step 5 built, off by default**: GitLab's weight found for the
      effort where the issues carry one (Premium, Ultimate), read in
-     bands, written 1, 3 or 5 and read back, never on a parent; Free
+     bands, written 1, 3 or 5 and read back, never a parent's; Free
      keeps the labels. Tried on the GitLab sandbox, Free only
      ([#488](https://github.com/JN0V/workline/pull/488)'s Tried); Premium
      not tried, no project at hand. A

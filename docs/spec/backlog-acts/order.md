@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/backlog/undo.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go, internal/forge/github_fields.go]
 status: draft
-checked: fac02675
+checked: 7fd48f92
 verified: agent:claude-code
 ---
 # Milestones and ordering
@@ -134,9 +134,10 @@ the level: "priority 1 (P0)".
   ignores the key, so a weight not kept is an error, never a pass. No
   label is created; an effort label on an issue, or a weight beside the
   labels read, is another place (`effort-elsewhere`).
-- **Never on a parent**: GitLab sums a parent's weight from its parts'.
+- **Never a parent's**: GitLab sums a parent's weight from its parts'.
   An issue with parts — its tasks, or a task list under "## Sub-issues"
-  — gets no weight written (`effort-parent`); the agent is told
+  — has no effort read from its weight, and gets none written
+  (`effort-parent`); the agent is told
   "Effort: not estimated here: a parent, GitLab sums its parts'
   weights". An epic is never an issue the role reads.
 - **Never `time_estimate`**: time, not complexity.
