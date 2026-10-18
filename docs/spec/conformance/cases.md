@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go]
-checked: 07029f11
+checked: 21c9ac40
 verified: agent:claude-code
 ---
 # Conformance — a case in full
@@ -114,8 +114,11 @@ saying so.
   `out/run.yaml` written over), `intents` (proposals added), `listed` (the
   run listed at that path instead), `setup` (commands run first: what the
   branches became since); `env`, the applying job's variables
-  (`WORKLINE_APP`); `line: true`, the line's result applied as CI's job
-  does (`apply --line`), its runs, none when it proposed nothing;
+  (`WORKLINE_APP`, `$VAR` expanded); `line: true`, the line's result
+  applied as CI's job does (`apply --line`), its runs, none when it
+  proposed nothing; `gates: true`, the run's result shown as the gates'
+  (`apply --gates`); `again`, commands after the apply (a second push),
+  then the run and the apply once more, on the head they leave;
 - `tamper: in/` — change the prepared input between prepare and apply.
 
 ## Expect
@@ -158,8 +161,9 @@ saying so.
   0 for none); `statuses`, the last status of a name on
   a commit (a revision), by `state`, `by` and a part of its
   `description`, or `absent: true`; `check-runs`, the last check of a
-  name on a commit, each annotation listed held by `path`, `line`,
-  `level` and a part of its message (`contains`), or `absent: true`.
+  name on a commit, its `title` and `count` of annotations when given,
+  each annotation listed held by `path`, `line`, `level` and a part of
+  its message (`contains`), or `absent: true`.
 
 ## Expect, after the run
 

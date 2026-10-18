@@ -1,6 +1,6 @@
 ---
 sources: [tests/conformance/runner_test.go, tests/evaluation]
-checked: 07029f11
+checked: 21c9ac40
 verified: agent:claude-code
 judged: ae14474
 ---
@@ -83,6 +83,10 @@ What else a case can give, run and expect, and how each is checked, is in
   `golangci-lint`, for the gates' cases: SARIF as 2.15.0 writes it,
   `errcheck` and `godot` read from the tree, `//nolint` skipped. A case puts
   them first: `env: {PATH: "$FIXTURES/bin:$PATH"}`.
+- **Fake gh.** `fixtures/gh/gh` stands for GitHub's CLI, for a case that
+  runs GitHub's own forge code (`forge: github`): a pull request, a
+  commit's check runs and a merge request's comments, each call numbered
+  in `$GH_LOG` with the annotations it sent, for `files` to check.
 - **Unavailable agent.** `unavailable:quota` (or `auth`, `network`) fails the
   way a real agent does when a quota runs out.
 - **Command forge.** `cmd:sh "$FIXTURES/forges/logged.sh"` plugs a script

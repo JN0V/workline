@@ -1,6 +1,6 @@
 # ADR-0049: The inspector judges the new findings of the project's own tools
 
-- **Status:** accepted; steps 1 and 2 built, 3 in part ([the build plan](#build-plan))
+- **Status:** accepted; steps 1 to 3 built ([the build plan](#build-plan))
 - **Date:** 2026-10-18
 - **Decided by:** the maintainer, on 2026-10-18: the direction a panel of
   four argued (users, principles, prior art, skeptic), and the three
@@ -165,20 +165,22 @@
      ones, 6.5 s and 7.1 s. The default, twice the head's run and a
      minute at least, leaves room for both.
 3. Posting: annotations plus a summary on GitHub, Code Quality on GitLab.
-   Built for GitLab, and the job of their own
-   ([gates](../spec/gates.md#shown-on-the-merge-request),
+   Built ([gates](../spec/gates.md#shown-on-the-merge-request),
    [gates in CI](../gates-in-ci.md)):
    - **A job of their own**: the gates run alone (`--gates-only`), with a
      read token and no secret; the judge reads their verdicts
-     (`--gates-from`).
+     (`--gates-from`), the applying job shows them (`apply --gates`).
    - **A fingerprint with no line**: the identity of step 2, hashed with
      how many alike come before it, for GitLab's comparison.
+   - **Many of one rule, one line** of the summary comment, as many rules
+     as the reviewer's `findings-max`. Nothing is filtered by what the
+     reviewer posted: what is shown stays the same with and without an
+     agent; telling the reviewer what the linters cover is its own step.
    - **A formatter's fixes**: its command is said (`fix:`); applying them
      is left, a patch the gates' job would propose.
    - **On GitLab**, every job holds the project's variables: the gates'
      job unsets the agent's and the bot's tokens, which keeps them from
      the tools' environment only.
-   - **GitHub's check and summary comment**: next.
 4. `roles/inspector`: the AI's triage, and runs with no agent.
 5. A golangci-lint gate on workline itself: [#202]'s Validation.
 6. [#203]: SonarQube read as a gate.

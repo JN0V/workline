@@ -50,4 +50,6 @@
 - The judge uploads its line's result when the documentalist found
   something, though nothing was proposed, so that `apply` runs.
 - **Amended by [ADR-0049](0049-the-inspector-judges-the-new-findings-of-the-projects-tools.md)**
-  (8a): the gates' findings leave code scanning on a merge request too.
+  (8a): the gates' findings leave code scanning on a merge request too,
+  shown as the annotations of the check `workline gates` and one summary
+  comment.

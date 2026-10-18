@@ -1,6 +1,6 @@
 ---
-sources: [internal/gate/added.go, internal/line/line.go, internal/report/report.go, cmd/workline/main.go]
-checked: 07029f11
+sources: [internal/gate/added.go, internal/line/line.go, internal/report/gates.go, internal/report/report.go, internal/engine/annotate.go, cmd/workline/main.go]
+checked: 21c9ac40
 verified: agent:claude-code
 ---
 # Gates — the new findings shown on a merge request
@@ -37,8 +37,27 @@ the findings a change adds go, and how
   `check_name` `gate:<gate>/<check>/<rule>`, its severity the tool's
   level (`error` major, `warning` minor, `note` info), its fingerprint
   the one above. GitLab compares the report with the target branch's.
+- **GitHub, a check and one comment** (`apply --gates <file>
+  --from-merge-request <n> --head <sha>`), in the job holding the write
+  token and no AI key:
+  - the annotations of the check `workline gates` on the head judged,
+    fifty a call, 500 at most, the rest counted;
+  - one summary comment (`<!-- workline:sticky=gates/summary -->`),
+    edited on each push: a row per check, a line per rule with its first
+    three places, as many rules as the reviewer's `findings-max`.
 - **Never code scanning** on a merge request: `--sarif` leaves the gates'
   findings out.
-- **GitHub**: the judge's job summary says each gate's verdict and its
-  first findings; a check's annotations and one summary comment are not
-  built yet.
+- **Nothing to say**: with no new finding and every check passing, no
+  check is written; the comment is only edited where an earlier push
+  left one.
+- **A check with `fix`**: its findings are one line of the comment, the
+  command with them, and no annotation.
+
+## The run's data
+
+- **Its places** must be inside the repository; its texts are cut and
+  their mentions defused.
+- **The merge request it names** must have the head judged as its head,
+  else nothing is shown (`moved-on`).
+- **Said, never an error**: `gates-shown`, `gates-not-shown` (a refused
+  check, a comment not written), `moved-on`.
