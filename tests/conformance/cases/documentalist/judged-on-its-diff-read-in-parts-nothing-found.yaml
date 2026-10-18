@@ -1,0 +1,17 @@
+case: documentalist/judged-on-its-diff-read-in-parts-nothing-found
+about: "When gardening, a doc whose sources are too large to go whole, whose change alone would fit a task, is read in parts against its sources as they are now, not judged on that change alone. Its parts find nothing wrong: the header records the commit it was judged in parts at, and `checked` does not move, the finding saying so: nobody read it whole in one task (ADR-0009; #462)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found"}
+expect:
+  status: pass
+  agent-calls: 2   # two parts; nothing found, no fix asked
+  applied: [patch]   # the header the role records
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "2 parts, 0 claims kept, nothing found wrong. `checked` stays"}]
+  no-findings: [{rule: suspect, where: docs/tech/auth.md, message: "not read"}]
+  files:
+    "docs/tech/auth.md": {contains: "judged-in-parts: "}

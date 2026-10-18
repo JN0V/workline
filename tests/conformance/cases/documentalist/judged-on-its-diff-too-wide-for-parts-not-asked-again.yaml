@@ -1,0 +1,16 @@
+case: documentalist/judged-on-its-diff-too-wide-for-parts-not-asked-again
+about: "When gardening, a doc judged on what changed in its sources, which are too large to go whole and would take more than parts-max parts, cannot be read in parts: its `judged` still holds it from an agent until a source changes, rather than judging that same change again each night (#462)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc on what changed'"
+  config: {roles: {documentalist: {settings: {parts-max: 1}}}}
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found"}
+expect:
+  status: pass
+  agent-calls: 0
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "its sources unchanged since: not put before an agent again until one changes"}]
+  no-findings: [{rule: suspect, where: docs/tech/auth.md, message: "judged in parts"}]

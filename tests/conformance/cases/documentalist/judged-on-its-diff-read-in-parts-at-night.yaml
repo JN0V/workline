@@ -1,0 +1,18 @@
+case: documentalist/judged-on-its-diff-read-in-parts-at-night
+about: "When gardening, a doc whose sources are too large to go whole, judged on what changed in them alone (`judged` stands), is read in parts against its sources as they are now: a false claim in a passage the change did not reach is found and fixed, `checked` does not move, and the header records the commit it was judged in parts at (#462)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && sed -i 's/3600/7200/' src/auth/token.go && git add -A && git commit -qm 'feat(auth): add the big table, keep users signed in for two hours'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/&\\njudged: $C/\" docs/tech/auth.md && git commit -qam 'docs: judge the auth doc on what changed'"
+run: {role: documentalist, event: schedule, ai: "fake:parts-contradiction"}
+expect:
+  status: pass
+  agent-calls: 3   # two parts, then the fix
+  applied: [patch, patch]   # the agent's fix, then the header the role records
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "2 parts, 1 claims kept"}]
+  no-findings: [{rule: suspect, where: docs/tech/auth.md, message: "not read"}]
+  files:
+    "docs/tech/auth.md": {contains: "judged-in-parts: "}

@@ -1,0 +1,40 @@
+case: documentalist/judged-kept-read-in-parts-not-recorded
+about: "A doc judged on a person's merge request on what changed in its sources alone, too large to go whole, its record kept in the documentalist's comment: once merged, gardening reads it in parts against its sources as they are now rather than write that record on `main`, which would hold it from the parts until a source changes (#462)."
+given:
+  repo: documented
+  setup:
+    - "seq 1 3000 | sed 's/^/var b/' > src/auth/big.go && sed -i 's#^sources: \\[src/auth/token.go\\]#sources: [src/auth/token.go, src/auth/big.go]#' docs/tech/auth.md && git add -A && git commit -qm 'feat(auth): add the big table'"
+    - "C=$(git rev-parse --short HEAD) && sed -i \"s/^checked: .*/checked: $C/\" docs/tech/auth.md && git commit -qam 'docs: confirm the auth doc'"
+    - "git init -q --bare ../origin.git && git remote add origin ../origin.git && git push -q origin main"
+    - "git checkout -qb feature && echo 'var extra' >> src/auth/big.go && git commit -qam 'feat(auth): add a row to the big table'"
+    - "sed -i \"s/@at@/$(git rev-parse HEAD)/; s/@doc@/$(git rev-parse HEAD:docs/tech/auth.md)/; s/@src@/$(git rev-parse HEAD:src/auth/token.go)/; s/@big@/$(git rev-parse HEAD:src/auth/big.go)/\" \"$FORGE_FILE\""
+    - "git checkout -q main && git merge -q --squash feature && GIT_AUTHOR_DATE=2026-01-07T12:00:00Z GIT_COMMITTER_DATE=2026-01-07T12:00:00Z git commit -qm 'feat(auth): add a row to the big table (#1)' && git push -q origin main && git branch -q -D feature"
+  forge:
+    merge-requests:
+      - id: 1
+        branch: feature
+        base: main
+        labels: []
+        closed: true
+        merged: true
+        merged-at: "2026-01-07T12:00:00Z"
+        merged-as: main
+        comments:
+          - body: |
+              **Docs judged, nothing pushed** — kept here.
+
+              <!-- workline:doc-judged {"doc":"docs/tech/auth.md","key":"judged","at":"@at@","ids":{"docs/tech/auth.md":"@doc@","src/auth/token.go":"@src@","src/auth/big.go":"@big@"}} -->
+
+              <!-- workline:sticky=documentalist/judged -->
+            author: workline-bot
+            bot: true
+run: {role: documentalist, event: schedule, ai: "fake:parts-nothing-found", open-merge-request: true}
+expect:
+  status: pass
+  agent-calls: 2   # its two parts
+  findings: [{rule: suspect, where: docs/tech/auth.md, message: "2 parts, 0 claims kept, nothing found wrong"}]
+  no-findings: [{rule: suspect, where: docs/tech/auth.md, message: "(judged on merge request #1 at"}]
+  forge:
+    merge-requests:
+      - {id: 2, branch: "workline/documentalist/fix-docs-tech-auth-md", base: main, body-contains: "`docs/tech/auth.md` — judged in parts"}
+      - {id: 3, absent: true}
