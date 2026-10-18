@@ -40,6 +40,9 @@ type Check struct {
 	// Config: the files the tool reads its config from, beside those its
 	// name tells, the head's copied over the merge base.
 	Config []string `yaml:"config"`
+	// Fix is the command that fixes what the check finds, a formatter's:
+	// said with its findings, which are not shown line by line.
+	Fix string `yaml:"fix"`
 }
 
 // Gate is one named gate.
@@ -117,38 +120,50 @@ func (g *Gate) Validate() []verdict.Finding {
 // counted: on a schedule, a release, or by hand. A check that could not
 // run, or whose output cannot be read, fails the gate unless marked
 // optional.
-func Run(repo, name string) *verdict.Verdict { return run(repo, name, "") }
+func Run(repo, name string) *verdict.Verdict {
+	v, _ := run(repo, name, "")
+	return v
+}
 
 // RunNew runs the gate on a change: the thresholds read only the findings
 // it adds since the merge base of since and HEAD, and a suppression it
-// adds counts as one (ADR-0049).
-func RunNew(repo, name, since string) *verdict.Verdict { return run(repo, name, since) }
+// adds counts as one (ADR-0049). Added is what the change adds, for what
+// shows it on the merge request; nil when the gate did not run.
+func RunNew(repo, name, since string) (*verdict.Verdict, *Added) { return run(repo, name, since) }
 
-func run(repo, name, since string) *verdict.Verdict {
+func run(repo, name, since string) (*verdict.Verdict, *Added) {
 	g, err := Load(repo, name)
 	if err != nil {
 		return &verdict.Verdict{Status: verdict.Block, Summary: "the gate could not be loaded",
-			Findings: []verdict.Finding{{Rule: "invalid-gate", Message: err.Error()}}}
+			Findings: []verdict.Finding{{Rule: "invalid-gate", Message: err.Error()}}}, nil
 	}
 	if bad := g.Validate(); len(bad) > 0 {
-		return &verdict.Verdict{Status: verdict.Block, Summary: "the gate is not valid; nothing was run", Findings: bad}
+		return &verdict.Verdict{Status: verdict.Block, Summary: "the gate is not valid; nothing was run", Findings: bad}, nil
 	}
 	out, err := outDir(repo, name)
 	if err != nil {
-		return &verdict.Verdict{Status: verdict.Block, Findings: []verdict.Finding{{Rule: "check-error", Message: err.Error()}}}
+		return &verdict.Verdict{Status: verdict.Block, Findings: []verdict.Finding{{Rule: "check-error", Message: err.Error()}}}, nil
 	}
 	var ch *change
 	if since != "" {
 		if ch, err = changeSince(repo, since); err != nil {
 			return &verdict.Verdict{Status: verdict.Block, Summary: fmt.Sprintf("gate %s did not run", name),
-				Findings: []verdict.Finding{{Rule: "check-error", Where: name, Message: err.Error()}}}
+				Findings: []verdict.Finding{{Rule: "check-error", Where: name, Message: err.Error()}}}, nil
 		}
 		defer ch.cleanUp()
 	}
 	v := &verdict.Verdict{}
+	var add *Added
+	if ch != nil {
+		add = &Added{Base: ch.base, Checks: []CheckCount{}, Findings: []Finding{}}
+	}
 	var told []string // how each check's new findings were told
 	for _, c := range g.Checks {
-		found, note := runCheck(repo, out, c, ch, g.Checks)
+		found, note, count, shown := runCheck(repo, out, c, ch, g.Checks)
+		if add != nil {
+			add.Checks = append(add.Checks, count)
+			add.Findings = append(add.Findings, shown...)
+		}
 		for _, f := range found {
 			if f.Rule == "check-error" && c.Optional {
 				f.Level = "warn"
@@ -175,7 +190,7 @@ func run(repo, name, since string) *verdict.Verdict {
 			v.Summary += ": " + strings.Join(told, ", ")
 		}
 	}
-	return v
+	return v, add
 }
 
 // enforce lowers or drops findings by the gate's `enforce`, keyed by a
@@ -206,8 +221,14 @@ func enforce(v *verdict.Verdict, g *Gate) {
 
 // runCheck runs one check and reads its result; on a change, a SARIF
 // check runs again at the merge base and only the results the head adds
-// count. The note says how many, for the summary.
-func runCheck(repo, out string, c Check, ch *change, all []Check) ([]verdict.Finding, string) {
+// count. The note says how many, for the summary; the count and the
+// findings shown are what the change adds, for what shows them.
+func runCheck(repo, out string, c Check, ch *change, all []Check) (found []verdict.Finding, note string, count CheckCount, shown []Finding) {
+	count = CheckCount{ID: c.ID, Output: c.Output, Fix: c.Fix, Before: -1}
+	failedWith := func(f verdict.Finding) ([]verdict.Finding, string, CheckCount, []Finding) {
+		count.Error = f.Message
+		return []verdict.Finding{f}, "", count, nil
+	}
 	timeout := defaultTimeout
 	if c.Timeout != "" {
 		timeout, _ = time.ParseDuration(c.Timeout)
@@ -219,33 +240,35 @@ func runCheck(repo, out string, c Check, ch *change, all []Check) ([]verdict.Fin
 	start := time.Now()
 	code, failed := execute(repo, out, c, timeout, env)
 	if failed != nil {
-		return []verdict.Finding{*failed}, ""
+		return failedWith(*failed)
 	}
 	switch c.Output {
 	case "exit":
 		if code != 0 {
-			return []verdict.Finding{{Rule: "check-failed", Where: c.ID, Message: fmt.Sprintf("exit %d; see %s", code, filepath.Join(out, c.ID+".log"))}}, ""
+			count.Failed = true
+			return []verdict.Finding{{Rule: "check-failed", Where: c.ID, Message: fmt.Sprintf("exit %d; see %s%s", code, filepath.Join(out, c.ID+".log"), fixWith(c))}}, "", count, nil
 		}
-		return nil, ""
+		return nil, "", count, nil
 	}
 	head, err := readSARIF(out, repo)
 	if err != nil {
-		return []verdict.Finding{{Rule: "check-error", Where: c.ID, Message: err.Error()}}, ""
+		return failedWith(verdict.Finding{Rule: "check-error", Where: c.ID, Message: err.Error()})
 	}
 	counted := results(head)
 	if ch == nil {
-		return overThreshold(c, counted, ""), ""
+		return overThreshold(c, counted, ""), "", count, nil
 	}
 	if c.New == "tool" {
-		return overThreshold(c, counted, ""), c.ID + " told by the tool"
+		stamp(counted, &lines{root: repo})
+		count.New, count.Before = len(counted), -1
+		return overThreshold(c, counted, ""), c.ID + " told by the tool", count, added(c, counted)
 	}
 	took := time.Since(start)
 	base, failed := rerun(ch, out, c, all, took, timeout)
 	tookBase := time.Since(start) - took
 	if failed != nil {
-		return []verdict.Finding{*failed}, ""
+		return failedWith(*failed)
 	}
-	var found []verdict.Finding
 	// The same tool on both sides, by construction, but for one the
 	// project's tree pins (go.mod's tool, package.json): said, as a
 	// finding of a rule the new version brings looks new.
@@ -253,20 +276,32 @@ func runCheck(repo, out string, c Check, ch *change, all []Check) ([]verdict.Fin
 		found = append(found, verdict.Finding{Rule: "tool-version-differs", Where: c.ID, Level: "warn",
 			Message: fmt.Sprintf("the head ran %s, the merge base %s: a finding the new version adds counts as the change's; a tool's upgrade gets a pull request of its own", hv, bv)})
 	}
-	compare(counted, results(base), &lines{root: repo}, &lines{root: ch.tree}, ch.moved)
+	headLines := &lines{root: repo}
+	compare(counted, results(base), headLines, &lines{root: ch.tree}, ch.moved)
+	stamp(counted, headLines)
 	compared := filepath.Join(out, "compared", c.ID)
 	if err := writeCompared(compared, head); err != nil {
-		return []verdict.Finding{{Rule: "check-error", Where: c.ID, Message: err.Error()}}, ""
+		return failedWith(verdict.Finding{Rule: "check-error", Where: c.ID, Message: err.Error()})
 	}
-	var added []*result
+	var fresh []*result
 	for _, r := range counted {
 		if r.state == "new" {
-			added = append(added, r)
+			fresh = append(fresh, r)
 		}
 	}
-	old := len(counted) - len(added)
-	found = append(found, overThreshold(c, added, fmt.Sprintf(" (%d there before it, not counted; each marked in %s)", old, compared))...)
-	return found, fmt.Sprintf("%s %d new, %d before it (%s, then %s at the merge base)", c.ID, len(added), old, took.Round(100*time.Millisecond), tookBase.Round(100*time.Millisecond))
+	old := len(counted) - len(fresh)
+	count.New, count.Before = len(fresh), old
+	found = append(found, overThreshold(c, fresh, fmt.Sprintf(" (%d there before it, not counted; each marked in %s)", old, compared))...)
+	return found, fmt.Sprintf("%s %d new, %d before it (%s, then %s at the merge base)", c.ID, len(fresh), old, took.Round(100*time.Millisecond), tookBase.Round(100*time.Millisecond)),
+		count, added(c, counted)
+}
+
+// fixWith is what a check's findings say of the command that fixes them.
+func fixWith(c Check) string {
+	if c.Fix == "" {
+		return ""
+	}
+	return "; to fix them: " + c.Fix
 }
 
 // execute runs a check's command in dir, its output in out.
@@ -380,7 +415,7 @@ func overThreshold(c Check, rs []*result, before string) []verdict.Finding {
 				noun = "finding"
 			}
 			f = append(f, verdict.Finding{Rule: "over-threshold", Where: c.ID,
-				Message: fmt.Sprintf("%d %s%s %s, at most %d allowed%s%s", n, kind, level, noun, most, before, first(rs, level))})
+				Message: fmt.Sprintf("%d %s%s %s, at most %d allowed%s%s%s", n, kind, level, noun, most, before, first(rs, level), fixWith(c))})
 		}
 	}
 	return f

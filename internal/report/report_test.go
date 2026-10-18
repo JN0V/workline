@@ -8,17 +8,17 @@ import (
 	"github.com/JN0V/workline/internal/verdict"
 )
 
-// On a merge request, code scanning gets neither the documentalist's nor
-// the reviewer's findings, which workline posts there itself; on any other
-// event, it gets them all (#412).
+// On a merge request, code scanning gets neither the documentalist's, the
+// reviewer's nor the gates' findings, which workline posts there itself
+// (#412, ADR-0049); on any other event, it gets them all.
 func TestForCodeScanning(t *testing.T) {
 	items := []Item{{Role: "documentalist"}, {Role: "reviewer"}, {Role: "committer"}, {Role: "gate:secrets"}}
 	var kept []string
 	for _, i := range ForCodeScanning("merge-request", items) {
 		kept = append(kept, i.Role)
 	}
-	if got := strings.Join(kept, ","); got != "committer,gate:secrets" {
-		t.Errorf("merge-request keeps %s, want committer,gate:secrets", got)
+	if got := strings.Join(kept, ","); got != "committer" {
+		t.Errorf("merge-request keeps %s, want committer", got)
 	}
 	if got := ForCodeScanning("schedule", items); len(got) != len(items) {
 		t.Errorf("schedule keeps %d of %d", len(got), len(items))

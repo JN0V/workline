@@ -3,8 +3,10 @@
 package line
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -23,6 +25,12 @@ type Step struct {
 	Status string           `json:"status"`
 	Result *engine.Result   `json:"result,omitempty"`
 	Gate   *verdict.Verdict `json:"gate,omitempty"`
+	// New: what a gate found the change adds, for what shows it on the
+	// merge request; on an event given a range, the gate run here.
+	New *gate.Added `json:"new,omitempty"`
+	// From: the file a gate's verdict was read from, the job that ran it
+	// having shown its findings; empty when it ran here.
+	From string `json:"from,omitempty"`
 }
 
 // Result is the outcome of an event on the line.
@@ -36,6 +44,26 @@ type Result struct {
 	// Pending lists the runs judged with NoApply, in the line's order: what
 	// `workline apply` is given in the job that holds the write token.
 	Pending []string `json:"pending,omitempty"`
+	// Range: the range the gates alone ran on (Gates.Only), which the
+	// line reading their verdicts checks it judges too.
+	Range string `json:"range,omitempty"`
+}
+
+// Gates says how a line takes its gate steps: run there, by default. In
+// CI, a job of their own runs them, with no write token and no agent's
+// (Only), and the job judging the line reads their verdicts (From): the
+// gates' tools run the change's code, a linter's config or plugin
+// (ADR-0049, section 6).
+type Gates struct {
+	// Only: the event's gate steps alone, each one, for a job that runs
+	// nothing else.
+	Only bool
+	// From: the file holding the result a line given Only printed; each
+	// gate step's verdict is read there, never run.
+	From string
+
+	read *Result // From, once read
+	err  error
 }
 
 // Run runs event's steps. base carries what every role run shares (repository,
@@ -46,7 +74,10 @@ type Result struct {
 // verdict (ADR-0037). With NoApply, each step judges the tree as it is — no
 // step sees what an earlier one proposed — and handoffs wait, since nothing
 // is applied yet.
-func Run(event string, base engine.Options) *Result {
+func Run(event string, base engine.Options) *Result { return RunWith(event, base, &Gates{}) }
+
+// RunWith is Run, its gate steps taken as gates says.
+func RunWith(event string, base engine.Options, gates *Gates) *Result {
 	res := &Result{Status: verdict.Pass, Steps: []Step{}}
 	cfg, err := routing.Load(base.Repo)
 	if err != nil {
@@ -79,18 +110,25 @@ func Run(event string, base engine.Options) *Result {
 		}
 	}
 	defer func() { res.Summary += own }()
-	stopAtFirst := cfg.StopsAtFirst(event)
+	// The gates alone: each one runs, so that each is shown.
+	stopAtFirst := cfg.StopsAtFirst(event) && !gates.Only
+	if gates.Only {
+		res.Range = whole["range"]
+	}
 	var notPassed []string // with every step run: those that did not pass, and how
+	considered := 0
 	for _, name := range steps {
 		step, status := name, verdict.Pass
-		if nothingElse && name != committerRole {
+		g, isGate := strings.CutPrefix(name, "gate:")
+		if nothingElse && name != committerRole || gates.Only && !isGate {
 			continue
 		}
-		if g, isGate := strings.CutPrefix(name, "gate:"); isGate {
-			v := runGate(base.Repo, g, event, whole["range"])
-			res.Steps = append(res.Steps, Step{Name: name, Status: v.Status, Gate: v})
-			res.Findings = append(res.Findings, v.Findings...)
-			status = v.Status
+		considered++
+		if isGate {
+			s := gates.step(base.Repo, g, event, whole["range"])
+			res.Steps = append(res.Steps, s)
+			res.Findings = append(res.Findings, s.Gate.Findings...)
+			status = s.Status
 		} else {
 			o := base
 			if name == committerRole {
@@ -109,9 +147,12 @@ func Run(event string, base engine.Options) *Result {
 		res.Status = worst(res.Status, status)
 	}
 	if len(notPassed) > 0 {
-		res.Summary = fmt.Sprintf("%s: every step ran; %d of %d did not pass: %s", event, len(notPassed), len(steps), strings.Join(notPassed, ", "))
+		res.Summary = fmt.Sprintf("%s: every step ran; %d of %d did not pass: %s", event, len(notPassed), considered, strings.Join(notPassed, ", "))
 	} else {
 		res.Summary = fmt.Sprintf("%s: %d steps passed", event, len(res.Steps))
+	}
+	if gates.Only {
+		res.Summary += "; the gates alone"
 	}
 	if len(res.Pending) > 0 {
 		res.Summary += fmt.Sprintf("; %d runs to apply", len(res.Pending))
@@ -123,16 +164,59 @@ func Run(event string, base engine.Options) *Result {
 // own included (beforeOwn leaves them to it).
 const committerRole = "committer"
 
+// step is a gate step: run here, or its verdict read from the job that
+// ran it. One not there is an error, never a pass: that job did not run
+// it, or ended before writing.
+func (g *Gates) step(repo, name, event, rng string) Step {
+	if g.From == "" {
+		v, added := runGate(repo, name, event, rng)
+		return Step{Name: "gate:" + name, Status: v.Status, Gate: v, New: added}
+	}
+	if g.read == nil && g.err == nil {
+		g.read, g.err = readResult(g.From)
+	}
+	not := func(why string) Step {
+		return Step{Name: "gate:" + name, Status: verdict.Block, From: g.From, Gate: &verdict.Verdict{Status: verdict.Block,
+			Summary:  fmt.Sprintf("gate %s: no verdict", name),
+			Findings: []verdict.Finding{{Rule: "check-error", Where: name, Message: why}}}}
+	}
+	switch {
+	case g.err != nil:
+		return not(fmt.Sprintf("the gates' job left no result to read (%v): it did not run, or ended before writing it", g.err))
+	case g.read.Range != rng:
+		return not(fmt.Sprintf("the gates ran on %q, this line judges %q", g.read.Range, rng))
+	}
+	for _, s := range g.read.Steps {
+		if s.Name == "gate:"+name && s.Gate != nil {
+			return Step{Name: s.Name, Status: s.Status, Gate: s.Gate, From: g.From}
+		}
+	}
+	return not(fmt.Sprintf("the gates' job, %s, holds no verdict of it", g.From))
+}
+
+// readResult reads a line's result as `--json` printed it.
+func readResult(file string) (*Result, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	var r Result
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, fmt.Errorf("%s: %v", file, err)
+	}
+	return &r, nil
+}
+
 // runGate runs a gate step. Given a range, as on a merge request or before
 // a push, its thresholds read only the findings the change adds since the
-// range's base; on a schedule or a release, every finding (ADR-0049). The
-// range is the one given, workline's own commits in it too: the tree
-// checked out is what the gate's tools read.
-func runGate(repo, name, event, rng string) *verdict.Verdict {
+// range's base, and what it adds is said; on a schedule or a release,
+// every finding (ADR-0049). The range is the one given, workline's own
+// commits in it too: the tree checked out is what the gate's tools read.
+func runGate(repo, name, event, rng string) (*verdict.Verdict, *gate.Added) {
 	if since := gitrange.Base(rng); since != "" && event != "schedule" && event != "release" {
 		return gate.RunNew(repo, name, since)
 	}
-	return gate.Run(repo, name)
+	return gate.Run(repo, name), nil
 }
 
 // worst is the verdict of a line whose steps all ran: a block on the work
