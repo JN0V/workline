@@ -18,18 +18,19 @@ type sarifFile struct {
 	name    string
 	doc     map[string]any
 	results []*result
+	tools   []string // each run's tool and version, when it says one
 }
 
 // result is one SARIF result, with what tells it from another.
 type result struct {
-	raw           map[string]any
-	tool, version string
-	rule, level   string
-	text          string
-	uri           string // from the tree's root, slashes
-	line          int
-	fingerprint   string // the tool's own, or ""
-	state         string // new or unchanged, once compared
+	raw         map[string]any
+	tool        string
+	rule, level string
+	text        string
+	uri         string // from the tree's root, slashes
+	line        int
+	fingerprint string // the tool's own, or ""
+	state       string // new or unchanged, once compared
 }
 
 // readSARIF reads the SARIF files a check wrote in out since it started,
@@ -61,13 +62,16 @@ func readSARIF(out, root string) ([]sarifFile, error) {
 			if version == "" {
 				version = str(driver, "version")
 			}
+			if version != "" {
+				f.tools = append(f.tools, tool+" "+version)
+			}
 			results, _ := run["results"].([]any)
 			for _, x := range results {
 				raw, ok := x.(map[string]any)
 				if !ok {
 					continue
 				}
-				f.results = append(f.results, parse(raw, tool, version, root))
+				f.results = append(f.results, parse(raw, tool, root))
 			}
 		}
 		files = append(files, f)
@@ -76,8 +80,8 @@ func readSARIF(out, root string) ([]sarifFile, error) {
 	return files, nil
 }
 
-func parse(raw map[string]any, tool, version, root string) *result {
-	r := &result{raw: raw, tool: tool, version: version, rule: str(raw, "ruleId"), level: str(raw, "level"), text: str(obj(raw, "message"), "text")}
+func parse(raw map[string]any, tool, root string) *result {
+	r := &result{raw: raw, tool: tool, rule: str(raw, "ruleId"), level: str(raw, "level"), text: str(obj(raw, "message"), "text")}
 	if r.level == "" {
 		r.level = "warning" // as the SARIF standard says
 	}

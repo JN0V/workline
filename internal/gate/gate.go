@@ -172,7 +172,7 @@ func run(repo, name, since string) *verdict.Verdict {
 
 // enforce lowers or drops findings by the gate's `enforce`, keyed by a
 // check's id or by a rule, then gives the verdict: a finding left at no
-// level blocks.
+// level blocks. A check that did not run is still said, off or not.
 func enforce(v *verdict.Verdict, g *Gate) {
 	var kept []verdict.Finding
 	for _, f := range v.Findings {
@@ -180,10 +180,10 @@ func enforce(v *verdict.Verdict, g *Gate) {
 		if !ok {
 			level = g.Enforce[f.Rule]
 		}
-		switch level {
-		case "off":
+		switch {
+		case level == "off" && f.Rule != "check-error":
 			continue
-		case "warn":
+		case level == "off", level == "warn":
 			f.Level = "warn"
 		}
 		kept = append(kept, f)
@@ -204,7 +204,7 @@ func runCheck(repo, out string, c Check, ch *change, all []Check) ([]verdict.Fin
 	if c.Timeout != "" {
 		timeout, _ = time.ParseDuration(c.Timeout)
 	}
-	var env []string
+	env := []string{"WORKLINE_BASE="} // every finding: none the job had set either
 	if ch != nil {
 		env = []string{"WORKLINE_BASE=" + ch.base}
 	}
@@ -241,7 +241,7 @@ func runCheck(repo, out string, c Check, ch *change, all []Check) ([]verdict.Fin
 	// The same tool on both sides, by construction, but for one the
 	// project's tree pins (go.mod's tool, package.json): said, as a
 	// finding of a rule the new version brings looks new.
-	if hv, bv := version(counted), version(results(base)); hv != "" && bv != "" && hv != bv {
+	if hv, bv := version(head), version(base); hv != "" && bv != "" && hv != bv {
 		found = append(found, verdict.Finding{Rule: "tool-version-differs", Where: c.ID, Level: "warn",
 			Message: fmt.Sprintf("the head ran %s, the merge base %s: a finding the new version adds counts as the change's; a tool's upgrade gets a pull request of its own", hv, bv)})
 	}
@@ -332,14 +332,16 @@ func results(files []sarifFile) []*result {
 	return out
 }
 
-// version is the tools' versions results say, joined.
-func version(rs []*result) string {
+// version is the tools and versions a check's runs say, joined.
+func version(files []sarifFile) string {
 	seen := map[string]bool{}
 	var out []string
-	for _, r := range rs {
-		if v := r.tool + " " + r.version; r.version != "" && !seen[v] {
-			seen[v] = true
-			out = append(out, v)
+	for _, f := range files {
+		for _, v := range f.tools {
+			if !seen[v] {
+				seen[v] = true
+				out = append(out, v)
+			}
 		}
 	}
 	sort.Strings(out)
@@ -408,9 +410,13 @@ func (ch *change) suppressions(checks []Check) []verdict.Finding {
 	for k, n := range ch.gone {
 		gone[k] = n
 	}
+	tools := make([][]string, len(checks))
+	for i, c := range checks {
+		tools[i] = linters.Ran(c.Run)
+	}
 	for _, l := range ch.added {
-		for _, c := range checks {
-			s, ok := linters.Suppressed(l.file, l.text, linters.Ran(c.Run))
+		for i, c := range checks {
+			s, ok := linters.Suppressed(l.file, l.text, tools[i])
 			if !ok {
 				continue
 			}
