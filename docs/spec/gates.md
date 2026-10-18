@@ -1,6 +1,6 @@
 ---
 sources: [internal/gate, internal/line, internal/linters/check.go]
-checked: 2c2c4d3a
+checked: 4d1556e2
 ---
 # Gates — v1 (draft)
 
@@ -43,8 +43,8 @@ gates:
   are for a later version.
 - A check with no threshold is refused when the file is loaded. The criteria
   are decided before the gate runs, never while reading the results. So is
-  a setting the engine cannot read: a `timeout` that is not a duration, a
-  `new` it does not know.
+  a setting the engine cannot read: a `timeout` or `base-timeout` that is
+  not a duration past zero, a `new` it does not know.
 - `timeout` caps a check's run (`10m` unless set); `new`, `base-timeout`
   and `config` say how a merge request's new findings are told (below).
 - `enforce` names a check by its id, or a rule (`suppression-added`); `warn`
