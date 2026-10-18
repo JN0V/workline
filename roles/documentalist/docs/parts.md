@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/documentalist/parts.go, internal/builtin/documentalist/documentalist.go]
-checked: a5e57aa5
+checked: 43b3c04d
 verified: agent:claude-code
 ---
 # Documentalist — judged in parts
@@ -53,6 +53,11 @@ sends it to a person; `parts-max-per-run` (16) caps the parts a run asks.
 
 ## Reading the claims, no AI
 
+- A quote running across the line break into the lines it cites, from
+  the line before or into the line after, is placed where it stands: a
+  sentence often starts at the end of the line before. One line either
+  way, no more
+  ([ADR-0009, amended](../../../docs/adr/0009-docs-far-behind-are-judged-in-parts.md#amendment-2026-10-18-checked-after-parts-measured-again-on)).
 - A claim whose quotes are not at the lines it cites is dropped
   (`claims-dropped`, naming the part, the quote and where it was looked
   for), for a person, who reads the doc whole: the claim dropped may have

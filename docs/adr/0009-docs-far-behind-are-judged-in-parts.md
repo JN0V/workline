@@ -346,3 +346,16 @@ its default" in its place.
   sentence true only across two sources was left three times, the
   count once; none was vouched for, the doc staying suspect for a
   person.
+- **Why the sentence was left, and the fix** (found offline, no tokens):
+  asked to quote a passage whole, the store's part quoted "Each one
+  lasts the configured session TTL, 24 hours by default" and cited lines
+  23-24, but "Each" ends line 22. The quote was not at the lines cited,
+  so the claim saying what was wrong was dropped before the fix, which
+  never saw it: runs 1 and 4 of this measure, by their `claims-dropped`
+  findings; run 2 of the first dropped two claims too, unexplained then.
+  A part's quote is now placed where it stands when it runs across the
+  line break into its range, from the line before or into the line
+  after, one line either way and no more. Replayed with a scripted agent
+  (`judged-in-parts-quote-from-the-line-before`), the claim is kept and
+  reaches the fix as lines 22-24. The count's miss (run 2) is the fix's
+  own patch citing a heading a line off, as before this change.
