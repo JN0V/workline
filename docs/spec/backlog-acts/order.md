@@ -2,7 +2,7 @@
 type: reference
 sources: [internal/backlog/backlog.go, internal/backlog/order.go, internal/scale/scale.go, internal/scale/detect.go, internal/builtin/productowner/productowner.go, internal/engine/backlog.go]
 status: draft
-checked: fbf66fcf
+checked: f649b75f
 verified: agent:claude-code
 ---
 # Milestones and ordering
