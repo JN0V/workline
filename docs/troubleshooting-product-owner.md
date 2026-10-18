@@ -1,6 +1,6 @@
 ---
 sources: [internal/builtin/productowner/productowner.go]
-checked: 4a1dedce
+checked: 7d5ad47d
 verified: agent:claude-code
 ---
 # Troubleshooting the product owner
@@ -22,6 +22,11 @@ When the product owner pauses, or an issue gets nothing. Part of
   `code-lines-max`.
 - `setting-gone`: `ignored-runs-max` or `weekly-sample` is no longer read;
   take it off.
+- `values-where`, blocking: the `priority` or `effort` setting names a
+  family of labels the project has none of; name one it has, or `auto`
+  ([settings](../roles/product-owner/docs/settings.md#priority-and-effort)).
+  `priority-elsewhere`: the issue holds a priority in another family; keep
+  one.
 - It runs only where routed: `schedule: [documentalist, product-owner]`.
 - `autonomy: cautious` notes and proposes: see the issues bearing
   `workline:proposed`.
