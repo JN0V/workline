@@ -1278,7 +1278,11 @@ func unestimated(open []forge.Issue, report int, isOpen map[int]bool) []verdict.
 		says = append(says, fmt.Sprintf("%d of %d ready issues have no priority: they follow their number", noPriority, ready))
 	}
 	if noEffort > 0 && scale.Used.Effort.Said != "" {
-		says = append(says, fmt.Sprintf("%d of %d have no effort, read as %s", noEffort, ready, scale.Effort.Name(scale.Effort.None)))
+		which := "ready issues "
+		if len(says) > 0 {
+			which = ""
+		}
+		says = append(says, fmt.Sprintf("%d of %d %shave no effort, read as %s", noEffort, ready, which, scale.Effort.Name(scale.Effort.None)))
 	}
 	if len(says) == 0 {
 		return nil
